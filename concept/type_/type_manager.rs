@@ -1090,7 +1090,7 @@ impl TypeManager {
         is_root: bool,
         ordering: Ordering,
     ) -> Result<RoleType<'static>, ConceptWriteError> {
-        OperationTimeValidation::validate_role_name_uniqueness(
+        OperationTimeValidation::validate_new_role_name_uniqueness(
             snapshot,
             relation_type.clone().into_owned(),
             &label.clone().into_owned(),
@@ -1292,7 +1292,7 @@ impl TypeManager {
         let new_label = Label::build_scoped(name, old_label.scope().unwrap().as_str());
         let relation_type = TypeReader::get_role_type_relates(snapshot, role_type.clone())?.relation();
 
-        OperationTimeValidation::validate_role_name_uniqueness(
+        OperationTimeValidation::validate_new_role_name_uniqueness(
             snapshot,
             relation_type,
             &new_label.clone().into_owned(),
@@ -1449,7 +1449,11 @@ impl TypeManager {
         subtype: RelationType<'static>,
         supertype: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_roles_compatible_with_new_relation_supertype(snapshot, subtype.clone(), supertype.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         // TODO: Add check that if we have inherited cascade and set supertype without cascade (lose cascade), we reject it with a specific error!
+
         Self::set_supertype(self, snapshot, subtype, supertype)
     }
 

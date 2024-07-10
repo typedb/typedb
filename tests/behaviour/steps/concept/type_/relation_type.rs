@@ -129,7 +129,24 @@ pub async fn relation_roles_contain(context: &mut Context, type_label: Label, co
     });
 }
 
-// TODO: Add steps into .feature for declared checks!
+#[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) get roles {is_empty_or_not}")]
+pub async fn relation_roles_is_empty(context: &mut Context, type_label: Label, is_empty_or_not: IsEmptyOrNot) {
+    with_read_tx!(context, |tx| {
+        let relation_type =
+            tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let actual_labels = relation_type
+            .get_relates(&tx.snapshot, &tx.type_manager)
+            .unwrap()
+            .iter()
+            .map(|(_label, relates)| {
+                relates.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+            })
+            .collect_vec();
+        is_empty_or_not.check(actual_labels.is_empty());
+    });
+}
+
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) get declared roles {contains_or_doesnt}:")]
 pub async fn relation_declared_roles_contain(
@@ -150,6 +167,27 @@ pub async fn relation_declared_roles_contain(
             })
             .collect_vec();
         contains.check(&expected_labels, &actual_labels);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) get declared roles {is_empty_or_not}")]
+pub async fn relation_declared_roles_is_empty(
+    context: &mut Context,
+    type_label: Label,
+    is_empty_or_not: IsEmptyOrNot,
+) {
+    with_read_tx!(context, |tx| {
+        let type_ = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let actual_labels = type_
+            .get_relates_declared(&tx.snapshot, &tx.type_manager)
+            .unwrap()
+            .iter()
+            .map(|relates| {
+                relates.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+            })
+            .collect_vec();
+        is_empty_or_not.check(actual_labels.is_empty());
     });
 }
 
@@ -312,7 +350,6 @@ pub async fn relation_role_subtypes_contain(
     });
 }
 
-// TODO: is_empty_or_not
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) get subtypes {is_empty_or_not}")]
 pub async fn relation_role_subtypes_is_empty(

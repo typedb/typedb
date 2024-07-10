@@ -23,6 +23,7 @@ use crate::{
 pub mod annotation_compatibility;
 pub mod commit_time_validation;
 pub mod operation_time_validation;
+mod validation;
 
 #[derive(Debug, Clone)]
 pub enum SchemaValidationError {
@@ -31,7 +32,7 @@ pub enum SchemaValidationError {
     RootHasBeenCorrupted(Label<'static>),
     LabelShouldBeUnique(Label<'static>),
     StructNameShouldBeUnique(String),
-    RoleNameShouldBeUnique(Label<'static>),
+    RoleNameShouldBeUniqueForRelationTypeHierarchy(Label<'static>, Label<'static>),
     CycleFoundInTypeHierarchy(Label<'static>, Label<'static>),
     CannotChangeValueTypeOfAttributeType(Label<'static>, Option<ValueType>),
     CannotDeleteTypeWithExistingSubtypes(Label<'static>),
@@ -76,6 +77,7 @@ pub enum SchemaValidationError {
     CannotUnsetValueTypeAsThereAreNonAbstractSubtypesWithoutDeclaredValueTypes(Label<'static>, Label<'static>),
     DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(AnnotationCategory, AnnotationCategory, Label<'static>),
     AnnotationIsNotCompatibleWithDeclaredAnnotation(AnnotationCategory, AnnotationCategory, Label<'static>),
+    RelationTypeMustRelateAtLeastOneRole(Label<'static>),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -92,7 +94,7 @@ impl Error for SchemaValidationError {
             Self::RootHasBeenCorrupted(_) => None,
             Self::LabelShouldBeUnique(_) => None,
             Self::StructNameShouldBeUnique(_) => None,
-            Self::RoleNameShouldBeUnique(_) => None,
+            Self::RoleNameShouldBeUniqueForRelationTypeHierarchy(_, _) => None,
             Self::CycleFoundInTypeHierarchy(_, _) => None,
             Self::CannotChangeValueTypeOfAttributeType(_, _) => None,
             Self::CannotDeleteTypeWithExistingSubtypes(_) => None,
@@ -134,6 +136,16 @@ impl Error for SchemaValidationError {
             Self::CannotUnsetValueTypeAsThereAreNonAbstractSubtypesWithoutDeclaredValueTypes(_, _) => None,
             Self::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(_, _, _) => None,
             Self::AnnotationIsNotCompatibleWithDeclaredAnnotation(_, _, _) => None,
+            Self::RelationTypeMustRelateAtLeastOneRole(_) => None,
         }
     }
 }
+
+macro_rules! get_label {
+    ($snapshot: ident, $type_:ident) => {
+        // TODO: It is a spicy macro, need to refactor it to return Result<Label, ConceptReadError>
+        TypeReader::get_label($snapshot, $type_).unwrap().unwrap()
+    };
+}
+
+pub(crate) use get_label;

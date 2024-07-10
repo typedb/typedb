@@ -329,6 +329,9 @@ impl TypeReader {
                     debug_assert!(!transitive_relates.contains_key(&role));
                     transitive_relates.insert(role, relates.clone());
                 }
+                // TODO: It's not technically overridden as it's just a supertype. Now it hides relation:role after
+                // we create just a single role for a relation. So we have relation:role when we don't have roles and we don't have relation:role once we have a real role.
+                // Do we want this behavior?
                 if let Some(overridden) = Self::get_supertype(snapshot, relates.role().clone())? {
                     overridden_relates.add(overridden);
                 }

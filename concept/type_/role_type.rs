@@ -147,7 +147,6 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
     }
 
     fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
-        // TODO: validation (Or better it in type_manager)
         type_manager.delete_role_type(snapshot, self)
     }
 

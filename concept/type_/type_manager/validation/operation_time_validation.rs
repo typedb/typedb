@@ -38,10 +38,14 @@ use crate::{
         relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::{type_reader::TypeReader, validation::SchemaValidationError},
+        type_manager::{
+            type_reader::TypeReader,
+            validation::{SchemaValidationError, get_label, validation::validate_role_name_uniqueness_non_transitive}
+        },
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::type_::type_manager::validation::validation::{edge_get_annotation_by_category, is_ordering_compatible_with_distinct_annotation, type_get_annotation_by_category, type_has_annotation_category, type_has_declared_annotation_category, type_is_abstract};
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -49,12 +53,6 @@ macro_rules! object_type_match {
             ObjectType::Entity($obj_var) => $block
             ObjectType::Relation($obj_var) => $block
         }
-    };
-}
-
-macro_rules! get_label {
-    ($snapshot: ident, $type_:ident) => {
-        TypeReader::get_label($snapshot, $type_).unwrap().unwrap()
     };
 }
 
@@ -110,7 +108,7 @@ impl OperationTimeValidation {
             .iter()
             .map(Owns::attribute)
             .try_for_each(|attribute_type: AttributeType<'static>| {
-                if Self::type_is_abstract(snapshot, attribute_type.clone())? {
+                if type_is_abstract(snapshot, attribute_type.clone())? {
                     Err(SchemaValidationError::CannotUnsetAbstractnessAsItOwnsAbstractTypes(get_label!(
                         snapshot,
                         attribute_type
@@ -145,7 +143,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_role_name_uniqueness<'a>(
+    pub(crate) fn validate_new_role_name_uniqueness<'a>(
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
         label: &Label<'static>,
@@ -153,32 +151,35 @@ impl OperationTimeValidation {
         let existing_relation_supertypes = TypeReader::get_supertypes(snapshot, relation_type.clone().into_owned())
             .map_err(SchemaValidationError::ConceptRead)?;
 
-        Self::validate_role_name_uniqueness_non_transitive(snapshot, relation_type, label)?;
+        validate_role_name_uniqueness_non_transitive(snapshot, relation_type, label)?;
         for relation_supertype in existing_relation_supertypes {
-            Self::validate_role_name_uniqueness_non_transitive(snapshot, relation_supertype, label)?;
+            validate_role_name_uniqueness_non_transitive(snapshot, relation_supertype, label)?;
         }
 
         Ok(())
     }
 
-    fn validate_role_name_uniqueness_non_transitive<'a>(
+    pub(crate) fn validate_roles_compatible_with_new_relation_supertype<'a>(
         snapshot: &impl ReadableSnapshot,
-        relation_type: RelationType<'static>,
-        new_label: &Label<'static>,
+        relation_subtype: RelationType<'static>,
+        relation_supertype: RelationType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        let scoped_label = Label::build_scoped(
-            new_label.name.as_str(),
-            TypeReader::get_label(snapshot, relation_type).unwrap().unwrap().name().as_str(),
-        );
+        let subtype_relates_declared = TypeReader::get_relates_declared(snapshot, relation_subtype)
+            .map_err(SchemaValidationError::ConceptRead)?;
 
-        if TypeReader::get_labelled_type::<RoleType<'static>>(snapshot, &scoped_label)
-            .map_err(SchemaValidationError::ConceptRead)?
-            .is_some()
-        {
-            Err(SchemaValidationError::RoleNameShouldBeUnique(new_label.clone()))
-        } else {
-            Ok(())
+        for subtype_relates in subtype_relates_declared {
+            let role = subtype_relates.role();
+            let role_label = get_label!(snapshot, role);
+            validate_role_name_uniqueness_non_transitive(snapshot, relation_supertype.clone(), &role_label)?;
+
+            let relation_supertype_supertypes = TypeReader::get_supertypes(snapshot, relation_supertype.clone().into_owned())
+                .map_err(SchemaValidationError::ConceptRead)?;
+            for supertype in relation_supertype_supertypes {
+                validate_role_name_uniqueness_non_transitive(snapshot, supertype, &role_label)?;
+            }
         }
+
+        Ok(())
     }
 
     pub(crate) fn validate_struct_name_uniqueness<'a>(
@@ -275,7 +276,7 @@ impl OperationTimeValidation {
         value_type: Option<ValueType>,
         abstract_set: Option<bool>,
     ) -> Result<(), SchemaValidationError> {
-        let is_abstract = abstract_set.unwrap_or(Self::type_has_annotation_category(
+        let is_abstract = abstract_set.unwrap_or(type_has_annotation_category(
             snapshot,
             attribute_type.clone(),
             AnnotationCategory::Abstract,
@@ -400,27 +401,23 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_: T,
     ) -> Result<(), SchemaValidationError> {
-        if Self::type_is_abstract(snapshot, type_.clone())? {
+        if type_is_abstract(snapshot, type_.clone())? {
             Ok(())
         } else {
             Err(SchemaValidationError::AttributeTypeSupertypeIsNotAbstract(get_label!(snapshot, type_)))
         }
     }
 
-    pub(crate) fn type_is_abstract<T>(snapshot: &impl ReadableSnapshot, type_: T) -> Result<bool, SchemaValidationError>
-    where
-        T: KindAPI<'static>,
-    {
-        Self::type_has_declared_annotation(snapshot, type_.clone(), Annotation::Abstract(AnnotationAbstract))
-    }
-
-    pub(crate) fn validate_ownership_abstractness(
+    pub(crate) fn validate_ownership_abstractness<T>(
         snapshot: &impl ReadableSnapshot,
-        owner: impl KindAPI<'static>,
+        owner: T,
         attribute: AttributeType<'static>,
-    ) -> Result<(), SchemaValidationError> {
-        let is_owner_abstract = Self::type_is_abstract(snapshot, owner.clone())?;
-        let is_attribute_abstract = Self::type_is_abstract(snapshot, attribute.clone())?;
+    ) -> Result<(), SchemaValidationError>
+        where
+            T: KindAPI<'static>,
+    {
+        let is_owner_abstract = type_is_abstract(snapshot, owner.clone())?;
+        let is_attribute_abstract = type_is_abstract(snapshot, attribute.clone())?;
 
         match (&is_owner_abstract, &is_attribute_abstract) {
             (true, true) | (false, false) | (true, false) => Ok(()),
@@ -507,7 +504,7 @@ impl OperationTimeValidation {
         EDGE: InterfaceImplementation<'static> + Clone,
     {
         if let Some(supertype_annotation) =
-            Self::edge_get_annotation_by_category(snapshot, supertype_edge, AnnotationCategory::Cardinality)?
+            edge_get_annotation_by_category(snapshot, supertype_edge, AnnotationCategory::Cardinality)?
         {
             match supertype_annotation {
                 Annotation::Cardinality(supertype_cardinality) => {
@@ -530,7 +527,7 @@ impl OperationTimeValidation {
         regex: AnnotationRegex,
     ) -> Result<(), SchemaValidationError> {
         if let Some(supertype_annotation) =
-            Self::type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Regex)?
+            type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Regex)?
         {
             match supertype_annotation {
                 Annotation::Regex(supertype_regex) => {
@@ -559,7 +556,7 @@ impl OperationTimeValidation {
         EDGE: InterfaceImplementation<'static> + Clone,
     {
         if let Some(supertype_annotation) =
-            Self::edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Regex)?
+            edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Regex)?
         {
             match supertype_annotation {
                 Annotation::Regex(supertype_regex) => {
@@ -586,7 +583,7 @@ impl OperationTimeValidation {
         range: AnnotationRange,
     ) -> Result<(), SchemaValidationError> {
         if let Some(supertype_annotation) =
-            Self::type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Range)?
+            type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Range)?
         {
             match supertype_annotation {
                 Annotation::Range(supertype_range) => {
@@ -616,7 +613,7 @@ impl OperationTimeValidation {
         EDGE: InterfaceImplementation<'static> + Clone,
     {
         if let Some(supertype_annotation) =
-            Self::edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Range)?
+            edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Range)?
         {
             match supertype_annotation {
                 Annotation::Range(supertype_range) => {
@@ -643,7 +640,7 @@ impl OperationTimeValidation {
         values: AnnotationValues,
     ) -> Result<(), SchemaValidationError> {
         if let Some(supertype_annotation) =
-            Self::type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Values)?
+            type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Values)?
         {
             match supertype_annotation {
                 Annotation::Values(supertype_values) => {
@@ -672,7 +669,7 @@ impl OperationTimeValidation {
         EDGE: InterfaceImplementation<'static> + Clone,
     {
         if let Some(supertype_annotation) =
-            Self::edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Values)?
+            edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Values)?
         {
             match supertype_annotation {
                 Annotation::Values(supertype_values) => {
@@ -702,9 +699,9 @@ impl OperationTimeValidation {
         T: KindAPI<'static>,
     {
         let subtype_abstract =
-            Self::type_has_declared_annotation_category(snapshot, subtype.clone(), AnnotationCategory::Abstract)?;
+            type_has_declared_annotation_category(snapshot, subtype.clone(), AnnotationCategory::Abstract)?;
         let supertype_abstract =
-            Self::type_has_declared_annotation_category(snapshot, supertype.clone(), AnnotationCategory::Abstract)?;
+            type_has_declared_annotation_category(snapshot, supertype.clone(), AnnotationCategory::Abstract)?;
 
         match (subtype_abstract, supertype_abstract) {
             (false, false) | (false, true) | (true, true) => Ok(()),
@@ -726,10 +723,10 @@ impl OperationTimeValidation {
             TypeReader::get_type_ordering(snapshot, role.clone()).map_err(SchemaValidationError::ConceptRead)?,
         );
         let distinct_set = distinct_set.unwrap_or(
-            Self::edge_get_annotation_by_category(snapshot, relates, AnnotationCategory::Distinct)?.is_some(),
+            edge_get_annotation_by_category(snapshot, relates, AnnotationCategory::Distinct)?.is_some(),
         );
 
-        if Self::is_ordering_compatible_with_distinct_annotation(ordering, distinct_set) {
+        if is_ordering_compatible_with_distinct_annotation(ordering, distinct_set) {
             Ok(())
         } else {
             Err(SchemaValidationError::InvalidOrderingForDistinctAnnotation(get_label!(snapshot, role)))
@@ -747,9 +744,9 @@ impl OperationTimeValidation {
             TypeReader::get_type_edge_ordering(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?,
         );
         let distinct_set = distinct_set
-            .unwrap_or(Self::edge_get_annotation_by_category(snapshot, owns, AnnotationCategory::Distinct)?.is_some());
+            .unwrap_or(edge_get_annotation_by_category(snapshot, owns, AnnotationCategory::Distinct)?.is_some());
 
-        if Self::is_ordering_compatible_with_distinct_annotation(ordering, distinct_set) {
+        if is_ordering_compatible_with_distinct_annotation(ordering, distinct_set) {
             Ok(())
         } else {
             Err(SchemaValidationError::InvalidOrderingForDistinctAnnotation(get_label!(snapshot, attribute)))
@@ -1119,7 +1116,7 @@ impl OperationTimeValidation {
                 .is_none();
 
             if no_value_type
-                && !Self::type_has_declared_annotation_category(
+                && !type_has_declared_annotation_category(
                     snapshot,
                     subtype.clone(),
                     AnnotationCategory::Abstract,
@@ -1597,91 +1594,5 @@ impl OperationTimeValidation {
             }
         }
         Ok(())
-    }
-
-    // TODO: Try to wrap all these type_has_***annotation and edge_has_***annotation into several macros!
-
-    // TODO: Refactor to type_get_declared_annotaiton
-    fn type_has_declared_annotation<T>(
-        snapshot: &impl ReadableSnapshot,
-        type_: T,
-        annotation: Annotation,
-    ) -> Result<bool, SchemaValidationError>
-    where
-        T: KindAPI<'static>,
-    {
-        let has = TypeReader::get_type_annotations_declared(snapshot, type_.clone())
-            .map_err(SchemaValidationError::ConceptRead)?
-            .contains(&T::AnnotationType::from(annotation));
-        Ok(has)
-    }
-
-    fn type_has_declared_annotation_category<T>(
-        snapshot: &impl ReadableSnapshot,
-        type_: T,
-        annotation_category: AnnotationCategory,
-    ) -> Result<bool, SchemaValidationError>
-    where
-        T: KindAPI<'static>,
-    {
-        let has = TypeReader::get_type_annotations_declared(snapshot, type_.clone())
-            .map_err(SchemaValidationError::ConceptRead)?
-            .iter()
-            .map(|annotation| annotation.clone().into().category())
-            .any(|found_category| found_category == annotation_category);
-        Ok(has)
-    }
-
-    fn type_has_annotation_category<T>(
-        snapshot: &impl ReadableSnapshot,
-        type_: T,
-        annotation_category: AnnotationCategory,
-    ) -> Result<bool, SchemaValidationError>
-    where
-        T: KindAPI<'static>,
-    {
-        let has = TypeReader::get_type_annotations(snapshot, type_.clone())
-            .map_err(SchemaValidationError::ConceptRead)?
-            .iter()
-            .map(|(annotation, _)| annotation.clone().into().category())
-            .any(|found_category| found_category == annotation_category);
-        Ok(has)
-    }
-
-    fn type_get_annotation_by_category(
-        snapshot: &impl ReadableSnapshot,
-        type_: impl KindAPI<'static>,
-        annotation_category: AnnotationCategory,
-    ) -> Result<Option<Annotation>, SchemaValidationError> {
-        let annotation = TypeReader::get_type_annotations(snapshot, type_.clone())
-            .map_err(SchemaValidationError::ConceptRead)?
-            .into_iter()
-            .map(|(found_annotation, _)| found_annotation)
-            .find(|found_annotation| found_annotation.clone().into().category() == annotation_category);
-        Ok(annotation.map(|val| val.clone().into()))
-    }
-
-    fn edge_get_annotation_by_category<EDGE>(
-        snapshot: &impl ReadableSnapshot,
-        edge: EDGE,
-        annotation_category: AnnotationCategory,
-    ) -> Result<Option<Annotation>, SchemaValidationError>
-    where
-        EDGE: InterfaceImplementation<'static> + Clone,
-    {
-        let annotation = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
-            .map_err(SchemaValidationError::ConceptRead)?
-            .into_iter()
-            .map(|(found_annotation, _)| found_annotation)
-            .find(|found_annotation| found_annotation.category() == annotation_category);
-        Ok(annotation.map(|val| val.clone()))
-    }
-
-    fn is_ordering_compatible_with_distinct_annotation(ordering: Ordering, distinct_set: bool) -> bool {
-        if distinct_set {
-            ordering == Ordering::Ordered
-        } else {
-            true
-        }
     }
 }
