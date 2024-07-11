@@ -7,11 +7,14 @@
 use std::{error::Error, fmt};
 
 use encoding::value::{label::Label, value_type::ValueType};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
     type_::{
-        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues},
+        annotation::{
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues,
+        },
         attribute_type::AttributeType,
         object_type::ObjectType,
         relation_type::RelationType,
@@ -182,14 +185,3 @@ impl Error for SchemaValidationError {
         }
     }
 }
-
-macro_rules! get_label {
-    ($snapshot: ident, $type_:ident) => {
-        // TODO: It is a spicy macro, need to refactor it to return Result<Label, ConceptReadError>
-        TypeReader::get_label($snapshot, $type_).unwrap().unwrap()
-    };
-}
-
-pub(crate) use get_label;
-
-use crate::type_::annotation::Annotation;

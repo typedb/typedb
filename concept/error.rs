@@ -153,6 +153,7 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::SnapshotGet { source } => Self::SnapshotGet { source },
             ConceptReadError::SnapshotIterate { source } => Self::SnapshotIterate { source },
             ConceptReadError::Encoding { source, .. } => Self::Encoding { source },
+            ConceptReadError::CannotGetLabelForExistingType => Self::ConceptRead { source: error },
         }
     }
 }
@@ -162,6 +163,7 @@ pub enum ConceptReadError {
     SnapshotGet { source: SnapshotGetError },
     SnapshotIterate { source: Arc<SnapshotIteratorError> },
     Encoding { source: EncodingError },
+    CannotGetLabelForExistingType,
 }
 
 impl fmt::Display for ConceptReadError {
@@ -175,7 +177,8 @@ impl Error for ConceptReadError {
         match self {
             Self::SnapshotGet { source, .. } => Some(source),
             Self::SnapshotIterate { source, .. } => Some(source),
-            ConceptReadError::Encoding { source, .. } => Some(source),
+            Self::Encoding { source, .. } => Some(source),
+            Self::CannotGetLabelForExistingType => None,
         }
     }
 }

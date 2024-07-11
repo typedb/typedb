@@ -4,48 +4,41 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, hash::Hash};
+use std::hash::Hash;
 
-use encoding::{
-    graph::{
-        thing::{edge::ThingEdgeRolePlayer, vertex_object::ObjectVertex},
-        type_::edge::TypeEdgeEncoding,
-        Typed,
-    },
-    layout::prefix::Prefix,
-    value::{label::Label, value_type::ValueType},
-};
+use encoding::{graph::type_::edge::TypeEdgeEncoding, value::label::Label};
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
-    thing::{
-        object::ObjectAPI,
-        relation::{RelationIterator, RolePlayerIterator},
-        thing_manager::ThingManager,
-    },
+    thing::object::ObjectAPI,
     type_::{
-        annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange,
-            AnnotationRegex, AnnotationValues,
-        },
-        attribute_type::{AttributeType, AttributeTypeAnnotation},
-        entity_type::EntityType,
-        object_type::ObjectType,
+        annotation::{Annotation, AnnotationAbstract, AnnotationCategory},
+        attribute_type::AttributeType,
         owns::Owns,
         plays::Plays,
-        relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::{
-            type_reader::TypeReader,
-            validation::{get_label, SchemaValidationError},
-        },
+        type_manager::{type_reader::TypeReader, validation::SchemaValidationError},
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+
+pub(crate) fn get_label_or_concept_read_err<'a>(
+    snapshot: &impl ReadableSnapshot,
+    type_: impl TypeAPI<'a>,
+) -> Result<Label<'static>, ConceptReadError> {
+    TypeReader::get_label(snapshot, type_)?.ok_or(ConceptReadError::CannotGetLabelForExistingType)
+}
+
+pub(crate) fn get_label_or_schema_err<'a>(
+    snapshot: &impl ReadableSnapshot,
+    type_: impl TypeAPI<'a>,
+) -> Result<Label<'static>, SchemaValidationError> {
+    get_label_or_concept_read_err(snapshot, type_).map_err(SchemaValidationError::ConceptRead)
+}
 
 pub(crate) fn validate_role_name_uniqueness_non_transitive<'a>(
     snapshot: &impl ReadableSnapshot,
@@ -70,7 +63,7 @@ pub(crate) fn validate_role_name_uniqueness_non_transitive<'a>(
 pub(crate) fn type_is_abstract(
     snapshot: &impl ReadableSnapshot,
     type_: impl KindAPI<'static>,
-) -> Result<bool, SchemaValidationError> {
+) -> Result<bool, ConceptReadError> {
     type_has_declared_annotation(snapshot, type_.clone(), Annotation::Abstract(AnnotationAbstract))
 }
 
@@ -124,7 +117,7 @@ pub(crate) fn validate_declared_annotation_is_compatible_with_inherited_annotati
             return Err(SchemaValidationError::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(
                 annotation_category,
                 existing_annotation_category,
-                get_label!(snapshot, type_),
+                get_label_or_concept_read_err(snapshot, type_).map_err(SchemaValidationError::ConceptRead)?,
             ));
         }
     }
@@ -150,7 +143,7 @@ where
             return Err(SchemaValidationError::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(
                 annotation_category,
                 existing_annotation_category,
-                get_label!(snapshot, interface),
+                get_label_or_concept_read_err(snapshot, interface).map_err(SchemaValidationError::ConceptRead)?,
             ));
         }
     }
@@ -172,7 +165,7 @@ pub(crate) fn validate_declared_annotation_is_compatible_with_declared_annotatio
             return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
                 annotation_category,
                 existing_annotation_category,
-                get_label!(snapshot, type_),
+                get_label_or_concept_read_err(snapshot, type_).map_err(SchemaValidationError::ConceptRead)?,
             ));
         }
     }
@@ -198,7 +191,7 @@ where
             return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
                 annotation_category,
                 existing_annotation_category,
-                get_label!(snapshot, interface),
+                get_label_or_concept_read_err(snapshot, interface).map_err(SchemaValidationError::ConceptRead)?,
             ));
         }
     }
@@ -213,9 +206,8 @@ pub(crate) fn type_has_declared_annotation<T: KindAPI<'static>>(
     snapshot: &impl ReadableSnapshot,
     type_: T,
     annotation: Annotation,
-) -> Result<bool, SchemaValidationError> {
-    let has = TypeReader::get_type_annotations_declared(snapshot, type_.clone())
-        .map_err(SchemaValidationError::ConceptRead)?
+) -> Result<bool, ConceptReadError> {
+    let has = TypeReader::get_type_annotations_declared(snapshot, type_.clone())?
         .contains(&T::AnnotationType::from(annotation));
     Ok(has)
 }

@@ -44,9 +44,8 @@ use crate::{
         type_manager::{
             type_reader::TypeReader,
             validation::{
-                get_label,
                 validation::{
-                    edge_get_annotation_by_category, is_attribute_type_owns_overridden,
+                    edge_get_annotation_by_category, get_label_or_schema_err, is_attribute_type_owns_overridden,
                     is_ordering_compatible_with_distinct_annotation, is_overridden_interface_object_supertype_or_self,
                     is_role_type_plays_overridden, type_get_annotation_by_category, type_has_annotation_category,
                     type_has_declared_annotation_category, type_is_abstract,
@@ -79,7 +78,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_: impl KindAPI<'static>,
     ) -> Result<(), SchemaValidationError> {
-        TypeReader::get_label(snapshot, type_).map_err(|err| SchemaValidationError::ConceptRead(err))?;
+        TypeReader::get_label(snapshot, type_).map_err(SchemaValidationError::ConceptRead)?;
         Ok(())
     }
 
@@ -108,7 +107,7 @@ impl OperationTimeValidation {
         if no_subtypes {
             Ok(())
         } else {
-            Err(SchemaValidationError::CannotDeleteTypeWithExistingSubtypes(get_label!(snapshot, type_)))
+            Err(SchemaValidationError::CannotDeleteTypeWithExistingSubtypes(get_label_or_schema_err(snapshot, type_)?))
         }
     }
 
@@ -124,11 +123,11 @@ impl OperationTimeValidation {
             .iter()
             .map(Owns::attribute)
             .try_for_each(|attribute_type: AttributeType<'static>| {
-                if type_is_abstract(snapshot, attribute_type.clone())? {
-                    Err(SchemaValidationError::CannotUnsetAbstractnessAsItOwnsAbstractTypes(get_label!(
+                if type_is_abstract(snapshot, attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)? {
+                    Err(SchemaValidationError::CannotUnsetAbstractnessAsItOwnsAbstractTypes(get_label_or_schema_err(
                         snapshot,
-                        attribute_type
-                    )))
+                        attribute_type,
+                    )?))
                 } else {
                     Ok(())
                 }
@@ -185,7 +184,7 @@ impl OperationTimeValidation {
 
         for subtype_relates in subtype_relates_declared {
             let role = subtype_relates.role();
-            let role_label = get_label!(snapshot, role);
+            let role_label = get_label_or_schema_err(snapshot, role)?;
             validate_role_name_uniqueness_non_transitive(snapshot, relation_supertype.clone(), &role_label)?;
 
             let relation_supertype_supertypes =
@@ -222,9 +221,9 @@ impl OperationTimeValidation {
                 {
                     let role_type_overridden = old_relates_override.role();
                     return Err(SchemaValidationError::CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(
-                        get_label!(snapshot, relation_subtype),
-                        get_label!(snapshot, relation_supertype),
-                        get_label!(snapshot, role_type_overridden),
+                        get_label_or_schema_err(snapshot, relation_subtype)?,
+                        get_label_or_schema_err(snapshot, relation_supertype)?,
+                        get_label_or_schema_err(snapshot, role_type_overridden)?,
                     ));
                 }
             }
@@ -251,9 +250,9 @@ impl OperationTimeValidation {
                 .map_err(SchemaValidationError::ConceptRead)?
             {
                 return Err(SchemaValidationError::CannotChangeSupertypeAsOwnsIsOverriddenInTheNewSupertype(
-                    get_label!(snapshot, owner_subtype),
-                    get_label!(snapshot, owner_supertype),
-                    get_label!(snapshot, attribute_type),
+                    get_label_or_schema_err(snapshot, owner_subtype)?,
+                    get_label_or_schema_err(snapshot, owner_supertype)?,
+                    get_label_or_schema_err(snapshot, attribute_type)?,
                 ));
             }
         }
@@ -287,9 +286,9 @@ impl OperationTimeValidation {
                 {
                     let attribute_type_overridden = old_owns_override.attribute();
                     return Err(SchemaValidationError::CannotChangeSupertypeAsOwnsOverrideIsImplicitlyLost(
-                        get_label!(snapshot, owner_subtype),
-                        get_label!(snapshot, owner_supertype),
-                        get_label!(snapshot, attribute_type_overridden),
+                        get_label_or_schema_err(snapshot, owner_subtype)?,
+                        get_label_or_schema_err(snapshot, owner_supertype)?,
+                        get_label_or_schema_err(snapshot, attribute_type_overridden)?,
                     ));
                 }
             }
@@ -316,9 +315,9 @@ impl OperationTimeValidation {
                 .map_err(SchemaValidationError::ConceptRead)?
             {
                 return Err(SchemaValidationError::CannotChangeSupertypeAsPlaysIsOverriddenInTheNewSupertype(
-                    get_label!(snapshot, player_subtype),
-                    get_label!(snapshot, player_supertype),
-                    get_label!(snapshot, role_type),
+                    get_label_or_schema_err(snapshot, player_subtype)?,
+                    get_label_or_schema_err(snapshot, player_supertype)?,
+                    get_label_or_schema_err(snapshot, role_type)?,
                 ));
             }
         }
@@ -350,9 +349,9 @@ impl OperationTimeValidation {
                 {
                     let role_type_overridden = old_plays_override.role();
                     return Err(SchemaValidationError::CannotChangeSupertypeAsPlaysOverrideIsImplicitlyLost(
-                        get_label!(snapshot, player_subtype),
-                        get_label!(snapshot, player_supertype),
-                        get_label!(snapshot, role_type_overridden),
+                        get_label_or_schema_err(snapshot, player_subtype)?,
+                        get_label_or_schema_err(snapshot, player_supertype)?,
+                        get_label_or_schema_err(snapshot, role_type_overridden)?,
                     ));
                 }
             }
@@ -404,7 +403,7 @@ impl OperationTimeValidation {
                     Ok(())
                 } else {
                     Err(SchemaValidationError::CannotChangeValueTypeOfAttributeType(
-                        get_label!(snapshot, subtype),
+                        get_label_or_schema_err(snapshot, subtype)?,
                         subtype_declared_value_type,
                     ))
                 }
@@ -467,10 +466,10 @@ impl OperationTimeValidation {
                 if is_abstract {
                     Ok(())
                 } else {
-                    Err(SchemaValidationError::AttributeTypeWithoutValueTypeShouldBeAbstract(get_label!(
+                    Err(SchemaValidationError::AttributeTypeWithoutValueTypeShouldBeAbstract(get_label_or_schema_err(
                         snapshot,
-                        attribute_type
-                    )))
+                        attribute_type,
+                    )?))
                 }
             }
         }
@@ -485,7 +484,7 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(SchemaValidationError::ValueTypeIsNotCompatibleWithRegexAnnotation(
-                get_label!(snapshot, attribute_type),
+                get_label_or_schema_err(snapshot, attribute_type)?,
                 value_type,
             ))
         }
@@ -500,7 +499,7 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(SchemaValidationError::ValueTypeIsNotCompatibleWithRangeAnnotation(
-                get_label!(snapshot, attribute_type),
+                get_label_or_schema_err(snapshot, attribute_type)?,
                 value_type,
             ))
         }
@@ -515,7 +514,7 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(SchemaValidationError::ValueTypeIsNotCompatibleWithValuesAnnotation(
-                get_label!(snapshot, attribute_type),
+                get_label_or_schema_err(snapshot, attribute_type)?,
                 value_type,
             ))
         }
@@ -542,7 +541,7 @@ impl OperationTimeValidation {
             {
                 return Err(
                     SchemaValidationError::CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsImplementation(
-                        get_label!(snapshot, interface),
+                        get_label_or_schema_err(snapshot, interface)?,
                         annotation_category,
                     ),
                 );
@@ -569,7 +568,7 @@ impl OperationTimeValidation {
             .contains(&annotation_category)
         {
             return Err(SchemaValidationError::CannotSetAnnotationToInterfaceImplementationBecauseItAlreadyExistsForItsInterface(
-                get_label!(snapshot, interface), annotation_category,
+                get_label_or_schema_err(snapshot, interface)?, annotation_category,
             ));
         }
 
@@ -580,10 +579,10 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_: T,
     ) -> Result<(), SchemaValidationError> {
-        if type_is_abstract(snapshot, type_.clone())? {
+        if type_is_abstract(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)? {
             Ok(())
         } else {
-            Err(SchemaValidationError::AttributeTypeSupertypeIsNotAbstract(get_label!(snapshot, type_)))
+            Err(SchemaValidationError::AttributeTypeSupertypeIsNotAbstract(get_label_or_schema_err(snapshot, type_)?))
         }
     }
 
@@ -595,14 +594,16 @@ impl OperationTimeValidation {
     where
         T: KindAPI<'static>,
     {
-        let is_owner_abstract = type_is_abstract(snapshot, owner.clone())?;
-        let is_attribute_abstract = type_is_abstract(snapshot, attribute.clone())?;
+        let is_owner_abstract =
+            type_is_abstract(snapshot, owner.clone()).map_err(SchemaValidationError::ConceptRead)?;
+        let is_attribute_abstract =
+            type_is_abstract(snapshot, attribute.clone()).map_err(SchemaValidationError::ConceptRead)?;
 
         match (&is_owner_abstract, &is_attribute_abstract) {
             (true, true) | (false, false) | (true, false) => Ok(()),
             (false, true) => Err(SchemaValidationError::NonAbstractCannotOwnAbstract(
-                get_label!(snapshot, owner),
-                get_label!(snapshot, attribute),
+                get_label_or_schema_err(snapshot, owner)?,
+                get_label_or_schema_err(snapshot, attribute)?,
             )),
         }
     }
@@ -721,7 +722,7 @@ impl OperationTimeValidation {
                     } else {
                         Err(SchemaValidationError::OnlyOneRegexCanBeSetForTypeHierarchy(
                             supertype_regex.clone(),
-                            get_label!(snapshot, supertype),
+                            get_label_or_schema_err(snapshot, supertype)?,
                         ))
                     }
                 }
@@ -751,7 +752,7 @@ impl OperationTimeValidation {
                         let object = supertype_edge.object();
                         Err(SchemaValidationError::OnlyOneRegexCanBeSetForTypeHierarchy(
                             supertype_regex.clone(),
-                            get_label!(snapshot, object),
+                            get_label_or_schema_err(snapshot, object)?,
                         ))
                     }
                 }
@@ -891,8 +892,8 @@ impl OperationTimeValidation {
         match (subtype_abstract, supertype_abstract) {
             (false, false) | (false, true) | (true, true) => Ok(()),
             (true, false) => Err(SchemaValidationError::CannotSetNonAbstractSupertypeForAbstractType(
-                get_label!(snapshot, supertype),
-                get_label!(snapshot, subtype),
+                get_label_or_schema_err(snapshot, supertype)?,
+                get_label_or_schema_err(snapshot, subtype)?,
             )),
         }
     }
@@ -913,7 +914,7 @@ impl OperationTimeValidation {
         if is_ordering_compatible_with_distinct_annotation(ordering, distinct_set) {
             Ok(())
         } else {
-            Err(SchemaValidationError::InvalidOrderingForDistinctAnnotation(get_label!(snapshot, role)))
+            Err(SchemaValidationError::InvalidOrderingForDistinctAnnotation(get_label_or_schema_err(snapshot, role)?))
         }
     }
 
@@ -933,7 +934,9 @@ impl OperationTimeValidation {
         if is_ordering_compatible_with_distinct_annotation(ordering, distinct_set) {
             Ok(())
         } else {
-            Err(SchemaValidationError::InvalidOrderingForDistinctAnnotation(get_label!(snapshot, attribute)))
+            Err(SchemaValidationError::InvalidOrderingForDistinctAnnotation(get_label_or_schema_err(
+                snapshot, attribute,
+            )?))
         }
     }
 
@@ -954,8 +957,8 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(SchemaValidationError::OrderingDoesNotMatchWithSupertype(
-                get_label!(snapshot, subtype_role),
-                get_label!(snapshot, supertype_role),
+                get_label_or_schema_err(snapshot, subtype_role)?,
+                get_label_or_schema_err(snapshot, supertype_role)?,
             ))
         }
     }
@@ -979,8 +982,8 @@ impl OperationTimeValidation {
             let subtype_attribute = subtype_owns.attribute();
             let supertype_attribute = supertype_owns.attribute();
             Err(SchemaValidationError::OrderingDoesNotMatchWithSupertype(
-                get_label!(snapshot, subtype_attribute),
-                get_label!(snapshot, supertype_attribute),
+                get_label_or_schema_err(snapshot, subtype_attribute)?,
+                get_label_or_schema_err(snapshot, supertype_attribute)?,
             ))
         }
     }
@@ -1079,8 +1082,8 @@ impl OperationTimeValidation {
             TypeReader::get_supertypes(snapshot, supertype.clone()).map_err(SchemaValidationError::ConceptRead)?;
         if supertype == type_ || existing_supertypes.contains(&type_) {
             Err(SchemaValidationError::CycleFoundInTypeHierarchy(
-                get_label!(snapshot, type_),
-                get_label!(snapshot, supertype),
+                get_label_or_schema_err(snapshot, type_)?,
+                get_label_or_schema_err(snapshot, supertype)?,
             ))
         } else {
             Ok(())
@@ -1142,8 +1145,8 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(SchemaValidationError::OverriddenOwnsAttributeTypeIsNotSupertype(
-                get_label!(snapshot, type_),
-                get_label!(snapshot, overridden),
+                get_label_or_schema_err(snapshot, type_)?,
+                get_label_or_schema_err(snapshot, overridden)?,
             ))
         }
     }
@@ -1159,8 +1162,8 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(SchemaValidationError::OverriddenPlaysRoleTypeIsNotSupertype(
-                get_label!(snapshot, type_),
-                get_label!(snapshot, overridden),
+                get_label_or_schema_err(snapshot, type_)?,
+                get_label_or_schema_err(snapshot, overridden)?,
             ))
         }
     }
@@ -1178,7 +1181,10 @@ impl OperationTimeValidation {
         {
             Ok(())
         } else {
-            Err(SchemaValidationError::OverriddenOwnsCannotBeRedeclared(get_label!(snapshot, owner), attribute_type))
+            Err(SchemaValidationError::OverriddenOwnsCannotBeRedeclared(
+                get_label_or_schema_err(snapshot, owner)?,
+                attribute_type,
+            ))
         }
     }
 
@@ -1195,7 +1201,10 @@ impl OperationTimeValidation {
         {
             Ok(())
         } else {
-            Err(SchemaValidationError::OverriddenPlaysCannotBeRedeclared(get_label!(snapshot, player), role_type))
+            Err(SchemaValidationError::OverriddenPlaysCannotBeRedeclared(
+                get_label_or_schema_err(snapshot, player)?,
+                role_type,
+            ))
         }
     }
 
@@ -1235,8 +1244,8 @@ impl OperationTimeValidation {
                         Ok(())
                     } else {
                         Err(SchemaValidationError::ValueTypeNotCompatibleWithInheritedValueTypeOf(
-                            get_label!(snapshot, attribute_type),
-                            get_label!(snapshot, inherited_value_type_source),
+                            get_label_or_schema_err(snapshot, attribute_type)?,
+                            get_label_or_schema_err(snapshot, inherited_value_type_source)?,
                             inherited_value_type,
                         ))
                     }
@@ -1263,8 +1272,8 @@ impl OperationTimeValidation {
                 if subtype_value_type != value_type {
                     let subtype = subtype.clone();
                     return Err(SchemaValidationError::ValueTypeNotCompatibleWithInheritedValueTypeOf(
-                        get_label!(snapshot, attribute_type),
-                        get_label!(snapshot, subtype),
+                        get_label_or_schema_err(snapshot, attribute_type)?,
+                        get_label_or_schema_err(snapshot, subtype)?,
                         subtype_value_type,
                     ));
                 }
@@ -1311,8 +1320,8 @@ impl OperationTimeValidation {
                 let subtype = subtype.clone();
                 return Err(
                     SchemaValidationError::CannotUnsetValueTypeAsThereAreNonAbstractSubtypesWithoutDeclaredValueTypes(
-                        get_label!(snapshot, attribute_type),
-                        get_label!(snapshot, subtype),
+                        get_label_or_schema_err(snapshot, attribute_type)?,
+                        get_label_or_schema_err(snapshot, subtype)?,
                     ),
                 );
             }
@@ -1399,8 +1408,8 @@ impl OperationTimeValidation {
                 } else {
                     let owns_owner = owns.owner();
                     Err(SchemaValidationError::CannotUnsetInheritedOwns(
-                        get_label!(snapshot, attribute_type),
-                        get_label!(snapshot, owner),
+                        get_label_or_schema_err(snapshot, attribute_type)?,
+                        get_label_or_schema_err(snapshot, owner)?,
                     ))
                 }
             }
@@ -1426,8 +1435,8 @@ impl OperationTimeValidation {
                 } else {
                     let plays_player = plays.player();
                     Err(SchemaValidationError::CannotUnsetInheritedPlays(
-                        get_label!(snapshot, role_type),
-                        get_label!(snapshot, plays_player),
+                        get_label_or_schema_err(snapshot, role_type)?,
+                        get_label_or_schema_err(snapshot, plays_player)?,
                     ))
                 }
             }
@@ -1458,7 +1467,7 @@ impl OperationTimeValidation {
                     let owner = owner.clone();
                     Err(SchemaValidationError::CannotUnsetInheritedAnnotation(
                         annotation_category,
-                        get_label!(snapshot, owner),
+                        get_label_or_schema_err(snapshot, owner)?,
                     ))
                 }
             }
@@ -1489,7 +1498,7 @@ impl OperationTimeValidation {
                     let object = edge.object();
                     Err(SchemaValidationError::CannotUnsetInheritedEdgeAnnotation(
                         annotation_category,
-                        get_label!(snapshot, object),
+                        get_label_or_schema_err(snapshot, object)?,
                     ))
                 }
             }
@@ -1546,8 +1555,8 @@ impl OperationTimeValidation {
             let owner = owns.owner();
             let attribute_type = owns.attribute();
             Err(SchemaValidationError::ValueTypeIsNotKeyableForUniqueAnnotation(
-                get_label!(snapshot, owner),
-                get_label!(snapshot, attribute_type),
+                get_label_or_schema_err(snapshot, owner)?,
+                get_label_or_schema_err(snapshot, attribute_type)?,
                 value_type,
             ))
         }
@@ -1564,8 +1573,8 @@ impl OperationTimeValidation {
             let owner = owns.owner();
             let attribute_type = owns.attribute();
             Err(SchemaValidationError::ValueTypeIsNotKeyableForKeyAnnotation(
-                get_label!(snapshot, owner),
-                get_label!(snapshot, attribute_type),
+                get_label_or_schema_err(snapshot, owner)?,
+                get_label_or_schema_err(snapshot, attribute_type)?,
                 value_type,
             ))
         }
@@ -1645,9 +1654,10 @@ impl OperationTimeValidation {
         let mut entity_iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
         match entity_iterator.next() {
             None => Ok(()),
-            Some(Ok(_)) => {
-                Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label!(snapshot, entity_type)))
-            }
+            Some(Ok(_)) => Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(
+                snapshot,
+                entity_type,
+            )?)),
             Some(Err(concept_read_error)) => Err(SchemaValidationError::ConceptRead(concept_read_error)),
         }
     }
@@ -1661,9 +1671,10 @@ impl OperationTimeValidation {
         let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
         match relation_iterator.next() {
             None => Ok(()),
-            Some(Ok(_)) => {
-                Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label!(snapshot, relation_type)))
-            }
+            Some(Ok(_)) => Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(
+                snapshot,
+                relation_type,
+            )?)),
             Some(Err(concept_read_error)) => Err(SchemaValidationError::ConceptRead(concept_read_error)),
         }
     }
@@ -1679,9 +1690,10 @@ impl OperationTimeValidation {
             .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
         match attribute_iterator.next() {
             None => Ok(()),
-            Some(Ok(_)) => {
-                Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label!(snapshot, attribute_type)))
-            }
+            Some(Ok(_)) => Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(
+                snapshot,
+                attribute_type,
+            )?)),
             Some(Err(err)) => Err(SchemaValidationError::ConceptRead(err.clone())),
         }
     }
@@ -1711,10 +1723,10 @@ impl OperationTimeValidation {
                 None => {}
                 Some(Ok(_)) => {
                     let role_type_clone = role_type.clone();
-                    Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label!(
+                    Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(
                         snapshot,
-                        role_type_clone
-                    )))?;
+                        role_type_clone,
+                    )?))?;
                 }
                 Some(Err(concept_read_error)) => {
                     Err(SchemaValidationError::ConceptRead(concept_read_error))?;
