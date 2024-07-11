@@ -10,7 +10,7 @@ use concept::{
         attribute::Attribute,
         object::{Object, ObjectAPI},
     },
-    type_::{attribute_type::AttributeType, OwnerAPI},
+    type_::{attribute_type::AttributeType, InterfaceImplementation, OwnerAPI},
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;

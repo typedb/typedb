@@ -67,7 +67,7 @@ impl<'a> RoleType<'a> {
         type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_relation<'m, Snapshot: ReadableSnapshot>(
+    pub fn get_relation<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,

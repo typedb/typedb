@@ -76,22 +76,6 @@ impl<'a> Owns<'a> {
         }
     }
 
-    pub fn get_cardinality(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Option<AnnotationCardinality>, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        for annotation in annotations.keys() {
-            match annotation {
-                OwnsAnnotation::Cardinality(cardinality) => return Ok(Some(*cardinality)),
-                OwnsAnnotation::Key(_) => return Ok(Some(AnnotationKey::CARDINALITY)),
-                _ => (),
-            }
-        }
-        Ok(None)
-    }
-
     // TODO: Should it be 'this or just 'tm on type_manager?
     pub fn get_override<'this>(
         &'this self,
@@ -116,22 +100,6 @@ impl<'a> Owns<'a> {
         type_manager: &TypeManager,
     ) -> Result<(), ConceptWriteError> {
         type_manager.unset_owns_overridden(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations_declared<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, ConceptReadError> {
-        type_manager.get_owns_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashMap<OwnsAnnotation, Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_annotations(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(
@@ -196,6 +164,14 @@ impl<'a> Owns<'a> {
         Ok(())
     }
 
+    pub fn get_ordering<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Ordering, ConceptReadError> {
+        type_manager.get_owns_ordering(snapshot, self.clone().into_owned())
+    }
+
     pub fn set_ordering(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -203,14 +179,6 @@ impl<'a> Owns<'a> {
         ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
         type_manager.set_owns_ordering(snapshot, self.clone().into_owned(), ordering)
-    }
-
-    pub fn get_ordering(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Ordering, ConceptReadError> {
-        type_manager.get_owns_ordering(snapshot, self.clone().into_owned())
     }
 
     fn into_owned(self) -> Owns<'static> {
@@ -248,6 +216,34 @@ impl<'a> InterfaceImplementation<'a> for Owns<'a> {
 
     fn interface(&self) -> AttributeType<'a> {
         self.attribute.clone()
+    }
+
+    fn get_annotations_declared<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, ConceptReadError> {
+        type_manager.get_owns_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashMap<OwnsAnnotation, Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_annotations(snapshot, self.clone().into_owned())
+    }
+
+    fn get_default_cardinality<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<AnnotationCardinality, ConceptReadError> {
+        let ordering = self.get_ordering(snapshot, type_manager)?;
+        Ok(match ordering {
+            Ordering::Unordered => AnnotationCardinality::owns_default(),
+            Ordering::Ordered => AnnotationCardinality::ordered_default(),
+        })
     }
 }
 

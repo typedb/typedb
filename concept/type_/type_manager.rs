@@ -43,8 +43,9 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{
-            AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory, AnnotationDistinct,
-            AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
+            AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex,
+            AnnotationUnique, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::{EntityType, EntityTypeAnnotation},
@@ -840,14 +841,6 @@ impl TypeManager {
         }
     }
 
-    pub(crate) const fn role_default_cardinality(&self, ordering: Ordering) -> AnnotationCardinality {
-        // TODO: read from database properties the default role cardinality the db was created with
-        match ordering {
-            Ordering::Unordered => AnnotationCardinality::new(1, Some(1)),
-            Ordering::Ordered => AnnotationCardinality::new(0, None),
-        }
-    }
-
     pub(crate) fn get_owns_annotations_declared<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
@@ -947,6 +940,25 @@ impl TypeManager {
                     .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
+    }
+
+    pub fn get_cardinality<'a, IM: InterfaceImplementation<'a>>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        interface_impl: IM,
+    ) -> Result<AnnotationCardinality, ConceptReadError> {
+        let annotations = interface_impl.get_annotations(snapshot, self)?;
+        let card = annotations
+            .iter()
+            .filter_map(|(annotation, _)| match annotation.clone().into() {
+                // Cardinality and Key cannot be set together
+                Annotation::Cardinality(card) => Some(card),
+                Annotation::Key(_) => Some(AnnotationKey::CARDINALITY),
+                _ => None,
+            })
+            .next()
+            .unwrap_or(interface_impl.get_default_cardinality(snapshot, self)?);
+        Ok(card)
     }
 }
 

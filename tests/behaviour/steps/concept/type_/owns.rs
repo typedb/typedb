@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::type_::{annotation, owns::OwnsAnnotation, Ordering, OwnerAPI, TypeAPI};
+use concept::type_::{annotation, owns::OwnsAnnotation, InterfaceImplementation, Ordering, OwnerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;

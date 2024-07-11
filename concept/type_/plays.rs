@@ -17,7 +17,7 @@ use crate::{
         object_type::ObjectType,
         role_type::RoleType,
         type_manager::TypeManager,
-        InterfaceImplementation, TypeAPI,
+        InterfaceImplementation, Ordering, TypeAPI,
     },
 };
 
@@ -63,22 +63,6 @@ impl<'a> Plays<'a> {
         type_manager: &TypeManager,
     ) -> Result<(), ConceptWriteError> {
         type_manager.unset_plays_overridden(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations_declared<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<PlaysAnnotation>>, ConceptReadError> {
-        type_manager.get_plays_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashMap<PlaysAnnotation, Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_annotations(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(
@@ -146,6 +130,30 @@ impl<'a> InterfaceImplementation<'a> for Plays<'a> {
 
     fn interface(&self) -> RoleType<'a> {
         self.role.clone()
+    }
+
+    fn get_annotations_declared<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<PlaysAnnotation>>, ConceptReadError> {
+        type_manager.get_plays_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashMap<PlaysAnnotation, Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_annotations(snapshot, self.clone().into_owned())
+    }
+
+    fn get_default_cardinality<'this>(
+        &'this self,
+        _snapshot: &impl ReadableSnapshot,
+        _type_manager: &TypeManager,
+    ) -> Result<AnnotationCardinality, ConceptReadError> {
+        Ok(AnnotationCardinality::plays_default())
     }
 }
 

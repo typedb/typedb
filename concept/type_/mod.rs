@@ -29,7 +29,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::Annotation,
+        annotation::{Annotation, AnnotationCardinality},
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::{Owns, OwnsAnnotation},
@@ -203,6 +203,12 @@ pub enum Ordering {
     Ordered,
 }
 
+impl Ordering {
+    pub fn default() -> Ordering {
+        Ordering::Unordered
+    }
+}
+
 impl<'a> TypeVertexPropertyEncoding<'a> for Ordering {
     const INFIX: Infix = Infix::PropertyOrdering;
 
@@ -227,10 +233,10 @@ impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
     }
 }
 
-pub(crate) trait InterfaceImplementation<'a>:
+pub trait InterfaceImplementation<'a>:
     TypeEdgeEncoding<'a, From = Self::ObjectType, To = Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
 {
-    type AnnotationType;
+    type AnnotationType: Hash + Eq + Clone + From<Annotation> + Into<Annotation>;
     type ObjectType: TypeAPI<'a>;
     type InterfaceType: KindAPI<'a>;
 
@@ -238,37 +244,32 @@ pub(crate) trait InterfaceImplementation<'a>:
 
     fn interface(&self) -> Self::InterfaceType;
 
-    // pub fn get_annotations<'this>(
-    //     &'this self,
-    //     snapshot: &impl ReadableSnapshot,
-    //     type_manager: &'this TypeManager,
-    // ) -> Result<MaybeOwns<'this, HashMap<Self::AnnotationType, Owns<'static>>>, ConceptReadError>
+    fn get_annotations_declared<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, ConceptReadError>;
+
+    fn get_annotations<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashMap<Self::AnnotationType, Self>>, ConceptReadError>;
+
+    fn get_cardinality<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<AnnotationCardinality, ConceptReadError> {
+        type_manager.get_cardinality(snapshot, self.clone())
+    }
+
+    fn get_default_cardinality<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<AnnotationCardinality, ConceptReadError>;
 }
-//
-// fn get_cardinality<T>(implementation: T)
-// where
-// T: InterfaceImplementation
-// {
-//     let annotations: T::AnotationType = implementation.get_annotations();
-//
-//     let a: PlaysAnnotation;
-//     let as_annotation: Annotation = a.into();
-//     match as_annotation {
-//         Annotation::Cardinality(cardinality),
-//         _ => ...
-//     };
-//
-//     let ordering = self.role.get_ordering(snapshot, type_manager)?;
-//     let card = annotations
-//         .iter()
-//         .filter_map(|(annotation, _)| match annotation {
-//             RelatesAnnotation::Cardinality(card) => Some(*card),
-//             _ => None,
-//         })
-//         .next()
-//         .unwrap_or_else(|| type_manager.role_default_cardinality(ordering));
-//     Ok(card)
-// }
 
 pub struct EdgeOverride<EDGE: TypeEdgeEncoding<'static>> {
     overridden: EDGE, // TODO: Consider storing EDGE::To instead

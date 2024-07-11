@@ -40,7 +40,7 @@ use crate::{
     },
     type_::{
         annotation::AnnotationDistinct, relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType,
-        ObjectTypeAPI, Ordering, TypeAPI,
+        InterfaceImplementation, ObjectTypeAPI, Ordering, TypeAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };

@@ -19,7 +19,7 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        InterfaceImplementation,
+        InterfaceImplementation, Ordering,
     },
 };
 
@@ -57,40 +57,6 @@ impl<'a> Relates<'a> {
         type_manager: &TypeManager,
     ) -> Result<(), ConceptWriteError> {
         type_manager.unset_relates_overridden(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_cardinality(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<AnnotationCardinality, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        let ordering = self.role.get_ordering(snapshot, type_manager)?;
-        let card = annotations
-            .iter()
-            .filter_map(|(annotation, _)| match annotation {
-                RelatesAnnotation::Cardinality(card) => Some(*card),
-                _ => None,
-            })
-            .next()
-            .unwrap_or_else(|| type_manager.role_default_cardinality(ordering));
-        Ok(card)
-    }
-
-    pub fn get_annotations_declared<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<RelatesAnnotation>>, ConceptReadError> {
-        type_manager.get_relates_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RelatesAnnotation, Relates<'static>>>, ConceptReadError> {
-        type_manager.get_relates_annotations(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(
@@ -164,6 +130,34 @@ impl<'a> InterfaceImplementation<'a> for Relates<'a> {
 
     fn interface(&self) -> RoleType<'a> {
         self.role.clone()
+    }
+
+    fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<RelatesAnnotation>>, ConceptReadError> {
+        type_manager.get_relates_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<RelatesAnnotation, Relates<'static>>>, ConceptReadError> {
+        type_manager.get_relates_annotations(snapshot, self.clone().into_owned())
+    }
+
+    fn get_default_cardinality<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<AnnotationCardinality, ConceptReadError> {
+        let ordering = self.role.get_ordering(snapshot, type_manager)?;
+        Ok(match ordering {
+            Ordering::Unordered => AnnotationCardinality::relates_default(),
+            Ordering::Ordered => AnnotationCardinality::ordered_default(),
+        })
     }
 }
 
