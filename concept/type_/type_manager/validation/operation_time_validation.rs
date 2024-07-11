@@ -57,6 +57,7 @@ use crate::{
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::type_::type_manager::validation::validation::{is_attribute_type_owns_overridden, is_overridden_interface_object_supertype_or_self, is_role_type_plays_overridden};
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -228,13 +229,39 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_owns_overrides_compatible_with_new_supertype<T>(
+    pub(crate) fn validate_owns_compatible_with_new_supertype<T>(
         snapshot: &impl ReadableSnapshot,
         owner_subtype: T,
         owner_supertype: T,
     ) -> Result<(), SchemaValidationError>
     where
         T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    {
+        let subtype_owns_declared: HashSet<Owns<'static>> =
+            TypeReader::get_implemented_interfaces_declared(snapshot, owner_subtype.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+        for subtype_owns in subtype_owns_declared {
+            let attribute_type = subtype_owns.attribute();
+            if is_attribute_type_owns_overridden(snapshot, owner_supertype.clone(), attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)? {
+                return Err(SchemaValidationError::CannotChangeSupertypeAsOwnsIsOverriddenInTheNewSupertype(
+                    get_label!(snapshot, owner_subtype),
+                    get_label!(snapshot, owner_supertype),
+                    get_label!(snapshot, attribute_type),
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn validate_owns_overrides_compatible_with_new_supertype<T>(
+        snapshot: &impl ReadableSnapshot,
+        owner_subtype: T,
+        owner_supertype: T,
+    ) -> Result<(), SchemaValidationError>
+        where
+            T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
         let supertype_owns_with_attributes: HashMap<AttributeType<'static>, Owns<'static>> =
             TypeReader::get_implemented_interfaces(snapshot, owner_supertype.clone())
@@ -265,13 +292,39 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_plays_overrides_compatible_with_new_supertype<T>(
+    pub(crate) fn validate_plays_compatible_with_new_supertype<T>(
         snapshot: &impl ReadableSnapshot,
         player_subtype: T,
         player_supertype: T,
     ) -> Result<(), SchemaValidationError>
     where
         T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    {
+        let subtype_plays_declared: HashSet<Plays<'static>> =
+            TypeReader::get_implemented_interfaces_declared(snapshot, player_subtype.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+        for subtype_plays in subtype_plays_declared {
+            let role_type = subtype_plays.role();
+            if is_role_type_plays_overridden(snapshot, player_supertype.clone(), role_type.clone()).map_err(SchemaValidationError::ConceptRead)? {
+                return Err(SchemaValidationError::CannotChangeSupertypeAsPlaysIsOverriddenInTheNewSupertype(
+                    get_label!(snapshot, player_subtype),
+                    get_label!(snapshot, player_supertype),
+                    get_label!(snapshot, role_type),
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn validate_plays_overrides_compatible_with_new_supertype<T>(
+        snapshot: &impl ReadableSnapshot,
+        player_subtype: T,
+        player_supertype: T,
+    ) -> Result<(), SchemaValidationError>
+        where
+            T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
         let supertype_plays_with_roles: HashMap<RoleType<'static>, Plays<'static>> =
             TypeReader::get_implemented_interfaces(snapshot, player_supertype.clone())
@@ -1070,22 +1123,30 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_overridden_is_supertype<T: KindAPI<'static>>(
+    pub(crate) fn validate_overridden_owns_attribute_type_is_supertype_or_self<T: KindAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
         type_: T,
         overridden: T,
     ) -> Result<(), SchemaValidationError> {
-        if type_ == overridden {
-            return Ok(());
-        }
-
-        let supertypes =
-            TypeReader::get_supertypes(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
-
-        if supertypes.contains(&overridden.clone()) {
+        if is_overridden_interface_object_supertype_or_self(snapshot, type_.clone(), overridden.clone()).map_err(SchemaValidationError::ConceptRead)? {
             Ok(())
         } else {
-            Err(SchemaValidationError::OverriddenInterfaceImplementationObjectIsNotSupertype(
+            Err(SchemaValidationError::OverriddenOwnsAttributeTypeIsNotSupertype(
+                get_label!(snapshot, type_),
+                get_label!(snapshot, overridden),
+            ))
+        }
+    }
+
+    pub(crate) fn validate_overridden_plays_role_type_is_supertype_or_self<T: KindAPI<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        type_: T,
+        overridden: T,
+    ) -> Result<(), SchemaValidationError> {
+        if is_overridden_interface_object_supertype_or_self(snapshot, type_.clone(), overridden.clone()).map_err(SchemaValidationError::ConceptRead)? {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::OverriddenPlaysRoleTypeIsNotSupertype(
                 get_label!(snapshot, type_),
                 get_label!(snapshot, overridden),
             ))
@@ -1100,19 +1161,14 @@ impl OperationTimeValidation {
     where
         T: ObjectTypeAPI<'static>,
     {
-        let is_overridden = {
-            let all_overridden = TypeReader::get_overridden_interfaces::<Owns<'static>, T>(snapshot, owner.clone())
-                .map_err(SchemaValidationError::ConceptRead)?;
-            all_overridden.contains_key(&attribute_type)
-        };
-        if !is_overridden {
+        if !is_attribute_type_owns_overridden(snapshot, owner.clone(), attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)? {
             Ok(())
         } else {
             Err(SchemaValidationError::OverriddenOwnsCannotBeRedeclared(get_label!(snapshot, owner), attribute_type))
         }
     }
 
-    pub(crate) fn validate_role_plays_not_overridden<T>(
+    pub(crate) fn validate_role_type_plays_not_overridden<T>(
         snapshot: &impl ReadableSnapshot,
         player: T,
         role_type: RoleType<'static>,
@@ -1120,12 +1176,7 @@ impl OperationTimeValidation {
     where
         T: ObjectTypeAPI<'static>,
     {
-        let is_overridden = {
-            let all_overridden = TypeReader::get_overridden_interfaces::<Plays<'static>, T>(snapshot, player.clone())
-                .map_err(SchemaValidationError::ConceptRead)?;
-            all_overridden.contains_key(&role_type)
-        };
-        if !is_overridden {
+        if !is_role_type_plays_overridden(snapshot, player.clone(), role_type.clone()).map_err(SchemaValidationError::ConceptRead)? {
             Ok(())
         } else {
             Err(SchemaValidationError::OverriddenPlaysCannotBeRedeclared(get_label!(snapshot, player), role_type))

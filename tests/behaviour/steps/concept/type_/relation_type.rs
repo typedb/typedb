@@ -20,6 +20,7 @@ use crate::{
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
+use crate::concept::type_::BehaviourConceptTestExecutionError;
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) create role: {type_label}{may_error}")]
@@ -80,13 +81,18 @@ pub async fn relation_role_set_override(
             .unwrap()
             .unwrap();
         let relation_supertype = relation_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
-        let overridden_relates = tx
+        if let Some(overridden_relates) = tx
             .type_manager
             .resolve_relates(&tx.snapshot, relation_supertype, supertype_label.into_typedb().name().as_str())
             .unwrap()
-            .unwrap();
-        let res = relates.set_override(&mut tx.snapshot, &tx.type_manager, overridden_relates);
-        may_error.check(&res);
+        {
+            let res = relates.set_override(&mut tx.snapshot, &tx.type_manager, overridden_relates);
+            may_error.check(&res);
+        } else {
+            // TODO: It is a little hacky as we don't test the concept api itself, but it is a correct behavior for TypeQL, so
+            // it's easier to support such tests here as well
+            may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(BehaviourConceptTestExecutionError::CannotFindRoleToOverride));
+        }
     });
 }
 

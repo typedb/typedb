@@ -45,6 +45,7 @@ use crate::{
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::error::ConceptReadError;
 
 pub(crate) fn validate_role_name_uniqueness_non_transitive<'a>(
     snapshot: &impl ReadableSnapshot,
@@ -71,6 +72,42 @@ pub(crate) fn type_is_abstract(
     type_: impl KindAPI<'static>,
 ) -> Result<bool, SchemaValidationError> {
     type_has_declared_annotation(snapshot, type_.clone(), Annotation::Abstract(AnnotationAbstract))
+}
+
+pub(crate) fn is_overridden_interface_object_supertype_or_self<T: KindAPI<'static>>(
+    snapshot: &impl ReadableSnapshot,
+    type_: T,
+    overridden: T,
+) -> Result<bool, ConceptReadError> {
+    if type_ == overridden {
+        return Ok(true);
+    }
+
+    Ok(TypeReader::get_supertypes(snapshot, type_.clone())?.contains(&overridden.clone()))
+}
+
+pub(crate) fn is_attribute_type_owns_overridden<T>(
+    snapshot: &impl ReadableSnapshot,
+    object_type: T,
+    attribute_type: AttributeType<'static>,
+) -> Result<bool, ConceptReadError>
+    where
+        T: ObjectTypeAPI<'static>,
+{
+    let all_overridden = TypeReader::get_overridden_interfaces::<Owns<'static>, T>(snapshot, object_type.clone())?;
+    Ok(all_overridden.contains_key(&attribute_type))
+}
+
+pub(crate) fn is_role_type_plays_overridden<T>(
+    snapshot: &impl ReadableSnapshot,
+    player: T,
+    role_type: RoleType<'static>,
+) -> Result<bool, ConceptReadError>
+    where
+        T: ObjectTypeAPI<'static>,
+{
+    let all_overridden = TypeReader::get_overridden_interfaces::<Plays<'static>, T>(snapshot, player.clone())?;
+    Ok(all_overridden.contains_key(&role_type))
 }
 
 // TODO: Try to wrap all these type_has_***annotation and edge_has_***annotation into several macros!

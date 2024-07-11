@@ -1453,12 +1453,26 @@ impl TypeManager {
         subtype: EntityType<'static>,
         supertype: EntityType<'static>,
     ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_owns_compatible_with_new_supertype(
+            snapshot,
+            subtype.clone(),
+            supertype.clone(),
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_plays_compatible_with_new_supertype(
+            snapshot,
+            subtype.clone(),
+            supertype.clone(),
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
             snapshot,
@@ -1490,12 +1504,26 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_owns_compatible_with_new_supertype(
+            snapshot,
+            subtype.clone(),
+            supertype.clone(),
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_plays_compatible_with_new_supertype(
+            snapshot,
+            subtype.clone(),
+            supertype.clone(),
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
             snapshot,
@@ -1517,6 +1545,7 @@ impl TypeManager {
         attribute: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
+        // TODO: Maybe do the same for plays and relates
         OperationTimeValidation::validate_ownership_abstractness(snapshot, owner.clone(), attribute.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1559,7 +1588,7 @@ impl TypeManager {
         OperationTimeValidation::validate_owns_is_inherited(snapshot, owns.owner(), overridden.attribute())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_overridden_is_supertype(snapshot, owns.attribute(), overridden.attribute())
+        OperationTimeValidation::validate_overridden_owns_attribute_type_is_supertype_or_self(snapshot, owns.attribute(), overridden.attribute())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_owns_override_ordering_match(
@@ -1614,7 +1643,7 @@ impl TypeManager {
         player: impl KindAPI<'static> + ObjectTypeAPI<'static> + PlayerAPI<'static>,
         role: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
-        OperationTimeValidation::validate_role_plays_not_overridden(snapshot, player.clone(), role.clone())
+        OperationTimeValidation::validate_role_type_plays_not_overridden(snapshot, player.clone(), role.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
@@ -1646,7 +1675,7 @@ impl TypeManager {
         OperationTimeValidation::validate_plays_is_inherited(snapshot, plays.player(), overridden.role())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_overridden_is_supertype(snapshot, plays.role(), overridden.role())
+        OperationTimeValidation::validate_overridden_plays_role_type_is_supertype_or_self(snapshot, plays.role(), overridden.role())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_edge_override_annotations_compatibility(
