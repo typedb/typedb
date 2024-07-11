@@ -4,18 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::error::Error;
-use std::fmt;
-use std::fmt::{Display, Formatter};
-use concept::error::ConceptReadError;
-use concept::type_::annotation::{AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues};
-use concept::type_::attribute_type::AttributeType;
-use concept::type_::object_type::ObjectType;
-use concept::type_::relation_type::RelationType;
-use concept::type_::role_type::RoleType;
-use concept::type_::type_manager::validation::SchemaValidationError;
-use encoding::value::label::Label;
-use encoding::value::value_type::ValueType;
+use std::{
+    error::Error,
+    fmt,
+    fmt::{Display, Formatter},
+};
+
+use concept::{
+    error::ConceptReadError,
+    type_::{
+        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues},
+        attribute_type::AttributeType,
+        object_type::ObjectType,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::validation::SchemaValidationError,
+    },
+};
+use encoding::value::{label::Label, value_type::ValueType};
 
 pub mod attribute_type;
 mod owns;

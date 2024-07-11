@@ -46,9 +46,14 @@ use crate::{
             validation::{
                 get_label,
                 validation::{
-                    edge_get_annotation_by_category, is_ordering_compatible_with_distinct_annotation,
-                    type_get_annotation_by_category, type_has_annotation_category,
+                    edge_get_annotation_by_category, is_attribute_type_owns_overridden,
+                    is_ordering_compatible_with_distinct_annotation, is_overridden_interface_object_supertype_or_self,
+                    is_role_type_plays_overridden, type_get_annotation_by_category, type_has_annotation_category,
                     type_has_declared_annotation_category, type_is_abstract,
+                    validate_declared_annotation_is_compatible_with_declared_annotations,
+                    validate_declared_annotation_is_compatible_with_inherited_annotations,
+                    validate_declared_edge_annotation_is_compatible_with_declared_annotations,
+                    validate_declared_edge_annotation_is_compatible_with_inherited_annotations,
                     validate_role_name_uniqueness_non_transitive,
                 },
                 SchemaValidationError,
@@ -57,7 +62,6 @@ use crate::{
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::type_::type_manager::validation::validation::{is_attribute_type_owns_overridden, is_overridden_interface_object_supertype_or_self, is_role_type_plays_overridden};
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -243,7 +247,9 @@ impl OperationTimeValidation {
 
         for subtype_owns in subtype_owns_declared {
             let attribute_type = subtype_owns.attribute();
-            if is_attribute_type_owns_overridden(snapshot, owner_supertype.clone(), attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)? {
+            if is_attribute_type_owns_overridden(snapshot, owner_supertype.clone(), attribute_type.clone())
+                .map_err(SchemaValidationError::ConceptRead)?
+            {
                 return Err(SchemaValidationError::CannotChangeSupertypeAsOwnsIsOverriddenInTheNewSupertype(
                     get_label!(snapshot, owner_subtype),
                     get_label!(snapshot, owner_supertype),
@@ -260,8 +266,8 @@ impl OperationTimeValidation {
         owner_subtype: T,
         owner_supertype: T,
     ) -> Result<(), SchemaValidationError>
-        where
-            T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    where
+        T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
         let supertype_owns_with_attributes: HashMap<AttributeType<'static>, Owns<'static>> =
             TypeReader::get_implemented_interfaces(snapshot, owner_supertype.clone())
@@ -306,7 +312,9 @@ impl OperationTimeValidation {
 
         for subtype_plays in subtype_plays_declared {
             let role_type = subtype_plays.role();
-            if is_role_type_plays_overridden(snapshot, player_supertype.clone(), role_type.clone()).map_err(SchemaValidationError::ConceptRead)? {
+            if is_role_type_plays_overridden(snapshot, player_supertype.clone(), role_type.clone())
+                .map_err(SchemaValidationError::ConceptRead)?
+            {
                 return Err(SchemaValidationError::CannotChangeSupertypeAsPlaysIsOverriddenInTheNewSupertype(
                     get_label!(snapshot, player_subtype),
                     get_label!(snapshot, player_supertype),
@@ -323,8 +331,8 @@ impl OperationTimeValidation {
         player_subtype: T,
         player_supertype: T,
     ) -> Result<(), SchemaValidationError>
-        where
-            T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    where
+        T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
         let supertype_plays_with_roles: HashMap<RoleType<'static>, Plays<'static>> =
             TypeReader::get_implemented_interfaces(snapshot, player_supertype.clone())
@@ -1128,7 +1136,9 @@ impl OperationTimeValidation {
         type_: T,
         overridden: T,
     ) -> Result<(), SchemaValidationError> {
-        if is_overridden_interface_object_supertype_or_self(snapshot, type_.clone(), overridden.clone()).map_err(SchemaValidationError::ConceptRead)? {
+        if is_overridden_interface_object_supertype_or_self(snapshot, type_.clone(), overridden.clone())
+            .map_err(SchemaValidationError::ConceptRead)?
+        {
             Ok(())
         } else {
             Err(SchemaValidationError::OverriddenOwnsAttributeTypeIsNotSupertype(
@@ -1143,7 +1153,9 @@ impl OperationTimeValidation {
         type_: T,
         overridden: T,
     ) -> Result<(), SchemaValidationError> {
-        if is_overridden_interface_object_supertype_or_self(snapshot, type_.clone(), overridden.clone()).map_err(SchemaValidationError::ConceptRead)? {
+        if is_overridden_interface_object_supertype_or_self(snapshot, type_.clone(), overridden.clone())
+            .map_err(SchemaValidationError::ConceptRead)?
+        {
             Ok(())
         } else {
             Err(SchemaValidationError::OverriddenPlaysRoleTypeIsNotSupertype(
@@ -1161,7 +1173,9 @@ impl OperationTimeValidation {
     where
         T: ObjectTypeAPI<'static>,
     {
-        if !is_attribute_type_owns_overridden(snapshot, owner.clone(), attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)? {
+        if !is_attribute_type_owns_overridden(snapshot, owner.clone(), attribute_type.clone())
+            .map_err(SchemaValidationError::ConceptRead)?
+        {
             Ok(())
         } else {
             Err(SchemaValidationError::OverriddenOwnsCannotBeRedeclared(get_label!(snapshot, owner), attribute_type))
@@ -1176,7 +1190,9 @@ impl OperationTimeValidation {
     where
         T: ObjectTypeAPI<'static>,
     {
-        if !is_role_type_plays_overridden(snapshot, player.clone(), role_type.clone()).map_err(SchemaValidationError::ConceptRead)? {
+        if !is_role_type_plays_overridden(snapshot, player.clone(), role_type.clone())
+            .map_err(SchemaValidationError::ConceptRead)?
+        {
             Ok(())
         } else {
             Err(SchemaValidationError::OverriddenPlaysCannotBeRedeclared(get_label!(snapshot, player), role_type))
@@ -1486,21 +1502,7 @@ impl OperationTimeValidation {
         type_: impl KindAPI<'static>,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError> {
-        let existing_annotations =
-            TypeReader::get_type_annotations(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
-
-        for (existing_annotation, _) in existing_annotations {
-            let existing_annotation_category = existing_annotation.clone().into().category();
-            if !annotation_category.declarable_below(existing_annotation_category) {
-                return Err(SchemaValidationError::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(
-                    annotation_category,
-                    existing_annotation_category,
-                    get_label!(snapshot, type_),
-                ));
-            }
-        }
-
-        Ok(())
+        validate_declared_annotation_is_compatible_with_inherited_annotations(snapshot, type_, annotation_category)
     }
 
     pub(crate) fn validate_set_edge_annotation_is_compatible_with_inherited_annotations<EDGE>(
@@ -1511,22 +1513,7 @@ impl OperationTimeValidation {
     where
         EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
     {
-        let existing_annotations = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
-            .map_err(SchemaValidationError::ConceptRead)?;
-
-        for (existing_annotation, _) in existing_annotations {
-            let existing_annotation_category = existing_annotation.category();
-            if !annotation_category.declarable_below(existing_annotation_category) {
-                let interface = edge.interface();
-                return Err(SchemaValidationError::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(
-                    annotation_category,
-                    existing_annotation_category,
-                    get_label!(snapshot, interface),
-                ));
-            }
-        }
-
-        Ok(())
+        validate_declared_edge_annotation_is_compatible_with_inherited_annotations(snapshot, edge, annotation_category)
     }
 
     pub(crate) fn validate_set_annotation_is_compatible_with_declared_annotations(
@@ -1534,21 +1521,7 @@ impl OperationTimeValidation {
         type_: impl KindAPI<'static>,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError> {
-        let existing_annotations = TypeReader::get_type_annotations_declared(snapshot, type_.clone())
-            .map_err(SchemaValidationError::ConceptRead)?;
-
-        for existing_annotation in existing_annotations {
-            let existing_annotation_category = existing_annotation.clone().into().category();
-            if !existing_annotation_category.declarable_alongside(annotation_category) {
-                return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
-                    annotation_category,
-                    existing_annotation_category,
-                    get_label!(snapshot, type_),
-                ));
-            }
-        }
-
-        Ok(())
+        validate_declared_annotation_is_compatible_with_declared_annotations(snapshot, type_, annotation_category)
     }
 
     pub(crate) fn validate_set_edge_annotation_is_compatible_with_declared_annotations<EDGE>(
@@ -1559,22 +1532,7 @@ impl OperationTimeValidation {
     where
         EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
     {
-        let existing_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, edge.clone())
-            .map_err(SchemaValidationError::ConceptRead)?;
-
-        for existing_annotation in existing_annotations {
-            let existing_annotation_category = existing_annotation.category();
-            if !existing_annotation_category.declarable_alongside(annotation_category) {
-                let interface = edge.interface();
-                return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
-                    annotation_category,
-                    existing_annotation_category,
-                    get_label!(snapshot, interface),
-                ));
-            }
-        }
-
-        Ok(())
+        validate_declared_edge_annotation_is_compatible_with_declared_annotations(snapshot, edge, annotation_category)
     }
 
     pub(crate) fn validate_owns_value_type_compatible_to_unique_annotation(

@@ -1444,7 +1444,7 @@ impl TypeManager {
 
         // TODO: Add check that if we have inherited independent and set supertype without independent (lose independence), we reject it with a specific error!
 
-        Self::set_supertype(self, snapshot, subtype, supertype)
+        self.set_supertype(snapshot, subtype, supertype)
     }
 
     pub(crate) fn set_entity_type_supertype(
@@ -1458,7 +1458,7 @@ impl TypeManager {
             subtype.clone(),
             supertype.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
             snapshot,
@@ -1472,7 +1472,7 @@ impl TypeManager {
             subtype.clone(),
             supertype.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
             snapshot,
@@ -1481,7 +1481,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        Self::set_supertype(self, snapshot, subtype, supertype)
+        self.set_supertype(snapshot, subtype, supertype)
     }
 
     pub(crate) fn set_relation_type_supertype(
@@ -1509,21 +1509,21 @@ impl TypeManager {
             subtype.clone(),
             supertype.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
             snapshot,
@@ -1534,7 +1534,7 @@ impl TypeManager {
 
         // TODO: Add check that if we have inherited cascade and set supertype without cascade (lose cascade), we reject it with a specific error!
 
-        Self::set_supertype(self, snapshot, subtype, supertype)
+        self.set_supertype(snapshot, subtype, supertype)
     }
 
     // TODO: If the validation for owns and plays can be made generic, we should see if we can make these functions generic as well.
@@ -1588,8 +1588,12 @@ impl TypeManager {
         OperationTimeValidation::validate_owns_is_inherited(snapshot, owns.owner(), overridden.attribute())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_overridden_owns_attribute_type_is_supertype_or_self(snapshot, owns.attribute(), overridden.attribute())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_overridden_owns_attribute_type_is_supertype_or_self(
+            snapshot,
+            owns.attribute(),
+            overridden.attribute(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_owns_override_ordering_match(
             snapshot,
@@ -1675,8 +1679,12 @@ impl TypeManager {
         OperationTimeValidation::validate_plays_is_inherited(snapshot, plays.player(), overridden.role())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_overridden_plays_role_type_is_supertype_or_self(snapshot, plays.role(), overridden.role())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_overridden_plays_role_type_is_supertype_or_self(
+            snapshot,
+            plays.role(),
+            overridden.role(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_edge_override_annotations_compatibility(
             snapshot,
@@ -1794,7 +1802,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        Self::unset_annotation_abstract(self, snapshot, type_)
+        self.unset_annotation_abstract(snapshot, type_)
     }
 
     pub(crate) fn unset_attribute_type_annotation_abstract(
@@ -1813,7 +1821,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        Self::unset_annotation_abstract(self, snapshot, type_)
+        self.unset_annotation_abstract(snapshot, type_)
     }
 
     pub(crate) fn set_annotation_independent(
@@ -1857,7 +1865,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        Self::set_supertype(self, snapshot, relates.role(), overridden.role())?;
+        self.set_supertype(snapshot, relates.role(), overridden.role())?;
         TypeWriter::storage_set_type_edge_overridden(snapshot, relates, overridden);
         Ok(())
     }

@@ -90,8 +90,20 @@ pub enum SchemaValidationError {
     DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(AnnotationCategory, AnnotationCategory, Label<'static>),
     AnnotationIsNotCompatibleWithDeclaredAnnotation(AnnotationCategory, AnnotationCategory, Label<'static>),
     RelationTypeMustRelateAtLeastOneRole(Label<'static>),
-    CannotRedeclareInheritedOwnsWithoutSpecialization(Label<'static>, Label<'static>, Label<'static>),
-    CannotRedeclareInheritedPlaysWithoutSpecialization(Label<'static>, Label<'static>, Label<'static>),
+    CannotRedeclareInheritedOwnsWithoutSpecializationWithOverride(Label<'static>, Label<'static>, Label<'static>),
+    CannotRedeclareInheritedPlaysWithoutSpecializationWithOverride(Label<'static>, Label<'static>, Label<'static>),
+    CannotRedeclareInheritedAnnotationWithoutSpecializationForOwns(
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        Annotation,
+    ),
+    CannotRedeclareInheritedAnnotationWithoutSpecializationForPlays(
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        Annotation,
+    ),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -163,8 +175,10 @@ impl Error for SchemaValidationError {
             Self::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(_, _, _) => None,
             Self::AnnotationIsNotCompatibleWithDeclaredAnnotation(_, _, _) => None,
             Self::RelationTypeMustRelateAtLeastOneRole(_) => None,
-            Self::CannotRedeclareInheritedOwnsWithoutSpecialization(_, _, _) => None,
-            Self::CannotRedeclareInheritedPlaysWithoutSpecialization(_, _, _) => None,
+            Self::CannotRedeclareInheritedOwnsWithoutSpecializationWithOverride(_, _, _) => None,
+            Self::CannotRedeclareInheritedPlaysWithoutSpecializationWithOverride(_, _, _) => None,
+            Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForOwns(_, _, _, _) => None,
+            Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForPlays(_, _, _, _) => None,
         }
     }
 }
@@ -177,3 +191,5 @@ macro_rules! get_label {
 }
 
 pub(crate) use get_label;
+
+use crate::type_::annotation::Annotation;

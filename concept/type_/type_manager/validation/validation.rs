@@ -20,6 +20,7 @@ use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
+    error::ConceptReadError,
     thing::{
         object::ObjectAPI,
         relation::{RelationIterator, RolePlayerIterator},
@@ -45,7 +46,6 @@ use crate::{
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::error::ConceptReadError;
 
 pub(crate) fn validate_role_name_uniqueness_non_transitive<'a>(
     snapshot: &impl ReadableSnapshot,
@@ -91,8 +91,8 @@ pub(crate) fn is_attribute_type_owns_overridden<T>(
     object_type: T,
     attribute_type: AttributeType<'static>,
 ) -> Result<bool, ConceptReadError>
-    where
-        T: ObjectTypeAPI<'static>,
+where
+    T: ObjectTypeAPI<'static>,
 {
     let all_overridden = TypeReader::get_overridden_interfaces::<Owns<'static>, T>(snapshot, object_type.clone())?;
     Ok(all_overridden.contains_key(&attribute_type))
@@ -103,11 +103,107 @@ pub(crate) fn is_role_type_plays_overridden<T>(
     player: T,
     role_type: RoleType<'static>,
 ) -> Result<bool, ConceptReadError>
-    where
-        T: ObjectTypeAPI<'static>,
+where
+    T: ObjectTypeAPI<'static>,
 {
     let all_overridden = TypeReader::get_overridden_interfaces::<Plays<'static>, T>(snapshot, player.clone())?;
     Ok(all_overridden.contains_key(&role_type))
+}
+
+pub(crate) fn validate_declared_annotation_is_compatible_with_inherited_annotations(
+    snapshot: &impl ReadableSnapshot,
+    type_: impl KindAPI<'static>,
+    annotation_category: AnnotationCategory,
+) -> Result<(), SchemaValidationError> {
+    let existing_annotations =
+        TypeReader::get_type_annotations(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
+
+    for (existing_annotation, _) in existing_annotations {
+        let existing_annotation_category = existing_annotation.clone().into().category();
+        if !annotation_category.declarable_below(existing_annotation_category) {
+            return Err(SchemaValidationError::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(
+                annotation_category,
+                existing_annotation_category,
+                get_label!(snapshot, type_),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+pub(crate) fn validate_declared_edge_annotation_is_compatible_with_inherited_annotations<EDGE>(
+    snapshot: &impl ReadableSnapshot,
+    edge: EDGE,
+    annotation_category: AnnotationCategory,
+) -> Result<(), SchemaValidationError>
+where
+    EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+{
+    let existing_annotations =
+        TypeReader::get_type_edge_annotations(snapshot, edge.clone()).map_err(SchemaValidationError::ConceptRead)?;
+
+    for (existing_annotation, _) in existing_annotations {
+        let existing_annotation_category = existing_annotation.category();
+        if !annotation_category.declarable_below(existing_annotation_category) {
+            let interface = edge.interface();
+            return Err(SchemaValidationError::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(
+                annotation_category,
+                existing_annotation_category,
+                get_label!(snapshot, interface),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+pub(crate) fn validate_declared_annotation_is_compatible_with_declared_annotations(
+    snapshot: &impl ReadableSnapshot,
+    type_: impl KindAPI<'static>,
+    annotation_category: AnnotationCategory,
+) -> Result<(), SchemaValidationError> {
+    let existing_annotations = TypeReader::get_type_annotations_declared(snapshot, type_.clone())
+        .map_err(SchemaValidationError::ConceptRead)?;
+
+    for existing_annotation in existing_annotations {
+        let existing_annotation_category = existing_annotation.clone().into().category();
+        if !existing_annotation_category.declarable_alongside(annotation_category) {
+            return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
+                annotation_category,
+                existing_annotation_category,
+                get_label!(snapshot, type_),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+pub(crate) fn validate_declared_edge_annotation_is_compatible_with_declared_annotations<EDGE>(
+    snapshot: &impl ReadableSnapshot,
+    edge: EDGE,
+    annotation_category: AnnotationCategory,
+) -> Result<(), SchemaValidationError>
+where
+    EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+{
+    let existing_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, edge.clone())
+        .map_err(SchemaValidationError::ConceptRead)?;
+
+    for existing_annotation in existing_annotations {
+        let existing_annotation_category = existing_annotation.category();
+        if !existing_annotation_category.declarable_alongside(annotation_category) {
+            let interface = edge.interface();
+            return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
+                annotation_category,
+                existing_annotation_category,
+                get_label!(snapshot, interface),
+            ));
+        }
+    }
+
+    Ok(())
 }
 
 // TODO: Try to wrap all these type_has_***annotation and edge_has_***annotation into several macros!

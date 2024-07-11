@@ -29,8 +29,14 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::Annotation, attribute_type::AttributeType, object_type::ObjectType, owns::Owns, plays::Plays,
-        role_type::RoleType, type_manager::TypeManager,
+        annotation::Annotation,
+        attribute_type::AttributeType,
+        object_type::ObjectType,
+        owns::{Owns, OwnsAnnotation},
+        plays::{Plays, PlaysAnnotation},
+        relates::RelatesAnnotation,
+        role_type::RoleType,
+        type_manager::TypeManager,
     },
     ConceptAPI,
 };
@@ -231,7 +237,38 @@ pub(crate) trait InterfaceImplementation<'a>:
     fn object(&self) -> Self::ObjectType;
 
     fn interface(&self) -> Self::InterfaceType;
+
+    // pub fn get_annotations<'this>(
+    //     &'this self,
+    //     snapshot: &impl ReadableSnapshot,
+    //     type_manager: &'this TypeManager,
+    // ) -> Result<MaybeOwns<'this, HashMap<Self::AnnotationType, Owns<'static>>>, ConceptReadError>
 }
+//
+// fn get_cardinality<T>(implementation: T)
+// where
+// T: InterfaceImplementation
+// {
+//     let annotations: T::AnotationType = implementation.get_annotations();
+//
+//     let a: PlaysAnnotation;
+//     let as_annotation: Annotation = a.into();
+//     match as_annotation {
+//         Annotation::Cardinality(cardinality),
+//         _ => ...
+//     };
+//
+//     let ordering = self.role.get_ordering(snapshot, type_manager)?;
+//     let card = annotations
+//         .iter()
+//         .filter_map(|(annotation, _)| match annotation {
+//             RelatesAnnotation::Cardinality(card) => Some(*card),
+//             _ => None,
+//         })
+//         .next()
+//         .unwrap_or_else(|| type_manager.role_default_cardinality(ordering));
+//     Ok(card)
+// }
 
 pub struct EdgeOverride<EDGE: TypeEdgeEncoding<'static>> {
     overridden: EDGE, // TODO: Consider storing EDGE::To instead

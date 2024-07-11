@@ -13,6 +13,7 @@ use itertools::Itertools;
 use macro_rules_attribute::apply;
 
 use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
     params::{
         Annotation, AnnotationCategory, ContainsOrDoesnt, ExistsOrDoesnt, IsEmptyOrNot, Label, MayError, RootLabel,
@@ -20,7 +21,6 @@ use crate::{
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
-use crate::concept::type_::BehaviourConceptTestExecutionError;
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) create role: {type_label}{may_error}")]
@@ -91,7 +91,9 @@ pub async fn relation_role_set_override(
         } else {
             // TODO: It is a little hacky as we don't test the concept api itself, but it is a correct behavior for TypeQL, so
             // it's easier to support such tests here as well
-            may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(BehaviourConceptTestExecutionError::CannotFindRoleToOverride));
+            may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
+                BehaviourConceptTestExecutionError::CannotFindRoleToOverride,
+            ));
         }
     });
 }
