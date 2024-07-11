@@ -1617,6 +1617,7 @@ impl TypeManager {
 
         OperationTimeValidation::validate_edge_override_annotations_compatibility(
             snapshot,
+            &self,
             owns.clone(),
             overridden.clone(),
         )
@@ -1700,6 +1701,7 @@ impl TypeManager {
 
         OperationTimeValidation::validate_edge_override_annotations_compatibility(
             snapshot,
+            &self,
             plays.clone(),
             overridden.clone(),
         )
@@ -1872,6 +1874,7 @@ impl TypeManager {
 
         OperationTimeValidation::validate_edge_override_annotations_compatibility(
             snapshot,
+            &self,
             relates.clone(),
             overridden.clone(),
         )
@@ -1926,7 +1929,7 @@ impl TypeManager {
         edge: EDGE,
     ) -> Result<(), ConceptWriteError>
     where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         self.unset_edge_annotation::<AnnotationDistinct>(snapshot, edge, AnnotationCategory::Distinct)
     }
@@ -1967,7 +1970,7 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         if let Some(override_owns) = TypeReader::get_implementation_override(snapshot, owns.clone())? {
-            OperationTimeValidation::validate_key_narrows_inherited_cardinality(snapshot, override_owns)
+            OperationTimeValidation::validate_key_narrows_inherited_cardinality(snapshot, &self, override_owns)
                 .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
@@ -1980,7 +1983,7 @@ impl TypeManager {
         edge: EDGE,
     ) -> Result<(), ConceptWriteError>
     where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         self.unset_edge_annotation::<AnnotationKey>(snapshot, edge, AnnotationCategory::Key)
     }
@@ -1992,7 +1995,7 @@ impl TypeManager {
         cardinality: AnnotationCardinality,
     ) -> Result<(), ConceptWriteError>
     where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone + Hash + Eq,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         OperationTimeValidation::validate_cardinality_arguments(cardinality)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -2000,6 +2003,7 @@ impl TypeManager {
         if let Some(override_edge) = TypeReader::get_implementation_override(snapshot, edge.clone())? {
             OperationTimeValidation::validate_cardinality_narrows_inherited_cardinality(
                 snapshot,
+                &self,
                 override_edge,
                 cardinality,
             )
@@ -2020,7 +2024,7 @@ impl TypeManager {
         edge: EDGE,
     ) -> Result<(), ConceptWriteError>
     where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         self.unset_edge_annotation::<AnnotationCardinality>(snapshot, edge, AnnotationCategory::Cardinality)
     }
@@ -2108,7 +2112,7 @@ impl TypeManager {
         edge: EDGE,
     ) -> Result<(), ConceptWriteError>
     where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         self.unset_edge_annotation::<AnnotationRegex>(snapshot, edge, AnnotationCategory::Regex)
     }
@@ -2215,7 +2219,7 @@ impl TypeManager {
     }
 
     pub(crate) fn unset_edge_annotation_range<
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     >(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -2310,7 +2314,7 @@ impl TypeManager {
     }
 
     pub(crate) fn unset_edge_annotation_values<
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     >(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -2351,7 +2355,7 @@ impl TypeManager {
     fn set_edge_annotation<A: TypeEdgePropertyEncoding<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        edge: impl TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        edge: impl TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
         annotation_category: AnnotationCategory,
         annotation_value: Option<A>,
     ) -> Result<(), ConceptWriteError> {
@@ -2396,7 +2400,7 @@ impl TypeManager {
     fn unset_edge_annotation<A: TypeEdgePropertyEncoding<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        edge: impl TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        edge: impl TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_unset_edge_annotation_is_not_inherited(

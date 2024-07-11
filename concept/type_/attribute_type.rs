@@ -113,6 +113,22 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
 impl<'a> KindAPI<'a> for AttributeType<'a> {
     type AnnotationType = AttributeTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Attribute;
+
+    fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_attribute_type_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<AttributeTypeAnnotation, AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_annotations(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> AttributeType<'a> {
@@ -213,22 +229,6 @@ impl<'a> AttributeType<'a> {
         Ok(self
             .get_annotations(snapshot, type_manager)?
             .contains_key(&AttributeTypeAnnotation::Independent(AnnotationIndependent)))
-    }
-
-    pub fn get_annotations_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, ConceptReadError> {
-        type_manager.get_attribute_type_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<AttributeTypeAnnotation, AttributeType<'static>>>, ConceptReadError> {
-        type_manager.get_attribute_type_annotations(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(

@@ -112,6 +112,22 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
 impl<'a> KindAPI<'a> for RelationType<'a> {
     type AnnotationType = RelationTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Relation;
+
+    fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<RelationTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_relation_type_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<RelationTypeAnnotation, RelationType<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_annotations(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {
@@ -181,22 +197,6 @@ impl<'a> RelationType<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<RelationType<'static>>>, ConceptReadError> {
         type_manager.get_relation_type_subtypes_transitive(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<RelationTypeAnnotation>>, ConceptReadError> {
-        type_manager.get_relation_type_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RelationTypeAnnotation, RelationType<'static>>>, ConceptReadError> {
-        type_manager.get_relation_type_annotations(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(

@@ -61,6 +61,7 @@ use crate::{
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::type_::type_manager::TypeManager;
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -650,60 +651,39 @@ impl OperationTimeValidation {
 
     pub(crate) fn validate_key_narrows_inherited_cardinality<EDGE>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         supertype_edge: EDGE,
     ) -> Result<(), SchemaValidationError>
     where
-        EDGE: InterfaceImplementation<'static> + Clone,
+        EDGE: InterfaceImplementation<'static>,
     {
-        match Self::get_conflicted_cardinality(snapshot, supertype_edge.clone(), AnnotationKey::CARDINALITY)? {
-            Some(conflicted_cardinality) => {
-                Err(SchemaValidationError::KeyShouldNarrowInheritedCardinality(conflicted_cardinality.clone()))
-            }
-            None => Ok(()),
+        let supertype_cardinality = supertype_edge.get_cardinality(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+
+        if supertype_cardinality.narrowed_correctly_by(&AnnotationKey::CARDINALITY) {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::KeyShouldNarrowInheritedCardinality(supertype_cardinality))
         }
     }
 
     pub(crate) fn validate_cardinality_narrows_inherited_cardinality<EDGE>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         supertype_edge: EDGE,
         cardinality: AnnotationCardinality,
     ) -> Result<(), SchemaValidationError>
     where
-        EDGE: InterfaceImplementation<'static> + Clone,
+        EDGE: InterfaceImplementation<'static>,
     {
-        match Self::get_conflicted_cardinality(snapshot, supertype_edge.clone(), cardinality.clone())? {
-            Some(conflicted_cardinality) => Err(SchemaValidationError::CardinalityShouldNarrowInheritedCardinality(
-                cardinality.clone(),
-                conflicted_cardinality.clone(),
-            )),
-            None => Ok(()),
-        }
-    }
+        let supertype_cardinality = supertype_edge.get_cardinality(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
 
-    fn get_conflicted_cardinality<EDGE, Snapshot>(
-        snapshot: &Snapshot,
-        supertype_edge: EDGE,
-        cardinality: AnnotationCardinality,
-    ) -> Result<Option<AnnotationCardinality>, SchemaValidationError>
-    where
-        Snapshot: ReadableSnapshot,
-        EDGE: InterfaceImplementation<'static> + Clone,
-    {
-        if let Some(supertype_annotation) =
-            edge_get_annotation_by_category(snapshot, supertype_edge, AnnotationCategory::Cardinality)?
-        {
-            match supertype_annotation {
-                Annotation::Cardinality(supertype_cardinality) => {
-                    if supertype_cardinality.narrowed_correctly_by(&cardinality) {
-                        Ok(None)
-                    } else {
-                        Ok(Some(supertype_cardinality))
-                    }
-                }
-                _ => unreachable!("Should not reach it for Cardinality-related function"),
-            }
+        if supertype_cardinality.narrowed_correctly_by(&cardinality) {
+            Ok(())
         } else {
-            Ok(None)
+            Err(SchemaValidationError::CardinalityShouldNarrowInheritedCardinality(
+                cardinality.clone(),
+                supertype_cardinality.clone(),
+            ))
         }
     }
 
@@ -739,7 +719,7 @@ impl OperationTimeValidation {
         regex: AnnotationRegex,
     ) -> Result<(), SchemaValidationError>
     where
-        EDGE: InterfaceImplementation<'static> + Clone,
+        EDGE: InterfaceImplementation<'static>,
     {
         if let Some(supertype_annotation) =
             edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Regex)?
@@ -796,7 +776,7 @@ impl OperationTimeValidation {
         range: AnnotationRange,
     ) -> Result<(), SchemaValidationError>
     where
-        EDGE: InterfaceImplementation<'static> + Clone,
+        EDGE: InterfaceImplementation<'static>,
     {
         if let Some(supertype_annotation) =
             edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Range)?
@@ -852,7 +832,7 @@ impl OperationTimeValidation {
         values: AnnotationValues,
     ) -> Result<(), SchemaValidationError>
     where
-        EDGE: InterfaceImplementation<'static> + Clone,
+        EDGE: InterfaceImplementation<'static>,
     {
         if let Some(supertype_annotation) =
             edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Values)?
@@ -1029,11 +1009,12 @@ impl OperationTimeValidation {
 
     pub(crate) fn validate_edge_override_annotations_compatibility<EDGE>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         edge: EDGE,
         overridden_edge: EDGE,
     ) -> Result<(), SchemaValidationError>
     where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         let subtype_declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, edge)
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -1048,11 +1029,12 @@ impl OperationTimeValidation {
             match subtype_annotation {
                 Annotation::Cardinality(cardinality) => Self::validate_cardinality_narrows_inherited_cardinality(
                     snapshot,
+                    type_manager,
                     overridden_edge.clone(),
                     cardinality,
                 )?,
                 Annotation::Key(_) => {
-                    Self::validate_key_narrows_inherited_cardinality(snapshot, overridden_edge.clone())?
+                    Self::validate_key_narrows_inherited_cardinality(snapshot, type_manager, overridden_edge.clone())?
                 }
                 Annotation::Regex(regex) => {
                     Self::validate_edge_regex_narrows_inherited_regex(snapshot, overridden_edge.clone(), regex)?
@@ -1481,7 +1463,7 @@ impl OperationTimeValidation {
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
     where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         let annotations = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -1520,7 +1502,7 @@ impl OperationTimeValidation {
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
     where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         validate_declared_edge_annotation_is_compatible_with_inherited_annotations(snapshot, edge, annotation_category)
     }
@@ -1539,7 +1521,7 @@ impl OperationTimeValidation {
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
     where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         validate_declared_edge_annotation_is_compatible_with_declared_annotations(snapshot, edge, annotation_category)
     }

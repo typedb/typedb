@@ -114,6 +114,22 @@ impl<'a> ObjectTypeAPI<'a> for EntityType<'a> {
 impl<'a> KindAPI<'a> for EntityType<'a> {
     type AnnotationType = EntityTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Entity;
+
+    fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<EntityTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_entity_type_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<EntityTypeAnnotation, EntityType<'static>>>, ConceptReadError> {
+        type_manager.get_entity_type_annotations(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> EntityType<'a> {
@@ -177,22 +193,6 @@ impl<'a> EntityType<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<EntityType<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_subtypes_transitive(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<EntityTypeAnnotation>>, ConceptReadError> {
-        type_manager.get_entity_type_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<EntityTypeAnnotation, EntityType<'static>>>, ConceptReadError> {
-        type_manager.get_entity_type_annotations(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(

@@ -159,6 +159,27 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
     }
 }
 
+impl<'a> KindAPI<'a> for RoleType<'a> {
+    type AnnotationType = RoleTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Role;
+
+    fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_role_type_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<RoleTypeAnnotation, RoleType<'static>>>, ConceptReadError> {
+        type_manager.get_role_type_annotations(snapshot, self.clone().into_owned())
+    }
+}
+
 impl<'a> RoleType<'a> {
     pub fn is_root(
         &self,
@@ -213,22 +234,6 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_subtypes_transitive(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_annotations<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RoleTypeAnnotation, RoleType<'static>>>, ConceptReadError> {
-        type_manager.get_role_type_annotations(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, ConceptReadError> {
-        type_manager.get_role_type_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -270,11 +275,6 @@ impl<'a> RoleType<'a> {
     pub fn into_owned(self) -> RoleType<'static> {
         RoleType { vertex: self.vertex.into_owned() }
     }
-}
-
-impl<'a> KindAPI<'a> for RoleType<'a> {
-    type AnnotationType = RoleTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Role;
 }
 
 impl<'a> Display for RoleType<'a> {

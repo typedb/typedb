@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::type_::{
-    annotation, annotation::DefaultFrom, object_type::ObjectType, relates::RelatesAnnotation,
-    role_type::RoleTypeAnnotation, InterfaceImplementation, Ordering, TypeAPI,
-};
+use concept::type_::{annotation, annotation::DefaultFrom, object_type::ObjectType, relates::RelatesAnnotation, role_type::RoleTypeAnnotation, InterfaceImplementation, Ordering, TypeAPI, KindAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
