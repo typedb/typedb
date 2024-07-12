@@ -45,8 +45,9 @@ pub enum SchemaValidationError {
     PlaysNotInherited(ObjectType<'static>, RoleType<'static>),
     OverriddenOwnsCannotBeRedeclared(Label<'static>, AttributeType<'static>),
     OverriddenPlaysCannotBeRedeclared(Label<'static>, RoleType<'static>),
-    OverriddenOwnsAttributeTypeIsNotSupertype(Label<'static>, Label<'static>),
-    OverriddenPlaysRoleTypeIsNotSupertype(Label<'static>, Label<'static>),
+    OverriddenOwnsAttributeTypeIsNotSupertype(Label<'static>, Label<'static>, Label<'static>),
+    OverriddenPlaysRoleTypeIsNotSupertype(Label<'static>, Label<'static>, Label<'static>),
+    OverriddenRelatesRoleTypeIsNotSupertype(Label<'static>, Label<'static>, Label<'static>),
     NonAbstractCannotOwnAbstract(Label<'static>, Label<'static>),
     NonAbstractCannotPlayAbstract(Label<'static>, Label<'static>),
     NonAbstractCannotRelateAbstract(Label<'static>, Label<'static>),
@@ -62,7 +63,6 @@ pub enum SchemaValidationError {
     RelatesOverrideIsNotInherited(Label<'static>, Label<'static>),
     OwnsOverrideIsNotInherited(Label<'static>, Label<'static>),
     PlaysOverrideIsNotInherited(Label<'static>, Label<'static>),
-    RelatesOverrideDoesNotMatchWithRoleSubtype(Label<'static>, Label<'static>, Label<'static>, Option<Label<'static>>),
     InvalidOrderingForDistinctAnnotation(Label<'static>),
     AttributeTypeWithoutValueTypeShouldBeAbstract(Label<'static>),
     ValueTypeIsNotCompatibleWithRegexAnnotation(Label<'static>, Option<ValueType>),
@@ -107,6 +107,24 @@ pub enum SchemaValidationError {
         Label<'static>,
         Annotation,
     ),
+    RedundantAnnotationForOwnsAlreadyInherited(
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        Annotation,
+    ),
+    RedundantAnnotationForPlaysAlreadyInherited(
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        Annotation,
+    ),
+    RedundantAnnotationForRelatesAlreadyInherited(
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        Annotation,
+    ),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -133,8 +151,9 @@ impl Error for SchemaValidationError {
             Self::PlaysNotInherited(_, _) => None,
             Self::OverriddenOwnsCannotBeRedeclared(_, _) => None,
             Self::OverriddenPlaysCannotBeRedeclared(_, _) => None,
-            Self::OverriddenOwnsAttributeTypeIsNotSupertype(_, _) => None,
-            Self::OverriddenPlaysRoleTypeIsNotSupertype(_, _) => None,
+            Self::OverriddenOwnsAttributeTypeIsNotSupertype(_, _, _) => None,
+            Self::OverriddenPlaysRoleTypeIsNotSupertype(_, _, _) => None,
+            Self::OverriddenRelatesRoleTypeIsNotSupertype(_, _, _) => None,
             Self::OrderingDoesNotMatchWithSupertype(_, _) => None,
             Self::CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(_, _, _) => None,
             Self::CannotChangeSupertypeAsOwnsOverrideIsImplicitlyLost(_, _, _) => None,
@@ -144,7 +163,6 @@ impl Error for SchemaValidationError {
             Self::RelatesOverrideIsNotInherited(_, _) => None,
             Self::OwnsOverrideIsNotInherited(_, _) => None,
             Self::PlaysOverrideIsNotInherited(_, _) => None,
-            Self::RelatesOverrideDoesNotMatchWithRoleSubtype(_, _, _, _) => None,
             Self::InvalidOrderingForDistinctAnnotation(_) => None,
             Self::NonAbstractCannotOwnAbstract(_, _) => None,
             Self::NonAbstractCannotPlayAbstract(_, _) => None,
@@ -182,6 +200,9 @@ impl Error for SchemaValidationError {
             Self::CannotRedeclareInheritedPlaysWithoutSpecializationWithOverride(_, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForOwns(_, _, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForPlays(_, _, _, _) => None,
+            Self::RedundantAnnotationForOwnsAlreadyInherited(_, _, _, _) => None,
+            Self::RedundantAnnotationForPlaysAlreadyInherited(_, _, _, _) => None,
+            Self::RedundantAnnotationForRelatesAlreadyInherited(_, _, _, _) => None,
         }
     }
 }

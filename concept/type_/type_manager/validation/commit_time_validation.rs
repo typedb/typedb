@@ -25,7 +25,7 @@ use crate::{
             validation::{
                 validation::{
                     get_label_or_concept_read_err, is_attribute_type_owns_overridden,
-                    is_overridden_interface_object_supertype_or_self, is_role_type_plays_overridden, type_is_abstract,
+                    is_overridden_interface_object_one_of_supertypes_or_self, is_role_type_plays_overridden, type_is_abstract,
                     validate_declared_annotation_is_compatible_with_declared_annotations,
                     validate_declared_annotation_is_compatible_with_inherited_annotations,
                     validate_declared_edge_annotation_is_compatible_with_declared_annotations,
@@ -38,6 +38,7 @@ use crate::{
         InterfaceImplementation, KindAPI, ObjectTypeAPI, TypeAPI,
     },
 };
+use crate::type_::type_manager::validation::validation::is_overridden_interface_object_declared_supertype_or_self;
 
 pub struct CommitTimeValidation {}
 
@@ -256,31 +257,8 @@ impl CommitTimeValidation {
             TypeReader::get_implemented_interfaces_declared(snapshot, relation_type.clone())?;
 
         for relates in relates_declared {
-            let relates_override_opt = TypeReader::get_implementation_override(snapshot, relates.clone())?;
-
-            if let Some(relates_override) = relates_override_opt {
+            if let Some(relates_override) = TypeReader::get_implementation_override(snapshot, relates.clone())? {
                 let role_type_overridden = relates_override.role();
-
-                let role = relates.role();
-                let role_supertype = TypeReader::get_supertype(snapshot, role.clone())?;
-                match role_supertype {
-                    None => validation_errors.push(SchemaValidationError::RelatesOverrideDoesNotMatchWithRoleSubtype(
-                        get_label_or_concept_read_err(snapshot, relation_type.clone())?,
-                        get_label_or_concept_read_err(snapshot, role)?,
-                        get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
-                        None,
-                    )),
-                    Some(role_supertype) => {
-                        if role_type_overridden != role_supertype {
-                            validation_errors.push(SchemaValidationError::RelatesOverrideDoesNotMatchWithRoleSubtype(
-                                get_label_or_concept_read_err(snapshot, relation_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, role.clone())?,
-                                get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
-                                Some(get_label_or_concept_read_err(snapshot, role_supertype.clone())?),
-                            ));
-                        }
-                    }
-                }
 
                 match &supertype {
                     None => validation_errors.push(SchemaValidationError::RelatesOverrideIsNotInherited(
@@ -298,6 +276,38 @@ impl CommitTimeValidation {
                                 get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
                             ));
                         }
+                    }
+                }
+
+                let role_type = relates.role();
+                // Only declared supertype (not transitive) fits as relates override == role subtype!
+                // It is only a commit-time check as we verify that operation-time generation has been correct
+                if !is_overridden_interface_object_declared_supertype_or_self(
+                    snapshot,
+                    role_type.clone(),
+                    role_type_overridden.clone(),
+                )? {
+                    validation_errors.push(SchemaValidationError::OverriddenRelatesRoleTypeIsNotSupertype(
+                        get_label_or_concept_read_err(snapshot, relation_type.clone())?,
+                        get_label_or_concept_read_err(snapshot, role_type.clone())?,
+                        get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
+                    ));
+                }
+
+                let relates_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, relates)?;
+                let relates_override_annotations =
+                    TypeReader::get_type_edge_annotations(snapshot, relates_override.clone())?;
+
+                for relates_annotation in relates_annotations_declared {
+                    if relates_override_annotations.keys().contains(&relates_annotation) {
+                        validation_errors.push(
+                            SchemaValidationError::RedundantAnnotationForRelatesAlreadyInherited(
+                                get_label_or_concept_read_err(snapshot, role_type.clone())?,
+                                get_label_or_concept_read_err(snapshot, relation_type.clone())?,
+                                get_label_or_concept_read_err(snapshot, relates_override.relation())?,
+                                relates_annotation,
+                            ),
+                        );
                     }
                 }
             }
@@ -320,10 +330,9 @@ impl CommitTimeValidation {
             TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
 
         for owns in owns_declared {
-            let owns_override_opt = TypeReader::get_implementation_override(snapshot, owns.clone())?;
-
-            if let Some(owns_override) = owns_override_opt {
+            if let Some(owns_override) = TypeReader::get_implementation_override(snapshot, owns.clone())? {
                 let attribute_type_overridden = owns_override.attribute();
+
                 match &supertype {
                     None => validation_errors.push(SchemaValidationError::OwnsOverrideIsNotInherited(
                         get_label_or_concept_read_err(snapshot, type_.clone())?,
@@ -341,18 +350,36 @@ impl CommitTimeValidation {
                                 get_label_or_concept_read_err(snapshot, attribute_type_overridden.clone())?,
                             ));
                         }
+                    }
+                }
 
-                        let attribute_type = owns.attribute();
-                        if !is_overridden_interface_object_supertype_or_self(
-                            snapshot,
-                            attribute_type.clone(),
-                            attribute_type_overridden.clone(),
-                        )? {
-                            validation_errors.push(SchemaValidationError::OverriddenOwnsAttributeTypeIsNotSupertype(
+                let attribute_type = owns.attribute();
+                if !is_overridden_interface_object_one_of_supertypes_or_self( // Any supertype (even transitive) fits
+                    snapshot,
+                    attribute_type.clone(),
+                    attribute_type_overridden.clone(),
+                )? {
+                    validation_errors.push(SchemaValidationError::OverriddenOwnsAttributeTypeIsNotSupertype(
+                        get_label_or_concept_read_err(snapshot, type_.clone())?,
+                        get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
+                        get_label_or_concept_read_err(snapshot, attribute_type_overridden.clone())?,
+                    ));
+                }
+
+                let owns_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, owns)?;
+                let owns_override_annotations =
+                    TypeReader::get_type_edge_annotations(snapshot, owns_override.clone())?;
+
+                for owns_annotation in owns_annotations_declared {
+                    if owns_override_annotations.keys().contains(&owns_annotation) {
+                        validation_errors.push(
+                            SchemaValidationError::RedundantAnnotationForOwnsAlreadyInherited(
                                 get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, attribute_type_overridden.clone())?,
-                            ));
-                        }
+                                get_label_or_concept_read_err(snapshot, type_.clone())?,
+                                get_label_or_concept_read_err(snapshot, owns_override.owner())?,
+                                owns_annotation,
+                            ),
+                        );
                     }
                 }
             }
@@ -375,9 +402,7 @@ impl CommitTimeValidation {
             TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
 
         for plays in plays_declared {
-            let plays_override_opt = TypeReader::get_implementation_override(snapshot, plays.clone())?;
-
-            if let Some(plays_override) = plays_override_opt {
+            if let Some(plays_override) = TypeReader::get_implementation_override(snapshot, plays.clone())? {
                 let role_type_overridden = plays_override.role();
                 match &supertype {
                     None => validation_errors.push(SchemaValidationError::PlaysOverrideIsNotInherited(
@@ -396,18 +421,36 @@ impl CommitTimeValidation {
                                 get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
                             ));
                         }
+                    }
+                }
 
-                        let role_type = plays.role();
-                        if !is_overridden_interface_object_supertype_or_self(
-                            snapshot,
-                            role_type.clone(),
-                            role_type_overridden.clone(),
-                        )? {
-                            validation_errors.push(SchemaValidationError::OverriddenPlaysRoleTypeIsNotSupertype(
+                let role_type = plays.role();
+                if !is_overridden_interface_object_one_of_supertypes_or_self( // Any supertype (even transitive) fits
+                    snapshot,
+                    role_type.clone(),
+                    role_type_overridden.clone(),
+                )? {
+                    validation_errors.push(SchemaValidationError::OverriddenPlaysRoleTypeIsNotSupertype(
+                        get_label_or_concept_read_err(snapshot, type_.clone())?,
+                        get_label_or_concept_read_err(snapshot, role_type.clone())?,
+                        get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
+                    ));
+                }
+
+                let plays_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, plays)?;
+                let plays_override_annotations =
+                    TypeReader::get_type_edge_annotations(snapshot, plays_override.clone())?;
+
+                for plays_annotation in plays_annotations_declared {
+                    if plays_override_annotations.keys().contains(&plays_annotation) {
+                        validation_errors.push(
+                            SchemaValidationError::RedundantAnnotationForPlaysAlreadyInherited(
                                 get_label_or_concept_read_err(snapshot, role_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
-                            ));
-                        }
+                                get_label_or_concept_read_err(snapshot, type_.clone())?,
+                                get_label_or_concept_read_err(snapshot, plays_override.player())?,
+                                plays_annotation,
+                            ),
+                        );
                     }
                 }
             }

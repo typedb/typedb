@@ -67,7 +67,7 @@ pub(crate) fn type_is_abstract(
     type_has_declared_annotation(snapshot, type_.clone(), Annotation::Abstract(AnnotationAbstract))
 }
 
-pub(crate) fn is_overridden_interface_object_supertype_or_self<T: KindAPI<'static>>(
+pub(crate) fn is_overridden_interface_object_one_of_supertypes_or_self<T: KindAPI<'static>>(
     snapshot: &impl ReadableSnapshot,
     type_: T,
     overridden: T,
@@ -77,6 +77,18 @@ pub(crate) fn is_overridden_interface_object_supertype_or_self<T: KindAPI<'stati
     }
 
     Ok(TypeReader::get_supertypes(snapshot, type_.clone())?.contains(&overridden.clone()))
+}
+
+pub(crate) fn is_overridden_interface_object_declared_supertype_or_self<T: KindAPI<'static>>(
+    snapshot: &impl ReadableSnapshot,
+    type_: T,
+    overridden: T,
+) -> Result<bool, ConceptReadError> {
+    if type_ == overridden {
+        return Ok(true);
+    }
+
+    Ok(TypeReader::get_supertype(snapshot, type_.clone())? == Some(overridden.clone()))
 }
 
 pub(crate) fn is_attribute_type_owns_overridden<T>(

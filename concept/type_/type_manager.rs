@@ -1195,7 +1195,7 @@ impl TypeManager {
 
         let declared_relates = TypeReader::get_relates(snapshot, relation_type.clone())?;
         for (_role_type, relates) in declared_relates.iter() {
-            self.delete_role_type(snapshot, relates.role().clone())?;
+            self.delete_role_type(snapshot, relates.role())?;
         }
 
         TypeWriter::storage_delete_label(snapshot, relation_type.clone());
@@ -1253,7 +1253,7 @@ impl TypeManager {
         }
 
         let relates = TypeReader::get_role_type_relates(snapshot, role_type.clone())?;
-        TypeWriter::storage_delete_relates(snapshot, relates.relation().clone(), role_type.clone());
+        TypeWriter::storage_delete_relates(snapshot, relates.relation(), role_type.clone());
         TypeWriter::storage_delete_label(snapshot, role_type.clone());
         TypeWriter::storage_delete_supertype(snapshot, role_type);
         Ok(())
@@ -1602,7 +1602,7 @@ impl TypeManager {
 
         OperationTimeValidation::validate_overridden_owns_attribute_type_is_supertype_or_self(
             snapshot,
-            owns.attribute(),
+            owns.clone(),
             overridden.attribute(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -1623,12 +1623,12 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let overridden_value_type_with_source = TypeReader::get_value_type(snapshot, overridden.attribute().clone())?;
-        let value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?;
+        let overridden_value_type_with_source = TypeReader::get_value_type(snapshot, overridden.attribute())?;
+        let value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute())?;
 
         OperationTimeValidation::validate_value_type_compatible_with_inherited_value_type(
             snapshot,
-            owns.attribute().clone(),
+            owns.attribute(),
             value_type.clone(),
             overridden_value_type_with_source.clone(),
         )
@@ -1694,7 +1694,7 @@ impl TypeManager {
 
         OperationTimeValidation::validate_overridden_plays_role_type_is_supertype_or_self(
             snapshot,
-            plays.role(),
+            plays.clone(),
             overridden.role(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -1774,8 +1774,8 @@ impl TypeManager {
             Some(relates_override) => {
                 OperationTimeValidation::validate_role_supertype_ordering_match(
                     snapshot,
-                    relates.role().clone(),
-                    relates_override.role().clone(),
+                    relates.role(),
+                    relates_override.role(),
                     Some(ordering),
                 )
                 .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -1866,8 +1866,8 @@ impl TypeManager {
 
         OperationTimeValidation::validate_role_supertype_ordering_match(
             snapshot,
-            relates.role().clone(),
-            overridden.role().clone(),
+            relates.role(),
+            overridden.role(),
             None,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -1890,7 +1890,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         relates: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
-        TypeWriter::storage_delete_supertype(snapshot, relates.role().clone());
+        TypeWriter::storage_delete_supertype(snapshot, relates.role());
         self.set_role_type_root_supertype(snapshot, relates.role());
         TypeWriter::storage_delete_type_edge_overridden(snapshot, relates);
         Ok(())
@@ -1942,7 +1942,7 @@ impl TypeManager {
         OperationTimeValidation::validate_owns_value_type_compatible_to_unique_annotation(
             snapshot,
             owns.clone(),
-            TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?,
+            TypeReader::get_value_type_without_source(snapshot, owns.attribute())?,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1965,7 +1965,7 @@ impl TypeManager {
         OperationTimeValidation::validate_owns_value_type_compatible_to_key_annotation(
             snapshot,
             owns.clone(),
-            TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?,
+            TypeReader::get_value_type_without_source(snapshot, owns.attribute())?,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -2082,7 +2082,7 @@ impl TypeManager {
         OperationTimeValidation::validate_annotation_regex_compatible_value_type(
             snapshot,
             owns.attribute(),
-            TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?,
+            TypeReader::get_value_type_without_source(snapshot, owns.attribute())?,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -2184,7 +2184,7 @@ impl TypeManager {
         owns: Owns<'static>,
         range: AnnotationRange,
     ) -> Result<(), ConceptWriteError> {
-        let owns_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?;
+        let owns_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute())?;
 
         OperationTimeValidation::validate_annotation_range_compatible_value_type(
             snapshot,
@@ -2279,7 +2279,7 @@ impl TypeManager {
         owns: Owns<'static>,
         values: AnnotationValues,
     ) -> Result<(), ConceptWriteError> {
-        let owns_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?;
+        let owns_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute())?;
 
         OperationTimeValidation::validate_annotation_values_compatible_value_type(
             snapshot,

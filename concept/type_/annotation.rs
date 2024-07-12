@@ -84,22 +84,6 @@ impl AnnotationCardinality {
         Self::new(0, Some(1))
     }
 
-    pub const fn relates_default() -> Self {
-        Self::new(0, Some(1))
-    }
-
-    pub const fn plays_default() -> Self {
-        Self::new(0, Some(1))
-    }
-
-    pub const fn owns_default() -> Self {
-        Self::new(0, Some(1))
-    }
-
-    pub const fn ordered_default() -> Self {
-        Self::new(0, None)
-    }
-
     pub fn valid(&self) -> bool {
         match self.end_inclusive {
             Some(end_inclusive) if self.start_inclusive > end_inclusive => false,

@@ -28,6 +28,8 @@ pub struct Plays<'a> {
 }
 
 impl<'a> Plays<'a> {
+    pub const DEFAULT_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(1, Some(1));
+
     pub(crate) fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
         Self { player, role }
     }
@@ -153,7 +155,7 @@ impl<'a> InterfaceImplementation<'a> for Plays<'a> {
         _snapshot: &impl ReadableSnapshot,
         _type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
-        Ok(AnnotationCardinality::plays_default())
+        Ok(Self::DEFAULT_CARDINALITY)
     }
 }
 

@@ -31,6 +31,9 @@ pub struct Owns<'a> {
 }
 
 impl<'a> Owns<'a> {
+    pub const DEFAULT_UNORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, Some(1));
+    pub const DEFAULT_ORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
+
     pub fn new(owner_type: ObjectType<'a>, attribute_type: AttributeType<'a>) -> Self {
         Owns { owner: owner_type, attribute: attribute_type }
     }
@@ -241,8 +244,8 @@ impl<'a> InterfaceImplementation<'a> for Owns<'a> {
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         let ordering = self.get_ordering(snapshot, type_manager)?;
         Ok(match ordering {
-            Ordering::Unordered => AnnotationCardinality::owns_default(),
-            Ordering::Ordered => AnnotationCardinality::ordered_default(),
+            Ordering::Unordered => Self::DEFAULT_UNORDERED_CARDINALITY,
+            Ordering::Ordered => Self::DEFAULT_ORDERED_CARDINALITY,
         })
     }
 }

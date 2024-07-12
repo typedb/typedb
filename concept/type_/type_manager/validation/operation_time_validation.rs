@@ -46,7 +46,7 @@ use crate::{
             validation::{
                 validation::{
                     edge_get_annotation_by_category, get_label_or_schema_err, is_attribute_type_owns_overridden,
-                    is_ordering_compatible_with_distinct_annotation, is_overridden_interface_object_supertype_or_self,
+                    is_ordering_compatible_with_distinct_annotation, is_overridden_interface_object_one_of_supertypes_or_self,
                     is_role_type_plays_overridden, type_get_annotation_by_category, type_has_annotation_category,
                     type_has_declared_annotation_category, type_is_abstract,
                     validate_declared_annotation_is_compatible_with_declared_annotations,
@@ -1116,36 +1116,38 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_overridden_owns_attribute_type_is_supertype_or_self<T: KindAPI<'static>>(
+    pub(crate) fn validate_overridden_owns_attribute_type_is_supertype_or_self(
         snapshot: &impl ReadableSnapshot,
-        type_: T,
-        overridden: T,
+        owns: Owns<'static>,
+        attribute_type_overridden: AttributeType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        if is_overridden_interface_object_supertype_or_self(snapshot, type_.clone(), overridden.clone())
+        if is_overridden_interface_object_one_of_supertypes_or_self(snapshot, owns.attribute(), attribute_type_overridden.clone())
             .map_err(SchemaValidationError::ConceptRead)?
         {
             Ok(())
         } else {
             Err(SchemaValidationError::OverriddenOwnsAttributeTypeIsNotSupertype(
-                get_label_or_schema_err(snapshot, type_)?,
-                get_label_or_schema_err(snapshot, overridden)?,
+                get_label_or_schema_err(snapshot, owns.owner())?,
+                get_label_or_schema_err(snapshot, owns.attribute())?,
+                get_label_or_schema_err(snapshot, attribute_type_overridden)?,
             ))
         }
     }
 
-    pub(crate) fn validate_overridden_plays_role_type_is_supertype_or_self<T: KindAPI<'static>>(
+    pub(crate) fn validate_overridden_plays_role_type_is_supertype_or_self(
         snapshot: &impl ReadableSnapshot,
-        type_: T,
-        overridden: T,
+        plays: Plays<'static>,
+        role_type_overridden: RoleType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        if is_overridden_interface_object_supertype_or_self(snapshot, type_.clone(), overridden.clone())
+        if is_overridden_interface_object_one_of_supertypes_or_self(snapshot, plays.role(), role_type_overridden.clone())
             .map_err(SchemaValidationError::ConceptRead)?
         {
             Ok(())
         } else {
             Err(SchemaValidationError::OverriddenPlaysRoleTypeIsNotSupertype(
-                get_label_or_schema_err(snapshot, type_)?,
-                get_label_or_schema_err(snapshot, overridden)?,
+                get_label_or_schema_err(snapshot, plays.player())?,
+                get_label_or_schema_err(snapshot, plays.role())?,
+                get_label_or_schema_err(snapshot, role_type_overridden)?,
             ))
         }
     }
@@ -1349,14 +1351,14 @@ impl OperationTimeValidation {
                         Self::validate_owns_value_type_compatible_to_key_annotation(snapshot, owns.clone(), None)?
                     }
                     Annotation::Regex(_) => {
-                        Self::validate_annotation_regex_compatible_value_type(snapshot, owns.attribute().clone(), None)?
+                        Self::validate_annotation_regex_compatible_value_type(snapshot, owns.attribute(), None)?
                     }
                     Annotation::Range(_) => {
-                        Self::validate_annotation_range_compatible_value_type(snapshot, owns.attribute().clone(), None)?
+                        Self::validate_annotation_range_compatible_value_type(snapshot, owns.attribute(), None)?
                     }
                     Annotation::Values(_) => Self::validate_annotation_values_compatible_value_type(
                         snapshot,
-                        owns.attribute().clone(),
+                        owns.attribute(),
                         None,
                     )?,
                     | Annotation::Abstract(_)
@@ -1597,17 +1599,17 @@ impl OperationTimeValidation {
                 )?,
                 Annotation::Regex(_) => Self::validate_annotation_regex_compatible_value_type(
                     snapshot,
-                    owns.attribute().clone(),
+                    owns.attribute(),
                     value_type.clone(),
                 )?,
                 Annotation::Range(_) => Self::validate_annotation_range_compatible_value_type(
                     snapshot,
-                    owns.attribute().clone(),
+                    owns.attribute(),
                     value_type.clone(),
                 )?,
                 Annotation::Values(_) => Self::validate_annotation_values_compatible_value_type(
                     snapshot,
-                    owns.attribute().clone(),
+                    owns.attribute(),
                     value_type.clone(),
                 )?,
                 | Annotation::Abstract(_)

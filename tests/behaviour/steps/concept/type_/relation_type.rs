@@ -73,8 +73,9 @@ pub async fn relation_role_set_override(
     with_schema_tx!(context, |tx| {
         let relation_type =
             tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        let relates = relation_type
-            .get_relates_of_role(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+        let relates = tx
+            .type_manager
+            .resolve_relates(&tx.snapshot, relation_type.clone(), role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
         let relation_supertype = relation_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
@@ -684,6 +685,31 @@ pub async fn relation_role_declared_annotations_is_empty(
 
         let actual_is_empty = relates_empty && role_empty;
         is_empty_or_not.check(actual_is_empty);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get cardinality: {annotation}")]
+pub async fn relation_role_cardinality(
+    context: &mut Context,
+    relation_label: Label,
+    role_label: Label,
+    cardinality_annotation: Annotation,
+) {
+    with_read_tx!(context, |tx| {
+        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relates = tx
+            .type_manager
+            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .unwrap()
+            .unwrap();
+        let actual_cardinality = relates
+            .get_cardinality(&tx.snapshot, &tx.type_manager)
+            .unwrap();
+        match cardinality_annotation.into_typedb(None) {
+            annotation::Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
+            _ => panic!("Expected annotations is not Cardinality"),
+        }
     });
 }
 

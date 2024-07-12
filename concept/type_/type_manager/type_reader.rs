@@ -332,7 +332,7 @@ impl TypeReader {
                 // TODO: It's not technically overridden as it's just a supertype. Now it hides relation:role after
                 // we create just a single role for a relation. So we have relation:role when we don't have roles and we don't have relation:role once we have a real role.
                 // Do we want this behavior?
-                if let Some(overridden) = Self::get_supertype(snapshot, relates.role().clone())? {
+                if let Some(overridden) = Self::get_supertype(snapshot, relates.role())? {
                     overridden_relates.add(overridden);
                 }
             }
@@ -366,7 +366,7 @@ impl TypeReader {
 
         let mut relates_transitive: HashSet<Relates<'static>> = HashSet::new();
         relates_transitive.insert(relates_immediate.clone());
-        let mut stack = TypeReader::get_subtypes(snapshot, relates_immediate.relation().clone())?;
+        let mut stack = TypeReader::get_subtypes(snapshot, relates_immediate.relation())?;
         while let Some(subtype) = stack.pop() {
             if !role_overriders.contains(&subtype) {
                 relates_transitive.insert(Relates::new(subtype.clone(), role.clone()));

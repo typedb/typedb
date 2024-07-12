@@ -30,6 +30,9 @@ pub struct Relates<'a> {
 }
 
 impl<'a> Relates<'a> {
+    pub const DEFAULT_UNORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(1, Some(1));
+    pub const DEFAULT_ORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
+
     pub(crate) fn new(relation: RelationType<'a>, role: RoleType<'a>) -> Self {
         Relates { relation, role }
     }
@@ -155,8 +158,8 @@ impl<'a> InterfaceImplementation<'a> for Relates<'a> {
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         let ordering = self.role.get_ordering(snapshot, type_manager)?;
         Ok(match ordering {
-            Ordering::Unordered => AnnotationCardinality::relates_default(),
-            Ordering::Ordered => AnnotationCardinality::ordered_default(),
+            Ordering::Unordered => Self::DEFAULT_UNORDERED_CARDINALITY,
+            Ordering::Ordered => Self::DEFAULT_ORDERED_CARDINALITY,
         })
     }
 }

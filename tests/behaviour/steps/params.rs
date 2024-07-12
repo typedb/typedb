@@ -465,10 +465,7 @@ impl Value {
             -36000 => Some(chrono_tz::Pacific::Honolulu),   // GMT-10
             600 => Some(chrono_tz::Australia::Adelaide),    // GMT+10:00 (Common in Oceania)
             -600 => Some(chrono_tz::Pacific::Pago_Pago),    // GMT-10:00 (Common in Pacific)
-            3600 => Some(chrono_tz::Europe::Paris),         // GMT+1:00 (Common in Europe)
             -3600 => Some(chrono_tz::Atlantic::Cape_Verde), // GMT-1:00 (Common in Atlantic)
-            600 => Some(chrono_tz::Etc::GMTPlus1),          // GMT+00:10 (Example for custom mapping)
-            -600 => Some(chrono_tz::Etc::GMTMinus1),        // GMT-00:10 (Example for custom mapping)
             180 => Some(chrono_tz::Etc::GMTPlus3),          // GMT+00:03
             -180 => Some(chrono_tz::Etc::GMTMinus3),        // GMT-00:03
             120 => Some(chrono_tz::Etc::GMTPlus2),          // GMT+00:02
