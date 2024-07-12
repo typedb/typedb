@@ -9,7 +9,7 @@ use std::fmt;
 use answer::variable::Variable;
 
 use super::{
-    constraint::{Constraints, ConstraintsBuilder},
+    constraint::{Constraint, Constraints, ConstraintsBuilder},
     disjunction::{Disjunction, DisjunctionBuilder},
     negation::Negation,
     nested_pattern::NestedPattern,
@@ -40,11 +40,11 @@ impl Conjunction {
         Ok(conjunction)
     }
 
-    pub fn constraints(&self) -> &Constraints {
-        &self.constraints
+    pub fn constraints(&self) -> &[Constraint<Variable>] {
+        &self.constraints.constraints()
     }
 
-    pub fn nested_patterns(&self) -> &Vec<NestedPattern> {
+    pub fn nested_patterns(&self) -> &[NestedPattern] {
         &self.nested_patterns
     }
 }

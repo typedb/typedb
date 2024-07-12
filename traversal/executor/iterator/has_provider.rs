@@ -127,20 +127,21 @@ impl HasProvider {
                     Err(_) => true,
                 }
             })),
-            IterateMode::UnboundSortedTo => HasProviderFilter::HasFilterAttribute(Arc::new({
-                let att_types = attribute_types.clone();
-                move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
-                    Ok((has, _)) => att_types.contains(&Type::Attribute(has.attribute().type_())),
-                    Err(_) => true,
-                }
-            })),
-            IterateMode::BoundFromSortedTo => HasProviderFilter::AttributeFilter(Arc::new({
-                let att_types = attribute_types.clone();
-                move |result: &Result<(Attribute<'_>, u64), ConceptReadError>| match result {
-                    Ok((attribute, _)) => att_types.contains(&Type::Attribute(attribute.type_())),
-                    Err(_) => true,
-                }
-            })),
+            IterateMode::UnboundSortedTo | IterateMode::BoundFromSortedTo => {
+                HasProviderFilter::HasFilterAttribute(Arc::new({
+                    let att_types = attribute_types.clone();
+                    move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
+                        Ok((has, _)) => att_types.contains(&Type::Attribute(has.attribute().type_())),
+                        Err(_) => true,
+                    }
+                }))
+            } // IterateMode::BoundFromSortedTo => HasProviderFilter::AttributeFilter(Arc::new({
+              // let att_types = attribute_types.clone();
+              // move |result: &Result<(Attribute<'_>, u64), ConceptReadError>| match result {
+              // Ok((attribute, _)) => att_types.contains(&Type::Attribute(attribute.type_())),
+              // Err(_) => true,
+              // }
+              // })),
         };
 
         let owner_cache = if matches!(iterate_mode, IterateMode::UnboundSortedTo) {
@@ -163,14 +164,7 @@ impl HasProvider {
             None
         };
 
-        Ok(Self {
-            has,
-            iterate_mode,
-            owner_attribute_types: owner_attribute_types,
-            attribute_types,
-            filter_fn,
-            owner_cache,
-        })
+        Ok(Self { has, iterate_mode, owner_attribute_types, attribute_types, filter_fn, owner_cache })
     }
 
     pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
@@ -194,14 +188,9 @@ impl HasProvider {
             }
             IterateMode::UnboundSortedTo => {
                 debug_assert!(self.owner_cache.is_some());
-                if self.owner_cache.as_ref().unwrap().len() == 1 {
+                if let Some([iter]) = self.owner_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
-                    let iterator: Filter<HasIterator, Arc<HasFilterAttributeFn>> = self
-                        .owner_cache
-                        .as_ref()
-                        .unwrap()
-                        .get(0)
-                        .unwrap()
+                    let iterator = iter
                         .get_has_types_range_unordered(
                             snapshot,
                             thing_manager,

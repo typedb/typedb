@@ -77,7 +77,7 @@ impl ConstraintIteratorProvider {
                     isa.clone().into_ids(variable_to_position),
                     mode,
                     type_annotations.constraint_annotations(isa.into()).unwrap().get_left_right().left_to_right(),
-                    type_annotations.variable_annotations(thing).unwrap(),
+                    type_annotations.variable_annotations(thing).unwrap().clone(),
                 );
                 Ok(Self::Isa(provider))
             }
@@ -87,7 +87,7 @@ impl ConstraintIteratorProvider {
                     has.clone().into_ids(variable_to_position),
                     mode,
                     type_annotations.constraint_annotations(has.into()).unwrap().get_left_right().left_to_right(),
-                    type_annotations.variable_annotations(has_attribute).unwrap(),
+                    type_annotations.variable_annotations(has_attribute).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
@@ -264,7 +264,7 @@ impl ConstraintIterator {
                     None => return Ok(None),
                     Some(Ok(peek_value)) => {
                         let cmp = VariableValue::Thing(Thing::Attribute(peek_value.0.attribute()))
-                            .partial_cmp(&value)
+                            .partial_cmp(value)
                             .unwrap();
                         match cmp {
                             Ordering::Less => {}
@@ -310,11 +310,13 @@ impl ConstraintIterator {
             ConstraintIterator::IsaEntitySortedThing(iter, isa) => {
                 let entity = iter.peek().unwrap().as_ref()?;
                 row.set(isa.thing(), VariableValue::Thing(entity.clone().into_owned().into()));
+                row.set(isa.type_(), VariableValue::Type(entity.type_().into()));
                 Ok(())
             }
             ConstraintIterator::IsaRelationSortedThing(iter, isa) => {
                 let relation = iter.peek().unwrap().as_ref()?;
                 row.set(isa.thing(), VariableValue::Thing(relation.clone().into_owned().into()));
+                row.set(isa.type_(), VariableValue::Type(relation.type_().into()));
                 Ok(())
             }
             ConstraintIterator::HasUnboundedSortedOwner(iter, has) => {
@@ -337,7 +339,8 @@ impl ConstraintIterator {
             }
             ConstraintIterator::HasBoundedSortedAttribute(iter, has) => {
                 let (has_value, _): &(Has<'_>, u64) = iter.peek().unwrap().as_ref()?;
-                debug_assert!(*row.get(has.owner()) == VariableValue::Thing(Thing::from(has_value.owner())));
+                // debug_assert!(*row.get(has.owner()) == VariableValue::Thing(Thing::from(has_value.owner())));
+                row.set(has.owner(), VariableValue::Thing(Thing::from(has_value.owner().clone().into_owned())));
                 row.set(
                     has.attribute(),
                     VariableValue::Thing(Thing::Attribute(has_value.attribute().clone().into_owned())),

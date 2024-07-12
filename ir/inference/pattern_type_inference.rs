@@ -380,7 +380,7 @@ pub mod tests {
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
-            let constraints = block.conjunction().constraints().constraints();
+            let constraints = block.conjunction().constraints();
 
             let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
 
@@ -439,7 +439,7 @@ pub mod tests {
 
             let block = builder.finish();
 
-            let constraints = block.conjunction().constraints().constraints();
+            let constraints = block.conjunction().constraints();
             let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -495,7 +495,7 @@ pub mod tests {
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
-            let constraints = block.conjunction().constraints().constraints();
+            let constraints = block.conjunction().constraints();
             let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -538,7 +538,7 @@ pub mod tests {
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
-            let constraints = block.conjunction().constraints().constraints();
+            let constraints = block.conjunction().constraints();
             let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -639,8 +639,8 @@ pub mod tests {
 
             let disj = conjunction.nested_patterns().first().unwrap().as_disjunction().unwrap();
             let [b1, b2] = &disj.conjunctions()[..] else { unreachable!() };
-            let b1_isa = &b1.constraints().constraints()[0];
-            let b2_isa = &b2.constraints().constraints()[0];
+            let b1_isa = &b1.constraints()[0];
+            let b2_isa = &b2.constraints()[0];
             let expected_nested_graphs = vec![
                 TypeInferenceGraph {
                     conjunction: b1,
@@ -684,13 +684,13 @@ pub mod tests {
                 ]),
                 edges: vec![
                     expected_edge(
-                        &conjunction.constraints().constraints()[1],
+                        &conjunction.constraints()[1],
                         var_name,
                         var_name_type,
                         vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
                     ),
                     expected_edge(
-                        &conjunction.constraints().constraints()[2],
+                        &conjunction.constraints()[2],
                         var_animal,
                         var_name,
                         vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
@@ -735,7 +735,7 @@ pub mod tests {
 
             let block = builder.finish();
             let conjunction = block.conjunction();
-            let constraints = conjunction.constraints().constraints();
+            let constraints = conjunction.constraints();
             let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -813,7 +813,7 @@ pub mod tests {
             let block = builder.finish();
 
             let conjunction = block.conjunction();
-            let constraints = conjunction.constraints().constraints();
+            let constraints = conjunction.constraints();
 
             let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
 
@@ -832,45 +832,45 @@ pub mod tests {
                 edges: vec![
                     // isa
                     expected_edge(
-                        &conjunction.constraints().constraints()[0],
+                        &conjunction.constraints()[0],
                         var_fears,
                         var_fears_type,
                         vec![(type_fears.clone(), type_fears.clone())],
                     ),
                     // has-fear edge
                     expected_edge(
-                        &conjunction.constraints().constraints()[2],
+                        &conjunction.constraints()[2],
                         var_fears,
                         var_role_has_fear,
                         vec![(type_fears.clone(), type_has_fear.clone())],
                     ),
                     expected_edge(
-                        &conjunction.constraints().constraints()[2],
+                        &conjunction.constraints()[2],
                         var_has_fear,
                         var_role_has_fear,
                         vec![(type_cat.clone(), type_has_fear.clone())],
                     ),
                     // is-feared edge
                     expected_edge(
-                        &conjunction.constraints().constraints()[3],
+                        &conjunction.constraints()[3],
                         var_fears,
                         var_role_is_feared,
                         vec![(type_fears.clone(), type_is_feared.clone())],
                     ),
                     expected_edge(
-                        &conjunction.constraints().constraints()[3],
+                        &conjunction.constraints()[3],
                         var_is_feared,
                         var_role_is_feared,
                         vec![(type_dog.clone(), type_is_feared.clone())],
                     ),
                     expected_edge(
-                        &conjunction.constraints().constraints()[4],
+                        &conjunction.constraints()[4],
                         var_role_has_fear,
                         var_role_has_fear_type,
                         vec![(type_has_fear.clone(), type_has_fear.clone())],
                     ),
                     expected_edge(
-                        &conjunction.constraints().constraints()[6],
+                        &conjunction.constraints()[6],
                         var_role_is_feared,
                         var_role_is_feared_type,
                         vec![(type_is_feared.clone(), type_is_feared.clone())],

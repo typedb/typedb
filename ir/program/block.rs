@@ -41,12 +41,16 @@ impl FunctionalBlock {
         Ok(builder.finish())
     }
 
+    pub fn context(&self) -> &BlockContext {
+        &self.context
+    }
+
     pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
     }
 
-    pub fn context(&self) -> &BlockContext {
-        &self.context
+    pub fn modifiers(&self) -> &[Modifier] {
+        &self.modifiers
     }
 
     pub fn scope_id(&self) -> ScopeId {
@@ -176,8 +180,12 @@ impl BlockContext {
         self.variable_names_index.get(name).cloned()
     }
 
-    pub(crate) fn get_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.variable_declaration.keys().cloned()
+    }
+
+    pub fn variable_categories(&self) -> impl Iterator<Item = (Variable, VariableCategory)> + '_ {
+        self.variable_categories.iter().map(|(&variable, &(category, _))| (variable, category))
     }
 
     pub(crate) fn get_variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {

@@ -11,7 +11,7 @@ use encoding::graph::definition::definition_key::DefinitionKey;
 use crate::program::{block::FunctionalBlock, function::FunctionIR};
 
 pub struct Program {
-    entry: FunctionalBlock,
+    pub entry: FunctionalBlock,
     functions: HashMap<DefinitionKey<'static>, FunctionIR>,
 }
 
@@ -37,7 +37,7 @@ impl Program {
 
     fn all_variables_categorised(block: &FunctionalBlock) -> bool {
         let context = block.context();
-        let mut variables = context.get_variables();
+        let mut variables = context.variables();
         variables.all(|var| context.get_variable_category(var).is_some())
     }
 
