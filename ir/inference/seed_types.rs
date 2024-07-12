@@ -158,7 +158,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     ) -> Result<(), TypeInferenceError> {
         // Get vertex annotations from Type & Function returns
         let TypeInferenceGraph { conjunction, vertices, .. } = tig;
-        for constraint in tig.conjunction.constraints().constraints() {
+        for constraint in tig.conjunction.constraints() {
             match constraint {
                 Constraint::Label(c) => c.apply(self, vertices)?,
                 Constraint::FunctionCallBinding(c) => c.apply(self, vertices)?,
@@ -266,7 +266,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         tig: &mut TypeInferenceGraph<'graph>,
     ) -> Result<bool, ConceptReadError> {
         let mut is_modified = false;
-        for c in tig.conjunction.constraints().constraints() {
+        for c in tig.conjunction.constraints() {
             is_modified = is_modified | self.try_propagating_vertex_annotation(c, &mut tig.vertices)?;
         }
 
@@ -416,7 +416,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     // Phase 3: seed edges
     fn seed_edges<'conj>(&self, tig: &mut TypeInferenceGraph<'conj>) -> Result<(), ConceptReadError> {
         let TypeInferenceGraph { conjunction, edges, vertices, .. } = tig;
-        for constraint in conjunction.constraints().constraints() {
+        for constraint in conjunction.constraints() {
             match constraint {
                 Constraint::Isa(isa) => edges.push(self.seed_edge(constraint, isa, vertices)?),
                 Constraint::Sub(sub) => edges.push(self.seed_edge(constraint, sub, vertices)?),
@@ -1097,7 +1097,7 @@ pub mod tests {
                 let types_tn = BTreeSet::from([type_name.clone()]);
                 let types_n = BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()]);
 
-                let constraints = conjunction.constraints().constraints();
+                let constraints = conjunction.constraints();
                 TypeInferenceGraph {
                     conjunction: &conjunction,
                     vertices: BTreeMap::from([
@@ -1170,7 +1170,7 @@ pub mod tests {
                 let types_a = BTreeSet::from([type_cat.clone(), type_dog.clone(), type_animal.clone()]);
                 let types_n = BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()]);
 
-                let constraints = conjunction.constraints().constraints();
+                let constraints = conjunction.constraints();
                 TypeInferenceGraph {
                     conjunction: &conjunction,
                     vertices: BTreeMap::from([(var_animal, types_a), (var_name, types_n)]),
@@ -1234,7 +1234,7 @@ pub mod tests {
                 let types_b =
                     BTreeSet::from([type_age.clone(), type_name.clone(), type_catname.clone(), type_dogname.clone()]);
 
-                let constraints = conjunction.constraints().constraints();
+                let constraints = conjunction.constraints();
                 TypeInferenceGraph {
                     conjunction: &conjunction,
                     vertices: BTreeMap::from([(var_a, types_a), (var_b, types_b)]),

@@ -64,8 +64,8 @@ impl TypeAnnotations {
         Self::new(vertex_annotations, constraint_annotations)
     }
 
-    pub fn variable_annotations(&self, variable: Variable) -> Option<Arc<HashSet<Type>>> {
-        self.variables.get(&variable).cloned()
+    pub fn variable_annotations(&self, variable: Variable) -> Option<&Arc<HashSet<Type>>> {
+        self.variables.get(&variable)
     }
 
     pub fn constraint_annotations(&self, constraint: Constraint<Variable>) -> Option<&ConstraintTypeAnnotations> {

@@ -4,10 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+};
 
 use answer::variable::Variable;
-use ir::pattern::constraint::{Comparison, ExpressionBinding, FunctionCallBinding, Has, Isa, RolePlayer};
+use concept::thing::statistics::Statistics;
+use ir::{
+    inference::type_inference::TypeAnnotations,
+    pattern::{
+        constraint::{Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, RolePlayer},
+        variable_category::VariableCategory,
+    },
+    program::block::FunctionalBlock,
+};
+use itertools::Itertools;
+
+use self::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost};
+
+mod vertex;
 
 pub struct PatternPlan {
     steps: Vec<Step>,
@@ -19,7 +35,115 @@ impl PatternPlan {
         Self { steps }
     }
 
-    pub(crate) fn steps(&self) -> &Vec<Step> {
+    pub fn from_block(block: FunctionalBlock, type_annotations: &TypeAnnotations, statistics: &Statistics) -> Self {
+        assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
+        let conjunction = block.conjunction();
+        assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
+
+        let mut variable_index = HashMap::new();
+        let mut variable_isa = HashMap::new();
+        let mut elements = Vec::new();
+        let mut adjacency: HashMap<usize, HashSet<usize>> = HashMap::new();
+
+        // 1. Register variables
+        for (variable, category) in block.context().variable_categories() {
+            match category {
+                VariableCategory::Type | VariableCategory::ThingType | VariableCategory::RoleType => (), // ignore for now
+                VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
+                    let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
+                    variable_index.insert(variable, elements.len());
+                    elements.push(PlannerVertex::Thing(planner));
+                }
+                VariableCategory::Value => todo!(),
+                VariableCategory::ObjectList | VariableCategory::AttributeList | VariableCategory::ValueList => todo!(),
+            }
+        }
+
+        let mut index_to_constraint = HashMap::new();
+
+        // 2. Register constraints
+        for constraint in conjunction.constraints() {
+            match constraint {
+                Constraint::Label(_) | Constraint::Sub(_) => (), // ignore for now
+                Constraint::Isa(isa) => {
+                    variable_isa.insert(isa.thing(), isa.clone());
+                }
+                Constraint::RolePlayer(_) => todo!(),
+                Constraint::Has(has) => {
+                    let planner = HasPlanner::from_constraint(has, &variable_index, type_annotations, statistics);
+
+                    let index = elements.len();
+
+                    index_to_constraint.insert(index, constraint);
+
+                    adjacency.entry(index).or_default().extend([planner.owner, planner.attribute]);
+
+                    adjacency.entry(planner.owner).or_default().insert(index);
+                    adjacency.entry(planner.attribute).or_default().insert(index);
+
+                    elements.push(PlannerVertex::Has(planner));
+                }
+                Constraint::ExpressionBinding(_) => todo!(),
+                Constraint::FunctionCallBinding(_) => todo!(),
+                Constraint::Comparison(_) => todo!(),
+            }
+        }
+
+        let ordering = initialise_plan_greedy(&elements, &adjacency);
+
+        let index_to_variable: HashMap<_, _> =
+            variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
+
+        let mut steps = Vec::with_capacity(index_to_constraint.len());
+        for (i, &index) in ordering.iter().enumerate().rev() {
+            let adjacent = &adjacency[&index];
+            if let Some(var) = index_to_variable.get(&index) {
+                let is_starting = !adjacent.iter().any(|adj| ordering[..i].contains(adj));
+                if is_starting {
+                    steps.push(Step::new(
+                        Execution::SortedIterators(vec![Iterate::Isa(
+                            variable_isa[var].clone(),
+                            IterateMode::UnboundSortedTo,
+                        )]),
+                        &HashSet::new(),
+                    ));
+                }
+            } else {
+                let bound_variables = adjacent
+                    .iter()
+                    .filter(|&adj| ordering[..i].contains(adj))
+                    .map(|adj| index_to_variable[adj])
+                    .collect::<HashSet<_>>();
+                match index_to_constraint.get(&index) {
+                    Some(Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_)) => todo!(),
+                    Some(Constraint::RolePlayer(_)) => todo!(),
+                    Some(Constraint::Has(has)) => {
+                        let iter = if bound_variables.is_empty() {
+                            Iterate::Has(has.clone(), IterateMode::UnboundSortedFrom)
+                        } else if bound_variables.len() == 2 {
+                            continue; // TODO
+                        } else if bound_variables.contains(&has.owner()) {
+                            Iterate::Has(has.clone(), IterateMode::BoundFromSortedTo)
+                        } else {
+                            Iterate::HasReverse(has.clone(), IterateMode::BoundFromSortedTo)
+                        };
+
+                        steps.push(Step::new(Execution::SortedIterators(vec![iter]), &bound_variables));
+                    }
+                    Some(Constraint::ExpressionBinding(_)) => todo!(),
+                    Some(Constraint::FunctionCallBinding(_)) => todo!(),
+                    Some(Constraint::Comparison(_)) => todo!(),
+                    None => (),
+                }
+            }
+        }
+
+        steps.reverse();
+
+        Self { steps }
+    }
+
+    pub(crate) fn steps(&self) -> &[Step] {
         &self.steps
     }
 
@@ -28,12 +152,43 @@ impl PatternPlan {
     }
 }
 
+#[allow(dead_code)]
+fn initialise_plan_greedy(elements: &[PlannerVertex], adjacency: &HashMap<usize, HashSet<usize>>) -> Vec<usize> {
+    let mut open_set: HashSet<usize> = (0..elements.len()).collect();
+    let mut ordering = Vec::with_capacity(elements.len());
+    while !open_set.is_empty() {
+        let (next, _cost) = open_set
+            .iter()
+            .map(|&el| (el, calculate_marginal_cost(elements, adjacency, &ordering, el)))
+            .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
+            .unwrap();
+        ordering.push(next);
+        open_set.remove(&next);
+    }
+    ordering
+}
+
+fn calculate_marginal_cost(
+    elements: &[PlannerVertex],
+    adjacency: &HashMap<usize, HashSet<usize>>,
+    prefix: &[usize],
+    next: usize,
+) -> f64 {
+    assert!(!prefix.contains(&next));
+    let adjacent = &adjacency[&next];
+    let preceding = adjacent.iter().filter(|adj| prefix.contains(adj)).copied().collect_vec();
+    let planner_vertex = &elements[next];
+    let VertexCost { per_input, per_output, branching_factor } = planner_vertex.cost(&preceding, elements);
+    per_input + branching_factor * per_output
+}
+
 /*
 Plan should indicate direction and operation to use.
 Plan should indicate whether returns iterator or single
 Plan should indicate pre-sortedness of iterator (allows intersecting automatically)
  */
 
+#[derive(Debug)]
 pub struct Step {
     pub(crate) execution: Execution,
     // filters: Vec<Filter>, // local filtering operations without storage lookups
@@ -61,6 +216,19 @@ pub enum Execution {
     Optional(PatternPlan),
 }
 
+impl fmt::Debug for Execution {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::SortedIterators(iters) => write!(f, "Execution::SortedIterators({iters:?})"),
+            Self::UnsortedIterator { .. } => write!(f, "Execution::UnsortedIterator"),
+            Self::Single { .. } => write!(f, "Execution::Single"),
+            Self::Disjunction { .. } => write!(f, "Execution::Disjunction"),
+            Self::Negation { .. } => write!(f, "Execution::Negation"),
+            Self::Optional { .. } => write!(f, "Execution::Optional"),
+        }
+    }
+}
+
 impl Execution {
     pub(crate) fn generated_variables(&self, bound_variables: &HashSet<Variable>) -> Vec<Variable> {
         let mut generated = Vec::new();
@@ -80,7 +248,7 @@ impl Execution {
                         generated.push(var)
                     }
                 });
-                // TODO: this should be a debug as a whole
+                #[cfg(debug_assertions)]
                 checks
                     .iter()
                     .for_each(|check| check.foreach_variable(|var| debug_assert!(!bound_variables.contains(&var))));
@@ -91,24 +259,21 @@ impl Execution {
                         generated.push(var)
                     }
                 });
-                // TODO: this should be a debug as a whole
+                #[cfg(debug_assertions)]
                 checks
                     .iter()
                     .for_each(|check| check.foreach_variable(|var| debug_assert!(!bound_variables.contains(&var))));
             }
-            Execution::Disjunction(disjunction) => {
-                todo!()
-            }
-            Execution::Negation(negation) => {}
-            Execution::Optional(optional) => {
-                todo!()
-            }
+            Execution::Disjunction(_disjunction) => todo!(),
+            Execution::Negation(_negation) => todo!(),
+            Execution::Optional(_optional) => todo!(),
         }
 
         generated
     }
 }
 
+#[derive(Debug)]
 pub enum Iterate {
     // type -> thing
     Isa(Isa<Variable>, IterateMode),
@@ -149,7 +314,7 @@ impl Iterate {
         }
     }
 
-    fn foreach_generated(&self, bound_variables: &HashSet<Variable>, mut apply: impl FnMut(Variable) -> ()) {
+    fn foreach_generated(&self, bound_variables: &HashSet<Variable>, mut apply: impl FnMut(Variable)) {
         match self {
             Iterate::Isa(isa, mode) => match mode {
                 IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
@@ -189,7 +354,7 @@ impl Iterate {
                 IterateMode::BoundFromSortedTo => {
                     debug_assert!(bound_variables.contains(&rp.relation()));
                     apply(rp.player());
-                    rp.role_type().map(|role_type| apply(role_type));
+                    rp.role_type().map(apply);
                 }
             },
             Iterate::RolePlayerReverse(rp, mode) => match mode {
@@ -200,7 +365,7 @@ impl Iterate {
                 IterateMode::BoundFromSortedTo => {
                     debug_assert!(bound_variables.contains(&rp.player()));
                     apply(rp.player());
-                    rp.role_type().map(|role_type| apply(role_type));
+                    rp.role_type().map(apply);
                 }
             },
             Iterate::FunctionCallBinding(call) => {
@@ -223,6 +388,7 @@ impl Iterate {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum IterateMode {
     UnboundSortedFrom,
     UnboundSortedTo,
@@ -251,7 +417,7 @@ pub enum Single {
 }
 
 impl Single {
-    fn foreach_generated(&self, bound_variables: &HashSet<Variable>, mut apply: impl FnMut(Variable) -> ()) {
+    fn foreach_generated(&self, bound_variables: &HashSet<Variable>, apply: impl FnMut(Variable)) {
         match self {
             Single::ExpressionBinding(binding) => {
                 debug_assert!(!binding.ids_assigned().any(|var| bound_variables.contains(&var)));
@@ -268,7 +434,7 @@ pub enum Check {
 }
 
 impl Check {
-    fn foreach_variable(&self, apply: impl Fn(Variable) -> ()) {
+    fn foreach_variable(&self, apply: impl Fn(Variable)) {
         match self {
             Check::Has(has) => has.ids().for_each(apply),
             Check::RolePlayer(rp) => rp.ids().for_each(apply),

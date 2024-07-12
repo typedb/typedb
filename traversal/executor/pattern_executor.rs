@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, io::Read, sync::Arc};
+use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
@@ -73,8 +73,7 @@ impl PatternExecutor {
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
     ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
-        AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager))
-            .flat_map(|batch| BatchRowIterator::new(batch))
+        AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager)).flat_map(BatchRowIterator::new)
     }
 
     fn compute_next_batch(
@@ -97,11 +96,8 @@ impl PatternExecutor {
                     if current_step >= steps_len {
                         return Ok(last_batch);
                     } else {
-                        let batch = (&mut self.steps[current_step]).batch_from(
-                            last_batch.take().unwrap(),
-                            snapshot,
-                            thing_manager,
-                        )?;
+                        let batch =
+                            self.steps[current_step].batch_from(last_batch.take().unwrap(), snapshot, thing_manager)?;
                         match batch {
                             None => {
                                 direction = Direction::Backward;
@@ -119,7 +115,7 @@ impl PatternExecutor {
                     }
                 }
                 Direction::Backward => {
-                    let batch = (&mut self.steps[current_step]).batch_continue(snapshot, thing_manager)?;
+                    let batch = self.steps[current_step].batch_continue(snapshot, thing_manager)?;
                     match batch {
                         None => {
                             if current_step == 0 {
@@ -140,6 +136,7 @@ impl PatternExecutor {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 enum Direction {
     Forward,
     Backward,
@@ -185,7 +182,7 @@ impl StepExecutor {
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         let vars_count = variable_positions.len() as u32;
-        let Step { execution: execution, .. } = step;
+        let Step { execution, .. } = step;
         match execution {
             Execution::SortedIterators(iterates) => {
                 let executor = SortedExecutor::new(
@@ -275,7 +272,7 @@ impl SortedExecutor {
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         let sort_variable = iterates[0].sort_variable().unwrap();
-        let sort_variable_position = *variable_positions.get(&sort_variable).unwrap();
+        let sort_variable_position = variable_positions[&sort_variable];
         let providers: Vec<ConstraintIteratorProvider> = iterates
             .into_iter()
             .map(|iterate| {
@@ -290,7 +287,7 @@ impl SortedExecutor {
             sort_variable_position,
             output_width: vars_count,
             input: None,
-            intersection_row: (0..vars_count).into_iter().map(|_| VariableValue::Empty).collect_vec(),
+            intersection_row: (0..vars_count).map(|_| VariableValue::Empty).collect_vec(),
             output: None,
         })
     }
@@ -352,7 +349,7 @@ impl SortedExecutor {
         if self.cartesian_iterator.is_active() {
             let found = self.cartesian_iterator.find_next(snapshot, thing_manager, &self.iterator_providers)?;
             if found {
-                return Ok(true);
+                Ok(true)
             } else {
                 // advance the first iterator past the intersection point to move to the next intersection
                 let intersection = &self.intersection_row[self.sort_variable_position.as_usize()];
@@ -363,14 +360,22 @@ impl SortedExecutor {
                 self.compute_next_row(snapshot, thing_manager)
             }
         } else {
-            let found = self.find_intersection(snapshot, thing_manager)?;
-            if found {
-                self.record_intersection()?;
-                self.advance_intersection_iterators()?;
-                self.may_activate_cartesian(snapshot, thing_manager)?;
-                return Ok(true);
-            } else {
-                return Ok(false);
+            loop {
+                if self.intersection_iterators.is_empty() {
+                    let failed = !self.create_intersection_iterators(snapshot, thing_manager)?;
+                    if failed {
+                        return Ok(false);
+                    }
+                }
+                let found = self.find_intersection(snapshot, thing_manager)?;
+                if found {
+                    self.record_intersection()?;
+                    self.advance_intersection_iterators()?;
+                    self.may_activate_cartesian(snapshot, thing_manager)?;
+                    return Ok(true);
+                } else {
+                    self.intersection_iterators.clear();
+                }
             }
         }
     }
@@ -380,11 +385,7 @@ impl SortedExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<bool, ConceptReadError> {
-        if self.intersection_iterators.is_empty() && !self.create_intersection_iterators(snapshot, thing_manager)? {
-            return Ok(false);
-        }
-
-        debug_assert!(self.intersection_iterators.len() > 0);
+        debug_assert!(!self.intersection_iterators.is_empty());
         if self.intersection_iterators.len() == 1 {
             // if there's only 1 iterator, we can just use it without any intersection
             return Ok(self.intersection_iterators[0].has_value());
@@ -481,7 +482,7 @@ impl SortedExecutor {
 
     fn advance_intersection_iterators(&mut self) -> Result<(), ConceptReadError> {
         for iter in &mut self.intersection_iterators {
-            let _ = iter.advance()?;
+            iter.advance()?;
         }
         Ok(())
     }
@@ -748,6 +749,7 @@ impl OptionalExecutor {
 
 const BATCH_ROWS_MAX: u32 = 64;
 
+#[derive(Debug)]
 struct Batch {
     width: u32,
     entries: u32,
