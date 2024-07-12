@@ -60,7 +60,7 @@ impl<'a> Relation<'a> {
         Relation { vertex }
     }
 
-    pub(crate) fn as_reference(&self) -> Relation<'_> {
+    pub fn as_reference(&self) -> Relation<'_> {
         Relation { vertex: self.vertex.as_reference() }
     }
 

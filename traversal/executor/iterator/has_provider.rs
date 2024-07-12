@@ -205,6 +205,7 @@ impl HasProvider {
                         .get_has_types_range_unordered(
                             snapshot,
                             thing_manager,
+                            // TODO: this should be just the types owned by the one instance's type in the cache!
                             self.attribute_types.iter().map(|t| t.as_attribute_type()),
                         )?
                         .filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());

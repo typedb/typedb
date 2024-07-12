@@ -601,6 +601,14 @@ impl<ID: IrID> Isa<ID> {
         Self { kind, thing, type_ }
     }
 
+    pub fn thing(&self) -> ID {
+        self.thing
+    }
+
+    pub fn type_(&self) -> ID {
+        self.type_
+    }
+
     pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
         [self.thing, self.type_].into_iter()
     }
@@ -613,12 +621,8 @@ impl<ID: IrID> Isa<ID> {
         function(self.type_, ConstraintIDSide::Right)
     }
 
-    pub(crate) fn thing(&self) -> ID {
-        self.thing
-    }
-
-    pub(crate) fn type_(&self) -> ID {
-        self.type_
+    pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> Isa<T> {
+        Isa::new(self.kind, *mapping.get(&self.thing).unwrap(), *mapping.get(&self.type_).unwrap())
     }
 }
 

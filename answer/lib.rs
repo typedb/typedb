@@ -112,6 +112,18 @@ impl<'a> From<Object<'a>> for Thing<'a> {
     }
 }
 
+impl<'a> From<Entity<'a>> for Thing<'a> {
+    fn from(entity: Entity<'a>) -> Self {
+        Thing::Entity(entity)
+    }
+}
+
+impl<'a> From<Relation<'a>> for Thing<'a> {
+    fn from(relation: Relation<'a>) -> Self {
+        Thing::Relation(relation)
+    }
+}
+
 impl<'a> Display for Thing<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {

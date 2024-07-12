@@ -7,7 +7,7 @@
 use std::collections::HashSet;
 
 use answer::variable::Variable;
-use ir::pattern::constraint::{Comparison, ExpressionBinding, FunctionCallBinding, Has, RolePlayer};
+use ir::pattern::constraint::{Comparison, ExpressionBinding, FunctionCallBinding, Has, Isa, RolePlayer};
 
 pub struct PatternPlan {
     steps: Vec<Step>,
@@ -110,6 +110,9 @@ impl Execution {
 }
 
 pub enum Iterate {
+    // type -> thing
+    Isa(Isa<Variable>, IterateMode),
+
     // owner -> attribute
     Has(Has<Variable>, IterateMode),
     // attribute -> owner
@@ -133,6 +136,7 @@ pub enum Iterate {
 impl Iterate {
     pub(crate) fn sort_variable(&self) -> Option<Variable> {
         match self {
+            Iterate::Isa(isa, mode) => Some(if mode.is_sorted_from() { isa.type_() } else { isa.thing() }),
             Iterate::Has(has, mode) => Some(if mode.is_sorted_from() { has.owner() } else { has.attribute() }),
             Iterate::HasReverse(has, mode) => Some(if mode.is_sorted_from() { has.attribute() } else { has.owner() }),
             Iterate::RolePlayer(rp, mode) => Some(if mode.is_sorted_from() { rp.relation() } else { rp.player() }),
@@ -147,6 +151,16 @@ impl Iterate {
 
     fn foreach_generated(&self, bound_variables: &HashSet<Variable>, mut apply: impl FnMut(Variable) -> ()) {
         match self {
+            Iterate::Isa(isa, mode) => match mode {
+                IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
+                    debug_assert!(!isa.ids().any(|var| bound_variables.contains(&var)));
+                    isa.ids().for_each(apply)
+                }
+                IterateMode::BoundFromSortedTo => {
+                    debug_assert!(bound_variables.contains(&isa.type_()));
+                    apply(isa.thing())
+                }
+            },
             Iterate::Has(has, mode) => match mode {
                 IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
                     debug_assert!(!has.ids().any(|var| bound_variables.contains(&var)));

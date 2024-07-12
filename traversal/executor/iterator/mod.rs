@@ -9,10 +9,10 @@ use std::{cmp::Ordering, collections::HashMap};
 use answer::{variable::Variable, variable_value::VariableValue, Thing};
 use concept::{
     error::ConceptReadError,
-    thing::{has::Has, thing_manager::ThingManager},
+    thing::{entity::EntityIterator, has::Has, relation::RelationIterator, thing_manager::ThingManager},
 };
 use ir::inference::type_inference::TypeAnnotations;
-use lending_iterator::LendingIterator;
+use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -26,6 +26,7 @@ use crate::{
                 HasUnboundedSortedToSingleIterator,
             },
             has_reverse_provider::HasReverseProvider,
+            isa_provider::IsaProvider,
             role_player_provider::RolePlayerProvider,
             role_player_reverse_provider::RolePlayerReverseProvider,
         },
@@ -40,10 +41,13 @@ mod comparison_reverse_provider;
 mod function_call_binding_provier;
 mod has_provider;
 mod has_reverse_provider;
+mod isa_provider;
 mod role_player_provider;
 mod role_player_reverse_provider;
 
 pub(crate) enum ConstraintIteratorProvider {
+    Isa(IsaProvider),
+
     Has(HasProvider),
     HasReverse(HasReverseProvider),
 
@@ -67,6 +71,16 @@ impl ConstraintIteratorProvider {
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         match iterate {
+            Iterate::Isa(isa, mode) => {
+                let thing = isa.thing();
+                let provider = IsaProvider::new(
+                    isa.clone().into_ids(variable_to_position),
+                    mode,
+                    type_annotations.constraint_annotations(isa.into()).unwrap().get_left_right().left_to_right(),
+                    type_annotations.variable_annotations(thing).unwrap(),
+                );
+                Ok(Self::Isa(provider))
+            }
             Iterate::Has(has, mode) => {
                 let has_attribute = has.attribute();
                 let provider = HasProvider::new(
@@ -107,6 +121,7 @@ impl ConstraintIteratorProvider {
         row: ImmutableRow<'_>,
     ) -> Result<ConstraintIterator, ConceptReadError> {
         match self {
+            ConstraintIteratorProvider::Isa(provider) => provider.get_iterator(snapshot, thing_manager, row),
             ConstraintIteratorProvider::Has(provider) => provider.get_iterator(snapshot, thing_manager, row),
             ConstraintIteratorProvider::HasReverse(provider) => todo!(),
             ConstraintIteratorProvider::RolePlayer(provider) => todo!(),
@@ -119,6 +134,9 @@ impl ConstraintIteratorProvider {
 }
 
 pub(crate) enum ConstraintIterator {
+    IsaEntitySortedThing(Peekable<EntityIterator>, ir::pattern::constraint::Isa<Position>),
+    IsaRelationSortedThing(Peekable<RelationIterator>, ir::pattern::constraint::Isa<Position>),
+    // IsaAttributeSortedThing(AttributeIterator<'a, Snapshot>),
     HasUnboundedSortedOwner(HasUnboundedSortedFromIterator, ir::pattern::constraint::Has<Position>),
     // HasUnboundedSortedAttributeMulti(HasUnboundedSortedAttributeMultiIterator),
     // TODO: perhaps we can merge with HasBoundedSortedTo?
@@ -134,15 +152,36 @@ impl ConstraintIterator {
     pub(crate) fn peek_sorted_value(&mut self) -> Option<Result<VariableValue<'_>, &ConceptReadError>> {
         debug_assert!(self.is_sorted());
         match self {
-            ConstraintIterator::HasUnboundedSortedOwner(iter, _) => iter
-                .peek()
-                .map(|result| result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::from(has.owner())))),
+            ConstraintIterator::IsaEntitySortedThing(iter, _) => iter.peek().map(|result| {
+                result
+                    .as_ref()
+                    // .map_err(|err| err.clone())
+                    .map(|entity| VariableValue::Thing(entity.as_reference().into()))
+            }),
+            ConstraintIterator::IsaRelationSortedThing(iter, _) => iter.peek().map(|result| {
+                result
+                    .as_ref()
+                    // .map_err(|err| err.clone())
+                    .map(|relation| VariableValue::Thing(relation.as_reference().into()))
+            }),
+            ConstraintIterator::HasUnboundedSortedOwner(iter, _) => iter.peek().map(|result| {
+                result
+                    .as_ref()
+                    // .map_err(|err| err.clone())
+                    .map(|(has, count)| VariableValue::Thing(Thing::from(has.owner())))
+            }),
             // ConstraintIterator::HasUnboundedSortedAttributeMulti(iter) => {}
             ConstraintIterator::HasUnboundedSortedAttributeSingle(iter, _) => iter.peek().map(|result| {
-                result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute())))
+                result
+                    .as_ref()
+                    // .map_err(|err| err.clone())
+                    .map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute())))
             }),
             ConstraintIterator::HasBoundedSortedAttribute(iter, _) => iter.peek().map(|result| {
-                result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute())))
+                result
+                    .as_ref()
+                    // .map_err(|err| err.clone())
+                    .map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute())))
             }),
         }
     }
@@ -153,6 +192,38 @@ impl ConstraintIterator {
     ) -> Result<Option<Ordering>, ConceptReadError> {
         debug_assert!(self.is_sorted());
         match self {
+            ConstraintIterator::IsaEntitySortedThing(iter, _) => loop {
+                let peek = iter.peek();
+                match peek {
+                    None => return Ok(None),
+                    Some(Ok(peek_value)) => {
+                        let cmp = VariableValue::Thing(peek_value.as_reference().into()).partial_cmp(value).unwrap();
+                        match cmp {
+                            Ordering::Less => {}
+                            Ordering::Equal => return Ok(Some(Ordering::Equal)),
+                            Ordering::Greater => return Ok(Some(Ordering::Greater)),
+                        }
+                    }
+                    Some(Err(err)) => return Err(err.clone()),
+                }
+                let _ = iter.next();
+            },
+            ConstraintIterator::IsaRelationSortedThing(iter, _) => loop {
+                let peek = iter.peek();
+                match peek {
+                    None => return Ok(None),
+                    Some(Ok(peek_value)) => {
+                        let cmp = VariableValue::Thing(peek_value.as_reference().into()).partial_cmp(value).unwrap();
+                        match cmp {
+                            Ordering::Less => {}
+                            Ordering::Equal => return Ok(Some(Ordering::Equal)),
+                            Ordering::Greater => return Ok(Some(Ordering::Greater)),
+                        }
+                    }
+                    Some(Err(err)) => return Err(err.clone()),
+                }
+                let _ = iter.next();
+            },
             ConstraintIterator::HasUnboundedSortedOwner(iter, _) => loop {
                 let peek = iter.peek();
                 match peek {
@@ -210,6 +281,12 @@ impl ConstraintIterator {
     pub(crate) fn advance(&mut self) -> Result<(), ConceptReadError> {
         assert!(self.has_value());
         match self {
+            ConstraintIterator::IsaEntitySortedThing(iter, _) => {
+                iter.next().transpose()?;
+            }
+            ConstraintIterator::IsaRelationSortedThing(iter, _) => {
+                iter.next().transpose()?;
+            }
             ConstraintIterator::HasUnboundedSortedOwner(iter, _) => {
                 // TODO: how to handle multiple answers found in an iterator, eg (_, count > 1)?
                 iter.next().transpose()?;
@@ -230,6 +307,16 @@ impl ConstraintIterator {
         debug_assert!(self.has_value());
         // TODO: how to handle multiple answers found in an iterator?
         match self {
+            ConstraintIterator::IsaEntitySortedThing(iter, isa) => {
+                let entity = iter.peek().unwrap().as_ref()?;
+                row.set(isa.thing(), VariableValue::Thing(entity.clone().into_owned().into()));
+                Ok(())
+            }
+            ConstraintIterator::IsaRelationSortedThing(iter, isa) => {
+                let relation = iter.peek().unwrap().as_ref()?;
+                row.set(isa.thing(), VariableValue::Thing(relation.clone().into_owned().into()));
+                Ok(())
+            }
             ConstraintIterator::HasUnboundedSortedOwner(iter, has) => {
                 let (has_value, _): &(Has<'_>, u64) = iter.peek().unwrap().as_ref()?;
                 row.set(has.owner(), VariableValue::Thing(Thing::from(has_value.owner().clone().into_owned())));
@@ -262,6 +349,8 @@ impl ConstraintIterator {
 
     pub(crate) fn has_value(&mut self) -> bool {
         match self {
+            ConstraintIterator::IsaEntitySortedThing(iter, _) => iter.peek().is_some(),
+            ConstraintIterator::IsaRelationSortedThing(iter, _) => iter.peek().is_some(),
             ConstraintIterator::HasUnboundedSortedOwner(iter, _) => iter.peek().is_some(),
             ConstraintIterator::HasUnboundedSortedAttributeSingle(iter, _) => iter.peek().is_some(),
             ConstraintIterator::HasBoundedSortedAttribute(iter, _) => iter.peek().is_some(),
@@ -270,7 +359,9 @@ impl ConstraintIterator {
 
     const fn is_sorted(&self) -> bool {
         match self {
-            ConstraintIterator::HasUnboundedSortedOwner(_, _)
+            ConstraintIterator::IsaEntitySortedThing(_, _)
+            | ConstraintIterator::IsaRelationSortedThing(_, _)
+            | ConstraintIterator::HasUnboundedSortedOwner(_, _)
             // | ConstraintIterator::HasUnboundedSortedAttributeMulti(_)
             | ConstraintIterator::HasUnboundedSortedAttributeSingle(_, _)
             | ConstraintIterator::HasBoundedSortedAttribute(_, _) => true,
