@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::type_::{annotation, annotation::DefaultFrom, object_type::ObjectType, relates::RelatesAnnotation, role_type::RoleTypeAnnotation, InterfaceImplementation, Ordering, TypeAPI, KindAPI};
+use concept::type_::{
+    annotation, annotation::DefaultFrom, object_type::ObjectType, relates::RelatesAnnotation,
+    role_type::RoleTypeAnnotation, InterfaceImplementation, KindAPI, Ordering, TypeAPI,
+};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
@@ -703,9 +706,7 @@ pub async fn relation_role_cardinality(
             .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
-        let actual_cardinality = relates
-            .get_cardinality(&tx.snapshot, &tx.type_manager)
-            .unwrap();
+        let actual_cardinality = relates.get_cardinality(&tx.snapshot, &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
             annotation::Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
             _ => panic!("Expected annotations is not Cardinality"),

@@ -49,7 +49,7 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
 pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
     match context.take_transaction().unwrap() {
         ActiveTransaction::Read(_) => {}
-        ActiveTransaction::Write(tx) => may_error.check(&tx.commit()),
+        ActiveTransaction::Write(tx) => may_error.check(&tx.commit()), // TODO: ConceptReadError is successful here, but it's not right... Need to check it somehow =(
         ActiveTransaction::Schema(tx) => may_error.check(&tx.commit()),
     }
 }

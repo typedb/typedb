@@ -6,10 +6,12 @@
 
 use std::{
     borrow::Cow,
+    cmp::min,
     collections::HashSet,
     error::Error,
     fmt,
     hash::{Hash, Hasher},
+    ops::Add,
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -23,6 +25,7 @@ use encoding::{
         },
     },
     value::{
+        decimal_value::Decimal,
         value::Value,
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
@@ -114,6 +117,16 @@ impl AnnotationCardinality {
 
     fn value_satisfies_end(&self, value: Option<u64>) -> bool {
         self.end_inclusive.unwrap_or(u64::MAX) >= value.unwrap_or(u64::MAX)
+    }
+}
+
+impl Add for AnnotationCardinality {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        let (lhs_start, lhs_end) = (self.start_inclusive, self.end_inclusive);
+        let (rhs_start, rhs_end) = (rhs.start_inclusive, rhs.end_inclusive);
+        Self::new(lhs_start + rhs_start, min(lhs_end, rhs_end))
     }
 }
 

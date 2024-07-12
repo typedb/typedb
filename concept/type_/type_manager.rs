@@ -800,7 +800,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_owns_ordering(owns))
         } else {
-            Ok(TypeReader::get_type_edge_property::<Ordering>(snapshot, owns)?.unwrap())
+            Ok(TypeReader::get_type_edge_ordering(snapshot, owns)?)
         }
     }
 
@@ -2218,9 +2218,7 @@ impl TypeManager {
         self.set_edge_annotation::<AnnotationRange>(snapshot, owns, AnnotationCategory::Range, Some(range))
     }
 
-    pub(crate) fn unset_edge_annotation_range<
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
-    >(
+    pub(crate) fn unset_edge_annotation_range<EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: EDGE,
@@ -2313,9 +2311,7 @@ impl TypeManager {
         self.set_edge_annotation::<AnnotationValues>(snapshot, owns, AnnotationCategory::Values, Some(values))
     }
 
-    pub(crate) fn unset_edge_annotation_values<
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
-    >(
+    pub(crate) fn unset_edge_annotation_values<EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: EDGE,

@@ -364,9 +364,7 @@ pub async fn get_owns_declared_annotations_is_empty(
 }
 
 #[apply(generic_step)]
-#[step(
-    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get cardinality: {annotation}"
-)]
+#[step(expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get cardinality: {annotation}")]
 pub async fn get_plays_cardinality(
     context: &mut Context,
     root_label: RootLabel,
@@ -378,9 +376,7 @@ pub async fn get_plays_cardinality(
     with_read_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
-        let actual_cardinality = plays
-            .get_cardinality(&tx.snapshot, &tx.type_manager)
-            .unwrap();
+        let actual_cardinality = plays.get_cardinality(&tx.snapshot, &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
             annotation::Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
             _ => panic!("Expected annotations is not Cardinality"),

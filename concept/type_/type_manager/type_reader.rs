@@ -434,7 +434,10 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'_>,
     ) -> Result<Ordering, ConceptReadError> {
-        Ok(Self::get_type_property_declared(snapshot, role_type)?.unwrap())
+        match Self::get_type_property_declared(snapshot, role_type)? {
+            Some(ordering) => Ok(ordering),
+            None => Err(ConceptReadError::CannotGetMandatoryProperty),
+        }
     }
 
     pub(crate) fn get_type_annotations_declared<T: KindAPI<'static>>(
@@ -578,7 +581,10 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         owns: Owns<'_>,
     ) -> Result<Ordering, ConceptReadError> {
-        Ok(Self::get_type_edge_property::<Ordering>(snapshot, owns)?.unwrap())
+        match Self::get_type_edge_property::<Ordering>(snapshot, owns)? {
+            Some(ordering) => Ok(ordering),
+            None => Err(ConceptReadError::CannotGetMandatoryProperty),
+        }
     }
 
     pub(crate) fn get_type_edge_property<'a, PROPERTY>(

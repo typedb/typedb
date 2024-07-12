@@ -81,9 +81,27 @@ pub enum SchemaValidationError {
     InvalidValuesArguments(AnnotationValues),
     CardinalityShouldNarrowInheritedCardinality(AnnotationCardinality, AnnotationCardinality),
     KeyShouldNarrowInheritedCardinality(AnnotationCardinality),
-    OwnsCardinalityDoesNotNarrowInheritedCardinality(Label<'static>, Label<'static>, Label<'static>, AnnotationCardinality, AnnotationCardinality),
-    PlaysCardinalityDoesNotNarrowInheritedCardinality(Label<'static>, Label<'static>, Label<'static>, AnnotationCardinality, AnnotationCardinality),
-    RelatesCardinalityDoesNotNarrowInheritedCardinality(Label<'static>, Label<'static>, Label<'static>, AnnotationCardinality, AnnotationCardinality),
+    OwnsCardinalityDoesNotNarrowInheritedCardinality(
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        AnnotationCardinality,
+        AnnotationCardinality,
+    ),
+    PlaysCardinalityDoesNotNarrowInheritedCardinality(
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        AnnotationCardinality,
+        AnnotationCardinality,
+    ),
+    RelatesCardinalityDoesNotNarrowInheritedCardinality(
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        AnnotationCardinality,
+        AnnotationCardinality,
+    ),
     OnlyOneRegexCanBeSetForTypeHierarchy(AnnotationRegex, Label<'static>),
     RangeShouldNarrowInheritedRange(AnnotationRange, AnnotationRange),
     ValuesShouldNarrowInheritedValues(AnnotationValues, AnnotationValues),
@@ -110,24 +128,9 @@ pub enum SchemaValidationError {
         Label<'static>,
         Annotation,
     ),
-    RedundantAnnotationForOwnsAlreadyInherited(
-        Label<'static>,
-        Label<'static>,
-        Label<'static>,
-        Annotation,
-    ),
-    RedundantAnnotationForPlaysAlreadyInherited(
-        Label<'static>,
-        Label<'static>,
-        Label<'static>,
-        Annotation,
-    ),
-    RedundantAnnotationForRelatesAlreadyInherited(
-        Label<'static>,
-        Label<'static>,
-        Label<'static>,
-        Annotation,
-    ),
+    RedundantAnnotationForOwnsAlreadyInherited(Label<'static>, Label<'static>, Label<'static>, Annotation),
+    RedundantAnnotationForPlaysAlreadyInherited(Label<'static>, Label<'static>, Label<'static>, Annotation),
+    RedundantAnnotationForRelatesAlreadyInherited(Label<'static>, Label<'static>, Label<'static>, Annotation),
 }
 
 impl fmt::Display for SchemaValidationError {

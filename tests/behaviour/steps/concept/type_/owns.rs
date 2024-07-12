@@ -291,9 +291,7 @@ pub async fn get_owns_declared_annotations_is_empty(
 }
 
 #[apply(generic_step)]
-#[step(
-    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get cardinality: {annotation}"
-)]
+#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get cardinality: {annotation}")]
 pub async fn get_owns_cardinality(
     context: &mut Context,
     root_label: params::RootLabel,
@@ -308,9 +306,7 @@ pub async fn get_owns_cardinality(
         let owns =
             object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
-        let actual_cardinality = owns
-            .get_cardinality(&tx.snapshot, &tx.type_manager)
-            .unwrap();
+        let actual_cardinality = owns.get_cardinality(&tx.snapshot, &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
             annotation::Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
             _ => panic!("Expected annotations is not Cardinality"),

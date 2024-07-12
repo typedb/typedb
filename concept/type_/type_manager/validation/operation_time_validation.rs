@@ -46,8 +46,9 @@ use crate::{
             validation::{
                 validation::{
                     edge_get_annotation_by_category, get_label_or_schema_err, is_attribute_type_owns_overridden,
-                    is_ordering_compatible_with_distinct_annotation, is_overridden_interface_object_one_of_supertypes_or_self,
-                    is_role_type_plays_overridden, type_get_annotation_by_category, type_has_annotation_category,
+                    is_ordering_compatible_with_distinct_annotation,
+                    is_overridden_interface_object_one_of_supertypes_or_self, is_role_type_plays_overridden,
+                    type_get_annotation_by_category, type_has_annotation_category,
                     type_has_declared_annotation_category, type_is_abstract,
                     validate_declared_annotation_is_compatible_with_declared_annotations,
                     validate_declared_annotation_is_compatible_with_inherited_annotations,
@@ -57,11 +58,11 @@ use crate::{
                 },
                 SchemaValidationError,
             },
+            TypeManager,
         },
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::type_::type_manager::TypeManager;
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -657,7 +658,8 @@ impl OperationTimeValidation {
     where
         EDGE: InterfaceImplementation<'static>,
     {
-        let supertype_cardinality = supertype_edge.get_cardinality(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+        let supertype_cardinality =
+            supertype_edge.get_cardinality(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
 
         if supertype_cardinality.narrowed_correctly_by(&AnnotationKey::CARDINALITY) {
             Ok(())
@@ -675,7 +677,8 @@ impl OperationTimeValidation {
     where
         EDGE: InterfaceImplementation<'static>,
     {
-        let supertype_cardinality = supertype_edge.get_cardinality(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+        let supertype_cardinality =
+            supertype_edge.get_cardinality(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
 
         if supertype_cardinality.narrowed_correctly_by(&cardinality) {
             Ok(())
@@ -1121,8 +1124,12 @@ impl OperationTimeValidation {
         owns: Owns<'static>,
         attribute_type_overridden: AttributeType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        if is_overridden_interface_object_one_of_supertypes_or_self(snapshot, owns.attribute(), attribute_type_overridden.clone())
-            .map_err(SchemaValidationError::ConceptRead)?
+        if is_overridden_interface_object_one_of_supertypes_or_self(
+            snapshot,
+            owns.attribute(),
+            attribute_type_overridden.clone(),
+        )
+        .map_err(SchemaValidationError::ConceptRead)?
         {
             Ok(())
         } else {
@@ -1139,8 +1146,12 @@ impl OperationTimeValidation {
         plays: Plays<'static>,
         role_type_overridden: RoleType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        if is_overridden_interface_object_one_of_supertypes_or_self(snapshot, plays.role(), role_type_overridden.clone())
-            .map_err(SchemaValidationError::ConceptRead)?
+        if is_overridden_interface_object_one_of_supertypes_or_self(
+            snapshot,
+            plays.role(),
+            role_type_overridden.clone(),
+        )
+        .map_err(SchemaValidationError::ConceptRead)?
         {
             Ok(())
         } else {
@@ -1356,11 +1367,9 @@ impl OperationTimeValidation {
                     Annotation::Range(_) => {
                         Self::validate_annotation_range_compatible_value_type(snapshot, owns.attribute(), None)?
                     }
-                    Annotation::Values(_) => Self::validate_annotation_values_compatible_value_type(
-                        snapshot,
-                        owns.attribute(),
-                        None,
-                    )?,
+                    Annotation::Values(_) => {
+                        Self::validate_annotation_values_compatible_value_type(snapshot, owns.attribute(), None)?
+                    }
                     | Annotation::Abstract(_)
                     | Annotation::Distinct(_)
                     | Annotation::Independent(_)

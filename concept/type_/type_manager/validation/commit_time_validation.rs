@@ -25,8 +25,9 @@ use crate::{
             validation::{
                 validation::{
                     get_label_or_concept_read_err, is_attribute_type_owns_overridden,
-                    is_overridden_interface_object_one_of_supertypes_or_self, is_overridden_interface_object_declared_supertype_or_self, is_role_type_plays_overridden, type_is_abstract,
-                    validate_declared_annotation_is_compatible_with_declared_annotations,
+                    is_overridden_interface_object_declared_supertype_or_self,
+                    is_overridden_interface_object_one_of_supertypes_or_self, is_role_type_plays_overridden,
+                    type_is_abstract, validate_declared_annotation_is_compatible_with_declared_annotations,
                     validate_declared_annotation_is_compatible_with_inherited_annotations,
                     validate_declared_edge_annotation_is_compatible_with_declared_annotations,
                     validate_declared_edge_annotation_is_compatible_with_inherited_annotations,
@@ -34,11 +35,11 @@ use crate::{
                 },
                 SchemaValidationError,
             },
+            TypeManager,
         },
         InterfaceImplementation, KindAPI, ObjectTypeAPI, TypeAPI,
     },
 };
-use crate::type_::type_manager::TypeManager;
 
 pub struct CommitTimeValidation {}
 
@@ -69,7 +70,10 @@ macro_rules! validate_types {
 }
 
 impl CommitTimeValidation {
-    pub(crate) fn validate(type_manager: &TypeManager, snapshot: &impl ReadableSnapshot) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
+    pub(crate) fn validate(
+        type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
         let mut errors = Vec::new();
         Self::validate_entity_types(type_manager, snapshot, &mut errors)?;
         Self::validate_relation_types(type_manager, snapshot, &mut errors)?;
@@ -317,14 +321,12 @@ impl CommitTimeValidation {
 
                 for relates_annotation in relates_annotations_declared {
                     if relates_override_annotations.keys().contains(&relates_annotation) {
-                        validation_errors.push(
-                            SchemaValidationError::RedundantAnnotationForRelatesAlreadyInherited(
-                                get_label_or_concept_read_err(snapshot, role_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, relation_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, relates_override.relation())?,
-                                relates_annotation,
-                            ),
-                        );
+                        validation_errors.push(SchemaValidationError::RedundantAnnotationForRelatesAlreadyInherited(
+                            get_label_or_concept_read_err(snapshot, role_type.clone())?,
+                            get_label_or_concept_read_err(snapshot, relation_type.clone())?,
+                            get_label_or_concept_read_err(snapshot, relates_override.relation())?,
+                            relates_annotation,
+                        ));
                     }
                 }
             }
@@ -372,7 +374,8 @@ impl CommitTimeValidation {
                 }
 
                 let attribute_type = owns.attribute();
-                if !is_overridden_interface_object_one_of_supertypes_or_self( // Any supertype (even transitive) fits
+                if !is_overridden_interface_object_one_of_supertypes_or_self(
+                    // Any supertype (even transitive) fits
                     snapshot,
                     attribute_type.clone(),
                     attribute_type_overridden.clone(),
@@ -385,19 +388,16 @@ impl CommitTimeValidation {
                 }
 
                 let owns_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, owns)?;
-                let owns_override_annotations =
-                    TypeReader::get_type_edge_annotations(snapshot, owns_override.clone())?;
+                let owns_override_annotations = TypeReader::get_type_edge_annotations(snapshot, owns_override.clone())?;
 
                 for owns_annotation in owns_annotations_declared {
                     if owns_override_annotations.keys().contains(&owns_annotation) {
-                        validation_errors.push(
-                            SchemaValidationError::RedundantAnnotationForOwnsAlreadyInherited(
-                                get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, type_.clone())?,
-                                get_label_or_concept_read_err(snapshot, owns_override.owner())?,
-                                owns_annotation,
-                            ),
-                        );
+                        validation_errors.push(SchemaValidationError::RedundantAnnotationForOwnsAlreadyInherited(
+                            get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
+                            get_label_or_concept_read_err(snapshot, type_.clone())?,
+                            get_label_or_concept_read_err(snapshot, owns_override.owner())?,
+                            owns_annotation,
+                        ));
                     }
                 }
             }
@@ -444,7 +444,8 @@ impl CommitTimeValidation {
                 }
 
                 let role_type = plays.role();
-                if !is_overridden_interface_object_one_of_supertypes_or_self( // Any supertype (even transitive) fits
+                if !is_overridden_interface_object_one_of_supertypes_or_self(
+                    // Any supertype (even transitive) fits
                     snapshot,
                     role_type.clone(),
                     role_type_overridden.clone(),
@@ -462,14 +463,12 @@ impl CommitTimeValidation {
 
                 for plays_annotation in plays_annotations_declared {
                     if plays_override_annotations.keys().contains(&plays_annotation) {
-                        validation_errors.push(
-                            SchemaValidationError::RedundantAnnotationForPlaysAlreadyInherited(
-                                get_label_or_concept_read_err(snapshot, role_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, type_.clone())?,
-                                get_label_or_concept_read_err(snapshot, plays_override.player())?,
-                                plays_annotation,
-                            ),
-                        );
+                        validation_errors.push(SchemaValidationError::RedundantAnnotationForPlaysAlreadyInherited(
+                            get_label_or_concept_read_err(snapshot, role_type.clone())?,
+                            get_label_or_concept_read_err(snapshot, type_.clone())?,
+                            get_label_or_concept_read_err(snapshot, plays_override.player())?,
+                            plays_annotation,
+                        ));
                     }
                 }
             }
@@ -670,14 +669,16 @@ impl CommitTimeValidation {
         Ok(())
     }
 
+    // TODO: Iterate over all owns and call these checks once for each owns!
+    // If some of the supertypes / overrides are not correct, stop their analysis (for example, this check can fail the server if ordering is empty)!
     fn validate_owns_cardinality<T>(
         type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
         type_: T,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError>
-        where
-            T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    where
+        T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
         let owns_declared: HashSet<Owns<'static>> =
             TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
@@ -688,15 +689,13 @@ impl CommitTimeValidation {
                 let owns_override_cardinality = owns_override.get_cardinality(snapshot, type_manager)?;
 
                 if !owns_override_cardinality.narrowed_correctly_by(&owns_cardinality) {
-                    validation_errors.push(
-                        SchemaValidationError::OwnsCardinalityDoesNotNarrowInheritedCardinality(
-                            get_label_or_concept_read_err(snapshot, owns.owner())?,
-                            get_label_or_concept_read_err(snapshot, owns_override.owner())?,
-                            get_label_or_concept_read_err(snapshot, owns.attribute())?,
-                            owns_cardinality,
-                            owns_override_cardinality,
-                        ),
-                    );
+                    validation_errors.push(SchemaValidationError::OwnsCardinalityDoesNotNarrowInheritedCardinality(
+                        get_label_or_concept_read_err(snapshot, owns.owner())?,
+                        get_label_or_concept_read_err(snapshot, owns_override.owner())?,
+                        get_label_or_concept_read_err(snapshot, owns.attribute())?,
+                        owns_cardinality,
+                        owns_override_cardinality,
+                    ));
                 }
             }
         }
@@ -710,8 +709,8 @@ impl CommitTimeValidation {
         type_: T,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError>
-        where
-            T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    where
+        T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
         let plays_declared: HashSet<Plays<'static>> =
             TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
@@ -722,15 +721,13 @@ impl CommitTimeValidation {
                 let plays_override_cardinality = plays_override.get_cardinality(snapshot, type_manager)?;
 
                 if !plays_override_cardinality.narrowed_correctly_by(&plays_cardinality) {
-                    validation_errors.push(
-                        SchemaValidationError::PlaysCardinalityDoesNotNarrowInheritedCardinality(
-                            get_label_or_concept_read_err(snapshot, plays.player())?,
-                            get_label_or_concept_read_err(snapshot, plays_override.player())?,
-                            get_label_or_concept_read_err(snapshot, plays.role())?,
-                            plays_cardinality,
-                            plays_override_cardinality,
-                        ),
-                    );
+                    validation_errors.push(SchemaValidationError::PlaysCardinalityDoesNotNarrowInheritedCardinality(
+                        get_label_or_concept_read_err(snapshot, plays.player())?,
+                        get_label_or_concept_read_err(snapshot, plays_override.player())?,
+                        get_label_or_concept_read_err(snapshot, plays.role())?,
+                        plays_cardinality,
+                        plays_override_cardinality,
+                    ));
                 }
             }
         }
@@ -738,14 +735,29 @@ impl CommitTimeValidation {
         Ok(())
     }
 
+    /*
+    TODO: Ideally, in situation when we have several edges overriding one edge with card(X..Y), we may want to check
+       that for edge(card(x1..y1)), edge(card(x2..y2)), ..., edge(card(xN..yN)) and overridden_edge(card(X..Y)) ->
+       x1 + x2 + ... + xN >= X (and xi can be < X!) and y1 + y2 + ... + yN <= Y
+       At the same time, it makes the schema not flexible enough, and I as a user would like to have it as an option.
+       So maybe separate checks that xi >= X and yi <= Y are enough for the schema, and the data
+       layer is checked naturally because edge is also an overridden_edge, so both cardinality constraints are checked!
+       HOWEVER! The current behavior allows the following case:
+       define
+       single-parentship sub relation, relates parent @card(1, 1);
+       parentship sub single-parentship, relates father as parent, relates mother as parent;
+       insert
+       $p (father, mother) isa parentship
+    */
+
     fn validate_relates_cardinality(
         type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
-    ) -> Result<(), ConceptReadError>
-    {
-        let relates_declared: HashSet<Relates<'static>> = TypeReader::get_relates_declared(snapshot, relation_type.clone())?;
+    ) -> Result<(), ConceptReadError> {
+        let relates_declared: HashSet<Relates<'static>> =
+            TypeReader::get_relates_declared(snapshot, relation_type.clone())?;
 
         for relates in relates_declared {
             if let Some(relates_override) = TypeReader::get_implementation_override(snapshot, relates.clone())? {
@@ -753,15 +765,13 @@ impl CommitTimeValidation {
                 let relates_override_cardinality = relates_override.get_cardinality(snapshot, type_manager)?;
 
                 if !relates_override_cardinality.narrowed_correctly_by(&relates_cardinality) {
-                    validation_errors.push(
-                        SchemaValidationError::RelatesCardinalityDoesNotNarrowInheritedCardinality(
-                            get_label_or_concept_read_err(snapshot, relates.relation())?,
-                            get_label_or_concept_read_err(snapshot, relates_override.relation())?,
-                            get_label_or_concept_read_err(snapshot, relates.role())?,
-                            relates_cardinality,
-                            relates_override_cardinality,
-                        ),
-                    );
+                    validation_errors.push(SchemaValidationError::RelatesCardinalityDoesNotNarrowInheritedCardinality(
+                        get_label_or_concept_read_err(snapshot, relates.relation())?,
+                        get_label_or_concept_read_err(snapshot, relates_override.relation())?,
+                        get_label_or_concept_read_err(snapshot, relates.role())?,
+                        relates_cardinality,
+                        relates_override_cardinality,
+                    ));
                 }
             }
         }

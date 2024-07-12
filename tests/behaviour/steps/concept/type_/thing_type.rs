@@ -6,7 +6,10 @@
 
 use std::ascii::escape_default;
 
-use concept::type_::{annotation, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation, object_type::ObjectType, relation_type::RelationTypeAnnotation, PlayerAPI, TypeAPI, KindAPI};
+use concept::type_::{
+    annotation, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation, object_type::ObjectType,
+    relation_type::RelationTypeAnnotation, KindAPI, PlayerAPI, TypeAPI,
+};
 use cucumber::gherkin::Step;
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use itertools::Itertools;
