@@ -1029,7 +1029,7 @@ impl TypeManager {
     }
 
     pub fn finalise(self, snapshot: &impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
-        let type_errors = CommitTimeValidation::validate(snapshot);
+        let type_errors = CommitTimeValidation::validate(&self, snapshot);
         match type_errors {
             Ok(errors) => {
                 if errors.is_empty() {
