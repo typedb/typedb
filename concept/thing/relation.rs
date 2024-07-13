@@ -193,7 +193,7 @@ impl<'a> Relation<'a> {
             return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
         }
 
-        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
+        let relates = role_type.get_relates_declared(snapshot, thing_manager.type_manager())?;
         let relates_annotations = relates.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
         let distinct = relates_annotations.contains_key(&RelatesAnnotation::Distinct(AnnotationDistinct));
         if distinct {
@@ -288,7 +288,7 @@ impl<'a> Relation<'a> {
         player: Object<'_>,
         delete_count: u64,
     ) -> Result<(), ConceptWriteError> {
-        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
+        let relates = role_type.get_relates_declared(snapshot, thing_manager.type_manager())?;
         let relates_annotations = relates.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
         let distinct = relates_annotations.contains_key(&RelatesAnnotation::Distinct(AnnotationDistinct));
         if distinct {

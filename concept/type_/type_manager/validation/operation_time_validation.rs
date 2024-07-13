@@ -182,7 +182,7 @@ impl OperationTimeValidation {
         relation_supertype: RelationType<'static>,
     ) -> Result<(), SchemaValidationError> {
         let subtype_relates_declared =
-            TypeReader::get_relates_declared(snapshot, relation_subtype).map_err(SchemaValidationError::ConceptRead)?;
+            TypeReader::get_implemented_interfaces_declared::<Relates<'static>>(snapshot, relation_subtype).map_err(SchemaValidationError::ConceptRead)?;
 
         for subtype_relates in subtype_relates_declared {
             let role = subtype_relates.role();
@@ -271,7 +271,7 @@ impl OperationTimeValidation {
         T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
         let supertype_owns_with_attributes: HashMap<AttributeType<'static>, Owns<'static>> =
-            TypeReader::get_implemented_interfaces(snapshot, owner_supertype.clone())
+            TypeReader::get_implemented_interfaces(snapshot, owner_supertype.clone().into_owned_object_type())
                 .map_err(SchemaValidationError::ConceptRead)?;
 
         let subtype_owns_declared: HashSet<Owns<'static>> =
@@ -336,7 +336,7 @@ impl OperationTimeValidation {
         T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
         let supertype_plays_with_roles: HashMap<RoleType<'static>, Plays<'static>> =
-            TypeReader::get_implemented_interfaces(snapshot, player_supertype.clone())
+            TypeReader::get_implemented_interfaces(snapshot, player_supertype.clone().into_owned_object_type())
                 .map_err(SchemaValidationError::ConceptRead)?;
 
         let subtype_plays_declared: HashSet<Plays<'static>> =
@@ -1086,7 +1086,7 @@ impl OperationTimeValidation {
             // TODO: Handle better. This could be misleading.
             return Err(SchemaValidationError::CannotModifyRoot);
         }
-        let is_inherited = TypeReader::get_relates(snapshot, super_relation.unwrap())
+        let is_inherited = TypeReader::get_implemented_interfaces::<Relates<'static>>(snapshot, super_relation.unwrap())
             .map_err(SchemaValidationError::ConceptRead)?
             .contains_key(&role_type);
         if is_inherited {
@@ -1108,7 +1108,7 @@ impl OperationTimeValidation {
                 return Err(SchemaValidationError::CannotModifyRoot);
             }
             let owns_transitive: HashMap<AttributeType<'static>, Owns<'static>> =
-                TypeReader::get_implemented_interfaces(snapshot, super_owner.unwrap())
+                TypeReader::get_implemented_interfaces(snapshot, super_owner.unwrap().clone().into_owned_object_type())
                     .map_err(SchemaValidationError::ConceptRead)?;
             owns_transitive.contains_key(&attribute)
         });
@@ -1215,7 +1215,7 @@ impl OperationTimeValidation {
                 return Err(SchemaValidationError::CannotModifyRoot);
             }
             let plays_transitive: HashMap<RoleType<'static>, Plays<'static>> =
-                TypeReader::get_implemented_interfaces(snapshot, super_player.unwrap())
+                TypeReader::get_implemented_interfaces(snapshot, super_player.unwrap().clone().into_owned_object_type())
                     .map_err(SchemaValidationError::ConceptRead)?;
             plays_transitive.contains_key(&role_type)
         });
@@ -1388,7 +1388,7 @@ impl OperationTimeValidation {
         attribute_type: AttributeType<'static>,
     ) -> Result<(), SchemaValidationError> {
         let all_owns: HashMap<AttributeType<'static>, Owns<'static>> =
-            TypeReader::get_implemented_interfaces(snapshot, owner.clone())
+            TypeReader::get_implemented_interfaces(snapshot, owner.clone().into_owned_object_type())
                 .map_err(SchemaValidationError::ConceptRead)?;
         let found_owns = all_owns
             .iter()
@@ -1416,7 +1416,7 @@ impl OperationTimeValidation {
         role_type: RoleType<'static>,
     ) -> Result<(), SchemaValidationError> {
         let all_plays: HashMap<RoleType<'static>, Plays<'static>> =
-            TypeReader::get_implemented_interfaces(snapshot, player.clone())
+            TypeReader::get_implemented_interfaces(snapshot, player.clone().into_owned_object_type())
                 .map_err(SchemaValidationError::ConceptRead)?;
         let found_plays =
             all_plays.iter().find(|(existing_plays_role_type, existing_plays)| **existing_plays_role_type == role_type);
@@ -1698,7 +1698,7 @@ impl OperationTimeValidation {
         role_type: RoleType<'_>,
     ) -> Result<(), SchemaValidationError> {
         // TODO: See if we can use existing methods from the ThingManager
-        let relation_type = TypeReader::get_role_type_relates(snapshot, role_type.clone().into_owned())
+        let relation_type = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone().into_owned())
             .map_err(SchemaValidationError::ConceptRead)?
             .relation();
         let prefix =

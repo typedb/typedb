@@ -44,6 +44,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::relation_type::RelationType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -67,20 +68,20 @@ impl<'a> RoleType<'a> {
         type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_relation<'m>(
+    pub fn get_relates_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Relates<'static>>, ConceptReadError> {
-        type_manager.get_relates_for_role_type(snapshot, self.clone().into_owned())
+        type_manager.get_relates_for_role_type_declared(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_relations_transitive<'m>(
+    pub fn get_relations<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {
-        type_manager.get_relates_for_role_type_transitive(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashMap<RelationType<'static>, Relates<'static>>>, ConceptReadError> {
+        type_manager.get_relates_for_role_type(snapshot, self.clone().into_owned())
     }
 
     pub fn get_ordering(

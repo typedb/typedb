@@ -98,21 +98,21 @@ pub async fn type_create(context: &mut Context, root_label: RootLabel, type_labe
     with_schema_tx!(context, |tx| {
         match root_label.into_typedb() {
             Kind::Entity => {
-                may_error.check(&tx.type_manager.create_entity_type(
+                may_error.check_concept_write_without_read_errors(&tx.type_manager.create_entity_type(
                     &mut tx.snapshot,
                     &type_label.into_typedb(),
                     false,
                 ));
             }
             Kind::Relation => {
-                may_error.check(&tx.type_manager.create_relation_type(
+                may_error.check_concept_write_without_read_errors(&tx.type_manager.create_relation_type(
                     &mut tx.snapshot,
                     &type_label.into_typedb(),
                     false,
                 ));
             }
             Kind::Attribute => {
-                may_error.check(&tx.type_manager.create_attribute_type(
+                may_error.check_concept_write_without_read_errors(&tx.type_manager.create_attribute_type(
                     &mut tx.snapshot,
                     &type_label.into_typedb(),
                     false,
@@ -129,7 +129,7 @@ pub async fn type_delete(context: &mut Context, root_label: RootLabel, type_labe
     with_schema_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
             let res = type_.delete(&mut tx.snapshot, &tx.type_manager);
-            may_error.check(&res);
+            may_error.check_concept_write_without_read_errors(&res);
         });
     });
 }
@@ -168,7 +168,7 @@ pub async fn type_set_label(
 ) {
     with_schema_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
-            may_error.check(&type_.set_label(&mut tx.snapshot, &tx.type_manager, &to_label.into_typedb()));
+            may_error.check_concept_write_without_read_errors(&type_.set_label(&mut tx.snapshot, &tx.type_manager, &to_label.into_typedb()));
         });
     });
 }
@@ -208,7 +208,7 @@ pub async fn type_set_annotation(
         with_type_and_value_type!(tx, root_label, type_label, type_, value_type, {
             let res =
                 type_.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(value_type).into());
-            may_error.check(&res);
+            may_error.check_concept_write_without_read_errors(&res);
         });
     });
 }
@@ -226,7 +226,7 @@ pub async fn type_unset_annotation(
         with_type!(tx, root_label, type_label, type_, {
             let res =
                 type_.unset_annotation(&mut tx.snapshot, &tx.type_manager, annotation_category.into_typedb().into());
-            may_error.check(&res);
+            may_error.check_concept_write_without_read_errors(&res);
         });
     });
 }
@@ -374,7 +374,7 @@ pub async fn type_set_supertype(
                 let supertype =
                     tx.type_manager.get_attribute_type(&tx.snapshot, &supertype_label.into_typedb()).unwrap().unwrap();
                 let res = thistype.set_supertype(&mut tx.snapshot, &tx.type_manager, supertype);
-                may_error.check(&res);
+                may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Entity => {
                 let thistype =
@@ -382,7 +382,7 @@ pub async fn type_set_supertype(
                 let supertype =
                     tx.type_manager.get_entity_type(&tx.snapshot, &supertype_label.into_typedb()).unwrap().unwrap();
                 let res = thistype.set_supertype(&mut tx.snapshot, &tx.type_manager, supertype);
-                may_error.check(&res);
+                may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Relation => {
                 let thistype =
@@ -390,7 +390,7 @@ pub async fn type_set_supertype(
                 let supertype =
                     tx.type_manager.get_relation_type(&tx.snapshot, &supertype_label.into_typedb()).unwrap().unwrap();
                 let res = thistype.set_supertype(&mut tx.snapshot, &tx.type_manager, supertype);
-                may_error.check(&res);
+                may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),
         };

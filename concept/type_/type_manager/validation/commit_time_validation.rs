@@ -92,7 +92,6 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
         Self::validate_annotations(type_manager, snapshot, type_.clone(), validation_errors)?;
-
         Self::validate_object_type(type_manager, snapshot, type_.clone(), validation_errors)?;
 
         Ok(())
@@ -105,21 +104,14 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
         Self::validate_annotations(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_relation_type_has_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_abstractness_matches_with_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_overridden_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_edge_annotations::<RelationType<'static>, Relates<'static>>(
-            type_manager,
-            snapshot,
-            type_.clone(),
-            validation_errors,
-        )?;
-
-        Self::validate_relates_cardinality(type_manager, snapshot, type_.clone(), validation_errors)?;
-
         Self::validate_object_type(type_manager, snapshot, type_.clone(), validation_errors)?;
 
+        Self::validate_relation_type_has_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
         Self::validate_relation_type_role_types(type_manager, snapshot, type_.clone(), validation_errors)?;
+
+        Self::validate_abstractness_matches_with_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
+        Self::validate_relates_cardinality(type_manager, snapshot, type_.clone(), validation_errors)?;
+        Self::validate_declared_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
 
         Ok(())
     }
@@ -130,7 +122,7 @@ impl CommitTimeValidation {
         relation_type: RelationType<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        let relates_declared = TypeReader::get_relates_declared(snapshot, relation_type.clone())?;
+        let relates_declared = TypeReader::get_implemented_interfaces_declared::<Relates<'static>>(snapshot, relation_type.clone())?;
 
         for relates in relates_declared {
             let role = relates.role();
@@ -167,24 +159,80 @@ impl CommitTimeValidation {
         type_: T,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        // TODO: Refactor it to just iterate over owns and call multiple checks in place!
         Self::validate_abstractness_matches_with_owns(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_abstractness_matches_with_plays(type_manager, snapshot, type_.clone(), validation_errors)?;
-
-        Self::validate_overridden_owns(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_overridden_plays(type_manager, snapshot, type_.clone(), validation_errors)?;
-
-        Self::validate_declared_owns_not_overridden(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_declared_plays_not_overridden(type_manager, snapshot, type_.clone(), validation_errors)?;
-
-        Self::validate_redundant_owns(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_redundant_plays(type_manager, snapshot, type_.clone(), validation_errors)?;
-
-        Self::validate_edge_annotations::<T, Plays<'static>>(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_edge_annotations::<T, Owns<'static>>(type_manager, snapshot, type_.clone(), validation_errors)?;
-
         Self::validate_owns_cardinality(type_manager, snapshot, type_.clone(), validation_errors)?;
+        Self::validate_declared_owns(type_manager, snapshot, type_.clone(), validation_errors)?;
+
+        Self::validate_abstractness_matches_with_plays(type_manager, snapshot, type_.clone(), validation_errors)?;
         Self::validate_plays_cardinality(type_manager, snapshot, type_.clone(), validation_errors)?;
+        Self::validate_declared_plays(type_manager, snapshot, type_.clone(), validation_errors)?;
+
+        Ok(())
+    }
+
+    fn validate_declared_owns<T>(
+        type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+        type_: T,
+        validation_errors: &mut Vec<SchemaValidationError>,
+    ) -> Result<(), ConceptReadError>
+        where
+            T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    {
+        let owns_declared: HashSet<Owns<'static>> =
+            TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
+
+        for owns in owns_declared {
+            Self::validate_overridden_owns(type_manager, snapshot, owns.clone(), validation_errors)?;
+            Self::validate_declared_owns_not_overridden_by_supertypes(type_manager, snapshot, owns.clone(), validation_errors)?;
+            Self::validate_redundant_owns(type_manager, snapshot, owns.clone(), validation_errors)?;
+            Self::validate_edge_annotations::<Owns<'static>>(type_manager, snapshot, owns.clone(), validation_errors)?;
+        }
+
+        Ok(())
+    }
+
+    fn validate_declared_plays<T>(
+        type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+        type_: T,
+        validation_errors: &mut Vec<SchemaValidationError>,
+    ) -> Result<(), ConceptReadError>
+        where
+            T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    {
+        let plays_declared: HashSet<Plays<'static>> =
+            TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
+
+        for plays in plays_declared {
+            Self::validate_overridden_plays(type_manager, snapshot, plays.clone(), validation_errors)?;
+            Self::validate_declared_plays_not_overridden_by_supertypes(type_manager, snapshot, plays.clone(), validation_errors)?;
+            Self::validate_redundant_plays(type_manager, snapshot, plays.clone(), validation_errors)?;
+            Self::validate_edge_annotations::<Plays<'static>>(type_manager, snapshot, plays.clone(), validation_errors)?;
+        }
+
+        Ok(())
+    }
+
+    fn validate_declared_relates(
+        type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'static>,
+        validation_errors: &mut Vec<SchemaValidationError>,
+    ) -> Result<(), ConceptReadError>
+    {
+        let relates_declared: HashSet<Relates<'static>> =
+            TypeReader::get_implemented_interfaces_declared(snapshot, relation_type.clone())?;
+
+        for relates in relates_declared {
+            Self::validate_overridden_relates(type_manager, snapshot, relates.clone(), validation_errors)?;
+            Self::validate_edge_annotations::<Relates<'static>>(
+                type_manager,
+                snapshot,
+                relates,
+                validation_errors,
+            )?;
+        }
 
         Ok(())
     }
@@ -203,7 +251,7 @@ impl CommitTimeValidation {
         }
 
         for attribute_type in
-            TypeReader::get_implemented_interfaces::<Owns<'static>, T>(snapshot, type_.clone())?.keys()
+            TypeReader::get_implemented_interfaces::<Owns<'static>>(snapshot, type_.clone().into_owned_object_type())?.keys()
         {
             if type_is_abstract(snapshot, attribute_type.clone())? {
                 validation_errors.push(SchemaValidationError::NonAbstractCannotOwnAbstract(
@@ -230,7 +278,7 @@ impl CommitTimeValidation {
             return Ok(());
         }
 
-        for role_type in TypeReader::get_implemented_interfaces::<Plays<'static>, T>(snapshot, type_.clone())?.keys() {
+        for role_type in TypeReader::get_implemented_interfaces::<Plays<'static>>(snapshot, type_.clone().into_owned_object_type())?.keys() {
             if type_is_abstract(snapshot, role_type.clone())? {
                 validation_errors.push(SchemaValidationError::NonAbstractCannotPlayAbstract(
                     get_label_or_concept_read_err(snapshot, type_.clone())?,
@@ -246,18 +294,18 @@ impl CommitTimeValidation {
     fn validate_abstractness_matches_with_relates(
         _type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
-        type_: RelationType<'static>,
+        relation_type: RelationType<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        if type_is_abstract(snapshot, type_.clone())? {
+        if type_is_abstract(snapshot, relation_type.clone())? {
             return Ok(());
         }
 
-        for role_type in TypeReader::get_relates(snapshot, type_.clone())?.keys() {
+        for role_type in TypeReader::get_implemented_interfaces::<Relates<'static>>(snapshot, relation_type.clone())?.keys() {
             let role_type = role_type.clone();
             if type_is_abstract(snapshot, role_type.clone())? {
                 validation_errors.push(SchemaValidationError::NonAbstractCannotRelateAbstract(
-                    get_label_or_concept_read_err(snapshot, type_.clone())?,
+                    get_label_or_concept_read_err(snapshot, relation_type.clone())?,
                     get_label_or_concept_read_err(snapshot, role_type.clone())?,
                 ));
             }
@@ -269,65 +317,191 @@ impl CommitTimeValidation {
     fn validate_overridden_relates(
         _type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
-        relation_type: RelationType<'static>,
+        relates: Relates<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
+        let relation_type = relates.relation();
         let supertype = TypeReader::get_supertype(snapshot, relation_type.clone())?;
 
-        let relates_declared: HashSet<Relates<'static>> =
-            TypeReader::get_implemented_interfaces_declared(snapshot, relation_type.clone())?;
+        if let Some(relates_override) = TypeReader::get_implementation_override(snapshot, relates.clone())? {
+            let role_type_overridden = relates_override.role();
 
-        for relates in relates_declared {
-            if let Some(relates_override) = TypeReader::get_implementation_override(snapshot, relates.clone())? {
-                let role_type_overridden = relates_override.role();
+            match &supertype {
+                None => validation_errors.push(SchemaValidationError::RelatesOverrideIsNotInherited(
+                    get_label_or_concept_read_err(snapshot, relation_type.clone())?,
+                    get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
+                )),
+                Some(supertype) => {
+                    let contains = TypeReader::get_implemented_interfaces::<Relates<'static>>(snapshot, supertype.clone())?
+                        .keys()
+                        .contains(&role_type_overridden);
 
-                match &supertype {
-                    None => validation_errors.push(SchemaValidationError::RelatesOverrideIsNotInherited(
+                    if !contains {
+                        validation_errors.push(SchemaValidationError::RelatesOverrideIsNotInherited(
+                            get_label_or_concept_read_err(snapshot, relation_type.clone())?,
+                            get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
+                        ));
+                    }
+                }
+            }
+
+            let role_type = relates.role();
+            // Only declared supertype (not transitive) fits as relates override == role subtype!
+            // It is only a commit-time check as we verify that operation-time generation has been correct
+            if !is_overridden_interface_object_declared_supertype_or_self(
+                snapshot,
+                role_type.clone(),
+                role_type_overridden.clone(),
+            )? {
+                validation_errors.push(SchemaValidationError::OverriddenRelatesRoleTypeIsNotSupertype(
+                    get_label_or_concept_read_err(snapshot, relation_type.clone())?,
+                    get_label_or_concept_read_err(snapshot, role_type.clone())?,
+                    get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
+                ));
+            }
+
+            let relates_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, relates)?;
+            let relates_override_annotations =
+                TypeReader::get_type_edge_annotations(snapshot, relates_override.clone())?;
+
+            for relates_annotation in relates_annotations_declared {
+                if relates_override_annotations.keys().contains(&relates_annotation) {
+                    validation_errors.push(SchemaValidationError::RedundantAnnotationForRelatesAlreadyInherited(
+                        get_label_or_concept_read_err(snapshot, role_type.clone())?,
                         get_label_or_concept_read_err(snapshot, relation_type.clone())?,
-                        get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
-                    )),
-                    Some(supertype) => {
-                        let contains = TypeReader::get_relates(snapshot, supertype.clone())?
+                        get_label_or_concept_read_err(snapshot, relates_override.relation())?,
+                        relates_annotation,
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn validate_overridden_owns(
+        _type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+        owns: Owns<'static>,
+        validation_errors: &mut Vec<SchemaValidationError>,
+    ) -> Result<(), ConceptReadError>
+    {
+        let type_ = owns.owner();
+        let supertype = TypeReader::get_supertype(snapshot, type_.clone())?;
+
+        if let Some(owns_override) = TypeReader::get_implementation_override(snapshot, owns.clone())? {
+            let attribute_type_overridden = owns_override.attribute();
+
+            match &supertype {
+                None => validation_errors.push(SchemaValidationError::OwnsOverrideIsNotInherited(
+                    get_label_or_concept_read_err(snapshot, type_.clone())?,
+                    get_label_or_concept_read_err(snapshot, attribute_type_overridden.clone())?,
+                )),
+                Some(supertype) => {
+                    let contains =
+                        TypeReader::get_implemented_interfaces::<Owns<'static>>(snapshot, supertype.clone())?
+                            .keys()
+                            .contains(&attribute_type_overridden);
+
+                    if !contains {
+                        validation_errors.push(SchemaValidationError::OwnsOverrideIsNotInherited(
+                            get_label_or_concept_read_err(snapshot, type_.clone())?,
+                            get_label_or_concept_read_err(snapshot, attribute_type_overridden.clone())?,
+                        ));
+                    }
+                }
+            }
+
+            let attribute_type = owns.attribute();
+            if !is_overridden_interface_object_one_of_supertypes_or_self(
+                // Any supertype (even transitive) fits
+                snapshot,
+                attribute_type.clone(),
+                attribute_type_overridden.clone(),
+            )? {
+                validation_errors.push(SchemaValidationError::OverriddenOwnsAttributeTypeIsNotSupertype(
+                    get_label_or_concept_read_err(snapshot, type_.clone())?,
+                    get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
+                    get_label_or_concept_read_err(snapshot, attribute_type_overridden.clone())?,
+                ));
+            }
+
+            let owns_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, owns)?;
+            let owns_override_annotations = TypeReader::get_type_edge_annotations(snapshot, owns_override.clone())?;
+
+            for owns_annotation in owns_annotations_declared {
+                if owns_override_annotations.keys().contains(&owns_annotation) {
+                    validation_errors.push(SchemaValidationError::RedundantAnnotationForOwnsAlreadyInherited(
+                        get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
+                        get_label_or_concept_read_err(snapshot, type_.clone())?,
+                        get_label_or_concept_read_err(snapshot, owns_override.owner())?,
+                        owns_annotation,
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn validate_overridden_plays(
+        _type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+        plays: Plays<'static>,
+        validation_errors: &mut Vec<SchemaValidationError>,
+    ) -> Result<(), ConceptReadError>
+    {
+        let type_ = plays.player();
+
+        if let Some(plays_override) = TypeReader::get_implementation_override(snapshot, plays.clone())? {
+            let role_type_overridden = plays_override.role();
+            let supertype = TypeReader::get_supertype(snapshot, type_.clone())?;
+            match &supertype {
+                None => validation_errors.push(SchemaValidationError::PlaysOverrideIsNotInherited(
+                    get_label_or_concept_read_err(snapshot, type_.clone())?,
+                    get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
+                )),
+                Some(supertype) => {
+                    let contains =
+                        TypeReader::get_implemented_interfaces::<Plays<'static>>(snapshot, supertype.clone())?
                             .keys()
                             .contains(&role_type_overridden);
 
-                        if !contains {
-                            validation_errors.push(SchemaValidationError::RelatesOverrideIsNotInherited(
-                                get_label_or_concept_read_err(snapshot, relation_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
-                            ));
-                        }
-                    }
-                }
-
-                let role_type = relates.role();
-                // Only declared supertype (not transitive) fits as relates override == role subtype!
-                // It is only a commit-time check as we verify that operation-time generation has been correct
-                if !is_overridden_interface_object_declared_supertype_or_self(
-                    snapshot,
-                    role_type.clone(),
-                    role_type_overridden.clone(),
-                )? {
-                    validation_errors.push(SchemaValidationError::OverriddenRelatesRoleTypeIsNotSupertype(
-                        get_label_or_concept_read_err(snapshot, relation_type.clone())?,
-                        get_label_or_concept_read_err(snapshot, role_type.clone())?,
-                        get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
-                    ));
-                }
-
-                let relates_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, relates)?;
-                let relates_override_annotations =
-                    TypeReader::get_type_edge_annotations(snapshot, relates_override.clone())?;
-
-                for relates_annotation in relates_annotations_declared {
-                    if relates_override_annotations.keys().contains(&relates_annotation) {
-                        validation_errors.push(SchemaValidationError::RedundantAnnotationForRelatesAlreadyInherited(
-                            get_label_or_concept_read_err(snapshot, role_type.clone())?,
-                            get_label_or_concept_read_err(snapshot, relation_type.clone())?,
-                            get_label_or_concept_read_err(snapshot, relates_override.relation())?,
-                            relates_annotation,
+                    if !contains {
+                        validation_errors.push(SchemaValidationError::PlaysOverrideIsNotInherited(
+                            get_label_or_concept_read_err(snapshot, type_.clone())?,
+                            get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
                         ));
                     }
+                }
+            }
+
+            let role_type = plays.role();
+            if !is_overridden_interface_object_one_of_supertypes_or_self(
+                // Any supertype (even transitive) fits
+                snapshot,
+                role_type.clone(),
+                role_type_overridden.clone(),
+            )? {
+                validation_errors.push(SchemaValidationError::OverriddenPlaysRoleTypeIsNotSupertype(
+                    get_label_or_concept_read_err(snapshot, type_.clone())?,
+                    get_label_or_concept_read_err(snapshot, role_type.clone())?,
+                    get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
+                ));
+            }
+
+            let plays_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, plays)?;
+            let plays_override_annotations =
+                TypeReader::get_type_edge_annotations(snapshot, plays_override.clone())?;
+
+            for plays_annotation in plays_annotations_declared {
+                if plays_override_annotations.keys().contains(&plays_annotation) {
+                    validation_errors.push(SchemaValidationError::RedundantAnnotationForPlaysAlreadyInherited(
+                        get_label_or_concept_read_err(snapshot, role_type.clone())?,
+                        get_label_or_concept_read_err(snapshot, type_.clone())?,
+                        get_label_or_concept_read_err(snapshot, plays_override.player())?,
+                        plays_annotation,
+                    ));
                 }
             }
         }
@@ -335,69 +509,100 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_overridden_owns<T>(
+    fn validate_declared_owns_not_overridden_by_supertypes(
         _type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
-        type_: T,
+        owns: Owns<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
-        let supertype = TypeReader::get_supertype(snapshot, type_.clone())?;
+        if let Some(supertype) = TypeReader::get_supertype(snapshot, owns.owner())? {
+            let attribute_type = owns.attribute();
+            if is_attribute_type_owns_overridden(snapshot, supertype.clone(), attribute_type.clone())? {
+                validation_errors.push(SchemaValidationError::OverriddenOwnsCannotBeRedeclared(
+                    get_label_or_concept_read_err(snapshot, owns.owner())?,
+                    attribute_type,
+                ));
+            }
+        }
 
-        let owns_declared: HashSet<Owns<'static>> =
-            TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
+        Ok(())
+    }
 
-        for owns in owns_declared {
-            if let Some(owns_override) = TypeReader::get_implementation_override(snapshot, owns.clone())? {
-                let attribute_type_overridden = owns_override.attribute();
+    fn validate_declared_plays_not_overridden_by_supertypes(
+        _type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+        plays: Plays<'static>,
+        validation_errors: &mut Vec<SchemaValidationError>,
+    ) -> Result<(), ConceptReadError>
+    {
+        if let Some(supertype) = TypeReader::get_supertype(snapshot, plays.player().clone())? {
+            let role_type = plays.role();
+            if is_role_type_plays_overridden(snapshot, supertype.clone(), role_type.clone())? {
+                validation_errors.push(SchemaValidationError::OverriddenPlaysCannotBeRedeclared(
+                    get_label_or_concept_read_err(snapshot, plays.player().clone())?,
+                    role_type,
+                ));
+            }
+        }
 
-                match &supertype {
-                    None => validation_errors.push(SchemaValidationError::OwnsOverrideIsNotInherited(
-                        get_label_or_concept_read_err(snapshot, type_.clone())?,
-                        get_label_or_concept_read_err(snapshot, attribute_type_overridden.clone())?,
-                    )),
-                    Some(supertype) => {
-                        let contains =
-                            TypeReader::get_implemented_interfaces::<Owns<'static>, T>(snapshot, supertype.clone())?
-                                .keys()
-                                .contains(&attribute_type_overridden);
+        Ok(())
+    }
 
-                        if !contains {
-                            validation_errors.push(SchemaValidationError::OwnsOverrideIsNotInherited(
-                                get_label_or_concept_read_err(snapshot, type_.clone())?,
-                                get_label_or_concept_read_err(snapshot, attribute_type_overridden.clone())?,
-                            ));
-                        }
-                    }
+    fn validate_redundant_owns(
+        _type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+        owns: Owns<'static>,
+        validation_errors: &mut Vec<SchemaValidationError>,
+    ) -> Result<(), ConceptReadError>
+    {
+        if let Some(supertype) = TypeReader::get_supertype(snapshot, owns.owner())? {
+            let supertype_owns =
+                TypeReader::get_implemented_interfaces::<Owns<'static>>(snapshot, supertype.clone())?;
+
+            let attribute_type = owns.attribute();
+            if let Some(supertype_owns) = supertype_owns.get(&attribute_type) {
+                let supertype_owns_owner = supertype_owns.owner();
+
+                let owns_override = TypeReader::get_implementation_override(snapshot, owns.clone())?;
+                let correct_override = match owns_override {
+                    None => false,
+                    Some(owns_override) => &owns_override == supertype_owns,
+                };
+                if !correct_override {
+                    validation_errors.push(
+                        SchemaValidationError::CannotRedeclareInheritedOwnsWithoutSpecializationWithOverride(
+                            get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
+                            get_label_or_concept_read_err(snapshot, owns.owner())?,
+                            get_label_or_concept_read_err(snapshot, supertype_owns_owner.clone())?,
+                        ),
+                    );
                 }
 
-                let attribute_type = owns.attribute();
-                if !is_overridden_interface_object_one_of_supertypes_or_self(
-                    // Any supertype (even transitive) fits
-                    snapshot,
-                    attribute_type.clone(),
-                    attribute_type_overridden.clone(),
-                )? {
-                    validation_errors.push(SchemaValidationError::OverriddenOwnsAttributeTypeIsNotSupertype(
-                        get_label_or_concept_read_err(snapshot, type_.clone())?,
-                        get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
-                        get_label_or_concept_read_err(snapshot, attribute_type_overridden.clone())?,
-                    ));
+                let owns_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, owns.clone())?;
+                if owns_annotations_declared.is_empty() {
+                    validation_errors.push(
+                        SchemaValidationError::CannotRedeclareInheritedOwnsWithoutSpecializationWithOverride(
+                            get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
+                            get_label_or_concept_read_err(snapshot, owns.owner())?,
+                            get_label_or_concept_read_err(snapshot, supertype_owns_owner.clone())?,
+                        ),
+                    );
                 }
 
-                let owns_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, owns)?;
-                let owns_override_annotations = TypeReader::get_type_edge_annotations(snapshot, owns_override.clone())?;
+                let supertype_owns_annotations =
+                    TypeReader::get_type_edge_annotations(snapshot, supertype_owns.clone())?;
 
                 for owns_annotation in owns_annotations_declared {
-                    if owns_override_annotations.keys().contains(&owns_annotation) {
-                        validation_errors.push(SchemaValidationError::RedundantAnnotationForOwnsAlreadyInherited(
-                            get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
-                            get_label_or_concept_read_err(snapshot, type_.clone())?,
-                            get_label_or_concept_read_err(snapshot, owns_override.owner())?,
-                            owns_annotation,
-                        ));
+                    if supertype_owns_annotations.keys().contains(&owns_annotation) {
+                        validation_errors.push(
+                            SchemaValidationError::CannotRedeclareInheritedAnnotationWithoutSpecializationForOwns(
+                                get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
+                                get_label_or_concept_read_err(snapshot, owns.owner())?,
+                                get_label_or_concept_read_err(snapshot, supertype_owns_owner.clone())?,
+                                owns_annotation,
+                            ),
+                        );
                     }
                 }
             }
@@ -406,261 +611,60 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_overridden_plays<T>(
+    fn validate_redundant_plays(
         _type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
-        type_: T,
+        plays: Plays<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
-        let supertype = TypeReader::get_supertype(snapshot, type_.clone())?;
+        if let Some(supertype) = TypeReader::get_supertype(snapshot, plays.player())? {
+            let supertype_plays =
+                TypeReader::get_implemented_interfaces::<Plays<'static>>(snapshot, supertype.clone())?;
 
-        let plays_declared: HashSet<Plays<'static>> =
-            TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
+            let role_type = plays.role();
+            if let Some(supertype_plays) = supertype_plays.get(&role_type) {
+                let supertype_plays_player = supertype_plays.player();
 
-        for plays in plays_declared {
-            if let Some(plays_override) = TypeReader::get_implementation_override(snapshot, plays.clone())? {
-                let role_type_overridden = plays_override.role();
-                match &supertype {
-                    None => validation_errors.push(SchemaValidationError::PlaysOverrideIsNotInherited(
-                        get_label_or_concept_read_err(snapshot, type_.clone())?,
-                        get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
-                    )),
-                    Some(supertype) => {
-                        let contains =
-                            TypeReader::get_implemented_interfaces::<Plays<'static>, T>(snapshot, supertype.clone())?
-                                .keys()
-                                .contains(&role_type_overridden);
-
-                        if !contains {
-                            validation_errors.push(SchemaValidationError::PlaysOverrideIsNotInherited(
-                                get_label_or_concept_read_err(snapshot, type_.clone())?,
-                                get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
-                            ));
-                        }
-                    }
+                let plays_override = TypeReader::get_implementation_override(snapshot, plays.clone())?;
+                let correct_override = match plays_override {
+                    None => false,
+                    Some(plays_override) => &plays_override == supertype_plays,
+                };
+                if !correct_override {
+                    validation_errors.push(
+                        SchemaValidationError::CannotRedeclareInheritedPlaysWithoutSpecializationWithOverride(
+                            get_label_or_concept_read_err(snapshot, role_type.clone())?,
+                            get_label_or_concept_read_err(snapshot, plays.player())?,
+                            get_label_or_concept_read_err(snapshot, supertype_plays_player.clone())?,
+                        ),
+                    );
                 }
 
-                let role_type = plays.role();
-                if !is_overridden_interface_object_one_of_supertypes_or_self(
-                    // Any supertype (even transitive) fits
-                    snapshot,
-                    role_type.clone(),
-                    role_type_overridden.clone(),
-                )? {
-                    validation_errors.push(SchemaValidationError::OverriddenPlaysRoleTypeIsNotSupertype(
-                        get_label_or_concept_read_err(snapshot, type_.clone())?,
-                        get_label_or_concept_read_err(snapshot, role_type.clone())?,
-                        get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
-                    ));
+                let plays_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, plays.clone())?;
+                if plays_annotations_declared.is_empty() {
+                    validation_errors.push(
+                        SchemaValidationError::CannotRedeclareInheritedPlaysWithoutSpecializationWithOverride(
+                            get_label_or_concept_read_err(snapshot, role_type.clone())?,
+                            get_label_or_concept_read_err(snapshot, plays.player())?,
+                            get_label_or_concept_read_err(snapshot, supertype_plays_player.clone())?,
+                        ),
+                    );
                 }
 
-                let plays_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, plays)?;
-                let plays_override_annotations =
-                    TypeReader::get_type_edge_annotations(snapshot, plays_override.clone())?;
+                let supertype_plays_annotations =
+                    TypeReader::get_type_edge_annotations(snapshot, supertype_plays.clone())?;
 
                 for plays_annotation in plays_annotations_declared {
-                    if plays_override_annotations.keys().contains(&plays_annotation) {
-                        validation_errors.push(SchemaValidationError::RedundantAnnotationForPlaysAlreadyInherited(
-                            get_label_or_concept_read_err(snapshot, role_type.clone())?,
-                            get_label_or_concept_read_err(snapshot, type_.clone())?,
-                            get_label_or_concept_read_err(snapshot, plays_override.player())?,
-                            plays_annotation,
-                        ));
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn validate_declared_owns_not_overridden<T>(
-        _type_manager: &TypeManager,
-        snapshot: &impl ReadableSnapshot,
-        type_: T,
-        validation_errors: &mut Vec<SchemaValidationError>,
-    ) -> Result<(), ConceptReadError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
-    {
-        if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
-            let owns_declared: HashSet<Owns<'static>> =
-                TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
-
-            for owns in owns_declared {
-                let attribute_type = owns.attribute();
-                if is_attribute_type_owns_overridden(snapshot, supertype.clone(), attribute_type.clone())? {
-                    validation_errors.push(SchemaValidationError::OverriddenOwnsCannotBeRedeclared(
-                        get_label_or_concept_read_err(snapshot, type_.clone())?,
-                        attribute_type,
-                    ));
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn validate_declared_plays_not_overridden<T>(
-        _type_manager: &TypeManager,
-        snapshot: &impl ReadableSnapshot,
-        type_: T,
-        validation_errors: &mut Vec<SchemaValidationError>,
-    ) -> Result<(), ConceptReadError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
-    {
-        if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
-            let plays_declared: HashSet<Plays<'static>> =
-                TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
-
-            for plays in plays_declared {
-                let role_type = plays.role();
-                if is_role_type_plays_overridden(snapshot, supertype.clone(), role_type.clone())? {
-                    validation_errors.push(SchemaValidationError::OverriddenPlaysCannotBeRedeclared(
-                        get_label_or_concept_read_err(snapshot, type_.clone())?,
-                        role_type,
-                    ));
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn validate_redundant_owns<T>(
-        _type_manager: &TypeManager,
-        snapshot: &impl ReadableSnapshot,
-        type_: T,
-        validation_errors: &mut Vec<SchemaValidationError>,
-    ) -> Result<(), ConceptReadError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
-    {
-        if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
-            let owns_declared: HashSet<Owns<'static>> =
-                TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
-
-            let supertype_owns =
-                TypeReader::get_implemented_interfaces::<Owns<'static>, T>(snapshot, supertype.clone())?;
-
-            for owns in owns_declared {
-                let attribute_type = owns.attribute();
-                if let Some(supertype_owns) = supertype_owns.get(&attribute_type) {
-                    let supertype_owns_owner = supertype_owns.owner();
-
-                    let owns_override = TypeReader::get_implementation_override(snapshot, owns.clone())?;
-                    let correct_override = match owns_override {
-                        None => false,
-                        Some(owns_override) => &owns_override == supertype_owns,
-                    };
-                    if !correct_override {
+                    if supertype_plays_annotations.keys().contains(&plays_annotation) {
                         validation_errors.push(
-                            SchemaValidationError::CannotRedeclareInheritedOwnsWithoutSpecializationWithOverride(
-                                get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, type_.clone())?,
-                                get_label_or_concept_read_err(snapshot, supertype_owns_owner.clone())?,
-                            ),
-                        );
-                    }
-
-                    let owns_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, owns)?;
-                    if owns_annotations_declared.is_empty() {
-                        validation_errors.push(
-                            SchemaValidationError::CannotRedeclareInheritedOwnsWithoutSpecializationWithOverride(
-                                get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, type_.clone())?,
-                                get_label_or_concept_read_err(snapshot, supertype_owns_owner.clone())?,
-                            ),
-                        );
-                    }
-
-                    let supertype_owns_annotations =
-                        TypeReader::get_type_edge_annotations(snapshot, supertype_owns.clone())?;
-
-                    for owns_annotation in owns_annotations_declared {
-                        if supertype_owns_annotations.keys().contains(&owns_annotation) {
-                            validation_errors.push(
-                                SchemaValidationError::CannotRedeclareInheritedAnnotationWithoutSpecializationForOwns(
-                                    get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
-                                    get_label_or_concept_read_err(snapshot, type_.clone())?,
-                                    get_label_or_concept_read_err(snapshot, supertype_owns_owner.clone())?,
-                                    owns_annotation,
-                                ),
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn validate_redundant_plays<T>(
-        _type_manager: &TypeManager,
-        snapshot: &impl ReadableSnapshot,
-        type_: T,
-        validation_errors: &mut Vec<SchemaValidationError>,
-    ) -> Result<(), ConceptReadError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
-    {
-        if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
-            let plays_declared: HashSet<Plays<'static>> =
-                TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())?;
-
-            let supertype_plays =
-                TypeReader::get_implemented_interfaces::<Plays<'static>, T>(snapshot, supertype.clone())?;
-
-            for plays in plays_declared {
-                let role_type = plays.role();
-                if let Some(supertype_plays) = supertype_plays.get(&role_type) {
-                    let supertype_plays_player = supertype_plays.player();
-
-                    let plays_override = TypeReader::get_implementation_override(snapshot, plays.clone())?;
-                    let correct_override = match plays_override {
-                        None => false,
-                        Some(plays_override) => &plays_override == supertype_plays,
-                    };
-                    if !correct_override {
-                        validation_errors.push(
-                            SchemaValidationError::CannotRedeclareInheritedPlaysWithoutSpecializationWithOverride(
+                            SchemaValidationError::CannotRedeclareInheritedAnnotationWithoutSpecializationForPlays(
                                 get_label_or_concept_read_err(snapshot, role_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, type_.clone())?,
+                                get_label_or_concept_read_err(snapshot, plays.player())?,
                                 get_label_or_concept_read_err(snapshot, supertype_plays_player.clone())?,
+                                plays_annotation,
                             ),
                         );
-                    }
-
-                    let plays_annotations_declared = TypeReader::get_type_edge_annotations_declared(snapshot, plays)?;
-                    if plays_annotations_declared.is_empty() {
-                        validation_errors.push(
-                            SchemaValidationError::CannotRedeclareInheritedPlaysWithoutSpecializationWithOverride(
-                                get_label_or_concept_read_err(snapshot, role_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, type_.clone())?,
-                                get_label_or_concept_read_err(snapshot, supertype_plays_player.clone())?,
-                            ),
-                        );
-                    }
-
-                    let supertype_plays_annotations =
-                        TypeReader::get_type_edge_annotations(snapshot, supertype_plays.clone())?;
-
-                    for plays_annotation in plays_annotations_declared {
-                        if supertype_plays_annotations.keys().contains(&plays_annotation) {
-                            validation_errors.push(
-                                SchemaValidationError::CannotRedeclareInheritedAnnotationWithoutSpecializationForPlays(
-                                    get_label_or_concept_read_err(snapshot, role_type.clone())?,
-                                    get_label_or_concept_read_err(snapshot, type_.clone())?,
-                                    get_label_or_concept_read_err(snapshot, supertype_plays_player.clone())?,
-                                    plays_annotation,
-                                ),
-                            );
-                        }
                     }
                 }
             }
@@ -757,7 +761,7 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
         let relates_declared: HashSet<Relates<'static>> =
-            TypeReader::get_relates_declared(snapshot, relation_type.clone())?;
+            TypeReader::get_implemented_interfaces_declared::<Relates<'static>>(snapshot, relation_type.clone())?;
 
         for relates in relates_declared {
             if let Some(relates_override) = TypeReader::get_implementation_override(snapshot, relates.clone())? {
@@ -785,7 +789,7 @@ impl CommitTimeValidation {
         relation_type: RelationType<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        let relates = TypeReader::get_relates(snapshot, relation_type.clone())?;
+        let relates = TypeReader::get_implemented_interfaces::<Relates<'static>>(snapshot, relation_type.clone())?;
 
         if relates.is_empty() {
             validation_errors.push(SchemaValidationError::RelationTypeMustRelateAtLeastOneRole(
@@ -856,43 +860,38 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_edge_annotations<T, EDGE>(
+    fn validate_edge_annotations<EDGE>(
         _type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
-        type_: T,
+        edge: EDGE,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError>
     where
-        T: TypeAPI<'static>,
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Hash + Eq + Clone,
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
-        let interface_implementations = TypeReader::get_implemented_interfaces_declared::<EDGE>(snapshot, type_)?;
+        let declared_annotations =
+            TypeReader::get_type_edge_annotations_declared(snapshot, edge.clone())?;
 
-        for implementation in interface_implementations {
-            let declared_annotations =
-                TypeReader::get_type_edge_annotations_declared(snapshot, implementation.clone())?;
+        for annotation in declared_annotations {
+            let annotation_category = annotation.category();
 
-            for annotation in declared_annotations {
-                let annotation_category = annotation.category();
-
-                if let Err(err) = validate_declared_edge_annotation_is_compatible_with_inherited_annotations(
-                    snapshot,
-                    implementation.clone(),
-                    annotation_category.clone(),
-                ) {
-                    validation_errors.push(err);
-                }
-
-                if let Err(err) = validate_declared_edge_annotation_is_compatible_with_declared_annotations(
-                    snapshot,
-                    implementation.clone(),
-                    annotation_category,
-                ) {
-                    validation_errors.push(err);
-                }
-
-                // TODO: Validate specific annotation constraints that are called when we set annotations and check their parents... Somehow make it smart...
+            if let Err(err) = validate_declared_edge_annotation_is_compatible_with_inherited_annotations(
+                snapshot,
+                edge.clone(),
+                annotation_category.clone(),
+            ) {
+                validation_errors.push(err);
             }
+
+            if let Err(err) = validate_declared_edge_annotation_is_compatible_with_declared_annotations(
+                snapshot,
+                edge.clone(),
+                annotation_category,
+            ) {
+                validation_errors.push(err);
+            }
+
+            // TODO: Validate specific annotation constraints that are called when we set annotations and check their parents... Somehow make it smart...
         }
 
         Ok(())

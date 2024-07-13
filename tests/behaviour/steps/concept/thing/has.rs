@@ -68,7 +68,7 @@ async fn object_set_has(
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
     object_root.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap().to_owned();
-    may_error.check(&object_set_has_impl(context, &object, &attribute));
+    may_error.check_concept_write_without_read_errors(&object_set_has_impl(context, &object, &attribute));
 }
 
 #[apply(generic_step)]
@@ -91,7 +91,7 @@ async fn object_set_has_list(
         .into_iter()
         .map(|attr_name| context.attributes[&attr_name].as_ref().unwrap().to_owned())
         .collect_vec();
-    may_error.check(&object_set_has_ordered_impl(context, &object, attribute_type, attributes));
+    may_error.check_concept_write_without_read_errors(&object_set_has_ordered_impl(context, &object, attribute_type, attributes));
 }
 
 #[apply(generic_step)]

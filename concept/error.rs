@@ -47,7 +47,7 @@ impl Error for ConceptError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ConceptWriteError {
     RootModification,
     SnapshotGet {
@@ -155,6 +155,7 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::Encoding { source, .. } => Self::Encoding { source },
             ConceptReadError::CannotGetLabelForExistingType => Self::ConceptRead { source: error },
             ConceptReadError::CannotGetMandatoryProperty => Self::ConceptRead { source: error },
+            ConceptReadError::CannotGetMandatoryRelatesForRole => Self::ConceptRead { source: error },
         }
     }
 }
@@ -166,6 +167,7 @@ pub enum ConceptReadError {
     Encoding { source: EncodingError },
     CannotGetLabelForExistingType,
     CannotGetMandatoryProperty,
+    CannotGetMandatoryRelatesForRole,
 }
 
 impl fmt::Display for ConceptReadError {
@@ -182,6 +184,7 @@ impl Error for ConceptReadError {
             Self::Encoding { source, .. } => Some(source),
             Self::CannotGetLabelForExistingType => None,
             Self::CannotGetMandatoryProperty => None,
+            Self::CannotGetMandatoryRelatesForRole => None,
         }
     }
 }

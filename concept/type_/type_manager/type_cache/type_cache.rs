@@ -282,12 +282,12 @@ impl TypeCache {
         RoleType::get_cache(&self, role_type).ordering
     }
 
-    pub(crate) fn get_role_type_relates<'a>(&self, role_type: RoleType<'a>) -> &Relates<'static> {
-        &RoleType::get_cache(&self, role_type).relates
+    pub(crate) fn get_role_type_relates_declared<'a>(&self, role_type: RoleType<'a>) -> &Relates<'static> {
+        &RoleType::get_cache(&self, role_type).relates_declared
     }
 
-    pub(crate) fn get_role_type_relates_transitive<'a>(&self, role_type: RoleType<'a>) -> &HashSet<Relates<'static>> {
-        &RoleType::get_cache(self, role_type).relates_transitive
+    pub(crate) fn get_role_type_relates<'a>(&self, role_type: RoleType<'a>) -> &HashMap<RelationType<'static>, Relates<'static>> {
+        &RoleType::get_cache(self, role_type).relates
     }
 
     pub(crate) fn get_relation_type_relates_declared<'a>(

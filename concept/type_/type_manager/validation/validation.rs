@@ -93,13 +93,13 @@ pub(crate) fn is_overridden_interface_object_declared_supertype_or_self<T: KindA
 
 pub(crate) fn is_attribute_type_owns_overridden<T>(
     snapshot: &impl ReadableSnapshot,
-    object_type: T,
+    owner: T,
     attribute_type: AttributeType<'static>,
 ) -> Result<bool, ConceptReadError>
 where
     T: ObjectTypeAPI<'static>,
 {
-    let all_overridden = TypeReader::get_overridden_interfaces::<Owns<'static>, T>(snapshot, object_type.clone())?;
+    let all_overridden = TypeReader::get_overridden_interfaces::<Owns<'static>>(snapshot, owner.into_owned_object_type())?;
     Ok(all_overridden.contains_key(&attribute_type))
 }
 
@@ -111,7 +111,7 @@ pub(crate) fn is_role_type_plays_overridden<T>(
 where
     T: ObjectTypeAPI<'static>,
 {
-    let all_overridden = TypeReader::get_overridden_interfaces::<Plays<'static>, T>(snapshot, player.clone())?;
+    let all_overridden = TypeReader::get_overridden_interfaces::<Plays<'static>>(snapshot, player.into_owned_object_type())?;
     Ok(all_overridden.contains_key(&role_type))
 }
 

@@ -39,7 +39,7 @@ pub async fn relation_type_create_role(
             role_label.into_typedb().name().as_str(),
             Ordering::Unordered,
         );
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -60,7 +60,7 @@ pub async fn relation_type_create_ordered_role(
             role_label.into_typedb().name().as_str(),
             Ordering::Ordered,
         );
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -88,7 +88,7 @@ pub async fn relation_role_set_override(
             .unwrap()
         {
             let res = relates.set_override(&mut tx.snapshot, &tx.type_manager, overridden_relates);
-            may_error.check(&res);
+            may_error.check_concept_write_without_read_errors(&res);
         } else {
             // TODO: It is a little hacky as we don't test the concept api itself, but it is a correct behavior for TypeQL, so
             // it's easier to support such tests here as well
@@ -115,7 +115,7 @@ pub async fn relation_role_unset_override(
             .unwrap()
             .unwrap();
         let res = relates.unset_override(&mut tx.snapshot, &tx.type_manager);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -268,7 +268,7 @@ pub async fn relation_type_delete_role(
             .unwrap()
             .role();
         let res = role.delete(&mut tx.snapshot, &tx.type_manager);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -399,7 +399,7 @@ pub async fn relation_role_set_name(
             .unwrap()
             .role();
         let res = role.set_name(&mut tx.snapshot, &tx.type_manager, to_label.into_typedb().name.as_str());
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -486,7 +486,7 @@ pub async fn relation_role_set_annotation(
                 unimplemented!("Annotation {:?} is not supported by roles and relates", parsed_annotation);
             }
         }
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -516,7 +516,7 @@ pub async fn relation_role_unset_annotation(
         } else {
             unimplemented!("Annotation {:?} is not supported by roles and relates", parsed_annotation_category);
         }
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -732,7 +732,7 @@ pub async fn relation_role_set_ordering(
             .unwrap()
             .role();
         let res = role.set_ordering(&mut tx.snapshot, &tx.type_manager, ordering.into_typedb().into());
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 

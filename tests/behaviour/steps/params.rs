@@ -32,13 +32,32 @@ pub(crate) enum MayError {
 }
 
 impl MayError {
-    pub fn check<T: fmt::Debug, E: fmt::Debug>(&self, res: &Result<T, E>) {
+    pub fn check<'a, T: fmt::Debug, E: fmt::Debug>(&self, res: &'a Result<T, E>) -> Option<&'a E> {
+        match self {
+            MayError::False => {
+                res.as_ref().unwrap();
+                None
+            }
+            MayError::True => {
+                Some(res.as_ref().unwrap_err())
+            }
+        }
+    }
+
+    pub fn check_concept_write_without_read_errors<T: fmt::Debug>(&self, res: &Result<T, ConceptWriteError>) {
         match self {
             MayError::False => {
                 res.as_ref().unwrap();
             }
             MayError::True => {
-                res.as_ref().unwrap_err();
+                match res.as_ref().unwrap_err() {
+                    ConceptWriteError::ConceptRead { source } => panic!("Expected error is ConceptRead {:?}", source),
+                    ConceptWriteError::SchemaValidation { source } => match source {
+                        SchemaValidationError::ConceptRead(source) => panic!("Expected error is SchemaValidation::ConceptRead {:?}", source),
+                        _ => {}
+                    }
+                    _ => {}
+                }
             }
         };
     }
@@ -78,10 +97,13 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
+use concept::error::ConceptWriteError;
 use concept::type_::{
     annotation::{AnnotationDistinct, AnnotationRange, AnnotationUnique, AnnotationValues},
     type_manager::TypeManager,
 };
+use concept::type_::type_manager::validation::SchemaValidationError;
+use database::transaction::SchemaCommitError;
 use encoding::value::decimal_value::Decimal;
 use storage::snapshot::ReadableSnapshot;
 

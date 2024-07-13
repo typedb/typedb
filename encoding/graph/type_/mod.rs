@@ -23,6 +23,10 @@ pub enum Kind {
 }
 
 impl Kind {
+    const fn all_kinds() -> [Kind; 4] {
+        [Kind::Entity, Kind::Attribute, Kind::Relation, Kind::Role]
+    }
+
     pub const fn root_label(&self) -> Label {
         match self {
             Kind::Entity => Label::new_static("entity"),
@@ -30,6 +34,10 @@ impl Kind {
             Kind::Relation => Label::new_static("relation"),
             Kind::Role => Label::new_static_scoped("role", "relation", "relation:role"),
         }
+    }
+
+    pub fn is_root_label(label: &Label) -> bool {
+        Kind::all_kinds().iter().any(|kind| kind.root_label() == *label)
     }
 }
 

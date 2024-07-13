@@ -166,7 +166,7 @@ impl TypeReader {
         owner: impl TypeAPI<'static>,
     ) -> Result<HashSet<IMPL>, ConceptReadError>
     where
-        IMPL: InterfaceImplementation<'static> + Hash + Eq,
+        IMPL: InterfaceImplementation<'static>,
     {
         let owns_prefix = IMPL::prefix_for_canonical_edges_from(IMPL::ObjectType::new(owner.into_vertex()));
         snapshot
@@ -175,13 +175,12 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn get_implemented_interfaces<IMPL, T>(
+    pub(crate) fn get_implemented_interfaces<IMPL>(
         snapshot: &impl ReadableSnapshot,
-        object_type: T,
+        object_type: IMPL::ObjectType,
     ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
     where
-        T: TypeAPI<'static>,
-        IMPL: InterfaceImplementation<'static> + Hash + Eq,
+        IMPL: InterfaceImplementation<'static>,
     {
         let mut transitive_implementations: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
         let mut overridden_interfaces: HashSet<IMPL::InterfaceType> = HashSet::new();
@@ -191,13 +190,18 @@ impl TypeReader {
                 Self::get_implemented_interfaces_declared::<IMPL>(snapshot, current_type.as_ref().unwrap().clone())?;
             for implementation in declared_implementations.into_iter() {
                 let interface = implementation.interface();
-                // We may encounter transitive implementations multiple times (relaxed schema validation
-                // or self-override for annotations narrowing)
                 if !overridden_interfaces.contains(&interface) && !transitive_implementations.contains_key(&interface) {
                     transitive_implementations.insert(interface, implementation.clone());
                 }
                 if let Some(overridden) = Self::get_implementation_override(snapshot, implementation.clone())? {
                     overridden_interfaces.add(overridden.interface());
+                }
+                // The root relates relation->role is not overridden, but the root role is a supertype
+                // for all roles. We don't want to return relation:role if there is a user-defined role.
+                if let Some(supertype) = Self::get_supertype(snapshot, implementation.interface())? {
+                    if Kind::is_root_label(&Self::get_label(snapshot, supertype.clone())?.ok_or(ConceptReadError::CannotGetLabelForExistingType)?) {
+                        overridden_interfaces.add(supertype);
+                    }
                 }
             }
             current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
@@ -205,13 +209,12 @@ impl TypeReader {
         Ok(transitive_implementations)
     }
 
-    pub(crate) fn get_overridden_interfaces<IMPL, T>(
+    pub(crate) fn get_overridden_interfaces<IMPL>(
         snapshot: &impl ReadableSnapshot,
-        object_type: T,
+        object_type: IMPL::ObjectType,
     ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
     where
-        T: TypeAPI<'static>,
-        IMPL: InterfaceImplementation<'static> + Hash + Eq,
+        IMPL: InterfaceImplementation<'static>,
     {
         let mut overridden_interfaces: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
         let mut current_type = Some(object_type);
@@ -237,7 +240,7 @@ impl TypeReader {
         implementation: IMPL,
     ) -> Result<Option<IMPL>, ConceptReadError>
     where
-        IMPL: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Hash + Eq,
+        IMPL: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         let override_property_key = EdgeOverride::<IMPL>::build_key(implementation);
         snapshot
@@ -252,7 +255,7 @@ impl TypeReader {
         interface_type: IMPL::InterfaceType,
     ) -> Result<HashSet<IMPL>, ConceptReadError>
     where
-        IMPL: InterfaceImplementation<'static> + Hash + Eq,
+        IMPL: InterfaceImplementation<'static>,
     {
         let owns_prefix = IMPL::prefix_for_reverse_edges_from(interface_type);
         snapshot
@@ -301,75 +304,32 @@ impl TypeReader {
         Ok(impl_transitive)
     }
 
-    pub(crate) fn get_relates_declared(
+    pub(crate) fn get_role_type_relates_declared(
         snapshot: &impl ReadableSnapshot,
-        relation: RelationType<'static>,
-    ) -> Result<HashSet<Relates<'static>>, ConceptReadError> {
-        let relates_prefix = Relates::prefix_for_canonical_edges_from(relation);
-        snapshot
-            .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                Relates::decode_canonical_edge(Bytes::Reference(key.byte_ref()).into_owned())
-            })
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-    }
-
-    pub(crate) fn get_relates(
-        snapshot: &impl ReadableSnapshot,
-        relation: RelationType<'static>,
-    ) -> Result<HashMap<RoleType<'static>, Relates<'static>>, ConceptReadError> {
-        let mut transitive_relates: HashMap<RoleType<'static>, Relates<'static>> = HashMap::new();
-        let mut overridden_relates: HashSet<RoleType<'static>> = HashSet::new();
-        let mut current_relation = Some(relation);
-        while current_relation.is_some() {
-            let declared_relates = Self::get_relates_declared(snapshot, current_relation.as_ref().unwrap().clone())?;
-            for relates in declared_relates.into_iter() {
-                let role = relates.role();
-                if !overridden_relates.contains(&role) {
-                    debug_assert!(!transitive_relates.contains_key(&role));
-                    transitive_relates.insert(role, relates.clone());
-                }
-                // TODO: It's not technically overridden as it's just a supertype. Now it hides relation:role after
-                // we create just a single role for a relation. So we have relation:role when we don't have roles and we don't have relation:role once we have a real role.
-                // Do we want this behavior?
-                if let Some(overridden) = Self::get_supertype(snapshot, relates.role())? {
-                    overridden_relates.add(overridden);
-                }
-            }
-            current_relation = Self::get_supertype(snapshot, current_relation.unwrap())?;
-        }
-        Ok(transitive_relates)
+        role: RoleType<'static>,
+    ) -> Result<Relates<'static>, ConceptReadError> {
+        let relates = Self::get_implementations_for_interface_declared::<Relates<'static>>(snapshot, role)?;
+        debug_assert!(relates.len() == 1);
+        relates.iter().next().map(|relates| relates.to_owned()).ok_or(ConceptReadError::CannotGetMandatoryRelatesForRole)
     }
 
     pub(crate) fn get_role_type_relates(
         snapshot: &impl ReadableSnapshot,
         role: RoleType<'static>,
-    ) -> Result<Relates<'static>, ConceptReadError> {
-        let relates_prefix = Relates::prefix_for_reverse_edges_from(role);
-        snapshot
-            .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_vec(|key, _| Relates::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned()))
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-            .map(|v| v.first().unwrap().clone())
-    }
-
-    pub(crate) fn get_role_type_relates_transitive(
-        snapshot: &impl ReadableSnapshot,
-        role: RoleType<'static>,
-    ) -> Result<HashSet<Relates<'static>>, ConceptReadError> {
-        let relates_immediate = Self::get_role_type_relates(snapshot, role.clone())?;
+    ) -> Result<HashMap<RelationType<'static>, Relates<'static>>, ConceptReadError> {
+        let relates_immediate = Self::get_role_type_relates_declared(snapshot, role.clone())?;
 
         let mut role_overriders: HashSet<RelationType<'static>> = HashSet::new();
         for subrole in Self::get_subtypes_transitive(snapshot, role.clone())? {
-            role_overriders.insert(Self::get_role_type_relates(snapshot, subrole)?.relation());
+            role_overriders.insert(Self::get_role_type_relates_declared(snapshot, subrole)?.relation());
         }
 
-        let mut relates_transitive: HashSet<Relates<'static>> = HashSet::new();
-        relates_transitive.insert(relates_immediate.clone());
+        let mut relates_transitive: HashMap<RelationType<'static>, Relates<'static>> = HashMap::new();
+        relates_transitive.insert(relates_immediate.relation(), relates_immediate.clone());
         let mut stack = TypeReader::get_subtypes(snapshot, relates_immediate.relation())?;
         while let Some(subtype) = stack.pop() {
             if !role_overriders.contains(&subtype) {
-                relates_transitive.insert(Relates::new(subtype.clone(), role.clone()));
+                relates_transitive.insert(subtype.clone(), Relates::new(subtype.clone(), role.clone()));
                 stack.append(&mut TypeReader::get_subtypes(snapshot, subtype)?);
             }
         }

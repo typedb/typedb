@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use database::transaction::{TransactionRead, TransactionSchema, TransactionWrite};
+use database::transaction::{SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use macro_rules_attribute::apply;
+use concept::error::ConceptWriteError;
 
 use crate::{
     assert::assert_matches,
@@ -49,8 +50,21 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
 pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
     match context.take_transaction().unwrap() {
         ActiveTransaction::Read(_) => {}
-        ActiveTransaction::Write(tx) => may_error.check(&tx.commit()), // TODO: ConceptReadError is successful here, but it's not right... Need to check it somehow =(
-        ActiveTransaction::Schema(tx) => may_error.check(&tx.commit()),
+        ActiveTransaction::Write(tx) => {
+            if let Some(errors) = may_error.check(&tx.commit()) {
+                errors.iter().for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone())))
+            }
+        }
+        ActiveTransaction::Schema(tx) => {
+            if let Some(schema_commit_error) = may_error.check(&tx.commit()) {
+                match schema_commit_error {
+                    SchemaCommitError::ConceptWrite { errors } => {
+                        errors.iter().for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone())))
+                    },
+                    _ => {}
+                }
+            }
+        }
     }
 }
 

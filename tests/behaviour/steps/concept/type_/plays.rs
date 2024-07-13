@@ -32,7 +32,7 @@ pub async fn set_plays(
     with_schema_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let res = object_type.set_plays(&mut tx.snapshot, &tx.type_manager, role_type);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -49,7 +49,7 @@ pub async fn unset_plays(
     with_schema_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let res = object_type.unset_plays(&mut tx.snapshot, &tx.type_manager, role_type);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -138,7 +138,7 @@ pub async fn get_plays_set_override(
             player_supertype.get_plays_role(&tx.snapshot, &tx.type_manager, overridden_role_type).unwrap();
         if let Some(overridden_plays) = overridden_plays_opt.as_ref() {
             let res = plays.set_override(&mut tx.snapshot, &tx.type_manager, overridden_plays_opt.unwrap());
-            may_error.check(&res);
+            may_error.check_concept_write_without_read_errors(&res);
         } else {
             assert!(may_error.expects_error());
         }
@@ -159,7 +159,7 @@ pub async fn get_plays_unset_override(
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
         let res = plays.unset_override(&mut tx.snapshot, &tx.type_manager);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -226,7 +226,7 @@ pub async fn get_plays_set_annotation(
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
         let res = plays.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(None).into());
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -247,7 +247,7 @@ pub async fn get_plays_unset_annotation(
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
         let res = plays.unset_annotation(&mut tx.snapshot, &tx.type_manager, annotation_category.into_typedb());
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 

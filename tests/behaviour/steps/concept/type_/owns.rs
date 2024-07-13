@@ -30,7 +30,7 @@ pub async fn set_owns(
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
         let res = object_type.set_owns(&mut tx.snapshot, &tx.type_manager, attr_type, Ordering::Unordered);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -48,7 +48,7 @@ pub async fn set_owns_ordered(
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
         let res = object_type.set_owns(&mut tx.snapshot, &tx.type_manager, attr_type, Ordering::Ordered);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -66,7 +66,7 @@ pub async fn unset_owns(
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
         let res = object_type.unset_owns(&mut tx.snapshot, &tx.type_manager, attr_type);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -95,7 +95,7 @@ pub async fn get_owns_set_override(
             .unwrap(); // This may also error
         if let Some(overridden_owns) = overridden_owns_opt {
             let res = owns.set_override(&mut tx.snapshot, &tx.type_manager, overridden_owns);
-            may_error.check(&res);
+            may_error.check_concept_write_without_read_errors(&res);
         } else {
             assert!(may_error.expects_error()); // We error by not finding the type to override
         }
@@ -117,7 +117,7 @@ pub async fn get_owns_unset_override(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = owner.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let res = owns.unset_override(&mut tx.snapshot, &tx.type_manager);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -138,7 +138,7 @@ pub async fn get_owns_set_annotation(
         let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type.clone()).unwrap().unwrap();
         let value_type = attr_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
         let res = owns.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(value_type).into());
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -160,7 +160,7 @@ pub async fn get_owns_unset_annotation(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let res = owns.unset_annotation(&mut tx.snapshot, &tx.type_manager, annotation_category.into_typedb());
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -463,7 +463,7 @@ pub async fn get_owns_set_ordering(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let res = owns.set_ordering(&mut tx.snapshot, &tx.type_manager, ordering.into_typedb().into());
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
