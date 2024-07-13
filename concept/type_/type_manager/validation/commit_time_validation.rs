@@ -69,6 +69,42 @@ macro_rules! validate_types {
     };
 }
 
+macro_rules! produced_errors {
+    ($errors:ident, $expr:expr) => {
+        {
+            let len_before = $errors.len();
+            $expr;
+            $errors.len() > len_before
+        }
+    };
+}
+
+macro_rules! ff {
+    ($func_name:ident, $kind:expr, $type_:ident, $func:path) => {
+        fn $func_name(
+            type_manager: &TypeManager,
+            snapshot: &impl ReadableSnapshot,
+            validation_errors: &mut Vec<SchemaValidationError>,
+        ) -> Result<(), ConceptReadError> {
+            let root_label = $kind.root_label();
+            let root = TypeReader::get_labelled_type::<$type_<'static>>(snapshot, &root_label)?;
+
+            match root {
+                Some(root) => {
+                    $func(type_manager, snapshot, root.clone(), validation_errors)?;
+
+                    for subtype in TypeReader::get_subtypes_transitive(snapshot, root)? {
+                        $func(type_manager, snapshot, subtype, validation_errors)?;
+                    }
+                }
+                None => validation_errors.push(SchemaValidationError::RootHasBeenCorrupted(root_label)),
+            };
+
+            Ok(())
+        }
+    };
+}
+
 impl CommitTimeValidation {
     pub(crate) fn validate(
         type_manager: &TypeManager,
@@ -109,9 +145,11 @@ impl CommitTimeValidation {
         Self::validate_relation_type_has_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
         Self::validate_relation_type_role_types(type_manager, snapshot, type_.clone(), validation_errors)?;
 
-        Self::validate_abstractness_matches_with_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_relates_cardinality(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_declared_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
+        let ill_relates = produced_errors!(validation_errors, Self::validate_declared_relates(type_manager, snapshot, type_.clone(), validation_errors)?);
+        if !ill_relates {
+            Self::validate_abstractness_matches_with_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
+            Self::validate_relates_cardinality(type_manager, snapshot, type_.clone(), validation_errors)?;
+        }
 
         Ok(())
     }
@@ -159,13 +197,17 @@ impl CommitTimeValidation {
         type_: T,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        Self::validate_abstractness_matches_with_owns(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_owns_cardinality(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_declared_owns(type_manager, snapshot, type_.clone(), validation_errors)?;
+        let ill_owns = produced_errors!(validation_errors, Self::validate_declared_owns(type_manager, snapshot, type_.clone(), validation_errors)?);
+        if !ill_owns {
+            Self::validate_abstractness_matches_with_owns(type_manager, snapshot, type_.clone(), validation_errors)?;
+            Self::validate_owns_cardinality(type_manager, snapshot, type_.clone(), validation_errors)?;
+        }
 
-        Self::validate_abstractness_matches_with_plays(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_plays_cardinality(type_manager, snapshot, type_.clone(), validation_errors)?;
-        Self::validate_declared_plays(type_manager, snapshot, type_.clone(), validation_errors)?;
+        let ill_plays = produced_errors!(validation_errors, Self::validate_declared_plays(type_manager, snapshot, type_.clone(), validation_errors)?);
+        if !ill_plays {
+            Self::validate_abstractness_matches_with_plays(type_manager, snapshot, type_.clone(), validation_errors)?;
+            Self::validate_plays_cardinality(type_manager, snapshot, type_.clone(), validation_errors)?;
+        }
 
         Ok(())
     }
