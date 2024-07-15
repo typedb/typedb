@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, iter::empty};
+use std::{
+    collections::HashMap,
+    fmt,
+    iter::{empty, zip},
+};
 
 use answer::variable::Variable;
 use itertools::Itertools;
@@ -16,8 +20,9 @@ use crate::{
         variable_category::{VariableCategory, VariableOptionality},
         IrID, ScopeId,
     },
-    program::block::BlockContext,
+    program::{block::BlockContext, function_signature::FunctionSignature},
     PatternDefinitionError,
+    PatternDefinitionError::FunctionCallArgumentCountMismatch,
 };
 
 #[derive(Debug)]
@@ -25,7 +30,7 @@ pub struct Constraints {
     scope: ScopeId,
     constraints: Vec<Constraint<Variable>>,
 
-    // TODO: could also store indexes into the Constraints vec? Depends how expensive Constraints are and if we delete
+    // TODO: could also store indexes into the Constraints vec? Depends how expensive Constraints are() and if we delete
     left_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
     right_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
     filter_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
@@ -42,7 +47,11 @@ impl Constraints {
         }
     }
 
-    pub(crate) fn constraints(&self) -> &[Constraint<Variable>] {
+    pub(crate) fn scope(&self) -> ScopeId {
+        self.scope
+    }
+
+    pub fn constraints(&self) -> &[Constraint<Variable>] {
         &self.constraints
     }
 
@@ -193,31 +202,58 @@ impl<'cx> ConstraintsBuilder<'cx> {
     pub fn add_function_call(
         &mut self,
         assigned: Vec<Variable>,
-        function_call: FunctionCall<Variable>,
+        callee_signature: &FunctionSignature,
+        arguments: Vec<Variable>,
     ) -> Result<&FunctionCallBinding<Variable>, PatternDefinitionError> {
-        use PatternDefinitionError::FunctionCallReturnArgCountMismatch;
+        use PatternDefinitionError::{
+            FunctionCallReturnArgCountMismatch, FunctionRequiredArgumentReceivedOptionalVariable,
+        };
         debug_assert!(assigned.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
+        debug_assert!(arguments.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
 
-        if assigned.len() != function_call.returns().len() {
+        // Validate
+        if assigned.len() != callee_signature.returns.len() {
             Err(FunctionCallReturnArgCountMismatch {
                 assigned_var_count: assigned.len(),
-                function_return_count: function_call.returns().len(),
+                function_return_count: callee_signature.returns.len(),
             })?
         }
+        if arguments.len() != callee_signature.arguments.len() {
+            Err(FunctionCallArgumentCountMismatch {
+                expected: callee_signature.arguments.len(),
+                actual: arguments.len(),
+            })?
+        }
+        let unsatisfied_required_argument =
+            zip(arguments.iter(), callee_signature.arguments.iter()).find(|(caller_var, callee_argument)| {
+                self.context.is_variable_optional(**caller_var) && VariableOptionality::Required == callee_argument.1
+            });
+        if let Some((variable, _)) = unsatisfied_required_argument {
+            Err(FunctionRequiredArgumentReceivedOptionalVariable { variable: *variable })?
+        }
 
+        // Construct
+        let call_variable_mapping =
+            arguments.iter().enumerate().map(|(index, variable)| (variable.clone(), index)).collect();
+        let function_call = FunctionCall::new(
+            callee_signature.function_id.clone(),
+            call_variable_mapping,
+            callee_signature.return_is_stream,
+        );
         let binding = FunctionCallBinding::new(assigned, function_call);
 
         for (index, var) in binding.ids_assigned().enumerate() {
+            self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
+        }
+
+        for (caller_var, callee_arg_index) in binding.function_call.call_id_mapping() {
             self.context.set_variable_category(
-                var,
-                binding.function_call().returns()[index].0,
+                *caller_var,
+                callee_signature.arguments[*callee_arg_index].0,
                 binding.clone().into(),
             )?;
-            match binding.function_call.returns()[index].1 {
-                VariableOptionality::Required => {}
-                VariableOptionality::Optional => self.context.set_variable_is_optional(var),
-            }
         }
+
         let as_ref = self.constraints.add_constraint(binding);
         Ok(as_ref.as_function_call_binding().unwrap())
     }
@@ -234,157 +270,12 @@ impl<'cx> ConstraintsBuilder<'cx> {
         Ok(as_ref.as_expression_binding().unwrap())
     }
 
-    pub(super) fn extend_from_typeql_statement(
-        &mut self,
-        stmt: &typeql::Statement,
-    ) -> Result<(), PatternDefinitionError> {
-        match stmt {
-            typeql::Statement::Is(_) => todo!(),
-            typeql::Statement::InStream(_) => todo!(),
-            typeql::Statement::Comparison(_) => todo!(),
-            typeql::Statement::Assignment(_) => todo!(),
-            typeql::Statement::Thing(thing) => self.extend_from_typeql_thing_statement(thing)?,
-            typeql::Statement::AttributeValue(_) => todo!(),
-            typeql::Statement::AttributeComparison(_) => todo!(),
-            typeql::Statement::Type(type_) => self.extend_from_typeql_type_statement(type_)?,
-        }
-        Ok(())
+    pub(crate) fn create_anonymous_variable(&mut self) -> Result<Variable, PatternDefinitionError> {
+        self.context.create_anonymous_variable(self.constraints.scope)
     }
 
-    fn extend_from_typeql_thing_statement(
-        &mut self,
-        thing: &typeql::statement::Thing,
-    ) -> Result<(), PatternDefinitionError> {
-        let var = match &thing.head {
-            typeql::statement::thing::Head::Variable(var) => self.register_typeql_var(var)?,
-            typeql::statement::thing::Head::Relation(rel) => {
-                let relation = self.context.create_anonymous_variable(self.constraints.scope)?;
-                self.add_typeql_relation(relation, rel)?;
-                relation
-            }
-        };
-        for constraint in &thing.constraints {
-            match constraint {
-                typeql::statement::thing::Constraint::Isa(isa) => self.add_typeql_isa(var, isa)?,
-                typeql::statement::thing::Constraint::Iid(_) => todo!(),
-                typeql::statement::thing::Constraint::Has(has) => self.add_typeql_has(var, has)?,
-                typeql::statement::thing::Constraint::Links(links) => self.add_typeql_relation(var, &links.relation)?,
-            }
-        }
-        Ok(())
-    }
-
-    fn extend_from_typeql_type_statement(
-        &mut self,
-        type_: &typeql::statement::Type,
-    ) -> Result<(), PatternDefinitionError> {
-        let var = self.register_typeql_type_var(&type_.type_)?;
-        for constraint in &type_.constraints {
-            assert!(constraint.annotations.is_empty(), "TODO: handle type statement annotations");
-            match &constraint.base {
-                typeql::statement::type_::ConstraintBase::Sub(_) => todo!(),
-                typeql::statement::type_::ConstraintBase::Label(label) => match label {
-                    typeql::statement::type_::LabelConstraint::Name(label) => {
-                        self.add_label(var, label.as_str())?;
-                    }
-                    typeql::statement::type_::LabelConstraint::Scoped(_) => todo!(),
-                },
-                typeql::statement::type_::ConstraintBase::ValueType(_) => todo!(),
-                typeql::statement::type_::ConstraintBase::Owns(_) => todo!(),
-                typeql::statement::type_::ConstraintBase::Relates(_) => todo!(),
-                typeql::statement::type_::ConstraintBase::Plays(_) => todo!(),
-            }
-        }
-        Ok(())
-    }
-
-    fn register_typeql_var(&mut self, var: &typeql::Variable) -> Result<Variable, PatternDefinitionError> {
-        match var {
-            typeql::Variable::Named(_, name) => {
-                self.context.get_or_declare_variable_named(name.as_str(), self.constraints.scope)
-            }
-            typeql::Variable::Anonymous(_) => self.context.create_anonymous_variable(self.constraints.scope),
-        }
-    }
-
-    fn register_typeql_type_var_any(&mut self, type_: &typeql::TypeAny) -> Result<Variable, PatternDefinitionError> {
-        match type_ {
-            typeql::TypeAny::Type(type_) => self.register_typeql_type_var(type_),
-            typeql::TypeAny::Optional(_) => todo!(),
-            typeql::TypeAny::List(_) => todo!(),
-        }
-    }
-
-    fn register_typeql_type_var(&mut self, type_: &typeql::Type) -> Result<Variable, PatternDefinitionError> {
-        match type_ {
-            typeql::Type::Label(label) => self.register_type_label_var(label),
-            typeql::Type::ScopedLabel(_) => todo!(),
-            typeql::Type::Variable(var) => self.register_typeql_var(var),
-            typeql::Type::BuiltinValue(_) => todo!(),
-        }
-    }
-
-    fn register_type_label_var(&mut self, label: &typeql::Label) -> Result<Variable, PatternDefinitionError> {
-        let var = self.context.create_anonymous_variable(self.constraints.scope)?;
-        match label {
-            typeql::Label::Identifier(ident) => self.add_label(var, ident.as_str())?,
-            typeql::Label::Reserved(reserved) => todo!("Unhandled builtin type: {reserved}"),
-        };
-        Ok(var)
-    }
-
-    fn add_typeql_isa(
-        &mut self,
-        thing: Variable,
-        isa: &typeql::statement::thing::isa::Isa,
-    ) -> Result<(), PatternDefinitionError> {
-        let kind = match isa.kind {
-            typeql::statement::thing::isa::IsaKind::Exact => IsaKind::Exact,
-            typeql::statement::thing::isa::IsaKind::Subtype => IsaKind::Subtype,
-        };
-        let type_ = self.register_typeql_type_var(&isa.type_)?;
-        self.add_isa(kind, thing, type_)?;
-        Ok(())
-    }
-
-    fn add_typeql_has(
-        &mut self,
-        owner: Variable,
-        has: &typeql::statement::thing::Has,
-    ) -> Result<(), PatternDefinitionError> {
-        let attr = match &has.value {
-            typeql::statement::thing::HasValue::Variable(var) => var,
-            typeql::statement::thing::HasValue::Expression(_) => todo!(),
-            typeql::statement::thing::HasValue::Comparison(_) => todo!(),
-        };
-        let attribute = self.context.get_or_declare_variable_named(attr.name().unwrap(), self.constraints.scope)?;
-        self.add_has(owner, attribute)?;
-        if let Some(type_) = &has.type_ {
-            let attribute_type = self.register_typeql_type_var_any(type_)?;
-            self.add_isa(IsaKind::Subtype, attribute, attribute_type)?;
-        }
-        Ok(())
-    }
-
-    fn add_typeql_relation(
-        &mut self,
-        relation: Variable,
-        roleplayers: &typeql::statement::thing::Relation,
-    ) -> Result<(), PatternDefinitionError> {
-        for role_player in &roleplayers.role_players {
-            match role_player {
-                typeql::statement::thing::RolePlayer::Typed(type_, var) => {
-                    let player = self.register_typeql_var(var)?;
-                    let type_ = self.register_typeql_type_var_any(type_)?;
-                    self.add_role_player(relation, player, Some(type_))?;
-                }
-                typeql::statement::thing::RolePlayer::Untyped(var) => {
-                    let player = self.register_typeql_var(var)?;
-                    self.add_role_player(relation, player, None)?;
-                }
-            }
-        }
-        Ok(())
+    pub(crate) fn get_or_declare_variable_named(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
+        self.context.get_or_declare_variable_named(name, self.constraints.scope)
     }
 }
 

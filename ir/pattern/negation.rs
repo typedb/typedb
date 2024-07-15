@@ -7,9 +7,12 @@
 use std::fmt;
 
 use crate::{
-    pattern::{conjunction::Conjunction, Scope, ScopeId},
+    pattern::{
+        conjunction::{Conjunction, ConjunctionBuilder},
+        optional::Optional,
+        Scope, ScopeId,
+    },
     program::block::BlockContext,
-    PatternDefinitionError,
 };
 
 #[derive(Debug)]
@@ -18,14 +21,15 @@ pub struct Negation {
 }
 
 impl Negation {
-    pub(crate) fn build_child_from_typeql_patterns(
-        context: &mut BlockContext,
-        parent_scope_id: ScopeId,
-        patterns: &[typeql::Pattern],
-    ) -> Result<Self, PatternDefinitionError> {
-        let scope_id = context.create_child_scope(parent_scope_id);
-        let conjunction = Conjunction::build_from_typeql_patterns(context, scope_id, patterns)?;
-        Ok(Self { conjunction })
+    pub fn new(scope_id: ScopeId) -> Self {
+        Self { conjunction: Conjunction::new(scope_id) }
+    }
+
+    pub(super) fn new_builder<'cx>(
+        context: &'cx mut BlockContext,
+        negation: &'cx mut Negation,
+    ) -> ConjunctionBuilder<'cx> {
+        ConjunctionBuilder::new(context, &mut negation.conjunction)
     }
 
     pub(crate) fn conjunction(&self) -> &Conjunction {

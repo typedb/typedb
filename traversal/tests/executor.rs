@@ -25,8 +25,12 @@ use encoding::{
 };
 use ir::{
     inference::type_inference::infer_types,
-    pattern::constraint::Has,
-    program::{block::FunctionalBlock, program::Program},
+    program::{
+        block::FunctionalBlock,
+        function_signature::{EmptySchemaFunctionIndex, FunctionSignatureIndex},
+        program::Program,
+    },
+    translator::pattern_builder::TypeQLBuilder,
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
@@ -142,7 +146,8 @@ fn traverse_has() {
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
 
     // IR
-    let mut builder = FunctionalBlock::builder();
+    let empty_function_index = FunctionSignatureIndex::new(&EmptySchemaFunctionIndex {}, HashMap::new());
+    let mut builder = TypeQLBuilder::build_match_but_dont_finish(&empty_function_index, &match_).unwrap();
     builder.conjunction_mut().and_typeql_patterns(&match_.patterns).unwrap();
     // builder.add_limit(3);
     // builder.add_filter(vec!["person", "age"]).unwrap();

@@ -4,20 +4,29 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::sync::Arc;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 
-use crate::program::{block::FunctionalBlock, function::FunctionIR};
+use crate::{
+    inference::type_inference::{FunctionAnnotations, TypeAnnotations},
+    program::{
+        block::FunctionalBlock,
+        function::{FunctionDefinitionError, FunctionIR},
+        function_signature::{FunctionID, FunctionIDTrait, FunctionManagerIndexInjectionTrait, FunctionSignatureIndex},
+    },
+    translator::{function_builder::TypeQLFunctionBuilder, pattern_builder::TypeQLBuilder},
+};
 
 pub struct Program {
-    pub entry: FunctionalBlock,
-    functions: HashMap<DefinitionKey<'static>, FunctionIR>,
+    entry: FunctionalBlock,
+    functions: Vec<FunctionIR>,
 }
 
 impl Program {
-    pub fn new(entry: FunctionalBlock, functions: HashMap<DefinitionKey<'static>, FunctionIR>) -> Self {
+    pub fn new(entry: FunctionalBlock, functions: Vec<FunctionIR>) -> Self {
         // TODO: verify exactly the required functions are provided
+        // TODO: ^ Why? I've since interpreted it as the query-local functions
         debug_assert!(Self::all_variables_categorised(&entry));
         Self { entry, functions }
     }
@@ -30,9 +39,50 @@ impl Program {
         &mut self.entry
     }
 
-    pub fn compile(match_: &typeql::query::stage::Match) -> Self {
-        let _entry = FunctionalBlock::from_match(match_);
-        todo!()
+    pub(crate) fn functions(&self) -> &Vec<FunctionIR> {
+        &self.functions
+    }
+
+    pub(crate) fn into_parts(self) -> (FunctionalBlock, Vec<FunctionIR>) {
+        let Self { entry, functions } = self;
+        (entry, functions)
+    }
+
+    // TODO: ProgramDefinitionError? ---> Yes
+    pub fn compile(
+        schema_functions: &impl FunctionManagerIndexInjectionTrait,
+        match_: &typeql::query::stage::Match,
+        preamble_functions: Vec<&typeql::Function>,
+    ) -> Result<Self, FunctionDefinitionError> {
+        let preamble_index = preamble_functions
+            .iter()
+            .enumerate()
+            .map(|(idx, function)| {
+                (
+                    function.signature.ident.ident.clone(),
+                    TypeQLFunctionBuilder::build_signature(FunctionID::Preamble(idx), *function),
+                )
+            })
+            .collect();
+        let function_index = FunctionSignatureIndex::new(schema_functions, preamble_index);
+        let functions: Vec<FunctionIR> = preamble_functions
+            .iter()
+            .map(|function| TypeQLFunctionBuilder::build_ir(&function_index, &function))
+            .collect::<Result<Vec<FunctionIR>, FunctionDefinitionError>>()?;
+        let entry = TypeQLBuilder::build_match(&function_index, match_)
+            .map_err(|source| FunctionDefinitionError::PatternDefinition { source })?;
+
+        Ok(Self { entry, functions })
+    }
+
+    // TODO: first arg: preexisting stuff. second arg: new functions
+    pub fn compile_functions<'index, 'functions>(
+        function_index: &FunctionSignatureIndex<'index, impl FunctionManagerIndexInjectionTrait>,
+        functions_to_compile: impl Iterator<Item = &'functions typeql::Function>,
+    ) -> Result<Vec<FunctionIR>, FunctionDefinitionError> {
+        let ir: Result<Vec<FunctionIR>, FunctionDefinitionError> =
+            functions_to_compile.map(|function| TypeQLFunctionBuilder::build_ir(function_index, &function)).collect();
+        Ok(ir?)
     }
 
     fn all_variables_categorised(block: &FunctionalBlock) -> bool {
@@ -40,8 +90,191 @@ impl Program {
         let mut variables = context.variables();
         variables.all(|var| context.get_variable_category(var).is_some())
     }
+}
 
-    pub(crate) fn functions(&self) -> &HashMap<DefinitionKey<'static>, FunctionIR> {
-        &self.functions
+pub struct AnnotatedProgram {
+    pub(crate) entry: FunctionalBlock,
+    pub(crate) entry_annotations: TypeAnnotations,
+    pub(crate) local_functions: LocalFunctionCache,
+    pub(crate) schema_functions: Arc<SchemaFunctionCache>,
+}
+
+impl AnnotatedProgram {
+    pub(crate) fn new(
+        entry: FunctionalBlock,
+        entry_annotations: TypeAnnotations,
+        local_functions: LocalFunctionCache,
+        schema_functions: Arc<SchemaFunctionCache>,
+    ) -> Self {
+        Self { entry, entry_annotations, local_functions, schema_functions }
+    }
+
+    fn get_function_ir(&self, function_id: FunctionID) -> Option<&FunctionIR> {
+        match function_id {
+            FunctionID::Schema(definition_key) => self.schema_functions.get_function_ir(definition_key),
+            FunctionID::Preamble(index) => self.local_functions.get_function_ir(index),
+        }
+    }
+
+    fn get_function_annotations(&self, function_id: FunctionID) -> Option<&FunctionAnnotations> {
+        match function_id {
+            FunctionID::Schema(definition_key) => self.schema_functions.get_function_annotations(definition_key),
+            FunctionID::Preamble(index) => self.local_functions.get_function_annotations(index),
+        }
+    }
+}
+
+pub struct SchemaFunctionCache {
+    ir: Box<[Option<FunctionIR>]>,
+    annotations: Box<[Option<FunctionAnnotations>]>,
+}
+
+impl SchemaFunctionCache {
+    pub fn new(ir: Box<[Option<FunctionIR>]>, annotations: Box<[Option<FunctionAnnotations>]>) -> Self {
+        Self { ir, annotations }
+    }
+
+    pub fn empty() -> Self {
+        Self { ir: Box::new([]), annotations: Box::new([]) }
+    }
+}
+
+impl CompiledFunctionCache for SchemaFunctionCache {
+    type KeyType = DefinitionKey<'static>;
+
+    fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR> {
+        self.ir.get(id.as_usize())?.as_ref()
+    }
+
+    fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations> {
+        self.annotations.get(id.as_usize())?.as_ref()
+    }
+}
+
+pub trait CompiledFunctionCache {
+    type KeyType;
+    fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR>;
+
+    fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations>;
+}
+
+// May hold IR & Annotations for either Schema functions or Preamble functions
+// For schema functions, The index does not correspond to function_id.as_usize().
+pub struct LocalFunctionCache {
+    ir: Box<[FunctionIR]>,
+    annotations: Box<[FunctionAnnotations]>,
+}
+
+impl LocalFunctionCache {
+    pub fn new(ir: Box<[FunctionIR]>, annotations: Box<[FunctionAnnotations]>) -> Self {
+        Self { ir, annotations }
+    }
+
+    pub fn iter_ir(&self) -> impl Iterator<Item = &FunctionIR> {
+        self.ir.iter()
+    }
+
+    pub fn into_parts(self) -> (Box<[FunctionIR]>, Box<[FunctionAnnotations]>) {
+        let Self { ir, annotations } = self;
+        (ir, annotations)
+    }
+}
+
+impl CompiledFunctionCache for LocalFunctionCache {
+    type KeyType = usize;
+
+    fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR> {
+        self.ir.get(id)
+    }
+
+    fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations> {
+        self.annotations.get(id)
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use std::{collections::HashSet, sync::Arc};
+
+    use typeql::query::Pipeline;
+
+    use crate::{
+        inference::{
+            tests::{managers, schema_consts::setup_types, setup_storage},
+            type_inference::infer_types,
+        },
+        pattern::{constraint::Constraint, Scope},
+        program::{
+            function::FunctionDefinitionError,
+            function_signature::{EmptySchemaFunctionIndex, FunctionID},
+            program::{CompiledFunctionCache, Program, SchemaFunctionCache},
+        },
+        PatternDefinitionError,
+    };
+
+    #[test]
+    fn from_typeql() {
+        let raw_query = "
+            with
+            fun cat_names($c: animal) -> { name } :
+                match
+                    $c has cat-name $n;
+                return { $n };
+
+            match
+                $x isa animal;
+                $n in cat_names($x);
+            filter $x;
+        ";
+        let query = typeql::parse_query(raw_query).unwrap().into_pipeline();
+        let Pipeline { stages, preambles, .. } = query;
+        let entry = stages.into_iter().map(|stage| stage.into_match()).find(|_| true).unwrap();
+        let function = preambles.into_iter().map(|preamble| preamble.function).find(|_| true).unwrap();
+
+        let function_id = FunctionID::Preamble(0);
+        let should_be_unresolved_error = Program::compile(&EmptySchemaFunctionIndex {}, &entry, vec![]);
+        assert!(matches!(
+            should_be_unresolved_error,
+            Err(FunctionDefinitionError::PatternDefinition {
+                source: PatternDefinitionError::UnresolvedFunction { .. }
+            })
+        ));
+
+        let program = Program::compile(&EmptySchemaFunctionIndex {}, &entry, vec![&function]).unwrap();
+        match &program.entry.conjunction().constraints()[2] {
+            Constraint::FunctionCallBinding(call) => {
+                assert_eq!(function_id, call.function_call().function_id())
+            }
+            _ => assert!(false),
+        }
+
+        let storage = setup_storage();
+        let (type_manager, _) = managers();
+        let ((type_animal, type_cat, type_dog), _, _) =
+            setup_types(storage.clone().open_snapshot_write(), &type_manager);
+        let empty_cache = Arc::new(SchemaFunctionCache::empty());
+
+        let snapshot = storage.clone().open_snapshot_read();
+        let var_f_c = program.functions[0]
+            .block()
+            .context()
+            .get_variable_named("c", program.functions[0].block().scope_id())
+            .unwrap()
+            .clone();
+        let var_x = program.entry.context().get_variable_named("x", program.entry.scope_id()).unwrap().clone();
+        let annotated_program = infer_types(program, &snapshot, &type_manager, empty_cache).unwrap();
+        assert_eq!(
+            &Arc::new(HashSet::from([type_cat.clone()])),
+            annotated_program
+                .get_function_annotations(function_id)
+                .unwrap()
+                .block_annotations
+                .variable_annotations(var_f_c)
+                .unwrap()
+        );
+        assert_eq!(
+            &Arc::new(HashSet::from([type_cat.clone()])),
+            annotated_program.entry_annotations.variable_annotations(var_x).unwrap(),
+        );
     }
 }

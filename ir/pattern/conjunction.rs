@@ -30,16 +30,6 @@ impl Conjunction {
         Self { scope_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new() }
     }
 
-    pub fn build_from_typeql_patterns(
-        context: &mut BlockContext,
-        scope_id: ScopeId,
-        patterns: &[typeql::Pattern],
-    ) -> Result<Self, PatternDefinitionError> {
-        let mut conjunction = Conjunction::new(scope_id);
-        ConjunctionBuilder::new(context, &mut conjunction).and_typeql_patterns(patterns)?;
-        Ok(conjunction)
-    }
-
     pub fn constraints(&self) -> &[Constraint<Variable>] {
         &self.constraints.constraints()
     }
@@ -83,51 +73,30 @@ impl<'cx> ConjunctionBuilder<'cx> {
         ConstraintsBuilder::new(self.context, &mut self.conjunction.constraints)
     }
 
-    pub fn and_typeql_patterns(self, patterns: &[typeql::Pattern]) -> Result<Self, PatternDefinitionError> {
-        patterns.iter().try_fold(self, |mut this, item| match item {
-            typeql::Pattern::Conjunction(conjunction) => this.and_typeql_patterns(patterns),
-            typeql::Pattern::Disjunction(disjunction) => this.and_typeql_disjunction(disjunction),
-            typeql::Pattern::Negation(negation) => this.and_typeql_negation(negation),
-            typeql::Pattern::Optional(optional) => this.and_typeql_optional(optional),
-            typeql::Pattern::Statement(stmt) => {
-                this.constraints_mut().extend_from_typeql_statement(stmt)?;
-                Ok(this)
-            }
-        })
-    }
-
-    fn and_typeql_disjunction(
-        self,
-        disjunction: &typeql::pattern::Disjunction,
-    ) -> Result<Self, PatternDefinitionError> {
-        let disjunction = Disjunction::build_child_from_typeql_patterns(
-            self.context,
-            self.conjunction.scope_id,
-            &disjunction.branches,
-        )?;
-        self.conjunction.nested_patterns.push(NestedPattern::Disjunction(disjunction));
-        Ok(self)
-    }
-
-    fn and_typeql_negation(self, negation: &typeql::pattern::Negation) -> Result<Self, PatternDefinitionError> {
-        let negation =
-            Negation::build_child_from_typeql_patterns(self.context, self.conjunction.scope_id, &negation.patterns)?;
-        self.conjunction.nested_patterns.push(NestedPattern::Negation(negation));
-        Ok(self)
-    }
-
-    fn and_typeql_optional(self, optional: &typeql::pattern::Optional) -> Result<Self, PatternDefinitionError> {
-        let optional =
-            Optional::build_child_from_typeql_patterns(self.context, self.conjunction.scope_id, &optional.patterns)?;
-        self.conjunction.nested_patterns.push(NestedPattern::Optional(optional));
-        Ok(self)
-    }
-
     pub fn add_disjunction(&mut self) -> DisjunctionBuilder<'_> {
         self.conjunction.nested_patterns.push(NestedPattern::Disjunction(Disjunction::new()));
         let disjunction =
             self.conjunction.nested_patterns.last_mut().and_then(NestedPattern::as_disjunction_mut).unwrap();
         DisjunctionBuilder::new(self.context, self.conjunction.scope_id, disjunction)
+    }
+    pub fn add_negation(&mut self) -> ConjunctionBuilder<'_> {
+        let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id);
+        let negation = Negation::new(nested_scope_id);
+        self.conjunction.nested_patterns.push(NestedPattern::Negation(negation));
+        let Some(NestedPattern::Negation(negation)) = self.conjunction.nested_patterns.last_mut() else {
+            unreachable!()
+        };
+        Negation::new_builder(self.context, negation)
+    }
+
+    pub fn add_optional(&mut self) -> ConjunctionBuilder<'_> {
+        let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id);
+        let optional = Optional::new(nested_scope_id);
+        self.conjunction.nested_patterns.push(NestedPattern::Optional(optional));
+        let Some(NestedPattern::Optional(optional)) = self.conjunction.nested_patterns.last_mut() else {
+            unreachable!()
+        };
+        Optional::new_builder(self.context, optional)
     }
 
     pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {

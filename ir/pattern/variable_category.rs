@@ -18,6 +18,7 @@ pub enum VariableCategory {
     Attribute,
     Value,
 
+    ThingList,
     ObjectList,
     AttributeList,
     ValueList,
@@ -53,10 +54,17 @@ impl VariableCategory {
             (_, Self::Value) | (Self::Value, _) => None,
 
             (Self::ObjectList, Self::ObjectList) => Some(Self::ObjectList),
+            (Self::ThingList, Self::ObjectList) | (Self::ObjectList, Self::ThingList) => Some(Self::ObjectList),
             (_, Self::ObjectList) | (Self::ObjectList, _) => None,
 
             (Self::AttributeList, Self::AttributeList) => Some(Self::AttributeList),
+            (Self::ThingList, Self::AttributeList) | (Self::AttributeList, Self::ThingList) => {
+                Some(Self::AttributeList)
+            }
             (_, Self::AttributeList) | (Self::AttributeList, _) => None,
+
+            (Self::ThingList, Self::ThingList) => Some(Self::ThingList),
+            (Self::ThingList, _) | (_, Self::ThingList) => None,
 
             (Self::ValueList, Self::ValueList) => Some(Self::ValueList),
             (_, Self::ValueList) | (Self::ValueList, _) => None,

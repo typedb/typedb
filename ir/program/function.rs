@@ -4,31 +4,135 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable::Variable;
+use std::{
+    collections::{BTreeSet, HashMap, HashSet},
+    error::Error,
+    fmt,
+    fmt::Display,
+    sync::Arc,
+};
 
-use crate::{program::block::FunctionalBlock, PatternDefinitionError};
+use answer::{variable::Variable, Type};
+use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
+
+use crate::{
+    program::{block::FunctionalBlock, function_signature::FunctionID},
+    PatternDefinitionError,
+};
+
+pub type PlaceholderTypeQLReturnOperation = String;
 
 pub struct FunctionIR {
+    // Variable categories for args & return can be read from the block's context.
     arguments: Vec<Variable>,
     block: FunctionalBlock,
-    // TODO: how to encode return operation?
+    return_operation: ReturnOperationIR,
 }
 
 impl FunctionIR {
-    fn new<'a>(
-        block: FunctionalBlock,
-        arguments: impl Iterator<Item = &'a str>,
-    ) -> Result<Self, PatternDefinitionError> {
-        let mut argument_variables = Vec::new();
-        {
-            let context = block.context();
-            for arg in arguments {
-                let var = context.get_variable(arg).ok_or_else(|| PatternDefinitionError::FunctionArgumentUnused {
-                    argument_variable: arg.to_string(),
-                })?;
-                argument_variables.push(var);
+    pub fn new<'a>(block: FunctionalBlock, arguments: Vec<Variable>, return_operation: ReturnOperationIR) -> Self {
+        Self { block, arguments, return_operation }
+    }
+
+    pub fn arguments(&self) -> &Vec<Variable> {
+        &self.arguments
+    }
+    pub fn block(&self) -> &FunctionalBlock {
+        &self.block
+    }
+    pub fn return_operation(&self) -> &ReturnOperationIR {
+        &self.return_operation
+    }
+}
+
+pub enum ReturnOperationIR {
+    Stream(Vec<Variable>),
+    Single(Vec<Reducer>),
+}
+
+impl ReturnOperationIR {
+    pub(crate) fn output_annotations(
+        &self,
+        function_variable_annotations: &HashMap<Variable, Arc<HashSet<Type>>>,
+    ) -> Vec<BTreeSet<Type>> {
+        match self {
+            ReturnOperationIR::Stream(vars) => {
+                let inputs = vars.iter().map(|v| function_variable_annotations.get(v).unwrap());
+                inputs
+                    .map(|types_as_arced_hashset| BTreeSet::from_iter(types_as_arced_hashset.iter().map(|t| t.clone())))
+                    .collect()
+            }
+            ReturnOperationIR::Single(_) => {
+                todo!()
             }
         }
-        Ok(Self { arguments: argument_variables, block })
+    }
+}
+
+impl ReturnOperationIR {
+    pub(crate) fn is_stream(&self) -> bool {
+        match self {
+            Self::Stream(_) => true,
+            Self::Single(_) => false,
+        }
+    }
+}
+
+pub enum Reducer {
+    Count(ReducerInput),
+    Sum(ReducerInput),
+    // First, Any etc.
+}
+
+pub enum ReducerInput {
+    Variable,
+    Reducer,
+}
+
+#[derive(Debug)]
+pub enum FunctionReadError {
+    FunctionNotFound { function_id: FunctionID },
+    SnapshotGet { source: SnapshotGetError },
+    SnapshotIterate { source: Arc<SnapshotIteratorError> },
+}
+
+impl Display for FunctionReadError {
+    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for FunctionReadError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::SnapshotGet { source } => Some(source),
+            Self::SnapshotIterate { source } => Some(source),
+            Self::FunctionNotFound { .. } => None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum FunctionDefinitionError {
+    FunctionArgumentUnused { argument_variable: String },
+    ReturnVariableUnavailable { variable: String },
+    PatternDefinition { source: PatternDefinitionError },
+    ParseError { source: typeql::common::error::Error },
+}
+
+impl fmt::Display for FunctionDefinitionError {
+    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for FunctionDefinitionError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::FunctionArgumentUnused { .. } => None,
+            Self::ReturnVariableUnavailable { .. } => None,
+            Self::PatternDefinition { source } => Some(source),
+            Self::ParseError { source } => Some(source),
+        }
     }
 }

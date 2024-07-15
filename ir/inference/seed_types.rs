@@ -22,7 +22,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     inference::{
         pattern_type_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph},
-        type_inference::VertexAnnotations,
+        type_inference::{FunctionAnnotations, VertexAnnotations},
         TypeInferenceError,
     },
     pattern::{
@@ -33,17 +33,49 @@ use crate::{
         variable_category::VariableCategory,
         Scope, ScopeId,
     },
-    program::block::BlockContext,
+    program::{
+        block::BlockContext,
+        function::FunctionIR,
+        function_signature::FunctionID,
+        program::{CompiledFunctionCache, LocalFunctionCache, SchemaFunctionCache},
+    },
 };
 
 pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
+    schema_functions: &'this SchemaFunctionCache,
+    local_functions: Option<&'this LocalFunctionCache>,
 }
 
 impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
-    pub(crate) fn new(snapshot: &'this Snapshot, type_manager: &'this TypeManager) -> Self {
-        TypeSeeder { snapshot, type_manager }
+    pub(crate) fn new(
+        snapshot: &'this Snapshot,
+        type_manager: &'this TypeManager,
+        schema_functions: &'this SchemaFunctionCache,
+        local_functions: Option<&'this LocalFunctionCache>,
+    ) -> Self {
+        TypeSeeder { snapshot, type_manager, schema_functions, local_functions }
+    }
+
+    fn get_function_annotations(&self, function_id: FunctionID) -> Option<&FunctionAnnotations> {
+        match function_id {
+            FunctionID::Schema(definition_key) => {
+                debug_assert!(self.schema_functions.get_function_annotations(definition_key.clone()).is_some());
+                self.schema_functions.get_function_annotations(definition_key.clone())
+            }
+            FunctionID::Preamble(index) => self.local_functions?.get_function_annotations(index),
+        }
+    }
+
+    fn get_function_ir(&self, function_id: FunctionID) -> Option<&FunctionIR> {
+        match function_id {
+            FunctionID::Schema(definition_key) => {
+                debug_assert!(self.schema_functions.get_function_ir(definition_key.clone()).is_some());
+                self.schema_functions.get_function_ir(definition_key.clone())
+            }
+            FunctionID::Preamble(index) => self.local_functions?.get_function_ir(index),
+        }
     }
 
     pub(crate) fn seed_types<'graph>(
@@ -210,7 +242,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             VariableCategory::Type => (true, true, true, true),
             VariableCategory::ThingType => (true, true, true, false),
             VariableCategory::RoleType => (false, false, false, true),
-            VariableCategory::Thing => (true, true, true, false),
+            VariableCategory::ThingList | VariableCategory::Thing => (true, true, true, false),
             VariableCategory::ObjectList | VariableCategory::Object => (true, true, false, false),
             VariableCategory::AttributeList | VariableCategory::Attribute => (false, false, true, false),
             VariableCategory::ValueList | VariableCategory::Value => (false, false, true, false),
@@ -406,13 +438,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         }
     }
 
-    fn vars_in_scope(context: &BlockContext, scope_id: ScopeId) -> impl Iterator<Item = Variable> + '_ {
-        context
-            .get_variable_scopes()
-            .filter(move |(variable, scope)| scope_id == **scope)
-            .map(|(variable, _)| *variable)
-    }
-
     // Phase 3: seed edges
     fn seed_edges<'conj>(&self, tig: &mut TypeInferenceGraph<'conj>) -> Result<(), ConceptReadError> {
         let TypeInferenceGraph { conjunction, edges, vertices, .. } = tig;
@@ -511,26 +536,23 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
         seeder: &TypeSeeder<'_, Snapshot>,
         tig_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        todo!();
-        let return_annotations: Vec<Option<BTreeSet<TypeAnnotation>>> = Vec::new(); // TODO
-        let argument_annotations: VertexAnnotations = BTreeMap::new(); // TODO
-        debug_assert_eq!(self.assigned().len(), return_annotations.len());
-        for (return_variable, return_annotation_opt) in zip(self.assigned(), &return_annotations) {
-            if let Some(return_annotations) = return_annotation_opt {
+        if let Some(callee_annotations) = seeder.get_function_annotations(self.function_call().function_id()) {
+            for (assigned_variable, return_annotation) in zip(self.assigned(), &callee_annotations.return_annotations) {
                 TypeSeeder::<Snapshot>::add_or_intersect(
                     tig_vertices,
-                    *return_variable,
-                    Cow::Borrowed(return_annotations),
+                    *assigned_variable,
+                    Cow::Borrowed(return_annotation),
                 );
             }
-        }
 
-        for (caller_variable, argument_variable) in self.function_call().call_id_mapping() {
-            if let Some(argument_annotations) = argument_annotations.get(argument_variable) {
+            let ir = seeder.get_function_ir(self.function_call().function_id()).unwrap();
+            for (caller_variable, arg_index) in self.function_call().call_id_mapping() {
+                let arg_annotations =
+                    callee_annotations.block_annotations.variable_annotations(ir.arguments()[*arg_index]).unwrap();
                 TypeSeeder::<Snapshot>::add_or_intersect(
                     tig_vertices,
                     *caller_variable,
-                    Cow::Borrowed(argument_annotations),
+                    Cow::Owned(arg_annotations.iter().map(|t| t.clone()).collect()),
                 );
             }
         }
@@ -1056,7 +1078,7 @@ pub mod tests {
             },
         },
         pattern::constraint::IsaKind,
-        program::block::FunctionalBlock,
+        program::{block::FunctionalBlock, program::SchemaFunctionCache},
     };
 
     #[test]
@@ -1067,6 +1089,7 @@ pub mod tests {
         // Some version of `$a isa animal, has name $n;`
         let storage = setup_storage();
         let (type_manager, thing_manager) = managers();
+
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
 
@@ -1137,7 +1160,8 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let seeder = TypeSeeder::new(&snapshot, &type_manager);
+            let empty_function_cache = SchemaFunctionCache::empty();
+            let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), &conjunction).unwrap();
             assert_eq!(expected_tig, tig);
         }
@@ -1149,6 +1173,7 @@ pub mod tests {
         // cat-name sub animal-name; dog-name sub animal-name;
         let storage = setup_storage();
         let (type_manager, thing_manager) = managers();
+
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), (type_fears, _, _)) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
 
@@ -1191,7 +1216,8 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let seeder = TypeSeeder::new(&snapshot, &type_manager);
+            let empty_function_cache = SchemaFunctionCache::empty();
+            let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), &conjunction).unwrap();
             if expected_tig != tig {
                 // We need this because of non-determinism
@@ -1205,6 +1231,7 @@ pub mod tests {
     fn test_comparison() {
         let storage = setup_storage();
         let (type_manager, thing_manager) = managers();
+
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), (type_fears, _, _)) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
         let type_age = {
@@ -1262,7 +1289,8 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let seeder = TypeSeeder::new(&snapshot, &type_manager);
+            let empty_function_cache = SchemaFunctionCache::empty();
+            let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), &conjunction).unwrap();
             assert_eq!(expected_tig.vertices, tig.vertices);
             assert_eq!(expected_tig, tig);

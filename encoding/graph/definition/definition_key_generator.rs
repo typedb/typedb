@@ -14,11 +14,15 @@ use crate::{
 
 pub struct DefinitionKeyGenerator {
     next_struct: DefinitionKeyAllocator,
+    next_function: DefinitionKeyAllocator,
 }
 
 impl DefinitionKeyGenerator {
     pub fn new() -> DefinitionKeyGenerator {
-        Self { next_struct: DefinitionKeyAllocator::new(Prefix::DefinitionStruct) }
+        Self {
+            next_struct: DefinitionKeyAllocator::new(Prefix::DefinitionStruct),
+            next_function: DefinitionKeyAllocator::new(Prefix::DefinitionFunction),
+        }
     }
     pub fn create_struct<Snapshot: WritableSnapshot>(
         &self,
@@ -31,5 +35,14 @@ impl DefinitionKeyGenerator {
 
     pub fn reset(&mut self) {
         self.next_struct.reset()
+    }
+
+    pub fn create_function<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+    ) -> Result<DefinitionKey<'static>, EncodingError> {
+        let definition_key = self.next_function.allocate(snapshot)?;
+        snapshot.put(definition_key.as_storage_key().into_owned_array());
+        Ok(definition_key)
     }
 }

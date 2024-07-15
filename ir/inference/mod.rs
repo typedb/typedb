@@ -37,6 +37,11 @@ On error, show the inferred types for variables (in minimal original query forma
 In the order that are connected to the variable.
  */
 
+use std::{
+    error::Error,
+    fmt::{Display, Formatter},
+};
+
 use concept::error::ConceptReadError;
 
 pub mod pattern_type_inference;
@@ -50,21 +55,21 @@ pub enum TypeInferenceError {
     LabelNotResolved(String),
 }
 
+impl Display for TypeInferenceError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for TypeInferenceError {}
+
 #[cfg(test)]
 pub mod tests {
-    use std::{
-        borrow::Borrow,
-        collections::{BTreeMap, BTreeSet},
-        sync::Arc,
-    };
+    use std::{borrow::Borrow, sync::Arc};
 
-    use answer::{variable::Variable, Type as TypeAnnotation};
     use concept::{
         thing::thing_manager::ThingManager,
-        type_::{
-            annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, type_manager::TypeManager,
-            Ordering, OwnerAPI, PlayerAPI,
-        },
+        type_::{type_manager::TypeManager, OwnerAPI, PlayerAPI},
     };
     use durability::wal::WAL;
     use encoding::{
@@ -72,22 +77,18 @@ pub mod tests {
             definition::definition_key_generator::DefinitionKeyGenerator,
             thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
         },
-        value::label::Label,
         EncodingKeyspace,
     };
     use itertools::Itertools;
     use storage::{
         durability_client::WALClient,
-        snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
+        snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
         MVCCStorage,
     };
     use test_utils::{create_tmp_dir, init_logging};
 
-    use crate::{
-        inference::pattern_type_inference::{
-            NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
-        },
-        pattern::{conjunction::Conjunction, constraint::Constraint},
+    use crate::inference::pattern_type_inference::{
+        NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
     };
 
     impl<'this> PartialEq<Self> for TypeInferenceEdge<'this> {
@@ -147,33 +148,18 @@ pub mod tests {
         (type_manager, thing_manager)
     }
 
-    pub mod schema_consts {
-        use std::{
-            borrow::Borrow,
-            collections::{BTreeMap, BTreeSet},
-            sync::Arc,
-        };
+    pub(crate) mod schema_consts {
+        use std::borrow::Borrow;
 
-        use answer::{variable::Variable, Type as TypeAnnotation};
-        use concept::{
-            thing::thing_manager::ThingManager,
-            type_::{
-                annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation,
-                entity_type::EntityTypeAnnotation, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
-            },
+        use answer::Type as TypeAnnotation;
+        use concept::type_::{
+            annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation,
+            type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
         };
-        use encoding::{
-            graph::{
-                definition::definition_key_generator::DefinitionKeyGenerator,
-                thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
-            },
-            value::{label::Label, value_type::ValueType},
-            EncodingKeyspace,
-        };
+        use encoding::value::{label::Label, value_type::ValueType};
         use storage::{
             durability_client::WALClient,
-            snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
-            MVCCStorage,
+            snapshot::{CommittableSnapshot, WritableSnapshot},
         };
         pub(crate) const LABEL_ANIMAL: &str = "animal";
         pub(crate) const LABEL_CAT: &str = "cat";

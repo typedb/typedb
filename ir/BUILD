@@ -15,6 +15,7 @@ rust_library(
         "optimisation/*.rs",
         "pattern/*.rs",
         "program/*.rs",
+        "translator/*.rs",
     ]),
     deps = [
         "//answer",
@@ -22,10 +23,13 @@ rust_library(
         "//durability",
         "//encoding",
         "//storage",
+        "//common/primitive",
 
         "@vaticle_typeql//rust:typeql",
 
         "@crates//:itertools",
+
+        "//util/test:test_utils", # dev dependency
     ],
 )
 

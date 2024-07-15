@@ -14,6 +14,7 @@ rust_library(
         "//common/logger",
         "//concept",
         "//encoding",
+        "//function",
         "//storage",
         "//durability",
 

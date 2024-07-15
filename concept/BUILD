@@ -7,6 +7,7 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = [
     ":__subpackages__",
     "//answer:__pkg__",
+    "//function:__subpackages__",
     "//database:__pkg__",
     "//ir:__pkg__",
     "//traversal:__subpackages__",

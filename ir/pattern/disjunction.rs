@@ -12,7 +12,7 @@ use itertools::Itertools;
 use super::conjunction::ConjunctionBuilder;
 use crate::{
     pattern::{conjunction::Conjunction, Scope, ScopeId},
-    program::block::BlockContext,
+    program::{block::BlockContext, function_signature::FunctionManagerIndexInjectionTrait},
     PatternDefinitionError,
 };
 
@@ -25,22 +25,6 @@ impl Disjunction {
     pub fn new() -> Self {
         Self { conjunctions: Vec::new() }
     }
-
-    pub(crate) fn build_child_from_typeql_patterns(
-        context: &mut BlockContext,
-        parent_scope_id: ScopeId,
-        patterns: &[Vec<typeql::Pattern>],
-    ) -> Result<Self, PatternDefinitionError> {
-        let conjunctions = patterns
-            .iter()
-            .map(|patterns| {
-                let conj_scope_id = context.create_child_scope(parent_scope_id);
-                Conjunction::build_from_typeql_patterns(context, conj_scope_id, patterns)
-            })
-            .try_collect()?;
-        Ok(Self { conjunctions })
-    }
-
     pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = Variable>> {
         todo!()
     }
