@@ -10,7 +10,7 @@ use concept::{
         attribute::Attribute,
         object::{Object, ObjectAPI},
     },
-    type_::{attribute_type::AttributeType, InterfaceImplementation, OwnerAPI},
+    type_::{attribute_type::AttributeType, Capability, OwnerAPI},
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
@@ -91,7 +91,12 @@ async fn object_set_has_list(
         .into_iter()
         .map(|attr_name| context.attributes[&attr_name].as_ref().unwrap().to_owned())
         .collect_vec();
-    may_error.check_concept_write_without_read_errors(&object_set_has_ordered_impl(context, &object, attribute_type, attributes));
+    may_error.check_concept_write_without_read_errors(&object_set_has_ordered_impl(
+        context,
+        &object,
+        attribute_type,
+        attributes,
+    ));
 }
 
 #[apply(generic_step)]

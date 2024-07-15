@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use concept::error::ConceptWriteError;
 use database::transaction::{SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use macro_rules_attribute::apply;
-use concept::error::ConceptWriteError;
 
 use crate::{
     assert::assert_matches,
@@ -52,15 +52,17 @@ pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
         ActiveTransaction::Read(_) => {}
         ActiveTransaction::Write(tx) => {
             if let Some(errors) = may_error.check(&tx.commit()) {
-                errors.iter().for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone())))
+                errors
+                    .iter()
+                    .for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone())))
             }
         }
         ActiveTransaction::Schema(tx) => {
             if let Some(schema_commit_error) = may_error.check(&tx.commit()) {
                 match schema_commit_error {
-                    SchemaCommitError::ConceptWrite { errors } => {
-                        errors.iter().for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone())))
-                    },
+                    SchemaCommitError::ConceptWrite { errors } => errors
+                        .iter()
+                        .for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone()))),
                     _ => {}
                 }
             }

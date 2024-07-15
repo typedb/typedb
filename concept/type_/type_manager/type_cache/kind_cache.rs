@@ -21,7 +21,18 @@ use encoding::{
 use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
-use crate::type_::{attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, owns::{Owns, OwnsAnnotation}, plays::{Plays, PlaysAnnotation}, relates::{Relates, RelatesAnnotation}, relation_type::RelationType, role_type::RoleType, type_manager::type_reader::TypeReader, KindAPI, Ordering, PlayerAPI, TypeAPI, ObjectTypeAPI};
+use crate::type_::{
+    attribute_type::AttributeType,
+    entity_type::EntityType,
+    object_type::ObjectType,
+    owns::{Owns, OwnsAnnotation},
+    plays::{Plays, PlaysAnnotation},
+    relates::{Relates, RelatesAnnotation},
+    relation_type::RelationType,
+    role_type::RoleType,
+    type_manager::type_reader::TypeReader,
+    KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
+};
 
 #[derive(Debug)]
 pub(crate) struct EntityTypeCache {
@@ -136,8 +147,13 @@ impl RelationTypeCache {
             let cache = RelationTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, relation.clone()),
                 owner_player_cache: OwnerPlayerCache::create(snapshot, relation.clone()),
-                relates_declared: TypeReader::get_implemented_interfaces_declared::<Relates<'static>>(snapshot, relation.clone()).unwrap(),
-                relates: TypeReader::get_implemented_interfaces::<Relates<'static>>(snapshot, relation.clone()).unwrap(),
+                relates_declared: TypeReader::get_implemented_interfaces_declared::<Relates<'static>>(
+                    snapshot,
+                    relation.clone(),
+                )
+                .unwrap(),
+                relates: TypeReader::get_implemented_interfaces::<Relates<'static>>(snapshot, relation.clone())
+                    .unwrap(),
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -330,13 +346,19 @@ impl OwnerPlayerCache {
     {
         let object_type = type_.into_owned_object_type();
         OwnerPlayerCache {
-            owns_declared: TypeReader::get_implemented_interfaces_declared::<Owns<'static>>(snapshot, object_type.clone())
-                .unwrap(),
+            owns_declared: TypeReader::get_implemented_interfaces_declared::<Owns<'static>>(
+                snapshot,
+                object_type.clone(),
+            )
+            .unwrap(),
             owns: TypeReader::get_implemented_interfaces::<Owns<'static>>(snapshot, object_type.clone()).unwrap(),
             owns_overridden: TypeReader::get_overridden_interfaces::<Owns<'static>>(snapshot, object_type.clone())
                 .unwrap(),
-            plays_declared: TypeReader::get_implemented_interfaces_declared::<Plays<'static>>(snapshot, object_type.clone())
-                .unwrap(),
+            plays_declared: TypeReader::get_implemented_interfaces_declared::<Plays<'static>>(
+                snapshot,
+                object_type.clone(),
+            )
+            .unwrap(),
             plays: TypeReader::get_implemented_interfaces::<Plays<'static>>(snapshot, object_type.clone()).unwrap(),
             plays_overridden: TypeReader::get_overridden_interfaces::<Plays<'static>>(snapshot, object_type.clone())
                 .unwrap(),

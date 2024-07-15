@@ -15,7 +15,7 @@ use encoding::{
         edge::TypeEdgeEncoding,
         property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
         vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
-        Kind,
+        CapabilityKind, Kind,
     },
     layout::infix::Infix,
     value::label::Label,
@@ -245,12 +245,13 @@ impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
     }
 }
 
-pub trait InterfaceImplementation<'a>:
+pub trait Capability<'a>:
     TypeEdgeEncoding<'a, From = Self::ObjectType, To = Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
 {
     type AnnotationType: Hash + Eq + Clone + From<Annotation> + Into<Annotation>;
     type ObjectType: TypeAPI<'a>;
     type InterfaceType: KindAPI<'a>;
+    const CAPABILITY_KIND: CapabilityKind;
 
     fn object(&self) -> Self::ObjectType;
 

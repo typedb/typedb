@@ -168,7 +168,11 @@ pub async fn type_set_label(
 ) {
     with_schema_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
-            may_error.check_concept_write_without_read_errors(&type_.set_label(&mut tx.snapshot, &tx.type_manager, &to_label.into_typedb()));
+            may_error.check_concept_write_without_read_errors(&type_.set_label(
+                &mut tx.snapshot,
+                &tx.type_manager,
+                &to_label.into_typedb(),
+            ));
         });
     });
 }

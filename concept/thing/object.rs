@@ -29,7 +29,7 @@ use crate::{
     },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, owns::Owns, role_type::RoleType,
-        type_manager::TypeManager, InterfaceImplementation, ObjectTypeAPI, Ordering, OwnerAPI,
+        type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering, OwnerAPI,
     },
     ConceptStatus,
 };

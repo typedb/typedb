@@ -67,7 +67,7 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        InterfaceImplementation, ObjectTypeAPI, OwnerAPI, TypeAPI,
+        Capability, ObjectTypeAPI, OwnerAPI, TypeAPI,
     },
     ConceptStatus,
 };

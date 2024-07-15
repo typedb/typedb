@@ -6,7 +6,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
+use encoding::{
+    graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
+    layout::prefix::Prefix,
+};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -19,7 +22,7 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        InterfaceImplementation, Ordering,
+        Capability, Ordering,
     },
 };
 
@@ -122,10 +125,11 @@ impl<'a> TypeEdgeEncoding<'a> for Relates<'a> {
     }
 }
 
-impl<'a> InterfaceImplementation<'a> for Relates<'a> {
+impl<'a> Capability<'a> for Relates<'a> {
     type AnnotationType = RelatesAnnotation;
     type ObjectType = RelationType<'a>;
     type InterfaceType = RoleType<'a>;
+    const CAPABILITY_KIND: CapabilityKind = CapabilityKind::Relates;
 
     fn object(&self) -> RelationType<'a> {
         self.relation.clone()

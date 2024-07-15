@@ -39,12 +39,12 @@ use crate::{
         object_type::ObjectType,
         plays::Plays,
         relates::Relates,
+        relation_type::RelationType,
         type_manager::TypeManager,
         KindAPI, TypeAPI,
     },
     ConceptAPI,
 };
-use crate::type_::relation_type::RelationType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {

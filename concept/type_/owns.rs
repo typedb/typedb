@@ -6,7 +6,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
+use encoding::{
+    graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
+    layout::prefix::Prefix,
+};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -20,7 +23,7 @@ use crate::{
         attribute_type::AttributeType,
         object_type::ObjectType,
         type_manager::TypeManager,
-        InterfaceImplementation, Ordering, TypeAPI,
+        Capability, Ordering, TypeAPI,
     },
 };
 
@@ -208,10 +211,11 @@ impl<'a> TypeEdgeEncoding<'a> for Owns<'a> {
     }
 }
 
-impl<'a> InterfaceImplementation<'a> for Owns<'a> {
+impl<'a> Capability<'a> for Owns<'a> {
     type AnnotationType = OwnsAnnotation;
     type ObjectType = ObjectType<'a>;
     type InterfaceType = AttributeType<'a>;
+    const CAPABILITY_KIND: CapabilityKind = CapabilityKind::Owns;
 
     fn object(&self) -> ObjectType<'a> {
         self.owner.clone()

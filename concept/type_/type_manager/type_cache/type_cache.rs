@@ -286,7 +286,10 @@ impl TypeCache {
         &RoleType::get_cache(&self, role_type).relates_declared
     }
 
-    pub(crate) fn get_role_type_relates<'a>(&self, role_type: RoleType<'a>) -> &HashMap<RelationType<'static>, Relates<'static>> {
+    pub(crate) fn get_role_type_relates<'a>(
+        &self,
+        role_type: RoleType<'a>,
+    ) -> &HashMap<RelationType<'static>, Relates<'static>> {
         &RoleType::get_cache(self, role_type).relates
     }
 

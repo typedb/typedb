@@ -45,7 +45,7 @@ use crate::{
         role_type::RoleType,
         sub::Sub,
         type_manager::validation::annotation_compatibility::is_annotation_inheritable,
-        EdgeOverride, InterfaceImplementation, KindAPI, Ordering, TypeAPI,
+        Capability, EdgeOverride, KindAPI, Ordering, TypeAPI,
     },
 };
 
@@ -166,7 +166,7 @@ impl TypeReader {
         owner: impl TypeAPI<'static>,
     ) -> Result<HashSet<IMPL>, ConceptReadError>
     where
-        IMPL: InterfaceImplementation<'static>,
+        IMPL: Capability<'static>,
     {
         let owns_prefix = IMPL::prefix_for_canonical_edges_from(IMPL::ObjectType::new(owner.into_vertex()));
         snapshot
@@ -180,7 +180,7 @@ impl TypeReader {
         object_type: IMPL::ObjectType,
     ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
     where
-        IMPL: InterfaceImplementation<'static>,
+        IMPL: Capability<'static>,
     {
         let mut transitive_implementations: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
         let mut overridden_interfaces: HashSet<IMPL::InterfaceType> = HashSet::new();
@@ -199,7 +199,10 @@ impl TypeReader {
                 // The root relates relation->role is not overridden, but the root role is a supertype
                 // for all roles. We don't want to return relation:role if there is a user-defined role.
                 if let Some(supertype) = Self::get_supertype(snapshot, implementation.interface())? {
-                    if Kind::is_root_label(&Self::get_label(snapshot, supertype.clone())?.ok_or(ConceptReadError::CannotGetLabelForExistingType)?) {
+                    if Kind::is_root_label(
+                        &Self::get_label(snapshot, supertype.clone())?
+                            .ok_or(ConceptReadError::CannotGetLabelForExistingType)?,
+                    ) {
                         overridden_interfaces.add(supertype);
                     }
                 }
@@ -214,7 +217,7 @@ impl TypeReader {
         object_type: IMPL::ObjectType,
     ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
     where
-        IMPL: InterfaceImplementation<'static>,
+        IMPL: Capability<'static>,
     {
         let mut overridden_interfaces: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
         let mut current_type = Some(object_type);
@@ -240,7 +243,7 @@ impl TypeReader {
         implementation: IMPL,
     ) -> Result<Option<IMPL>, ConceptReadError>
     where
-        IMPL: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
+        IMPL: Capability<'static>,
     {
         let override_property_key = EdgeOverride::<IMPL>::build_key(implementation);
         snapshot
@@ -255,7 +258,7 @@ impl TypeReader {
         interface_type: IMPL::InterfaceType,
     ) -> Result<HashSet<IMPL>, ConceptReadError>
     where
-        IMPL: InterfaceImplementation<'static>,
+        IMPL: Capability<'static>,
     {
         let owns_prefix = IMPL::prefix_for_reverse_edges_from(interface_type);
         snapshot
@@ -269,7 +272,7 @@ impl TypeReader {
         interface_type: IMPL::InterfaceType,
     ) -> Result<HashMap<ObjectType<'static>, IMPL>, ConceptReadError>
     where
-        IMPL: InterfaceImplementation<'static, ObjectType = ObjectType<'static>> + Hash + Eq,
+        IMPL: Capability<'static, ObjectType = ObjectType<'static>> + Hash + Eq,
     {
         let mut impl_transitive: HashMap<ObjectType<'static>, IMPL> = HashMap::new();
         let declared_impl_set: HashSet<IMPL> =
@@ -310,7 +313,11 @@ impl TypeReader {
     ) -> Result<Relates<'static>, ConceptReadError> {
         let relates = Self::get_implementations_for_interface_declared::<Relates<'static>>(snapshot, role)?;
         debug_assert!(relates.len() == 1);
-        relates.iter().next().map(|relates| relates.to_owned()).ok_or(ConceptReadError::CannotGetMandatoryRelatesForRole)
+        relates
+            .iter()
+            .next()
+            .map(|relates| relates.to_owned())
+            .ok_or(ConceptReadError::CannotGetMandatoryRelatesForRole)
     }
 
     pub(crate) fn get_role_type_relates(
@@ -471,7 +478,7 @@ impl TypeReader {
         edge: EDGE,
     ) -> Result<HashSet<Annotation>, ConceptReadError>
     where
-        EDGE: InterfaceImplementation<'b>,
+        EDGE: Capability<'b>,
     {
         let type_edge = edge.to_canonical_type_edge();
         snapshot
@@ -519,7 +526,7 @@ impl TypeReader {
         edge: EDGE,
     ) -> Result<HashMap<Annotation, EDGE>, ConceptReadError>
     where
-        EDGE: InterfaceImplementation<'static>,
+        EDGE: Capability<'static>,
     {
         let mut annotations: HashMap<Annotation, EDGE> = HashMap::new();
         let mut edge_opt = Some(edge);

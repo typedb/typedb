@@ -22,7 +22,7 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::{type_reader::TypeReader, validation::SchemaValidationError},
-        InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
+        Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
 
@@ -99,7 +99,8 @@ pub(crate) fn is_attribute_type_owns_overridden<T>(
 where
     T: ObjectTypeAPI<'static>,
 {
-    let all_overridden = TypeReader::get_overridden_interfaces::<Owns<'static>>(snapshot, owner.into_owned_object_type())?;
+    let all_overridden =
+        TypeReader::get_overridden_interfaces::<Owns<'static>>(snapshot, owner.into_owned_object_type())?;
     Ok(all_overridden.contains_key(&attribute_type))
 }
 
@@ -111,7 +112,8 @@ pub(crate) fn is_role_type_plays_overridden<T>(
 where
     T: ObjectTypeAPI<'static>,
 {
-    let all_overridden = TypeReader::get_overridden_interfaces::<Plays<'static>>(snapshot, player.into_owned_object_type())?;
+    let all_overridden =
+        TypeReader::get_overridden_interfaces::<Plays<'static>>(snapshot, player.into_owned_object_type())?;
     Ok(all_overridden.contains_key(&role_type))
 }
 
@@ -143,7 +145,7 @@ pub(crate) fn validate_declared_edge_annotation_is_compatible_with_inherited_ann
     annotation_category: AnnotationCategory,
 ) -> Result<(), SchemaValidationError>
 where
-    EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+    EDGE: Capability<'static>,
 {
     let existing_annotations =
         TypeReader::get_type_edge_annotations(snapshot, edge.clone()).map_err(SchemaValidationError::ConceptRead)?;
@@ -191,7 +193,7 @@ pub(crate) fn validate_declared_edge_annotation_is_compatible_with_declared_anno
     annotation_category: AnnotationCategory,
 ) -> Result<(), SchemaValidationError>
 where
-    EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+    EDGE: Capability<'static>,
 {
     let existing_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, edge.clone())
         .map_err(SchemaValidationError::ConceptRead)?;
@@ -275,7 +277,7 @@ pub(crate) fn edge_get_annotation_by_category<EDGE>(
     annotation_category: AnnotationCategory,
 ) -> Result<Option<Annotation>, SchemaValidationError>
 where
-    EDGE: InterfaceImplementation<'static> + Clone,
+    EDGE: Capability<'static> + Clone,
 {
     let annotation = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
         .map_err(SchemaValidationError::ConceptRead)?

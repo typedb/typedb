@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter, Result};
 
 use crate::value::label::Label;
 
@@ -44,5 +44,35 @@ impl Kind {
 impl std::fmt::Debug for Kind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Kind[{}]", self.root_label().name)
+    }
+}
+
+#[derive(Copy, Clone)]
+pub enum CapabilityKind {
+    Relates,
+    Plays,
+    Owns,
+}
+
+impl CapabilityKind {
+    const fn all_kinds() -> [CapabilityKind; 3] {
+        [CapabilityKind::Relates, CapabilityKind::Plays, CapabilityKind::Owns]
+    }
+}
+
+impl Display for CapabilityKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let str = match self {
+            CapabilityKind::Relates => "relates",
+            CapabilityKind::Plays => "plays",
+            CapabilityKind::Owns => "owns",
+        };
+        write!(f, "{}", str)
+    }
+}
+
+impl std::fmt::Debug for CapabilityKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "CapabilityKind[{}]", self.to_string())
     }
 }

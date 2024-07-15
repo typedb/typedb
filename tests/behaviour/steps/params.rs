@@ -38,9 +38,7 @@ impl MayError {
                 res.as_ref().unwrap();
                 None
             }
-            MayError::True => {
-                Some(res.as_ref().unwrap_err())
-            }
+            MayError::True => Some(res.as_ref().unwrap_err()),
         }
     }
 
@@ -49,16 +47,16 @@ impl MayError {
             MayError::False => {
                 res.as_ref().unwrap();
             }
-            MayError::True => {
-                match res.as_ref().unwrap_err() {
-                    ConceptWriteError::ConceptRead { source } => panic!("Expected error is ConceptRead {:?}", source),
-                    ConceptWriteError::SchemaValidation { source } => match source {
-                        SchemaValidationError::ConceptRead(source) => panic!("Expected error is SchemaValidation::ConceptRead {:?}", source),
-                        _ => {}
+            MayError::True => match res.as_ref().unwrap_err() {
+                ConceptWriteError::ConceptRead { source } => panic!("Expected error is ConceptRead {:?}", source),
+                ConceptWriteError::SchemaValidation { source } => match source {
+                    SchemaValidationError::ConceptRead(source) => {
+                        panic!("Expected error is SchemaValidation::ConceptRead {:?}", source)
                     }
                     _ => {}
-                }
-            }
+                },
+                _ => {}
+            },
         };
     }
 
@@ -97,12 +95,13 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
-use concept::error::ConceptWriteError;
-use concept::type_::{
-    annotation::{AnnotationDistinct, AnnotationRange, AnnotationUnique, AnnotationValues},
-    type_manager::TypeManager,
+use concept::{
+    error::ConceptWriteError,
+    type_::{
+        annotation::{AnnotationDistinct, AnnotationRange, AnnotationUnique, AnnotationValues},
+        type_manager::{validation::SchemaValidationError, TypeManager},
+    },
 };
-use concept::type_::type_manager::validation::SchemaValidationError;
 use database::transaction::SchemaCommitError;
 use encoding::value::decimal_value::Decimal;
 use storage::snapshot::ReadableSnapshot;
@@ -536,17 +535,11 @@ impl Annotation {
                     r#"Invalid @card format: {card:?}. Expected "@card(min, max)""#
                 );
                 let card = card["@card(".len()..card.len() - ")".len()].trim();
-                let (min, max) =
-                    card.split_once(',').map(|(min, max)| (min.trim(), Some(max.trim()))).unwrap_or((card, None));
+                let (min, max) = card.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
 
                 TypeDBAnnotation::Cardinality(AnnotationCardinality::new(
                     min.parse().unwrap(),
-                    max.map(|val| match val {
-                        "*" => Ok(None),
-                        _ => val.parse().map(Some).map_err(|_| "Failed to parse max"),
-                    })
-                    .unwrap()
-                    .unwrap(),
+                    if max.is_empty() { None } else { Some(max.parse().unwrap()) },
                 ))
             }
             values if values.starts_with("@values") => {

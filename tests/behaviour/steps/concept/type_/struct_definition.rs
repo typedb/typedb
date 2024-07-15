@@ -41,7 +41,9 @@ pub async fn struct_delete(context: &mut Context, type_label: Label, may_error: 
             .get_struct_definition_key(&tx.snapshot, type_label.into_typedb().scoped_name().as_str())
             .unwrap()
         {
-            may_error.check_concept_write_without_read_errors(&tx.type_manager.delete_struct(&mut tx.snapshot, definition_key));
+            may_error.check_concept_write_without_read_errors(
+                &tx.type_manager.delete_struct(&mut tx.snapshot, definition_key),
+            );
         } else {
             assert!(may_error.expects_error());
         }

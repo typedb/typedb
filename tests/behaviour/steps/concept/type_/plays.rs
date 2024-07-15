@@ -4,9 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::type_::{
-    annotation, plays::PlaysAnnotation, InterfaceImplementation, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
-};
+use concept::type_::{annotation, plays::PlaysAnnotation, Capability, Ordering, OwnerAPI, PlayerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
