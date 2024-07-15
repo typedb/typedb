@@ -45,7 +45,6 @@ impl<'func, SchemaIndex: FunctionManagerIndexInjectionTrait> TypeQLBuilder<'func
         conjunction: &mut ConjunctionBuilder<'func>,
         patterns: &Vec<typeql::pattern::Pattern>,
     ) -> Result<(), PatternDefinitionError> {
-        let mut builder = FunctionalBlock::builder();
         patterns.iter().try_for_each(|pattern| match pattern {
             typeql::pattern::Pattern::Conjunction(nested) => self.add_patterns(conjunction, &nested.patterns),
             typeql::pattern::Pattern::Disjunction(disjunction) => self.add_disjunction(conjunction, disjunction),
