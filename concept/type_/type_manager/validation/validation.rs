@@ -6,30 +6,35 @@
 
 use std::hash::Hash;
 
-use encoding::{graph::type_::edge::TypeEdgeEncoding, value::label::Label};
+use encoding::{
+    graph::type_::{edge::TypeEdgeEncoding, Kind},
+    value::label::Label,
+};
 use itertools::Itertools;
-use encoding::graph::type_::Kind;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    error::ConceptReadError,
+    error::{ConceptReadError, ConceptWriteError},
     thing::object::ObjectAPI,
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCategory},
+        annotation::{
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange,
+            AnnotationRegex, AnnotationValues,
+        },
         attribute_type::AttributeType,
         owns::Owns,
         plays::Plays,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::{type_reader::TypeReader, validation::SchemaValidationError},
+        type_manager::{
+            type_reader::TypeReader,
+            validation::{operation_time_validation::OperationTimeValidation, SchemaValidationError},
+            TypeManager,
+        },
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::error::ConceptWriteError;
-use crate::type_::annotation::{AnnotationCardinality, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationValues};
-use crate::type_::type_manager::TypeManager;
-use crate::type_::type_manager::validation::operation_time_validation::OperationTimeValidation;
 
 pub(crate) fn get_label_or_concept_read_err<'a>(
     snapshot: &impl ReadableSnapshot,
@@ -222,8 +227,9 @@ pub(crate) fn validate_type_regex_narrows_inherited_regex<T: KindAPI<'static>>(
     regex: AnnotationRegex,
 ) -> Result<(), SchemaValidationError> {
     let supertype = match supertype {
-        None => TypeReader::get_supertype(snapshot, attribute_type.clone())
-            .map_err(SchemaValidationError::ConceptRead)?,
+        None => {
+            TypeReader::get_supertype(snapshot, attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)?
+        }
         Some(_) => supertype,
     };
 
@@ -259,8 +265,9 @@ pub(crate) fn validate_edge_regex_narrows_inherited_regex<CAP: Capability<'stati
     regex: AnnotationRegex,
 ) -> Result<(), SchemaValidationError> {
     let overridden_owns = match overridden_owns {
-        None => TypeReader::get_capabilities_override(snapshot, owns.clone())
-            .map_err(SchemaValidationError::ConceptRead)?,
+        None => {
+            TypeReader::get_capabilities_override(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?
+        }
         Some(_) => overridden_owns,
     };
 
@@ -297,8 +304,9 @@ pub(crate) fn validate_type_range_narrows_inherited_range<T: KindAPI<'static>>(
     range: AnnotationRange,
 ) -> Result<(), SchemaValidationError> {
     let supertype = match supertype {
-        None => TypeReader::get_supertype(snapshot, attribute_type.clone())
-            .map_err(SchemaValidationError::ConceptRead)?,
+        None => {
+            TypeReader::get_supertype(snapshot, attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)?
+        }
         Some(_) => supertype,
     };
 
@@ -335,8 +343,9 @@ pub(crate) fn validate_edge_range_narrows_inherited_range<CAP: Capability<'stati
     range: AnnotationRange,
 ) -> Result<(), SchemaValidationError> {
     let overridden_owns = match overridden_owns {
-        None => TypeReader::get_capabilities_override(snapshot, owns.clone())
-            .map_err(SchemaValidationError::ConceptRead)?,
+        None => {
+            TypeReader::get_capabilities_override(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?
+        }
         Some(_) => overridden_owns,
     };
 
@@ -373,8 +382,9 @@ pub(crate) fn validate_type_values_narrows_inherited_values<T: KindAPI<'static>>
     values: AnnotationValues,
 ) -> Result<(), SchemaValidationError> {
     let supertype = match supertype {
-        None => TypeReader::get_supertype(snapshot, attribute_type.clone())
-            .map_err(SchemaValidationError::ConceptRead)?,
+        None => {
+            TypeReader::get_supertype(snapshot, attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)?
+        }
         Some(_) => supertype,
     };
 
@@ -410,8 +420,9 @@ pub(crate) fn validate_edge_values_narrows_inherited_values<CAP: Capability<'sta
     values: AnnotationValues,
 ) -> Result<(), SchemaValidationError> {
     let overridden_owns = match overridden_owns {
-        None => TypeReader::get_capabilities_override(snapshot, owns.clone())
-            .map_err(SchemaValidationError::ConceptRead)?,
+        None => {
+            TypeReader::get_capabilities_override(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?
+        }
         Some(_) => overridden_owns,
     };
 
@@ -448,25 +459,18 @@ pub(crate) fn validate_type_annotations_narrowing_of_inherited_annotations<T: Ki
     subtype_annotation: T::AnnotationType,
 ) -> Result<(), SchemaValidationError> {
     match subtype_annotation.into() {
-        Annotation::Abstract(_) => validate_type_supertype_abstractness(snapshot, subtype.clone(), supertype.clone())?,
-        Annotation::Regex(regex) => validate_type_regex_narrows_inherited_regex(
-            snapshot,
-            subtype.clone(),
-            Some(supertype.clone()),
-            regex,
-        )?,
-        Annotation::Range(range) => validate_type_range_narrows_inherited_range(
-            snapshot,
-            subtype.clone(),
-            Some(supertype.clone()),
-            range,
-        )?,
-        Annotation::Values(values) => validate_type_values_narrows_inherited_values(
-            snapshot,
-            subtype.clone(),
-            Some(supertype.clone()),
-            values,
-        )?,
+        Annotation::Abstract(_) => {
+            validate_type_supertype_abstractness(snapshot, subtype.clone(), Some(supertype.clone()), Some(true))?
+        }
+        Annotation::Regex(regex) => {
+            validate_type_regex_narrows_inherited_regex(snapshot, subtype.clone(), Some(supertype.clone()), regex)?
+        }
+        Annotation::Range(range) => {
+            validate_type_range_narrows_inherited_range(snapshot, subtype.clone(), Some(supertype.clone()), range)?
+        }
+        Annotation::Values(values) => {
+            validate_type_values_narrows_inherited_values(snapshot, subtype.clone(), Some(supertype.clone()), values)?
+        }
         | Annotation::Distinct(_)
         | Annotation::Independent(_)
         | Annotation::Unique(_)
@@ -495,18 +499,12 @@ pub(crate) fn validate_edge_annotations_narrowing_of_inherited_annotations<CAP: 
         Annotation::Key(_) => {
             validate_key_narrows_inherited_cardinality(snapshot, type_manager, edge.clone(), overridden_edge.clone())?
         }
-        Annotation::Regex(regex) => validate_edge_regex_narrows_inherited_regex(
-            snapshot,
-            edge.clone(),
-            Some(overridden_edge.clone()),
-            regex,
-        )?,
-        Annotation::Range(range) => validate_edge_range_narrows_inherited_range(
-            snapshot,
-            edge.clone(),
-            Some(overridden_edge.clone()),
-            range,
-        )?,
+        Annotation::Regex(regex) => {
+            validate_edge_regex_narrows_inherited_regex(snapshot, edge.clone(), Some(overridden_edge.clone()), regex)?
+        }
+        Annotation::Range(range) => {
+            validate_edge_range_narrows_inherited_range(snapshot, edge.clone(), Some(overridden_edge.clone()), range)?
+        }
         Annotation::Values(values) => validate_edge_values_narrows_inherited_values(
             snapshot,
             edge.clone(),
@@ -532,12 +530,10 @@ pub(crate) fn validate_type_supertype_ordering_match(
         return Ok(());
     }
 
-    let supertype_ordering = TypeReader::get_type_ordering(snapshot, supertype.clone())
-        .map_err(SchemaValidationError::ConceptRead)?;
-    let type_ordering = set_subtype_role_ordering.unwrap_or(
-        TypeReader::get_type_ordering(snapshot, type_.clone())
-            .map_err(SchemaValidationError::ConceptRead)?,
-    );
+    let supertype_ordering =
+        TypeReader::get_type_ordering(snapshot, supertype.clone()).map_err(SchemaValidationError::ConceptRead)?;
+    let type_ordering = set_subtype_role_ordering
+        .unwrap_or(TypeReader::get_type_ordering(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?);
 
     if type_ordering == supertype_ordering {
         Ok(())
@@ -558,8 +554,7 @@ pub(crate) fn validate_edge_override_ordering_match(
     set_subtype_owns_ordering: Option<Ordering>,
 ) -> Result<(), SchemaValidationError> {
     let edge_ordering = set_subtype_owns_ordering.unwrap_or(
-        TypeReader::get_type_edge_ordering(snapshot, edge.clone())
-            .map_err(SchemaValidationError::ConceptRead)?,
+        TypeReader::get_type_edge_ordering(snapshot, edge.clone()).map_err(SchemaValidationError::ConceptRead)?,
     );
     let overridden_edge_ordering = TypeReader::get_type_edge_ordering(snapshot, overridden_edge.clone())
         .map_err(SchemaValidationError::ConceptRead)?;
@@ -580,22 +575,35 @@ pub(crate) fn validate_edge_override_ordering_match(
 pub(crate) fn validate_type_supertype_abstractness<T>(
     snapshot: &impl ReadableSnapshot,
     subtype: T,
-    supertype: T,
+    supertype: Option<T>,
+    set_subtype_abstract: Option<bool>,
 ) -> Result<(), SchemaValidationError>
-    where
-        T: KindAPI<'static>,
+where
+    T: KindAPI<'static>,
 {
-    let subtype_abstract =
-        type_has_declared_annotation_category(snapshot, subtype.clone(), AnnotationCategory::Abstract)?;
-    let supertype_abstract =
-        type_has_declared_annotation_category(snapshot, supertype.clone(), AnnotationCategory::Abstract)?;
+    let supertype = match supertype {
+        None => TypeReader::get_supertype(snapshot, subtype.clone()).map_err(SchemaValidationError::ConceptRead)?,
+        Some(_) => supertype,
+    };
 
-    match (subtype_abstract, supertype_abstract) {
-        (false, false) | (false, true) | (true, true) => Ok(()),
-        (true, false) => Err(SchemaValidationError::AbstractTypesSupertypeHasToBeAbstract(
-            get_label_or_schema_err(snapshot, supertype)?,
-            get_label_or_schema_err(snapshot, subtype)?,
-        )),
+    if let Some(supertype) = supertype {
+        let subtype_abstract = set_subtype_abstract.unwrap_or(type_has_declared_annotation_category(
+            snapshot,
+            subtype.clone(),
+            AnnotationCategory::Abstract,
+        )?);
+        let supertype_abstract =
+            type_has_declared_annotation_category(snapshot, supertype.clone(), AnnotationCategory::Abstract)?;
+
+        match (subtype_abstract, supertype_abstract) {
+            (false, false) | (false, true) | (true, true) => Ok(()),
+            (true, false) => Err(SchemaValidationError::AbstractTypesSupertypeHasToBeAbstract(
+                get_label_or_schema_err(snapshot, supertype)?,
+                get_label_or_schema_err(snapshot, subtype)?,
+            )),
+        }
+    } else {
+        Ok(())
     }
 }
 

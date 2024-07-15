@@ -5,9 +5,11 @@
  */
 
 use std::{error::Error, fmt};
-use encoding::graph::type_::{CapabilityKind, Kind};
 
-use encoding::value::{label::Label, value_type::ValueType};
+use encoding::{
+    graph::type_::{CapabilityKind, Kind},
+    value::{label::Label, value_type::ValueType},
+};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -20,10 +22,9 @@ use crate::{
         object_type::ObjectType,
         relation_type::RelationType,
         role_type::RoleType,
-        Capability, TypeAPI,
+        Capability, Ordering, TypeAPI,
     },
 };
-use crate::type_::Ordering;
 
 pub mod annotation_compatibility;
 pub mod commit_time_validation;
@@ -79,12 +80,7 @@ pub enum SchemaValidationError {
     InvalidRegexArguments(AnnotationRegex),
     InvalidRangeArguments(AnnotationRange),
     InvalidValuesArguments(AnnotationValues),
-    KeyShouldNarrowInheritedCardinality(
-        Label<'static>,
-        Label<'static>,
-        Label<'static>,
-        AnnotationCardinality,
-    ),
+    KeyShouldNarrowInheritedCardinality(Label<'static>, Label<'static>, Label<'static>, AnnotationCardinality),
     CardinalityDoesNotNarrowInheritedCardinality(
         CapabilityKind,
         Label<'static>,
@@ -122,17 +118,13 @@ pub enum SchemaValidationError {
     CannotUnsetInheritedAnnotation(AnnotationCategory, Label<'static>),
     CannotUnsetInheritedEdgeAnnotation(AnnotationCategory, Label<'static>),
     ValueTypeNotCompatibleWithInheritedValueType(Label<'static>, Label<'static>, ValueType, ValueType),
+    RedundantValueTypeDeclarationAsItsAlreadyInherited(Label<'static>, Label<'static>, ValueType, ValueType),
     DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(AnnotationCategory, AnnotationCategory, Label<'static>),
     AnnotationIsNotCompatibleWithDeclaredAnnotation(AnnotationCategory, AnnotationCategory, Label<'static>),
     RelationTypeMustRelateAtLeastOneRole(Label<'static>),
     CannotRedeclareInheritedOwnsWithoutSpecializationWithOverride(Label<'static>, Label<'static>, Label<'static>),
     CannotRedeclareInheritedPlaysWithoutSpecializationWithOverride(Label<'static>, Label<'static>, Label<'static>),
-    CannotRedeclareInheritedAnnotationWithoutSpecializationForType(
-        Kind,
-        Label<'static>,
-        Label<'static>,
-        Annotation,
-    ),
+    CannotRedeclareInheritedAnnotationWithoutSpecializationForType(Kind, Label<'static>, Label<'static>, Annotation),
     CannotRedeclareInheritedAnnotationWithoutSpecializationForCapability(
         CapabilityKind,
         Label<'static>,
@@ -140,9 +132,6 @@ pub enum SchemaValidationError {
         Label<'static>,
         Annotation,
     ),
-    RedundantAnnotationForOwnsAlreadyInherited(Label<'static>, Label<'static>, Label<'static>, Annotation),
-    RedundantAnnotationForPlaysAlreadyInherited(Label<'static>, Label<'static>, Label<'static>, Annotation),
-    RedundantAnnotationForRelatesAlreadyInherited(Label<'static>, Label<'static>, Label<'static>, Annotation),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -214,6 +203,7 @@ impl Error for SchemaValidationError {
             Self::CannotUnsetInheritedAnnotation(_, _) => None,
             Self::CannotUnsetInheritedEdgeAnnotation(_, _) => None,
             Self::ValueTypeNotCompatibleWithInheritedValueType(_, _, _, _) => None,
+            Self::RedundantValueTypeDeclarationAsItsAlreadyInherited(_, _, _, _) => None,
             Self::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(_, _, _) => None,
             Self::AnnotationIsNotCompatibleWithDeclaredAnnotation(_, _, _) => None,
             Self::RelationTypeMustRelateAtLeastOneRole(_) => None,
@@ -221,9 +211,6 @@ impl Error for SchemaValidationError {
             Self::CannotRedeclareInheritedPlaysWithoutSpecializationWithOverride(_, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForType(_, _, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForCapability(_, _, _, _, _) => None,
-            Self::RedundantAnnotationForOwnsAlreadyInherited(_, _, _, _) => None,
-            Self::RedundantAnnotationForPlaysAlreadyInherited(_, _, _, _) => None,
-            Self::RedundantAnnotationForRelatesAlreadyInherited(_, _, _, _) => None,
         }
     }
 }

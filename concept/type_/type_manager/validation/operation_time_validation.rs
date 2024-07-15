@@ -12,7 +12,6 @@ use std::{
 use encoding::{
     graph::{
         thing::{edge::ThingEdgeRolePlayer, vertex_object::ObjectVertex},
-        type_::edge::TypeEdgeEncoding,
         Typed,
     },
     layout::prefix::Prefix,
@@ -30,7 +29,7 @@ use crate::{
     },
     type_::{
         annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange,
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationRange,
             AnnotationRegex, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
@@ -45,14 +44,22 @@ use crate::{
             type_reader::TypeReader,
             validation::{
                 validation::{
-                    edge_get_annotation_by_category, get_label_or_schema_err, is_attribute_type_owns_overridden,
-                    is_ordering_compatible_with_distinct_annotation,
+                    edge_get_annotation_by_category, get_label_or_concept_read_err, get_label_or_schema_err,
+                    is_attribute_type_owns_overridden, is_ordering_compatible_with_distinct_annotation,
                     is_overridden_interface_object_one_of_supertypes_or_self, is_role_type_plays_overridden,
-                    type_get_annotation_by_category, type_has_annotation_category,
-                    type_has_declared_annotation_category, type_is_abstract,
+                    type_has_annotation_category,
+                    type_is_abstract,
+                    validate_cardinality_narrows_inherited_cardinality,
                     validate_declared_annotation_is_compatible_with_other_inherited_annotations,
                     validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations,
-                    validate_role_name_uniqueness_non_transitive,
+                    validate_edge_annotations_narrowing_of_inherited_annotations,
+                    validate_edge_override_ordering_match, validate_edge_range_narrows_inherited_range,
+                    validate_edge_regex_narrows_inherited_regex, validate_edge_values_narrows_inherited_values,
+                    validate_key_narrows_inherited_cardinality, validate_role_name_uniqueness_non_transitive,
+                    validate_type_annotations_narrowing_of_inherited_annotations,
+                    validate_type_range_narrows_inherited_range, validate_type_regex_narrows_inherited_regex,
+                    validate_type_supertype_abstractness, validate_type_supertype_ordering_match,
+                    validate_type_values_narrows_inherited_values,
                 },
                 SchemaValidationError,
             },
@@ -61,7 +68,6 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::type_::type_manager::validation::validation::{get_label_or_concept_read_err, validate_cardinality_narrows_inherited_cardinality, validate_edge_annotations_narrowing_of_inherited_annotations, validate_edge_override_ordering_match, validate_edge_range_narrows_inherited_range, validate_edge_regex_narrows_inherited_regex, validate_edge_values_narrows_inherited_values, validate_key_narrows_inherited_cardinality, validate_type_annotations_narrowing_of_inherited_annotations, validate_type_range_narrows_inherited_range, validate_type_regex_narrows_inherited_regex, validate_type_supertype_abstractness, validate_type_supertype_ordering_match, validate_type_values_narrows_inherited_values};
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -670,6 +676,15 @@ impl OperationTimeValidation {
         validate_cardinality_narrows_inherited_cardinality(snapshot, type_manager, edge, overridden_edge, cardinality)
     }
 
+    pub(crate) fn validate_type_supertype_abstractness<T: KindAPI<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: T,
+        supertype: Option<T>,
+        set_subtype_abstract: Option<bool>,
+    ) -> Result<(), SchemaValidationError> {
+        validate_type_supertype_abstractness(snapshot, attribute_type, supertype, set_subtype_abstract)
+    }
+
     pub(crate) fn validate_type_regex_narrows_inherited_regex<T: KindAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
         attribute_type: T,
@@ -801,7 +816,12 @@ impl OperationTimeValidation {
                 category,
             )?;
 
-            validate_type_annotations_narrowing_of_inherited_annotations(snapshot, subtype.clone(), supertype.clone(), subtype_annotation)?;
+            validate_type_annotations_narrowing_of_inherited_annotations(
+                snapshot,
+                subtype.clone(),
+                supertype.clone(),
+                subtype_annotation,
+            )?;
         }
         Ok(())
     }
@@ -823,7 +843,13 @@ impl OperationTimeValidation {
                 category,
             )?;
 
-            validate_edge_annotations_narrowing_of_inherited_annotations(snapshot, type_manager, edge.clone(), overridden_edge.clone(), subtype_annotation)?;
+            validate_edge_annotations_narrowing_of_inherited_annotations(
+                snapshot,
+                type_manager,
+                edge.clone(),
+                overridden_edge.clone(),
+                subtype_annotation,
+            )?;
         }
         Ok(())
     }
@@ -856,10 +882,9 @@ impl OperationTimeValidation {
             // TODO: Handle better. This could be misleading.
             return Err(SchemaValidationError::CannotModifyRoot);
         }
-        let is_inherited =
-            TypeReader::get_capabilities::<Relates<'static>>(snapshot, super_relation.unwrap())
-                .map_err(SchemaValidationError::ConceptRead)?
-                .contains_key(&role_type);
+        let is_inherited = TypeReader::get_capabilities::<Relates<'static>>(snapshot, super_relation.unwrap())
+            .map_err(SchemaValidationError::ConceptRead)?
+            .contains_key(&role_type);
         if is_inherited {
             Ok(())
         } else {
@@ -985,11 +1010,9 @@ impl OperationTimeValidation {
             if super_player.is_none() {
                 return Err(SchemaValidationError::CannotModifyRoot);
             }
-            let plays_transitive: HashMap<RoleType<'static>, Plays<'static>> = TypeReader::get_capabilities(
-                snapshot,
-                super_player.unwrap().clone().into_owned_object_type(),
-            )
-            .map_err(SchemaValidationError::ConceptRead)?;
+            let plays_transitive: HashMap<RoleType<'static>, Plays<'static>> =
+                TypeReader::get_capabilities(snapshot, super_player.unwrap().clone().into_owned_object_type())
+                    .map_err(SchemaValidationError::ConceptRead)?;
             plays_transitive.contains_key(&role_type)
         });
         if is_inherited {
@@ -1169,7 +1192,11 @@ impl OperationTimeValidation {
         type_: impl KindAPI<'static>,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError> {
-        validate_declared_annotation_is_compatible_with_other_inherited_annotations(snapshot, type_, annotation_category)
+        validate_declared_annotation_is_compatible_with_other_inherited_annotations(
+            snapshot,
+            type_,
+            annotation_category,
+        )
     }
 
     pub(crate) fn validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations<CAP>(
@@ -1180,7 +1207,11 @@ impl OperationTimeValidation {
     where
         CAP: Capability<'static>,
     {
-        validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations(snapshot, edge, annotation_category)
+        validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations(
+            snapshot,
+            edge,
+            annotation_category,
+        )
     }
 
     pub(crate) fn validate_declared_annotation_is_compatible_with_other_declared_annotations(

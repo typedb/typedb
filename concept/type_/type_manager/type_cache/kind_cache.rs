@@ -147,13 +147,9 @@ impl RelationTypeCache {
             let cache = RelationTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, relation.clone()),
                 owner_player_cache: OwnerPlayerCache::create(snapshot, relation.clone()),
-                relates_declared: TypeReader::get_capabilities_declared::<Relates<'static>>(
-                    snapshot,
-                    relation.clone(),
-                )
-                .unwrap(),
-                relates: TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation.clone())
+                relates_declared: TypeReader::get_capabilities_declared::<Relates<'static>>(snapshot, relation.clone())
                     .unwrap(),
+                relates: TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation.clone()).unwrap(),
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -178,8 +174,7 @@ impl AttributeTypeCache {
                     attribute.clone(),
                 )
                 .unwrap(),
-                owns: TypeReader::get_capabilities_for_interface::<Owns<'static>>(snapshot, attribute.clone())
-                    .unwrap(),
+                owns: TypeReader::get_capabilities_for_interface::<Owns<'static>>(snapshot, attribute.clone()).unwrap(),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -346,19 +341,13 @@ impl OwnerPlayerCache {
     {
         let object_type = type_.into_owned_object_type();
         OwnerPlayerCache {
-            owns_declared: TypeReader::get_capabilities_declared::<Owns<'static>>(
-                snapshot,
-                object_type.clone(),
-            )
-            .unwrap(),
+            owns_declared: TypeReader::get_capabilities_declared::<Owns<'static>>(snapshot, object_type.clone())
+                .unwrap(),
             owns: TypeReader::get_capabilities::<Owns<'static>>(snapshot, object_type.clone()).unwrap(),
             owns_overridden: TypeReader::get_overridden_interfaces::<Owns<'static>>(snapshot, object_type.clone())
                 .unwrap(),
-            plays_declared: TypeReader::get_capabilities_declared::<Plays<'static>>(
-                snapshot,
-                object_type.clone(),
-            )
-            .unwrap(),
+            plays_declared: TypeReader::get_capabilities_declared::<Plays<'static>>(snapshot, object_type.clone())
+                .unwrap(),
             plays: TypeReader::get_capabilities::<Plays<'static>>(snapshot, object_type.clone()).unwrap(),
             plays_overridden: TypeReader::get_overridden_interfaces::<Plays<'static>>(snapshot, object_type.clone())
                 .unwrap(),
