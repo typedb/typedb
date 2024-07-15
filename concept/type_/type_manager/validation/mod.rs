@@ -5,6 +5,7 @@
  */
 
 use std::{error::Error, fmt};
+use encoding::graph::type_::{CapabilityKind, Kind};
 
 use encoding::value::{label::Label, value_type::ValueType};
 use storage::snapshot::ReadableSnapshot;
@@ -22,6 +23,7 @@ use crate::{
         Capability, TypeAPI,
     },
 };
+use crate::type_::Ordering;
 
 pub mod annotation_compatibility;
 pub mod commit_time_validation;
@@ -52,9 +54,10 @@ pub enum SchemaValidationError {
     NonAbstractCannotPlayAbstract(Label<'static>, Label<'static>),
     NonAbstractCannotRelateAbstract(Label<'static>, Label<'static>),
     AttributeTypeSupertypeIsNotAbstract(Label<'static>),
-    CannotSetNonAbstractSupertypeForAbstractType(Label<'static>, Label<'static>),
+    AbstractTypesSupertypeHasToBeAbstract(Label<'static>, Label<'static>),
     CannotUnsetAbstractnessAsItOwnsAbstractTypes(Label<'static>),
-    OrderingDoesNotMatchWithSupertype(Label<'static>, Label<'static>),
+    OrderingDoesNotMatchWithSupertype(Label<'static>, Label<'static>, Ordering, Ordering),
+    OrderingDoesNotMatchWithOverride(Label<'static>, Label<'static>, Label<'static>, Ordering, Ordering),
     CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(Label<'static>, Label<'static>, Label<'static>),
     CannotChangeSupertypeAsOwnsOverrideIsImplicitlyLost(Label<'static>, Label<'static>, Label<'static>),
     CannotChangeSupertypeAsPlaysOverrideIsImplicitlyLost(Label<'static>, Label<'static>, Label<'static>),
@@ -76,23 +79,14 @@ pub enum SchemaValidationError {
     InvalidRegexArguments(AnnotationRegex),
     InvalidRangeArguments(AnnotationRange),
     InvalidValuesArguments(AnnotationValues),
-    CardinalityShouldNarrowInheritedCardinality(AnnotationCardinality, AnnotationCardinality),
-    KeyShouldNarrowInheritedCardinality(AnnotationCardinality),
-    OwnsCardinalityDoesNotNarrowInheritedCardinality(
+    KeyShouldNarrowInheritedCardinality(
         Label<'static>,
         Label<'static>,
         Label<'static>,
-        AnnotationCardinality,
         AnnotationCardinality,
     ),
-    PlaysCardinalityDoesNotNarrowInheritedCardinality(
-        Label<'static>,
-        Label<'static>,
-        Label<'static>,
-        AnnotationCardinality,
-        AnnotationCardinality,
-    ),
-    RelatesCardinalityDoesNotNarrowInheritedCardinality(
+    CardinalityDoesNotNarrowInheritedCardinality(
+        CapabilityKind,
         Label<'static>,
         Label<'static>,
         Label<'static>,
@@ -133,13 +127,14 @@ pub enum SchemaValidationError {
     RelationTypeMustRelateAtLeastOneRole(Label<'static>),
     CannotRedeclareInheritedOwnsWithoutSpecializationWithOverride(Label<'static>, Label<'static>, Label<'static>),
     CannotRedeclareInheritedPlaysWithoutSpecializationWithOverride(Label<'static>, Label<'static>, Label<'static>),
-    CannotRedeclareInheritedAnnotationWithoutSpecializationForOwns(
-        Label<'static>,
+    CannotRedeclareInheritedAnnotationWithoutSpecializationForType(
+        Kind,
         Label<'static>,
         Label<'static>,
         Annotation,
     ),
-    CannotRedeclareInheritedAnnotationWithoutSpecializationForPlays(
+    CannotRedeclareInheritedAnnotationWithoutSpecializationForCapability(
+        CapabilityKind,
         Label<'static>,
         Label<'static>,
         Label<'static>,
@@ -177,7 +172,8 @@ impl Error for SchemaValidationError {
             Self::OverriddenOwnsAttributeTypeIsNotSupertype(_, _, _) => None,
             Self::OverriddenPlaysRoleTypeIsNotSupertype(_, _, _) => None,
             Self::OverriddenRelatesRoleTypeIsNotSupertype(_, _, _) => None,
-            Self::OrderingDoesNotMatchWithSupertype(_, _) => None,
+            Self::OrderingDoesNotMatchWithSupertype(_, _, _, _) => None,
+            Self::OrderingDoesNotMatchWithOverride(_, _, _, _, _) => None,
             Self::CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(_, _, _) => None,
             Self::CannotChangeSupertypeAsOwnsOverrideIsImplicitlyLost(_, _, _) => None,
             Self::CannotChangeSupertypeAsPlaysOverrideIsImplicitlyLost(_, _, _) => None,
@@ -191,7 +187,7 @@ impl Error for SchemaValidationError {
             Self::NonAbstractCannotPlayAbstract(_, _) => None,
             Self::NonAbstractCannotRelateAbstract(_, _) => None,
             Self::AttributeTypeSupertypeIsNotAbstract(_) => None,
-            Self::CannotSetNonAbstractSupertypeForAbstractType(_, _) => None,
+            Self::AbstractTypesSupertypeHasToBeAbstract(_, _) => None,
             Self::CannotUnsetAbstractnessAsItOwnsAbstractTypes(_) => None,
             Self::AttributeTypeWithoutValueTypeShouldBeAbstract(_) => None,
             Self::ValueTypeIsNotCompatibleWithRegexAnnotation(_, _) => None,
@@ -205,11 +201,8 @@ impl Error for SchemaValidationError {
             Self::InvalidRegexArguments(_) => None,
             Self::InvalidRangeArguments(_) => None,
             Self::InvalidValuesArguments(_) => None,
-            Self::CardinalityShouldNarrowInheritedCardinality(_, _) => None,
-            Self::KeyShouldNarrowInheritedCardinality(_) => None,
-            Self::OwnsCardinalityDoesNotNarrowInheritedCardinality(_, _, _, _, _) => None,
-            Self::PlaysCardinalityDoesNotNarrowInheritedCardinality(_, _, _, _, _) => None,
-            Self::RelatesCardinalityDoesNotNarrowInheritedCardinality(_, _, _, _, _) => None,
+            Self::KeyShouldNarrowInheritedCardinality(_, _, _, _) => None,
+            Self::CardinalityDoesNotNarrowInheritedCardinality(_, _, _, _, _, _) => None,
             Self::OnlyOneRegexCanBeSetForTypeHierarchy(_, _, _, _) => None,
             Self::RangeShouldNarrowInheritedRange(_, _, _, _) => None,
             Self::ValuesShouldNarrowInheritedValues(_, _, _, _) => None,
@@ -226,8 +219,8 @@ impl Error for SchemaValidationError {
             Self::RelationTypeMustRelateAtLeastOneRole(_) => None,
             Self::CannotRedeclareInheritedOwnsWithoutSpecializationWithOverride(_, _, _) => None,
             Self::CannotRedeclareInheritedPlaysWithoutSpecializationWithOverride(_, _, _) => None,
-            Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForOwns(_, _, _, _) => None,
-            Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForPlays(_, _, _, _) => None,
+            Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForType(_, _, _, _) => None,
+            Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForCapability(_, _, _, _, _) => None,
             Self::RedundantAnnotationForOwnsAlreadyInherited(_, _, _, _) => None,
             Self::RedundantAnnotationForPlaysAlreadyInherited(_, _, _, _) => None,
             Self::RedundantAnnotationForRelatesAlreadyInherited(_, _, _, _) => None,

@@ -128,7 +128,7 @@ impl<'a> Capability<'a> for Plays<'a> {
     type AnnotationType = PlaysAnnotation;
     type ObjectType = ObjectType<'a>;
     type InterfaceType = RoleType<'a>;
-    const CAPABILITY_KIND: CapabilityKind = CapabilityKind::Plays;
+    const KIND: CapabilityKind = CapabilityKind::Plays;
 
     fn object(&self) -> ObjectType<'a> {
         self.player.clone()

@@ -251,7 +251,7 @@ pub trait Capability<'a>:
     type AnnotationType: Hash + Eq + Clone + From<Annotation> + Into<Annotation>;
     type ObjectType: TypeAPI<'a>;
     type InterfaceType: KindAPI<'a>;
-    const CAPABILITY_KIND: CapabilityKind;
+    const KIND: CapabilityKind;
 
     fn object(&self) -> Self::ObjectType;
 

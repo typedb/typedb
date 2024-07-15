@@ -215,7 +215,7 @@ impl<'a> Capability<'a> for Owns<'a> {
     type AnnotationType = OwnsAnnotation;
     type ObjectType = ObjectType<'a>;
     type InterfaceType = AttributeType<'a>;
-    const CAPABILITY_KIND: CapabilityKind = CapabilityKind::Owns;
+    const KIND: CapabilityKind = CapabilityKind::Owns;
 
     fn object(&self) -> ObjectType<'a> {
         self.owner.clone()

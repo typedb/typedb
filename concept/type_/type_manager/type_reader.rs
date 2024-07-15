@@ -161,44 +161,44 @@ impl TypeReader {
         Self::get_type_property_declared::<Label<'static>>(snapshot, type_)
     }
 
-    pub(crate) fn get_implemented_interfaces_declared<IMPL>(
+    pub(crate) fn get_capabilities_declared<CAP>(
         snapshot: &impl ReadableSnapshot,
         owner: impl TypeAPI<'static>,
-    ) -> Result<HashSet<IMPL>, ConceptReadError>
+    ) -> Result<HashSet<CAP>, ConceptReadError>
     where
-        IMPL: Capability<'static>,
+        CAP: Capability<'static>,
     {
-        let owns_prefix = IMPL::prefix_for_canonical_edges_from(IMPL::ObjectType::new(owner.into_vertex()));
+        let owns_prefix = CAP::prefix_for_canonical_edges_from(CAP::ObjectType::new(owner.into_vertex()));
         snapshot
             .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| IMPL::decode_canonical_edge(Bytes::Reference(key.byte_ref()).into_owned()))
+            .collect_cloned_hashset(|key, _| CAP::decode_canonical_edge(Bytes::Reference(key.byte_ref()).into_owned()))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn get_implemented_interfaces<IMPL>(
+    pub(crate) fn get_capabilities<CAP>(
         snapshot: &impl ReadableSnapshot,
-        object_type: IMPL::ObjectType,
-    ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
+        object_type: CAP::ObjectType,
+    ) -> Result<HashMap<CAP::InterfaceType, CAP>, ConceptReadError>
     where
-        IMPL: Capability<'static>,
+        CAP: Capability<'static>,
     {
-        let mut transitive_implementations: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
-        let mut overridden_interfaces: HashSet<IMPL::InterfaceType> = HashSet::new();
+        let mut transitive_capabilities: HashMap<CAP::InterfaceType, CAP> = HashMap::new();
+        let mut overridden_interfaces: HashSet<CAP::InterfaceType> = HashSet::new();
         let mut current_type = Some(object_type);
         while current_type.is_some() {
-            let declared_implementations =
-                Self::get_implemented_interfaces_declared::<IMPL>(snapshot, current_type.as_ref().unwrap().clone())?;
-            for implementation in declared_implementations.into_iter() {
-                let interface = implementation.interface();
-                if !overridden_interfaces.contains(&interface) && !transitive_implementations.contains_key(&interface) {
-                    transitive_implementations.insert(interface, implementation.clone());
+            let declared_capabilities =
+                Self::get_capabilities_declared::<CAP>(snapshot, current_type.as_ref().unwrap().clone())?;
+            for capability in declared_capabilities.into_iter() {
+                let interface = capability.interface();
+                if !overridden_interfaces.contains(&interface) && !transitive_capabilities.contains_key(&interface) {
+                    transitive_capabilities.insert(interface, capability.clone());
                 }
-                if let Some(overridden) = Self::get_implementation_override(snapshot, implementation.clone())? {
+                if let Some(overridden) = Self::get_capabilities_override(snapshot, capability.clone())? {
                     overridden_interfaces.add(overridden.interface());
                 }
                 // The root relates relation->role is not overridden, but the root role is a supertype
                 // for all roles. We don't want to return relation:role if there is a user-defined role.
-                if let Some(supertype) = Self::get_supertype(snapshot, implementation.interface())? {
+                if let Some(supertype) = Self::get_supertype(snapshot, capability.interface())? {
                     if Kind::is_root_label(
                         &Self::get_label(snapshot, supertype.clone())?
                             .ok_or(ConceptReadError::CannotGetLabelForExistingType)?,
@@ -209,24 +209,24 @@ impl TypeReader {
             }
             current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
         }
-        Ok(transitive_implementations)
+        Ok(transitive_capabilities)
     }
 
-    pub(crate) fn get_overridden_interfaces<IMPL>(
+    pub(crate) fn get_overridden_interfaces<CAP>(
         snapshot: &impl ReadableSnapshot,
-        object_type: IMPL::ObjectType,
-    ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
+        object_type: CAP::ObjectType,
+    ) -> Result<HashMap<CAP::InterfaceType, CAP>, ConceptReadError>
     where
-        IMPL: Capability<'static>,
+        CAP: Capability<'static>,
     {
-        let mut overridden_interfaces: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
+        let mut overridden_interfaces: HashMap<CAP::InterfaceType, CAP> = HashMap::new();
         let mut current_type = Some(object_type);
         while current_type.is_some() {
-            let declared_implementations =
-                Self::get_implemented_interfaces_declared::<IMPL>(snapshot, current_type.as_ref().unwrap().clone())?;
-            for implementation in declared_implementations.into_iter() {
-                if let Some(overridden) = Self::get_implementation_override(snapshot, implementation.clone())? {
-                    if overridden.interface() != implementation.interface()
+            let declared_capabilities =
+                Self::get_capabilities_declared::<CAP>(snapshot, current_type.as_ref().unwrap().clone())?;
+            for capability in declared_capabilities.into_iter() {
+                if let Some(overridden) = Self::get_capabilities_override(snapshot, capability.clone())? {
+                    if overridden.interface() != capability.interface()
                         && !overridden_interfaces.contains_key(&overridden.interface())
                     {
                         overridden_interfaces.insert(overridden.interface(), overridden);
@@ -238,53 +238,53 @@ impl TypeReader {
         Ok(overridden_interfaces)
     }
 
-    pub(crate) fn get_implementation_override<IMPL>(
+    pub(crate) fn get_capabilities_override<CAP>(
         snapshot: &impl ReadableSnapshot,
-        implementation: IMPL,
-    ) -> Result<Option<IMPL>, ConceptReadError>
+        capability: CAP,
+    ) -> Result<Option<CAP>, ConceptReadError>
     where
-        IMPL: Capability<'static>,
+        CAP: Capability<'static>,
     {
-        let override_property_key = EdgeOverride::<IMPL>::build_key(implementation);
+        let override_property_key = EdgeOverride::<CAP>::build_key(capability);
         snapshot
             .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
-                EdgeOverride::<IMPL>::from_value_bytes(overridden_edge_bytes).overridden
+                EdgeOverride::<CAP>::from_value_bytes(overridden_edge_bytes).overridden
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
-    pub(crate) fn get_implementations_for_interface_declared<IMPL>(
+    pub(crate) fn get_capabilities_for_interface_declared<CAP>(
         snapshot: &impl ReadableSnapshot,
-        interface_type: IMPL::InterfaceType,
-    ) -> Result<HashSet<IMPL>, ConceptReadError>
+        interface_type: CAP::InterfaceType,
+    ) -> Result<HashSet<CAP>, ConceptReadError>
     where
-        IMPL: Capability<'static>,
+        CAP: Capability<'static>,
     {
-        let owns_prefix = IMPL::prefix_for_reverse_edges_from(interface_type);
+        let owns_prefix = CAP::prefix_for_reverse_edges_from(interface_type);
         snapshot
             .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| IMPL::decode_reverse_edge(Bytes::Array(key.byte_ref().into())))
+            .collect_cloned_hashset(|key, _| CAP::decode_reverse_edge(Bytes::Array(key.byte_ref().into())))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn get_implementations_for_interface<IMPL>(
+    pub(crate) fn get_capabilities_for_interface<CAP>(
         snapshot: &impl ReadableSnapshot,
-        interface_type: IMPL::InterfaceType,
-    ) -> Result<HashMap<ObjectType<'static>, IMPL>, ConceptReadError>
+        interface_type: CAP::InterfaceType,
+    ) -> Result<HashMap<ObjectType<'static>, CAP>, ConceptReadError>
     where
-        IMPL: Capability<'static, ObjectType = ObjectType<'static>> + Hash + Eq,
+        CAP: Capability<'static, ObjectType = ObjectType<'static>>,
     {
-        let mut impl_transitive: HashMap<ObjectType<'static>, IMPL> = HashMap::new();
-        let declared_impl_set: HashSet<IMPL> =
-            Self::get_implementations_for_interface_declared(snapshot, interface_type.clone())?;
+        let mut impl_transitive: HashMap<ObjectType<'static>, CAP> = HashMap::new();
+        let declared_impl_set: HashSet<CAP> =
+            Self::get_capabilities_for_interface_declared(snapshot, interface_type.clone())?;
 
         for declared_impl in declared_impl_set {
             let mut stack = Vec::new();
             stack.push(declared_impl.object());
             while let Some(sub_object) = stack.pop() {
                 let mut declared_impl_was_overridden = false;
-                for sub_owner_owns in Self::get_implemented_interfaces_declared::<IMPL>(snapshot, sub_object.clone())? {
-                    if let Some(overridden_impl) = Self::get_implementation_override(snapshot, sub_owner_owns.clone())?
+                for sub_owner_owns in Self::get_capabilities_declared::<CAP>(snapshot, sub_object.clone())? {
+                    if let Some(overridden_impl) = Self::get_capabilities_override(snapshot, sub_owner_owns.clone())?
                     {
                         declared_impl_was_overridden =
                             declared_impl_was_overridden || overridden_impl.interface() == interface_type;
@@ -311,7 +311,7 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         role: RoleType<'static>,
     ) -> Result<Relates<'static>, ConceptReadError> {
-        let relates = Self::get_implementations_for_interface_declared::<Relates<'static>>(snapshot, role)?;
+        let relates = Self::get_capabilities_for_interface_declared::<Relates<'static>>(snapshot, role)?;
         debug_assert!(relates.len() == 1);
         relates
             .iter()
@@ -538,7 +538,7 @@ impl TypeReader {
                     annotations.insert(annotation, edge.clone());
                 }
             }
-            edge_opt = Self::get_implementation_override(snapshot, edge.clone())?;
+            edge_opt = Self::get_capabilities_override(snapshot, edge.clone())?;
             declared = false;
         }
         Ok(annotations)

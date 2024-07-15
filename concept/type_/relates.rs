@@ -129,7 +129,7 @@ impl<'a> Capability<'a> for Relates<'a> {
     type AnnotationType = RelatesAnnotation;
     type ObjectType = RelationType<'a>;
     type InterfaceType = RoleType<'a>;
-    const CAPABILITY_KIND: CapabilityKind = CapabilityKind::Relates;
+    const KIND: CapabilityKind = CapabilityKind::Relates;
 
     fn object(&self) -> RelationType<'a> {
         self.relation.clone()

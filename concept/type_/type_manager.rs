@@ -443,7 +443,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_declared(entity_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces_declared(snapshot, entity_type.clone())?;
+            let owns = TypeReader::get_capabilities_declared(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -456,7 +456,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_declared(relation_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces_declared(snapshot, relation_type.clone())?;
+            let owns = TypeReader::get_capabilities_declared(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -469,7 +469,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_for_attribute_type_declared(attribute_type.clone())))
         } else {
-            let plays = TypeReader::get_implementations_for_interface_declared::<Owns<'static>>(
+            let plays = TypeReader::get_capabilities_for_interface_declared::<Owns<'static>>(
                 snapshot,
                 attribute_type.clone(),
             )?;
@@ -486,7 +486,7 @@ impl TypeManager {
             Ok(MaybeOwns::Borrowed(cache.get_owns_for_attribute_type(attribute_type.clone())))
         } else {
             let owns =
-                TypeReader::get_implementations_for_interface::<Owns<'static>>(snapshot, attribute_type.clone())?;
+                TypeReader::get_capabilities_for_interface::<Owns<'static>>(snapshot, attribute_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -500,7 +500,7 @@ impl TypeManager {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_declared(relation_type)))
         } else {
             let relates =
-                TypeReader::get_implemented_interfaces_declared::<Relates<'static>>(snapshot, relation_type.clone())?;
+                TypeReader::get_capabilities_declared::<Relates<'static>>(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
@@ -513,7 +513,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
-            let relates = TypeReader::get_implemented_interfaces::<Relates<'static>>(snapshot, relation_type.clone())?;
+            let relates = TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
@@ -527,7 +527,7 @@ impl TypeManager {
             Ok(MaybeOwns::Borrowed(cache.get_plays_for_role_type_declared(role_type.clone())))
         } else {
             let plays =
-                TypeReader::get_implementations_for_interface_declared::<Plays<'static>>(snapshot, role_type.clone())?;
+                TypeReader::get_capabilities_for_interface_declared::<Plays<'static>>(snapshot, role_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -566,7 +566,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_for_role_type(role_type.clone())))
         } else {
-            let plays = TypeReader::get_implementations_for_interface::<Plays<'static>>(snapshot, role_type.clone())?;
+            let plays = TypeReader::get_capabilities_for_interface::<Plays<'static>>(snapshot, role_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -579,7 +579,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces::<Owns<'static>>(
+            let owns = TypeReader::get_capabilities::<Owns<'static>>(
                 snapshot,
                 entity_type.into_owned_object_type(),
             )?;
@@ -595,7 +595,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces::<Owns<'static>>(
+            let owns = TypeReader::get_capabilities::<Owns<'static>>(
                 snapshot,
                 relation_type.into_owned_object_type(),
             )?;
@@ -659,7 +659,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_declared(entity_type)))
         } else {
-            let plays = TypeReader::get_implemented_interfaces_declared(snapshot, entity_type.clone())?;
+            let plays = TypeReader::get_capabilities_declared(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -672,7 +672,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(entity_type)))
         } else {
-            let plays = TypeReader::get_implemented_interfaces::<Plays<'static>>(
+            let plays = TypeReader::get_capabilities::<Plays<'static>>(
                 snapshot,
                 entity_type.into_owned_object_type(),
             )?;
@@ -704,7 +704,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_declared(relation_type)))
         } else {
-            let plays = TypeReader::get_implemented_interfaces_declared(snapshot, relation_type.clone())?;
+            let plays = TypeReader::get_capabilities_declared(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -717,7 +717,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(relation_type)))
         } else {
-            let plays = TypeReader::get_implemented_interfaces::<Plays<'static>>(
+            let plays = TypeReader::get_capabilities::<Plays<'static>>(
                 snapshot,
                 relation_type.into_owned_object_type(),
             )?;
@@ -749,7 +749,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_override(plays)))
         } else {
-            Ok(MaybeOwns::Owned(TypeReader::get_implementation_override(snapshot, plays)?))
+            Ok(MaybeOwns::Owned(TypeReader::get_capabilities_override(snapshot, plays)?))
         }
     }
 
@@ -787,7 +787,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_override(owns)))
         } else {
-            Ok(MaybeOwns::Owned(TypeReader::get_implementation_override(snapshot, owns)?))
+            Ok(MaybeOwns::Owned(TypeReader::get_capabilities_override(snapshot, owns)?))
         }
     }
 
@@ -836,7 +836,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relates_override(relates)))
         } else {
-            Ok(MaybeOwns::Owned(TypeReader::get_implementation_override(snapshot, relates)?))
+            Ok(MaybeOwns::Owned(TypeReader::get_capabilities_override(snapshot, relates)?))
         }
     }
 
@@ -941,10 +941,10 @@ impl TypeManager {
         }
     }
 
-    pub fn get_cardinality<'a, IM: Capability<'a>>(
+    pub fn get_cardinality<'a, CAP: Capability<'a>>(
         &self,
         snapshot: &impl ReadableSnapshot,
-        interface_impl: IM,
+        interface_impl: CAP,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         let annotations = interface_impl.get_annotations(snapshot, self)?;
         let card = annotations
@@ -1193,7 +1193,7 @@ impl TypeManager {
         //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         let declared_relates =
-            TypeReader::get_implemented_interfaces::<Relates<'static>>(snapshot, relation_type.clone())?;
+            TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation_type.clone())?;
         for (_role_type, relates) in declared_relates.iter() {
             self.delete_role_type(snapshot, relates.role())?;
         }
@@ -1219,7 +1219,7 @@ impl TypeManager {
         //     .map_err(|source| ConceptWriteError::SchemaValidation {  source } )?;
 
         for owns in
-            TypeReader::get_implementations_for_interface_declared::<Owns<'static>>(snapshot, attribute_type.clone())?
+            TypeReader::get_capabilities_for_interface_declared::<Owns<'static>>(snapshot, attribute_type.clone())?
         {
             self.unset_owns(snapshot, owns.owner(), owns.attribute())?
         }
@@ -1247,7 +1247,7 @@ impl TypeManager {
         //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         for plays in
-            TypeReader::get_implementations_for_interface_declared::<Plays<'static>>(snapshot, role_type.clone())?
+            TypeReader::get_capabilities_for_interface_declared::<Plays<'static>>(snapshot, role_type.clone())?
         {
             self.unset_plays(snapshot, plays.player(), plays.role())?
         }
@@ -1419,9 +1419,6 @@ impl TypeManager {
         };
 
         OperationTimeValidation::validate_sub_does_not_create_cycle(snapshot, subtype.clone(), supertype.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        OperationTimeValidation::validate_type_supertype_abstractness(snapshot, subtype.clone(), supertype.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_supertype_annotations_compatibility(
@@ -1732,8 +1729,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        // TODO: subtype ordering match should be checked on commit time, not operation time!
-        let owns_override_opt = TypeReader::get_implementation_override(snapshot, owns.clone())?;
+        let owns_override_opt = TypeReader::get_capabilities_override(snapshot, owns.clone())?;
         match owns_override_opt {
             Some(owns_override) => {
                 OperationTimeValidation::validate_owns_override_ordering_match(
@@ -1767,7 +1763,7 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: subtype ordering match should be checked on commit time, not operation time!
-        let relates_override_opt = TypeReader::get_implementation_override(snapshot, relates.clone())?;
+        let relates_override_opt = TypeReader::get_capabilities_override(snapshot, relates.clone())?;
         match relates_override_opt {
             Some(relates_override) => {
                 OperationTimeValidation::validate_role_supertype_ordering_match(
@@ -1791,6 +1787,8 @@ impl TypeManager {
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: Validation: existing instances (or is it schema/data validation?)
+
+
         self.set_annotation::<AnnotationAbstract>(snapshot, type_, AnnotationCategory::Abstract, None)
     }
 
@@ -1967,8 +1965,8 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        if let Some(override_owns) = TypeReader::get_implementation_override(snapshot, owns.clone())? {
-            OperationTimeValidation::validate_key_narrows_inherited_cardinality(snapshot, &self, override_owns)
+        if let Some(override_owns) = TypeReader::get_capabilities_override(snapshot, owns.clone())? {
+            OperationTimeValidation::validate_key_narrows_inherited_cardinality(snapshot, &self, owns.clone(), override_owns)
                 .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
@@ -1998,10 +1996,11 @@ impl TypeManager {
         OperationTimeValidation::validate_cardinality_arguments(cardinality)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        if let Some(override_edge) = TypeReader::get_implementation_override(snapshot, edge.clone())? {
+        if let Some(override_edge) = TypeReader::get_capabilities_override(snapshot, edge.clone())? {
             OperationTimeValidation::validate_cardinality_narrows_inherited_cardinality(
                 snapshot,
                 &self,
+                edge.clone(),
                 override_edge,
                 cardinality,
             )
@@ -2087,7 +2086,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_annotation_set_only_for_interface_implementation(
+        OperationTimeValidation::validate_annotation_set_only_for_capability(
             snapshot,
             owns.clone(),
             AnnotationCategory::Regex,
@@ -2199,7 +2198,7 @@ impl TypeManager {
         OperationTimeValidation::validate_range_arguments(range.clone(), owns_value_type)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_annotation_set_only_for_interface_implementation(
+        OperationTimeValidation::validate_annotation_set_only_for_capability(
             snapshot,
             owns.clone(),
             AnnotationCategory::Range,
@@ -2294,7 +2293,7 @@ impl TypeManager {
         OperationTimeValidation::validate_values_arguments(values.clone(), owns_value_type)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_annotation_set_only_for_interface_implementation(
+        OperationTimeValidation::validate_annotation_set_only_for_capability(
             snapshot,
             owns.clone(),
             AnnotationCategory::Values,
@@ -2323,7 +2322,6 @@ impl TypeManager {
         self.unset_edge_annotation::<AnnotationValues>(snapshot, edge, AnnotationCategory::Values)
     }
 
-    // TODO: Might want to be able to get AnnotationCategory from A (Annotation***) as well, so it's more error-prone!
     fn set_annotation<A: TypeVertexPropertyEncoding<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -2331,14 +2329,14 @@ impl TypeManager {
         annotation_category: AnnotationCategory,
         annotation_value: Option<A>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_set_annotation_is_compatible_with_declared_annotations(
+        OperationTimeValidation::validate_declared_annotation_is_compatible_with_other_declared_annotations(
             snapshot,
             type_.clone(),
             annotation_category,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_set_annotation_is_compatible_with_inherited_annotations(
+        OperationTimeValidation::validate_declared_annotation_is_compatible_with_other_inherited_annotations(
             snapshot,
             type_.clone(),
             annotation_category,
@@ -2359,14 +2357,14 @@ impl TypeManager {
         annotation_category: AnnotationCategory,
         annotation_value: Option<A>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_set_edge_annotation_is_compatible_with_declared_annotations(
+        OperationTimeValidation::validate_declared_edge_annotation_is_compatible_with_declared_annotations(
             snapshot,
             edge.clone(),
             annotation_category,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_set_edge_annotation_is_compatible_with_inherited_annotations(
+        OperationTimeValidation::validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations(
             snapshot,
             edge.clone(),
             annotation_category,
