@@ -21,13 +21,12 @@ use ir::{
     },
     program::block::FunctionalBlock,
 };
-use itertools::Itertools;
-
-use self::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost};
-
-mod vertex;
 use ir::pattern::IrID;
 use ir::program::block::BlockContext;
+
+// use self::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost};
+//
+// mod vertex;
 
 pub struct PatternPlan {
     pub(crate) steps: Vec<Step>,
@@ -62,26 +61,26 @@ impl PatternPlan {
         let conjunction = block.conjunction();
         assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
 
-        let mut variable_index = HashMap::new();
+        // let mut variable_index = HashMap::new();
         let mut variable_isa = HashMap::new();
-        let mut elements = Vec::new();
-        let mut adjacency: HashMap<usize, HashSet<usize>> = HashMap::new();
+        // let mut elements = Vec::new();
+        // let mut adjacency: HashMap<usize, HashSet<usize>> = HashMap::new();
 
         // 1. Register variables
         for (variable, category) in block.context().variable_categories() {
             match category {
                 VariableCategory::Type | VariableCategory::ThingType | VariableCategory::RoleType => (), // ignore for now
                 VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
-                    let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
-                    variable_index.insert(variable, elements.len());
-                    elements.push(PlannerVertex::Thing(planner));
+                    // let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
+                    // variable_index.insert(variable, elements.len());
+                    // elements.push(PlannerVertex::Thing(planner));
                 }
                 VariableCategory::Value => todo!(),
                 VariableCategory::ObjectList | VariableCategory::AttributeList | VariableCategory::ValueList => todo!(),
             }
         }
 
-        let mut index_to_constraint = HashMap::new();
+        // let mut index_to_constraint = HashMap::new();
 
         // 2. Register constraints
         for constraint in conjunction.constraints() {
@@ -92,18 +91,18 @@ impl PatternPlan {
                 }
                 Constraint::RolePlayer(_) => todo!(),
                 Constraint::Has(has) => {
-                    let planner = HasPlanner::from_constraint(has, &variable_index, type_annotations, statistics);
-
-                    let index = elements.len();
-
-                    index_to_constraint.insert(index, constraint);
-
-                    adjacency.entry(index).or_default().extend([planner.owner, planner.attribute]);
-
-                    adjacency.entry(planner.owner).or_default().insert(index);
-                    adjacency.entry(planner.attribute).or_default().insert(index);
-
-                    elements.push(PlannerVertex::Has(planner));
+                    // let planner = HasPlanner::from_constraint(has, &variable_index, type_annotations, statistics);
+                    //
+                    // let index = elements.len();
+                    //
+                    // index_to_constraint.insert(index, constraint);
+                    //
+                    // adjacency.entry(index).or_default().extend([planner.owner, planner.attribute]);
+                    //
+                    // adjacency.entry(planner.owner).or_default().insert(index);
+                    // adjacency.entry(planner.attribute).or_default().insert(index);
+                    //
+                    // elements.push(PlannerVertex::Has(planner));
                 }
                 Constraint::ExpressionBinding(_) => todo!(),
                 Constraint::FunctionCallBinding(_) => todo!(),
@@ -111,58 +110,59 @@ impl PatternPlan {
             }
         }
 
-        let ordering = initialise_plan_greedy(&elements, &adjacency);
-
-        let index_to_variable: HashMap<_, _> =
-            variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
-
-        let mut steps = Vec::with_capacity(index_to_constraint.len());
-        for (i, &index) in ordering.iter().enumerate().rev() {
-            let adjacent = &adjacency[&index];
-            if let Some(var) = index_to_variable.get(&index) {
-                let is_starting = !adjacent.iter().any(|adj| ordering[..i].contains(adj));
-                if is_starting {
-                    steps.push(Step::new(
-                        Execution::SortedIterators(vec![Iterate::Isa(
-                            variable_isa[var].clone(),
-                            IterateMode::UnboundSortedTo,
-                        )]),
-                        &HashSet::new(),
-                    ));
-                }
-            } else {
-                let bound_variables = adjacent
-                    .iter()
-                    .filter(|&adj| ordering[..i].contains(adj))
-                    .map(|adj| index_to_variable[adj])
-                    .collect::<HashSet<_>>();
-                match index_to_constraint.get(&index) {
-                    Some(Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_)) => todo!(),
-                    Some(Constraint::RolePlayer(_)) => todo!(),
-                    Some(Constraint::Has(has)) => {
-                        let iter = if bound_variables.is_empty() {
-                            Iterate::Has(has.clone(), IterateMode::UnboundSortedFrom)
-                        } else if bound_variables.len() == 2 {
-                            continue; // TODO
-                        } else if bound_variables.contains(&has.owner()) {
-                            Iterate::Has(has.clone(), IterateMode::BoundFromSortedTo)
-                        } else {
-                            Iterate::HasReverse(has.clone(), IterateMode::BoundFromSortedTo)
-                        };
-
-                        steps.push(Step::new(Execution::SortedIterators(vec![iter]), &bound_variables));
-                    }
-                    Some(Constraint::ExpressionBinding(_)) => todo!(),
-                    Some(Constraint::FunctionCallBinding(_)) => todo!(),
-                    Some(Constraint::Comparison(_)) => todo!(),
-                    None => (),
-                }
-            }
-        }
-
-        steps.reverse();
-
-        Self { steps }
+        todo!()
+        // let ordering = initialise_plan_greedy(&elements, &adjacency);
+        //
+        // let index_to_variable: HashMap<_, _> =
+        //     variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
+        //
+        // let mut steps = Vec::with_capacity(index_to_constraint.len());
+        // for (i, &index) in ordering.iter().enumerate().rev() {
+        //     let adjacent = &adjacency[&index];
+        //     if let Some(var) = index_to_variable.get(&index) {
+        //         let is_starting = !adjacent.iter().any(|adj| ordering[..i].contains(adj));
+        //         if is_starting {
+        //             steps.push(Step::new(
+        //                 Execution::SortedIterators(vec![Iterate::Isa(
+        //                     variable_isa[var].clone(),
+        //                     IterateMode::UnboundSortedTo,
+        //                 )]),
+        //                 &HashSet::new(),
+        //             ));
+        //         }
+        //     } else {
+        //         let bound_variables = adjacent
+        //             .iter()
+        //             .filter(|&adj| ordering[..i].contains(adj))
+        //             .map(|adj| index_to_variable[adj])
+        //             .collect::<HashSet<_>>();
+        //         match index_to_constraint.get(&index) {
+        //             Some(Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_)) => todo!(),
+        //             Some(Constraint::RolePlayer(_)) => todo!(),
+        //             Some(Constraint::Has(has)) => {
+        //                 let iter = if bound_variables.is_empty() {
+        //                     Iterate::Has(has.clone(), IterateMode::UnboundSortedFrom)
+        //                 } else if bound_variables.len() == 2 {
+        //                     continue; // TODO
+        //                 } else if bound_variables.contains(&has.owner()) {
+        //                     Iterate::Has(has.clone(), IterateMode::BoundFromSortedTo)
+        //                 } else {
+        //                     Iterate::HasReverse(has.clone(), IterateMode::BoundFromSortedTo)
+        //                 };
+        //
+        //                 steps.push(Step::new(Execution::SortedIterators(vec![iter]), &bound_variables));
+        //             }
+        //             Some(Constraint::ExpressionBinding(_)) => todo!(),
+        //             Some(Constraint::FunctionCallBinding(_)) => todo!(),
+        //             Some(Constraint::Comparison(_)) => todo!(),
+        //             None => (),
+        //         }
+        //     }
+        // }
+        //
+        // steps.reverse();
+        //
+        // Self { steps }
     }
 
     pub(crate) fn steps(&self) -> &[Step] {
@@ -174,34 +174,34 @@ impl PatternPlan {
     }
 }
 #[allow(dead_code)]
-fn initialise_plan_greedy(elements: &[PlannerVertex], adjacency: &HashMap<usize, HashSet<usize>>) -> Vec<usize> {
-    let mut open_set: HashSet<usize> = (0..elements.len()).collect();
-    let mut ordering = Vec::with_capacity(elements.len());
-    while !open_set.is_empty() {
-        let (next, _cost) = open_set
-            .iter()
-            .map(|&el| (el, calculate_marginal_cost(elements, adjacency, &ordering, el)))
-            .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
-            .unwrap();
-        ordering.push(next);
-        open_set.remove(&next);
-    }
-    ordering
-}
-
-fn calculate_marginal_cost(
-    elements: &[PlannerVertex],
-    adjacency: &HashMap<usize, HashSet<usize>>,
-    prefix: &[usize],
-    next: usize,
-) -> f64 {
-    assert!(!prefix.contains(&next));
-    let adjacent = &adjacency[&next];
-    let preceding = adjacent.iter().filter(|adj| prefix.contains(adj)).copied().collect_vec();
-    let planner_vertex = &elements[next];
-    let VertexCost { per_input, per_output, branching_factor } = planner_vertex.cost(&preceding, elements);
-    per_input + branching_factor * per_output
-}
+// fn initialise_plan_greedy(elements: &[PlannerVertex], adjacency: &HashMap<usize, HashSet<usize>>) -> Vec<usize> {
+//     let mut open_set: HashSet<usize> = (0..elements.len()).collect();
+//     let mut ordering = Vec::with_capacity(elements.len());
+//     while !open_set.is_empty() {
+//         let (next, _cost) = open_set
+//             .iter()
+//             .map(|&el| (el, calculate_marginal_cost(elements, adjacency, &ordering, el)))
+//             .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
+//             .unwrap();
+//         ordering.push(next);
+//         open_set.remove(&next);
+//     }
+//     ordering
+// }
+//
+// fn calculate_marginal_cost(
+//     elements: &[PlannerVertex],
+//     adjacency: &HashMap<usize, HashSet<usize>>,
+//     prefix: &[usize],
+//     next: usize,
+// ) -> f64 {
+//     assert!(!prefix.contains(&next));
+//     let adjacent = &adjacency[&next];
+//     let preceding = adjacent.iter().filter(|adj| prefix.contains(adj)).copied().collect_vec();
+//     let planner_vertex = &elements[next];
+//     let VertexCost { per_input, per_output, branching_factor } = planner_vertex.cost(&preceding, elements);
+//     per_input + branching_factor * per_output
+// }
 
 pub enum Step {
     SortedJoin(SortedJoinStep),
@@ -348,7 +348,7 @@ trait InstructionAPI {
 #[derive(Debug)]
 pub enum Instruction {
     // type -> thing
-    Isa(Isa<Variable>, IterateMode),
+    Isa(Isa<Variable>, IterateBounds<Variable>),
     // owner -> attribute
     Has(Has<Variable>, IterateBounds<Variable>),
     // attribute -> owner
@@ -379,7 +379,7 @@ impl Instruction {
     fn bound_vars_foreach(&self, mut apply: impl FnMut(Variable) -> ()) {
         match self {
             Instruction::Isa(_, bounds) => {
-                bounds.variables().iter().cloned().for_each(apply)
+                bounds.bounds().iter().cloned().for_each(apply)
             }
             Instruction::Has(_, bounds) | Instruction::HasReverse(_, bounds) => {
                 bounds.bounds().iter().cloned().for_each(apply)
@@ -397,6 +397,13 @@ impl Instruction {
 
     fn unbound_vars_foreach(&self, mut apply: impl FnMut(Variable)) {
         match self {
+            Instruction::Isa(isa, bounds) => {
+                isa.ids_foreach(|var, _| {
+                    if !bounds.bounds().iter().contains(&var) {
+                        apply(var)
+                    }
+                })
+            }
             Instruction::Has(has, bounds) | Instruction::HasReverse(has, bounds) => {
                 has.ids_foreach(|var, _| {
                     if !bounds.bounds().iter().contains(&var) {
@@ -489,6 +496,7 @@ impl Instruction {
 impl InstructionAPI for Instruction {
     fn constraint(&self) -> Constraint<Variable> {
         match self {
+            Instruction::Isa(isa, _) => isa.clone().into(),
             Instruction::Has(has, _) | Instruction::HasReverse(has, _) => has.clone().into(),
             Instruction::RolePlayer(rp, _) | Instruction::RolePlayerReverse(rp, _) => rp.clone().into(),
             Instruction::FunctionCallBinding(call) => call.clone().into(),

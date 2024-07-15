@@ -43,9 +43,9 @@ pub(crate) struct HasIteratorExecutor {
 
 #[derive(Debug, Copy, Clone)]
 enum IterateMode {
-    IterateUnboundSortedFrom,
-    IterateUnboundSortedTo,
-    IterateBoundSortedTo,
+    UnboundSortedFrom,
+    UnboundSortedTo,
+    BoundFromSortedTo,
 }
 
 impl IterateMode {
@@ -55,19 +55,19 @@ impl IterateMode {
             match sort_by {
                 None => {
                     // arbitrarily pick from sorted
-                    IterateMode::IterateUnboundSortedFrom
+                    IterateMode::UnboundSortedFrom
                 }
                 Some(variable) => {
                     if has.owner() == variable {
-                        IterateMode::IterateUnboundSortedFrom
+                        IterateMode::UnboundSortedFrom
                     } else {
-                        IterateMode::IterateUnboundSortedTo
+                        IterateMode::UnboundSortedTo
                     }
                 }
             }
         } else {
             debug_assert!(variable_modes.owner.is_bound());
-            IterateMode::IterateUnboundSortedTo
+            IterateMode::BoundFromSortedTo
         }
     }
 }
@@ -174,7 +174,7 @@ impl HasIteratorExecutor {
         debug_assert!(!variable_modes.is_fully_bound());
         let iterate_mode = IterateMode::new(&has, variable_modes, sort_by);
         let filter_fn = match iterate_mode {
-            IterateMode::IterateUnboundSortedFrom => HasExecutorFilter::HasFilterBoth(Arc::new({
+            IterateMode::UnboundSortedFrom => HasExecutorFilter::HasFilterBoth(Arc::new({
                 let owner_att_types = owner_attribute_types.clone();
                 let att_types = attribute_types.clone();
                 move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
@@ -185,7 +185,7 @@ impl HasIteratorExecutor {
                     Err(_) => true,
                 }
             })),
-            IterateMode::IterateUnboundSortedTo  | IterateMode::BoundFromSortedTo => HasExecutorFilter::HasFilterAttribute(Arc::new({
+            IterateMode::UnboundSortedTo | IterateMode::BoundFromSortedTo => HasExecutorFilter::HasFilterAttribute(Arc::new({
                 let att_types = attribute_types.clone();
                 move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
                     Ok((has, _)) => att_types.contains(&Type::Attribute(has.attribute().type_())),
@@ -201,7 +201,7 @@ impl HasIteratorExecutor {
             // })),
         };
 
-        let owner_cache = if matches!(iterate_mode, IterateMode::IterateUnboundSortedTo) {
+        let owner_cache = if matches!(iterate_mode, IterateMode::UnboundSortedTo) {
             let mut cache = Vec::new();
             for owner_type in owner_attribute_types.keys() {
                 for result in thing_manager
@@ -239,7 +239,7 @@ impl HasIteratorExecutor {
         row: ImmutableRow<'_>,
     ) -> Result<InstructionIterator, ConceptReadError> {
         match self.iterate_mode {
-            IterateMode::IterateUnboundSortedFrom => {
+            IterateMode::UnboundSortedFrom => {
                 let first_from_type = self.owner_attribute_types.first_key_value().unwrap().0;
                 let last_key_from_type = self.owner_attribute_types.last_key_value().unwrap().0;
                 let key_range =
@@ -254,7 +254,7 @@ impl HasIteratorExecutor {
                 );
                 Ok(peekable)
             }
-            IterateMode::IterateUnboundSortedTo => {
+            IterateMode::UnboundSortedTo => {
                 debug_assert!(self.owner_cache.is_some());
                 if let Some([iter]) = self.owner_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
@@ -295,7 +295,7 @@ impl HasIteratorExecutor {
                     Ok(peekable)
                 }
             }
-            IterateMode::IterateBoundSortedTo => {
+            IterateMode::BoundFromSortedTo => {
                 debug_assert!(row.len() > self.has.owner().as_usize());
                 let owner = row.get(self.has.owner());
                 let iterator = match owner {

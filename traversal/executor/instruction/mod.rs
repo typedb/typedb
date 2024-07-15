@@ -28,10 +28,7 @@ use crate::{
             has_reverse_executor::HasReverseIteratorExecutor,
             role_player_executor::RolePlayerIteratorExecutor,
             role_player_reverse_executor::RolePlayerReverseIteratorExecutor,
-            has_reverse_provider::HasReverseProvider,
-            isa_provider::IsaProvider,
-            role_player_provider::RolePlayerProvider,
-            role_player_reverse_provider::RolePlayerReverseProvider,
+            isa_executor::IsaExecutor,
         },
         pattern_executor::{ImmutableRow, Row},
         Position,
@@ -45,12 +42,12 @@ mod comparison_reverse_executor;
 mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
-mod isa_provider;
 mod role_player_executor;
 mod role_player_reverse_executor;
+mod isa_executor;
 
 pub(crate) enum IteratorExecutor {
-    Isa(IsaProvider),
+    Isa(IsaExecutor),
 
     Has(HasIteratorExecutor),
     HasReverse(HasReverseIteratorExecutor),
@@ -78,11 +75,15 @@ impl IteratorExecutor {
         sort_by: Option<Variable>,
     ) -> Result<Self, ConceptReadError> {
         match instruction {
-            Instruction::Isa(isa, mode) => {
+            Instruction::Isa(isa, bounds) => {
                 let thing = isa.thing();
                 let provider = IsaProvider::new(
-                    isa.clone().into_ids(variable_to_position),
-                    mode,
+                    isa.clone(),
+                    bounds,
+                    selected_variables,
+                    named_variables,
+                    variable_positions,
+                    sort_by,
                     type_annotations.constraint_annotations(isa.into()).unwrap().get_left_right().left_to_right(),
                     type_annotations.variable_annotations(thing).unwrap().clone(),
                 );

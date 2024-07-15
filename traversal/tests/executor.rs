@@ -5,20 +5,20 @@
  */
 
 use std::{borrow::Cow,
-    collections::{HashMap, HashSet}, sync::Arc};
+          collections::HashMap, sync::Arc};
 
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
-    type_::{type_manager::TypeManager, Ordering, OwnerAPI},
+    type_::{Ordering, OwnerAPI, type_manager::TypeManager},
 };
 use durability::wal::WAL;
 use encoding::{
+    EncodingKeyspace,
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
     value::{label::Label, value::Value, value_type::ValueType},
-    EncodingKeyspace,
 };
 use ir::{
     inference::type_inference::infer_types,
@@ -29,14 +29,17 @@ use ir::{
     },
     translator::block_builder::TypeQLBuilder,
 };
-use itertools::Itertools;
-use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, WriteSnapshot},
 };
+use storage::sequence_number::SequenceNumber;
+use storage::snapshot::ReadSnapshot;
 use test_utils::{create_tmp_dir, init_logging, TempDir};
+use traversal::executor::program_executor::ProgramExecutor;
+use traversal::planner::pattern_plan::PatternPlan;
+use traversal::planner::program_plan::ProgramPlan;
 
 fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
     init_logging();
@@ -139,7 +142,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
     let program = Program::new(block, HashMap::new());
-    let type_annotations = infer_types(&program, &snapshot, &type_manager);
+    let type_annotations = infer_types(&program, &snapshot, &type_manager).unwrap();
     let pattern_plan = PatternPlan::from_block(program.entry, &type_annotations, &statistics);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
     let executor = ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap();
@@ -148,7 +151,5 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
         let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
         let (_, thing_manager) = load_managers(storage.clone());
         let thing_manager = Arc::new(thing_manager);
-
-const PERSON_LABEL: Label = Label::new_static("person");
-const AGE_LABEL: Label = Label::new_static("age");
-const NAME_LABEL: Label = Label::new_static("name");
+    }
+}
