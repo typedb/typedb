@@ -12,6 +12,8 @@ use concept::{
     thing::{entity::EntityIterator, has::Has, relation::RelationIterator, thing_manager::ThingManager},
 };
 use concept::thing::attribute::AttributeIterator;
+use concept::thing::ThingAPI;
+use concept::type_::TypeAPI;
 use ir::inference::type_inference::TypeAnnotations;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
@@ -37,6 +39,7 @@ use crate::{
     planner::pattern_plan::Instruction,
 };
 use crate::executor::instruction::has_executor::HasVariableModes;
+use crate::executor::instruction::isa_executor::IsaVariableModes;
 
 mod comparison_executor;
 mod comparison_reverse_executor;
@@ -156,9 +159,21 @@ impl IteratorExecutor {
 }
 
 pub(crate) enum InstructionIterator {
-    IsaEntitySortedThing(Peekable<EntityIterator>, ir::pattern::constraint::Isa<Position>),
-    IsaRelationSortedThing(Peekable<RelationIterator>, ir::pattern::constraint::Isa<Position>),
-    IsaAttributeSortedThing(Peekable<AttributeIterator>, ir::pattern::constraint::Isa<Position>),
+    IsaEntitySortedThing(
+        Peekable<EntityIterator>,
+        ir::pattern::constraint::Isa<Position>,
+        IsaVariableModes,
+    ),
+    IsaRelationSortedThing(
+        Peekable<RelationIterator>,
+        ir::pattern::constraint::Isa<Position>,
+        IsaVariableModes,
+    ),
+    IsaAttributeSortedThing(
+        Peekable<AttributeIterator>,
+        ir::pattern::constraint::Isa<Position>,
+        IsaVariableModes,
+    ),
 
     HasUnboundedSortedOwner(
         HasUnboundedSortedOwnerIterator,
@@ -191,13 +206,13 @@ impl InstructionIterator {
     pub(crate) fn peek_sorted_value(&mut self) -> Option<Result<VariableValue<'_>, &ConceptReadError>> {
         debug_assert!(self.is_sorted());
         match self {
-            InstructionIterator::IsaEntitySortedThing(iter, _) => iter.peek().map(|result| {
-                result.as_ref() .map(|entity| VariableValue::Thing(entity.as_reference().into()))
+            InstructionIterator::IsaEntitySortedThing(iter, _, _) => iter.peek().map(|result| {
+                result.as_ref().map(|entity| VariableValue::Thing(entity.as_reference().into()))
             }),
-            InstructionIterator::IsaRelationSortedThing(iter, _) => iter.peek().map(|result| {
-                result .as_ref() .map(|relation| VariableValue::Thing(relation.as_reference().into()))
+            InstructionIterator::IsaRelationSortedThing(iter, _, _) => iter.peek().map(|result| {
+                result.as_ref().map(|relation| VariableValue::Thing(relation.as_reference().into()))
             }),
-            InstructionIterator::IsaAttributeSortedThing(iter, _) => iter.peek().map(|result| {
+            InstructionIterator::IsaAttributeSortedThing(iter, _, _) => iter.peek().map(|result| {
                 result.as_ref().map(|attribute| VariableValue::Thing(attribute.as_reference().into()))
             }),
             InstructionIterator::HasUnboundedSortedOwner(iter, _, _) => iter.peek().map(|result| {
@@ -221,7 +236,7 @@ impl InstructionIterator {
     ) -> Result<Option<Ordering>, ConceptReadError> {
         debug_assert!(self.is_sorted());
         match self {
-            InstructionIterator::IsaEntitySortedThing(iter, _) => loop {
+            InstructionIterator::IsaEntitySortedThing(iter, _, _) => loop {
                 let peek = iter.peek();
                 match peek {
                     None => return Ok(None),
@@ -237,7 +252,7 @@ impl InstructionIterator {
                 }
                 let _ = iter.next();
             },
-            InstructionIterator::IsaRelationSortedThing(iter, _) => loop {
+            InstructionIterator::IsaRelationSortedThing(iter, _, _) => loop {
                 let peek = iter.peek();
                 match peek {
                     None => return Ok(None),
@@ -253,7 +268,7 @@ impl InstructionIterator {
                 }
                 let _ = iter.next();
             },
-            InstructionIterator::IsaAttributeSortedThing(iter, _) => loop {
+            InstructionIterator::IsaAttributeSortedThing(iter, _, _) => loop {
                 let peek = iter.peek();
                 match peek {
                     None => return Ok(None),
@@ -344,13 +359,13 @@ impl InstructionIterator {
     pub(crate) fn advance(&mut self) -> Result<(), ConceptReadError> {
         assert!(self.has_value());
         match self {
-            InstructionIterator::IsaEntitySortedThing(iter, _) => {
+            InstructionIterator::IsaEntitySortedThing(iter, _, _) => {
                 iter.next().transpose()?;
             }
-            InstructionIterator::IsaRelationSortedThing(iter, _) => {
+            InstructionIterator::IsaRelationSortedThing(iter, _, _) => {
                 iter.next().transpose()?;
             }
-            InstructionIterator::IsaAttributeSortedThing(iter, _) => {
+            InstructionIterator::IsaAttributeSortedThing(iter, _, _) => {
                 iter.next().transpose()?;
             }
             InstructionIterator::HasUnboundedSortedOwner(iter, _, _) => {
@@ -373,28 +388,22 @@ impl InstructionIterator {
         Ok(())
     }
 
-    pub(crate) fn write_values(&mut self, row: &mut Row) -> Result<(), &ConceptReadError> {
+    pub(crate) fn write_values(&mut self, row: &mut Row) -> Result<(), ConceptReadError> {
         debug_assert!(self.has_value());
         // TODO: how to handle multiple answers found in an iterator?
         // TODO: when do we copy the selected values from the input Row into the output Row?
         match self {
-            InstructionIterator::IsaEntitySortedThing(iter, isa) => {
-                let entity = iter.peek().unwrap().as_ref()?;
-                row.set(isa.thing(), VariableValue::Thing(entity.clone().into_owned().into()));
-                row.set(isa.type_(), VariableValue::Type(entity.type_().into()));
-                Ok(())
+            InstructionIterator::IsaEntitySortedThing(iter, isa, isa_variable_modes) => {
+                let thing: Thing<'_> = iter.peek().unwrap().as_ref().map_err(|err| err.clone())?.clone().into();
+                Self::write_values_isa(thing, isa, *isa_variable_modes, row)
             }
-            InstructionIterator::IsaRelationSortedThing(iter, isa) => {
-                let relation = iter.peek().unwrap().as_ref()?;
-                row.set(isa.thing(), VariableValue::Thing(relation.clone().into_owned().into()));
-                row.set(isa.type_(), VariableValue::Type(relation.type_().into()));
-                Ok(())
+            InstructionIterator::IsaRelationSortedThing(iter, isa, isa_variable_modes) => {
+                let thing: Thing<'_> = iter.peek().unwrap().as_ref().map_err(|err| err.clone())?.clone().into();
+                Self::write_values_isa(thing, isa, *isa_variable_modes, row)
             }
-            InstructionIterator::IsaAttributeSortedThing(iter, isa) => {
-                let attribute = iter.peek().unwrap().as_ref()?;
-                row.set(isa.thing(), VariableValue::Thing(attribute.clone().into_owned().into()));
-                row.set(isa.type_(), VariableValue::Type(attribute.type_().into()));
-                Ok(())
+            InstructionIterator::IsaAttributeSortedThing(iter, isa, isa_variable_modes) => {
+                let thing: Thing<'_> = iter.peek().unwrap().as_ref().map_err(|err| err.clone())?.clone().into();
+                Self::write_values_isa(thing, isa, *isa_variable_modes, row)
             }
             InstructionIterator::HasUnboundedSortedOwner(iter, has, has_variable_modes) => {
                 Self::write_values_has(iter, has, *has_variable_modes, row)
@@ -411,35 +420,68 @@ impl InstructionIterator {
         }
     }
 
+    fn write_values_isa(
+        thing: Thing<'_>,
+        isa_constraint: &ir::pattern::constraint::Isa<Position>,
+        modes: IsaVariableModes,
+        row: &mut Row,
+    ) -> Result<(), ConceptReadError> {
+        match modes.type_() {
+            VariableMode::BoundSelect
+            | VariableMode::UnboundSelect => {
+                row.set(isa_constraint.thing(), VariableValue::Type(thing.type_()));
+            }
+            VariableMode::UnboundCount
+            | VariableMode::UnboundCheck
+            | VariableMode::BoundUnselect => {
+                debug_assert!(*row.get(isa_constraint.type_()) == VariableValue::Empty)
+            }
+        }
+        match modes.thing() {
+            VariableMode::BoundSelect
+            | VariableMode::UnboundSelect => {
+                row.set(isa_constraint.thing(), VariableValue::Thing(thing.into_owned()))
+            }
+            VariableMode::UnboundCount
+            | VariableMode::UnboundCheck
+            | VariableMode::BoundUnselect => {
+                debug_assert!(*row.get(isa_constraint.thing()) == VariableValue::Empty)
+            }
+        }
+        Ok(())
+    }
+
     fn write_values_has<'a, HasIterator: for<'b> LendingIterator<Item<'b>=Result<(Has<'b>, u64), ConceptReadError>>>(
         iterator: &'a mut Peekable<HasIterator>,
         has_constraint: &ir::pattern::constraint::Has<Position>,
         modes: HasVariableModes,
         row: &mut Row,
-    ) -> Result<(), &'a ConceptReadError> {
-        let (has_value, count) = iterator.peek().unwrap().as_ref()?;
+    ) -> Result<(), ConceptReadError> {
+        let (has_value, count) = iterator.peek().unwrap().as_ref().map_err(|err| err.clone())?;
         // TODO: incorporate the repetitions/count
         match modes.owner() {
-            VariableMode::Bound => {
-                debug_assert!(*row.get(has_constraint.owner()) == VariableValue::Thing(has_value.owner().into()));
+            VariableMode::BoundSelect => {
+                row.set(has_constraint.owner(), VariableValue::Thing(has_value.owner().into_owned().into()));
             }
             VariableMode::UnboundSelect => {
                 row.set(has_constraint.owner(), VariableValue::Thing(has_value.owner().clone().into_owned().into()));
             }
             VariableMode::UnboundCount
-            | VariableMode::UnboundCheck => {
+            | VariableMode::UnboundCheck
+            | VariableMode::BoundUnselect => {
                 debug_assert!(*row.get(has_constraint.owner()) == VariableValue::Empty)
             }
         };
         match modes.attribute() {
-            VariableMode::Bound => {
-                debug_assert!(*row.get(has_constraint.attribute()) == VariableValue::Thing(has_value.attribute().into()));
+            VariableMode::BoundSelect => {
+                row.set(has_constraint.attribute(), VariableValue::Thing(has_value.attribute().into_owned().into()));
             }
             VariableMode::UnboundSelect => {
                 row.set(has_constraint.attribute(), VariableValue::Thing(has_value.attribute().clone().into_owned().into()));
             }
             VariableMode::UnboundCount
-            | VariableMode::UnboundCheck => {
+            | VariableMode::UnboundCheck
+            | VariableMode::BoundUnselect => {
                 // don't write counts or checks since they are not selected
                 debug_assert!(*row.get(has_constraint.attribute()) == VariableValue::Empty)
             }
@@ -450,9 +492,9 @@ impl InstructionIterator {
     pub(crate) fn write_values_and_advance_optimised(&mut self, row: &mut Row) -> Result<(), &ConceptReadError> {
         debug_assert!(self.has_value());
         match self {
-            InstructionIterator::IsaEntitySortedThing(_, _) => {}
-            InstructionIterator::IsaRelationSortedThing(_, _) => {}
-            InstructionIterator::IsaAttributeSortedThing(_, _) => {}
+            InstructionIterator::IsaEntitySortedThing(_, _, _) => {}
+            InstructionIterator::IsaRelationSortedThing(_, _, _) => {}
+            InstructionIterator::IsaAttributeSortedThing(_, _, _) => {}
             InstructionIterator::HasUnboundedSortedOwner(iter, has, has_variable_modes) => {}
             InstructionIterator::HasUnboundedSortedAttributeMerged(iter, has, has_variable_modes) => {}
             InstructionIterator::HasUnboundedSortedAttributeSingle(iter, has, has_variable_modes) => {}
@@ -463,9 +505,9 @@ impl InstructionIterator {
 
     pub(crate) fn has_value(&mut self) -> bool {
         match self {
-            InstructionIterator::IsaEntitySortedThing(iter, _) => iter.peek().is_some(),
-            InstructionIterator::IsaRelationSortedThing(iter, _) => iter.peek().is_some(),
-            InstructionIterator::IsaAttributeSortedThing(iter, _) => iter.peek().is_some(),
+            InstructionIterator::IsaEntitySortedThing(iter, _, _) => iter.peek().is_some(),
+            InstructionIterator::IsaRelationSortedThing(iter, _, _) => iter.peek().is_some(),
+            InstructionIterator::IsaAttributeSortedThing(iter, _, _) => iter.peek().is_some(),
             InstructionIterator::HasUnboundedSortedOwner(iter, _, _) => iter.peek().is_some(),
             InstructionIterator::HasUnboundedSortedAttributeMerged(iter, _, _) => iter.peek().is_some(),
             InstructionIterator::HasUnboundedSortedAttributeSingle(iter, _, _) => iter.peek().is_some(),
@@ -475,9 +517,9 @@ impl InstructionIterator {
 
     const fn is_sorted(&self) -> bool {
         match self {
-            InstructionIterator::IsaEntitySortedThing(_, _)
-            | InstructionIterator::IsaRelationSortedThing(_, _)
-            | InstructionIterator::IsaAttributeSortedThing(_, _)
+            InstructionIterator::IsaEntitySortedThing(_, _, _)
+            | InstructionIterator::IsaRelationSortedThing(_, _, _)
+            | InstructionIterator::IsaAttributeSortedThing(_, _, _)
             | InstructionIterator::HasUnboundedSortedOwner(_, _, _)
             | InstructionIterator::HasUnboundedSortedAttributeMerged(_, _, _)
             | InstructionIterator::HasUnboundedSortedAttributeSingle(_, _, _)
@@ -488,7 +530,8 @@ impl InstructionIterator {
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum VariableMode {
-    Bound,
+    BoundUnselect,
+    BoundSelect,
     UnboundSelect,
     UnboundCount,
     UnboundCheck,
@@ -499,7 +542,8 @@ impl VariableMode {}
 impl VariableMode {
     pub(crate) const fn new(is_bound: bool, is_selected: bool, is_named: bool) -> VariableMode {
         match (is_bound, is_selected, is_named) {
-            (true, _, _) => Self::Bound,
+            (true, false, _) => Self::BoundUnselect,
+            (true, true, _) => Self::BoundSelect,
             (false, true, _) => Self::UnboundSelect,
             (false, false, true) => Self::UnboundCount,
             (false, false, false) => Self::UnboundCheck,
@@ -507,7 +551,7 @@ impl VariableMode {
     }
 
     pub(crate) fn is_bound(&self) -> bool {
-        matches!(self, Self::Bound)
+        matches!(self, Self::BoundSelect) || matches!(self, Self::BoundUnselect)
     }
 
     pub(crate) fn is_unbound(&self) -> bool {

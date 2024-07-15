@@ -4,23 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod common;
-
 use std::{
     collections::HashMap,
     sync::Arc,
 };
 
-use answer::variable_value::VariableValue;
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI
     ,
 };
-use encoding::{
-    graph::type_::Kind,
-    value::label::Label,
-};
+use encoding::value::label::Label;
 use ir::{
     inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
@@ -41,8 +35,10 @@ use traversal::{
 };
 use traversal::executor::pattern_executor::ImmutableRow;
 use traversal::planner::pattern_plan::IterateBounds;
+
 use crate::common::{load_managers, setup_storage};
 
+mod common;
 
 const ANIMAL_LABEL: Label = Label::new_static("animal");
 const CAT_LABEL: Label = Label::new_static("cat");
@@ -73,7 +69,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 }
 
 #[test]
-fn select_named_ignore_unnamed() {
+fn anonymous_vars_not_returned() {
     let (tmp_dir, storage) = setup_storage();
     setup_database(storage.clone());
 

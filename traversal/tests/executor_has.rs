@@ -47,6 +47,7 @@ use traversal::{
         program_plan::ProgramPlan,
     },
 };
+use traversal::executor::pattern_executor::ImmutableRow;
 use traversal::planner::pattern_plan::IterateBounds;
 use crate::common::{load_managers, setup_storage};
 
@@ -174,13 +175,14 @@ fn traverse_has_unbounded_sorted_from() {
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
 
-        let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> =
-            iterator.map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone())).collect();
+        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
+            .map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone()))
+            .collect();
         assert_eq!(rows.len(), 7);
 
         for row in rows {
             let r = row.unwrap();
-            for value in r {
+            for value in r.into_iter() {
                 print!("{}, ", value);
             }
             println!()
@@ -246,27 +248,28 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
 
-        let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> =
-            iterator.map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone())).collect();
+        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
+            .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone()))
+            .collect();
 
         // person 1 - has age 1, has age 2, has age 3, has name 1, has name 2 => 5 answers
         // person 2 - has age 1, has age 4, has age 5 => 3 answers
         // person 3 - has age 4, has name 3 => 2 answers
 
-        for row in &rows {
+        for row in rows.iter() {
             let r = row.as_ref().unwrap();
-            for value in r {
+            for value in r.clone().into_iter() {
                 print!("{}, ", value);
             }
             println!()
         }
         assert_eq!(rows.len(), 10);
 
-        let attribute_position = variable_positions.get(&var_attribute).unwrap().as_usize();
-        let mut last_attribute = &rows[0].as_ref().unwrap()[attribute_position];
-        for row in &rows {
+        let attribute_position = *variable_positions.get(&var_attribute).unwrap();
+        let mut last_attribute = rows[0].as_ref().unwrap().get(attribute_position);
+        for row in rows.iter() {
             let r = row.as_ref().unwrap();
-            let attribute = &r[attribute_position];
+            let attribute = r.get(attribute_position);
             assert!(last_attribute <= attribute, "{} <= {} failed", &last_attribute, &attribute);
             last_attribute = attribute;
         }

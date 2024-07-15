@@ -14,7 +14,7 @@ use answer::{variable::Variable, variable_value::VariableValue};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::inference::type_inference::TypeAnnotations;
 use ir::program::block::BlockContext;
-use lending_iterator::{AsLendingIterator, LendingIterator};
+use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -27,6 +27,7 @@ use crate::{
         OptionalStep, PatternPlan, SortedJoinStep, Step, UnsortedJoinStep,
     },
 };
+use crate::executor::SelectedPositions;
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, Position>,
@@ -277,11 +278,11 @@ struct SortedJoinExecutor {
     instruction_executors: Vec<IteratorExecutor>,
     sort_variable_position: Position,
     output_width: u32,
-    outputs_selected: Vec<Position>, // only some of 'width' columns will be populated
+    outputs_selected: SelectedPositions,
 
     iterators: Vec<InstructionIterator>,
     cartesian_iterator: CartesianIterator,
-    input: Option<BatchRowIterator>,
+    input: Option<Peekable<BatchRowIterator>>,
     intersection_row: Vec<VariableValue<'static>>,
     output: Option<Batch>,
 }
@@ -320,7 +321,7 @@ impl SortedJoinExecutor {
             instruction_executors: executors,
             sort_variable_position,
             output_width,
-            outputs_selected: select_variables.into_iter().map(|var| *variable_positions.get(&var).unwrap()).collect(),
+            outputs_selected: SelectedPositions::new(&select_variables, variable_positions),
             iterators: Vec::with_capacity(instruction_count),
             cartesian_iterator: CartesianIterator::new(output_width as usize, instruction_count, sort_variable_position),
             input: None,
@@ -335,9 +336,10 @@ impl SortedJoinExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
-        debug_assert!(self.output.is_none() && (self.input.is_none() || !self.input.as_ref().unwrap().has_next()));
-        self.input = Some(BatchRowIterator::new(Ok(input_batch)));
-        debug_assert!(self.input.as_ref().unwrap().has_next());
+        debug_assert!(self.output.is_none() && (self.input.is_none() || !self.input.as_mut().unwrap().peek().is_some()));
+        self.input = Some(Peekable::new(BatchRowIterator::new(Ok(input_batch))));
+        debug_assert!(self.input.as_mut().unwrap().peek().is_some());
+        self.create_intersection_iterators(snapshot, thing_manager)?;
         self.may_compute_next_batch(snapshot, thing_manager)?;
         Ok(self.output.take())
     }
@@ -398,13 +400,7 @@ impl SortedJoinExecutor {
             }
         } else {
             loop {
-                if self.iterators.is_empty() {
-                    let failed = !self.create_intersection_iterators(snapshot, thing_manager)?;
-                    if failed {
-                        return Ok(false);
-                    }
-                }
-                let found = self.find_intersection(snapshot, thing_manager)?;
+                let found = self.find_intersection()?;
                 if found {
                     self.record_intersection()?;
                     self.advance_intersection_iterators()?;
@@ -412,16 +408,16 @@ impl SortedJoinExecutor {
                     return Ok(true);
                 } else {
                     self.iterators.clear();
+                    let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone())?;
+                    if self.input.as_mut().unwrap().peek().is_some() {
+                        self.create_intersection_iterators(snapshot, thing_manager)?;
+                    }
                 }
             }
         }
     }
 
-    fn find_intersection(
-        &mut self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-    ) -> Result<bool, ConceptReadError> {
+    fn find_intersection(&mut self) -> Result<bool, ConceptReadError> {
         debug_assert!(!self.iterators.is_empty());
         if self.iterators.len() == 1 {
             // if there's only 1 iterator, we can just use it without any intersection
@@ -503,18 +499,14 @@ impl SortedJoinExecutor {
         &mut self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<(), ConceptReadError> {
         debug_assert!(self.iterators.is_empty());
-        let next_row = self.input.as_mut().unwrap().next().transpose().map_err(|err| err.clone())?;
-        match next_row {
-            None => Ok(false),
-            Some(row) => {
-                for executor in &self.instruction_executors {
-                    self.iterators.push(executor.get_iterator(snapshot, thing_manager, row.as_reference())?);
-                }
-                Ok(true)
-            }
+        let peek = self.input.as_mut().unwrap().peek().unwrap();
+        let next_row: &ImmutableRow<'_> = peek.as_ref().map_err(|err| (*err).clone())?;
+        for executor in &self.instruction_executors {
+            self.iterators.push(executor.get_iterator(snapshot, thing_manager, next_row.as_reference())?);
         }
+        Ok(())
     }
 
     fn advance_intersection_iterators(&mut self) -> Result<(), ConceptReadError> {
@@ -540,13 +532,16 @@ impl SortedJoinExecutor {
     }
 
     fn record_intersection(&mut self) -> Result<(), ConceptReadError> {
-        for value in &mut self.intersection_row {
-            *value = VariableValue::Empty
-        }
+        self.intersection_row.fill(VariableValue::Empty);
         let mut row = Row::new(&mut self.intersection_row);
         for iter in &mut self.iterators {
             // iter.write_values_and_advance_optimised(&mut row).map_err(|err| err.clone())?
-            iter.write_values(&mut row).map_err(|err| err.clone())?
+            iter.write_values(&mut row)?
+        }
+
+        let input_row = self.input.as_mut().unwrap().peek().unwrap().as_ref().map_err(|err| (*err).clone())?;
+        for position in self.outputs_selected.iter_selected() {
+            row.set(position, input_row.get(position).clone().into_owned())
         }
         Ok(())
     }
@@ -915,7 +910,7 @@ impl<'a> ImmutableRow<'a> {
         self.row.len()
     }
 
-    pub(crate) fn get(&self, position: Position) -> &VariableValue {
+    pub fn get(&self, position: Position) -> &VariableValue {
         &self.row[position.as_usize()]
     }
 

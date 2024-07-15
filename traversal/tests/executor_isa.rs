@@ -4,30 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod common;
-
 use std::{
-    borrow::Cow,
     collections::HashMap,
     sync::Arc,
 };
-use typeql::builder::type_;
 
 use answer::variable_value::VariableValue;
 use concept::{
     error::ConceptReadError,
-    thing::{object::ObjectAPI, thing_manager::ThingManager},
-    type_::{Ordering, OwnerAPI, type_manager::TypeManager},
+    thing::object::ObjectAPI,
+    type_::OwnerAPI,
 };
-use durability::wal::WAL;
 use encoding::{
-    EncodingKeyspace,
-    graph::{
-        definition::definition_key_generator::DefinitionKeyGenerator,
-        thing::vertex_generator::ThingVertexGenerator,
-        type_::{Kind, vertex_generator::TypeVertexGenerator},
-    },
-    value::{label::Label, value::Value, value_type::ValueType},
+    graph::type_::Kind,
+    value::label::Label,
 };
 use ir::{
     inference::type_inference::infer_types,
@@ -40,7 +30,6 @@ use storage::{
     MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
-use test_utils::{create_tmp_dir, init_logging, TempDir};
 use traversal::{
     executor::program_executor::ProgramExecutor,
     planner::{
@@ -49,7 +38,10 @@ use traversal::{
     },
 };
 use traversal::planner::pattern_plan::IterateBounds;
+
 use crate::common::{load_managers, setup_storage};
+
+mod common;
 
 const ANIMAL_LABEL: Label = Label::new_static("animal");
 const CAT_LABEL: Label = Label::new_static("cat");

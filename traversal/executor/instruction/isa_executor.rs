@@ -10,28 +10,27 @@ use std::{
 };
 use std::collections::HashMap;
 
+use itertools::Itertools;
+
 use answer::Type;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::pattern::constraint::{Has, Isa};
-use itertools::{Iterate, Itertools};
 use answer::variable::Variable;
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use ir::pattern::constraint::Isa;
 use lending_iterator::Peekable;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{
-    executor::{instruction::InstructionIterator, pattern_executor::ImmutableRow, Position},
-};
-use crate::executor::instruction::has_executor::HasVariableModes;
+use crate::executor::{instruction::InstructionIterator, pattern_executor::ImmutableRow, Position};
 use crate::executor::instruction::VariableMode;
 use crate::planner::pattern_plan::IterateBounds;
 
 pub(crate) struct IsaExecutor {
     isa: Isa<Position>,
     iterate_mode: IterateMode,
-    type_instance_types: Arc<BTreeMap<Type, Vec<Type>>>, // TODO: if we ever want to implement transitivity directly in Executor
+    variable_modes: IsaVariableModes,
+    // TODO: if we ever want to implement transitivity directly in Executor, we could leverage type instances
+    type_instance_types: Arc<BTreeMap<Type, Vec<Type>>>,
     thing_types: Arc<HashSet<Type>>,
-    // filter_fn: crate::executor::iterator::has_provider::HasProviderFilter,
     type_cache: Option<Arc<HashSet<Type>>>,
 }
 
@@ -42,7 +41,7 @@ enum IterateMode {
 }
 
 #[derive(Debug, Copy, Clone)]
-struct IsaVariableModes {
+pub(crate) struct IsaVariableModes {
     thing: VariableMode,
     type_: VariableMode,
 }
@@ -52,7 +51,7 @@ impl IsaVariableModes {
         isa: &Isa<Variable>,
         bounds: &IterateBounds<Variable>,
         selected: &Vec<Variable>,
-        named: &HashMap<Variable, String>
+        named: &HashMap<Variable, String>,
     ) -> Self {
         let (thing, type_) = (isa.thing(), isa.type_());
         Self {
@@ -67,6 +66,14 @@ impl IsaVariableModes {
 
     fn is_fully_unbound(&self) -> bool {
         self.thing.is_unbound() && self.type_.is_unbound()
+    }
+
+    pub(crate) fn thing(&self) -> VariableMode {
+        self.thing
+    }
+
+    pub(crate) fn type_(&self) -> VariableMode {
+        self.type_
     }
 }
 
@@ -133,8 +140,8 @@ impl IsaExecutor {
         //         }
         //     })),
         // };
-        let modes = IsaVariableModes::new(&isa, &iterate_bounds, selected_variables, variable_names);
-        let iterate_mode = IterateMode::new(&isa, modes, sort_by);
+        let variable_modes = IsaVariableModes::new(&isa, &iterate_bounds, selected_variables, variable_names);
+        let iterate_mode = IterateMode::new(&isa, variable_modes, sort_by);
         let type_cache = if matches!(iterate_mode, IterateMode::UnboundSortedTo) {
             let mut cache = thing_types.clone();
             debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
@@ -146,9 +153,10 @@ impl IsaExecutor {
         Self {
             isa: isa.into_ids(variable_positions),
             iterate_mode,
+            variable_modes,
             type_instance_types: constraint_types,
             thing_types,
-            type_cache
+            type_cache,
         }
     }
 
@@ -171,6 +179,7 @@ impl IsaExecutor {
                             let iterator = InstructionIterator::IsaEntitySortedThing(
                                 Peekable::new(thing_manager.get_entities_in(snapshot, entity_type.clone())),
                                 self.isa.clone(),
+                                self.variable_modes,
                             );
                             Ok(iterator)
                         }
@@ -178,6 +187,7 @@ impl IsaExecutor {
                             let iterator = InstructionIterator::IsaRelationSortedThing(
                                 Peekable::new(thing_manager.get_relations_in(snapshot, relation_type.clone())),
                                 self.isa.clone(),
+                                self.variable_modes,
                             );
                             Ok(iterator)
                         }
@@ -185,6 +195,7 @@ impl IsaExecutor {
                             let iterator = InstructionIterator::IsaAttributeSortedThing(
                                 Peekable::new(thing_manager.get_attributes_in(snapshot, attribute_type.clone())?),
                                 self.isa.clone(),
+                                self.variable_modes,
                             );
                             Ok(iterator)
                         }

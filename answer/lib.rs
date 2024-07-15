@@ -104,6 +104,13 @@ pub enum Thing<'a> {
 }
 
 impl<'a> Thing<'a> {
+    pub fn type_(&self) -> Type {
+        match self {
+            Thing::Entity(entity) => Type::Entity(entity.type_()),
+            Thing::Relation(relation) => Type::Relation(relation.type_()),
+            Thing::Attribute(attribute) => Type::Attribute(attribute.type_()),
+        }
+    }
 
     pub fn as_attribute(&self) -> Attribute<'_> {
         match self {
