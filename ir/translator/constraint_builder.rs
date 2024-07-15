@@ -13,7 +13,6 @@ use crate::{
     PatternDefinitionError,
 };
 
-// TODO: Try to downcast 'func to 'cx
 pub struct TypeQLConstraintBuilder<'cx, SchemaIndex: FunctionManagerIndexInjectionTrait> {
     constraints: ConstraintsBuilder<'cx>,
     function_index: &'cx FunctionSignatureIndex<'cx, SchemaIndex>,

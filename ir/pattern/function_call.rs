@@ -19,7 +19,7 @@ pub struct FunctionCall<ID: IrID> {
     function_id: FunctionID,
     // map call variable to index of argument
     call_variable_mapping: BTreeMap<ID, usize>,
-    return_is_stream: bool, // TODO: This is only used in display. Is that reason to keep it?
+    return_is_stream: bool,
 }
 
 impl<ID: IrID> FunctionCall<ID> {

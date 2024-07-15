@@ -75,7 +75,6 @@ impl Program {
         Ok(Self { entry, functions })
     }
 
-    // TODO: first arg: preexisting stuff. second arg: new functions
     pub fn compile_functions<'index, 'functions>(
         function_index: &FunctionSignatureIndex<'index, impl FunctionManagerIndexInjectionTrait>,
         functions_to_compile: impl Iterator<Item = &'functions typeql::Function>,
