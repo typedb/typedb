@@ -161,7 +161,7 @@ impl ThingManager {
     pub fn get_attributes<'this, Snapshot: ReadableSnapshot>(
         &'this self,
         snapshot: &'this Snapshot,
-    ) -> AttributeIterator<'_, Snapshot> {
+    ) -> Result<AttributeIterator, ConceptReadError> {
         let start = AttributeVertex::build_prefix_prefix(Prefix::ATTRIBUTE_MIN);
         let end = AttributeVertex::build_prefix_prefix(Prefix::ATTRIBUTE_MAX);
         let attribute_iterator = snapshot.iterate_range(KeyRange::new_inclusive(start, end));
@@ -169,14 +169,18 @@ impl ThingManager {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix(Prefix::ATTRIBUTE_MIN);
         let has_reverse_end = ThingEdgeHasReverse::prefix_from_prefix(Prefix::ATTRIBUTE_MAX);
         let has_reverse_iterator = snapshot.iterate_range(KeyRange::new_inclusive(has_reverse_start, has_reverse_end));
-        AttributeIterator::new(attribute_iterator, has_reverse_iterator, snapshot, self.type_manager())
+        Ok(AttributeIterator::new(
+            attribute_iterator,
+            has_reverse_iterator,
+            self.type_manager().get_independent_attribute_types(snapshot)?
+        ))
     }
 
     pub fn get_attributes_in<'this>(
         &'this self,
         snapshot: &'this impl ReadableSnapshot,
         attribute_type: AttributeType<'_>,
-    ) -> Result<AttributeIterator<'this, impl ReadableSnapshot>, ConceptReadError> {
+    ) -> Result<AttributeIterator, ConceptReadError> {
         let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager.as_ref())?;
         let Some(value_type) = attribute_value_type.as_ref() else {
             return Ok(AttributeIterator::new_empty());
@@ -193,7 +197,11 @@ impl ThingManager {
         let has_reverse_iterator =
             snapshot.iterate_range(KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING));
 
-        Ok(AttributeIterator::new(attribute_iterator, has_reverse_iterator, snapshot, self.type_manager()))
+        Ok(AttributeIterator::new(
+            attribute_iterator,
+            has_reverse_iterator,
+            self.type_manager().get_independent_attribute_types(snapshot)?
+        ))
     }
 
     pub(crate) fn get_attribute_value<'a>(
@@ -410,8 +418,10 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         owner_type_range: KeyRange<ObjectType<'static>>,
     ) -> HasIterator {
-        let range = owner_type_range
-            .map(|type_| ThingEdgeHas::prefix_from_type(type_.into_vertex()), |_| ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        let range = owner_type_range.map(
+            |type_| ThingEdgeHas::prefix_from_type(type_.into_vertex()),
+            |_| ThingEdgeHas::FIXED_WIDTH_ENCODING
+        );
         HasIterator::new(snapshot.iterate_range(range))
     }
 
@@ -421,7 +431,7 @@ impl ThingManager {
         attribute_type: AttributeType<'_>,
         path_to_field: Vec<StructFieldIDUInt>,
         value: Value<'_>,
-    ) -> Result<StructIndexToAttributeIterator<'_, Snapshot>, ConceptReadError> {
+    ) -> Result<StructIndexToAttributeIterator, ConceptReadError> {
         debug_assert!({
             let value_type = attribute_type.get_value_type(snapshot, &self.type_manager).unwrap().unwrap();
             value_type.category() == ValueTypeCategory::Struct
@@ -448,8 +458,7 @@ impl ThingManager {
         Ok(StructIndexToAttributeIterator::new(
             index_to_attribute_iterator,
             has_reverse_iterator,
-            snapshot,
-            &self.type_manager,
+            self.type_manager.get_independent_attribute_types(snapshot)?
         ))
     }
 

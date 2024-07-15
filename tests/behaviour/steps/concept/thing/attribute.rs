@@ -10,6 +10,7 @@ use concept::{
     type_::TypeAPI,
 };
 use macro_rules_attribute::apply;
+use lending_iterator::LendingIterator;
 
 use crate::{
     generic_step,
@@ -154,10 +155,12 @@ async fn attribute_instances_contain(
     var: params::Var,
 ) {
     let attribute = context.attributes.get(&var.name).expect("no variable {} in context.").as_ref().unwrap();
-    let actuals = with_read_tx!(context, |tx| {
+    let actuals: Vec<Attribute<'static>> = with_read_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        tx.thing_manager.get_attributes_in(&tx.snapshot, attribute_type).unwrap().collect_cloned()
+        tx.thing_manager.get_attributes_in(&tx.snapshot, attribute_type).unwrap()
+            .map_static(|result| result.unwrap().clone().into_owned())
+            .collect()
     });
     containment.check(std::slice::from_ref(attribute), &actuals);
 }

@@ -29,10 +29,10 @@ use crate::planner::pattern_plan::IterateBounds;
 pub(crate) struct IsaExecutor {
     isa: Isa<Position>,
     iterate_mode: IterateMode,
-    type_instance_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    type_instance_types: Arc<BTreeMap<Type, Vec<Type>>>, // TODO: if we ever want to implement transitivity directly in Executor
     thing_types: Arc<HashSet<Type>>,
     // filter_fn: crate::executor::iterator::has_provider::HasProviderFilter,
-    type_cache: Option<Vec<Type>>,
+    type_cache: Option<Arc<HashSet<Type>>>,
 }
 
 enum IterateMode {
@@ -48,6 +48,19 @@ struct IsaVariableModes {
 }
 
 impl IsaVariableModes {
+    fn new(
+        isa: &Isa<Variable>,
+        bounds: &IterateBounds<Variable>,
+        selected: &Vec<Variable>,
+        named: &HashMap<Variable, String>
+    ) -> Self {
+        let (thing, type_) = (isa.thing(), isa.type_());
+        Self {
+            thing: VariableMode::new(bounds.contains(thing), selected.contains(&thing), named.contains_key(&thing)),
+            type_: VariableMode::new(bounds.contains(type_), selected.contains(&type_), named.contains_key(&type_)),
+        }
+    }
+
     fn is_fully_bound(&self) -> bool {
         self.thing.is_bound() && self.type_.is_bound()
     }
@@ -120,16 +133,23 @@ impl IsaExecutor {
         //         }
         //     })),
         // };
-
+        let modes = IsaVariableModes::new(&isa, &iterate_bounds, selected_variables, variable_names);
+        let iterate_mode = IterateMode::new(&isa, modes, sort_by);
         let type_cache = if matches!(iterate_mode, IterateMode::UnboundSortedTo) {
-            let mut cache = type_instance_types.keys().cloned().collect_vec();
+            let mut cache = thing_types.clone();
             debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
             Some(cache)
         } else {
             None
         };
 
-        Self { isa, iterate_mode, type_instance_types, thing_types, type_cache }
+        Self {
+            isa: isa.into_ids(variable_positions),
+            iterate_mode,
+            type_instance_types: constraint_types,
+            thing_types,
+            type_cache
+        }
     }
 
     pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
@@ -146,9 +166,7 @@ impl IsaExecutor {
                 debug_assert!(self.type_cache.is_some());
                 if self.type_cache.as_ref().unwrap().len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
-                    // TODO: move this into the 'if'
-                    let thing_type = &self.type_instance_types.get(&self.type_cache.as_ref().unwrap()[0]).unwrap()[0];
-                    match thing_type {
+                    match &self.type_cache.iter().flat_map(|types| types.iter()).next().unwrap() {
                         Type::Entity(entity_type) => {
                             let iterator = InstructionIterator::IsaEntitySortedThing(
                                 Peekable::new(thing_manager.get_entities_in(snapshot, entity_type.clone())),
@@ -164,9 +182,11 @@ impl IsaExecutor {
                             Ok(iterator)
                         }
                         Type::Attribute(attribute_type) => {
-                            todo!()
-                            // let attribute_iterator = thing_manager.get_attributes_in(snapshot, attribute_type.clone())?;
-                            // Ok(ConstraintIterator::IsaAttributeSortedThing(attribute_iterator))
+                            let iterator = InstructionIterator::IsaAttributeSortedThing(
+                                Peekable::new(thing_manager.get_attributes_in(snapshot, attribute_type.clone())?),
+                                self.isa.clone(),
+                            );
+                            Ok(iterator)
                         }
                         Type::RoleType(_) => unreachable!("Cannot get instances of role types."),
                     }

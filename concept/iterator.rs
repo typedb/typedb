@@ -23,24 +23,8 @@ macro_rules! concept_iterator {
                 $name { snapshot_iterator: None }
             }
 
-            pub fn peek(&mut self) -> Option<Result<$concept_type<'_>, $crate::error::ConceptReadError>> {
-                use $crate::error::ConceptReadError::SnapshotIterate;
-                self.snapshot_iterator.as_mut()?.peek().map(|result| {
-                    result
-                        .map(|(storage_key, _value_bytes)| {
-                            $map_fn(::storage::key_value::StorageKey::Reference(storage_key))
-                        })
-                        .map_err(|error| SnapshotIterate { source: error })
-                })
-            }
-
             pub fn seek(&mut self) {
                 todo!()
-            }
-
-            pub fn collect_cloned(mut self) -> Vec<$concept_type<'static>> {
-                use ::lending_iterator::LendingIterator;
-                self.map_static(|item| item.unwrap().into_owned()).collect()
             }
         }
 

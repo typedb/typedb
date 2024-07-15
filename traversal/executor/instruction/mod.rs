@@ -11,6 +11,7 @@ use concept::{
     error::ConceptReadError,
     thing::{entity::EntityIterator, has::Has, relation::RelationIterator, thing_manager::ThingManager},
 };
+use concept::thing::attribute::AttributeIterator;
 use ir::inference::type_inference::TypeAnnotations;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
@@ -26,9 +27,9 @@ use crate::{
                 HasUnboundedSortedAttributeSingleIterator, HasUnboundedSortedOwnerIterator,
             },
             has_reverse_executor::HasReverseIteratorExecutor,
+            isa_executor::IsaExecutor,
             role_player_executor::RolePlayerIteratorExecutor,
             role_player_reverse_executor::RolePlayerReverseIteratorExecutor,
-            isa_executor::IsaExecutor,
         },
         pattern_executor::{ImmutableRow, Row},
         Position,
@@ -77,7 +78,7 @@ impl IteratorExecutor {
         match instruction {
             Instruction::Isa(isa, bounds) => {
                 let thing = isa.thing();
-                let provider = IsaProvider::new(
+                let provider = IsaExecutor::new(
                     isa.clone(),
                     bounds,
                     selected_variables,
@@ -157,6 +158,7 @@ impl IteratorExecutor {
 pub(crate) enum InstructionIterator {
     IsaEntitySortedThing(Peekable<EntityIterator>, ir::pattern::constraint::Isa<Position>),
     IsaRelationSortedThing(Peekable<RelationIterator>, ir::pattern::constraint::Isa<Position>),
+    IsaAttributeSortedThing(Peekable<AttributeIterator>, ir::pattern::constraint::Isa<Position>),
 
     HasUnboundedSortedOwner(
         HasUnboundedSortedOwnerIterator,
@@ -195,9 +197,12 @@ impl InstructionIterator {
             InstructionIterator::IsaRelationSortedThing(iter, _) => iter.peek().map(|result| {
                 result .as_ref() .map(|relation| VariableValue::Thing(relation.as_reference().into()))
             }),
-            InstructionIterator::HasUnboundedSortedOwner(iter, _, _) => iter
-                .peek()
-                .map(|result| result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::from(has.owner())))),
+            InstructionIterator::IsaAttributeSortedThing(iter, _) => iter.peek().map(|result| {
+                result.as_ref().map(|attribute| VariableValue::Thing(attribute.as_reference().into()))
+            }),
+            InstructionIterator::HasUnboundedSortedOwner(iter, _, _) => iter.peek().map(|result| {
+                result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::from(has.owner())))
+            }),
             InstructionIterator::HasUnboundedSortedAttributeMerged(iter, _, _) => iter.peek().map(|result| {
                 result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute())))
             }),
@@ -233,6 +238,22 @@ impl InstructionIterator {
                 let _ = iter.next();
             },
             InstructionIterator::IsaRelationSortedThing(iter, _) => loop {
+                let peek = iter.peek();
+                match peek {
+                    None => return Ok(None),
+                    Some(Ok(peek_value)) => {
+                        let cmp = VariableValue::Thing(peek_value.as_reference().into()).partial_cmp(value).unwrap();
+                        match cmp {
+                            Ordering::Less => {}
+                            Ordering::Equal => return Ok(Some(Ordering::Equal)),
+                            Ordering::Greater => return Ok(Some(Ordering::Greater)),
+                        }
+                    }
+                    Some(Err(err)) => return Err(err.clone()),
+                }
+                let _ = iter.next();
+            },
+            InstructionIterator::IsaAttributeSortedThing(iter, _) => loop {
                 let peek = iter.peek();
                 match peek {
                     None => return Ok(None),
@@ -329,6 +350,9 @@ impl InstructionIterator {
             InstructionIterator::IsaRelationSortedThing(iter, _) => {
                 iter.next().transpose()?;
             }
+            InstructionIterator::IsaAttributeSortedThing(iter, _) => {
+                iter.next().transpose()?;
+            }
             InstructionIterator::HasUnboundedSortedOwner(iter, _, _) => {
                 // TODO: how to handle multiple answers found in an iterator, eg (_, count > 1)?
                 iter.next().transpose()?;
@@ -352,6 +376,7 @@ impl InstructionIterator {
     pub(crate) fn write_values(&mut self, row: &mut Row) -> Result<(), &ConceptReadError> {
         debug_assert!(self.has_value());
         // TODO: how to handle multiple answers found in an iterator?
+        // TODO: when do we copy the selected values from the input Row into the output Row?
         match self {
             InstructionIterator::IsaEntitySortedThing(iter, isa) => {
                 let entity = iter.peek().unwrap().as_ref()?;
@@ -365,34 +390,34 @@ impl InstructionIterator {
                 row.set(isa.type_(), VariableValue::Type(relation.type_().into()));
                 Ok(())
             }
+            InstructionIterator::IsaAttributeSortedThing(iter, isa) => {
+                let attribute = iter.peek().unwrap().as_ref()?;
+                row.set(isa.thing(), VariableValue::Thing(attribute.clone().into_owned().into()));
+                row.set(isa.type_(), VariableValue::Type(attribute.type_().into()));
+                Ok(())
+            }
             InstructionIterator::HasUnboundedSortedOwner(iter, has, has_variable_modes) => {
-                Self::write_values_has(iter, has, has_variable_modes, row)
+                Self::write_values_has(iter, has, *has_variable_modes, row)
             }
             InstructionIterator::HasUnboundedSortedAttributeMerged(iter, has, has_variable_modes) => {
-                let (has_value, count): &(Has<'_>, u64) = iter.peek().unwrap().as_ref()?;
-                Self::write_values_has(has, *has_variable_modes, has_value, *count, row);
-                Ok(())
+                Self::write_values_has(iter, has, *has_variable_modes, row)
             }
             InstructionIterator::HasUnboundedSortedAttributeSingle(iter, has, has_variable_modes) => {
-                let (has_value, count): &(Has<'_>, u64) = iter.peek().unwrap().as_ref()?;
-                Self::write_values_has(has, *has_variable_modes, has_value, *count, row);
-                Ok(())
+                Self::write_values_has(iter, has, *has_variable_modes, row)
             }
             InstructionIterator::HasBoundedSortedAttribute(iter, has, has_variable_modes) => {
-                let (has_value, count): &(Has<'_>, u64) = iter.peek().unwrap().as_ref()?;
-                Self::write_values_has(has, *has_variable_modes, has_value, *count, row);
-                Ok(())
+                Self::write_values_has(iter, has, *has_variable_modes, row)
             }
         }
     }
 
-    fn write_values_has<'a, HasIterator: for<'b> LendingIterator<Item<'b>=(Has<'b>, u64)>>(
+    fn write_values_has<'a, HasIterator: for<'b> LendingIterator<Item<'b>=Result<(Has<'b>, u64), ConceptReadError>>>(
         iterator: &'a mut Peekable<HasIterator>,
         has_constraint: &ir::pattern::constraint::Has<Position>,
         modes: HasVariableModes,
         row: &mut Row,
     ) -> Result<(), &'a ConceptReadError> {
-        let (has_value, count) = iterator.peek().unwrap();
+        let (has_value, count) = iterator.peek().unwrap().as_ref()?;
         // TODO: incorporate the repetitions/count
         match modes.owner() {
             VariableMode::Bound => {
@@ -425,9 +450,10 @@ impl InstructionIterator {
     pub(crate) fn write_values_and_advance_optimised(&mut self, row: &mut Row) -> Result<(), &ConceptReadError> {
         debug_assert!(self.has_value());
         match self {
-            InstructionIterator::HasUnboundedSortedOwner(iter, has, has_variable_modes) => {
-
-            }
+            InstructionIterator::IsaEntitySortedThing(_, _) => {}
+            InstructionIterator::IsaRelationSortedThing(_, _) => {}
+            InstructionIterator::IsaAttributeSortedThing(_, _) => {}
+            InstructionIterator::HasUnboundedSortedOwner(iter, has, has_variable_modes) => {}
             InstructionIterator::HasUnboundedSortedAttributeMerged(iter, has, has_variable_modes) => {}
             InstructionIterator::HasUnboundedSortedAttributeSingle(iter, has, has_variable_modes) => {}
             InstructionIterator::HasBoundedSortedAttribute(iter, has, has_variable_modes) => {}
@@ -439,6 +465,7 @@ impl InstructionIterator {
         match self {
             InstructionIterator::IsaEntitySortedThing(iter, _) => iter.peek().is_some(),
             InstructionIterator::IsaRelationSortedThing(iter, _) => iter.peek().is_some(),
+            InstructionIterator::IsaAttributeSortedThing(iter, _) => iter.peek().is_some(),
             InstructionIterator::HasUnboundedSortedOwner(iter, _, _) => iter.peek().is_some(),
             InstructionIterator::HasUnboundedSortedAttributeMerged(iter, _, _) => iter.peek().is_some(),
             InstructionIterator::HasUnboundedSortedAttributeSingle(iter, _, _) => iter.peek().is_some(),
@@ -450,6 +477,7 @@ impl InstructionIterator {
         match self {
             InstructionIterator::IsaEntitySortedThing(_, _)
             | InstructionIterator::IsaRelationSortedThing(_, _)
+            | InstructionIterator::IsaAttributeSortedThing(_, _)
             | InstructionIterator::HasUnboundedSortedOwner(_, _, _)
             | InstructionIterator::HasUnboundedSortedAttributeMerged(_, _, _)
             | InstructionIterator::HasUnboundedSortedAttributeSingle(_, _, _)

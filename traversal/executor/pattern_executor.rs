@@ -396,7 +396,7 @@ impl SortedJoinExecutor {
             }
         } else {
             loop {
-                if self.intersection_iterators.is_empty() {
+                if self.iterators.is_empty() {
                     let failed = !self.create_intersection_iterators(snapshot, thing_manager)?;
                     if failed {
                         return Ok(false);
@@ -409,7 +409,7 @@ impl SortedJoinExecutor {
                     self.may_activate_cartesian(snapshot, thing_manager)?;
                     return Ok(true);
                 } else {
-                    self.intersection_iterators.clear();
+                    self.iterators.clear();
                 }
             }
         }
@@ -420,8 +420,8 @@ impl SortedJoinExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<bool, ConceptReadError> {
-        debug_assert!(!self.intersection_iterators.is_empty());
-        if self.intersection_iterators.len() == 1 {
+        debug_assert!(!self.iterators.is_empty());
+        if self.iterators.len() == 1 {
             // if there's only 1 iterator, we can just use it without any intersection
             return Ok(self.iterators[0].has_value());
         } else if self.iterators[0].peek_sorted_value().transpose().map_err(|err| err.clone())?.is_none() {
@@ -543,7 +543,8 @@ impl SortedJoinExecutor {
         }
         let mut row = Row::new(&mut self.intersection_row);
         for iter in &mut self.iterators {
-            iter.write_values_and_advance_optimised(&mut row).map_err(|err| err.clone())?
+            // iter.write_values_and_advance_optimised(&mut row).map_err(|err| err.clone())?
+            iter.write_values(&mut row).map_err(|err| err.clone())?
         }
         Ok(())
     }

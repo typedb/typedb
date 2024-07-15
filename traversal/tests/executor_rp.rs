@@ -6,47 +6,47 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::HashMap,
     sync::Arc,
 };
-use typeql::parser::Rule::GROUP;
 
 use answer::variable_value::VariableValue;
 use concept::{
     error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
-    type_::{type_manager::TypeManager, Ordering, OwnerAPI},
+    type_::{Ordering, OwnerAPI, type_manager::TypeManager},
 };
 use concept::type_::PlayerAPI;
 use durability::wal::WAL;
 use encoding::{
+    EncodingKeyspace,
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator,
         thing::vertex_generator::ThingVertexGenerator,
-        type_::{vertex_generator::TypeVertexGenerator, Kind},
+        type_::{Kind, vertex_generator::TypeVertexGenerator},
     },
     value::{label::Label, value::Value, value_type::ValueType},
-    EncodingKeyspace,
 };
 use ir::{
-    inference::type_inference::{infer_types, ConstraintTypeAnnotations, LeftRightAnnotations, TypeAnnotations},
+    inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
     program::{block::FunctionalBlock, program::Program},
 };
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
 use test_utils::{create_tmp_dir, init_logging, TempDir};
 use traversal::{
     executor::program_executor::ProgramExecutor,
     planner::{
-        pattern_plan::{Instruction, IterateMode, PatternPlan, SortedJoinStep, Step},
+        pattern_plan::{Instruction, PatternPlan, SortedJoinStep, Step},
         program_plan::ProgramPlan,
     },
 };
+use traversal::planner::pattern_plan::IterateBounds;
 
 fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
     init_logging();
@@ -94,7 +94,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     ).unwrap();
     let membership_member_type = relates_member.role();
     let relates_group = membership_type.create_relates(
-        &mut snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name().as_str(), Ordering::Unordered
+        &mut snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name().as_str(), Ordering::Unordered
     ).unwrap();
     let membership_group_type = relates_group.role();
 
@@ -129,16 +129,16 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
         .unwrap();
 
     _membership_1.add_player(
-        &mut snapshot, &thing_manager, membership_member_type.clone(), _person_1.into_owned_object()
+        &mut snapshot, &thing_manager, membership_member_type.clone(), _person_1.clone().into_owned_object()
     ).unwrap();
     _membership_1.add_player(
-        &mut snapshot, &thing_manager, membership_group_type.clone(), _group_1.into_owned_object()
+        &mut snapshot, &thing_manager, membership_group_type.clone(), _group_1.clone().into_owned_object()
     ).unwrap();
     _membership_2.add_player(
-        &mut snapshot, &thing_manager, membership_member_type.clone(), _person_3.into_owned_object()
+        &mut snapshot, &thing_manager, membership_member_type.clone(), _person_3.clone().into_owned_object()
     ).unwrap();
     _membership_2.add_player(
-        &mut snapshot, &thing_manager, membership_member_type.clone(), _group_2.into_owned_object()
+        &mut snapshot, &thing_manager, membership_member_type.clone(), _group_2.clone().into_owned_object()
     ).unwrap();
 
     _person_1.set_has_unordered(&mut snapshot, &thing_manager, _age_1.as_reference()).unwrap();
@@ -179,9 +179,11 @@ fn traverse_rp_unbounded_sorted_from() {
     let var_membership = conjunction.get_or_declare_variable(&"membership").unwrap();
 
     let rp_membership_person = conjunction.constraints_mut()
-        .add_role_player(var_membership, var_person, Some(var_membership_member_type)).unwrap();
+        .add_role_player(var_membership, var_person, Some(var_membership_member_type)).unwrap()
+        .clone();
     let rp_membership_group = conjunction.constraints_mut()
-        .add_role_player(var_membership, var_group, Some(var_membership_group_type)).unwrap();
+        .add_role_player(var_membership, var_group, Some(var_membership_group_type)).unwrap()
+        .clone();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
@@ -203,14 +205,15 @@ fn traverse_rp_unbounded_sorted_from() {
 
     // Plan
     let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+        var_membership,
         vec![
-            Instruction::RolePlayer(rp_membership_person.clone(), IterateMode::UnboundSortedFrom),
-            Instruction::RolePlayer(rp_membership_group.clone(), IterateMode::UnboundSortedFrom),
+            Instruction::RolePlayer(rp_membership_person.clone(), IterateBounds::None([])),
+            Instruction::RolePlayer(rp_membership_group.clone(), IterateBounds::None([]))
         ],
-        &HashSet::new(),
+        &vec![var_membership, var_group, var_person]
     ))];
 
-    let pattern_plan = PatternPlan::new(steps);
+    let pattern_plan = PatternPlan::new(steps, program.entry.context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor
@@ -276,10 +279,11 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     // Plan
     let steps = vec![Step::SortedJoin(SortedJoinStep::new(
-        vec![Instruction::Has(has_attribute.clone(), IterateMode::UnboundSortedTo)],
-        &HashSet::new(),
+        var_attribute,
+        vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
+        &vec![var_person, var_attribute]
     ))];
-    let pattern_plan = PatternPlan::new(steps);
+    let pattern_plan = PatternPlan::new(steps, program.entry.context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor
