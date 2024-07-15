@@ -15,7 +15,7 @@ use crate::{
         function::{FunctionDefinitionError, FunctionIR},
         function_signature::{FunctionID, FunctionIDTrait, FunctionManagerIndexInjectionTrait, FunctionSignatureIndex},
     },
-    translator::{function_builder::TypeQLFunctionBuilder, pattern_builder::TypeQLBuilder},
+    translator::{function_builder::TypeQLFunctionBuilder, block_builder::TypeQLBuilder},
 };
 
 pub struct Program {

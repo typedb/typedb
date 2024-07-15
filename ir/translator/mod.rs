@@ -6,4 +6,4 @@
 
 mod constraint_builder;
 pub mod function_builder;
-pub mod pattern_builder;
+pub mod block_builder;

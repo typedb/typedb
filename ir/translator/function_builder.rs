@@ -19,7 +19,7 @@ use crate::{
             FunctionID, FunctionManagerIndexInjectionTrait, FunctionSignature, FunctionSignatureIndex,
         },
     },
-    translator::pattern_builder::TypeQLBuilder,
+    translator::block_builder::TypeQLBuilder,
 };
 
 pub struct TypeQLFunctionBuilder {}

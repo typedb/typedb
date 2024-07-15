@@ -30,7 +30,7 @@ use ir::{
         function_signature::{EmptySchemaFunctionIndex, FunctionSignatureIndex},
         program::Program,
     },
-    translator::pattern_builder::TypeQLBuilder,
+    translator::block_builder::TypeQLBuilder,
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;

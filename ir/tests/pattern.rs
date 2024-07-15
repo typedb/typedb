@@ -11,7 +11,7 @@ use ir::{
         block::FunctionalBlock,
         function_signature::{EmptySchemaFunctionIndex, FunctionSignatureIndex},
     },
-    translator::pattern_builder::TypeQLBuilder,
+    translator::block_builder::TypeQLBuilder,
     PatternDefinitionError,
 };
 use typeql::query::stage::Stage;
