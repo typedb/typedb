@@ -111,6 +111,14 @@ impl<'a> Thing<'a> {
             _ => panic!("Thing is not an Attribute."),
         }
     }
+
+    pub fn into_owned(self) -> Thing<'static> {
+        match self {
+            Thing::Entity(entity) => Thing::Entity(entity.into_owned()),
+            Thing::Relation(relation) => Thing::Relation(relation.into_owned()),
+            Thing::Attribute(attribute) => Thing::Attribute(attribute.into_owned()),
+        }
+    }
 }
 
 impl<'a> From<Object<'a>> for Thing<'a> {

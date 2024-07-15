@@ -28,10 +28,10 @@ fn build_modifiers() {
     let mut builder = FunctionalBlock::builder();
     let mut conjunction = builder.conjunction_mut();
 
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_name = conjunction.get_or_declare_variable("name").unwrap();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable_named("person").unwrap();
+    let var_name = conjunction.get_or_declare_variable_named("name").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable_named("person_type").unwrap();
+    let var_name_type = conjunction.get_or_declare_variable_named("name_type").unwrap();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
@@ -53,10 +53,10 @@ fn build_invalid_modifiers() {
     let mut conjunction = builder.conjunction_mut();
 
     let person_name = String::from("bob");
-    let var_person = conjunction.get_or_declare_variable(&person_name).unwrap();
-    let var_name = conjunction.get_or_declare_variable("name").unwrap();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable_named(&person_name).unwrap();
+    let var_name = conjunction.get_or_declare_variable_named("name").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable_named("person_type").unwrap();
+    let var_name_type = conjunction.get_or_declare_variable_named("name_type").unwrap();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
@@ -76,11 +76,11 @@ fn build_program_with_functions() {
     let mut builder = FunctionalBlock::builder();
     let mut conjunction = builder.conjunction_mut();
 
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable_named("person").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable_named("person_type").unwrap();
 
-    let var_count = conjunction.get_or_declare_variable("count").unwrap();
-    let var_mean = conjunction.get_or_declare_variable("sum").unwrap();
+    let var_count = conjunction.get_or_declare_variable_named("count").unwrap();
+    let var_mean = conjunction.get_or_declare_variable_named("sum").unwrap();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
 

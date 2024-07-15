@@ -20,8 +20,8 @@ pub enum VariableValue<'a> {
     Type(Type),
     Thing(Thing<'a>),
     Value(Value<'a>),
-    ThingList(Arc<[Thing<'a>]>),
-    ValueList(Arc<[Value<'a>]>),
+    ThingList(Arc<[Thing<'static>]>),
+    ValueList(Arc<[Value<'static>]>),
 }
 
 impl<'a> VariableValue<'a> {
@@ -30,6 +30,17 @@ impl<'a> VariableValue<'a> {
         match self {
             VariableValue::Thing(thing) => thing,
             _ => panic!("VariableValue is not a THing")
+        }
+    }
+
+    pub fn into_owned(self) -> VariableValue<'static> {
+        match self {
+            VariableValue::Empty => VariableValue::Empty,
+            VariableValue::Type(type_) => VariableValue::Type(type_),
+            VariableValue::Thing(thing) => VariableValue::Thing(thing.into_owned()),
+            VariableValue::Value(value) => VariableValue::Value(value.into_owned()),
+            VariableValue::ThingList(list) => VariableValue::ThingList(list),
+            VariableValue::ValueList(list) => VariableValue::ValueList(list),
         }
     }
 }

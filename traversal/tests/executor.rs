@@ -4,22 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+mod common;
+
 use std::{borrow::Cow,
           collections::HashMap, sync::Arc};
 
 use concept::{
-    thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
-    type_::{Ordering, OwnerAPI, type_manager::TypeManager},
+    thing::{object::ObjectAPI, statistics::Statistics},
+    type_::{Ordering, OwnerAPI},
 };
-use durability::wal::WAL;
-use encoding::{
-    EncodingKeyspace,
-    graph::{
-        definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
-        type_::vertex_generator::TypeVertexGenerator,
-    },
-    value::{label::Label, value::Value, value_type::ValueType},
-};
+use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use ir::{
     inference::type_inference::infer_types,
     program::{
@@ -30,47 +24,24 @@ use ir::{
     translator::block_builder::TypeQLBuilder,
 };
 use storage::{
-    durability_client::WALClient,
-    MVCCStorage,
+    durability_client::WALClient
+    ,
     snapshot::{CommittableSnapshot, WriteSnapshot},
 };
 use storage::sequence_number::SequenceNumber;
 use storage::snapshot::ReadSnapshot;
-use test_utils::{create_tmp_dir, init_logging, TempDir};
 use traversal::executor::program_executor::ProgramExecutor;
 use traversal::planner::pattern_plan::PatternPlan;
 use traversal::planner::program_plan::ProgramPlan;
-
-fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
-
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-    (storage_path, storage)
-}
-
-fn load_managers(storage: Arc<MVCCStorage<WALClient>>) -> (Arc<TypeManager>, ThingManager) {
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage).unwrap());
-    let type_manager =
-        Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
-    let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
-    (type_manager, thing_manager)
-}
+use crate::common::{load_managers, setup_storage};
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const AGE_LABEL: Label = Label::new_static("age");
 const NAME_LABEL: Label = Label::new_static("name");
 
-fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
+#[test]
+fn test_planning_traversal() {
+    let (tmp_dir, storage) = setup_storage();
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 

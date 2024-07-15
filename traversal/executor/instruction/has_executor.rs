@@ -296,7 +296,7 @@ impl HasIteratorExecutor {
                 }
             }
             IterateMode::BoundFromSortedTo => {
-                debug_assert!(row.len() > self.has.owner().as_usize());
+                debug_assert!(row.width() > self.has.owner().as_usize());
                 let owner = row.get(self.has.owner());
                 let iterator = match owner {
                     VariableValue::Thing(Thing::Entity(entity)) => entity.get_has_types_range_unordered(

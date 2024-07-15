@@ -103,4 +103,8 @@ impl<'cx> ConjunctionBuilder<'cx> {
     pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
         self.context.get_or_declare_variable_named(name, self.conjunction.scope_id)
     }
+
+    pub fn declare_variable_anonymous(&mut self) -> Result<Variable, PatternDefinitionError> {
+        self.context.create_anonymous_variable(self.conjunction.scope_id)
+    }
 }

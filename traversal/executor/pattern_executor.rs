@@ -5,6 +5,8 @@
  */
 
 use std::{cmp::Ordering, collections::HashMap, sync::Arc};
+use std::borrow::Cow;
+use std::fmt::{Display, Formatter};
 
 use itertools::Itertools;
 
@@ -508,7 +510,7 @@ impl SortedJoinExecutor {
             None => Ok(false),
             Some(row) => {
                 for executor in &self.instruction_executors {
-                    self.iterators.push(executor.get_iterator(snapshot, thing_manager, row)?);
+                    self.iterators.push(executor.get_iterator(snapshot, thing_manager, row.as_reference())?);
                 }
                 Ok(true)
             }
@@ -899,17 +901,17 @@ impl<'a> Row<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct ImmutableRow<'a> {
-    row: &'a [VariableValue<'static>],
+    row: Cow<'a, [VariableValue<'static>]>,
 }
 
 impl<'a> ImmutableRow<'a> {
     fn new(row: &'a [VariableValue<'static>]) -> Self {
-        Self { row }
+        Self { row: Cow::Borrowed(row) }
     }
 
-    pub(crate) fn len(&self) -> usize {
+    pub fn width(&self) -> usize {
         self.row.len()
     }
 
@@ -917,7 +919,27 @@ impl<'a> ImmutableRow<'a> {
         &self.row[position.as_usize()]
     }
 
-    pub fn to_vec(&self) -> Vec<VariableValue<'static>> {
-        self.row.to_vec()
+    pub fn into_owned(self) -> ImmutableRow<'static> {
+        let cloned: Vec<VariableValue<'static>> = self.row.into_iter().map(|value| value.clone().into_owned()).collect();
+        ImmutableRow { row: Cow::Owned(cloned) }
+    }
+
+    pub fn as_reference(&self) -> ImmutableRow<'_> {
+        ImmutableRow { row: Cow::Borrowed(self.row.as_ref()) }
+    }
+}
+
+impl ImmutableRow<'static> {
+    pub fn into_iter(self) -> impl Iterator<Item=VariableValue<'static>> {
+        self.row.into_owned().into_iter()
+    }
+}
+
+impl<'a> Display for ImmutableRow<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for value in self.row.as_ref() {
+            write!(f, "{value},\t")?
+        }
+        write!(f, "\n")
     }
 }

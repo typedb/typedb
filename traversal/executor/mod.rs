@@ -10,7 +10,7 @@ use ir::pattern::IrID;
 
 mod function_executor;
 mod instruction;
-mod pattern_executor;
+pub mod pattern_executor;
 pub mod program_executor;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]

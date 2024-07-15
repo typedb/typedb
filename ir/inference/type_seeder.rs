@@ -1098,10 +1098,10 @@ pub mod tests {
             // Case 1: $a isa cat, has animal-name $n;
             let mut builder = FunctionalBlock::builder();
             let mut conjunction = builder.conjunction_mut();
-            let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
-            let var_name = conjunction.get_or_declare_variable("name").unwrap();
-            let var_animal_type = conjunction.get_or_declare_variable("animal_type").unwrap();
-            let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
+            let var_animal = conjunction.get_or_declare_variable_named("animal").unwrap();
+            let var_name = conjunction.get_or_declare_variable_named("name").unwrap();
+            let var_animal_type = conjunction.get_or_declare_variable_named("animal_type").unwrap();
+            let var_name_type = conjunction.get_or_declare_variable_named("name_type").unwrap();
 
             // Try seeding
             {
@@ -1182,8 +1182,8 @@ pub mod tests {
             // // Case 1: $a has $n;
             let mut builder = FunctionalBlock::builder();
             let mut conjunction = builder.conjunction_mut();
-            let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
-            let var_name = conjunction.get_or_declare_variable("name").unwrap();
+            let var_animal = conjunction.get_or_declare_variable_named("animal").unwrap();
+            let var_name = conjunction.get_or_declare_variable_named("name").unwrap();
             // Try seeding
             {
                 conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
@@ -1246,8 +1246,8 @@ pub mod tests {
             // // Case 1: $a > $b;
             let mut builder = FunctionalBlock::builder();
             let mut conjunction = builder.conjunction_mut();
-            let var_a = conjunction.get_or_declare_variable("a").unwrap();
-            let var_b = conjunction.get_or_declare_variable("b").unwrap();
+            let var_a = conjunction.get_or_declare_variable_named("a").unwrap();
+            let var_b = conjunction.get_or_declare_variable_named("b").unwrap();
             // Try seeding
             {
                 conjunction.constraints_mut().add_comparison(var_a, var_b).unwrap();
