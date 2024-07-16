@@ -965,7 +965,7 @@ impl TypeManager {
             .create_struct(snapshot)
             .map_err(|source| ConceptWriteError::Encoding { source })?;
 
-        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), StructDefinition::new(name));
+        TypeWriter::storage_insert_struct(snapshot, definition_key.clone(), StructDefinition::new(name));
         Ok(definition_key)
     }
 
@@ -982,7 +982,7 @@ impl TypeManager {
             .add_field(field_name, value_type, is_optional)
             .map_err(|source| ConceptWriteError::Encoding { source })?;
 
-        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_definition);
+        TypeWriter::storage_insert_struct(snapshot, definition_key.clone(), struct_definition);
         Ok(())
     }
 
@@ -995,7 +995,7 @@ impl TypeManager {
         let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())?;
         struct_definition.delete_field(field_name).map_err(|source| ConceptWriteError::Encoding { source })?;
 
-        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_definition);
+        TypeWriter::storage_insert_struct(snapshot, definition_key.clone(), struct_definition);
         Ok(())
     }
 
@@ -1347,7 +1347,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_attribute_type_value_type_compatible_with_annotations(
+        OperationTimeValidation::validate_attribute_type_value_type_compatible_with_declared_annotations(
             snapshot,
             attribute.clone(),
             Some(value_type.clone()),

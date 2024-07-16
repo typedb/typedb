@@ -1073,7 +1073,7 @@ impl OperationTimeValidation {
         match value_type {
             Some(_) => {
                 Self::validate_value_type_compatible_with_abstractness(snapshot, attribute_type.clone(), None, None)?;
-                Self::validate_attribute_type_value_type_compatible_with_annotations(
+                Self::validate_attribute_type_value_type_compatible_with_declared_annotations(
                     snapshot,
                     attribute_type.clone(),
                     None,
@@ -1314,14 +1314,14 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_attribute_type_value_type_compatible_with_annotations(
+    pub(crate) fn validate_attribute_type_value_type_compatible_with_declared_annotations(
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
-        let annotations = TypeReader::get_type_annotations(snapshot, attribute_type.clone())
+        let annotations = TypeReader::get_type_annotations_declared(snapshot, attribute_type.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
-        for (annotation, _) in annotations {
+        for annotation in annotations {
             match annotation {
                 AttributeTypeAnnotation::Regex(_) => Self::validate_annotation_regex_compatible_value_type(
                     snapshot,
