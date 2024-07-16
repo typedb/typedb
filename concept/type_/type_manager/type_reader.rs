@@ -82,7 +82,7 @@ impl TypeReader {
         name: &str,
     ) -> Result<Option<DefinitionKey<'static>>, ConceptReadError> {
         let index_key = NameToStructDefinitionIndex::build(StringBytes::<BUFFER_KEY_INLINE>::build_ref(name));
-        let bytes = snapshot.get(index_key.into_storage_key().as_reference()).unwrap();
+        let bytes = snapshot.get(index_key.into_storage_key().as_reference()).map_err(|source| ConceptReadError::SnapshotGet {source})?;
         Ok(bytes.map(|value| DefinitionKey::new(Bytes::Array(value))))
     }
 
@@ -91,9 +91,62 @@ impl TypeReader {
         definition_key: DefinitionKey<'_>,
     ) -> Result<StructDefinition, ConceptReadError> {
         let bytes =
-            snapshot.get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference()).unwrap();
+            snapshot.get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference()).map_err(|source| ConceptReadError::SnapshotGet {source})?;
         Ok(StructDefinition::from_bytes(bytes.unwrap().as_ref()))
     }
+
+    pub(crate) fn get_struct_definitions_all(
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<HashMap<DefinitionKey<'static>, StructDefinition>, ConceptReadError> {
+        Ok(snapshot
+            .iterate_range(KeyRange::new_within(
+                DefinitionKey::build_prefix(StructDefinition::PREFIX),
+                StructDefinition::PREFIX.fixed_width_keys(),
+            ))
+            .collect_cloned_hashmap(|key, value| {
+                (DefinitionKey::new(Bytes::Array(key.byte_ref().into())), StructDefinition::from_bytes(value))
+            }).map_err(|source| ConceptReadError::SnapshotIterate{source})?)
+    }
+
+    pub(crate) fn get_struct_definition_usages_in_attribute_types(
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<HashMap<DefinitionKey<'static>, HashSet<AttributeType<'static>>>, ConceptReadError> {
+        let mut usages: HashMap<DefinitionKey<'static>, HashSet<AttributeType<'static>>> = HashMap::new();
+
+        let root = TypeReader::get_labelled_type::<AttributeType<'static>>(snapshot, &Kind::Attribute.root_label())?.ok_or(ConceptReadError::CannotGetLabelForExistingType)?;
+        let attribute_types = TypeReader::get_subtypes_transitive(snapshot, root)?;
+        for attribute_type in attribute_types {
+            if let Some(ValueType::Struct(definition_key)) = TypeReader::get_value_type_declared(snapshot, attribute_type.clone())? {
+                if !usages.contains_key(&definition_key) {
+                    usages.insert(definition_key.clone(), HashSet::new());
+                }
+                usages.get_mut(&definition_key).unwrap().insert(attribute_type);
+            }
+        }
+
+        Ok(usages)
+    }
+
+    pub(crate) fn get_struct_definition_usages_in_struct_definitions(
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<HashMap<DefinitionKey<'static>, HashSet<DefinitionKey<'static>>>, ConceptReadError> {
+        let mut usages: HashMap<DefinitionKey<'static>, HashSet<DefinitionKey<'static>>> = HashMap::new();
+
+        let struct_definitions = TypeReader::get_struct_definitions_all(snapshot)?;
+        for (owner_key, struct_definition) in struct_definitions {
+            for value_type in struct_definition.fields.values().map(|field| field.value_type.clone()) {
+                if let ValueType::Struct(definition_key) = value_type {
+                    if !usages.contains_key(&definition_key) {
+                        usages.insert(definition_key.clone(), HashSet::new());
+                    }
+                    usages.get_mut(&definition_key).unwrap().insert(owner_key.clone());
+                }
+            }
+        }
+
+        Ok(usages)
+    }
+
     // TODO: Should get_{super/sub}type[s_transitive] return T or T::SelfStatic.
     // T::SelfStatic is the more consistent, more honest interface, but T is convenient.
     pub(crate) fn get_supertype<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Option<T>, ConceptReadError>

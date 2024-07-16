@@ -18,6 +18,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use itertools::Itertools;
+use encoding::graph::definition::definition_key::DefinitionKey;
 use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
@@ -29,8 +30,7 @@ use crate::{
     },
     type_::{
         annotation::{
-            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationRange,
-            AnnotationRegex, AnnotationValues,
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::EntityType,
@@ -47,9 +47,7 @@ use crate::{
                     edge_get_annotation_by_category, get_label_or_concept_read_err, get_label_or_schema_err,
                     is_attribute_type_owns_overridden, is_ordering_compatible_with_distinct_annotation,
                     is_overridden_interface_object_one_of_supertypes_or_self, is_role_type_plays_overridden,
-                    type_has_annotation_category,
-                    type_is_abstract,
-                    validate_cardinality_narrows_inherited_cardinality,
+                    type_has_annotation_category, type_is_abstract, validate_cardinality_narrows_inherited_cardinality,
                     validate_declared_annotation_is_compatible_with_other_inherited_annotations,
                     validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations,
                     validate_edge_annotations_narrowing_of_inherited_annotations,
@@ -428,7 +426,10 @@ impl OperationTimeValidation {
         match value_type_with_source {
             Some((value_type, source)) => {
                 if source != attribute_type {
-                    return Ok(());
+                    return Err(SchemaValidationError::CannotUnsetInheritedValueType(
+                        value_type,
+                        get_label_or_schema_err(snapshot, source)?,
+                    ));
                 }
 
                 let attribute_supertype = TypeReader::get_supertype(snapshot, attribute_type.clone())
@@ -1482,6 +1483,34 @@ impl OperationTimeValidation {
                 }
             }
         }
+        Ok(())
+    }
+
+    pub(crate) fn validate_deleted_struct_is_not_used(
+        snapshot: &impl ReadableSnapshot,
+        definition_key: &DefinitionKey<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())
+            .map_err(SchemaValidationError::ConceptRead)?;
+
+        let usages_in_attribute_types = TypeReader::get_struct_definition_usages_in_attribute_types(snapshot)
+            .map_err(SchemaValidationError::ConceptRead)?;
+        if let Some(owners) = usages_in_attribute_types.get(definition_key) {
+            return Err(SchemaValidationError::StructCannotBeDeletedAsItsUsedAsValueTypeForAttributeTypes(
+                struct_definition.name,
+                owners.len(),
+            ))
+        }
+
+        let usages_in_struct_definition_fields = TypeReader::get_struct_definition_usages_in_struct_definitions(snapshot)
+            .map_err(SchemaValidationError::ConceptRead)?;
+        if let Some(owners) = usages_in_struct_definition_fields.get(definition_key) {
+            return Err(SchemaValidationError::StructCannotBeDeletedAsItsUsedAsValueTypeForStructs(
+                struct_definition.name,
+                owners.len(),
+            ))
+        }
+
         Ok(())
     }
 }

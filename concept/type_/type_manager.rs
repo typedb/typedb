@@ -1004,10 +1004,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         definition_key: &DefinitionKey<'static>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: Check that struct is not referred from attributes (value type) and other structs (fields)!
-        // OperationTimeValidation::validate_struct_is_not_used(snapshot, entity_type.clone().into_owned())
-        //     .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-        todo!();
+        OperationTimeValidation::validate_deleted_struct_is_not_used(snapshot, definition_key)
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         TypeWriter::storage_delete_struct(snapshot, definition_key);
         Ok(())
     }

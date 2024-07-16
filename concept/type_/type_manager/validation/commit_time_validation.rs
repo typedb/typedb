@@ -4,19 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, hash::Hash};
-use std::collections::HashMap;
-
-use encoding::{
-    graph::type_::{CapabilityKind, Kind},
+use std::{
+    collections::{HashMap, HashSet},
+    hash::Hash,
 };
+
+use encoding::graph::type_::{CapabilityKind, Kind};
 use itertools::Itertools;
+use encoding::graph::definition::r#struct::StructDefinition;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
     type_::{
-        annotation::Annotation,
+        annotation::{Annotation, AnnotationCardinality},
         attribute_type::AttributeType,
         entity_type::EntityType,
         owns::Owns,
@@ -45,7 +46,6 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, TypeAPI,
     },
 };
-use crate::type_::annotation::AnnotationCardinality;
 
 pub struct CommitTimeValidation {}
 
@@ -83,32 +83,6 @@ macro_rules! produced_errors {
     }};
 }
 
-macro_rules! ff {
-    ($func_name:ident, $kind:expr, $type_:ident, $func:path) => {
-        fn $func_name(
-            type_manager: &TypeManager,
-            snapshot: &impl ReadableSnapshot,
-            validation_errors: &mut Vec<SchemaValidationError>,
-        ) -> Result<(), ConceptReadError> {
-            let root_label = $kind.root_label();
-            let root = TypeReader::get_labelled_type::<$type_<'static>>(snapshot, &root_label)?;
-
-            match root {
-                Some(root) => {
-                    $func(type_manager, snapshot, root.clone(), validation_errors)?;
-
-                    for subtype in TypeReader::get_subtypes_transitive(snapshot, root)? {
-                        $func(type_manager, snapshot, subtype, validation_errors)?;
-                    }
-                }
-                None => validation_errors.push(SchemaValidationError::RootHasBeenCorrupted(root_label)),
-            };
-
-            Ok(())
-        }
-    };
-}
-
 impl CommitTimeValidation {
     pub(crate) fn validate(
         type_manager: &TypeManager,
@@ -118,6 +92,7 @@ impl CommitTimeValidation {
         Self::validate_entity_types(type_manager, snapshot, &mut errors)?;
         Self::validate_relation_types(type_manager, snapshot, &mut errors)?;
         Self::validate_attribute_types(type_manager, snapshot, &mut errors)?;
+        Self::validate_struct_definitions(type_manager, snapshot, &mut errors)?;
         Ok(errors)
     }
 
@@ -176,7 +151,19 @@ impl CommitTimeValidation {
             Self::validate_type_annotations(type_manager, snapshot, type_.clone(), validation_errors)?;
         }
 
-        // TODO: Validate value type against annotations? Validate value type set?
+        Ok(())
+    }
+
+    fn validate_struct_definitions(
+        type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+        validation_errors: &mut Vec<SchemaValidationError>,
+    ) -> Result<(), ConceptReadError> {
+        let definitions = TypeReader::get_struct_definitions_all(snapshot)?;
+
+        for (_key, struct_definition) in definitions {
+            Self::validate_struct_definition_fields(type_manager, snapshot, struct_definition, validation_errors)?;
+        }
 
         Ok(())
     }
@@ -1020,7 +1007,21 @@ impl CommitTimeValidation {
 
         Ok(())
     }
-}
+
+    fn validate_struct_definition_fields(
+        _type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+        struct_definition: StructDefinition,
+        validation_errors: &mut Vec<SchemaValidationError>,
+    ) -> Result<(), ConceptReadError> {
+        debug_assert_eq!(struct_definition.fields.len(), struct_definition.field_names.len());
+
+        if struct_definition.fields.is_empty() {
+            validation_errors.push(SchemaValidationError::StructShouldHaveAtLeastOneField(struct_definition.name));
+        }
+
+        Ok(())
+    }
 
 
 // TODO: WiP
@@ -1037,7 +1038,7 @@ impl CommitTimeValidation {
 //     let mut cardinality_connections: HashMap<Owns<'static>, HashSet<Owns<'static>>> = HashMap::new();
 //     let mut cardinalities: HashMap<Owns<'static>, AnnotationCardinality> = HashMap::new();
 //
-//     let types = TypeReader::get_subtypes(snapshot, root_type)?;
+//     let types = TypeReader::get_subtypes_transitive(snapshot, root_type)?;
 //
 //     for type_ in types { // TODO: Debug on a test case tomorrow!
 //         let owns_declared: HashSet<Owns<'static>> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
@@ -1052,7 +1053,7 @@ impl CommitTimeValidation {
 //                 if !cardinality_connections.contains_key(&overridden_owns) {
 //                     cardinality_connections.insert(overridden_owns.clone(), HashSet::new());
 //                 }
-//                 cardinality_connections.get(&overridden_owns).unwrap().insert(owns.clone());
+//                 cardinality_connections.get_mut(&overridden_owns).unwrap().insert(owns.clone());
 //
 //                 if !cardinalities.contains_key(&overridden_owns) {
 //                     cardinalities.insert(overridden_owns.clone(), overridden_owns.get_cardinality(snapshot, type_manager)?);
@@ -1080,3 +1081,4 @@ impl CommitTimeValidation {
 //
 //     Ok(())
 // }
+}
