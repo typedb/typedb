@@ -633,6 +633,28 @@ impl OperationTimeValidation {
         }
     }
 
+    pub(crate) fn validate_plays_abstractness<T>(
+        snapshot: &impl ReadableSnapshot,
+        player: T,
+        role_type: RoleType<'static>,
+    ) -> Result<(), SchemaValidationError>
+        where
+            T: KindAPI<'static>,
+    {
+        let is_player_abstract =
+            type_is_abstract(snapshot, player.clone()).map_err(SchemaValidationError::ConceptRead)?;
+        let is_role_abstract =
+            type_is_abstract(snapshot, role_type.clone()).map_err(SchemaValidationError::ConceptRead)?;
+
+        match (&is_player_abstract, &is_role_abstract) {
+            (true, true) | (false, false) | (true, false) => Ok(()),
+            (false, true) => Err(SchemaValidationError::NonAbstractCannotPlayAbstract(
+                get_label_or_schema_err(snapshot, player)?,
+                get_label_or_schema_err(snapshot, role_type)?,
+            )),
+        }
+    }
+
     pub(crate) fn validate_cardinality_arguments(
         cardinality: AnnotationCardinality,
     ) -> Result<(), SchemaValidationError> {

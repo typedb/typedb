@@ -13,6 +13,8 @@ use std::{
     hash::{Hash, Hasher},
     ops::Add,
 };
+use std::cmp::max;
+use std::iter::Sum;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -84,7 +86,7 @@ impl AnnotationCardinality {
     }
 
     pub const fn default() -> Self {
-        Self::new(0, Some(1))
+        Self::new(0, None)
     }
 
     pub fn valid(&self) -> bool {
@@ -126,7 +128,21 @@ impl Add for AnnotationCardinality {
     fn add(self, rhs: Self) -> Self::Output {
         let (lhs_start, lhs_end) = (self.start_inclusive, self.end_inclusive);
         let (rhs_start, rhs_end) = (rhs.start_inclusive, rhs.end_inclusive);
-        Self::new(lhs_start + rhs_start, min(lhs_end, rhs_end))
+
+        let new_start = lhs_start + rhs_start;
+        let new_end = match (lhs_end, rhs_end) {
+            (None, None) => None,
+            (Some(end), None) | (None, Some(end)) => Some(max(new_start, end)),
+            (Some(lhs_end), Some(rhs_end)) => Some(max(new_start, min(lhs_end, rhs_end))),
+        };
+
+        Self::new(new_start, new_end)
+    }
+}
+
+impl Sum for AnnotationCardinality {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::default(), |lhs, rhs| lhs + rhs)
     }
 }
 

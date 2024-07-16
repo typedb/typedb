@@ -1534,7 +1534,6 @@ impl TypeManager {
         attribute: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: Maybe do the same for plays and relates
         OperationTimeValidation::validate_ownership_abstractness(snapshot, owner.clone(), attribute.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1637,6 +1636,9 @@ impl TypeManager {
         player: impl KindAPI<'static> + ObjectTypeAPI<'static> + PlayerAPI<'static>,
         role: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
+        OperationTimeValidation::validate_plays_abstractness(snapshot, owner.clone(), attribute.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         OperationTimeValidation::validate_role_type_plays_not_overridden(snapshot, player.clone(), role.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
