@@ -1636,7 +1636,7 @@ impl TypeManager {
         player: impl KindAPI<'static> + ObjectTypeAPI<'static> + PlayerAPI<'static>,
         role: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
-        OperationTimeValidation::validate_plays_abstractness(snapshot, owner.clone(), attribute.clone())
+        OperationTimeValidation::validate_plays_abstractness(snapshot, player.clone(), role.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_role_type_plays_not_overridden(snapshot, player.clone(), role.clone())
