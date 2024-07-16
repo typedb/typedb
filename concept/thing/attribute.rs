@@ -11,6 +11,8 @@ use std::{
     sync::Arc,
 };
 use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+use bytes::byte_array::ByteArray;
 
 use bytes::Bytes;
 use encoding::{
@@ -26,6 +28,7 @@ use encoding::{
         value_struct::{StructIndexEntry, StructIndexEntryKey},
     },
 };
+use encoding::graph::thing::vertex_object::ObjectVertex;
 use iterator::State;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -107,6 +110,12 @@ impl<'a> Attribute<'a> {
 
     pub(crate) fn vertex<'this: 'a>(&'this self) -> AttributeVertex<'this> {
         self.vertex.as_reference()
+    }
+
+    pub fn next_possible(&self) -> Attribute<'static> {
+        let mut bytes = ByteArray::from(self.vertex.bytes());
+        bytes.increment().unwrap();
+        Attribute::new(AttributeVertex::new(Bytes::Array(bytes)))
     }
 
     pub(crate) fn into_vertex(self) -> AttributeVertex<'a> {
@@ -390,5 +399,11 @@ impl<'a> Display for Attribute<'a> {
             self.type_().vertex().type_id_(),
             self.vertex.attribute_id()
         )
+    }
+}
+
+impl<'a> Hash for Attribute<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Hash::hash(&self.vertex, state)
     }
 }

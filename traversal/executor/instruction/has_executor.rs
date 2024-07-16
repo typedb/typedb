@@ -174,31 +174,28 @@ impl HasIteratorExecutor {
         debug_assert!(!variable_modes.is_fully_bound());
         let iterate_mode = IterateMode::new(&has, variable_modes, sort_by);
         let filter_fn = match iterate_mode {
-            IterateMode::UnboundSortedFrom => HasExecutorFilter::HasFilterBoth(Arc::new({
-                let owner_att_types = owner_attribute_types.clone();
-                let att_types = attribute_types.clone();
-                move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
-                    Ok((has, _)) => {
-                        owner_att_types.contains_key(&Type::from(has.owner().type_()))
-                            && att_types.contains(&Type::Attribute(has.attribute().type_()))
+            IterateMode::UnboundSortedFrom => {
+                HasExecutorFilter::HasFilterBoth(Arc::new({
+                    let owner_att_types = owner_attribute_types.clone();
+                    let att_types = attribute_types.clone();
+                    move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
+                        Ok((has, _)) => {
+                            owner_att_types.contains_key(&Type::from(has.owner().type_()))
+                                && att_types.contains(&Type::Attribute(has.attribute().type_()))
+                        }
+                        Err(_) => true,
                     }
-                    Err(_) => true,
-                }
-            })),
-            IterateMode::UnboundSortedTo | IterateMode::BoundFromSortedTo => HasExecutorFilter::HasFilterAttribute(Arc::new({
-                let att_types = attribute_types.clone();
-                move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
-                    Ok((has, _)) => att_types.contains(&Type::Attribute(has.attribute().type_())),
-                    Err(_) => true,
-                }
-            })),
-            // IterateMode::IterateBoundSortedTo => HasExecutorFilter::AttributeFilter(Arc::new({
-            //     let att_types = attribute_types.clone();
-            //     move |result: &Result<(Attribute<'_>, u64), ConceptReadError>| match result {
-            //         Ok((attribute, _)) => att_types.contains(&Type::Attribute(attribute.type_())),
-            //         Err(_) => true,
-            //     }
-            // })),
+                }))
+            }
+            IterateMode::UnboundSortedTo | IterateMode::BoundFromSortedTo => {
+                HasExecutorFilter::HasFilterAttribute(Arc::new({
+                    let att_types = attribute_types.clone();
+                    move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
+                        Ok((has, _)) => att_types.contains(&Type::Attribute(has.attribute().type_())),
+                        Err(_) => true,
+                    }
+                }))
+            }
         };
 
         let owner_cache = if matches!(iterate_mode, IterateMode::UnboundSortedTo) {
@@ -250,7 +247,7 @@ impl HasIteratorExecutor {
                     .get_has_from_type_range_unordered(snapshot, key_range)
                     .filter::<_, HasFilterBothFn>(filter_fn);
                 let peekable = InstructionIterator::HasUnboundedSortedOwner(
-                    Peekable::new(iterator), self.has.clone(), self.variable_modes
+                    Peekable::new(iterator), self.has.clone(), self.variable_modes, None
                 );
                 Ok(peekable)
             }
@@ -267,7 +264,7 @@ impl HasIteratorExecutor {
                         )?
                         .filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
                     let peekable = InstructionIterator::HasUnboundedSortedAttributeSingle(
-                        Peekable::new(iterator), self.has.clone(), self.variable_modes
+                        Peekable::new(iterator), self.has.clone(), self.variable_modes, None
                     );
                     Ok(peekable)
                 } else {
@@ -284,13 +281,13 @@ impl HasIteratorExecutor {
                         iterators.push(Peekable::new(iter?))
                     }
 
-                    // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
+                   // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
                     let merged: KMergeBy<HasIterator, HasOrderByAttributeFn> =
                         KMergeBy::new(iterators, Self::compare_has_by_attribute);
                     let filtered: Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterAttributeFn>> =
                         merged.filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
                     let peekable = InstructionIterator::HasUnboundedSortedAttributeMerged(
-                        Peekable::new(filtered), self.has.clone(), self.variable_modes
+                        Peekable::new(filtered), self.has.clone(), self.variable_modes, None
                     );
                     Ok(peekable)
                 }
@@ -313,7 +310,7 @@ impl HasIteratorExecutor {
                 };
                 let filtered = iterator.filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
                 let peekable = InstructionIterator::HasBoundedSortedAttribute(
-                    Peekable::new(filtered), self.has.clone(), self.variable_modes
+                    Peekable::new(filtered), self.has.clone(), self.variable_modes, None
                 );
                 Ok(peekable)
             }

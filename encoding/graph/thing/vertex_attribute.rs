@@ -39,7 +39,7 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct AttributeVertex<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }

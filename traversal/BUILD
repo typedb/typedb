@@ -17,6 +17,7 @@ rust_library(
     deps = [
         "//answer",
         "//common/lending_iterator",
+        "//common/logger",
         "//concept",
         "//encoding",
         "//ir",
@@ -25,6 +26,7 @@ rust_library(
         "@vaticle_typeql//rust:typeql",
 
         "@crates//:itertools",
+        "@crates//:tracing",
     ],
 )
 

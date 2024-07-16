@@ -8,6 +8,8 @@ use std::{
     collections::HashSet,
     fmt::{Display, Formatter},
 };
+use bytes::byte_array::ByteArray;
+use bytes::Bytes;
 
 use encoding::{
     graph::{thing::vertex_object::ObjectVertex, type_::vertex::PrefixedTypeVertexEncoding, Typed},
@@ -72,6 +74,12 @@ impl<'a> Entity<'a> {
         thing_manager: &'m ThingManager,
     ) -> IndexedPlayersIterator {
         thing_manager.get_indexed_players(snapshot, Object::Entity(self.as_reference()))
+    }
+
+    pub fn next_possible(&self) -> Entity<'static> {
+        let mut bytes = ByteArray::from(self.vertex.bytes());
+        bytes.increment().unwrap();
+        Entity::new(ObjectVertex::new(Bytes::Array(bytes)))
     }
 
     pub fn into_owned(self) -> Entity<'static> {

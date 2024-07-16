@@ -180,6 +180,7 @@ impl IsaExecutor {
                                 Peekable::new(thing_manager.get_entities_in(snapshot, entity_type.clone())),
                                 self.isa.clone(),
                                 self.variable_modes,
+                                None,
                             );
                             Ok(iterator)
                         }
@@ -188,6 +189,7 @@ impl IsaExecutor {
                                 Peekable::new(thing_manager.get_relations_in(snapshot, relation_type.clone())),
                                 self.isa.clone(),
                                 self.variable_modes,
+                                None,
                             );
                             Ok(iterator)
                         }
@@ -196,6 +198,7 @@ impl IsaExecutor {
                                 Peekable::new(thing_manager.get_attributes_in(snapshot, attribute_type.clone())?),
                                 self.isa.clone(),
                                 self.variable_modes,
+                                None,
                             );
                             Ok(iterator)
                         }

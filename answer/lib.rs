@@ -5,6 +5,8 @@
  */
 
 use std::fmt::{Display, Formatter};
+use bytes::byte_array::ByteArray;
+use bytes::Bytes;
 
 use concept::{
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
@@ -13,6 +15,9 @@ use concept::{
         role_type::RoleType, ObjectTypeAPI,
     },
 };
+use concept::type_::TypeAPI;
+use encoding::AsBytes;
+use encoding::graph::type_::vertex::TypeVertex;
 use encoding::value::value::Value;
 
 pub mod answer_map;
@@ -48,6 +53,31 @@ impl Type {
         match self {
             Type::Attribute(attribute) => attribute.clone().into_owned(),
             _ => panic!("Type is not an Attribute type."),
+        }
+    }
+
+    pub fn next_possible(&self) -> Self {
+        match self {
+            Type::Entity(entity) => {
+                let mut bytes = ByteArray::from(entity.vertex().bytes());
+                bytes.increment().unwrap();
+                Self::Entity(EntityType::new(TypeVertex::new(Bytes::Array(bytes))))
+            }
+            Type::Relation(relation) => {
+                let mut bytes = ByteArray::from(relation.vertex().bytes());
+                bytes.increment().unwrap();
+                Self::Relation(RelationType::new(TypeVertex::new(Bytes::Array(bytes))))
+            }
+            Type::Attribute(attribute) => {
+                let mut bytes = ByteArray::from(attribute.vertex().bytes());
+                bytes.increment().unwrap();
+                Self::Attribute(AttributeType::new(TypeVertex::new(Bytes::Array(bytes))))
+            }
+            Type::RoleType(role) => {
+                let mut bytes = ByteArray::from(role.vertex().bytes());
+                bytes.increment().unwrap();
+                Self::RoleType(RoleType::new(TypeVertex::new(Bytes::Array(bytes))))
+            }
         }
     }
 }
@@ -96,7 +126,7 @@ impl Display for Type {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Thing<'a> {
     Entity(Entity<'a>),
     Relation(Relation<'a>),
@@ -124,6 +154,14 @@ impl<'a> Thing<'a> {
             Thing::Entity(entity) => Thing::Entity(entity.into_owned()),
             Thing::Relation(relation) => Thing::Relation(relation.into_owned()),
             Thing::Attribute(attribute) => Thing::Attribute(attribute.into_owned()),
+        }
+    }
+
+    pub fn next_possible(&self) -> Thing<'static> {
+        match self {
+            Thing::Entity(entity) => Thing::Entity(entity.next_possible()),
+            Thing::Relation(relation) => Thing::Relation(relation.next_possible()),
+            Thing::Attribute(attribute) => Thing::Attribute(attribute.next_possible()),
         }
     }
 }

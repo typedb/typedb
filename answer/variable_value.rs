@@ -14,7 +14,7 @@ use encoding::value::value::Value;
 
 use crate::{Thing, Type};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum VariableValue<'a> {
     Empty,
     Type(Type),
@@ -41,6 +41,18 @@ impl<'a> VariableValue<'a> {
             VariableValue::Value(value) => VariableValue::Value(value.into_owned()),
             VariableValue::ThingList(list) => VariableValue::ThingList(list),
             VariableValue::ValueList(list) => VariableValue::ValueList(list),
+        }
+    }
+
+    pub fn next_possible(&self) -> VariableValue<'static> {
+        match self {
+            VariableValue::Empty => unreachable!("No next value for an Empty value."),
+            VariableValue::Type(type_) => VariableValue::Type(type_.next_possible()),
+            VariableValue::Thing(thing) => VariableValue::Thing(thing.next_possible()),
+            VariableValue::Value(_) => unreachable!("Value instances don't have a well defined order."),
+            VariableValue::ThingList(_)  | VariableValue::ValueList(_)=> {
+                unreachable!("Lists have no well defined order.")
+            }
         }
     }
 }

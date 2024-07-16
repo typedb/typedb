@@ -8,6 +8,7 @@ use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
 };
+use bytes::byte_array::ByteArray;
 
 use bytes::Bytes;
 use encoding::{
@@ -44,6 +45,7 @@ use crate::{
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
+use crate::thing::entity::Entity;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Relation<'a> {
@@ -303,6 +305,12 @@ impl<'a> Relation<'a> {
                 delete_count,
             )
         }
+    }
+
+    pub fn next_possible(&self) -> Relation<'static> {
+        let mut bytes = ByteArray::from(self.vertex.bytes());
+        bytes.increment().unwrap();
+        Relation::new(ObjectVertex::new(Bytes::Array(bytes)))
     }
 
     pub fn into_owned(self) -> Relation<'static> {

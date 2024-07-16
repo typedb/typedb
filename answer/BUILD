@@ -13,6 +13,7 @@ rust_library(
         "*.rs",
     ]),
     deps = [
+        "//common/bytes",
         "//concept",
         "//encoding",
     ],

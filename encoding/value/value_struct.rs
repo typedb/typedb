@@ -11,6 +11,7 @@
  */
 
 use std::{collections::HashMap, ops::Range, sync::Arc};
+use std::hash::{Hash, Hasher};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use primitive::either::Either;
@@ -145,6 +146,16 @@ impl<'a> StructValue<'a> {
             debug_assert_eq!(*idx, popped);
         }
         Ok(())
+    }
+}
+
+impl<'a> Hash for StructValue<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Hash::hash(&self.definition_key, state);
+        for (id, value) in self.fields.iter() {
+            Hash::hash(id, state);
+            Hash::hash(value, state);
+        }
     }
 }
 

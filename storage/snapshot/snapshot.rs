@@ -512,7 +512,7 @@ impl Error for SnapshotError {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,)]
 pub enum SnapshotGetError {
     MVCCRead { source: MVCCReadError },
     ExpectedRequiredKeyToExist { key: StorageKey<'static, BUFFER_KEY_INLINE> },

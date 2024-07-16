@@ -339,7 +339,7 @@ impl SortedJoinExecutor {
         debug_assert!(self.output.is_none() && (self.input.is_none() || !self.input.as_mut().unwrap().peek().is_some()));
         self.input = Some(Peekable::new(BatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
-        self.create_intersection_iterators(snapshot, thing_manager)?;
+        self.may_create_intersection_iterators(snapshot, thing_manager)?;
         self.may_compute_next_batch(snapshot, thing_manager)?;
         Ok(self.output.take())
     }
@@ -350,6 +350,7 @@ impl SortedJoinExecutor {
         thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
         debug_assert!(self.output.is_none());
+        self.may_create_intersection_iterators(snapshot, thing_manager)?;
         self.may_compute_next_batch(snapshot, thing_manager)?;
         Ok(self.output.take())
     }
@@ -394,26 +395,27 @@ impl SortedJoinExecutor {
                 let intersection = &self.intersection_row[self.sort_variable_position.as_usize()];
                 let iterator = &mut self.iterators[0];
                 while iterator.has_value() && iterator.peek_sorted_value_equals(intersection)? {
-                    iterator.advance()?;
+                    iterator.advance_single()?;
                 }
                 self.compute_next_row(snapshot, thing_manager)
             }
         } else {
-            loop {
+            while !self.iterators.is_empty() {
                 let found = self.find_intersection()?;
                 if found {
                     self.record_intersection()?;
-                    self.advance_intersection_iterators()?;
+                    self.counting_advance_intersection_iterators()?;
                     self.may_activate_cartesian(snapshot, thing_manager)?;
                     return Ok(true);
                 } else {
                     self.iterators.clear();
                     let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone())?;
                     if self.input.as_mut().unwrap().peek().is_some() {
-                        self.create_intersection_iterators(snapshot, thing_manager)?;
+                        self.may_create_intersection_iterators(snapshot, thing_manager)?;
                     }
                 }
             }
+            Ok(false)
         }
     }
 
@@ -465,19 +467,20 @@ impl SortedJoinExecutor {
                     }
                     Ordering::Equal => {}
                     Ordering::Greater => {
+                        // TODO: use seek()
                         let current_max = &mut containing_max[max_index].peek_sorted_value().unwrap().unwrap();
                         let iter_i = &mut containing_i[i_index];
-                        let iterator_status = iter_i.skip_to_sorted_value(current_max)?;
-                        match iterator_status {
+                        let skip_result = iter_i.counting_skip_to_sorted_value(current_max)?;
+                        match skip_result {
                             None => {
                                 failed = true;
                                 break;
                             }
-                            Some(Ordering::Less) => {
+                            Some((Ordering::Less, _)) => {
                                 unreachable!("Skip to should always be empty or equal/greater than the target")
                             }
-                            Some(Ordering::Equal) => {}
-                            Some(Ordering::Greater) => {
+                            Some((Ordering::Equal, _)) => {}
+                            Some((Ordering::Greater, _)) => {
                                 current_max_index = i;
                                 retry = true;
                             }
@@ -495,25 +498,28 @@ impl SortedJoinExecutor {
         }
     }
 
-    fn create_intersection_iterators(
+    fn may_create_intersection_iterators(
         &mut self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptReadError> {
         debug_assert!(self.iterators.is_empty());
-        let peek = self.input.as_mut().unwrap().peek().unwrap();
-        let next_row: &ImmutableRow<'_> = peek.as_ref().map_err(|err| (*err).clone())?;
-        for executor in &self.instruction_executors {
-            self.iterators.push(executor.get_iterator(snapshot, thing_manager, next_row.as_reference())?);
+        let peek = self.input.as_mut().unwrap().peek();
+        if let Some(input) = peek {
+            let next_row: &ImmutableRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
+            for executor in &self.instruction_executors {
+                self.iterators.push(executor.get_iterator(snapshot, thing_manager, next_row.as_reference())?);
+            }
         }
         Ok(())
     }
 
-    fn advance_intersection_iterators(&mut self) -> Result<(), ConceptReadError> {
+    fn counting_advance_intersection_iterators(&mut self) -> Result<usize, ConceptReadError> {
+        let mut multiplicity = 1;
         for iter in &mut self.iterators {
-            let _ = iter.advance()?;
+            multiplicity *= iter.counting_advance_past(ImmutableRow::new(&self.intersection_row))?;
         }
-        Ok(())
+        Ok(multiplicity)
     }
 
     fn clear_intersection_iterators(&mut self) {
@@ -535,13 +541,14 @@ impl SortedJoinExecutor {
         self.intersection_row.fill(VariableValue::Empty);
         let mut row = Row::new(&mut self.intersection_row);
         for iter in &mut self.iterators {
-            // iter.write_values_and_advance_optimised(&mut row).map_err(|err| err.clone())?
             iter.write_values(&mut row)?
         }
 
         let input_row = self.input.as_mut().unwrap().peek().unwrap().as_ref().map_err(|err| (*err).clone())?;
         for position in self.outputs_selected.iter_selected() {
-            row.set(position, input_row.get(position).clone().into_owned())
+            if position.as_usize() < input_row.width() {
+                row.set(position, input_row.get(position).clone().into_owned())
+            }
         }
         Ok(())
     }
@@ -623,8 +630,9 @@ impl CartesianIterator {
                 let iterator = match preexisting_iterator {
                     None => self.reopen_iterator(snapshot, thing_manager, &iterator_executors[index])?,
                     Some(mut iter) => {
-                        let ordering = iter.skip_to_sorted_value(intersection)?;
-                        debug_assert!(ordering.is_some() && ordering.unwrap().is_eq());
+                        // TODO: use seek()
+                        let skip_result = iter.counting_skip_to_sorted_value(intersection)?;
+                        debug_assert!(skip_result.is_some() && skip_result.unwrap().0.is_eq());
                         iter
                     }
                 };
@@ -648,7 +656,7 @@ impl CartesianIterator {
         loop {
             let iterator_index = self.cartesian_executor_indices[executor_index];
             let iter = (&mut self.iterators)[iterator_index].as_mut().unwrap();
-            iter.advance()?;
+            iter.advance_single()?;
             if !iter.peek_sorted_value_equals(intersection)? {
                 if executor_index == 0 {
                     self.is_active = false;
@@ -673,7 +681,8 @@ impl CartesianIterator {
         let mut reopened =
             executor.get_iterator(snapshot, thing_manager, ImmutableRow::new(&self.intersection_source))?;
         let intersection = &self.intersection_source[self.sort_variable_position.as_usize()];
-        reopened.skip_to_sorted_value(intersection)?;
+        // TODO: use seek()
+        reopened.counting_skip_to_sorted_value(intersection)?;
         Ok(reopened)
     }
 
