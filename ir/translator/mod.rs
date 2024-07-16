@@ -4,6 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod block_builder;
 mod constraint_builder;
 pub mod function_builder;
-pub mod block_builder;

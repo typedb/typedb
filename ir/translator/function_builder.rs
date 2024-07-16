@@ -14,10 +14,11 @@ use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
     program::{
         block::FunctionalBlock,
-        function::{FunctionDefinitionError, FunctionIR, Reducer, ReturnOperationIR},
+        function::{FunctionIR, Reducer, ReturnOperationIR},
         function_signature::{
             FunctionID, FunctionManagerIndexInjectionTrait, FunctionSignature, FunctionSignatureIndex,
         },
+        FunctionDefinitionError,
     },
     translator::block_builder::TypeQLBuilder,
 };

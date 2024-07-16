@@ -14,7 +14,7 @@ use primitive::maybe_owns::MaybeOwns;
 
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
-    program::function::FunctionReadError,
+    program::FunctionReadError,
     translator::function_builder::TypeQLFunctionBuilder,
 };
 

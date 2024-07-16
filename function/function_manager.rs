@@ -21,12 +21,12 @@ use encoding::{
 use ir::{
     inference::type_inference::infer_types_for_functions,
     program::{
-        function::FunctionReadError,
         function_signature::{
             EmptySchemaFunctionIndex, FunctionID, FunctionIDTrait, FunctionManagerIndexInjectionTrait,
             FunctionSignature, FunctionSignatureIndex,
         },
         program::{Program, SchemaFunctionCache},
+        FunctionReadError,
     },
     translator::function_builder::TypeQLFunctionBuilder,
 };
@@ -255,7 +255,7 @@ pub mod tests {
 
     use crate::{
         function_cache::FunctionCache,
-        function_manager::{tests::schema_consts::setup_types, FunctionManager, FunctionManagerIndex},
+        function_manager::{tests::test_schema::setup_types, FunctionManager, FunctionManagerIndex},
     };
 
     fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
@@ -279,8 +279,7 @@ pub mod tests {
         let storage = setup_storage();
         let type_manager =
             TypeManager::new(Arc::new(DefinitionKeyGenerator::new()), Arc::new(TypeVertexGenerator::new()), None);
-        let ((type_animal, type_cat, type_dog), _, _) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager);
+        let ((type_animal, type_cat, type_dog), _) = setup_types(storage.clone().open_snapshot_write(), &type_manager);
         let functions_to_define = vec!["
         fun cat_names($c: animal) -> { name } :
             match
@@ -353,7 +352,7 @@ pub mod tests {
         }
     }
 
-    pub(crate) mod schema_consts {
+    pub(crate) mod test_schema {
         use std::borrow::Borrow;
 
         use answer::Type as TypeAnnotation;
@@ -374,18 +373,11 @@ pub mod tests {
         pub(crate) const LABEL_CATNAME: &str = "cat-name";
         pub(crate) const LABEL_DOGNAME: &str = "dog-name";
 
-        pub(crate) const LABEL_FEARS: &str = "fears";
-        pub(crate) const LABEL_HAS_FEAR: &str = "has-fear";
-        pub(crate) const LABEL_IS_FEARED: &str = "is-feared";
-
         pub(crate) fn setup_types<Snapshot: WritableSnapshot + CommittableSnapshot<WALClient>>(
             snapshot_: Snapshot,
             type_manager: &TypeManager,
-        ) -> (
-            (TypeAnnotation, TypeAnnotation, TypeAnnotation),
-            (TypeAnnotation, TypeAnnotation, TypeAnnotation),
-            (TypeAnnotation, TypeAnnotation, TypeAnnotation),
-        ) {
+        ) -> ((TypeAnnotation, TypeAnnotation, TypeAnnotation), (TypeAnnotation, TypeAnnotation, TypeAnnotation))
+        {
             // dog sub animal, owns dog-name; cat sub animal owns cat-name;
             // cat-name sub animal-name; dog-name sub animal-name;
             let mut snapshot = snapshot_;
@@ -422,17 +414,6 @@ pub mod tests {
             cat_owns.set_override(&mut snapshot, type_manager, animal_owns.clone()).unwrap();
             dog_owns.set_override(&mut snapshot, type_manager, animal_owns.clone()).unwrap();
 
-            // Relations
-            let fears = type_manager.create_relation_type(&mut snapshot, &Label::build(LABEL_FEARS), false).unwrap();
-            let has_fear =
-                fears.create_relates(&mut snapshot, &type_manager, LABEL_HAS_FEAR, Ordering::Unordered).unwrap().role();
-            let is_feared = fears
-                .create_relates(&mut snapshot, &type_manager, LABEL_IS_FEARED, Ordering::Unordered)
-                .unwrap()
-                .role();
-            cat.set_plays(&mut snapshot, &type_manager, has_fear.clone()).unwrap();
-            dog.set_plays(&mut snapshot, &type_manager, is_feared.clone()).unwrap();
-
             snapshot.commit().unwrap();
 
             (
@@ -441,11 +422,6 @@ pub mod tests {
                     TypeAnnotation::Attribute(name),
                     TypeAnnotation::Attribute(catname),
                     TypeAnnotation::Attribute(dogname),
-                ),
-                (
-                    TypeAnnotation::Relation(fears),
-                    TypeAnnotation::RoleType(has_fear),
-                    TypeAnnotation::RoleType(is_feared),
                 ),
             )
         }

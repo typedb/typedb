@@ -79,6 +79,7 @@ impl<'cx> ConjunctionBuilder<'cx> {
             self.conjunction.nested_patterns.last_mut().and_then(NestedPattern::as_disjunction_mut).unwrap();
         DisjunctionBuilder::new(self.context, self.conjunction.scope_id, disjunction)
     }
+
     pub fn add_negation(&mut self) -> ConjunctionBuilder<'_> {
         let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id);
         let negation = Negation::new(nested_scope_id);

@@ -9,7 +9,7 @@ use std::{error::Error, fmt};
 use encoding::error::EncodingError;
 use ir::{
     inference::TypeInferenceError,
-    program::function::{FunctionDefinitionError, FunctionReadError},
+    program::{FunctionDefinitionError, FunctionReadError},
 };
 use storage::{snapshot::SnapshotGetError, ReadSnapshotOpenError};
 

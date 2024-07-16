@@ -30,7 +30,7 @@ pub struct Constraints {
     scope: ScopeId,
     constraints: Vec<Constraint<Variable>>,
 
-    // TODO: could also store indexes into the Constraints vec? Depends how expensive Constraints are() and if we delete
+    // TODO: could also store indexes into the Constraints vec? Depends how expensive Constraints are and if we delete
     left_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
     right_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
     filter_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,

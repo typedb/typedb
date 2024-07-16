@@ -12,10 +12,11 @@ use crate::{
     inference::type_inference::{FunctionAnnotations, TypeAnnotations},
     program::{
         block::FunctionalBlock,
-        function::{FunctionDefinitionError, FunctionIR},
+        function::FunctionIR,
         function_signature::{FunctionID, FunctionIDTrait, FunctionManagerIndexInjectionTrait, FunctionSignatureIndex},
+        FunctionDefinitionError, ProgramDefinitionError,
     },
-    translator::{function_builder::TypeQLFunctionBuilder, block_builder::TypeQLBuilder},
+    translator::{block_builder::TypeQLBuilder, function_builder::TypeQLFunctionBuilder},
 };
 
 pub struct Program {
@@ -48,12 +49,11 @@ impl Program {
         (entry, functions)
     }
 
-    // TODO: ProgramDefinitionError? ---> Yes
     pub fn compile(
         schema_functions: &impl FunctionManagerIndexInjectionTrait,
         match_: &typeql::query::stage::Match,
         preamble_functions: Vec<&typeql::Function>,
-    ) -> Result<Self, FunctionDefinitionError> {
+    ) -> Result<Self, ProgramDefinitionError> {
         let preamble_index = preamble_functions
             .iter()
             .enumerate()
@@ -67,10 +67,13 @@ impl Program {
         let function_index = FunctionSignatureIndex::new(schema_functions, preamble_index);
         let functions: Vec<FunctionIR> = preamble_functions
             .iter()
-            .map(|function| TypeQLFunctionBuilder::build_ir(&function_index, &function))
-            .collect::<Result<Vec<FunctionIR>, FunctionDefinitionError>>()?;
+            .map(|function| {
+                TypeQLFunctionBuilder::build_ir(&function_index, &function)
+                    .map_err(|source| ProgramDefinitionError::FunctionDefinition { source })
+            })
+            .collect::<Result<Vec<FunctionIR>, ProgramDefinitionError>>()?;
         let entry = TypeQLBuilder::build_match(&function_index, match_)
-            .map_err(|source| FunctionDefinitionError::PatternDefinition { source })?;
+            .map_err(|source| ProgramDefinitionError::PatternDefinition { source })?;
 
         Ok(Self { entry, functions })
     }
@@ -138,6 +141,14 @@ impl SchemaFunctionCache {
     }
 }
 
+pub trait CompiledFunctionCache {
+    type KeyType;
+
+    fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR>;
+
+    fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations>;
+}
+
 impl CompiledFunctionCache for SchemaFunctionCache {
     type KeyType = DefinitionKey<'static>;
 
@@ -148,13 +159,6 @@ impl CompiledFunctionCache for SchemaFunctionCache {
     fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations> {
         self.annotations.get(id.as_usize())?.as_ref()
     }
-}
-
-pub trait CompiledFunctionCache {
-    type KeyType;
-    fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR>;
-
-    fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations>;
 }
 
 // May hold IR & Annotations for either Schema functions or Preamble functions

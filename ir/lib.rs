@@ -14,7 +14,7 @@ use answer::variable::Variable;
 
 use crate::{
     pattern::{constraint::Constraint, variable_category::VariableCategory},
-    program::function::FunctionReadError,
+    program::FunctionReadError,
 };
 
 pub mod inference;
