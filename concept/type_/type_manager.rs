@@ -1809,7 +1809,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, type_.clone())
+        OperationTimeValidation::validate_no_subtypes_for_type_abstractness_unset(snapshot, type_.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_value_type_compatible_with_abstractness(

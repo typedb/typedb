@@ -9,9 +9,11 @@ use std::{
     hash::Hash,
 };
 
-use encoding::graph::type_::{CapabilityKind, Kind};
+use encoding::graph::{
+    definition::r#struct::StructDefinition,
+    type_::{CapabilityKind, Kind},
+};
 use itertools::Itertools;
-use encoding::graph::definition::r#struct::StructDefinition;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -1023,62 +1025,61 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-
-// TODO: WiP
-//
-// fn validate_owns_cardinality_wip_supercool_version<T>( // TODO: Call it only for root
-//     type_manager: &TypeManager,
-//     snapshot: &impl ReadableSnapshot,
-//     root_type: T,
-//     validation_errors: &mut Vec<SchemaValidationError>,
-// ) -> Result<(), ConceptReadError>
-//     where
-//         T: ObjectTypeAPI<'static> + KindAPI<'static>,
-// {
-//     let mut cardinality_connections: HashMap<Owns<'static>, HashSet<Owns<'static>>> = HashMap::new();
-//     let mut cardinalities: HashMap<Owns<'static>, AnnotationCardinality> = HashMap::new();
-//
-//     let types = TypeReader::get_subtypes_transitive(snapshot, root_type)?;
-//
-//     for type_ in types { // TODO: Debug on a test case tomorrow!
-//         let owns_declared: HashSet<Owns<'static>> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
-//
-//         for owns in owns_declared {
-//             if !cardinalities.contains_key(&owns) {
-//                 cardinalities.insert(owns.clone(), owns.get_cardinality(snapshot, type_manager)?);
-//             }
-//
-//             let mut current_overridden_owns = TypeReader::get_capabilities_override(snapshot, owns.clone())?;
-//             while let Some(overridden_owns) = current_overridden_owns {
-//                 if !cardinality_connections.contains_key(&overridden_owns) {
-//                     cardinality_connections.insert(overridden_owns.clone(), HashSet::new());
-//                 }
-//                 cardinality_connections.get_mut(&overridden_owns).unwrap().insert(owns.clone());
-//
-//                 if !cardinalities.contains_key(&overridden_owns) {
-//                     cardinalities.insert(overridden_owns.clone(), overridden_owns.get_cardinality(snapshot, type_manager)?);
-//                 }
-//
-//                 current_overridden_owns = TypeReader::get_capabilities_override(snapshot, owns.clone())?;
-//             }
-//         }
-//     }
-//
-//     for (top_owns, all_bottom_owns) in cardinality_connections {
-//         let top_cardinality = cardinalities.get(&top_owns).unwrap();
-//         let bottom_cardinality = all_bottom_owns.iter().map(|owns| cardinalities.get(owns).unwrap()).sum();
-//
-//         if !top_cardinality.narrowed_correctly_by(bottom_cardinality) {
-//             validation_errors.push(SchemaValidationError::SummarizedCardinalityOfEdgesOverridingEdgeOverflowsOverridenCardinlaity(
-//                 CapabilityKind::Owns,
-//                 get_label_or_concept_read_err(snapshot, top_owns.owner())?,
-//                 get_label_or_concept_read_err(snapshot, top_owns.attribute())?,
-//                 top_cardinality.clone(),
-//                 bottom_cardinality.clone(),
-//             ));
-//         }
-//     }
-//
-//     Ok(())
-// }
+    // TODO: WiP
+    //
+    // fn validate_owns_cardinality_wip_supercool_version<T>( // TODO: Call it only for root
+    //     type_manager: &TypeManager,
+    //     snapshot: &impl ReadableSnapshot,
+    //     root_type: T,
+    //     validation_errors: &mut Vec<SchemaValidationError>,
+    // ) -> Result<(), ConceptReadError>
+    //     where
+    //         T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    // {
+    //     let mut cardinality_connections: HashMap<Owns<'static>, HashSet<Owns<'static>>> = HashMap::new();
+    //     let mut cardinalities: HashMap<Owns<'static>, AnnotationCardinality> = HashMap::new();
+    //
+    //     let types = TypeReader::get_subtypes_transitive(snapshot, root_type)?;
+    //
+    //     for type_ in types { // TODO: Debug on a test case tomorrow!
+    //         let owns_declared: HashSet<Owns<'static>> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
+    //
+    //         for owns in owns_declared {
+    //             if !cardinalities.contains_key(&owns) {
+    //                 cardinalities.insert(owns.clone(), owns.get_cardinality(snapshot, type_manager)?);
+    //             }
+    //
+    //             let mut current_overridden_owns = TypeReader::get_capabilities_override(snapshot, owns.clone())?;
+    //             while let Some(overridden_owns) = current_overridden_owns {
+    //                 if !cardinality_connections.contains_key(&overridden_owns) {
+    //                     cardinality_connections.insert(overridden_owns.clone(), HashSet::new());
+    //                 }
+    //                 cardinality_connections.get_mut(&overridden_owns).unwrap().insert(owns.clone());
+    //
+    //                 if !cardinalities.contains_key(&overridden_owns) {
+    //                     cardinalities.insert(overridden_owns.clone(), overridden_owns.get_cardinality(snapshot, type_manager)?);
+    //                 }
+    //
+    //                 current_overridden_owns = TypeReader::get_capabilities_override(snapshot, owns.clone())?;
+    //             }
+    //         }
+    //     }
+    //
+    //     for (top_owns, all_bottom_owns) in cardinality_connections {
+    //         let top_cardinality = cardinalities.get(&top_owns).unwrap();
+    //         let bottom_cardinality = all_bottom_owns.iter().map(|owns| cardinalities.get(owns).unwrap()).sum();
+    //
+    //         if !top_cardinality.narrowed_correctly_by(bottom_cardinality) {
+    //             validation_errors.push(SchemaValidationError::SummarizedCardinalityOfEdgesOverridingEdgeOverflowsOverridenCardinlaity(
+    //                 CapabilityKind::Owns,
+    //                 get_label_or_concept_read_err(snapshot, top_owns.owner())?,
+    //                 get_label_or_concept_read_err(snapshot, top_owns.attribute())?,
+    //                 top_cardinality.clone(),
+    //                 bottom_cardinality.clone(),
+    //             ));
+    //         }
+    //     }
+    //
+    //     Ok(())
+    // }
 }

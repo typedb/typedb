@@ -5,7 +5,8 @@
  */
 
 use encoding::graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding};
-use storage::{snapshot::ReadableSnapshot};
+use storage::snapshot::ReadableSnapshot;
+
 use crate::type_::type_manager::type_reader::TypeReader;
 
 pub struct StructDefinitionCache {

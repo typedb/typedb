@@ -11,6 +11,7 @@ use std::{
 
 use encoding::{
     graph::{
+        definition::definition_key::DefinitionKey,
         thing::{edge::ThingEdgeRolePlayer, vertex_object::ObjectVertex},
         Typed,
     },
@@ -18,7 +19,6 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use itertools::Itertools;
-use encoding::graph::definition::definition_key::DefinitionKey;
 use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
@@ -113,6 +113,21 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(SchemaValidationError::CannotDeleteTypeWithExistingSubtypes(get_label_or_schema_err(snapshot, type_)?))
+        }
+    }
+
+    pub(crate) fn validate_no_subtypes_for_type_abstractness_unset(
+        snapshot: &impl ReadableSnapshot,
+        type_: AttributeType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let no_subtypes =
+            TypeReader::get_subtypes(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?.is_empty();
+        if no_subtypes {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::CannotUnsetAbstractnessOfAttributeTypeAsItHasSubtypes(get_label_or_schema_err(
+                snapshot, type_,
+            )?))
         }
     }
 
@@ -1499,16 +1514,17 @@ impl OperationTimeValidation {
             return Err(SchemaValidationError::StructCannotBeDeletedAsItsUsedAsValueTypeForAttributeTypes(
                 struct_definition.name,
                 owners.len(),
-            ))
+            ));
         }
 
-        let usages_in_struct_definition_fields = TypeReader::get_struct_definition_usages_in_struct_definitions(snapshot)
-            .map_err(SchemaValidationError::ConceptRead)?;
+        let usages_in_struct_definition_fields =
+            TypeReader::get_struct_definition_usages_in_struct_definitions(snapshot)
+                .map_err(SchemaValidationError::ConceptRead)?;
         if let Some(owners) = usages_in_struct_definition_fields.get(definition_key) {
             return Err(SchemaValidationError::StructCannotBeDeletedAsItsUsedAsValueTypeForStructs(
                 struct_definition.name,
                 owners.len(),
-            ))
+            ));
         }
 
         Ok(())

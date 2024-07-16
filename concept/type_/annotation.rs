@@ -227,8 +227,8 @@ impl AnnotationRange {
                             start_inclusive < &end_inclusive.clone().unwrap_date_time_tz()
                         }
                         Value::String(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_string(),
-                        Value::Duration(start_inclusive) => unreachable!("Cannot use duration for AnnotationRange"),
-                        Value::Struct(start_inclusive) => unreachable!("Cannot use structs for AnnotationRange"),
+                        Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
+                        Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
                     }
                 }
             },
