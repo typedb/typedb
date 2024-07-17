@@ -243,7 +243,7 @@ impl<'a> RoleType<'a> {
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
-                type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())?
+                type_manager.set_role_type_annotation_abstract(snapshot, self.clone().into_owned())?
             }
         };
         Ok(())

@@ -655,6 +655,26 @@ impl OperationTimeValidation {
         }
     }
 
+    pub(crate) fn validate_relates_abstractness(
+        snapshot: &impl ReadableSnapshot,
+        role_type: RoleType<'static>,
+        set_abstract: Option<bool>,
+    ) -> Result<(), SchemaValidationError> {
+        let relates = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone()).map_err(SchemaValidationError::ConceptRead)?;
+        let is_relation_abstract =
+            type_is_abstract(snapshot, relates.relation()).map_err(SchemaValidationError::ConceptRead)?;
+        let is_role_abstract = set_abstract.unwrap_or(
+            type_is_abstract(snapshot, role_type.clone()).map_err(SchemaValidationError::ConceptRead)?);
+
+        match (&is_relation_abstract, &is_role_abstract) {
+            (true, true) | (false, false) | (true, false) => Ok(()),
+            (false, true) => Err(SchemaValidationError::NonAbstractCannotRelateAbstract(
+                get_label_or_schema_err(snapshot, relates.relation())?,
+                get_label_or_schema_err(snapshot, role_type)?,
+            )),
+        }
+    }
+
     pub(crate) fn validate_cardinality_arguments(
         cardinality: AnnotationCardinality,
     ) -> Result<(), SchemaValidationError> {

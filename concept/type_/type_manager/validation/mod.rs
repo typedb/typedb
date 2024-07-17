@@ -93,8 +93,7 @@ pub enum SchemaValidationError {
         AnnotationCardinality,
         AnnotationCardinality,
     ),
-    SummarizedCardinalityOfEdgesOverridingEdgeOverflowsOverridenCardinlaity(
-        // TODO: Find a better name
+    SummarizedCardinalityOfEdgesOverridingSingleEdgeOverflowsOverriddenCardinality(
         CapabilityKind,
         Label<'static>,
         Label<'static>,
@@ -209,7 +208,7 @@ impl Error for SchemaValidationError {
             Self::InvalidValuesArguments(_) => None,
             Self::KeyShouldNarrowInheritedCardinality(_, _, _, _) => None,
             Self::CardinalityDoesNotNarrowInheritedCardinality(_, _, _, _, _, _) => None,
-            Self::SummarizedCardinalityOfEdgesOverridingEdgeOverflowsOverridenCardinlaity(_, _, _, _, _) => None,
+            Self::SummarizedCardinalityOfEdgesOverridingSingleEdgeOverflowsOverriddenCardinality(_, _, _, _, _) => None,
             Self::OnlyOneRegexCanBeSetForTypeHierarchy(_, _, _, _) => None,
             Self::RangeShouldNarrowInheritedRange(_, _, _, _) => None,
             Self::ValuesShouldNarrowInheritedValues(_, _, _, _) => None,

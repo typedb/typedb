@@ -57,22 +57,22 @@ macro_rules! validate_types {
             type_manager: &TypeManager,
             snapshot: &impl ReadableSnapshot,
             validation_errors: &mut Vec<SchemaValidationError>,
-        ) -> Result<Option<$type_<'static>>, ConceptReadError> {
+        ) -> Result<(), ConceptReadError> {
             let root_label = $kind.root_label();
             let root = TypeReader::get_labelled_type::<$type_<'static>>(snapshot, &root_label)?;
 
             match root {
-                Some(ref root) => {
+                Some(root) => {
                     $func(type_manager, snapshot, root.clone(), validation_errors)?;
 
-                    for subtype in TypeReader::get_subtypes_transitive(snapshot, root.clone())? {
+                    for subtype in TypeReader::get_subtypes_transitive(snapshot, root)? {
                         $func(type_manager, snapshot, subtype, validation_errors)?;
                     }
                 }
                 None => validation_errors.push(SchemaValidationError::RootHasBeenCorrupted(root_label)),
             };
 
-            Ok(root)
+            Ok(())
         }
     };
 }
@@ -91,29 +91,10 @@ impl CommitTimeValidation {
         snapshot: &impl ReadableSnapshot,
     ) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
         let mut errors = Vec::new();
-        let mut entity_root = None;
-        let mut relation_root = None;
-        let invalid_types = produced_errors!(
-            errors,
-            {
-                entity_root = Self::validate_entity_types(type_manager, snapshot, &mut errors)?;
-                relation_root = Self::validate_relation_types(type_manager, snapshot, &mut errors)?;
-                Self::validate_attribute_types(type_manager, snapshot, &mut errors)?;
-                Self::validate_struct_definitions(type_manager, snapshot, &mut errors)?;
-            }
-        );
-
-        if !invalid_types {
-            let entity_root = entity_root.unwrap();
-            Self::validate_global_cardinality::<Owns<'static>, EntityType<'static>>(type_manager, snapshot, entity_root.clone(), &mut errors)?;
-            Self::validate_global_cardinality::<Plays<'static>, EntityType<'static>>(type_manager, snapshot, entity_root, &mut errors)?;
-
-            let relation_root = relation_root.unwrap();
-            Self::validate_global_cardinality::<Relates<'static>, RelationType<'static>>(type_manager, snapshot, relation_root.clone(), &mut errors)?;
-            Self::validate_global_cardinality::<Owns<'static>, RelationType<'static>>(type_manager, snapshot, relation_root.clone(), &mut errors)?;
-            Self::validate_global_cardinality::<Plays<'static>, RelationType<'static>>(type_manager, snapshot, relation_root, &mut errors)?;
-        }
-
+        Self::validate_entity_types(type_manager, snapshot, &mut errors)?;
+        Self::validate_relation_types(type_manager, snapshot, &mut errors)?;
+        Self::validate_attribute_types(type_manager, snapshot, &mut errors)?;
+        Self::validate_struct_definitions(type_manager, snapshot, &mut errors)?;
         Ok(errors)
     }
 
@@ -151,7 +132,7 @@ impl CommitTimeValidation {
         );
         if !ill_relates {
             Self::validate_abstractness_matches_with_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
-            Self::validate_relates_cardinality_isolated_narrowing(type_manager, snapshot, type_.clone(), validation_errors)?;
+            Self::validate_capability_cardinality_isolated_narrowing::<Relates<'static>, RelationType<'static>>(type_manager, snapshot, type_.clone(), validation_errors)?;
         }
 
         Ok(())
@@ -227,7 +208,7 @@ impl CommitTimeValidation {
         );
         if !ill_owns {
             Self::validate_abstractness_matches_with_owns(type_manager, snapshot, type_.clone(), validation_errors)?;
-            Self::validate_owns_cardinality_isolated_narrowing(type_manager, snapshot, type_.clone(), validation_errors)?;
+            Self::validate_capability_cardinality_isolated_narrowing::<Owns<'static>, T>(type_manager, snapshot, type_.clone(), validation_errors)?;
         }
 
         let ill_plays = produced_errors!(
@@ -236,7 +217,7 @@ impl CommitTimeValidation {
         );
         if !ill_plays {
             Self::validate_abstractness_matches_with_plays(type_manager, snapshot, type_.clone(), validation_errors)?;
-            Self::validate_plays_cardinality_isolated_narrowing(type_manager, snapshot, type_.clone(), validation_errors)?;
+            Self::validate_capability_cardinality_isolated_narrowing::<Plays<'static>, T>(type_manager, snapshot, type_.clone(), validation_errors)?;
         }
 
         Ok(())
@@ -344,7 +325,6 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    // TODO: Add BDD tests and operation time check as for owns
     fn validate_abstractness_matches_with_plays<T>(
         _type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
@@ -372,7 +352,6 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    // TODO: Add BDD tests and operation time check as for owns
     fn validate_abstractness_matches_with_relates(
         _type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
@@ -729,95 +708,66 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    // TODO: Can probably just move it into main check function...
-    fn validate_owns_cardinality_isolated_narrowing<T>(
+    fn validate_capability_cardinality_isolated_narrowing<CAP: Capability<'static>, T: KindAPI<'static>>(
         type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
         type_: T,
-        validation_errors: &mut Vec<SchemaValidationError>,
-    ) -> Result<(), ConceptReadError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
-    {
-        let owns_declared: HashSet<Owns<'static>> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
-
-        for owns in owns_declared {
-            if let Some(owns_override) = TypeReader::get_capabilities_override(snapshot, owns.clone())? {
-                let owns_cardinality = owns.get_cardinality(snapshot, type_manager)?;
-                let owns_override_cardinality = owns_override.get_cardinality(snapshot, type_manager)?;
-
-                if !owns_override_cardinality.narrowed_correctly_by(&owns_cardinality) {
-                    validation_errors.push(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
-                        CapabilityKind::Owns,
-                        get_label_or_concept_read_err(snapshot, owns.owner())?,
-                        get_label_or_concept_read_err(snapshot, owns_override.owner())?,
-                        get_label_or_concept_read_err(snapshot, owns.attribute())?,
-                        owns_cardinality,
-                        owns_override_cardinality,
-                    ));
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn validate_plays_cardinality_isolated_narrowing<T>(
-        type_manager: &TypeManager,
-        snapshot: &impl ReadableSnapshot,
-        type_: T,
-        validation_errors: &mut Vec<SchemaValidationError>,
-    ) -> Result<(), ConceptReadError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
-    {
-        let plays_declared: HashSet<Plays<'static>> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
-
-        for plays in plays_declared {
-            if let Some(plays_override) = TypeReader::get_capabilities_override(snapshot, plays.clone())? {
-                let plays_cardinality = plays.get_cardinality(snapshot, type_manager)?;
-                let plays_override_cardinality = plays_override.get_cardinality(snapshot, type_manager)?;
-
-                if !plays_override_cardinality.narrowed_correctly_by(&plays_cardinality) {
-                    validation_errors.push(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
-                        CapabilityKind::Plays,
-                        get_label_or_concept_read_err(snapshot, plays.player())?,
-                        get_label_or_concept_read_err(snapshot, plays_override.player())?,
-                        get_label_or_concept_read_err(snapshot, plays.role())?,
-                        plays_cardinality,
-                        plays_override_cardinality,
-                    ));
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn validate_relates_cardinality_isolated_narrowing(
-        type_manager: &TypeManager,
-        snapshot: &impl ReadableSnapshot,
-        relation_type: RelationType<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        let relates_declared: HashSet<Relates<'static>> =
-            TypeReader::get_capabilities_declared::<Relates<'static>>(snapshot, relation_type.clone())?;
+        let mut cardinality_connections: HashMap<CAP, HashSet<CAP>> = HashMap::new();
+        let mut cardinalities: HashMap<CAP, AnnotationCardinality> = HashMap::new();
 
-        for relates in relates_declared {
-            if let Some(relates_override) = TypeReader::get_capabilities_override(snapshot, relates.clone())? {
-                let relates_cardinality = relates.get_cardinality(snapshot, type_manager)?;
-                let relates_override_cardinality = relates_override.get_cardinality(snapshot, type_manager)?;
+        let edge_declared: HashSet<CAP> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
 
-                if !relates_override_cardinality.narrowed_correctly_by(&relates_cardinality) {
+        for edge in edge_declared {
+            if !cardinalities.contains_key(&edge) {
+                cardinalities.insert(edge.clone(), edge.get_cardinality(snapshot, type_manager)?);
+            }
+
+            let mut current_overridden_edge = TypeReader::get_capabilities_override(snapshot, edge.clone())?;
+            while let Some(overridden_edge) = current_overridden_edge {
+                if !cardinalities.contains_key(&overridden_edge) {
+                    cardinalities.insert(overridden_edge.clone(), overridden_edge.get_cardinality(snapshot, type_manager)?);
+                }
+
+                if !cardinality_connections.contains_key(&overridden_edge) {
+                    cardinality_connections.insert(overridden_edge.clone(), HashSet::new());
+                }
+                cardinality_connections.get_mut(&overridden_edge).unwrap().insert(edge.clone());
+
+                let overridden_card = cardinalities.get(&overridden_edge).unwrap();
+                let edge_card = cardinalities.get(&overridden_edge).unwrap();
+
+                if !overridden_card.narrowed_correctly_by(edge_card) {
                     validation_errors.push(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
-                        CapabilityKind::Relates,
-                        get_label_or_concept_read_err(snapshot, relates.relation())?,
-                        get_label_or_concept_read_err(snapshot, relates_override.relation())?,
-                        get_label_or_concept_read_err(snapshot, relates.role())?,
-                        relates_cardinality,
-                        relates_override_cardinality,
+                        CAP::KIND,
+                        get_label_or_concept_read_err(snapshot, edge.object())?,
+                        get_label_or_concept_read_err(snapshot, overridden_edge.object())?,
+                        get_label_or_concept_read_err(snapshot, edge.interface())?,
+                        edge_card.clone(),
+                        overridden_card.clone(),
                     ));
                 }
+
+                current_overridden_edge = TypeReader::get_capabilities_override(snapshot, overridden_edge.clone())?;
+            }
+        }
+
+        for (root_edge, inheriting_edges) in cardinality_connections {
+            let kk = inheriting_edges.iter().map(|edge| get_label_or_concept_read_err(snapshot, edge.interface().clone()).unwrap().to_string()).join("+");
+            // println!("ROOT: {:?} VS INHERITING EDGES {:?}", get_label_or_concept_read_err(snapshot, root_edge.interface().clone()).unwrap().to_string(), kk);
+            let root_cardinality = cardinalities.get(&root_edge).unwrap();
+            let inheriting_cardinality = inheriting_edges.iter().map(|edge| cardinalities.get(edge).unwrap().clone()).into_iter().sum();
+
+            if !root_cardinality.narrowed_correctly_by(&inheriting_cardinality) {
+                // println!("WRONG CARD: parent {:?} vs child {:?}", root_cardinality.clone(), inheriting_cardinality.clone());
+                validation_errors.push(SchemaValidationError::SummarizedCardinalityOfEdgesOverridingSingleEdgeOverflowsOverriddenCardinality(
+                    CAP::KIND,
+                    get_label_or_concept_read_err(snapshot, root_edge.object())?,
+                    get_label_or_concept_read_err(snapshot, root_edge.interface())?,
+                    root_cardinality.clone(),
+                    inheriting_cardinality.clone(),
+                ));
             }
         }
 
@@ -1017,7 +967,7 @@ impl CommitTimeValidation {
 
     fn validate_struct_definition_fields(
         _type_manager: &TypeManager,
-        snapshot: &impl ReadableSnapshot,
+        _snapshot: &impl ReadableSnapshot,
         struct_definition: StructDefinition,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
@@ -1025,64 +975,6 @@ impl CommitTimeValidation {
 
         if struct_definition.fields.is_empty() {
             validation_errors.push(SchemaValidationError::StructShouldHaveAtLeastOneField(struct_definition.name));
-        }
-
-        Ok(())
-    }
-
-    // TODO: This is not correct, gonna rewrite! Need to check it on each level
-    fn validate_global_cardinality<CAP: Capability<'static>, T: KindAPI<'static>>(
-        type_manager: &TypeManager,
-        snapshot: &impl ReadableSnapshot,
-        root_type: T,
-        validation_errors: &mut Vec<SchemaValidationError>,
-    ) -> Result<(), ConceptReadError> {
-        let mut cardinality_connections: HashMap<CAP, HashSet<CAP>> = HashMap::new();
-        let mut cardinalities: HashMap<CAP, AnnotationCardinality> = HashMap::new();
-
-        let types = TypeReader::get_subtypes_transitive(snapshot, root_type)?;
-
-        for type_ in types {
-            let edge_declared: HashSet<CAP> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
-
-            for edge in edge_declared {
-                if !cardinalities.contains_key(&edge) {
-                    cardinalities.insert(edge.clone(), edge.get_cardinality(snapshot, type_manager)?);
-                }
-
-                let mut current_overridden_edge = TypeReader::get_capabilities_override(snapshot, edge.clone())?;
-                while let Some(overridden_edge) = current_overridden_edge {
-                    if !cardinality_connections.contains_key(&overridden_edge) {
-                        cardinality_connections.insert(overridden_edge.clone(), HashSet::new());
-                    }
-                    cardinality_connections.get_mut(&overridden_edge).unwrap().insert(edge.clone());
-
-                    if !cardinalities.contains_key(&overridden_edge) {
-                        cardinalities.insert(overridden_edge.clone(), overridden_edge.get_cardinality(snapshot, type_manager)?);
-                    }
-
-                    current_overridden_edge = TypeReader::get_capabilities_override(snapshot, overridden_edge.clone())?;
-                }
-            }
-        }
-
-        println!("NEW ITER");
-        for (root_edge, inheriting_edges) in cardinality_connections {
-            let kk = inheriting_edges.iter().map(|edge| get_label_or_concept_read_err(snapshot, edge.interface().clone()).unwrap().to_string()).join("+");
-            println!("ROOT: {:?} VS INHERITING EDGES {:?}", get_label_or_concept_read_err(snapshot, root_edge.interface().clone()).unwrap().to_string(), kk);
-            let root_cardinality = cardinalities.get(&root_edge).unwrap();
-            let inheriting_cardinality = inheriting_edges.iter().map(|edge| cardinalities.get(edge).unwrap().clone()).into_iter().sum();
-
-            if !root_cardinality.narrowed_correctly_by(&inheriting_cardinality) {
-                println!("WRONG CARD: parent {:?} vs child {:?}", root_cardinality.clone(), inheriting_cardinality.clone());
-                validation_errors.push(SchemaValidationError::SummarizedCardinalityOfEdgesOverridingEdgeOverflowsOverridenCardinlaity(
-                    CAP::KIND,
-                    get_label_or_concept_read_err(snapshot, root_edge.object())?,
-                    get_label_or_concept_read_err(snapshot, root_edge.interface())?,
-                    root_cardinality.clone(),
-                    inheriting_cardinality.clone(),
-                ));
-            }
         }
 
         Ok(())

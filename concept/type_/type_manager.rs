@@ -1765,6 +1765,17 @@ impl TypeManager {
         Ok(())
     }
 
+    pub(crate) fn set_role_type_annotation_abstract(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        role_type: RoleType<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_relates_abstractness(snapshot, role_type.clone(), Some(true)) // set_abstract
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        self.set_annotation_abstract(snapshot, role_type)
+    }
+
     pub(crate) fn set_annotation_abstract(
         &self,
         snapshot: &mut impl WritableSnapshot,
