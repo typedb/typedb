@@ -751,6 +751,7 @@ impl Error for AnnotationError {
     }
 }
 
+// TODO: Use ValueType's hash instead of this hack once it is merged with 3.0 branch!
 mod hash_value {
     use std::hash::{Hash, Hasher};
 
