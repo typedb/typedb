@@ -8,21 +8,15 @@ mod common;
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use answer::variable_value::VariableValue;
 use concept::{
     error::ConceptReadError,
-    thing::{object::ObjectAPI, thing_manager::ThingManager},
-    type_::{type_manager::TypeManager, Ordering, OwnerAPI},
+    thing::object::ObjectAPI,
+    type_::{Ordering, OwnerAPI},
 };
-use durability::wal::WAL;
 use encoding::{
-    graph::{
-        definition::definition_key_generator::DefinitionKeyGenerator,
-        thing::vertex_generator::ThingVertexGenerator,
-        type_::{vertex_generator::TypeVertexGenerator, Kind},
-    },
-    value::{label::Label, value::Value, value_type::ValueType},
-    EncodingKeyspace,
+    graph::type_::Kind,
+    value::{label::Label, value::Value, value_type::ValueType}
+    ,
 };
 use ir::{
     inference::type_inference::infer_types,
@@ -32,17 +26,17 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
-use test_utils::{create_tmp_dir, init_logging, TempDir};
 use traversal::{
-    executor::{pattern_executor::ImmutableRow, program_executor::ProgramExecutor},
+    executor::program_executor::ProgramExecutor,
     planner::{
         pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
         program_plan::ProgramPlan,
     },
 };
+use traversal::executor::batch::ImmutableRow;
 
 use crate::common::{load_managers, setup_storage};
 
@@ -259,6 +253,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
         }
         assert_eq!(rows.len(), 10);
 
+        // sort ordering check
         let attribute_position = *variable_positions.get(&var_attribute).unwrap();
         let mut last_attribute = rows[0].as_ref().unwrap().get(attribute_position);
         for row in rows.iter() {

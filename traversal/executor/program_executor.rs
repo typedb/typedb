@@ -16,11 +16,12 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     executor::{
         function_executor::FunctionExecutor,
-        pattern_executor::{ImmutableRow, PatternExecutor, Row},
+        pattern_executor::PatternExecutor,
         Position,
     },
     planner::program_plan::ProgramPlan,
 };
+use crate::executor::batch::ImmutableRow;
 
 pub struct ProgramExecutor {
     entry: PatternExecutor,

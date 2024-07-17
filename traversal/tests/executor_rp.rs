@@ -23,16 +23,17 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
 use traversal::{
-    executor::{pattern_executor::ImmutableRow, program_executor::ProgramExecutor},
+    executor::program_executor::ProgramExecutor,
     planner::{
         pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
         program_plan::ProgramPlan,
     },
 };
+use traversal::executor::batch::ImmutableRow;
 
 use crate::common::{load_managers, setup_storage};
 

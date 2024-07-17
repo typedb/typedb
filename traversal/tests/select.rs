@@ -6,7 +6,6 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use answer::variable_value::VariableValue;
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
@@ -24,16 +23,17 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
 use traversal::{
-    executor::{pattern_executor::ImmutableRow, program_executor::ProgramExecutor},
+    executor::program_executor::ProgramExecutor,
     planner::{
         pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
         program_plan::ProgramPlan,
     },
 };
+use traversal::executor::batch::ImmutableRow;
 
 use crate::common::{load_managers, setup_storage};
 
@@ -147,27 +147,27 @@ fn anonymous_vars_not_enumerated_or_counted() {
         let (_, thing_manager) = load_managers(storage.clone());
         let thing_manager = Arc::new(thing_manager);
 
-        let variable_positions = executor.entry_variable_positions().clone();
-        let attribute_position = *variable_positions.get(&var_attribute).unwrap();
         let iterator = executor.into_iterator(snapshot, thing_manager);
-
         let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
             .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone()))
             .collect();
 
-        // person 1, empty attr
-        // person 2, empty attr
-        // person 3, empty attr
+        // person1, <something>
+        // person2, <something>
+        // person3, <something>
+
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[0].as_ref().unwrap().multiplicity(), 1);
+        assert_eq!(rows[1].as_ref().unwrap().multiplicity(), 1);
+        assert_eq!(rows[2].as_ref().unwrap().multiplicity(), 1);
 
         for row in rows.iter() {
             let r = row.as_ref().unwrap();
-            debug_assert!(*r.get(attribute_position) == VariableValue::Empty);
             for value in r.clone().into_iter() {
                 print!("{}, ", value);
             }
             println!()
         }
-        assert_eq!(rows.len(), 3);
     }
 }
 
@@ -226,26 +226,26 @@ fn unselected_named_vars_counted() {
         let (_, thing_manager) = load_managers(storage.clone());
         let thing_manager = Arc::new(thing_manager);
 
-        let variable_positions = executor.entry_variable_positions().clone();
-        let attribute_position = *variable_positions.get(&var_attribute).unwrap();
         let iterator = executor.into_iterator(snapshot, thing_manager);
-
         let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
             .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone()))
             .collect();
 
-        // person 1, empty attr
-        // person 2, empty attr
-        // person 3, empty attr
+        // 5x person 1, <something>
+        // 3x person 2, <something>
+        // 2x person 3, <something>
+
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[0].as_ref().unwrap().multiplicity(), 5);
+        assert_eq!(rows[1].as_ref().unwrap().multiplicity(), 3);
+        assert_eq!(rows[2].as_ref().unwrap().multiplicity(), 2);
 
         for row in rows.iter() {
             let r = row.as_ref().unwrap();
-            debug_assert!(*r.get(attribute_position) == VariableValue::Empty);
             for value in r.clone().into_iter() {
                 print!("{}, ", value);
             }
             println!()
         }
-        assert_eq!(rows.len(), 3);
     }
 }

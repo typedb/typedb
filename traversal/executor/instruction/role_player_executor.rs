@@ -6,7 +6,8 @@
 
 use ir::pattern::constraint::RolePlayer;
 
-use crate::executor::{instruction::iterator::InstructionIterator, pattern_executor::Row, Position};
+use crate::executor::{instruction::iterator::InstructionIterator, Position};
+use crate::executor::batch::Row;
 
 pub(crate) struct RolePlayerIteratorExecutor {
     role_player: RolePlayer<Position>,

@@ -6,7 +6,7 @@
 
 use std::{cmp::Ordering, collections::HashSet};
 
-use answer::{variable_value::VariableValue, Thing};
+use answer::{Thing, variable_value::VariableValue};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -32,10 +32,11 @@ use crate::executor::{
             counting_advance_has_unbounded_sorted_owner_iterator, counting_advance_relation_iterator,
         },
         VariableMode,
-    },
-    pattern_executor::{ImmutableRow, Row},
+    }
+    ,
     Position,
 };
+use crate::executor::batch::{ImmutableRow, Row};
 
 pub(crate) enum HasSortedAttributeIterator {
     // Unbounded()

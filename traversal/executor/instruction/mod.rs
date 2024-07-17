@@ -28,11 +28,11 @@ use crate::{
             role_player_executor::RolePlayerIteratorExecutor,
             role_player_reverse_executor::RolePlayerReverseIteratorExecutor,
         },
-        pattern_executor::ImmutableRow,
         Position,
     },
     planner::pattern_plan::Instruction,
 };
+use crate::executor::batch::ImmutableRow;
 
 mod comparison_executor;
 mod comparison_reverse_executor;

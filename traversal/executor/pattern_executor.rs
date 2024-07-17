@@ -5,23 +5,23 @@
  */
 
 use std::{
-    borrow::Cow,
     cmp::Ordering,
     collections::HashMap,
-    fmt::{Display, Formatter},
+    fmt::Display,
     sync::Arc,
 };
+
+use itertools::Itertools;
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::{inference::type_inference::TypeAnnotations, program::block::BlockContext};
-use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     executor::{
-        instruction::{iterator::InstructionIterator, InstructionExecutor},
+        instruction::{InstructionExecutor, iterator::InstructionIterator},
         Position, SelectedPositions,
     },
     planner::pattern_plan::{
@@ -29,6 +29,7 @@ use crate::{
         UnsortedJoinStep,
     },
 };
+use crate::executor::batch::{Batch, BatchRowIterator, ImmutableRow, Row};
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, Position>,
@@ -90,7 +91,7 @@ impl PatternExecutor {
         self,
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
-    ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a>=Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager))
             .flat_map(|batch| BatchRowIterator::new(batch))
     }
@@ -286,6 +287,7 @@ struct SortedJoinExecutor {
     cartesian_iterator: CartesianIterator,
     input: Option<Peekable<BatchRowIterator>>,
     intersection_row: Vec<VariableValue<'static>>,
+    intersection_multiplicity: u64,
     output: Option<Batch>,
 }
 
@@ -332,6 +334,7 @@ impl SortedJoinExecutor {
             ),
             input: None,
             intersection_row: (0..output_width).map(|_| VariableValue::Empty).collect_vec(),
+            intersection_multiplicity: 1,
             output: None,
         })
     }
@@ -385,6 +388,7 @@ impl SortedJoinExecutor {
             self.cartesian_iterator.write_into(row)
         } else {
             row.copy_from(&self.intersection_row);
+            row.set_multiplicity(self.intersection_multiplicity);
             Ok(())
         }
     }
@@ -412,7 +416,7 @@ impl SortedJoinExecutor {
                 let found = self.find_intersection()?;
                 if found {
                     self.record_intersection()?;
-                    self.counting_advance_intersection_iterators()?;
+                    self.advance_intersection_iterators_with_multiplicity()?;
                     self.may_activate_cartesian(snapshot, thing_manager)?;
                     return Ok(true);
                 } else {
@@ -522,12 +526,14 @@ impl SortedJoinExecutor {
         Ok(())
     }
 
-    fn counting_advance_intersection_iterators(&mut self) -> Result<usize, ConceptReadError> {
-        let mut multiplicity = 1;
+    fn advance_intersection_iterators_with_multiplicity(&mut self) -> Result<(), ConceptReadError> {
+        let mut multiplicity: u64 = 1;
         for iter in &mut self.iterators {
-            multiplicity *= iter.count_until_next_answer(ImmutableRow::new(&self.intersection_row))?;
+            let row = ImmutableRow::new(&self.intersection_row, self.intersection_multiplicity);
+            multiplicity *= iter.count_until_next_answer(row)?;
         }
-        Ok(multiplicity)
+        self.intersection_multiplicity = multiplicity;
+        Ok(())
     }
 
     fn clear_intersection_iterators(&mut self) {
@@ -558,6 +564,7 @@ impl SortedJoinExecutor {
                 row.set(position, input_row.get(position).clone().into_owned())
             }
         }
+        self.intersection_multiplicity = 1;
         Ok(())
     }
 
@@ -583,6 +590,7 @@ impl SortedJoinExecutor {
                 thing_manager,
                 &self.instruction_executors,
                 &self.intersection_row,
+                self.intersection_multiplicity,
                 &mut self.iterators,
             )?
         }
@@ -594,6 +602,7 @@ struct CartesianIterator {
     sort_variable_position: Position,
     is_active: bool,
     intersection_source: Vec<VariableValue<'static>>,
+    intersection_multiplicity: u64,
     cartesian_executor_indices: Vec<usize>,
     iterators: Vec<Option<InstructionIterator>>,
 }
@@ -604,6 +613,7 @@ impl CartesianIterator {
             sort_variable_position,
             is_active: false,
             intersection_source: vec![VariableValue::Empty; width],
+            intersection_multiplicity: 1,
             cartesian_executor_indices: Vec::with_capacity(iterator_executor_count),
             iterators: (0..iterator_executor_count).into_iter().map(|_| Option::None).collect_vec(),
         }
@@ -619,11 +629,13 @@ impl CartesianIterator {
         thing_manager: &ThingManager,
         iterator_executors: &Vec<InstructionExecutor>,
         source_intersection: &Vec<VariableValue<'static>>,
+        source_multiplicity: u64,
         intersection_iterators: &mut Vec<InstructionIterator>,
     ) -> Result<(), ConceptReadError> {
         debug_assert!(source_intersection.len() == self.intersection_source.len());
         self.is_active = true;
         self.intersection_source.clone_from_slice(source_intersection);
+        self.intersection_multiplicity = source_multiplicity;
 
         // we are able to re-use existing iterators since they should only move forward. We only reset the indices
         self.cartesian_executor_indices.clear();
@@ -704,6 +716,7 @@ impl CartesianIterator {
                 row.set(Position::new(index as u32), value.clone());
             }
         }
+        row.set_multiplicity(self.intersection_multiplicity);
         Ok(())
     }
 }
@@ -793,166 +806,5 @@ impl OptionalExecutor {
 
     fn batch_continue(&mut self) -> Result<Option<Batch>, ConceptReadError> {
         todo!()
-    }
-}
-
-const BATCH_ROWS_MAX: u32 = 64;
-
-#[derive(Debug)]
-struct Batch {
-    width: u32,
-    entries: u32,
-    data: Vec<VariableValue<'static>>,
-}
-
-impl Batch {
-    const EMPTY_SINGLE_ROW: Batch = Batch { width: 0, entries: 1, data: Vec::new() };
-
-    fn new(width: u32) -> Self {
-        let size = width * BATCH_ROWS_MAX;
-        Batch { width, data: vec![VariableValue::Empty; size as usize], entries: 0 }
-    }
-
-    fn rows_count(&self) -> u32 {
-        self.entries
-    }
-
-    fn is_full(&self) -> bool {
-        (self.entries * self.width) as usize == self.data.len()
-    }
-
-    fn get_row(&self, index: u32) -> ImmutableRow<'_> {
-        debug_assert!(index <= self.entries);
-        let start = (index * self.width) as usize;
-        let end = ((index + 1) * self.width) as usize;
-        let slice = &self.data[start..end];
-        ImmutableRow::new(slice)
-    }
-
-    fn get_row_mut(&mut self, index: u32) -> Row<'_> {
-        debug_assert!(index <= self.entries);
-        self.row_internal_mut(index)
-    }
-
-    fn append<T>(&mut self, mut writer: impl FnMut(Row<'_>) -> T) -> T {
-        debug_assert!(!self.is_full());
-        let row = self.row_internal_mut(self.entries);
-        let result = writer(row);
-        self.entries += 1;
-        result
-    }
-
-    fn row_internal_mut(&mut self, index: u32) -> Row<'_> {
-        let start = (index * self.width) as usize;
-        let end = ((index + 1) * self.width) as usize;
-        let slice = &mut self.data[start..end];
-        Row::new(slice)
-    }
-}
-
-struct BatchRowIterator {
-    batch: Result<Batch, ConceptReadError>,
-    index: u32,
-}
-
-impl BatchRowIterator {
-    fn new(batch: Result<Batch, ConceptReadError>) -> Self {
-        Self { batch, index: 0 }
-    }
-
-    fn has_next(&self) -> bool {
-        self.batch.as_ref().is_ok_and(|batch| self.index < batch.rows_count())
-    }
-}
-
-impl LendingIterator for BatchRowIterator {
-    type Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>;
-
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        match self.batch.as_mut() {
-            Ok(batch) => {
-                if self.index >= batch.rows_count() {
-                    None
-                } else {
-                    let row = batch.get_row(self.index);
-                    self.index += 1;
-                    Some(Ok(row))
-                }
-            }
-            Err(err) => Some(Err(err)),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Row<'a> {
-    row: &'a mut [VariableValue<'static>],
-}
-
-impl<'a> Row<'a> {
-    fn new(row: &'a mut [VariableValue<'static>]) -> Self {
-        Self { row }
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.row.len()
-    }
-
-    pub(crate) fn get(&self, position: Position) -> &VariableValue {
-        &self.row[position.as_usize()]
-    }
-
-    pub(crate) fn set(&mut self, position: Position, value: VariableValue<'static>) {
-        debug_assert!(*self.get(position) == VariableValue::Empty || *self.get(position) == value);
-        self.row[position.as_usize()] = value;
-    }
-
-    fn copy_from(&mut self, row: &[VariableValue<'static>]) {
-        debug_assert!(self.len() == row.len());
-        self.row.clone_from_slice(row)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ImmutableRow<'a> {
-    row: Cow<'a, [VariableValue<'static>]>,
-}
-
-impl<'a> ImmutableRow<'a> {
-    fn new(row: &'a [VariableValue<'static>]) -> Self {
-        Self { row: Cow::Borrowed(row) }
-    }
-
-    pub fn width(&self) -> usize {
-        self.row.len()
-    }
-
-    pub fn get(&self, position: Position) -> &VariableValue {
-        &self.row[position.as_usize()]
-    }
-
-    pub fn into_owned(self) -> ImmutableRow<'static> {
-        let cloned: Vec<VariableValue<'static>> =
-            self.row.into_iter().map(|value| value.clone().into_owned()).collect();
-        ImmutableRow { row: Cow::Owned(cloned) }
-    }
-
-    pub fn as_reference(&self) -> ImmutableRow<'_> {
-        ImmutableRow { row: Cow::Borrowed(self.row.as_ref()) }
-    }
-}
-
-impl ImmutableRow<'static> {
-    pub fn into_iter(self) -> impl Iterator<Item = VariableValue<'static>> {
-        self.row.into_owned().into_iter()
-    }
-}
-
-impl<'a> Display for ImmutableRow<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        for value in self.row.as_ref() {
-            write!(f, "{value},\t")?
-        }
-        write!(f, "\n")
     }
 }

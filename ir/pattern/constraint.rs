@@ -357,12 +357,6 @@ impl<ID: IrID> Constraint<ID> {
     }
 }
 
-// impl<'a, T: Into<Constraint<ID>> + 'a, ID: IrID> Into<&'a Constraint<ID>> for &'a T {
-//     fn into(self) -> &'a Constraint<ID> {
-//         todo!()
-//     }
-// }
-
 impl<ID: IrID> fmt::Display for Constraint<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

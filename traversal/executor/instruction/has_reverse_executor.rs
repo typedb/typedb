@@ -6,7 +6,8 @@
 
 use ir::pattern::constraint::Has;
 
-use crate::executor::{instruction::iterator::InstructionIterator, pattern_executor::Row, Position};
+use crate::executor::{instruction::iterator::InstructionIterator, Position};
+use crate::executor::batch::Row;
 
 pub(crate) struct HasReverseIteratorExecutor {
     has: Has<Position>,

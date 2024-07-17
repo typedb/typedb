@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, variable_value::VariableValue, Thing, Type};
+use answer::{Thing, Type, variable::Variable, variable_value::VariableValue};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -30,11 +30,11 @@ use crate::{
             iterator::{HasSortedAttributeIterator, HasSortedOwnerIterator, InstructionIterator},
             VariableMode,
         },
-        pattern_executor::ImmutableRow,
         Position,
     },
     planner::pattern_plan::IterateBounds,
 };
+use crate::executor::batch::ImmutableRow;
 
 pub(crate) struct HasIteratorExecutor {
     has: Has<Position>,
