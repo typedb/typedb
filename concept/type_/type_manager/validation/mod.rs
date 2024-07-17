@@ -34,7 +34,7 @@ mod validation;
 #[derive(Debug, Clone)]
 pub enum SchemaValidationError {
     ConceptRead(ConceptReadError),
-    CannotModifyRoot,
+    RootTypesAreImmutable,
     RootHasBeenCorrupted(Label<'static>),
     LabelShouldBeUnique(Label<'static>),
     StructNameShouldBeUnique(String),
@@ -51,9 +51,7 @@ pub enum SchemaValidationError {
     OwnsNotInherited(ObjectType<'static>, AttributeType<'static>),
     PlaysNotInherited(ObjectType<'static>, RoleType<'static>),
     OverriddenCapabilityCannotBeRedeclared(CapabilityKind, Label<'static>, Label<'static>),
-    OverriddenOwnsAttributeTypeIsNotSupertype(Label<'static>, Label<'static>, Label<'static>),
-    OverriddenPlaysRoleTypeIsNotSupertype(Label<'static>, Label<'static>, Label<'static>),
-    OverriddenRelatesRoleTypeIsNotSupertype(Label<'static>, Label<'static>, Label<'static>),
+    OverriddenCapabilityInterfaceIsNotSupertype(CapabilityKind, Label<'static>, Label<'static>, Label<'static>),
     NonAbstractTypeCannotHaveAbstractCapability(CapabilityKind, Label<'static>, Label<'static>),
     AttributeTypeSupertypeIsNotAbstract(Label<'static>),
     AbstractTypesSupertypeHasToBeAbstract(Label<'static>, Label<'static>),
@@ -157,7 +155,7 @@ impl Error for SchemaValidationError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ConceptRead(source) => Some(source),
-            Self::CannotModifyRoot => None,
+            Self::RootTypesAreImmutable => None,
             Self::RootHasBeenCorrupted(_) => None,
             Self::LabelShouldBeUnique(_) => None,
             Self::StructNameShouldBeUnique(_) => None,
@@ -174,9 +172,7 @@ impl Error for SchemaValidationError {
             Self::OwnsNotInherited(_, _) => None,
             Self::PlaysNotInherited(_, _) => None,
             Self::OverriddenCapabilityCannotBeRedeclared(_, _, _) => None,
-            Self::OverriddenOwnsAttributeTypeIsNotSupertype(_, _, _) => None,
-            Self::OverriddenPlaysRoleTypeIsNotSupertype(_, _, _) => None,
-            Self::OverriddenRelatesRoleTypeIsNotSupertype(_, _, _) => None,
+            Self::OverriddenCapabilityInterfaceIsNotSupertype(_, _, _, _) => None,
             Self::OrderingDoesNotMatchWithSupertype(_, _, _, _) => None,
             Self::OrderingDoesNotMatchWithOverride(_, _, _, _, _) => None,
             Self::CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(_, _, _) => None,

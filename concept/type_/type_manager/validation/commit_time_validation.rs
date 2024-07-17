@@ -9,11 +9,9 @@ use std::{
     hash::Hash,
 };
 
-use encoding::graph::{
-    definition::r#struct::StructDefinition,
-    type_::{CapabilityKind, Kind},
-};
+use encoding::graph::{definition::r#struct::StructDefinition, type_::Kind};
 use itertools::Itertools;
+use encoding::graph::type_::CapabilityKind;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -410,7 +408,8 @@ impl CommitTimeValidation {
                 role_type.clone(),
                 role_type_overridden.clone(),
             )? {
-                validation_errors.push(SchemaValidationError::OverriddenRelatesRoleTypeIsNotSupertype(
+                validation_errors.push(SchemaValidationError::OverriddenCapabilityInterfaceIsNotSupertype(
+                    CapabilityKind::Relates,
                     get_label_or_concept_read_err(snapshot, relation_type.clone())?,
                     get_label_or_concept_read_err(snapshot, role_type.clone())?,
                     get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,
@@ -459,7 +458,8 @@ impl CommitTimeValidation {
                 attribute_type.clone(),
                 attribute_type_overridden.clone(),
             )? {
-                validation_errors.push(SchemaValidationError::OverriddenOwnsAttributeTypeIsNotSupertype(
+                validation_errors.push(SchemaValidationError::OverriddenCapabilityInterfaceIsNotSupertype(
+                    CapabilityKind::Owns,
                     get_label_or_concept_read_err(snapshot, type_.clone())?,
                     get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
                     get_label_or_concept_read_err(snapshot, attribute_type_overridden.clone())?,
@@ -507,7 +507,8 @@ impl CommitTimeValidation {
                 role_type.clone(),
                 role_type_overridden.clone(),
             )? {
-                validation_errors.push(SchemaValidationError::OverriddenPlaysRoleTypeIsNotSupertype(
+                validation_errors.push(SchemaValidationError::OverriddenCapabilityInterfaceIsNotSupertype(
+                    CapabilityKind::Plays,
                     get_label_or_concept_read_err(snapshot, type_.clone())?,
                     get_label_or_concept_read_err(snapshot, role_type.clone())?,
                     get_label_or_concept_read_err(snapshot, role_type_overridden.clone())?,

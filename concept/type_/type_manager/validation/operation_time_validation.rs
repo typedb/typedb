@@ -95,7 +95,7 @@ impl OperationTimeValidation {
         let label = TypeReader::get_label(snapshot, type_).map_err(SchemaValidationError::ConceptRead)?.unwrap();
         let is_root = TypeReader::check_type_is_root(&label, T::ROOT_KIND);
         if is_root {
-            Err(SchemaValidationError::CannotModifyRoot)
+            Err(SchemaValidationError::RootTypesAreImmutable)
         } else {
             Ok(())
         }
@@ -892,8 +892,7 @@ impl OperationTimeValidation {
         let super_relation =
             TypeReader::get_supertype(snapshot, relation_type.clone()).map_err(SchemaValidationError::ConceptRead)?;
         if super_relation.is_none() {
-            // TODO: Handle better. This could be misleading.
-            return Err(SchemaValidationError::CannotModifyRoot);
+            return Err(SchemaValidationError::RootTypesAreImmutable);
         }
         let is_inherited = TypeReader::get_capabilities::<Relates<'static>>(snapshot, super_relation.unwrap())
             .map_err(SchemaValidationError::ConceptRead)?
@@ -914,7 +913,7 @@ impl OperationTimeValidation {
             let super_owner =
                 TypeReader::get_supertype(snapshot, owner.clone()).map_err(SchemaValidationError::ConceptRead)?;
             if super_owner.is_none() {
-                return Err(SchemaValidationError::CannotModifyRoot);
+                return Err(SchemaValidationError::RootTypesAreImmutable);
             }
             let owns_transitive: HashMap<AttributeType<'static>, Owns<'static>> =
                 TypeReader::get_capabilities(snapshot, super_owner.unwrap().clone().into_owned_object_type())
@@ -942,7 +941,8 @@ impl OperationTimeValidation {
         {
             Ok(())
         } else {
-            Err(SchemaValidationError::OverriddenOwnsAttributeTypeIsNotSupertype(
+            Err(SchemaValidationError::OverriddenCapabilityInterfaceIsNotSupertype(
+                CapabilityKind::Owns,
                 get_label_or_schema_err(snapshot, owns.owner())?,
                 get_label_or_schema_err(snapshot, owns.attribute())?,
                 get_label_or_schema_err(snapshot, attribute_type_overridden)?,
@@ -964,7 +964,8 @@ impl OperationTimeValidation {
         {
             Ok(())
         } else {
-            Err(SchemaValidationError::OverriddenPlaysRoleTypeIsNotSupertype(
+            Err(SchemaValidationError::OverriddenCapabilityInterfaceIsNotSupertype(
+                CapabilityKind::Plays,
                 get_label_or_schema_err(snapshot, plays.player())?,
                 get_label_or_schema_err(snapshot, plays.role())?,
                 get_label_or_schema_err(snapshot, role_type_overridden)?,
@@ -999,7 +1000,7 @@ impl OperationTimeValidation {
             let super_player =
                 TypeReader::get_supertype(snapshot, player.clone()).map_err(SchemaValidationError::ConceptRead)?;
             if super_player.is_none() {
-                return Err(SchemaValidationError::CannotModifyRoot);
+                return Err(SchemaValidationError::RootTypesAreImmutable);
             }
             let plays_transitive: HashMap<RoleType<'static>, Plays<'static>> =
                 TypeReader::get_capabilities(snapshot, super_player.unwrap().clone().into_owned_object_type())

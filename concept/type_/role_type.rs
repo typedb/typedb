@@ -98,7 +98,7 @@ impl<'a> RoleType<'a> {
         type_manager: &TypeManager,
         ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_role_ordering(snapshot, self.clone(), ordering)
+        type_manager.set_role_ordering(snapshot, self.clone().into_owned(), ordering)
     }
 }
 

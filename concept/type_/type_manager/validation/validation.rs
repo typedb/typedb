@@ -585,7 +585,6 @@ where
 
 // TODO: Try to wrap all these type_has_***annotation and edge_has_***annotation into several macros!
 
-// TODO: Refactor to type_get_declared_annotation
 pub(crate) fn type_has_declared_annotation<T: KindAPI<'static>>(
     snapshot: &impl ReadableSnapshot,
     type_: T,
