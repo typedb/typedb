@@ -108,8 +108,8 @@ pub trait LendingIterator: 'static {
     }
 
     fn count_as_ref(&mut self) -> usize
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         let mut count = 0;
         while self.next().is_some() {

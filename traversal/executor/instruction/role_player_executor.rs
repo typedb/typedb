@@ -6,8 +6,7 @@
 
 use ir::pattern::constraint::RolePlayer;
 
-use crate::executor::{pattern_executor::Row, Position};
-use crate::executor::instruction::iterator::InstructionIterator;
+use crate::executor::{instruction::iterator::InstructionIterator, pattern_executor::Row, Position};
 
 pub(crate) struct RolePlayerIteratorExecutor {
     role_player: RolePlayer<Position>,
@@ -15,7 +14,7 @@ pub(crate) struct RolePlayerIteratorExecutor {
 
 impl RolePlayerIteratorExecutor {
     pub(crate) fn new(role_player: RolePlayer<Position>) -> RolePlayerIteratorExecutor {
-        Self { role_player  }
+        Self { role_player }
     }
 }
 

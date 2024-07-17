@@ -12,7 +12,9 @@ use concept::{
     error::ConceptReadError,
     thing::{
         attribute::Attribute,
+        entity::Entity,
         object::{Object, ObjectAPI},
+        relation::Relation,
         thing_manager::ThingManager,
     },
     type_::{
@@ -24,8 +26,6 @@ use concept::{
         Ordering, OwnerAPI, PlayerAPI,
     },
 };
-use concept::thing::entity::Entity;
-use concept::thing::relation::Relation;
 use durability::wal::WAL;
 use encoding::{
     error::EncodingError,
@@ -152,8 +152,10 @@ fn attribute_create() {
         assert_eq!(attributes_count, 2);
 
         let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
-        let mut ages: Vec<Attribute<'static>> = thing_manager.get_attributes_in(&snapshot, age_type).unwrap()
-            .map_static(|result| result.unwrap().clone().into_owned())
+        let mut ages: Vec<Attribute<'static>> = thing_manager
+            .get_attributes_in(&snapshot, age_type)
+            .unwrap()
+            .map_static(|result| result.unwrap().into_owned())
             .collect();
         assert_eq!(ages.len(), 1);
         assert_eq!(ages.first_mut().unwrap().get_value(&snapshot, &thing_manager).unwrap(), Value::Long(age_value));
@@ -222,9 +224,8 @@ fn has() {
         let attributes_count = thing_manager.get_attributes(&snapshot).unwrap().count();
         assert_eq!(attributes_count, 2);
 
-        let people: Vec<Entity<'static>> = thing_manager.get_entities(&snapshot)
-            .map_static(|result| result.unwrap().clone().into_owned())
-            .collect();
+        let people: Vec<Entity<'static>> =
+            thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
         let person_1 = people.first().unwrap();
         let retrieved_attributes_count = person_1.get_has_unordered(&snapshot, &thing_manager).count();
         assert_eq!(retrieved_attributes_count, 2);
@@ -295,9 +296,8 @@ fn attribute_cleanup_on_concurrent_detach() {
         let name_type = type_manager.get_attribute_type(&snapshot_1, &name_label).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot_1, &age_label).unwrap().unwrap();
 
-        let entities: Vec<Entity<'static>> = thing_manager.get_entities(&snapshot_1)
-            .map_static(|result| result.unwrap().clone().into_owned())
-            .collect();
+        let entities: Vec<Entity<'static>> =
+            thing_manager.get_entities(&snapshot_1).map_static(|result| result.unwrap().into_owned()).collect();
         let bob = entities
             .iter()
             .find(|entity| {
@@ -324,9 +324,8 @@ fn attribute_cleanup_on_concurrent_detach() {
         let name_type = type_manager.get_attribute_type(&snapshot_2, &name_label).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot_2, &age_label).unwrap().unwrap();
 
-        let entities: Vec<Entity<'static>> = thing_manager.get_entities(&snapshot_2)
-            .map_static(|result| result.unwrap().clone().into_owned())
-            .collect();
+        let entities: Vec<Entity<'static>> =
+            thing_manager.get_entities(&snapshot_2).map_static(|result| result.unwrap().into_owned()).collect();
         let alice = entities
             .iter()
             .find(|entity| {
@@ -341,8 +340,10 @@ fn attribute_cleanup_on_concurrent_detach() {
             })
             .unwrap();
 
-        let mut ages: Vec<Attribute<'static>> = thing_manager.get_attributes_in(&snapshot_2, age_type.clone()).unwrap()
-            .map_static(|result| result.unwrap().clone().into_owned())
+        let mut ages: Vec<Attribute<'static>> = thing_manager
+            .get_attributes_in(&snapshot_2, age_type.clone())
+            .unwrap()
+            .map_static(|result| result.unwrap().into_owned())
             .collect();
         let age = ages
             .iter_mut()
@@ -469,13 +470,11 @@ fn role_player_distinct() {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone());
 
-        let entities: Vec<Entity<'static>> = thing_manager.get_entities(&snapshot)
-            .map_static(|result| result.unwrap().clone().into_owned())
-            .collect();
+        let entities: Vec<Entity<'static>> =
+            thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
         assert_eq!(entities.len(), 4);
-        let relations : Vec<Relation<'static>>= thing_manager.get_relations(&snapshot)
-            .map_static(|result| result.unwrap().clone().into_owned())
-            .collect();
+        let relations: Vec<Relation<'static>> =
+            thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
         assert_eq!(relations.len(), 2);
 
         let players_0 = relations[0].get_players(&snapshot, &thing_manager).count();
@@ -611,13 +610,11 @@ fn role_player_duplicates() {
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone());
-        let entities: Vec<Entity<'static>> = thing_manager.get_entities(&snapshot)
-            .map_static(|result| result.unwrap().clone().into_owned())
-            .collect();
+        let entities: Vec<Entity<'static>> =
+            thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
         assert_eq!(entities.len(), 2);
-        let relations: Vec<Relation<'static>> = thing_manager.get_relations(&snapshot)
-            .map_static(|result| result.unwrap().clone().into_owned())
-            .collect();
+        let relations: Vec<Relation<'static>> =
+            thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
         assert_eq!(relations.len(), 1);
 
         let list_1 = relations.first().unwrap();
@@ -719,9 +716,10 @@ fn attribute_string_write_read() {
     // read them back by type
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let attrs: Vec<Attribute<'static>> = thing_manager.get_attributes_in(&snapshot, attr_type.clone())
+        let attrs: Vec<Attribute<'static>> = thing_manager
+            .get_attributes_in(&snapshot, attr_type.clone())
             .unwrap()
-            .map_static(|result| result.unwrap().clone().into_owned())
+            .map_static(|result| result.unwrap().into_owned())
             .collect();
         let attr_values: Vec<String> = attrs
             .into_iter()
@@ -805,9 +803,10 @@ fn attribute_struct_write_read() {
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let attr_type = type_manager.get_attribute_type(&snapshot, &attr_label).unwrap().unwrap();
-        let attr_vec: Vec<Attribute<'static>> = thing_manager.get_attributes_in(&snapshot, attr_type.clone())
+        let attr_vec: Vec<Attribute<'static>> = thing_manager
+            .get_attributes_in(&snapshot, attr_type.clone())
             .unwrap()
-            .map_static(|result| result.unwrap().clone().into_owned())
+            .map_static(|result| result.unwrap().into_owned())
             .collect();
         let mut attr = attr_vec.get(0).unwrap().clone();
         let value_0 = attr.get_value(&snapshot, &thing_manager).unwrap();
@@ -904,7 +903,7 @@ fn read_attribute_struct_by_field() {
                 .unwrap();
             let mut attr_by_field: Vec<Attribute> = Vec::new();
             while let Some(res) = attr_by_field_iterator.next() {
-                attr_by_field.push(res.as_ref().unwrap().clone().into_owned());
+                attr_by_field.push(res.as_ref().unwrap().into_owned());
             }
             assert_eq!(1, attr_by_field.len());
             assert_eq!(attr, attr_by_field.get(0).unwrap());

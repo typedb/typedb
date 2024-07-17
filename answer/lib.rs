@@ -5,20 +5,16 @@
  */
 
 use std::fmt::{Display, Formatter};
-use bytes::byte_array::ByteArray;
-use bytes::Bytes;
 
+use bytes::{byte_array::ByteArray, Bytes};
 use concept::{
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
-        role_type::RoleType, ObjectTypeAPI,
+        role_type::RoleType, ObjectTypeAPI, TypeAPI,
     },
 };
-use concept::type_::TypeAPI;
-use encoding::AsBytes;
-use encoding::graph::type_::vertex::TypeVertex;
-use encoding::value::value::Value;
+use encoding::{graph::type_::vertex::TypeVertex, value::value::Value, AsBytes};
 
 pub mod answer_map;
 pub mod variable;

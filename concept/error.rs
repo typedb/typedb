@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt, sync::Arc};
-use std::cmp::Ordering;
+use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 
 use encoding::{
     error::EncodingError,
@@ -170,32 +169,6 @@ pub enum ConceptReadError {
     CorruptMissingMandatoryProperty,
     CorruptMissingMandatoryRelatesForRole,
 }
-
-// TODO: workaround for generic lifetimes in Executor
-impl Ord for ConceptReadError {
-    fn cmp(&self, other: &Self) -> Ordering {
-        return Ordering::Equal;
-    }
-}
-
-impl PartialOrd for ConceptReadError {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for ConceptReadError {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (ConceptReadError::SnapshotGet { .. }, ConceptReadError::SnapshotGet { .. }) => true,
-            (ConceptReadError::SnapshotIterate { .. }, ConceptReadError::SnapshotIterate { .. }) => true,
-            (ConceptReadError::Encoding { .. }, ConceptReadError::Encoding { .. }) => true,
-            _ => false
-        }
-    }
-}
-
-impl Eq for ConceptReadError {}
 
 impl fmt::Display for ConceptReadError {
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {

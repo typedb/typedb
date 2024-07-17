@@ -18,7 +18,8 @@ use encoding::{
 use storage::{sequence_number::SequenceNumber, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{
-    attribute_type::AttributeType,
+    annotation::{Annotation, AnnotationIndependent},
+    attribute_type::{AttributeType, AttributeTypeAnnotation},
     entity_type::EntityType,
     object_type::ObjectType,
     owns::{Owns, OwnsAnnotation},
@@ -37,8 +38,6 @@ use crate::type_::{
     },
     KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
 };
-use crate::type_::annotation::{Annotation, AnnotationIndependent};
-use crate::type_::attribute_type::AttributeTypeAnnotation;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -105,17 +104,21 @@ impl TypeCache {
         let attribute_types_index_label = Self::build_label_to_type_index(&attribute_type_caches);
         let struct_definition_index_by_name = Self::build_name_to_struct_definition_index(&struct_definition_caches);
 
-        let independent_attribute_types = attribute_type_caches.iter()
+        let independent_attribute_types = attribute_type_caches
+            .iter()
             .filter_map(|cache| cache.as_ref())
             .filter_map(|cache| {
-                if cache.common_type_cache()
+                if cache
+                    .common_type_cache()
                     .annotations
-                    .contains_key(&AttributeTypeAnnotation::Independent(AnnotationIndependent {})) {
+                    .contains_key(&AttributeTypeAnnotation::Independent(AnnotationIndependent {}))
+                {
                     Some(cache.common_type_cache.type_.clone())
                 } else {
                     None
                 }
-            }).collect();
+            })
+            .collect();
 
         Ok(TypeCache {
             open_sequence_number,
@@ -184,49 +187,49 @@ impl TypeCache {
     }
 
     pub(crate) fn get_supertype<'a, 'this, T, CACHE>(&'this self, type_: T) -> Option<T::SelfStatic>
-        where
-            T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         Some(T::get_cache(self, type_).common_type_cache().supertype.as_ref()?.clone())
     }
 
     pub(crate) fn get_supertypes<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
-        where
-            T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().supertypes
     }
 
     pub(crate) fn get_subtypes<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
-        where
-            T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().subtypes
     }
 
     pub(crate) fn get_subtypes_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
-        where
-            T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().subtypes_transitive
     }
 
     pub(crate) fn get_label<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Label<'static>
-        where
-            T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().label
     }
 
     pub(crate) fn is_root<'a, 'this, T, CACHE>(&'this self, type_: T) -> bool
-        where
-            T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         T::get_cache(self, type_).common_type_cache().is_root
     }
@@ -235,9 +238,9 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &HashSet<<<T as TypeAPI<'a>>::SelfStatic as KindAPI<'static>>::AnnotationType>
-        where
-            T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().annotations_declared
     }
@@ -246,9 +249,9 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &HashMap<<<T as TypeAPI<'a>>::SelfStatic as KindAPI<'static>>::AnnotationType, <T as TypeAPI<'a>>::SelfStatic>
-        where
-            T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().annotations
     }
@@ -268,9 +271,9 @@ impl TypeCache {
     }
 
     pub(crate) fn get_owns_declared<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns<'static>>
-        where
-            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasOwnerPlayerCache + 'this,
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().owns_declared
     }
@@ -279,9 +282,9 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &HashMap<AttributeType<'static>, Owns<'static>>
-        where
-            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasOwnerPlayerCache + 'this,
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().owns
     }
@@ -290,9 +293,9 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &HashMap<AttributeType<'static>, Owns<'static>>
-        where
-            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasOwnerPlayerCache + 'this,
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().owns_overridden
     }
@@ -356,9 +359,9 @@ impl TypeCache {
     }
 
     pub(crate) fn get_plays_declared<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>
-        where
-            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasOwnerPlayerCache + 'this,
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().plays_declared
     }
@@ -367,9 +370,9 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &'this HashMap<RoleType<'static>, Plays<'static>>
-        where
-            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasOwnerPlayerCache + 'this,
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().plays
     }
@@ -378,9 +381,9 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &'this HashMap<RoleType<'static>, Plays<'static>>
-        where
-            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
-            CACHE: HasOwnerPlayerCache + 'this,
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().plays_overridden
     }

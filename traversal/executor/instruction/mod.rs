@@ -5,29 +5,26 @@
  */
 
 use std::collections::HashMap;
-pub use tracing::{error, info, trace, warn};
 
 use answer::variable::Variable;
 use concept::{
     error::ConceptReadError,
-    thing::thing_manager::ThingManager,
+    thing::{thing_manager::ThingManager, ThingAPI},
+    type_::TypeAPI,
 };
-use concept::thing::ThingAPI;
-use concept::type_::TypeAPI;
 use ir::inference::type_inference::TypeAnnotations;
 use iterator::InstructionIterator;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
+pub use tracing::{error, info, trace, warn};
 
 use crate::{
     executor::{
         instruction::{
             comparison_executor::ComparisonIteratorExecutor,
             comparison_reverse_executor::ComparisonReverseIteratorExecutor,
-            function_call_binding_executor::FunctionCallBindingIteratorExecutor,
-            has_executor::HasIteratorExecutor,
-            has_reverse_executor::HasReverseIteratorExecutor,
-            isa_executor::IsaExecutor,
+            function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasIteratorExecutor,
+            has_reverse_executor::HasReverseIteratorExecutor, isa_executor::IsaExecutor,
             role_player_executor::RolePlayerIteratorExecutor,
             role_player_reverse_executor::RolePlayerReverseIteratorExecutor,
         },
@@ -42,11 +39,11 @@ mod comparison_reverse_executor;
 mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
+mod isa_executor;
+pub(crate) mod iterator;
+mod iterator_advance;
 mod role_player_executor;
 mod role_player_reverse_executor;
-mod isa_executor;
-mod iterator_advance;
-pub(crate) mod iterator;
 
 pub(crate) enum InstructionExecutor {
     Isa(IsaExecutor),
@@ -58,7 +55,6 @@ pub(crate) enum InstructionExecutor {
     RolePlayerReverse(RolePlayerReverseIteratorExecutor),
 
     // RolePlayerIndex(RolePlayerIndexExecutor),
-
     FunctionCallBinding(FunctionCallBindingIteratorExecutor),
 
     Comparison(ComparisonIteratorExecutor),

@@ -4,12 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::{
     collections::{HashMap, HashSet},
     fmt,
 };
-use itertools::Itertools;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -18,11 +16,11 @@ use ir::{
     pattern::{
         constraint::{Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, RolePlayer},
         variable_category::VariableCategory,
+        IrID,
     },
-    program::block::FunctionalBlock,
+    program::block::{BlockContext, FunctionalBlock},
 };
-use ir::pattern::IrID;
-use ir::program::block::BlockContext;
+use itertools::Itertools;
 
 // use self::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost};
 //
@@ -169,7 +167,7 @@ impl PatternPlan {
         &self.steps
     }
 
-    pub(crate) fn into_steps(self) -> impl Iterator<Item=Step> {
+    pub(crate) fn into_steps(self) -> impl Iterator<Item = Step> {
         self.steps.into_iter()
     }
 }
@@ -237,11 +235,7 @@ pub struct SortedJoinStep {
 }
 
 impl SortedJoinStep {
-    pub fn new(
-        sort_variable: Variable,
-        instructions: Vec<Instruction>,
-        selected_variables: &Vec<Variable>
-    ) -> Self {
+    pub fn new(sort_variable: Variable, instructions: Vec<Instruction>, selected_variables: &Vec<Variable>) -> Self {
         let mut bound = Vec::with_capacity(instructions.len() * 2);
         let mut unbound = Vec::with_capacity(instructions.len() * 2);
         instructions.iter().for_each(|instruction| {
@@ -297,11 +291,13 @@ impl UnsortedJoinStep {
                 bound.push(var)
             }
         });
-        check_instructions.iter().for_each(|instruction| instruction.bound_vars_foreach(|var| {
-            if !bound.contains(&var) {
-                bound.push(var)
-            }
-        }));
+        check_instructions.iter().for_each(|instruction| {
+            instruction.bound_vars_foreach(|var| {
+                if !bound.contains(&var) {
+                    bound.push(var)
+                }
+            })
+        });
         Self {
             iterate_instruction,
             check_instructions,
@@ -323,7 +319,6 @@ pub struct AssignmentStep {
 }
 
 impl AssignmentStep {
-
     fn unbound_variables(&self) -> &[Variable] {
         &self.unbound
     }
@@ -361,7 +356,6 @@ pub enum Instruction {
 
     // $x --> $y
     // RolePlayerIndex(IR, IterateBounds)
-
     FunctionCallBinding(FunctionCallBinding<Variable>),
 
     // lhs derived from rhs. We need to decide if lhs will always be sorted
@@ -378,9 +372,7 @@ pub enum Instruction {
 impl Instruction {
     fn bound_vars_foreach(&self, mut apply: impl FnMut(Variable) -> ()) {
         match self {
-            Instruction::Isa(_, bounds) => {
-                bounds.bounds().iter().cloned().for_each(apply)
-            }
+            Instruction::Isa(_, bounds) => bounds.bounds().iter().cloned().for_each(apply),
             Instruction::Has(_, bounds) | Instruction::HasReverse(_, bounds) => {
                 bounds.bounds().iter().cloned().for_each(apply)
             }
@@ -397,20 +389,16 @@ impl Instruction {
 
     fn unbound_vars_foreach(&self, mut apply: impl FnMut(Variable)) {
         match self {
-            Instruction::Isa(isa, bounds) => {
-                isa.ids_foreach(|var, _| {
-                    if !bounds.bounds().iter().contains(&var) {
-                        apply(var)
-                    }
-                })
-            }
-            Instruction::Has(has, bounds) | Instruction::HasReverse(has, bounds) => {
-                has.ids_foreach(|var, _| {
-                    if !bounds.bounds().iter().contains(&var) {
-                        apply(var)
-                    }
-                })
-            }
+            Instruction::Isa(isa, bounds) => isa.ids_foreach(|var, _| {
+                if !bounds.bounds().iter().contains(&var) {
+                    apply(var)
+                }
+            }),
+            Instruction::Has(has, bounds) | Instruction::HasReverse(has, bounds) => has.ids_foreach(|var, _| {
+                if !bounds.bounds().iter().contains(&var) {
+                    apply(var)
+                }
+            }),
             Instruction::RolePlayer(rp, bounds) | Instruction::RolePlayerReverse(rp, bounds) => {
                 rp.ids_foreach(|var, _| {
                     if !bounds.bounds().iter().contains(&var) {
@@ -538,7 +526,6 @@ impl<ID: IrID> IterateBounds<ID> {
         }
     }
 }
-
 
 // enum Filter {
 //

@@ -5,15 +5,17 @@
  */
 
 use std::sync::Arc;
-use concept::thing::thing_manager::ThingManager;
-use concept::type_::type_manager::TypeManager;
+
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use durability::wal::WAL;
-use encoding::EncodingKeyspace;
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
-use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use storage::durability_client::WALClient;
-use storage::MVCCStorage;
+use encoding::{
+    graph::{
+        definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
+        type_::vertex_generator::TypeVertexGenerator,
+    },
+    EncodingKeyspace,
+};
+use storage::{durability_client::WALClient, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging, TempDir};
 
 pub fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {

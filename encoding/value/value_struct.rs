@@ -10,8 +10,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, ops::Range, sync::Arc};
-use std::hash::{Hash, Hasher};
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+    ops::Range,
+    sync::Arc,
+};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use primitive::either::Either;

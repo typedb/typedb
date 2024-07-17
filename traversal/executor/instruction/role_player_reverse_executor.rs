@@ -6,15 +6,14 @@
 
 use ir::pattern::constraint::RolePlayer;
 
-use crate::executor::{pattern_executor::Row, Position};
-use crate::executor::instruction::iterator::InstructionIterator;
+use crate::executor::{instruction::iterator::InstructionIterator, pattern_executor::Row, Position};
 
 pub(crate) struct RolePlayerReverseIteratorExecutor {
     role_player: RolePlayer<Position>,
 }
 
 impl RolePlayerReverseIteratorExecutor {
-    pub(crate) fn new(role_player: RolePlayer<Position>,) -> RolePlayerReverseIteratorExecutor {
+    pub(crate) fn new(role_player: RolePlayer<Position>) -> RolePlayerReverseIteratorExecutor {
         Self { role_player }
     }
 }

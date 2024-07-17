@@ -154,7 +154,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute: Attribute<'_>
+        attribute: Attribute<'_>,
     ) -> Result<bool, ConceptReadError> {
         thing_manager.has_attribute(snapshot, self, attribute)
     }

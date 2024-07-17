@@ -4,18 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
-    type_::{Ordering, OwnerAPI},
+    type_::{Ordering, OwnerAPI, PlayerAPI},
 };
-use concept::type_::PlayerAPI;
 use encoding::{
     graph::type_::Kind,
     value::{label::Label, value::Value, value_type::ValueType},
@@ -28,18 +23,16 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use traversal::{
-    executor::program_executor::ProgramExecutor,
+    executor::{pattern_executor::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
-        pattern_plan::{Instruction, PatternPlan, SortedJoinStep, Step},
+        pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
         program_plan::ProgramPlan,
     },
 };
-use traversal::executor::pattern_executor::ImmutableRow;
-use traversal::planner::pattern_plan::IterateBounds;
 
 use crate::common::{load_managers, setup_storage};
 
@@ -61,13 +54,13 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let group_type = type_manager.create_entity_type(&mut snapshot, &GROUP_LABEL, false).unwrap();
 
     let membership_type = type_manager.create_relation_type(&mut snapshot, &MEMBERSHIP_LABEL, false).unwrap();
-    let relates_member = membership_type.create_relates(
-        &mut snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name().as_str(), Ordering::Unordered
-    ).unwrap();
+    let relates_member = membership_type
+        .create_relates(&mut snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name().as_str(), Ordering::Unordered)
+        .unwrap();
     let membership_member_type = relates_member.role();
-    let relates_group = membership_type.create_relates(
-        &mut snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name().as_str(), Ordering::Unordered
-    ).unwrap();
+    let relates_group = membership_type
+        .create_relates(&mut snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name().as_str(), Ordering::Unordered)
+        .unwrap();
     let membership_group_type = relates_group.role();
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL, false).unwrap();
@@ -100,18 +93,28 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
         .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Bobby".to_string())))
         .unwrap();
 
-    _membership_1.add_player(
-        &mut snapshot, &thing_manager, membership_member_type.clone(), _person_1.clone().into_owned_object()
-    ).unwrap();
-    _membership_1.add_player(
-        &mut snapshot, &thing_manager, membership_group_type.clone(), _group_1.clone().into_owned_object()
-    ).unwrap();
-    _membership_2.add_player(
-        &mut snapshot, &thing_manager, membership_member_type.clone(), _person_3.clone().into_owned_object()
-    ).unwrap();
-    _membership_2.add_player(
-        &mut snapshot, &thing_manager, membership_member_type.clone(), _group_2.clone().into_owned_object()
-    ).unwrap();
+    _membership_1
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            membership_member_type.clone(),
+            _person_1.clone().into_owned_object(),
+        )
+        .unwrap();
+    _membership_1
+        .add_player(&mut snapshot, &thing_manager, membership_group_type.clone(), _group_1.clone().into_owned_object())
+        .unwrap();
+    _membership_2
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            membership_member_type.clone(),
+            _person_3.clone().into_owned_object(),
+        )
+        .unwrap();
+    _membership_2
+        .add_player(&mut snapshot, &thing_manager, membership_member_type.clone(), _group_2.clone().into_owned_object())
+        .unwrap();
 
     _person_1.set_has_unordered(&mut snapshot, &thing_manager, _age_1.as_reference()).unwrap();
     _person_1.set_has_unordered(&mut snapshot, &thing_manager, _age_2.as_reference()).unwrap();
@@ -150,11 +153,15 @@ fn traverse_rp_unbounded_sorted_from() {
     let var_group = conjunction.get_or_declare_variable_named(&"group").unwrap();
     let var_membership = conjunction.get_or_declare_variable_named(&"membership").unwrap();
 
-    let rp_membership_person = conjunction.constraints_mut()
-        .add_role_player(var_membership, var_person, Some(var_membership_member_type)).unwrap()
+    let rp_membership_person = conjunction
+        .constraints_mut()
+        .add_role_player(var_membership, var_person, Some(var_membership_member_type))
+        .unwrap()
         .clone();
-    let rp_membership_group = conjunction.constraints_mut()
-        .add_role_player(var_membership, var_group, Some(var_membership_group_type)).unwrap()
+    let rp_membership_group = conjunction
+        .constraints_mut()
+        .add_role_player(var_membership, var_group, Some(var_membership_group_type))
+        .unwrap()
         .clone();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
@@ -164,8 +171,14 @@ fn traverse_rp_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
+        .unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
+        .unwrap();
 
     let program = Program::new(block.finish(), HashMap::new());
 
@@ -180,9 +193,9 @@ fn traverse_rp_unbounded_sorted_from() {
         var_membership,
         vec![
             Instruction::RolePlayer(rp_membership_person.clone(), IterateBounds::None([])),
-            Instruction::RolePlayer(rp_membership_group.clone(), IterateBounds::None([]))
+            Instruction::RolePlayer(rp_membership_group.clone(), IterateBounds::None([])),
         ],
-        &vec![var_membership, var_group, var_person]
+        &vec![var_membership, var_group, var_person],
     ))];
 
     let pattern_plan = PatternPlan::new(steps, program.entry.context().clone());
@@ -202,8 +215,9 @@ fn traverse_rp_unbounded_sorted_from() {
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
 
-        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
-            iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
+            .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone()))
+            .collect();
         assert_eq!(rows.len(), 7);
 
         for row in rows {
@@ -253,7 +267,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let steps = vec![Step::SortedJoin(SortedJoinStep::new(
         var_attribute,
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
-        &vec![var_person, var_attribute]
+        &vec![var_person, var_attribute],
     ))];
     let pattern_plan = PatternPlan::new(steps, program.entry.context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());

@@ -6,29 +6,27 @@
 
 use std::{
     cmp::Ordering,
+    collections::HashSet,
     fmt::{Display, Formatter},
+    hash::{Hash, Hasher},
     marker::PhantomData,
     sync::Arc,
 };
-use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
-use bytes::byte_array::ByteArray;
 
-use bytes::Bytes;
+use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
-    AsBytes,
     graph::{
-        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
+        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
         type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
     },
-    Keyable, value::{
+    value::{
         decode_value_u64,
         value::Value,
         value_struct::{StructIndexEntry, StructIndexEntryKey},
     },
+    AsBytes, Keyable,
 };
-use encoding::graph::thing::vertex_object::ObjectVertex;
 use iterator::State;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -38,11 +36,11 @@ use storage::{
 };
 
 use crate::{
-    ByteReference,
-    ConceptAPI,
-    ConceptStatus,
     edge_iterator,
-    error::{ConceptReadError, ConceptWriteError}, thing::{object::Object, thing_manager::ThingManager, ThingAPI}, type_::{attribute_type::AttributeType, ObjectTypeAPI, TypeAPI},
+    error::{ConceptReadError, ConceptWriteError},
+    thing::{object::Object, thing_manager::ThingManager, ThingAPI},
+    type_::{attribute_type::AttributeType, ObjectTypeAPI, TypeAPI},
+    ByteReference, ConceptAPI, ConceptStatus,
 };
 
 #[derive(Debug, Clone)]
@@ -224,8 +222,7 @@ pub struct AttributeIteratorImpl<AttributeExtractor: KeyAttributeExtractor> {
 pub type AttributeIterator = AttributeIteratorImpl<StandardAttributeExtractor>;
 pub type StructIndexToAttributeIterator = AttributeIteratorImpl<StructIndexAttributeExtractor>;
 
-impl<KeyExtractor: KeyAttributeExtractor> AttributeIteratorImpl<KeyExtractor>
-{
+impl<KeyExtractor: KeyAttributeExtractor> AttributeIteratorImpl<KeyExtractor> {
     pub(crate) fn new(
         attributes_iterator: SnapshotRangeIterator,
         has_reverse_iterator: SnapshotRangeIterator,
@@ -315,9 +312,9 @@ impl<KeyExtractor: KeyAttributeExtractor> AttributeIteratorImpl<KeyExtractor>
                 None => self.state = State::Done,
                 Some(Ok((key, _))) => {
                     let attribute_vertex = KeyExtractor::storage_key_to_attribute_vertex(StorageKey::Reference(key));
-                    let independent = self.independent_attribute_types.contains(
-                        &Attribute::new(attribute_vertex.as_reference()).type_()
-                    );
+                    let independent = self
+                        .independent_attribute_types
+                        .contains(&Attribute::new(attribute_vertex.as_reference()).type_());
                     if independent {
                         self.state = State::ItemReady;
                     } else {

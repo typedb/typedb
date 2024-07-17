@@ -8,9 +8,8 @@ use std::{
     collections::HashSet,
     fmt::{Display, Formatter},
 };
-use bytes::byte_array::ByteArray;
-use bytes::Bytes;
 
+use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{thing::vertex_object::ObjectVertex, type_::vertex::PrefixedTypeVertexEncoding, Typed},
     layout::prefix::Prefix,

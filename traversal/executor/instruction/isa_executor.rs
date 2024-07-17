@@ -5,28 +5,31 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
-use std::collections::HashMap;
 
-use itertools::Itertools;
-
-use answer::Type;
-use answer::variable::Variable;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use concept::thing::attribute::AttributeIterator;
-use concept::thing::entity::EntityIterator;
-use concept::thing::relation::RelationIterator;
+use answer::{variable::Variable, Type};
+use concept::{
+    error::ConceptReadError,
+    thing::{
+        attribute::AttributeIterator, entity::EntityIterator, relation::RelationIterator, thing_manager::ThingManager,
+    },
+};
 use ir::pattern::constraint::Isa;
+use itertools::Itertools;
 use lending_iterator::Peekable;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::executor::{pattern_executor::ImmutableRow, Position};
-use crate::executor::instruction::iterator::InstructionIterator;
-use crate::executor::instruction::VariableMode;
-use crate::planner::pattern_plan::IterateBounds;
+use crate::{
+    executor::{
+        instruction::{iterator::InstructionIterator, VariableMode},
+        pattern_executor::ImmutableRow,
+        Position,
+    },
+    planner::pattern_plan::IterateBounds,
+};
 
 pub(crate) struct IsaExecutor {
     isa: Isa<Position>,

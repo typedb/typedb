@@ -4,24 +4,38 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::Thing;
-use answer::variable_value::VariableValue;
-use concept::error::ConceptReadError;
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::HashSet};
+
+use answer::{variable_value::VariableValue, Thing};
+use concept::{
+    error::ConceptReadError,
+    thing::{
+        attribute::AttributeIterator, entity::EntityIterator, has::Has, object::HasAttributeIterator,
+        relation::RelationIterator,
+    },
+};
 use lending_iterator::{LendingIterator, Peekable};
-use std::collections::HashSet;
-use concept::thing::has::Has;
 use tracing::warn;
-use concept::thing::attribute::AttributeIterator;
-use concept::thing::entity::EntityIterator;
-use concept::thing::object::HasAttributeIterator;
-use concept::thing::relation::RelationIterator;
-use crate::executor::instruction::iterator_advance::{counting_advance_attribute_iterator, counting_advance_entity_iterator, counting_advance_has_bounded_sorted_attribute_iterator, counting_advance_has_unbounded_sorted_attribute_merged_iterator, counting_advance_has_unbounded_sorted_attribute_single_iterator, counting_advance_has_unbounded_sorted_owner_iterator, counting_advance_relation_iterator};
-use crate::executor::instruction::has_executor::{HasBoundedSortedAttributeIterator, HasUnboundedSortedAttributeMergedIterator, HasUnboundedSortedAttributeSingleIterator, HasUnboundedSortedOwnerIterator, HasVariableModes};
-use crate::executor::instruction::isa_executor::IsaVariableModes;
-use crate::executor::instruction::VariableMode;
-use crate::executor::pattern_executor::{ImmutableRow, Row};
-use crate::executor::Position;
+
+use crate::executor::{
+    instruction::{
+        has_executor::{
+            HasBoundedSortedAttributeIterator, HasUnboundedSortedAttributeMergedIterator,
+            HasUnboundedSortedAttributeSingleIterator, HasUnboundedSortedOwnerIterator, HasVariableModes,
+        },
+        isa_executor::IsaVariableModes,
+        iterator_advance::{
+            counting_advance_attribute_iterator, counting_advance_entity_iterator,
+            counting_advance_has_bounded_sorted_attribute_iterator,
+            counting_advance_has_unbounded_sorted_attribute_merged_iterator,
+            counting_advance_has_unbounded_sorted_attribute_single_iterator,
+            counting_advance_has_unbounded_sorted_owner_iterator, counting_advance_relation_iterator,
+        },
+        VariableMode,
+    },
+    pattern_executor::{ImmutableRow, Row},
+    Position,
+};
 
 pub(crate) enum HasSortedAttributeIterator {
     // Unbounded()
@@ -31,12 +45,11 @@ pub(crate) enum HasSortedAttributeIterator {
 }
 
 impl HasSortedAttributeIterator {
-
     fn peek(&mut self) -> Option<&Result<(Has, u64), ConceptReadError>> {
         match self {
             HasSortedAttributeIterator::UnboundedMerged(iter) => iter.peek(),
             HasSortedAttributeIterator::UnboundedSingle(iter) => iter.peek(),
-            HasSortedAttributeIterator::Bounded(iter) => iter.peek()
+            HasSortedAttributeIterator::Bounded(iter) => iter.peek(),
         }
     }
 
@@ -55,7 +68,8 @@ impl HasSortedAttributeIterator {
     }
 
     fn counting_skip_to_sorted_value(
-        &mut self, value: &VariableValue<'_>
+        &mut self,
+        value: &VariableValue<'_>,
     ) -> Result<(usize, Option<Ordering>), ConceptReadError> {
         match self {
             HasSortedAttributeIterator::UnboundedMerged(iter) => {
@@ -89,26 +103,27 @@ impl HasSortedAttributeIterator {
 }
 
 pub(crate) enum HasSortedOwnerIterator {
-    Unbounded(Peekable<HasUnboundedSortedOwnerIterator>)
+    Unbounded(Peekable<HasUnboundedSortedOwnerIterator>),
 }
 
 impl HasSortedOwnerIterator {
     fn peek(&mut self) -> Option<&Result<(Has, u64), ConceptReadError>> {
         match self {
-            Self::Unbounded(iter) => iter.peek()
+            Self::Unbounded(iter) => iter.peek(),
         }
     }
 
     fn peek_sorted_value(&mut self) -> Option<Result<VariableValue<'_>, &ConceptReadError>> {
         match self {
-            Self::Unbounded(iter) => iter.peek().map(|result| {
-                result.as_ref().map(|(has, count)| VariableValue::Thing(has.owner().into()))
-            }),
+            Self::Unbounded(iter) => {
+                iter.peek().map(|result| result.as_ref().map(|(has, count)| VariableValue::Thing(has.owner().into())))
+            }
         }
     }
 
     fn counting_skip_to_sorted_value(
-        &mut self, value: &VariableValue<'_>
+        &mut self,
+        value: &VariableValue<'_>,
     ) -> Result<(usize, Option<Ordering>), ConceptReadError> {
         match self {
             Self::Unbounded(iter) => counting_advance_has_unbounded_sorted_owner_iterator(iter, value),
@@ -171,15 +186,15 @@ impl InstructionIterator {
     pub(crate) fn peek_sorted_value(&mut self) -> Option<Result<VariableValue<'_>, &ConceptReadError>> {
         debug_assert!(self.is_sorted());
         match self {
-            InstructionIterator::IsaEntitySortedThing(iter, _, _, _) => iter.peek().map(|result| {
-                result.as_ref().map(|entity| VariableValue::Thing(entity.as_reference().into()))
-            }),
-            InstructionIterator::IsaRelationSortedThing(iter, _, _, _) => iter.peek().map(|result| {
-                result.as_ref().map(|relation| VariableValue::Thing(relation.as_reference().into()))
-            }),
-            InstructionIterator::IsaAttributeSortedThing(iter, _, _, _) => iter.peek().map(|result| {
-                result.as_ref().map(|attribute| VariableValue::Thing(attribute.as_reference().into()))
-            }),
+            InstructionIterator::IsaEntitySortedThing(iter, _, _, _) => iter
+                .peek()
+                .map(|result| result.as_ref().map(|entity| VariableValue::Thing(entity.as_reference().into()))),
+            InstructionIterator::IsaRelationSortedThing(iter, _, _, _) => iter
+                .peek()
+                .map(|result| result.as_ref().map(|relation| VariableValue::Thing(relation.as_reference().into()))),
+            InstructionIterator::IsaAttributeSortedThing(iter, _, _, _) => iter
+                .peek()
+                .map(|result| result.as_ref().map(|attribute| VariableValue::Thing(attribute.as_reference().into()))),
             InstructionIterator::HasSortedAttribute(iter, _, _, _) => iter.peek_sorted_value(),
             InstructionIterator::HasSortedOwner(iter, _, _, _) => iter.peek_sorted_value(),
         }
@@ -191,21 +206,15 @@ impl InstructionIterator {
     ) -> Result<(usize, Option<Ordering>), ConceptReadError> {
         debug_assert!(self.is_sorted());
         match self {
-            InstructionIterator::IsaEntitySortedThing(iter, _, _, _) => {
-                counting_advance_entity_iterator(iter, value)
-            }
+            InstructionIterator::IsaEntitySortedThing(iter, _, _, _) => counting_advance_entity_iterator(iter, value),
             InstructionIterator::IsaRelationSortedThing(iter, _, _, _) => {
                 counting_advance_relation_iterator(iter, value)
             }
             InstructionIterator::IsaAttributeSortedThing(iter, _, _, _) => {
                 counting_advance_attribute_iterator(iter, value)
             }
-            InstructionIterator::HasSortedAttribute(iter, _, _, _) => {
-                iter.counting_skip_to_sorted_value(value)
-            }
-            InstructionIterator::HasSortedOwner(iter, _, _, _) => {
-                iter.counting_skip_to_sorted_value(value)
-            }
+            InstructionIterator::HasSortedAttribute(iter, _, _, _) => iter.counting_skip_to_sorted_value(value),
+            InstructionIterator::HasSortedOwner(iter, _, _, _) => iter.counting_skip_to_sorted_value(value),
         }
     }
 
@@ -277,9 +286,7 @@ impl InstructionIterator {
                 Ok(1)
             }
             (VariableMode::UnboundCount, VariableMode::UnboundCount)
-            | (VariableMode::BoundSelect, VariableMode::UnboundCount) => {
-                Ok(iterator.count())
-            }
+            | (VariableMode::BoundSelect, VariableMode::UnboundCount) => Ok(iterator.count()),
             (VariableMode::UnboundCount, VariableMode::UnboundCheck) => {
                 let mut count = 1;
                 iterator.advance_single()?;
@@ -294,7 +301,9 @@ impl InstructionIterator {
                 Ok(count)
             }
             (VariableMode::UnboundCheck, VariableMode::UnboundSelect) => {
-                warn!("Sorted variable Check and unsorted variable Select is unperformant as it requires deduplicating.");
+                warn!(
+                    "Sorted variable Check and unsorted variable Select is unperformant as it requires deduplicating."
+                );
                 if deduplication_set.is_none() {
                     *deduplication_set = Some(HashSet::new());
                 }
@@ -318,7 +327,9 @@ impl InstructionIterator {
                 }
             }
             (VariableMode::UnboundCheck, VariableMode::UnboundCount) => {
-                warn!("Sorted variable Check and unsorted variable Count is unperformant as it requires deduplicating.");
+                warn!(
+                    "Sorted variable Check and unsorted variable Count is unperformant as it requires deduplicating."
+                );
                 let mut multiplicity = 1;
                 let mut dedup = HashSet::new();
                 loop {
@@ -351,7 +362,6 @@ impl InstructionIterator {
         }
     }
 
-
     fn count_until_next_answer_has_sorted_attribute(
         answer_row: ImmutableRow,
         iterator: &mut HasSortedAttributeIterator,
@@ -381,9 +391,7 @@ impl InstructionIterator {
                 Ok(1)
             }
             (VariableMode::UnboundCount, VariableMode::UnboundCount)
-            | (VariableMode::BoundSelect, VariableMode::UnboundCount) => {
-                Ok(iterator.count())
-            }
+            | (VariableMode::BoundSelect, VariableMode::UnboundCount) => Ok(iterator.count()),
             (VariableMode::UnboundCount, VariableMode::UnboundCheck) => {
                 let mut count = 1;
                 iterator.advance_single()?;
@@ -398,7 +406,9 @@ impl InstructionIterator {
                 Ok(count)
             }
             (VariableMode::UnboundCheck, VariableMode::UnboundSelect) => {
-                warn!("Sorted variable Check and unsorted variable Select is unperformant as it requires deduplicating.");
+                warn!(
+                    "Sorted variable Check and unsorted variable Select is unperformant as it requires deduplicating."
+                );
                 if deduplication_set.is_none() {
                     *deduplication_set = Some(HashSet::new());
                 }
@@ -422,7 +432,9 @@ impl InstructionIterator {
                 }
             }
             (VariableMode::UnboundCheck, VariableMode::UnboundCount) => {
-                warn!("Sorted variable Check and unsorted variable Count is unperformant as it requires deduplicating.");
+                warn!(
+                    "Sorted variable Check and unsorted variable Count is unperformant as it requires deduplicating."
+                );
                 let mut multiplicity = 1;
                 let mut dedup = HashSet::new();
                 loop {
@@ -496,8 +508,9 @@ impl InstructionIterator {
     }
 
     fn write_values_has(
-        has: &Has<'_>, has_constraint: &ir::pattern::constraint::Has<Position>,
-        row: &mut Row
+        has: &Has<'_>,
+        has_constraint: &ir::pattern::constraint::Has<Position>,
+        row: &mut Row,
     ) -> Result<(), ConceptReadError> {
         row.set(has_constraint.owner(), VariableValue::Thing(has.owner().into_owned().into()));
         row.set(has_constraint.attribute(), VariableValue::Thing(has.attribute().into_owned().into()));
@@ -514,8 +527,7 @@ impl InstructionIterator {
             | InstructionIterator::IsaRelationSortedThing(_, _, _, _)
             | InstructionIterator::IsaAttributeSortedThing(_, _, _, _)
             | InstructionIterator::HasSortedAttribute(_, _, _, _)
-            | InstructionIterator::HasSortedOwner(_, _, _, _) => true
+            | InstructionIterator::HasSortedOwner(_, _, _, _) => true,
         }
     }
 }
-

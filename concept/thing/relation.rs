@@ -8,13 +8,12 @@ use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
 };
-use bytes::byte_array::ByteArray;
 
-use bytes::Bytes;
+use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeRolePlayerIndex, ThingEdgeRolePlayer},
+            edge::{ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
             vertex_object::ObjectVertex,
         },
         type_::vertex::PrefixedTypeVertexEncoding,
@@ -35,6 +34,7 @@ use crate::{
     concept_iterator, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
+        entity::Entity,
         object::{Object, ObjectAPI},
         thing_manager::ThingManager,
         ThingAPI,
@@ -45,7 +45,6 @@ use crate::{
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
-use crate::thing::entity::Entity;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Relation<'a> {

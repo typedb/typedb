@@ -6,8 +6,7 @@
 
 mod common;
 
-use std::{borrow::Cow,
-          collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics},
@@ -24,15 +23,15 @@ use ir::{
     translator::block_builder::TypeQLBuilder,
 };
 use storage::{
-    durability_client::WALClient
-    ,
-    snapshot::{CommittableSnapshot, WriteSnapshot},
+    durability_client::WALClient,
+    sequence_number::SequenceNumber,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
-use storage::sequence_number::SequenceNumber;
-use storage::snapshot::ReadSnapshot;
-use traversal::executor::program_executor::ProgramExecutor;
-use traversal::planner::pattern_plan::PatternPlan;
-use traversal::planner::program_plan::ProgramPlan;
+use traversal::{
+    executor::program_executor::ProgramExecutor,
+    planner::{pattern_plan::PatternPlan, program_plan::ProgramPlan},
+};
+
 use crate::common::{load_managers, setup_storage};
 
 const PERSON_LABEL: Label = Label::new_static("person");
@@ -54,29 +53,30 @@ fn test_planning_traversal() {
     person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
 
     let person = [
-            thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-     thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-     thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-        ];
+        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
+        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
+        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
+    ];
 
     let age = [
-            thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(10)).unwrap(),
-     thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(11)).unwrap(),
-     thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(12)).unwrap(),
-     thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(13)).unwrap(),
-     thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(14)).unwrap(),
-        ];
+        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(10)).unwrap(),
+        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(11)).unwrap(),
+        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(12)).unwrap(),
+        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(13)).unwrap(),
+        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(14)).unwrap(),
+    ];
 
-    let name = [ thing_manager
-        .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("John".to_string())))
-        .unwrap(),
-     thing_manager
-        .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Alice".to_string())))
-        .unwrap(),
-     thing_manager
-        .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Leila".to_string())))
-        .unwrap(),
-        ];
+    let name = [
+        thing_manager
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("John".to_string())))
+            .unwrap(),
+        thing_manager
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Alice".to_string())))
+            .unwrap(),
+        thing_manager
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Leila".to_string())))
+            .unwrap(),
+    ];
 
     person[0].set_has_unordered(&mut snapshot, &thing_manager, age[0].clone()).unwrap();
     person[0].set_has_unordered(&mut snapshot, &thing_manager, age[1].clone()).unwrap();

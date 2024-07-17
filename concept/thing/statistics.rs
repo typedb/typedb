@@ -15,7 +15,7 @@ use bytes::Bytes;
 use durability::DurabilityRecordType;
 use encoding::graph::{
     thing::{
-        edge::{ThingEdgeHas, ThingEdgeRolePlayerIndex, ThingEdgeRolePlayer},
+        edge::{ThingEdgeHas, ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
     },

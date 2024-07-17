@@ -10,7 +10,7 @@ use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeRolePlayerIndex, ThingEdgeRolePlayer},
+            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
             property::{HAS_ORDER_PROPERTY_FACTORY, ROLE_PLAYER_ORDER_PROPERTY_FACTORY},
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_generator::ThingVertexGenerator,
@@ -172,7 +172,7 @@ impl ThingManager {
         Ok(AttributeIterator::new(
             attribute_iterator,
             has_reverse_iterator,
-            self.type_manager().get_independent_attribute_types(snapshot)?
+            self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
 
@@ -200,7 +200,7 @@ impl ThingManager {
         Ok(AttributeIterator::new(
             attribute_iterator,
             has_reverse_iterator,
-            self.type_manager().get_independent_attribute_types(snapshot)?
+            self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
 
@@ -403,7 +403,7 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
-        attribute: Attribute<'_>
+        attribute: Attribute<'_>,
     ) -> Result<bool, ConceptReadError> {
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         let has_exists = snapshot
@@ -418,10 +418,8 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         owner_type_range: KeyRange<ObjectType<'static>>,
     ) -> HasIterator {
-        let range = owner_type_range.map(
-            |type_| ThingEdgeHas::prefix_from_type(type_.into_vertex()),
-            |_| ThingEdgeHas::FIXED_WIDTH_ENCODING
-        );
+        let range = owner_type_range
+            .map(|type_| ThingEdgeHas::prefix_from_type(type_.into_vertex()), |_| ThingEdgeHas::FIXED_WIDTH_ENCODING);
         HasIterator::new(snapshot.iterate_range(range))
     }
 
@@ -458,7 +456,7 @@ impl ThingManager {
         Ok(StructIndexToAttributeIterator::new(
             index_to_attribute_iterator,
             has_reverse_iterator,
-            self.type_manager.get_independent_attribute_types(snapshot)?
+            self.type_manager.get_independent_attribute_types(snapshot)?,
         ))
     }
 

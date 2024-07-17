@@ -6,13 +6,11 @@
 
 use std::{
     cmp::Ordering,
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
-use std::collections::HashMap;
 
-use answer::{Thing, Type, variable_value::VariableValue};
-use answer::variable::Variable;
+use answer::{variable::Variable, variable_value::VariableValue, Thing, Type};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -26,10 +24,17 @@ use lending_iterator::{adaptors::Filter, higher_order::FnHktHelper, kmerge::KMer
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
-use crate::executor::{pattern_executor::ImmutableRow, Position};
-use crate::executor::instruction::iterator::{HasSortedAttributeIterator, HasSortedOwnerIterator, InstructionIterator};
-use crate::executor::instruction::VariableMode;
-use crate::planner::pattern_plan::IterateBounds;
+use crate::{
+    executor::{
+        instruction::{
+            iterator::{HasSortedAttributeIterator, HasSortedOwnerIterator, InstructionIterator},
+            VariableMode,
+        },
+        pattern_executor::ImmutableRow,
+        Position,
+    },
+    planner::pattern_plan::IterateBounds,
+};
 
 pub(crate) struct HasIteratorExecutor {
     has: Has<Position>,
@@ -88,11 +93,11 @@ impl HasVariableModes {
     ) -> Self {
         let (owner, attribute) = (has.owner(), has.attribute());
         Self {
-            owner: VariableMode::new(
-                bounds.contains(owner), selected.contains(&owner), named.contains_key(&owner),
-            ),
+            owner: VariableMode::new(bounds.contains(owner), selected.contains(&owner), named.contains_key(&owner)),
             attribute: VariableMode::new(
-                bounds.contains(attribute), selected.contains(&attribute), named.contains_key(&attribute),
+                bounds.contains(attribute),
+                selected.contains(&attribute),
+                named.contains_key(&attribute),
             ),
         }
     }
@@ -121,20 +126,20 @@ enum HasExecutorFilter {
 }
 
 enum HasIteratorSortedAttribute {
-    UnboundedMerged
+    UnboundedMerged,
 }
 
 pub(crate) type HasUnboundedSortedOwnerIterator = Filter<HasIterator, Arc<HasFilterBothFn>>;
 pub(crate) type HasUnboundedSortedAttributeMergedIterator =
-Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterAttributeFn>>;
+    Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterAttributeFn>>;
 pub(crate) type HasUnboundedSortedAttributeSingleIterator = Filter<HasIterator, Arc<HasFilterAttributeFn>>;
 pub(crate) type HasBoundedSortedAttributeIterator = Filter<HasIterator, Arc<HasFilterAttributeFn>>;
 
 type HasFilterBothFn =
-dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
+    dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
 type AttributeFilterFn = dyn for<'a, 'b> FnHktHelper<&'a Result<(Attribute<'b>, u64), ConceptReadError>, bool>;
 type HasFilterAttributeFn =
-dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
+    dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
 type HasOrderByAttributeFn = for<'a, 'b> fn(
     (
         &'a Result<(concept::thing::has::Has<'a>, u64), ConceptReadError>,
@@ -179,19 +184,17 @@ impl HasIteratorExecutor {
         debug_assert!(!variable_modes.is_fully_bound());
         let iterate_mode = IterateMode::new(&has, variable_modes, sort_by);
         let filter_fn = match iterate_mode {
-            IterateMode::UnboundSortedFrom => {
-                HasExecutorFilter::HasFilterBoth(Arc::new({
-                    let owner_att_types = owner_attribute_types.clone();
-                    let att_types = attribute_types.clone();
-                    move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
-                        Ok((has, _)) => {
-                            owner_att_types.contains_key(&Type::from(has.owner().type_()))
-                                && att_types.contains(&Type::Attribute(has.attribute().type_()))
-                        }
-                        Err(_) => true,
+            IterateMode::UnboundSortedFrom => HasExecutorFilter::HasFilterBoth(Arc::new({
+                let owner_att_types = owner_attribute_types.clone();
+                let att_types = attribute_types.clone();
+                move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
+                    Ok((has, _)) => {
+                        owner_att_types.contains_key(&Type::from(has.owner().type_()))
+                            && att_types.contains(&Type::Attribute(has.attribute().type_()))
                     }
-                }))
-            }
+                    Err(_) => true,
+                }
+            })),
             IterateMode::UnboundSortedTo | IterateMode::BoundFromSortedTo => {
                 HasExecutorFilter::HasFilterAttribute(Arc::new({
                     let att_types = attribute_types.clone();
@@ -255,7 +258,7 @@ impl HasIteratorExecutor {
                     HasSortedOwnerIterator::Unbounded(Peekable::new(iterator)),
                     self.has.clone(),
                     self.variable_modes,
-                    None
+                    None,
                 );
                 Ok(peekable)
             }
@@ -275,7 +278,7 @@ impl HasIteratorExecutor {
                         HasSortedAttributeIterator::UnboundedSingle(Peekable::new(iterator)),
                         self.has.clone(),
                         self.variable_modes,
-                        None
+                        None,
                     );
                     Ok(peekable)
                 } else {
@@ -292,7 +295,7 @@ impl HasIteratorExecutor {
                         iterators.push(Peekable::new(iter?))
                     }
 
-                   // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
+                    // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
                     let merged: KMergeBy<HasIterator, HasOrderByAttributeFn> =
                         KMergeBy::new(iterators, Self::compare_has_by_attribute);
                     let filtered: Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterAttributeFn>> =
@@ -301,7 +304,7 @@ impl HasIteratorExecutor {
                         HasSortedAttributeIterator::UnboundedMerged(Peekable::new(filtered)),
                         self.has.clone(),
                         self.variable_modes,
-                        None
+                        None,
                     );
                     Ok(peekable)
                 }
@@ -327,7 +330,7 @@ impl HasIteratorExecutor {
                     HasSortedAttributeIterator::Bounded(Peekable::new(filtered)),
                     self.has.clone(),
                     self.variable_modes,
-                    None
+                    None,
                 );
                 Ok(peekable)
             }
@@ -372,16 +375,10 @@ impl HasCheckExecutor {
         let owner = row.get(self.has.owner());
         let attribute = row.get(self.has.attribute()).as_thing().as_attribute();
         match owner {
-            VariableValue::Thing(Thing::Entity(entity)) => entity.has_attribute(
-                snapshot,
-                thing_manager,
-                attribute,
-            ),
-            VariableValue::Thing(Thing::Relation(relation)) => relation.has_attribute(
-                snapshot,
-                thing_manager,
-                attribute,
-            ),
+            VariableValue::Thing(Thing::Entity(entity)) => entity.has_attribute(snapshot, thing_manager, attribute),
+            VariableValue::Thing(Thing::Relation(relation)) => {
+                relation.has_attribute(snapshot, thing_manager, attribute)
+            }
             _ => unreachable!("Has owner must be an entity or relation."),
         }
     }

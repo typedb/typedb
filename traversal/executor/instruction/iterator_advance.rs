@@ -4,21 +4,25 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::cmp::Ordering;
+
 use answer::variable_value::VariableValue;
-use concept::error::ConceptReadError;
-use concept::thing::attribute::AttributeIterator;
-use concept::thing::entity::{EntityIterator};
-use concept::thing::relation::RelationIterator;
+use concept::{
+    error::ConceptReadError,
+    thing::{attribute::AttributeIterator, entity::EntityIterator, relation::RelationIterator},
+};
 use lending_iterator::{LendingIterator, Peekable};
-use crate::executor::instruction::has_executor::{HasBoundedSortedAttributeIterator, HasUnboundedSortedAttributeMergedIterator, HasUnboundedSortedAttributeSingleIterator, HasUnboundedSortedOwnerIterator};
+
+use crate::executor::instruction::has_executor::{
+    HasBoundedSortedAttributeIterator, HasUnboundedSortedAttributeMergedIterator,
+    HasUnboundedSortedAttributeSingleIterator, HasUnboundedSortedOwnerIterator,
+};
 
 macro_rules! counting_advance_to_thing_iterator {
     ($name: ident, $iterator_type: ty) => {
         pub(crate) fn $name(
             iterator: &mut Peekable<$iterator_type>,
-            target: &VariableValue<'_>
+            target: &VariableValue<'_>,
         ) -> Result<(usize, Option<Ordering>), ConceptReadError> {
             let mut count = 0;
             loop {
@@ -51,7 +55,7 @@ macro_rules! counting_advance_to_has_iterator_owner {
     ($name: ident, $iterator_type: ty) => {
         pub(crate) fn $name(
             iterator: &mut Peekable<$iterator_type>,
-            target: &VariableValue<'_>
+            target: &VariableValue<'_>,
         ) -> Result<(usize, Option<Ordering>), ConceptReadError> {
             let mut count = 0;
             loop {
@@ -87,7 +91,7 @@ macro_rules! counting_advance_to_has_iterator_attribute {
     ($name: ident, $iterator_type: ty) => {
         pub(crate) fn $name(
             iterator: &mut Peekable<$iterator_type>,
-            target: &VariableValue<'_>
+            target: &VariableValue<'_>,
         ) -> Result<(usize, Option<Ordering>), ConceptReadError> {
             let mut count = 0;
             loop {

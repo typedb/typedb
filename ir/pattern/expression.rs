@@ -6,9 +6,9 @@
 
 use std::{
     fmt::{Display, Formatter},
+    iter::empty,
     marker::PhantomData,
 };
-use std::iter::empty;
 
 use crate::pattern::IrID;
 
@@ -18,8 +18,7 @@ pub struct Expression<ID: IrID> {
 }
 
 impl<ID: IrID> Expression<ID> {
-
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
         todo!();
         empty()
     }

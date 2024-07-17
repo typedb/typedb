@@ -4,23 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
-use std::borrow::Cow;
-use answer::variable_value::VariableValue;
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
+use answer::variable_value::VariableValue;
 use concept::{
     error::ConceptReadError,
-    thing::object::ObjectAPI
-    ,
+    thing::object::ObjectAPI,
+    type_::{Ordering, OwnerAPI},
 };
-use concept::type_::{Ordering, OwnerAPI};
-use encoding::graph::type_::Kind;
-use encoding::value::label::Label;
-use encoding::value::value::Value;
-use encoding::value::value_type::ValueType;
+use encoding::{
+    graph::type_::Kind,
+    value::{label::Label, value::Value, value_type::ValueType},
+};
 use ir::{
     inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
@@ -29,18 +24,16 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use traversal::{
-    executor::program_executor::ProgramExecutor,
+    executor::{pattern_executor::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
-        pattern_plan::{Instruction, PatternPlan, SortedJoinStep, Step},
+        pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
         program_plan::ProgramPlan,
     },
 };
-use traversal::executor::pattern_executor::ImmutableRow;
-use traversal::planner::pattern_plan::IterateBounds;
 
 use crate::common::{load_managers, setup_storage};
 

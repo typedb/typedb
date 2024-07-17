@@ -4,31 +4,31 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, sync::Arc};
-use std::borrow::Cow;
-use std::fmt::{Display, Formatter};
-
-use itertools::Itertools;
+use std::{
+    borrow::Cow,
+    cmp::Ordering,
+    collections::HashMap,
+    fmt::{Display, Formatter},
+    sync::Arc,
+};
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::inference::type_inference::TypeAnnotations;
-use ir::program::block::BlockContext;
+use ir::{inference::type_inference::TypeAnnotations, program::block::BlockContext};
+use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     executor::{
-        instruction::InstructionExecutor,
-        Position,
+        instruction::{iterator::InstructionIterator, InstructionExecutor},
+        Position, SelectedPositions,
     },
     planner::pattern_plan::{
-        AssignmentStep, DisjunctionStep, Instruction, NegationStep,
-        OptionalStep, PatternPlan, SortedJoinStep, Step, UnsortedJoinStep,
+        AssignmentStep, DisjunctionStep, Instruction, NegationStep, OptionalStep, PatternPlan, SortedJoinStep, Step,
+        UnsortedJoinStep,
     },
 };
-use crate::executor::instruction::iterator::InstructionIterator;
-use crate::executor::SelectedPositions;
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, Position>,
@@ -59,9 +59,8 @@ impl PatternExecutor {
                 let previous = variable_positions.insert(*variable, Position::new(variable_positions.len() as u32));
                 debug_assert_eq!(previous, Option::None);
             }
-            let executor = StepExecutor::new(
-                step, &context, &variable_positions, type_annotations, snapshot, thing_manager,
-            )?;
+            let executor =
+                StepExecutor::new(step, &context, &variable_positions, type_annotations, snapshot, thing_manager)?;
             step_executors.push(executor)
         }
         let mut variable_positions_index = vec![Variable::new(0); variable_positions.len()];
@@ -91,7 +90,7 @@ impl PatternExecutor {
         self,
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
-    ) -> impl for<'a> LendingIterator<Item<'a>=Result<ImmutableRow<'a>, &'a ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager))
             .flat_map(|batch| BatchRowIterator::new(batch))
     }
@@ -116,8 +115,11 @@ impl PatternExecutor {
                     if current_step >= steps_len {
                         return Ok(last_batch);
                     } else {
-                        let batch = self.step_executors[current_step]
-                            .batch_from(last_batch.take().unwrap(), snapshot, thing_manager)?;
+                        let batch = self.step_executors[current_step].batch_from(
+                            last_batch.take().unwrap(),
+                            snapshot,
+                            thing_manager,
+                        )?;
                         match batch {
                             None => {
                                 direction = Direction::Backward;
@@ -135,8 +137,7 @@ impl PatternExecutor {
                     }
                 }
                 Direction::Backward => {
-                    let batch = self.step_executors[current_step]
-                        .batch_continue(snapshot, thing_manager)?;
+                    let batch = self.step_executors[current_step].batch_continue(snapshot, thing_manager)?;
                     match batch {
                         None => {
                             if current_step == 0 {
@@ -324,7 +325,11 @@ impl SortedJoinExecutor {
             output_width,
             outputs_selected: SelectedPositions::new(&select_variables, variable_positions),
             iterators: Vec::with_capacity(instruction_count),
-            cartesian_iterator: CartesianIterator::new(output_width as usize, instruction_count, sort_variable_position),
+            cartesian_iterator: CartesianIterator::new(
+                output_width as usize,
+                instruction_count,
+                sort_variable_position,
+            ),
             input: None,
             intersection_row: (0..output_width).map(|_| VariableValue::Empty).collect_vec(),
             output: None,
@@ -337,7 +342,9 @@ impl SortedJoinExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
-        debug_assert!(self.output.is_none() && (self.input.is_none() || !self.input.as_mut().unwrap().peek().is_some()));
+        debug_assert!(
+            self.output.is_none() && (self.input.is_none() || !self.input.as_mut().unwrap().peek().is_some())
+        );
         self.input = Some(Peekable::new(BatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
         self.may_create_intersection_iterators(snapshot, thing_manager)?;
@@ -925,7 +932,8 @@ impl<'a> ImmutableRow<'a> {
     }
 
     pub fn into_owned(self) -> ImmutableRow<'static> {
-        let cloned: Vec<VariableValue<'static>> = self.row.into_iter().map(|value| value.clone().into_owned()).collect();
+        let cloned: Vec<VariableValue<'static>> =
+            self.row.into_iter().map(|value| value.clone().into_owned()).collect();
         ImmutableRow { row: Cow::Owned(cloned) }
     }
 
@@ -935,7 +943,7 @@ impl<'a> ImmutableRow<'a> {
 }
 
 impl ImmutableRow<'static> {
-    pub fn into_iter(self) -> impl Iterator<Item=VariableValue<'static>> {
+    pub fn into_iter(self) -> impl Iterator<Item = VariableValue<'static>> {
         self.row.into_owned().into_iter()
     }
 }

@@ -8,9 +8,8 @@ use std::{
     borrow::Cow,
     cmp::Ordering,
     fmt::{Display, Formatter},
-    hash::Hash,
+    hash::{Hash, Hasher},
 };
-use std::hash::{Hash, Hasher};
 
 use bytes::byte_array::ByteArray;
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
@@ -72,7 +71,7 @@ impl<'a> Hash for Value<'a> {
             Value::Double(value) => Hash::hash(&self.encode_double(), state), // same bitwise representation as storage of values
             Value::Decimal(value) => Hash::hash(value, state),
             Value::Date(value) => Hash::hash(value, state),
-            Value::DateTime(value) =>Hash::hash(value, state),
+            Value::DateTime(value) => Hash::hash(value, state),
             Value::DateTimeTZ(value) => Hash::hash(value, state),
             Value::Duration(value) => Hash::hash(value, state),
             Value::String(value) => Hash::hash(value, state),

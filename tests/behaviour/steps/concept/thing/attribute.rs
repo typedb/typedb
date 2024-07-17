@@ -9,8 +9,8 @@ use concept::{
     thing::{attribute::Attribute, ThingAPI},
     type_::TypeAPI,
 };
-use macro_rules_attribute::apply;
 use lending_iterator::LendingIterator;
+use macro_rules_attribute::apply;
 
 use crate::{
     generic_step,
@@ -158,7 +158,9 @@ async fn attribute_instances_contain(
     let actuals: Vec<Attribute<'static>> = with_read_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        tx.thing_manager.get_attributes_in(&tx.snapshot, attribute_type).unwrap()
+        tx.thing_manager
+            .get_attributes_in(&tx.snapshot, attribute_type)
+            .unwrap()
             .map_static(|result| result.unwrap().clone().into_owned())
             .collect()
     });

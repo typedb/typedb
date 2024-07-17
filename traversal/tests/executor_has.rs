@@ -6,27 +6,23 @@
 
 mod common;
 
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use concept::{
     error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
-    type_::{Ordering, OwnerAPI, type_manager::TypeManager},
+    type_::{type_manager::TypeManager, Ordering, OwnerAPI},
 };
 use durability::wal::WAL;
 use encoding::{
-    EncodingKeyspace,
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator,
         thing::vertex_generator::ThingVertexGenerator,
-        type_::{Kind, vertex_generator::TypeVertexGenerator},
+        type_::{vertex_generator::TypeVertexGenerator, Kind},
     },
     value::{label::Label, value::Value, value_type::ValueType},
+    EncodingKeyspace,
 };
 use ir::{
     inference::type_inference::infer_types,
@@ -36,19 +32,18 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging, TempDir};
 use traversal::{
-    executor::program_executor::ProgramExecutor,
+    executor::{pattern_executor::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
-        pattern_plan::{Instruction, PatternPlan, SortedJoinStep, Step},
+        pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
         program_plan::ProgramPlan,
     },
 };
-use traversal::executor::pattern_executor::ImmutableRow;
-use traversal::planner::pattern_plan::IterateBounds;
+
 use crate::common::{load_managers, setup_storage};
 
 const PERSON_LABEL: Label = Label::new_static("person");
@@ -155,7 +150,7 @@ fn traverse_has_unbounded_sorted_from() {
             Instruction::Has(has_age.clone(), IterateBounds::None([])),
             Instruction::Has(has_name.clone(), IterateBounds::None([])),
         ],
-        &vec![var_person, var_name, var_age]
+        &vec![var_person, var_name, var_age],
     ))];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, program.entry().context().clone());
@@ -175,9 +170,8 @@ fn traverse_has_unbounded_sorted_from() {
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
 
-        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
-            .map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone()))
-            .collect();
+        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+            iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
         assert_eq!(rows.len(), 7);
 
         for row in rows {

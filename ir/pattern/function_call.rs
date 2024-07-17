@@ -35,7 +35,7 @@ impl<ID: IrID> FunctionCall<ID> {
         &self.call_variable_mapping
     }
 
-    pub fn argument_ids(&self) -> impl Iterator<Item=ID> + '_ {
+    pub fn argument_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.call_variable_mapping.keys().into_iter().cloned()
     }
 

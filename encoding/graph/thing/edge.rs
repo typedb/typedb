@@ -511,7 +511,9 @@ impl<'a> ThingEdgeRolePlayerIndex<'a> {
         ThingEdgeRolePlayerIndex { bytes: Bytes::Array(bytes) }
     }
 
-    pub fn prefix_from(from: ObjectVertex<'_>) -> StorageKey<'static, { ThingEdgeRolePlayerIndex::LENGTH_PREFIX_FROM }> {
+    pub fn prefix_from(
+        from: ObjectVertex<'_>,
+    ) -> StorageKey<'static, { ThingEdgeRolePlayerIndex::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(from.bytes().bytes());
