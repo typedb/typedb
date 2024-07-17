@@ -11,10 +11,10 @@
 
 # Introducing TypeDB
 
-TypeDB is a general-purpose database designed with a new kind of high-level, declarative query language that drastically simplifies handling complex data and logic. TypeDB is built for the performance, maintainability, safety, and scalability needs of modern applications, and is specifically tailored to cloud-based development.
+**TypeDB** is a fast and versatile database featuring a new kind of high-level, declarative query language, **TypeQL**, that significantly simplifies the management of complex data and logic. It is engineered to meet the performance, maintainability, safety, and scalability requirements of modern applications, and is specifically optimized for cloud-based development.
 
 - Get started by [installing TypeDB](https://typedb.com/docs/home/install/overview).
-- Explore the basics of TypeDB in our easy [Crash Course](https://typedb.com/docs/home/crash-course).
+- Explore the basics of TypeDB in our [Crash Course](https://typedb.com/docs/home/crash-course).
 - Discover more of TypeDB’s unique [features](https://typedb.com/features).
 - Master TypeDB with our end-to-end [Learning Course](https://typedb.com/docs/learn/overview).
 - Learn more at TypeDB's [Learning Center](https://typedb.com/learn).
@@ -204,9 +204,8 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
 If you want to begin your journey with TypeDB, you can explore the following resources:
 
 * More on TypeDB's [features](https://typedb.com/features)
-* In-depth dive into TypeDB's [philosophy](https://typedb.com/philosophy)
-* Our [TypeDB quickstart](https://typedb.com/docs/home/quickstart)
-* [TypeDB in 25 queries](https://typedb.com/docs/home/25-queries)
+* [TypeDB Quickstart](https://typedb.com/docs/home/quickstart) and [Crash Course](https://typedb.com/docs/home/crash-course)
+* [TypeDB Academy](https://typedb.com/docs/academy)
 * **[TypeQL](https://github.com/vaticle/typeql)**
 * **[TypeDB Studio](https://github.com/vaticle/typedb-studio)**
 
