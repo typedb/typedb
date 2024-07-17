@@ -14,12 +14,12 @@
 **TypeDB** is a fast and versatile database featuring a new kind of high-level, declarative query language, **TypeQL**, that significantly simplifies the management of complex data and logic. It is engineered to meet the performance, maintainability, safety, and scalability requirements of modern applications, and is specifically optimized for cloud-based development.
 
 - Get started by [installing TypeDB](https://typedb.com/docs/home/install/overview).
-- Explore the basics of TypeDB in our [Crash Course](https://typedb.com/docs/home/crash-course).
-- Discover more of TypeDB’s unique [features](https://typedb.com/features).
-- Master TypeDB with our end-to-end [Learning Course](https://typedb.com/docs/learn/overview).
-- Learn more at TypeDB's [Learning Center](https://typedb.com/learn).
+- Explore the basics of TypeDB in our [Quickstart](https://typedb.com/docs/home/quickstart) and [Crash Course](https://typedb.com/docs/home/crash-course).
+- Master TypeDB with [TypeDB Academy](https://typedb.com/docs/academy).
+- Discover more of TypeDB’s unique [Features](https://typedb.com/features).
+- Find further articles and lectures in our [Learning Center](https://typedb.com/learn).
 
-> **IMPORTANT NOTE:** TypeDB & TypeQL are in the process of being rewritten in [Rust](https://www.rust-lang.org). There will be significant refinement to the language, and minor breaks in backwards compatibility. Learn about the changes on our [roadmap issue on GitHub](https://github.com/vaticle/typedb/issues/6764). The biggest change to TypeDB 3.0 will be our storage data structure and architecture that significantly boosts performance. We’re aiming to release 3.0 in the summer this year, along with preliminary benchmarks of TypeDB.
+> **IMPORTANT NOTE:** TypeDB & TypeQL are in the process of being rewritten in [Rust](https://www.rust-lang.org). There will be significant refinement to the language, and minor breaks in backwards compatibility. Learn about the changes on our [roadmap blog post](https://typedb.com/blog/typedb-3-roadmap). The biggest change to TypeDB 3.0 will be our storage data structure and architecture that significantly boosts performance. We’re aiming to release 3.0 in the summer this year, along with preliminary benchmarks of TypeDB.
 
 ## Polymorphic databases
 
