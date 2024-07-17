@@ -352,7 +352,7 @@ impl TypeManager {
                                     field_path: fields_path.clone().into_iter().map(|str| str.to_owned()).collect(),
                                 },
                             })
-                        }
+                        };
                     }
                 }
             } else {
@@ -1080,7 +1080,7 @@ impl TypeManager {
             relation_type.clone().into_owned(),
             &label.clone().into_owned(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.create_role_type_unconditional(snapshot, label, relation_type, false, ordering)
     }
@@ -1203,7 +1203,7 @@ impl TypeManager {
         //     .map_err(|source| ConceptWriteError::SchemaValidation {  source } )?;
 
         for owns in
-            TypeReader::get_capabilities_for_interface_declared::<Owns<'static>>(snapshot, attribute_type.clone())?
+        TypeReader::get_capabilities_for_interface_declared::<Owns<'static>>(snapshot, attribute_type.clone())?
         {
             self.unset_owns(snapshot, owns.owner().into(), owns.attribute())?
         }
@@ -1225,7 +1225,6 @@ impl TypeManager {
         OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, role_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        // TODO: More validation
         // TODO: Re-enable when we get the thing_manager
         // OperationTimeValidation::validate_exact_type_no_instances_role(snapshot, role_type.clone().into_owned())
         //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
@@ -1314,7 +1313,7 @@ impl TypeManager {
             relation_type,
             &new_label.clone().into_owned(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_delete_label(snapshot, role_type.clone());
         TypeWriter::storage_put_label(snapshot, role_type, &new_label);
@@ -1361,21 +1360,21 @@ impl TypeManager {
             Some(value_type.clone()),
             existing_value_type_with_source.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_attribute_type_value_type_compatible_with_declared_annotations(
             snapshot,
             attribute_type.clone(),
             Some(value_type.clone()),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_value_type_compatible_with_all_owns_annotations(
             snapshot,
             attribute_type.clone(),
             Some(value_type.clone()),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // We can't change value type now, but it's safer to have this check already called
         if let Some((existing_value_type, _)) = existing_value_type_with_source {
@@ -1411,8 +1410,8 @@ impl TypeManager {
         subtype: K,
         supertype: K,
     ) -> Result<(), ConceptWriteError>
-    where
-        K: KindAPI<'static>,
+        where
+            K: KindAPI<'static>,
     {
         debug_assert! {
             OperationTimeValidation::validate_type_exists(snapshot, subtype.clone()).is_ok() &&
@@ -1430,7 +1429,7 @@ impl TypeManager {
             subtype.clone(),
             supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_delete_supertype(snapshot, subtype.clone());
         TypeWriter::storage_put_supertype(snapshot, subtype.clone(), supertype.clone());
@@ -1448,15 +1447,13 @@ impl TypeManager {
             subtype.clone(),
             supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_attribute_type_supertype_is_abstract(snapshot, self, supertype.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_attribute_type_does_not_lose_independent_annotation_with_new_supertype(snapshot, subtype.clone(), supertype.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        // TODO: Add check that if we have inherited independent and set supertype without independent (lose independence), we reject it with a specific error!
 
         self.set_supertype(snapshot, subtype, supertype)
     }
@@ -1472,28 +1469,28 @@ impl TypeManager {
             subtype.clone().into_owned_object_type(),
             supertype.clone().into_owned_object_type(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_compatible_with_new_supertype(
             snapshot,
             subtype.clone().into_owned_object_type(),
             supertype.clone().into_owned_object_type(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_supertype(snapshot, subtype, supertype)
     }
@@ -1509,42 +1506,42 @@ impl TypeManager {
             subtype.clone(),
             supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_relates_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_owns_compatible_with_new_supertype(
             snapshot,
             subtype.clone().into_owned_object_type(),
             supertype.clone().into_owned_object_type(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_compatible_with_new_supertype(
             snapshot,
             subtype.clone().into_owned_object_type(),
             supertype.clone().into_owned_object_type(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_relation_type_does_not_acquire_cascade_annotation_with_new_supertype(snapshot, subtype.clone(), supertype.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -1571,14 +1568,14 @@ impl TypeManager {
             attribute.clone(),
             None,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_interface_not_overridden::<Owns<'static>>(
             snapshot,
             owner.clone(),
             attribute.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
         TypeWriter::storage_put_interface_impl(snapshot, owns.clone());
@@ -1622,7 +1619,7 @@ impl TypeManager {
             owns.clone(),
             overridden.attribute(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_owns_override_ordering_match(
             snapshot,
@@ -1630,7 +1627,7 @@ impl TypeManager {
             overridden.clone(),
             None,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_edge_override_annotations_compatibility(
             snapshot,
@@ -1638,7 +1635,7 @@ impl TypeManager {
             owns.clone(),
             overridden.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let overridden_value_type_with_source = TypeReader::get_value_type(snapshot, overridden.attribute())?;
         let value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute())?;
@@ -1649,14 +1646,14 @@ impl TypeManager {
             value_type.clone(),
             overridden_value_type_with_source.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_owns_value_type_compatible_with_annotations(
             snapshot,
             overridden.clone(),
             value_type.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_set_type_edge_overridden(snapshot, owns, overridden);
         Ok(())
@@ -1689,14 +1686,14 @@ impl TypeManager {
             role.clone(),
             None,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_interface_not_overridden::<Plays<'static>>(
             snapshot,
             player.clone(),
             role.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
         TypeWriter::storage_put_interface_impl(snapshot, plays.clone());
@@ -1737,7 +1734,7 @@ impl TypeManager {
             plays.clone(),
             overridden.role(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_edge_override_annotations_compatibility(
             snapshot,
@@ -1745,7 +1742,7 @@ impl TypeManager {
             plays.clone(),
             overridden.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_set_type_edge_overridden(snapshot, plays, overridden);
         Ok(())
@@ -1772,7 +1769,7 @@ impl TypeManager {
             Some(ordering),
             None,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let owns_override_opt = TypeReader::get_capability_override(snapshot, owns.clone())?;
         match owns_override_opt {
@@ -1783,7 +1780,7 @@ impl TypeManager {
                     owns_override.clone(),
                     Some(ordering),
                 )
-                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+                    .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
             }
             None => {}
         }
@@ -1808,9 +1805,8 @@ impl TypeManager {
             Some(ordering),
             None,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        // TODO: subtype ordering match should be checked on commit time, not operation time!
         let relates_override_opt = TypeReader::get_capability_override(snapshot, relates.clone())?;
         match relates_override_opt {
             Some(relates_override) => {
@@ -1820,7 +1816,7 @@ impl TypeManager {
                     relates_override.role(),
                     Some(ordering),
                 )
-                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+                    .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
             }
             None => {}
         }
@@ -1843,7 +1839,7 @@ impl TypeManager {
             role_type.clone(),
             Some(true), // set_abstract
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation_abstract(snapshot, role_type)
     }
@@ -1862,7 +1858,7 @@ impl TypeManager {
             None,       // supertype: will be read from storage
             Some(true), // set abstract annotation
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: Validation: existing instances (or is it schema/data validation?)
 
@@ -1877,13 +1873,34 @@ impl TypeManager {
         self.unset_annotation::<AnnotationAbstract>(snapshot, type_, AnnotationCategory::Abstract)
     }
 
-    pub(crate) fn unset_owner_annotation_abstract(
+    pub(crate) fn unset_relation_type_annotation_abstract(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_no_capabilities_with_abstract_interfaces_to_unset_abstractness::<Relates<'static>>(
+            snapshot,
+            self,
+            relation_type.clone(),
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        self.unset_object_type_annotation_abstract(snapshot, relation_type)
+    }
+
+    pub(crate) fn unset_object_type_annotation_abstract(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_: impl ObjectTypeAPI<'static> + KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: We may move it to schema validation
-        OperationTimeValidation::validate_no_abstract_attribute_types_owned_to_unset_abstractness(
+        OperationTimeValidation::validate_no_capabilities_with_abstract_interfaces_to_unset_abstractness::<Owns<'static>>(
+            snapshot,
+            self,
+            type_.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_no_capabilities_with_abstract_interfaces_to_unset_abstractness::<Plays<'static>>(
             snapshot,
             self,
             type_.clone(),
@@ -1898,6 +1915,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
+        // TODO: It can be ignored for operation time validations, but we may be strict as well
         OperationTimeValidation::validate_no_subtypes_for_type_abstractness_unset(snapshot, type_.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1907,7 +1925,7 @@ impl TypeManager {
             TypeReader::get_value_type_without_source(snapshot, type_.clone())?,
             Some(false),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.unset_annotation_abstract(snapshot, type_)
     }
@@ -1944,7 +1962,7 @@ impl TypeManager {
             overridden.role(),
             None,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_edge_override_annotations_compatibility(
             snapshot,
@@ -1952,7 +1970,7 @@ impl TypeManager {
             relates.clone(),
             overridden.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_supertype(snapshot, relates.role(), overridden.role())?;
         TypeWriter::storage_set_type_edge_overridden(snapshot, relates, overridden);
@@ -1992,7 +2010,7 @@ impl TypeManager {
             None,
             Some(true),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_edge_annotation::<AnnotationDistinct>(snapshot, relates, AnnotationCategory::Distinct, None)
     }
@@ -2002,8 +2020,8 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         edge: EDGE,
     ) -> Result<(), ConceptWriteError>
-    where
-        EDGE: Capability<'static>,
+        where
+            EDGE: Capability<'static>,
     {
         self.unset_edge_annotation::<AnnotationDistinct>(snapshot, edge, AnnotationCategory::Distinct)
     }
@@ -2018,7 +2036,7 @@ impl TypeManager {
             owns.clone(),
             TypeReader::get_value_type_without_source(snapshot, owns.attribute())?,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_edge_annotation::<AnnotationUnique>(snapshot, owns, AnnotationCategory::Unique, None)
     }
@@ -2041,7 +2059,7 @@ impl TypeManager {
             owns.clone(),
             TypeReader::get_value_type_without_source(snapshot, owns.attribute())?,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         if let Some(override_owns) = TypeReader::get_capability_override(snapshot, owns.clone())? {
             OperationTimeValidation::validate_key_narrows_inherited_cardinality(
@@ -2050,7 +2068,7 @@ impl TypeManager {
                 owns.clone(),
                 override_owns,
             )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
         self.set_edge_annotation::<AnnotationKey>(snapshot, owns, AnnotationCategory::Key, None)
@@ -2061,8 +2079,8 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         edge: EDGE,
     ) -> Result<(), ConceptWriteError>
-    where
-        EDGE: Capability<'static>,
+        where
+            EDGE: Capability<'static>,
     {
         self.unset_edge_annotation::<AnnotationKey>(snapshot, edge, AnnotationCategory::Key)
     }
@@ -2073,8 +2091,8 @@ impl TypeManager {
         edge: EDGE,
         cardinality: AnnotationCardinality,
     ) -> Result<(), ConceptWriteError>
-    where
-        EDGE: Capability<'static>,
+        where
+            EDGE: Capability<'static>,
     {
         OperationTimeValidation::validate_cardinality_arguments(cardinality)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -2087,7 +2105,7 @@ impl TypeManager {
                 override_edge,
                 cardinality,
             )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
         self.set_edge_annotation::<AnnotationCardinality>(
@@ -2103,8 +2121,8 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         edge: EDGE,
     ) -> Result<(), ConceptWriteError>
-    where
-        EDGE: Capability<'static>,
+        where
+            EDGE: Capability<'static>,
     {
         self.unset_edge_annotation::<AnnotationCardinality>(snapshot, edge, AnnotationCategory::Cardinality)
     }
@@ -2123,14 +2141,14 @@ impl TypeManager {
             type_.clone(),
             TypeReader::get_value_type_without_source(snapshot, type_.clone())?,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
             snapshot,
             type_.clone(),
             AnnotationCategory::Regex,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_type_regex_narrows_inherited_regex(
             snapshot,
@@ -2138,7 +2156,7 @@ impl TypeManager {
             None, // supertype: will be read from storage
             regex.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation::<AnnotationRegex>(snapshot, type_, AnnotationCategory::Regex, Some(regex))
     }
@@ -2165,14 +2183,14 @@ impl TypeManager {
             owns.attribute(),
             TypeReader::get_value_type_without_source(snapshot, owns.attribute())?,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_set_only_for_capability(
             snapshot,
             owns.clone(),
             AnnotationCategory::Regex,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_edge_regex_narrows_inherited_regex(
             snapshot,
@@ -2180,7 +2198,7 @@ impl TypeManager {
             None, // overridden_owns: will be read from storage
             regex.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_edge_annotation::<AnnotationRegex>(snapshot, owns, AnnotationCategory::Regex, Some(regex))
     }
@@ -2190,8 +2208,8 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         edge: EDGE,
     ) -> Result<(), ConceptWriteError>
-    where
-        EDGE: Capability<'static>,
+        where
+            EDGE: Capability<'static>,
     {
         self.unset_edge_annotation::<AnnotationRegex>(snapshot, edge, AnnotationCategory::Regex)
     }
@@ -2225,7 +2243,7 @@ impl TypeManager {
             type_.clone(),
             type_value_type.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_range_arguments(range.clone(), type_value_type)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -2235,7 +2253,7 @@ impl TypeManager {
             type_.clone(),
             AnnotationCategory::Range,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_type_range_narrows_inherited_range(
             snapshot,
@@ -2243,7 +2261,7 @@ impl TypeManager {
             None, // supertype: will be read from storage
             range.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: Maybe for the future: check if compatible with existing VALUES annotation
 
@@ -2271,7 +2289,7 @@ impl TypeManager {
             owns.attribute(),
             owns_value_type.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_range_arguments(range.clone(), owns_value_type)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -2281,7 +2299,7 @@ impl TypeManager {
             owns.clone(),
             AnnotationCategory::Range,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_edge_range_narrows_inherited_range(
             snapshot,
@@ -2289,7 +2307,7 @@ impl TypeManager {
             None, // overridden_owns: will be read from storage
             range.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: Maybe for the future: check if compatible with existing VALUES annotation
 
@@ -2317,7 +2335,7 @@ impl TypeManager {
             type_.clone(),
             type_value_type.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_values_arguments(values.clone(), type_value_type)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -2327,7 +2345,7 @@ impl TypeManager {
             type_.clone(),
             AnnotationCategory::Values,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_type_values_narrows_inherited_values(
             snapshot,
@@ -2335,7 +2353,7 @@ impl TypeManager {
             None, // supertype: will be read from storage
             values.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: Maybe for the future: check if compatible with existing RANGE annotation
 
@@ -2363,7 +2381,7 @@ impl TypeManager {
             owns.attribute(),
             owns_value_type.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_values_arguments(values.clone(), owns_value_type)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -2373,7 +2391,7 @@ impl TypeManager {
             owns.clone(),
             AnnotationCategory::Values,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_edge_values_narrows_inherited_values(
             snapshot,
@@ -2381,7 +2399,7 @@ impl TypeManager {
             None, // overridden_owns: will be read from storage
             values.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: Maybe for the future: check if compatible with existing RANGE annotation
         self.set_edge_annotation::<AnnotationValues>(snapshot, owns, AnnotationCategory::Values, Some(values))
@@ -2410,14 +2428,14 @@ impl TypeManager {
             type_.clone(),
             annotation_category,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_declared_annotation_is_compatible_with_other_inherited_annotations(
             snapshot,
             type_.clone(),
             annotation_category,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation_unconditional(snapshot, type_, annotation_value)
     }
@@ -2450,14 +2468,14 @@ impl TypeManager {
             edge.clone(),
             annotation_category,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations(
             snapshot,
             edge.clone(),
             annotation_category,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         match annotation_value {
             None => TypeWriter::storage_put_type_edge_property::<A>(snapshot, edge, annotation_value),
@@ -2480,7 +2498,7 @@ impl TypeManager {
             type_.clone(),
             annotation_category,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_delete_type_vertex_property::<A>(snapshot, type_);
         Ok(())
@@ -2500,7 +2518,7 @@ impl TypeManager {
             edge.clone(),
             annotation_category,
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_delete_type_edge_property::<A>(snapshot, edge);
         Ok(())

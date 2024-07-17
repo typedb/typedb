@@ -219,7 +219,7 @@ impl<'a> EntityType<'a> {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match entity_annotation {
             EntityTypeAnnotation::Abstract(_) => {
-                type_manager.unset_owner_annotation_abstract(snapshot, self.clone().into_owned())?
+                type_manager.unset_object_type_annotation_abstract(snapshot, self.clone().into_owned())?
             }
         }
 

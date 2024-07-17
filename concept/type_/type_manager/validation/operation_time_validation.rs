@@ -133,24 +133,22 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_no_abstract_attribute_types_owned_to_unset_abstractness<T>(
+    pub(crate) fn validate_no_capabilities_with_abstract_interfaces_to_unset_abstractness<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        type_: T,
-    ) -> Result<(), SchemaValidationError>
-        where
-            T: ObjectTypeAPI<'static>,
-    {
-        TypeReader::get_capabilities_declared(snapshot, type_)
+        type_: impl KindAPI<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        TypeReader::get_capabilities_declared::<CAP>(snapshot, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?
             .iter()
-            .map(Owns::attribute)
-            .try_for_each(|attribute_type: AttributeType<'static>| {
-                if attribute_type.is_abstract(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)? {
-                    Err(SchemaValidationError::CannotUnsetAbstractnessAsItOwnsAbstractTypes(get_label_or_schema_err(
-                        snapshot,
-                        attribute_type,
-                    )?))
+            .map(CAP::interface)
+            .try_for_each(|interface_type| {
+                if interface_type.is_abstract(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)? {
+                    Err(SchemaValidationError::CannotUnsetAbstractnessAsItHasDeclaredCapabilityOfAbstractInterface(
+                        CapabilityKind::Owns,
+                        get_label_or_schema_err(snapshot, type_.clone())?,
+                        get_label_or_schema_err(snapshot, interface_type)?,
+                    ))
                 } else {
                     Ok(())
                 }

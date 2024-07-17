@@ -226,7 +226,7 @@ impl<'a> RelationType<'a> {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match relation_type_annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.unset_owner_annotation_abstract(snapshot, self.clone().into_owned())?
+                type_manager.unset_relation_type_annotation_abstract(snapshot, self.clone().into_owned())?
             }
             RelationTypeAnnotation::Cascade(_) => {
                 type_manager.unset_annotation_cascade(snapshot, self.clone().into_owned())?
