@@ -67,6 +67,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::type_::type_manager::validation::validation::{edge_get_owner_of_annotation_category, type_get_annotation_by_category, type_get_owner_of_annotation_category};
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -105,8 +106,8 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_: T,
     ) -> Result<(), SchemaValidationError>
-    where
-        T: KindAPI<'static>,
+        where
+            T: KindAPI<'static>,
     {
         let no_subtypes =
             TypeReader::get_subtypes(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?.is_empty();
@@ -137,8 +138,8 @@ impl OperationTimeValidation {
         type_manager: &TypeManager,
         type_: T,
     ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static>,
+        where
+            T: ObjectTypeAPI<'static>,
     {
         TypeReader::get_capabilities_declared(snapshot, type_)
             .map_err(SchemaValidationError::ConceptRead)?
@@ -285,8 +286,8 @@ impl OperationTimeValidation {
         owner_subtype: T,
         owner_supertype: T,
     ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
+        where
+            T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
         let supertype_owns_with_attributes: HashMap<AttributeType<'static>, Owns<'static>> =
             TypeReader::get_capabilities(snapshot, owner_supertype.clone().into_owned_object_type())
@@ -347,8 +348,8 @@ impl OperationTimeValidation {
         player_subtype: T,
         player_supertype: T,
     ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
+        where
+            T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
         let supertype_plays_with_roles: HashMap<RoleType<'static>, Plays<'static>> =
             TypeReader::get_capabilities(snapshot, player_supertype.clone().into_owned_object_type())
@@ -419,7 +420,7 @@ impl OperationTimeValidation {
                 if old_value_type == new_value_type {
                     Ok(())
                 } else {
-                    Err(SchemaValidationError::CannotChangeValueTypeOfAttributeType(
+                    Err(SchemaValidationError::ChangingAttributeTypeSupertypeWillImplicitlyChangeItsValueType(
                         get_label_or_schema_err(snapshot, subtype)?,
                         subtype_declared_value_type,
                     ))
@@ -545,8 +546,8 @@ impl OperationTimeValidation {
         interface: CAP::InterfaceType,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
-    where
-        CAP: Capability<'static, ObjectType = ObjectType<'static>>,
+        where
+            CAP: Capability<'static, ObjectType=ObjectType<'static>>,
     {
         let implementations = TypeReader::get_capabilities_for_interface::<CAP>(snapshot, interface.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -576,8 +577,8 @@ impl OperationTimeValidation {
         capability: CAP,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
-    where
-        CAP: Capability<'static, ObjectType = ObjectType<'static>>,
+        where
+            CAP: Capability<'static, ObjectType=ObjectType<'static>>,
     {
         let interface = capability.interface();
         let interface_annotations = TypeReader::get_type_annotations(snapshot, interface.clone())
@@ -937,7 +938,7 @@ impl OperationTimeValidation {
             owns.attribute(),
             attribute_type_overridden.clone(),
         )
-        .map_err(SchemaValidationError::ConceptRead)?
+            .map_err(SchemaValidationError::ConceptRead)?
         {
             Ok(())
         } else {
@@ -960,7 +961,7 @@ impl OperationTimeValidation {
             plays.role(),
             role_type_overridden.clone(),
         )
-        .map_err(SchemaValidationError::ConceptRead)?
+            .map_err(SchemaValidationError::ConceptRead)?
         {
             Ok(())
         } else {
@@ -1062,6 +1063,50 @@ impl OperationTimeValidation {
         }
     }
 
+    pub(crate) fn validate_relation_type_does_not_acquire_cascade_annotation_with_new_supertype(
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'static>,
+        new_supertype: RelationType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let old_annotation = type_get_annotation_by_category(snapshot, relation_type.clone(), AnnotationCategory::Cascade)?;
+        match old_annotation {
+            None => {
+                let new_supertype_annotation = type_get_annotation_by_category(snapshot, new_supertype.clone(), AnnotationCategory::Cascade)?;
+                match new_supertype_annotation {
+                    None => Ok(()),
+                    Some(_) => Err(SchemaValidationError::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(
+                        get_label_or_schema_err(snapshot, relation_type)?,
+                        get_label_or_schema_err(snapshot, new_supertype)?,
+                    )),
+                }
+            },
+            Some(_) => Ok(()),
+        }
+    }
+
+    pub(crate) fn validate_attribute_type_does_not_lose_independent_annotation_with_new_supertype(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+        new_supertype: AttributeType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let annotation_owner = type_get_owner_of_annotation_category(snapshot, attribute_type.clone(), AnnotationCategory::Independent)?;
+        match annotation_owner {
+            Some(owner) => if attribute_type == owner {
+                Ok(())
+            } else {
+                let new_supertype_annotation = type_get_annotation_by_category(snapshot, new_supertype.clone(), AnnotationCategory::Independent)?;
+                match new_supertype_annotation {
+                    Some(_) => Ok(()),
+                    None => Err(SchemaValidationError::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(
+                        get_label_or_schema_err(snapshot, attribute_type)?,
+                        get_label_or_schema_err(snapshot, new_supertype)?,
+                    )),
+                }
+            },
+            None => Ok(()),
+        }
+    }
+
     pub(crate) fn validate_unset_owns_is_not_inherited(
         snapshot: &impl ReadableSnapshot,
         owner: ObjectType<'static>,
@@ -1117,64 +1162,41 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_unset_annotation_is_not_inherited<T>(
+    pub(crate) fn validate_unset_annotation_is_not_inherited<T: KindAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
         type_: T,
         annotation_category: AnnotationCategory,
-    ) -> Result<(), SchemaValidationError>
-    where
-        T: KindAPI<'static>,
-    {
-        let annotations =
-            TypeReader::get_type_annotations(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
-        let found_annotation = annotations
-            .iter()
-            .map(|(existing_annotation, source)| (existing_annotation.clone().into().category(), source))
-            .find(|(existing_category, source)| existing_category.clone() == annotation_category);
-
-        match found_annotation {
-            Some((_, owner)) => {
-                if type_ == owner.clone() {
-                    Ok(())
-                } else {
-                    let owner = owner.clone();
-                    Err(SchemaValidationError::CannotUnsetInheritedAnnotation(
-                        annotation_category,
-                        get_label_or_schema_err(snapshot, owner)?,
-                    ))
-                }
-            }
+    ) -> Result<(), SchemaValidationError> {
+        let annotation_owner = type_get_owner_of_annotation_category(snapshot, type_.clone(), annotation_category.clone())?;
+        match annotation_owner {
+            Some(owner) => if type_ == owner {
+                Ok(())
+            } else {
+                Err(SchemaValidationError::CannotUnsetInheritedAnnotation(
+                    annotation_category,
+                    get_label_or_schema_err(snapshot, owner)?,
+                ))
+            },
             None => Ok(()),
         }
     }
 
-    pub(crate) fn validate_unset_edge_annotation_is_not_inherited<CAP>(
+    pub(crate) fn validate_unset_edge_annotation_is_not_inherited<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         edge: CAP,
         annotation_category: AnnotationCategory,
-    ) -> Result<(), SchemaValidationError>
-    where
-        CAP: Capability<'static>,
-    {
-        let annotations = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
-            .map_err(SchemaValidationError::ConceptRead)?;
-        let found_annotation = annotations
-            .iter()
-            .map(|(existing_annotation, source)| (existing_annotation.clone().category(), source))
-            .find(|(existing_category, source)| existing_category.clone() == annotation_category);
-
-        match found_annotation {
-            Some((_, owner)) => {
-                if edge == *owner {
-                    Ok(())
-                } else {
-                    let object = edge.object();
-                    Err(SchemaValidationError::CannotUnsetInheritedEdgeAnnotation(
-                        annotation_category,
-                        get_label_or_schema_err(snapshot, object)?,
-                    ))
-                }
-            }
+    ) -> Result<(), SchemaValidationError> {
+        let annotation_owner = edge_get_owner_of_annotation_category(snapshot, edge.clone(), annotation_category.clone())?;
+        match annotation_owner {
+            Some(owner) => if edge == owner {
+                Ok(())
+            } else {
+                Err(SchemaValidationError::CannotUnsetInheritedEdgeAnnotation(
+                    annotation_category,
+                    get_label_or_schema_err(snapshot, edge.object())?,
+                    get_label_or_schema_err(snapshot, edge.interface())?,
+                ))
+            },
             None => Ok(()),
         }
     }
@@ -1196,8 +1218,8 @@ impl OperationTimeValidation {
         edge: CAP,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
-    where
-        CAP: Capability<'static>,
+        where
+            CAP: Capability<'static>,
     {
         validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations(
             snapshot,
@@ -1233,8 +1255,8 @@ impl OperationTimeValidation {
         edge: CAP,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
-    where
-        CAP: Capability<'static>,
+        where
+            CAP: Capability<'static>,
     {
         let existing_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, edge.clone())
             .map_err(SchemaValidationError::ConceptRead)?;

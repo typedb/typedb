@@ -656,6 +656,42 @@ where
     Ok(annotation.map(|val| val.clone()))
 }
 
+pub(crate) fn type_get_owner_of_annotation_category<T: KindAPI<'static>>(
+    snapshot: &impl ReadableSnapshot,
+    type_: T,
+    annotation_category: AnnotationCategory,
+) -> Result<Option<T>, SchemaValidationError> {
+    let annotations =
+        TypeReader::get_type_annotations(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
+    let found_annotation = annotations
+        .iter()
+        .map(|(existing_annotation, source)| (existing_annotation.clone().into().category(), source))
+        .find(|(existing_category, source)| existing_category.clone() == annotation_category);
+
+    Ok(match found_annotation {
+        Some((_, owner)) => Some(owner.clone()),
+        None => None,
+    })
+}
+
+pub(crate) fn edge_get_owner_of_annotation_category<CAP: Capability<'static>>(
+    snapshot: &impl ReadableSnapshot,
+    edge: CAP,
+    annotation_category: AnnotationCategory,
+) -> Result<Option<CAP>, SchemaValidationError> {
+    let annotations =
+        TypeReader::get_type_edge_annotations(snapshot, edge.clone()).map_err(SchemaValidationError::ConceptRead)?;
+    let found_annotation = annotations
+        .iter()
+        .map(|(existing_annotation, source)| (existing_annotation.clone().category(), source))
+        .find(|(existing_category, source)| existing_category.clone() == annotation_category);
+
+    Ok(match found_annotation {
+        Some((_, owner)) => Some(owner.clone()),
+        None => None,
+    })
+}
+
 pub(crate) fn is_ordering_compatible_with_distinct_annotation(ordering: Ordering, distinct_set: bool) -> bool {
     if distinct_set {
         ordering == Ordering::Ordered

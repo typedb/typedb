@@ -43,7 +43,7 @@ pub enum SchemaValidationError {
     StructCannotBeDeletedAsItsUsedAsValueTypeForStructs(String, usize),
     RoleNameShouldBeUniqueForRelationTypeHierarchy(Label<'static>, Label<'static>),
     CycleFoundInTypeHierarchy(Label<'static>, Label<'static>),
-    CannotChangeValueTypeOfAttributeType(Label<'static>, Option<ValueType>),
+    ChangingAttributeTypeSupertypeWillImplicitlyChangeItsValueType(Label<'static>, Option<ValueType>),
     CannotUnsetAbstractnessOfAttributeTypeAsItHasSubtypes(Label<'static>),
     CannotDeleteTypeWithExistingSubtypes(Label<'static>),
     CannotDeleteTypeWithExistingInstances(Label<'static>),
@@ -122,7 +122,7 @@ pub enum SchemaValidationError {
     CannotUnsetInheritedOwns(Label<'static>, Label<'static>),
     CannotUnsetInheritedPlays(Label<'static>, Label<'static>),
     CannotUnsetInheritedAnnotation(AnnotationCategory, Label<'static>),
-    CannotUnsetInheritedEdgeAnnotation(AnnotationCategory, Label<'static>),
+    CannotUnsetInheritedEdgeAnnotation(AnnotationCategory, Label<'static>, Label<'static>),
     CannotUnsetInheritedValueType(ValueType, Label<'static>),
     ValueTypeNotCompatibleWithInheritedValueType(Label<'static>, Label<'static>, ValueType, ValueType),
     RedundantValueTypeDeclarationAsItsAlreadyInherited(Label<'static>, Label<'static>, ValueType, ValueType),
@@ -143,6 +143,8 @@ pub enum SchemaValidationError {
         Label<'static>,
         Annotation,
     ),
+    ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(Label<'static>, Label<'static>),
+    ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(Label<'static>, Label<'static>),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -164,7 +166,7 @@ impl Error for SchemaValidationError {
             Self::StructCannotBeDeletedAsItsUsedAsValueTypeForStructs(_, _) => None,
             Self::RoleNameShouldBeUniqueForRelationTypeHierarchy(_, _) => None,
             Self::CycleFoundInTypeHierarchy(_, _) => None,
-            Self::CannotChangeValueTypeOfAttributeType(_, _) => None,
+            Self::ChangingAttributeTypeSupertypeWillImplicitlyChangeItsValueType(_, _) => None,
             Self::CannotUnsetAbstractnessOfAttributeTypeAsItHasSubtypes(_) => None,
             Self::CannotDeleteTypeWithExistingSubtypes(_) => None,
             Self::CannotDeleteTypeWithExistingInstances(_) => None,
@@ -212,7 +214,7 @@ impl Error for SchemaValidationError {
             Self::CannotUnsetInheritedOwns(_, _) => None,
             Self::CannotUnsetInheritedPlays(_, _) => None,
             Self::CannotUnsetInheritedAnnotation(_, _) => None,
-            Self::CannotUnsetInheritedEdgeAnnotation(_, _) => None,
+            Self::CannotUnsetInheritedEdgeAnnotation(_, _, _) => None,
             Self::CannotUnsetInheritedValueType(_, _) => None,
             Self::ValueTypeNotCompatibleWithInheritedValueType(_, _, _, _) => None,
             Self::RedundantValueTypeDeclarationAsItsAlreadyInherited(_, _, _, _) => None,
@@ -222,6 +224,8 @@ impl Error for SchemaValidationError {
             Self::CannotRedeclareInheritedCapabilityWithoutSpecializationWithOverride(_, _, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForType(_, _, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForCapability(_, _, _, _, _) => None,
+            Self::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(_, _) => None,
+            Self::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(_, _) => None,
         }
     }
 }

@@ -1453,6 +1453,9 @@ impl TypeManager {
         OperationTimeValidation::validate_attribute_type_supertype_is_abstract(snapshot, self, supertype.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_attribute_type_does_not_lose_independent_annotation_with_new_supertype(snapshot, subtype.clone(), supertype.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         // TODO: Add check that if we have inherited independent and set supertype without independent (lose independence), we reject it with a specific error!
 
         self.set_supertype(snapshot, subtype, supertype)
@@ -1543,7 +1546,8 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        // TODO: Add check that if we have inherited cascade and set supertype without cascade (lose cascade), we reject it with a specific error!
+        OperationTimeValidation::validate_relation_type_does_not_acquire_cascade_annotation_with_new_supertype(snapshot, subtype.clone(), supertype.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_supertype(snapshot, subtype, supertype)
     }
