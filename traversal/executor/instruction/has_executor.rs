@@ -26,7 +26,8 @@ use lending_iterator::{adaptors::Filter, higher_order::FnHktHelper, kmerge::KMer
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
-use crate::executor::{instruction::InstructionIterator, pattern_executor::ImmutableRow, Position};
+use crate::executor::{pattern_executor::ImmutableRow, Position};
+use crate::executor::instruction::iterator::{HasSortedAttributeIterator, HasSortedOwnerIterator, InstructionIterator};
 use crate::executor::instruction::VariableMode;
 use crate::planner::pattern_plan::IterateBounds;
 
@@ -119,11 +120,15 @@ enum HasExecutorFilter {
     AttributeFilter(Arc<AttributeFilterFn>),
 }
 
-pub(crate) type HasUnboundedSortedOwnerIterator = Peekable<Filter<HasIterator, Arc<HasFilterBothFn>>>;
+enum HasIteratorSortedAttribute {
+    UnboundedMerged
+}
+
+pub(crate) type HasUnboundedSortedOwnerIterator = Filter<HasIterator, Arc<HasFilterBothFn>>;
 pub(crate) type HasUnboundedSortedAttributeMergedIterator =
-Peekable<Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterAttributeFn>>>;
-pub(crate) type HasUnboundedSortedAttributeSingleIterator = Peekable<Filter<HasIterator, Arc<HasFilterAttributeFn>>>;
-pub(crate) type HasBoundedSortedAttributeIterator = Peekable<Filter<HasIterator, Arc<HasFilterAttributeFn>>>;
+Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterAttributeFn>>;
+pub(crate) type HasUnboundedSortedAttributeSingleIterator = Filter<HasIterator, Arc<HasFilterAttributeFn>>;
+pub(crate) type HasBoundedSortedAttributeIterator = Filter<HasIterator, Arc<HasFilterAttributeFn>>;
 
 type HasFilterBothFn =
 dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
@@ -246,8 +251,11 @@ impl HasIteratorExecutor {
                 let iterator: Filter<HasIterator, Arc<HasFilterBothFn>> = thing_manager
                     .get_has_from_type_range_unordered(snapshot, key_range)
                     .filter::<_, HasFilterBothFn>(filter_fn);
-                let peekable = InstructionIterator::HasUnboundedSortedOwner(
-                    Peekable::new(iterator), self.has.clone(), self.variable_modes, None
+                let peekable = InstructionIterator::HasSortedOwner(
+                    HasSortedOwnerIterator::Unbounded(Peekable::new(iterator)),
+                    self.has.clone(),
+                    self.variable_modes,
+                    None
                 );
                 Ok(peekable)
             }
@@ -263,8 +271,11 @@ impl HasIteratorExecutor {
                             self.attribute_types.iter().map(|t| t.as_attribute_type()),
                         )?
                         .filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
-                    let peekable = InstructionIterator::HasUnboundedSortedAttributeSingle(
-                        Peekable::new(iterator), self.has.clone(), self.variable_modes, None
+                    let peekable = InstructionIterator::HasSortedAttribute(
+                        HasSortedAttributeIterator::UnboundedSingle(Peekable::new(iterator)),
+                        self.has.clone(),
+                        self.variable_modes,
+                        None
                     );
                     Ok(peekable)
                 } else {
@@ -286,8 +297,11 @@ impl HasIteratorExecutor {
                         KMergeBy::new(iterators, Self::compare_has_by_attribute);
                     let filtered: Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterAttributeFn>> =
                         merged.filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
-                    let peekable = InstructionIterator::HasUnboundedSortedAttributeMerged(
-                        Peekable::new(filtered), self.has.clone(), self.variable_modes, None
+                    let peekable = InstructionIterator::HasSortedAttribute(
+                        HasSortedAttributeIterator::UnboundedMerged(Peekable::new(filtered)),
+                        self.has.clone(),
+                        self.variable_modes,
+                        None
                     );
                     Ok(peekable)
                 }
@@ -309,8 +323,11 @@ impl HasIteratorExecutor {
                     _ => unreachable!("Has owner must be an entity or relation."),
                 };
                 let filtered = iterator.filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
-                let peekable = InstructionIterator::HasBoundedSortedAttribute(
-                    Peekable::new(filtered), self.has.clone(), self.variable_modes, None
+                let peekable = InstructionIterator::HasSortedAttribute(
+                    HasSortedAttributeIterator::Bounded(Peekable::new(filtered)),
+                    self.has.clone(),
+                    self.variable_modes,
+                    None
                 );
                 Ok(peekable)
             }

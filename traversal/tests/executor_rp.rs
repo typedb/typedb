@@ -4,29 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod common;
-
 use std::{
     borrow::Cow,
     collections::HashMap,
     sync::Arc,
 };
 
-use answer::variable_value::VariableValue;
 use concept::{
     error::ConceptReadError,
-    thing::{object::ObjectAPI, thing_manager::ThingManager},
-    type_::{Ordering, OwnerAPI, type_manager::TypeManager},
+    thing::object::ObjectAPI,
+    type_::{Ordering, OwnerAPI},
 };
 use concept::type_::PlayerAPI;
-use durability::wal::WAL;
 use encoding::{
-    EncodingKeyspace,
-    graph::{
-        definition::definition_key_generator::DefinitionKeyGenerator,
-        thing::vertex_generator::ThingVertexGenerator,
-        type_::{Kind, vertex_generator::TypeVertexGenerator},
-    },
+    graph::type_::Kind,
     value::{label::Label, value::Value, value_type::ValueType},
 };
 use ir::{
@@ -40,7 +31,6 @@ use storage::{
     MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
-use test_utils::{create_tmp_dir, init_logging, TempDir};
 use traversal::{
     executor::program_executor::ProgramExecutor,
     planner::{
@@ -48,8 +38,12 @@ use traversal::{
         program_plan::ProgramPlan,
     },
 };
+use traversal::executor::pattern_executor::ImmutableRow;
 use traversal::planner::pattern_plan::IterateBounds;
+
 use crate::common::{load_managers, setup_storage};
+
+mod common;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const GROUP_LABEL: Label = Label::new_static("group");
@@ -208,13 +202,13 @@ fn traverse_rp_unbounded_sorted_from() {
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
 
-        let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> =
-            iterator.map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone())).collect();
+        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+            iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
         assert_eq!(rows.len(), 7);
 
         for row in rows {
             let r = row.unwrap();
-            for value in r {
+            for value in r.into_iter() {
                 print!("{}, ", value);
             }
             println!()
@@ -280,27 +274,28 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
 
-        let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> =
-            iterator.map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone())).collect();
+        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+            iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
 
         // person 1 - has age 1, has age 2, has age 3, has name 1, has name 2 => 5 answers
         // person 2 - has age 1, has age 4, has age 5 => 3 answers
         // person 3 - has age 4, has name 3 => 2 answers
 
+        assert_eq!(rows.len(), 10);
+
         for row in &rows {
             let r = row.as_ref().unwrap();
-            for value in r {
+            for value in r.clone().into_iter() {
                 print!("{}, ", value);
             }
             println!()
         }
-        assert_eq!(rows.len(), 10);
 
-        let attribute_position = variable_positions.get(&var_attribute).unwrap().as_usize();
-        let mut last_attribute = &rows[0].as_ref().unwrap()[attribute_position];
+        let attribute_position = variable_positions.get(&var_attribute).unwrap();
+        let mut last_attribute = rows[0].as_ref().unwrap().get(*attribute_position);
         for row in &rows {
             let r = row.as_ref().unwrap();
-            let attribute = &r[attribute_position];
+            let attribute = r.get(*attribute_position);
             assert!(last_attribute <= attribute, "{} <= {} failed", &last_attribute, &attribute);
             last_attribute = attribute;
         }

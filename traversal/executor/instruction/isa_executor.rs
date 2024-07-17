@@ -15,12 +15,16 @@ use itertools::Itertools;
 use answer::Type;
 use answer::variable::Variable;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::thing::attribute::AttributeIterator;
+use concept::thing::entity::EntityIterator;
+use concept::thing::relation::RelationIterator;
 use ir::pattern::constraint::Isa;
 use lending_iterator::Peekable;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::executor::{instruction::InstructionIterator, pattern_executor::ImmutableRow, Position};
+use crate::executor::{pattern_executor::ImmutableRow, Position};
+use crate::executor::instruction::iterator::InstructionIterator;
 use crate::executor::instruction::VariableMode;
 use crate::planner::pattern_plan::IterateBounds;
 
@@ -45,6 +49,10 @@ pub(crate) struct IsaVariableModes {
     thing: VariableMode,
     type_: VariableMode,
 }
+
+pub(crate) type IsaUnboundedSortedThingEntity = Peekable<EntityIterator>;
+pub(crate) type IsaUnboundedSortedThingRelation = Peekable<RelationIterator>;
+pub(crate) type IsaUnboundedSortedThingAttribute = Peekable<AttributeIterator>;
 
 impl IsaVariableModes {
     fn new(

@@ -107,6 +107,17 @@ pub trait LendingIterator: 'static {
         count
     }
 
+    fn count_as_ref(&mut self) -> usize
+        where
+            Self: Sized,
+    {
+        let mut count = 0;
+        while self.next().is_some() {
+            count += 1;
+        }
+        count
+    }
+
     fn try_collect<B, E>(self) -> Result<B, E>
     where
         Self: Sized,

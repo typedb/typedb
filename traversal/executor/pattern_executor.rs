@@ -19,7 +19,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     executor::{
-        instruction::{InstructionIterator, IteratorExecutor},
+        instruction::InstructionExecutor,
         Position,
     },
     planner::pattern_plan::{
@@ -27,6 +27,7 @@ use crate::{
         OptionalStep, PatternPlan, SortedJoinStep, Step, UnsortedJoinStep,
     },
 };
+use crate::executor::instruction::iterator::InstructionIterator;
 use crate::executor::SelectedPositions;
 
 pub(crate) struct PatternExecutor {
@@ -275,7 +276,7 @@ impl StepExecutor {
 }
 
 struct SortedJoinExecutor {
-    instruction_executors: Vec<IteratorExecutor>,
+    instruction_executors: Vec<InstructionExecutor>,
     sort_variable_position: Position,
     output_width: u32,
     outputs_selected: SelectedPositions,
@@ -301,10 +302,10 @@ impl SortedJoinExecutor {
     ) -> Result<Self, ConceptReadError> {
         let sort_variable_position = *variable_positions.get(&sort_variable).unwrap();
         let instruction_count = instructions.len();
-        let executors: Vec<IteratorExecutor> = instructions
+        let executors: Vec<InstructionExecutor> = instructions
             .into_iter()
             .map(|instruction| {
-                IteratorExecutor::new(
+                InstructionExecutor::new(
                     instruction,
                     &select_variables,
                     named_variables,
@@ -470,17 +471,17 @@ impl SortedJoinExecutor {
                         // TODO: use seek()
                         let current_max = &mut containing_max[max_index].peek_sorted_value().unwrap().unwrap();
                         let iter_i = &mut containing_i[i_index];
-                        let skip_result = iter_i.counting_skip_to_sorted_value(current_max)?;
-                        match skip_result {
+                        let (_, next_value_cmp) = iter_i.counting_skip_to_sorted_value(current_max)?;
+                        match next_value_cmp {
                             None => {
                                 failed = true;
                                 break;
                             }
-                            Some((Ordering::Less, _)) => {
+                            Some(Ordering::Less) => {
                                 unreachable!("Skip to should always be empty or equal/greater than the target")
                             }
-                            Some((Ordering::Equal, _)) => {}
-                            Some((Ordering::Greater, _)) => {
+                            Some(Ordering::Equal) => {}
+                            Some(Ordering::Greater) => {
                                 current_max_index = i;
                                 retry = true;
                             }
@@ -517,7 +518,7 @@ impl SortedJoinExecutor {
     fn counting_advance_intersection_iterators(&mut self) -> Result<usize, ConceptReadError> {
         let mut multiplicity = 1;
         for iter in &mut self.iterators {
-            multiplicity *= iter.counting_advance_past(ImmutableRow::new(&self.intersection_row))?;
+            multiplicity *= iter.count_until_next_answer(ImmutableRow::new(&self.intersection_row))?;
         }
         Ok(multiplicity)
     }
@@ -609,7 +610,7 @@ impl CartesianIterator {
         &mut self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        iterator_executors: &Vec<IteratorExecutor>,
+        iterator_executors: &Vec<InstructionExecutor>,
         source_intersection: &Vec<VariableValue<'static>>,
         intersection_iterators: &mut Vec<InstructionIterator>,
     ) -> Result<(), ConceptReadError> {
@@ -631,8 +632,8 @@ impl CartesianIterator {
                     None => self.reopen_iterator(snapshot, thing_manager, &iterator_executors[index])?,
                     Some(mut iter) => {
                         // TODO: use seek()
-                        let skip_result = iter.counting_skip_to_sorted_value(intersection)?;
-                        debug_assert!(skip_result.is_some() && skip_result.unwrap().0.is_eq());
+                        let (_, next_value_cmp) = iter.counting_skip_to_sorted_value(intersection)?;
+                        debug_assert!(next_value_cmp.is_some() && next_value_cmp.unwrap().is_eq());
                         iter
                     }
                 };
@@ -646,7 +647,7 @@ impl CartesianIterator {
         &mut self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        executors: &Vec<IteratorExecutor>,
+        executors: &Vec<InstructionExecutor>,
     ) -> Result<bool, ConceptReadError> {
         debug_assert!(self.is_active);
         // precondition: all required iterators are open to the intersection point
@@ -676,7 +677,7 @@ impl CartesianIterator {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        executor: &IteratorExecutor,
+        executor: &InstructionExecutor,
     ) -> Result<InstructionIterator, ConceptReadError> {
         let mut reopened =
             executor.get_iterator(snapshot, thing_manager, ImmutableRow::new(&self.intersection_source))?;
