@@ -6,7 +6,7 @@
 
 use std::{cmp::Ordering, collections::HashSet};
 
-use answer::{Thing, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -18,6 +18,7 @@ use lending_iterator::{LendingIterator, Peekable};
 use tracing::warn;
 
 use crate::executor::{
+    batch::{ImmutableRow, Row},
     instruction::{
         has_executor::{
             HasBoundedSortedAttributeIterator, HasUnboundedSortedAttributeMergedIterator,
@@ -32,11 +33,9 @@ use crate::executor::{
             counting_advance_has_unbounded_sorted_owner_iterator, counting_advance_relation_iterator,
         },
         VariableMode,
-    }
-    ,
+    },
     Position,
 };
-use crate::executor::batch::{ImmutableRow, Row};
 
 pub(crate) enum HasSortedAttributeIterator {
     // Unbounded()

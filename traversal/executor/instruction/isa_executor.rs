@@ -9,7 +9,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{Type, variable::Variable};
+use answer::{variable::Variable, Type};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -24,12 +24,12 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     executor::{
+        batch::ImmutableRow,
         instruction::{iterator::InstructionIterator, VariableMode},
         Position,
     },
     planner::pattern_plan::IterateBounds,
 };
-use crate::executor::batch::ImmutableRow;
 
 pub(crate) struct IsaExecutor {
     isa: Isa<Position>,

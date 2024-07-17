@@ -4,11 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{
+    borrow::Cow,
+    fmt::{Display, Formatter},
+};
+
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
-use std::borrow::Cow;
-use std::fmt::{Display, Formatter};
 use lending_iterator::LendingIterator;
+
 use crate::executor::Position;
 
 const BATCH_ROWS_MAX: u32 = 64;
@@ -23,16 +27,17 @@ pub struct Batch {
 
 impl Batch {
     pub(crate) const INIT_MULTIPLICITIES: [u64; BATCH_ROWS_MAX as usize] = [1; BATCH_ROWS_MAX as usize];
-    pub(crate) const EMPTY_SINGLE_ROW: Batch = Batch {
-        width: 0,
-        entries: 1,
-        data: Vec::new(),
-        multiplicities: Batch::INIT_MULTIPLICITIES
-    };
+    pub(crate) const EMPTY_SINGLE_ROW: Batch =
+        Batch { width: 0, entries: 1, data: Vec::new(), multiplicities: Batch::INIT_MULTIPLICITIES };
 
     pub(crate) fn new(width: u32) -> Self {
         let size = width * BATCH_ROWS_MAX;
-        Batch { width, data: vec![VariableValue::Empty; size as usize], entries: 0, multiplicities: Batch::INIT_MULTIPLICITIES }
+        Batch {
+            width,
+            data: vec![VariableValue::Empty; size as usize],
+            entries: 0,
+            multiplicities: Batch::INIT_MULTIPLICITIES,
+        }
     }
 
     fn rows_count(&self) -> u32 {
@@ -184,7 +189,7 @@ impl<'a> ImmutableRow<'a> {
 }
 
 impl ImmutableRow<'static> {
-    pub fn into_iter(self) -> impl Iterator<Item=VariableValue<'static>> {
+    pub fn into_iter(self) -> impl Iterator<Item = VariableValue<'static>> {
         self.row.into_owned().into_iter()
     }
 }
@@ -198,4 +203,3 @@ impl<'a> Display for ImmutableRow<'a> {
         write!(f, "]\n")
     }
 }
-

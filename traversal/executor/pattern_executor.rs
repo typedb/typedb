@@ -4,24 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    cmp::Ordering,
-    collections::HashMap,
-    fmt::Display,
-    sync::Arc,
-};
-
-use itertools::Itertools;
+use std::{cmp::Ordering, collections::HashMap, fmt::Display, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::{inference::type_inference::TypeAnnotations, program::block::BlockContext};
+use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     executor::{
-        instruction::{InstructionExecutor, iterator::InstructionIterator},
+        batch::{Batch, BatchRowIterator, ImmutableRow, Row},
+        instruction::{iterator::InstructionIterator, InstructionExecutor},
         Position, SelectedPositions,
     },
     planner::pattern_plan::{
@@ -29,7 +24,6 @@ use crate::{
         UnsortedJoinStep,
     },
 };
-use crate::executor::batch::{Batch, BatchRowIterator, ImmutableRow, Row};
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, Position>,
@@ -91,7 +85,7 @@ impl PatternExecutor {
         self,
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
-    ) -> impl for<'a> LendingIterator<Item<'a>=Result<ImmutableRow<'a>, &'a ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager))
             .flat_map(|batch| BatchRowIterator::new(batch))
     }
@@ -700,7 +694,7 @@ impl CartesianIterator {
         let mut reopened = executor.get_iterator(
             snapshot,
             thing_manager,
-            ImmutableRow::new(&self.intersection_source, self.intersection_multiplicity)
+            ImmutableRow::new(&self.intersection_source, self.intersection_multiplicity),
         )?;
         let intersection = &self.intersection_source[self.sort_variable_position.as_usize()];
         // TODO: use seek()

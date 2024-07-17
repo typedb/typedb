@@ -20,6 +20,7 @@ pub use tracing::{error, info, trace, warn};
 
 use crate::{
     executor::{
+        batch::ImmutableRow,
         instruction::{
             comparison_executor::ComparisonIteratorExecutor,
             comparison_reverse_executor::ComparisonReverseIteratorExecutor,
@@ -32,7 +33,6 @@ use crate::{
     },
     planner::pattern_plan::Instruction,
 };
-use crate::executor::batch::ImmutableRow;
 
 mod comparison_executor;
 mod comparison_reverse_executor;

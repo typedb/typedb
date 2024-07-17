@@ -903,7 +903,7 @@ fn read_attribute_struct_by_field() {
                 .unwrap();
             let mut attr_by_field: Vec<Attribute> = Vec::new();
             while let Some(res) = attr_by_field_iterator.next() {
-                attr_by_field.push(res.as_ref().unwrap().into_owned());
+                attr_by_field.push(res.as_ref().unwrap().clone().into_owned());
             }
             assert_eq!(1, attr_by_field.len());
             assert_eq!(attr, attr_by_field.get(0).unwrap());

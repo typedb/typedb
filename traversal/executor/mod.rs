@@ -12,11 +12,11 @@ use std::{
 use answer::variable::Variable;
 use ir::pattern::IrID;
 
+pub mod batch;
 mod function_executor;
 mod instruction;
 pub mod pattern_executor;
 pub mod program_executor;
-pub mod batch;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct Position {

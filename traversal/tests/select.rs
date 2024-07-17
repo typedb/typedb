@@ -23,17 +23,16 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use traversal::{
-    executor::program_executor::ProgramExecutor,
+    executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
         pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
         program_plan::ProgramPlan,
     },
 };
-use traversal::executor::batch::ImmutableRow;
 
 use crate::common::{load_managers, setup_storage};
 
@@ -257,7 +256,6 @@ fn unselected_named_vars_counted() {
     }
 }
 
-
 #[test]
 fn cartesian_named_counted_checked() {
     let (tmp_dir, storage) = setup_storage();
@@ -342,6 +340,5 @@ fn cartesian_named_counted_checked() {
         assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 2);
         assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 2);
         assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 2);
-
     }
 }
