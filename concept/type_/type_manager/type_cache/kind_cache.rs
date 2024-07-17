@@ -224,7 +224,7 @@ impl OwnsCache {
             let owns = Owns::new(owner, attribute);
             let cache = OwnsCache {
                 ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
-                overrides: TypeReader::get_capabilities_override(snapshot, owns.clone()).unwrap(),
+                overrides: TypeReader::get_capability_override(snapshot, owns.clone()).unwrap(),
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, owns.clone())
                     .unwrap()
                     .into_iter()
@@ -256,7 +256,7 @@ impl PlaysCache {
             let role = RoleType::new(edge.to().into_owned());
             let plays = Plays::new(player, role);
             let cache = PlaysCache {
-                overrides: TypeReader::get_capabilities_override(snapshot, plays.clone()).unwrap(),
+                overrides: TypeReader::get_capability_override(snapshot, plays.clone()).unwrap(),
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, plays.clone())
                     .unwrap()
                     .into_iter()
@@ -288,7 +288,7 @@ impl RelatesCache {
             let role = RoleType::new(edge.to().into_owned());
             let relates = Relates::new(relation, role);
             let cache = RelatesCache {
-                overrides: TypeReader::get_capabilities_override(snapshot, relates.clone()).unwrap(),
+                overrides: TypeReader::get_capability_override(snapshot, relates.clone()).unwrap(),
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, relates.clone())
                     .unwrap()
                     .into_iter()

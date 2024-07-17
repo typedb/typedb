@@ -6,15 +6,14 @@
 
 use std::{
     borrow::Cow,
-    cmp::min,
+    cmp::{max, min},
     collections::HashSet,
     error::Error,
     fmt,
     hash::{Hash, Hasher},
+    iter::Sum,
     ops::Add,
 };
-use std::cmp::max;
-use std::iter::Sum;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{

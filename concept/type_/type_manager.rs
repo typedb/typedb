@@ -55,7 +55,7 @@ use crate::{
         relates::{Relates, RelatesAnnotation},
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
-        type_manager::type_reader::TypeReader,
+        type_manager::{type_reader::TypeReader, validation::SchemaValidationError},
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
@@ -734,7 +734,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_override(plays)))
         } else {
-            Ok(MaybeOwns::Owned(TypeReader::get_capabilities_override(snapshot, plays)?))
+            Ok(MaybeOwns::Owned(TypeReader::get_capability_override(snapshot, plays)?))
         }
     }
 
@@ -772,7 +772,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_override(owns)))
         } else {
-            Ok(MaybeOwns::Owned(TypeReader::get_capabilities_override(snapshot, owns)?))
+            Ok(MaybeOwns::Owned(TypeReader::get_capability_override(snapshot, owns)?))
         }
     }
 
@@ -821,7 +821,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relates_override(relates)))
         } else {
-            Ok(MaybeOwns::Owned(TypeReader::get_capabilities_override(snapshot, relates)?))
+            Ok(MaybeOwns::Owned(TypeReader::get_capability_override(snapshot, relates)?))
         }
     }
 
@@ -1217,7 +1217,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: Check/clean overrides?
+        // TODO: We have a commit-time check for overrides not being left hanging, but maybe we should clean it/reject here. We DO check that there are no subtypes for type deletion.
         OperationTimeValidation::validate_can_modify_type(snapshot, role_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1428,7 +1428,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_attribute_type_supertype_is_abstract(snapshot, supertype.clone())
+        OperationTimeValidation::validate_attribute_type_supertype_is_abstract(snapshot, self, supertype.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: Add check that if we have inherited independent and set supertype without independent (lose independence), we reject it with a specific error!
@@ -1444,8 +1444,8 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_owns_compatible_with_new_supertype(
             snapshot,
-            subtype.clone(),
-            supertype.clone(),
+            subtype.clone().into_owned_object_type(),
+            supertype.clone().into_owned_object_type(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1458,8 +1458,8 @@ impl TypeManager {
 
         OperationTimeValidation::validate_plays_compatible_with_new_supertype(
             snapshot,
-            subtype.clone(),
-            supertype.clone(),
+            subtype.clone().into_owned_object_type(),
+            supertype.clone().into_owned_object_type(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1495,8 +1495,8 @@ impl TypeManager {
 
         OperationTimeValidation::validate_owns_compatible_with_new_supertype(
             snapshot,
-            subtype.clone(),
-            supertype.clone(),
+            subtype.clone().into_owned_object_type(),
+            supertype.clone().into_owned_object_type(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1509,8 +1509,8 @@ impl TypeManager {
 
         OperationTimeValidation::validate_plays_compatible_with_new_supertype(
             snapshot,
-            subtype.clone(),
-            supertype.clone(),
+            subtype.clone().into_owned_object_type(),
+            supertype.clone().into_owned_object_type(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1526,18 +1526,23 @@ impl TypeManager {
         self.set_supertype(snapshot, subtype, supertype)
     }
 
-    // TODO: If the validation for owns and plays can be made generic, we should see if we can make these functions generic as well.
     pub(crate) fn set_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        owner: impl ObjectTypeAPI<'static> + KindAPI<'static>,
+        owner: ObjectType<'static>,
         attribute: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_ownership_abstractness(snapshot, owner.clone(), attribute.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_capability_abstractness::<Owns<'static>>(
+            snapshot,
+            self,
+            owner.clone(),
+            attribute.clone(),
+            None,
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_attribute_type_owns_not_overridden(
+        OperationTimeValidation::validate_interface_not_overridden::<Owns<'static>>(
             snapshot,
             owner.clone(),
             attribute.clone(),
@@ -1556,7 +1561,7 @@ impl TypeManager {
         owner: ObjectType<'static>,
         attribute: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: Check/clean overrides?
+        // TODO: We have a commit-time check for overrides not being left hanging, but maybe we should clean it/reject here. We DO check that there are no subtypes for type deletion.
         OperationTimeValidation::validate_unset_owns_is_not_inherited(snapshot, owner.clone(), attribute.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1633,14 +1638,24 @@ impl TypeManager {
     pub(crate) fn set_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        player: impl KindAPI<'static> + ObjectTypeAPI<'static> + PlayerAPI<'static>,
+        player: ObjectType<'static>,
         role: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
-        OperationTimeValidation::validate_plays_abstractness(snapshot, player.clone(), role.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_capability_abstractness::<Plays<'static>>(
+            snapshot,
+            self,
+            player.clone(),
+            role.clone(),
+            None,
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_role_type_plays_not_overridden(snapshot, player.clone(), role.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_interface_not_overridden::<Plays<'static>>(
+            snapshot,
+            player.clone(),
+            role.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
         TypeWriter::storage_put_interface_impl(snapshot, plays.clone());
@@ -1653,7 +1668,7 @@ impl TypeManager {
         player: ObjectType<'static>,
         role: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: Check/clean overrides?
+        // TODO: We have a commit-time check for overrides not being left hanging, but maybe we should clean it/reject here. We DO check that there are no subtypes for type deletion.
         OperationTimeValidation::validate_unset_plays_is_not_inherited(snapshot, player.clone(), role.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1713,7 +1728,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let owns_override_opt = TypeReader::get_capabilities_override(snapshot, owns.clone())?;
+        let owns_override_opt = TypeReader::get_capability_override(snapshot, owns.clone())?;
         match owns_override_opt {
             Some(owns_override) => {
                 OperationTimeValidation::validate_owns_override_ordering_match(
@@ -1747,7 +1762,7 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: subtype ordering match should be checked on commit time, not operation time!
-        let relates_override_opt = TypeReader::get_capabilities_override(snapshot, relates.clone())?;
+        let relates_override_opt = TypeReader::get_capability_override(snapshot, relates.clone())?;
         match relates_override_opt {
             Some(relates_override) => {
                 OperationTimeValidation::validate_role_supertype_ordering_match(
@@ -1770,8 +1785,16 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_relates_abstractness(snapshot, role_type.clone(), Some(true)) // set_abstract
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        let relates = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone())?;
+
+        OperationTimeValidation::validate_capability_abstractness::<Relates<'static>>(
+            snapshot,
+            self,
+            relates.relation(),
+            role_type.clone(),
+            Some(true), // set_abstract
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation_abstract(snapshot, role_type)
     }
@@ -1810,6 +1833,7 @@ impl TypeManager {
         // TODO: We may move it to schema validation
         OperationTimeValidation::validate_no_abstract_attribute_types_owned_to_unset_abstractness(
             snapshot,
+            self,
             type_.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -1967,7 +1991,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        if let Some(override_owns) = TypeReader::get_capabilities_override(snapshot, owns.clone())? {
+        if let Some(override_owns) = TypeReader::get_capability_override(snapshot, owns.clone())? {
             OperationTimeValidation::validate_key_narrows_inherited_cardinality(
                 snapshot,
                 &self,
@@ -2003,7 +2027,7 @@ impl TypeManager {
         OperationTimeValidation::validate_cardinality_arguments(cardinality)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        if let Some(override_edge) = TypeReader::get_capabilities_override(snapshot, edge.clone())? {
+        if let Some(override_edge) = TypeReader::get_capability_override(snapshot, edge.clone())? {
             OperationTimeValidation::validate_cardinality_narrows_inherited_cardinality(
                 snapshot,
                 &self,

@@ -253,7 +253,7 @@ impl TypeReader {
                 if !overridden_interfaces.contains(&interface) && !transitive_capabilities.contains_key(&interface) {
                     transitive_capabilities.insert(interface, capability.clone());
                 }
-                if let Some(overridden) = Self::get_capabilities_override(snapshot, capability.clone())? {
+                if let Some(overridden) = Self::get_capability_override(snapshot, capability.clone())? {
                     overridden_interfaces.add(overridden.interface());
                 }
                 // The root relates relation->role is not overridden, but the root role is a supertype
@@ -285,7 +285,7 @@ impl TypeReader {
             let declared_capabilities =
                 Self::get_capabilities_declared::<CAP>(snapshot, current_type.as_ref().unwrap().clone())?;
             for capability in declared_capabilities.into_iter() {
-                if let Some(overridden) = Self::get_capabilities_override(snapshot, capability.clone())? {
+                if let Some(overridden) = Self::get_capability_override(snapshot, capability.clone())? {
                     if overridden.interface() != capability.interface()
                         && !overridden_interfaces.contains_key(&overridden.interface())
                     {
@@ -298,7 +298,7 @@ impl TypeReader {
         Ok(overridden_interfaces)
     }
 
-    pub(crate) fn get_capabilities_override<CAP>(
+    pub(crate) fn get_capability_override<CAP>(
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
     ) -> Result<Option<CAP>, ConceptReadError>
@@ -344,7 +344,7 @@ impl TypeReader {
             while let Some(sub_object) = stack.pop() {
                 let mut declared_impl_was_overridden = false;
                 for sub_owner_owns in Self::get_capabilities_declared::<CAP>(snapshot, sub_object.clone())? {
-                    if let Some(overridden_impl) = Self::get_capabilities_override(snapshot, sub_owner_owns.clone())? {
+                    if let Some(overridden_impl) = Self::get_capability_override(snapshot, sub_owner_owns.clone())? {
                         declared_impl_was_overridden =
                             declared_impl_was_overridden || overridden_impl.interface() == interface_type;
                     }
@@ -597,7 +597,7 @@ impl TypeReader {
                     annotations.insert(annotation, edge.clone());
                 }
             }
-            edge_opt = Self::get_capabilities_override(snapshot, edge.clone())?;
+            edge_opt = Self::get_capability_override(snapshot, edge.clone())?;
             declared = false;
         }
         Ok(annotations)

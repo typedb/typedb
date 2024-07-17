@@ -70,13 +70,6 @@ pub(crate) fn validate_role_name_uniqueness_non_transitive<'a>(
     }
 }
 
-pub(crate) fn type_is_abstract(
-    snapshot: &impl ReadableSnapshot,
-    type_: impl KindAPI<'static>,
-) -> Result<bool, ConceptReadError> {
-    type_has_declared_annotation(snapshot, type_.clone(), Annotation::Abstract(AnnotationAbstract))
-}
-
 pub(crate) fn is_overridden_interface_object_one_of_supertypes_or_self<T: KindAPI<'static>>(
     snapshot: &impl ReadableSnapshot,
     type_: T,
@@ -101,30 +94,13 @@ pub(crate) fn is_overridden_interface_object_declared_supertype_or_self<T: KindA
     Ok(TypeReader::get_supertype(snapshot, type_.clone())? == Some(overridden.clone()))
 }
 
-pub(crate) fn is_attribute_type_owns_overridden<T>(
+pub(crate) fn is_interface_overridden<CAP: Capability<'static>>(
     snapshot: &impl ReadableSnapshot,
-    owner: T,
-    attribute_type: AttributeType<'static>,
-) -> Result<bool, ConceptReadError>
-where
-    T: ObjectTypeAPI<'static>,
-{
-    let all_overridden =
-        TypeReader::get_overridden_interfaces::<Owns<'static>>(snapshot, owner.into_owned_object_type())?;
-    Ok(all_overridden.contains_key(&attribute_type))
-}
-
-pub(crate) fn is_role_type_plays_overridden<T>(
-    snapshot: &impl ReadableSnapshot,
-    player: T,
-    role_type: RoleType<'static>,
-) -> Result<bool, ConceptReadError>
-where
-    T: ObjectTypeAPI<'static>,
-{
-    let all_overridden =
-        TypeReader::get_overridden_interfaces::<Plays<'static>>(snapshot, player.into_owned_object_type())?;
-    Ok(all_overridden.contains_key(&role_type))
+    object_type: CAP::ObjectType,
+    interface_type: CAP::InterfaceType,
+) -> Result<bool, ConceptReadError> {
+    let all_overridden = TypeReader::get_overridden_interfaces::<CAP>(snapshot, object_type)?;
+    Ok(all_overridden.contains_key(&interface_type))
 }
 
 pub(crate) fn validate_declared_annotation_is_compatible_with_other_inherited_annotations(
@@ -266,7 +242,7 @@ pub(crate) fn validate_edge_regex_narrows_inherited_regex<CAP: Capability<'stati
 ) -> Result<(), SchemaValidationError> {
     let overridden_owns = match overridden_owns {
         None => {
-            TypeReader::get_capabilities_override(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?
+            TypeReader::get_capability_override(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?
         }
         Some(_) => overridden_owns,
     };
@@ -344,7 +320,7 @@ pub(crate) fn validate_edge_range_narrows_inherited_range<CAP: Capability<'stati
 ) -> Result<(), SchemaValidationError> {
     let overridden_owns = match overridden_owns {
         None => {
-            TypeReader::get_capabilities_override(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?
+            TypeReader::get_capability_override(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?
         }
         Some(_) => overridden_owns,
     };
@@ -421,7 +397,7 @@ pub(crate) fn validate_edge_values_narrows_inherited_values<CAP: Capability<'sta
 ) -> Result<(), SchemaValidationError> {
     let overridden_owns = match overridden_owns {
         None => {
-            TypeReader::get_capabilities_override(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?
+            TypeReader::get_capability_override(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?
         }
         Some(_) => overridden_owns,
     };

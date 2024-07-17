@@ -13,6 +13,7 @@ use encoding::{
     graph::{
         definition::definition_key::DefinitionKey,
         thing::{edge::ThingEdgeRolePlayer, vertex_object::ObjectVertex},
+        type_::CapabilityKind,
         Typed,
     },
     layout::prefix::Prefix,
@@ -45,9 +46,9 @@ use crate::{
             validation::{
                 validation::{
                     edge_get_annotation_by_category, get_label_or_concept_read_err, get_label_or_schema_err,
-                    is_attribute_type_owns_overridden, is_ordering_compatible_with_distinct_annotation,
-                    is_overridden_interface_object_one_of_supertypes_or_self, is_role_type_plays_overridden,
-                    type_has_annotation_category, type_is_abstract, validate_cardinality_narrows_inherited_cardinality,
+                    is_interface_overridden, is_ordering_compatible_with_distinct_annotation,
+                    is_overridden_interface_object_one_of_supertypes_or_self, type_has_annotation_category,
+                    validate_cardinality_narrows_inherited_cardinality,
                     validate_declared_annotation_is_compatible_with_other_inherited_annotations,
                     validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations,
                     validate_edge_annotations_narrowing_of_inherited_annotations,
@@ -133,6 +134,7 @@ impl OperationTimeValidation {
 
     pub(crate) fn validate_no_abstract_attribute_types_owned_to_unset_abstractness<T>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         type_: T,
     ) -> Result<(), SchemaValidationError>
     where
@@ -143,7 +145,7 @@ impl OperationTimeValidation {
             .iter()
             .map(Owns::attribute)
             .try_for_each(|attribute_type: AttributeType<'static>| {
-                if type_is_abstract(snapshot, attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)? {
+                if attribute_type.is_abstract(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)? {
                     Err(SchemaValidationError::CannotUnsetAbstractnessAsItOwnsAbstractTypes(get_label_or_schema_err(
                         snapshot,
                         attribute_type,
@@ -233,7 +235,7 @@ impl OperationTimeValidation {
                 .map_err(SchemaValidationError::ConceptRead)?;
 
         for subtype_relates in subtype_relates_declared {
-            if let Some(old_relates_override) = TypeReader::get_capabilities_override(snapshot, subtype_relates)
+            if let Some(old_relates_override) = TypeReader::get_capability_override(snapshot, subtype_relates)
                 .map_err(SchemaValidationError::ConceptRead)?
             {
                 if !supertype_relates_with_roles
@@ -253,21 +255,18 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_owns_compatible_with_new_supertype<T>(
+    pub(crate) fn validate_owns_compatible_with_new_supertype(
         snapshot: &impl ReadableSnapshot,
-        owner_subtype: T,
-        owner_supertype: T,
-    ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
-    {
+        owner_subtype: ObjectType<'static>,
+        owner_supertype: ObjectType<'static>,
+    ) -> Result<(), SchemaValidationError> {
         let subtype_owns_declared: HashSet<Owns<'static>> =
             TypeReader::get_capabilities_declared(snapshot, owner_subtype.clone())
                 .map_err(SchemaValidationError::ConceptRead)?;
 
         for subtype_owns in subtype_owns_declared {
             let attribute_type = subtype_owns.attribute();
-            if is_attribute_type_owns_overridden(snapshot, owner_supertype.clone(), attribute_type.clone())
+            if is_interface_overridden::<Owns<'static>>(snapshot, owner_supertype.clone(), attribute_type.clone())
                 .map_err(SchemaValidationError::ConceptRead)?
             {
                 return Err(SchemaValidationError::CannotChangeSupertypeAsOwnsIsOverriddenInTheNewSupertype(
@@ -298,7 +297,7 @@ impl OperationTimeValidation {
                 .map_err(SchemaValidationError::ConceptRead)?;
 
         for subtype_owns in subtype_owns_declared {
-            if let Some(old_owns_override) = TypeReader::get_capabilities_override(snapshot, subtype_owns)
+            if let Some(old_owns_override) = TypeReader::get_capability_override(snapshot, subtype_owns)
                 .map_err(SchemaValidationError::ConceptRead)?
             {
                 if !supertype_owns_with_attributes
@@ -318,21 +317,18 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_plays_compatible_with_new_supertype<T>(
+    pub(crate) fn validate_plays_compatible_with_new_supertype(
         snapshot: &impl ReadableSnapshot,
-        player_subtype: T,
-        player_supertype: T,
-    ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
-    {
+        player_subtype: ObjectType<'static>,
+        player_supertype: ObjectType<'static>,
+    ) -> Result<(), SchemaValidationError> {
         let subtype_plays_declared: HashSet<Plays<'static>> =
             TypeReader::get_capabilities_declared(snapshot, player_subtype.clone())
                 .map_err(SchemaValidationError::ConceptRead)?;
 
         for subtype_plays in subtype_plays_declared {
             let role_type = subtype_plays.role();
-            if is_role_type_plays_overridden(snapshot, player_supertype.clone(), role_type.clone())
+            if is_interface_overridden::<Plays<'static>>(snapshot, player_supertype.clone(), role_type.clone())
                 .map_err(SchemaValidationError::ConceptRead)?
             {
                 return Err(SchemaValidationError::CannotChangeSupertypeAsPlaysIsOverriddenInTheNewSupertype(
@@ -363,7 +359,7 @@ impl OperationTimeValidation {
                 .map_err(SchemaValidationError::ConceptRead)?;
 
         for subtype_plays in subtype_plays_declared {
-            if let Some(old_plays_override) = TypeReader::get_capabilities_override(snapshot, subtype_plays)
+            if let Some(old_plays_override) = TypeReader::get_capability_override(snapshot, subtype_plays)
                 .map_err(SchemaValidationError::ConceptRead)?
             {
                 if !supertype_plays_with_roles.iter().any(|(_, supertype_plays)| supertype_plays == &old_plays_override)
@@ -602,75 +598,34 @@ impl OperationTimeValidation {
 
     pub(crate) fn validate_attribute_type_supertype_is_abstract<T: KindAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         type_: T,
     ) -> Result<(), SchemaValidationError> {
-        if type_is_abstract(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)? {
+        if type_.is_abstract(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)? {
             Ok(())
         } else {
             Err(SchemaValidationError::AttributeTypeSupertypeIsNotAbstract(get_label_or_schema_err(snapshot, type_)?))
         }
     }
 
-    pub(crate) fn validate_ownership_abstractness<T>(
+    pub(crate) fn validate_capability_abstractness<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        owner: T,
-        attribute: AttributeType<'static>,
-    ) -> Result<(), SchemaValidationError>
-    where
-        T: KindAPI<'static>,
-    {
-        let is_owner_abstract =
-            type_is_abstract(snapshot, owner.clone()).map_err(SchemaValidationError::ConceptRead)?;
-        let is_attribute_abstract =
-            type_is_abstract(snapshot, attribute.clone()).map_err(SchemaValidationError::ConceptRead)?;
-
-        match (&is_owner_abstract, &is_attribute_abstract) {
-            (true, true) | (false, false) | (true, false) => Ok(()),
-            (false, true) => Err(SchemaValidationError::NonAbstractCannotOwnAbstract(
-                get_label_or_schema_err(snapshot, owner)?,
-                get_label_or_schema_err(snapshot, attribute)?,
-            )),
-        }
-    }
-
-    pub(crate) fn validate_plays_abstractness<T>(
-        snapshot: &impl ReadableSnapshot,
-        player: T,
-        role_type: RoleType<'static>,
-    ) -> Result<(), SchemaValidationError>
-        where
-            T: KindAPI<'static>,
-    {
-        let is_player_abstract =
-            type_is_abstract(snapshot, player.clone()).map_err(SchemaValidationError::ConceptRead)?;
-        let is_role_abstract =
-            type_is_abstract(snapshot, role_type.clone()).map_err(SchemaValidationError::ConceptRead)?;
-
-        match (&is_player_abstract, &is_role_abstract) {
-            (true, true) | (false, false) | (true, false) => Ok(()),
-            (false, true) => Err(SchemaValidationError::NonAbstractCannotPlayAbstract(
-                get_label_or_schema_err(snapshot, player)?,
-                get_label_or_schema_err(snapshot, role_type)?,
-            )),
-        }
-    }
-
-    pub(crate) fn validate_relates_abstractness(
-        snapshot: &impl ReadableSnapshot,
-        role_type: RoleType<'static>,
+        type_manager: &TypeManager,
+        object: impl TypeAPI<'static>,
+        interface_type: CAP::InterfaceType,
         set_abstract: Option<bool>,
     ) -> Result<(), SchemaValidationError> {
-        let relates = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone()).map_err(SchemaValidationError::ConceptRead)?;
-        let is_relation_abstract =
-            type_is_abstract(snapshot, relates.relation()).map_err(SchemaValidationError::ConceptRead)?;
-        let is_role_abstract = set_abstract.unwrap_or(
-            type_is_abstract(snapshot, role_type.clone()).map_err(SchemaValidationError::ConceptRead)?);
+        let is_object_abstract =
+            object.is_abstract(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+        let is_interface_abstract = set_abstract
+            .unwrap_or(interface_type.is_abstract(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?);
 
-        match (&is_relation_abstract, &is_role_abstract) {
+        match (&is_object_abstract, &is_interface_abstract) {
             (true, true) | (false, false) | (true, false) => Ok(()),
-            (false, true) => Err(SchemaValidationError::NonAbstractCannotRelateAbstract(
-                get_label_or_schema_err(snapshot, relates.relation())?,
-                get_label_or_schema_err(snapshot, role_type)?,
+            (false, true) => Err(SchemaValidationError::NonAbstractTypeCannotHaveAbstractCapability(
+                CAP::KIND,
+                get_label_or_schema_err(snapshot, object)?,
+                get_label_or_schema_err(snapshot, interface_type)?,
             )),
         }
     }
@@ -1017,42 +972,20 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_attribute_type_owns_not_overridden<T>(
+    pub(crate) fn validate_interface_not_overridden<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        owner: T,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static>,
-    {
-        if !is_attribute_type_owns_overridden(snapshot, owner.clone(), attribute_type.clone())
+        object_type: CAP::ObjectType,
+        interface_type: CAP::InterfaceType,
+    ) -> Result<(), SchemaValidationError> {
+        if !is_interface_overridden::<CAP>(snapshot, object_type.clone(), interface_type.clone())
             .map_err(SchemaValidationError::ConceptRead)?
         {
             Ok(())
         } else {
-            Err(SchemaValidationError::OverriddenOwnsCannotBeRedeclared(
-                get_label_or_schema_err(snapshot, owner)?,
-                attribute_type,
-            ))
-        }
-    }
-
-    pub(crate) fn validate_role_type_plays_not_overridden<T>(
-        snapshot: &impl ReadableSnapshot,
-        player: T,
-        role_type: RoleType<'static>,
-    ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static>,
-    {
-        if !is_role_type_plays_overridden(snapshot, player.clone(), role_type.clone())
-            .map_err(SchemaValidationError::ConceptRead)?
-        {
-            Ok(())
-        } else {
-            Err(SchemaValidationError::OverriddenPlaysCannotBeRedeclared(
-                get_label_or_schema_err(snapshot, player)?,
-                role_type,
+            Err(SchemaValidationError::OverriddenCapabilityCannotBeRedeclared(
+                CapabilityKind::Owns,
+                get_label_or_schema_err(snapshot, object_type)?,
+                get_label_or_schema_err(snapshot, interface_type)?,
             ))
         }
     }
