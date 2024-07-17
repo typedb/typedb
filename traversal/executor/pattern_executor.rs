@@ -387,8 +387,7 @@ impl SortedJoinExecutor {
         if self.cartesian_iterator.is_active() {
             self.cartesian_iterator.write_into(row)
         } else {
-            row.copy_from(&self.intersection_row);
-            row.set_multiplicity(self.intersection_multiplicity);
+            row.copy_from(&self.intersection_row, self.intersection_multiplicity);
             Ok(())
         }
     }
@@ -530,7 +529,7 @@ impl SortedJoinExecutor {
         let mut multiplicity: u64 = 1;
         for iter in &mut self.iterators {
             let row = ImmutableRow::new(&self.intersection_row, self.intersection_multiplicity);
-            multiplicity *= iter.count_until_next_answer(row)?;
+            multiplicity *= iter.count_until_next_answer(row)? as u64;
         }
         self.intersection_multiplicity = multiplicity;
         Ok(())
@@ -553,7 +552,7 @@ impl SortedJoinExecutor {
 
     fn record_intersection(&mut self) -> Result<(), ConceptReadError> {
         self.intersection_row.fill(VariableValue::Empty);
-        let mut row = Row::new(&mut self.intersection_row);
+        let mut row = Row::new(&mut self.intersection_row, &mut self.intersection_multiplicity);
         for iter in &mut self.iterators {
             iter.write_values(&mut row)?
         }
@@ -698,8 +697,11 @@ impl CartesianIterator {
         thing_manager: &ThingManager,
         executor: &InstructionExecutor,
     ) -> Result<InstructionIterator, ConceptReadError> {
-        let mut reopened =
-            executor.get_iterator(snapshot, thing_manager, ImmutableRow::new(&self.intersection_source))?;
+        let mut reopened = executor.get_iterator(
+            snapshot,
+            thing_manager,
+            ImmutableRow::new(&self.intersection_source, self.intersection_multiplicity)
+        )?;
         let intersection = &self.intersection_source[self.sort_variable_position.as_usize()];
         // TODO: use seek()
         reopened.counting_skip_to_sorted_value(intersection)?;

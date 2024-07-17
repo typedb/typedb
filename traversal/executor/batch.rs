@@ -18,14 +18,21 @@ pub struct Batch {
     width: u32,
     entries: u32,
     data: Vec<VariableValue<'static>>,
+    multiplicities: [u64; BATCH_ROWS_MAX as usize],
 }
 
 impl Batch {
-    pub(crate) const EMPTY_SINGLE_ROW: Batch = Batch { width: 0, entries: 1, data: Vec::new() };
+    pub(crate) const INIT_MULTIPLICITIES: [u64; BATCH_ROWS_MAX as usize] = [1; BATCH_ROWS_MAX as usize];
+    pub(crate) const EMPTY_SINGLE_ROW: Batch = Batch {
+        width: 0,
+        entries: 1,
+        data: Vec::new(),
+        multiplicities: Batch::INIT_MULTIPLICITIES
+    };
 
     pub(crate) fn new(width: u32) -> Self {
         let size = width * BATCH_ROWS_MAX;
-        Batch { width, data: vec![VariableValue::Empty; size as usize], entries: 0 }
+        Batch { width, data: vec![VariableValue::Empty; size as usize], entries: 0, multiplicities: Batch::INIT_MULTIPLICITIES }
     }
 
     fn rows_count(&self) -> u32 {
@@ -41,7 +48,7 @@ impl Batch {
         let start = (index * self.width) as usize;
         let end = ((index + 1) * self.width) as usize;
         let slice = &self.data[start..end];
-        ImmutableRow::new(slice)
+        ImmutableRow::new(slice, self.multiplicities[index as usize])
     }
 
     fn get_row_mut(&mut self, index: u32) -> Row<'_> {
@@ -61,7 +68,7 @@ impl Batch {
         let start = (index * self.width) as usize;
         let end = ((index + 1) * self.width) as usize;
         let slice = &mut self.data[start..end];
-        Row::new(slice)
+        Row::new(slice, &mut self.multiplicities[index as usize])
     }
 
     pub(crate) fn into_iterator(self) -> BatchRowIterator {
@@ -106,11 +113,12 @@ impl LendingIterator for BatchRowIterator {
 #[derive(Debug)]
 pub struct Row<'a> {
     row: &'a mut [VariableValue<'static>],
+    multiplicity: &'a mut u64,
 }
 
 impl<'a> Row<'a> {
-    fn new(row: &'a mut [VariableValue<'static>]) -> Self {
-        Self { row }
+    pub(crate) fn new(row: &'a mut [VariableValue<'static>], multiplicity: &'a mut u64) -> Self {
+        Self { row, multiplicity }
     }
 
     pub(crate) fn len(&self) -> usize {
@@ -126,9 +134,18 @@ impl<'a> Row<'a> {
         self.row[position.as_usize()] = value;
     }
 
-    pub(crate) fn copy_from(&mut self, row: &[VariableValue<'static>]) {
+    pub(crate) fn copy_from(&mut self, row: &[VariableValue<'static>], multiplicity: u64) {
         debug_assert!(self.len() == row.len());
-        self.row.clone_from_slice(row)
+        self.row.clone_from_slice(row);
+        *self.multiplicity = multiplicity;
+    }
+
+    pub(crate) fn multiplicity(&self) -> u64 {
+        *self.multiplicity
+    }
+
+    pub(crate) fn set_multiplicity(&mut self, multiplicity: u64) {
+        *self.multiplicity = multiplicity;
     }
 }
 
@@ -139,7 +156,7 @@ pub struct ImmutableRow<'a> {
 }
 
 impl<'a> ImmutableRow<'a> {
-    fn new(row: &'a [VariableValue<'static>], multiplicity: u64) -> Self {
+    pub(crate) fn new(row: &'a [VariableValue<'static>], multiplicity: u64) -> Self {
         Self { row: Cow::Borrowed(row), multiplicity }
     }
 
@@ -147,12 +164,12 @@ impl<'a> ImmutableRow<'a> {
         self.row.len()
     }
 
-    pub fn multiplicity(&self) -> u64 {
-        self.multiplicity
-    }
-
     pub fn get(&self, position: Position) -> &VariableValue {
         &self.row[position.as_usize()]
+    }
+
+    pub fn get_multiplicity(&self) -> u64 {
+        self.multiplicity
     }
 
     pub fn into_owned(self) -> ImmutableRow<'static> {
@@ -174,10 +191,11 @@ impl ImmutableRow<'static> {
 
 impl<'a> Display for ImmutableRow<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} x [  ", self.multiplicity)?;
         for value in self.row.as_ref() {
-            write!(f, "{value},\t")?
+            write!(f, "{value}  ")?
         }
-        write!(f, "\n")
+        write!(f, "]\n")
     }
 }
 

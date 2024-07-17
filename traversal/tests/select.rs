@@ -157,16 +157,13 @@ fn anonymous_vars_not_enumerated_or_counted() {
         // person3, <something>
 
         assert_eq!(rows.len(), 3);
-        assert_eq!(rows[0].as_ref().unwrap().multiplicity(), 1);
-        assert_eq!(rows[1].as_ref().unwrap().multiplicity(), 1);
-        assert_eq!(rows[2].as_ref().unwrap().multiplicity(), 1);
+        assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 1);
+        assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 1);
+        assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 1);
 
         for row in rows.iter() {
             let r = row.as_ref().unwrap();
-            for value in r.clone().into_iter() {
-                print!("{}, ", value);
-            }
-            println!()
+            print!("{}", r);
         }
     }
 }
@@ -236,16 +233,13 @@ fn unselected_named_vars_counted() {
         // 2x person 3, <something>
 
         assert_eq!(rows.len(), 3);
-        assert_eq!(rows[0].as_ref().unwrap().multiplicity(), 5);
-        assert_eq!(rows[1].as_ref().unwrap().multiplicity(), 3);
-        assert_eq!(rows[2].as_ref().unwrap().multiplicity(), 2);
+        assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 5);
+        assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 3);
+        assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 2);
 
         for row in rows.iter() {
             let r = row.as_ref().unwrap();
-            for value in r.clone().into_iter() {
-                print!("{}, ", value);
-            }
-            println!()
+            print!("{}", r);
         }
     }
 }

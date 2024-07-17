@@ -37,6 +37,7 @@ use traversal::{
         program_plan::ProgramPlan,
     },
 };
+use traversal::executor::batch::ImmutableRow;
 use traversal::planner::pattern_plan::IterateBounds;
 
 use crate::common::{load_managers, setup_storage};
@@ -103,7 +104,7 @@ fn traverse_isa_unbounded_sorted_thing() {
         vec![
             Instruction::Isa(isa.clone(), IterateBounds::None([])),
         ],
-        &vec![var_dog, var_dog_type]
+        &vec![var_dog, var_dog_type],
     ))];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, program.entry().context().clone());
@@ -123,16 +124,15 @@ fn traverse_isa_unbounded_sorted_thing() {
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
 
-        let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> =
-            iterator.map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone())).collect();
+        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
+            .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+            .collect();
         assert_eq!(rows.len(), 3);
 
         for row in rows {
             let r = row.unwrap();
-            for value in r {
-                print!("{}, ", value);
-            }
-            println!()
+            assert_eq!(r.get_mutiplicity(), 1);
+            print!("{}", r);
         }
     }
 }
@@ -195,21 +195,20 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
 
-        let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> =
-            iterator.map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone())).collect();
+        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+            iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
 
         // person 1 - has age 1, has age 2, has age 3, has name 1, has name 2 => 5 answers
         // person 2 - has age 1, has age 4, has age 5 => 3 answers
         // person 3 - has age 4, has name 3 => 2 answers
 
+        assert_eq!(rows.len(), 10);
+
         for row in &rows {
             let r = row.as_ref().unwrap();
-            for value in r {
-                print!("{}, ", value);
-            }
-            println!()
+            debug_assert_eq!(r.get_multiplicity(), 1);
+            print!("{}", r);
         }
-        assert_eq!(rows.len(), 10);
 
         let attribute_position = variable_positions.get(&var_attribute).unwrap().as_usize();
         let mut last_attribute = &rows[0].as_ref().unwrap()[attribute_position];

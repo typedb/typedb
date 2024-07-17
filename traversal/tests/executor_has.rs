@@ -170,10 +170,8 @@ fn traverse_has_unbounded_sorted_from() {
 
         for row in rows {
             let r = row.unwrap();
-            for value in r.into_iter() {
-                print!("{}, ", value);
-            }
-            println!()
+            assert_eq!(r.get_multiplicity(), 1);
+            print!("{}", r);
         }
     }
 }
@@ -246,10 +244,8 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
         for row in rows.iter() {
             let r = row.as_ref().unwrap();
-            for value in r.clone().into_iter() {
-                print!("{}, ", value);
-            }
-            println!()
+            assert_eq!(r.get_multiplicity(), 1);
+            print!("{}", r);
         }
         assert_eq!(rows.len(), 10);
 
