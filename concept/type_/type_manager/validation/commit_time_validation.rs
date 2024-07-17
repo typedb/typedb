@@ -9,9 +9,11 @@ use std::{
     hash::Hash,
 };
 
-use encoding::graph::{definition::r#struct::StructDefinition, type_::Kind};
+use encoding::graph::{
+    definition::r#struct::StructDefinition,
+    type_::{CapabilityKind, Kind},
+};
 use itertools::Itertools;
-use encoding::graph::type_::CapabilityKind;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

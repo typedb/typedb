@@ -56,7 +56,11 @@ pub enum SchemaValidationError {
     AttributeTypeSupertypeIsNotAbstract(Label<'static>),
     AbstractTypesSupertypeHasToBeAbstract(Label<'static>, Label<'static>),
     CannotUnsetAbstractnessAsItHasDeclaredCapabilityOfAbstractInterface(CapabilityKind, Label<'static>, Label<'static>),
-    CannotUnsetAbstractnessAsItHasInheritedCapabilityOfAbstractInterface(CapabilityKind, Label<'static>, Label<'static>),
+    CannotUnsetAbstractnessAsItHasInheritedCapabilityOfAbstractInterface(
+        CapabilityKind,
+        Label<'static>,
+        Label<'static>,
+    ),
     OrderingDoesNotMatchWithSupertype(Label<'static>, Label<'static>, Ordering, Ordering),
     OrderingDoesNotMatchWithOverride(Label<'static>, Label<'static>, Label<'static>, Ordering, Ordering),
     CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(Label<'static>, Label<'static>, Label<'static>),
@@ -144,8 +148,14 @@ pub enum SchemaValidationError {
         Label<'static>,
         Annotation,
     ),
-    ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(Label<'static>, Label<'static>),
-    ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(Label<'static>, Label<'static>),
+    ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(
+        Label<'static>,
+        Label<'static>,
+    ),
+    ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(
+        Label<'static>,
+        Label<'static>,
+    ),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -226,7 +236,9 @@ impl Error for SchemaValidationError {
             Self::CannotRedeclareInheritedCapabilityWithoutSpecializationWithOverride(_, _, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForType(_, _, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForCapability(_, _, _, _, _) => None,
-            Self::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(_, _) => None,
+            Self::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(_, _) => {
+                None
+            }
             Self::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(_, _) => None,
         }
     }
