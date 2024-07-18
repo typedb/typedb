@@ -139,7 +139,7 @@ impl BlockContext {
         self.variable_names_index.get(name)
     }
 
-    pub(crate) fn get_or_declare_variable_named(
+    pub(crate) fn get_or_declare_variable(
         &mut self,
         name: &str,
         scope: ScopeId,

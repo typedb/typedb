@@ -253,8 +253,8 @@ impl<'cx> ConstraintsBuilder<'cx> {
         self.context.create_anonymous_variable(self.constraints.scope)
     }
 
-    pub(crate) fn get_or_declare_variable_named(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
-        self.context.get_or_declare_variable_named(name, self.constraints.scope)
+    pub(crate) fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
+        self.context.get_or_declare_variable(name, self.constraints.scope)
     }
 }
 

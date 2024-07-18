@@ -50,7 +50,7 @@ pub fn infer_types(
     let preamble_functions = infer_types_for_functions(functions, snapshot, type_manager, &schema_functions)?;
     let root_tig = infer_types_for_block(snapshot, &entry, type_manager, &schema_functions, Some(&preamble_functions))?;
     let entry_annotations = TypeAnnotations::build(root_tig);
-    Ok(AnnotatedProgram::new(entry, entry_annotations, preamble_functions, schema_functions.clone()))
+    Ok(AnnotatedProgram::new(entry, entry_annotations, preamble_functions, schema_functions))
 }
 
 pub fn infer_types_for_functions(

@@ -22,6 +22,7 @@ use ir::{
     pattern::constraint::IsaKind,
     program::{block::FunctionalBlock, program::Program},
 };
+use ir::program::program::CompiledSchemaFunctions;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -101,18 +102,16 @@ fn traverse_has_unbounded_sorted_from() {
     // query:
     //   match
     //    $person has name $name, has age $age;
-    //   limit 3;
-    //   filter $person, $age;
 
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable_named(&"person_type").unwrap();
-    let var_age_type = conjunction.get_or_declare_variable_named(&"age_type").unwrap();
-    let var_name_type = conjunction.get_or_declare_variable_named(&"name_type").unwrap();
-    let var_person = conjunction.get_or_declare_variable_named(&"person").unwrap();
-    let var_age = conjunction.get_or_declare_variable_named(&"age").unwrap();
-    let var_name = conjunction.get_or_declare_variable_named(&"name").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_age_type = conjunction.get_or_declare_variable(&"age_type").unwrap();
+    let var_name_type = conjunction.get_or_declare_variable(&"name_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_age = conjunction.get_or_declare_variable(&"age").unwrap();
+    let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
 
     let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();
     let has_name = conjunction.constraints_mut().add_has(var_person, var_name).unwrap().clone();
@@ -127,12 +126,12 @@ fn traverse_has_unbounded_sorted_from() {
     block.add_limit(3);
     let filter = block.add_filter(vec![&"person", &"age"]).unwrap().clone();
 
-    let program = Program::new(block.finish(), HashMap::new());
+    let program = Program::new(block.finish(), Vec::new());
 
-    let type_annotations = {
+    let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&program, &snapshot, &type_manager).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -145,14 +144,14 @@ fn traverse_has_unbounded_sorted_from() {
         &vec![var_person, var_name, var_age],
     ))];
     // TODO: incorporate the filter
-    let pattern_plan = PatternPlan::new(steps, program.entry().context().clone());
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
     };
 
     {
@@ -187,10 +186,10 @@ fn traverse_has_unbounded_sorted_to_merged() {
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable_named(&"person_type").unwrap();
-    let var_attribute_type = conjunction.get_or_declare_variable_named(&"attr_type").unwrap();
-    let var_person = conjunction.get_or_declare_variable_named(&"person").unwrap();
-    let var_attribute = conjunction.get_or_declare_variable_named(&"attr").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_attribute_type = conjunction.get_or_declare_variable(&"attr_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_attribute = conjunction.get_or_declare_variable(&"attr").unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();
@@ -199,12 +198,12 @@ fn traverse_has_unbounded_sorted_to_merged() {
         .constraints_mut()
         .add_label(var_attribute_type, Kind::Attribute.root_label().scoped_name().as_str())
         .unwrap();
-    let program = Program::new(block.finish(), HashMap::new());
+    let program = Program::new(block.finish(), Vec::new());
 
-    let type_annotations = {
+    let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&program, &snapshot, &type_manager).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -213,14 +212,14 @@ fn traverse_has_unbounded_sorted_to_merged() {
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
         &vec![var_person, var_attribute],
     ))];
-    let pattern_plan = PatternPlan::new(steps, program.entry().context().clone());
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
     };
 
     {

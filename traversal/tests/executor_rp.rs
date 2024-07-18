@@ -143,15 +143,15 @@ fn traverse_rp_unbounded_sorted_from() {
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable_named(&"person_type").unwrap();
-    let var_group_type = conjunction.get_or_declare_variable_named(&"group_type").unwrap();
-    let var_membership_type = conjunction.get_or_declare_variable_named(&"membership_type").unwrap();
-    let var_membership_member_type = conjunction.get_or_declare_variable_named(&"membership_member_type").unwrap();
-    let var_membership_group_type = conjunction.get_or_declare_variable_named(&"membership_group_type").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_group_type = conjunction.get_or_declare_variable(&"group_type").unwrap();
+    let var_membership_type = conjunction.get_or_declare_variable(&"membership_type").unwrap();
+    let var_membership_member_type = conjunction.get_or_declare_variable(&"membership_member_type").unwrap();
+    let var_membership_group_type = conjunction.get_or_declare_variable(&"membership_group_type").unwrap();
 
-    let var_person = conjunction.get_or_declare_variable_named(&"person").unwrap();
-    let var_group = conjunction.get_or_declare_variable_named(&"group").unwrap();
-    let var_membership = conjunction.get_or_declare_variable_named(&"membership").unwrap();
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_group = conjunction.get_or_declare_variable(&"group").unwrap();
+    let var_membership = conjunction.get_or_declare_variable(&"membership").unwrap();
 
     let rp_membership_person = conjunction
         .constraints_mut()
@@ -241,10 +241,10 @@ fn traverse_has_unbounded_sorted_to_merged() {
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable_named(&"person_type").unwrap();
-    let var_attribute_type = conjunction.get_or_declare_variable_named(&"attr_type").unwrap();
-    let var_person = conjunction.get_or_declare_variable_named(&"person").unwrap();
-    let var_attribute = conjunction.get_or_declare_variable_named(&"attr").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_attribute_type = conjunction.get_or_declare_variable(&"attr_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_attribute = conjunction.get_or_declare_variable(&"attr").unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();

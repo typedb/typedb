@@ -118,9 +118,9 @@ fn anonymous_vars_not_enumerated_or_counted() {
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable_named(&"person_type").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
     let var_attribute_type = conjunction.declare_variable_anonymous().unwrap();
-    let var_person = conjunction.get_or_declare_variable_named(&"person").unwrap();
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
     let var_attribute = conjunction.declare_variable_anonymous().unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
@@ -194,10 +194,10 @@ fn unselected_named_vars_counted() {
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable_named(&"person_type").unwrap();
-    let var_attribute_type = conjunction.get_or_declare_variable_named(&"attr_type").unwrap();
-    let var_person = conjunction.get_or_declare_variable_named(&"person").unwrap();
-    let var_attribute = conjunction.get_or_declare_variable_named(&"attr").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_attribute_type = conjunction.get_or_declare_variable(&"attr_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_attribute = conjunction.get_or_declare_variable(&"attr").unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();
@@ -270,13 +270,13 @@ fn cartesian_named_counted_checked() {
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable_named(&"person_type").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
     let var_name_type = conjunction.declare_variable_anonymous().unwrap();
     let var_age_type = conjunction.declare_variable_anonymous().unwrap();
     let var_email_type = conjunction.declare_variable_anonymous().unwrap();
-    let var_person = conjunction.get_or_declare_variable_named(&"person").unwrap();
-    let var_name = conjunction.get_or_declare_variable_named(&"name").unwrap();
-    let var_age = conjunction.get_or_declare_variable_named(&"age").unwrap();
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
+    let var_age = conjunction.get_or_declare_variable(&"age").unwrap();
     let var_email = conjunction.declare_variable_anonymous().unwrap();
     let has_name = conjunction.constraints_mut().add_has(var_person, var_name).unwrap().clone();
     let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();

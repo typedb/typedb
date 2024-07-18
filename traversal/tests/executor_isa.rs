@@ -83,8 +83,8 @@ fn traverse_isa_unbounded_sorted_thing() {
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_dog_type = conjunction.get_or_declare_variable_named(&"dog_type").unwrap();
-    let var_dog = conjunction.get_or_declare_variable_named(&"dog").unwrap();
+    let var_dog_type = conjunction.get_or_declare_variable(&"dog_type").unwrap();
+    let var_dog = conjunction.get_or_declare_variable(&"dog").unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type).unwrap().clone();
@@ -150,10 +150,10 @@ fn traverse_has_unbounded_sorted_to_merged() {
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable_named(&"person_type").unwrap();
-    let var_attribute_type = conjunction.get_or_declare_variable_named(&"attr_type").unwrap();
-    let var_person = conjunction.get_or_declare_variable_named(&"person").unwrap();
-    let var_attribute = conjunction.get_or_declare_variable_named(&"attr").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_attribute_type = conjunction.get_or_declare_variable(&"attr_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_attribute = conjunction.get_or_declare_variable(&"attr").unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();

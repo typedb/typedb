@@ -375,7 +375,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable_named(name).unwrap())
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -433,7 +433,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable_named(name).unwrap())
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -491,7 +491,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable_named(name).unwrap())
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -535,7 +535,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable_named(name).unwrap())
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -615,7 +615,7 @@ pub mod tests {
         let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name, var_name_type) = ["animal", "name", "name_type"]
             .into_iter()
-            .map(|name| conjunction.get_or_declare_variable_named(name).unwrap())
+            .map(|name| conjunction.get_or_declare_variable(name).unwrap())
             .collect_tuple()
             .unwrap();
         {
@@ -628,12 +628,12 @@ pub mod tests {
                 let mut disj = conjunction.add_disjunction();
 
                 let mut branch1 = disj.add_conjunction();
-                let b1_var_animal_type = branch1.get_or_declare_variable_named("b1_animal_type").unwrap();
+                let b1_var_animal_type = branch1.get_or_declare_variable("b1_animal_type").unwrap();
                 branch1.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b1_var_animal_type).unwrap();
                 branch1.constraints_mut().add_label(b1_var_animal_type, LABEL_CAT).unwrap();
 
                 let mut branch2 = disj.add_conjunction();
-                let b2_var_animal_type = branch2.get_or_declare_variable_named("b2_animal_type").unwrap();
+                let b2_var_animal_type = branch2.get_or_declare_variable("b2_animal_type").unwrap();
                 branch2.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b2_var_animal_type).unwrap();
                 branch2.constraints_mut().add_label(b2_var_animal_type, LABEL_DOG).unwrap();
 
@@ -738,7 +738,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name) = ["animal", "name"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable_named(name).unwrap())
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -809,7 +809,7 @@ pub mod tests {
                 "role_is_feared_type",
             ]
             .into_iter()
-            .map(|name| conjunction.get_or_declare_variable_named(name).unwrap())
+            .map(|name| conjunction.get_or_declare_variable(name).unwrap())
             .collect_tuple()
             .unwrap();
 
