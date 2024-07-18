@@ -12,7 +12,10 @@ use std::{
 
 use bytes::Bytes;
 use itertools::Itertools;
-use rocksdb::{checkpoint::Checkpoint, Options, ReadOptions, WriteBatch, WriteOptions, DB, IteratorMode, ColumnFamily, DEFAULT_COLUMN_FAMILY_NAME};
+use rocksdb::{
+    checkpoint::Checkpoint, ColumnFamily, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB,
+    DEFAULT_COLUMN_FAMILY_NAME,
+};
 use serde::{Deserialize, Serialize};
 
 use super::iterator;
@@ -287,9 +290,10 @@ impl Keyspace {
 
     pub(crate) fn reset(&mut self) -> Result<(), KeyspaceError> {
         let mut iterator = self.kv_storage.iterator(IteratorMode::Start);
-        let first = iterator.next().transpose().map_err(|err| KeyspaceError::Iterate { name: self.name, source: err })?;
+        let first =
+            iterator.next().transpose().map_err(|err| KeyspaceError::Iterate { name: self.name, source: err })?;
         if first.is_none() {
-            return Ok(())
+            return Ok(());
         }
         let first_key = first.unwrap().0;
 
@@ -297,7 +301,8 @@ impl Keyspace {
         let last = iterator.next().unwrap().map_err(|err| KeyspaceError::Iterate { name: self.name, source: err })?;
         let last_key = last.0;
         let default_cf = self.kv_storage.cf_handle(DEFAULT_COLUMN_FAMILY_NAME).unwrap();
-        self.kv_storage.delete_range_cf(default_cf, first_key, last_key)
+        self.kv_storage
+            .delete_range_cf(default_cf, first_key, last_key)
             .map_err(|err| KeyspaceError::DeleteRange { name: self.name, source: err })
     }
 }
@@ -375,7 +380,7 @@ pub enum KeyspaceError {
     Put { name: &'static str, source: rocksdb::Error },
     BatchWrite { name: &'static str, source: rocksdb::Error },
     Iterate { name: &'static str, source: rocksdb::Error },
-    DeleteRange { name: &'static str, source: rocksdb::Error }
+    DeleteRange { name: &'static str, source: rocksdb::Error },
 }
 
 impl fmt::Display for KeyspaceError {

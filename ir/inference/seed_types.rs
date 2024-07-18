@@ -1049,9 +1049,9 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
         role_type
-            .get_relations_transitive(seeder.snapshot, seeder.type_manager)?
+            .get_relations(seeder.snapshot, seeder.type_manager)?
             .iter()
-            .map(|relates| TypeAnnotation::Relation(relates.relation().clone()))
+            .map(|(relation, _)| TypeAnnotation::Relation(relation.clone()))
             .for_each(|type_| {
                 collector.insert(type_);
             });

@@ -124,7 +124,7 @@ impl HashMapFunctionIndex {
         let index = buffered_typeql
             .map(|(function_id, function)| {
                 (
-                    function.signature.ident.ident.clone(),
+                    function.signature.ident.as_str().to_owned(),
                     TypeQLFunctionBuilder::build_signature(function_id.into(), &function),
                 )
             })

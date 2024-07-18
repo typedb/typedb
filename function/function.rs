@@ -21,7 +21,7 @@ impl<FunctionIDType: FunctionIDTrait> Function<FunctionIDType> {
     }
 
     pub fn name(&self) -> String {
-        self.parsed.signature.ident.ident.to_owned()
+        self.parsed.signature.ident.as_str().to_owned()
     }
 }
 
