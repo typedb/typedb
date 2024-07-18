@@ -26,12 +26,7 @@ use encoding::{
     },
     EncodingKeyspace,
 };
-use storage::{
-    durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
-    sequence_number::SequenceNumber,
-    MVCCStorage, StorageOpenError,
-};
+use storage::{durability_client::{DurabilityClient, DurabilityClientError, WALClient}, recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError}, sequence_number::SequenceNumber, MVCCStorage, StorageOpenError, StorageResetError};
 
 #[derive(Debug, Clone)]
 pub(super) struct Schema {
@@ -180,6 +175,40 @@ impl Database<WALClient> {
         fs::remove_dir_all(path).map_err(|err| DatabaseDeleteError::DirectoryDelete { source: err })?;
         Ok(())
     }
+
+    pub fn reset(&mut self) -> Result<(), DatabaseResetError>{
+        let _schema_read_lock = self.schema.write().unwrap();
+        let _schema_write_lock = self.schema_txn_lock.write().unwrap();
+
+        match Arc::get_mut(&mut self.storage) {
+            None => {
+                return Err(DatabaseResetError::StorageInUse {});
+            }
+            Some(storage) => {
+                storage.reset()
+                    .map_err(|err| DatabaseResetError::CorruptionStorageReset { source: err })?
+            }
+        }
+        match Arc::get_mut(&mut self.definition_key_generator) {
+            None => {
+                return Err(DatabaseResetError::CorruptionDefinitionKeyGeneratorInUse {});
+            }
+            Some(definition_key_generator) => definition_key_generator.reset(),
+        }
+        match Arc::get_mut(&mut self.type_vertex_generator) {
+            None => {
+                return Err(DatabaseResetError::CorruptionTypeVertexGeneratorInUse {});
+            }
+            Some(type_vertex_generator) => type_vertex_generator.reset(),
+        }
+        match Arc::get_mut(&mut self.thing_vertex_generator) {
+            None => {
+                return Err(DatabaseResetError::TypeVertexGeneratorInUse {});
+            }
+            Some(thing_vertex_generator) => thing_vertex_generator.reset(),
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -257,6 +286,33 @@ impl Error for DatabaseDeleteError {
         match self {
             Self::DirectoryDelete { source } => Some(source),
             Self::InUse { .. } => None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum DatabaseResetError {
+    StorageInUse { },
+    CorruptionStorageReset { source: StorageResetError },
+    CorruptionDefinitionKeyGeneratorInUse {},
+    CorruptionTypeVertexGeneratorInUse {},
+    TypeVertexGeneratorInUse {}
+}
+
+impl fmt::Display for DatabaseResetError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for DatabaseResetError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::StorageInUse { .. }
+            | Self::CorruptionDefinitionKeyGeneratorInUse { .. }
+            | Self::CorruptionTypeVertexGeneratorInUse { .. }
+            | Self::TypeVertexGeneratorInUse { .. } => None,
+            Self::CorruptionStorageReset { source, .. } => Some(source),
         }
     }
 }

@@ -42,8 +42,8 @@ use crate::{
 };
 
 pub struct ThingVertexGenerator {
-    entity_ids: Box<[AtomicU64]>,
-    relation_ids: Box<[AtomicU64]>,
+    entity_ids: Box<[AtomicU64; TypeIDUInt::MAX as usize]>,
+    relation_ids: Box<[AtomicU64; TypeIDUInt::MAX as usize]>,
     large_value_hasher: fn(&[u8]) -> u64,
 }
 
@@ -64,8 +64,8 @@ impl ThingVertexGenerator {
         // TODO: we should create a resizable Vector linked to the id of types/highest id of each type
         //       this will speed up booting time on load (loading this will require MAX types * 3 iterator searches) and reduce memory footprint
         ThingVertexGenerator {
-            entity_ids: (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Box<[AtomicU64]>>(),
-            relation_ids: (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Box<[AtomicU64]>>(),
+            entity_ids: Self::allocate_empty_ids(),
+            relation_ids: Self::allocate_empty_ids(),
             large_value_hasher,
         }
     }
@@ -95,8 +95,8 @@ impl ThingVertexGenerator {
             .map_err(|err| EncodingError::ExistingTypesRead { source: err })?;
         read_snapshot.close_resources();
 
-        let entity_ids = (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Box<[AtomicU64]>>();
-        let relation_ids = (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Box<[AtomicU64]>>();
+        let entity_ids = Self::allocate_empty_ids();
+        let relation_ids = Self::allocate_empty_ids();
         for type_id in entity_types {
             let mut max_object_id =
                 ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)).into_bytes().into_array();
@@ -124,6 +124,10 @@ impl ThingVertexGenerator {
         }
 
         Ok(ThingVertexGenerator { entity_ids, relation_ids, large_value_hasher })
+    }
+
+    fn allocate_empty_ids() -> Box<[AtomicU64; TypeIDUInt::MAX as usize]> {
+        Box::new(std::array::from_fn(|_| AtomicU64::new(0)))
     }
 
     pub fn hasher(&self) -> &impl Fn(&[u8]) -> u64 {
@@ -419,5 +423,10 @@ impl ThingVertexGenerator {
         Snapshot: ReadableSnapshot,
     {
         StructAttributeID::find_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)
+    }
+
+    pub fn reset(&mut self) {
+        self.entity_ids.iter().for_each(|id| id.store(0, Ordering::SeqCst));
+        self.relation_ids.iter().for_each(|id| id.store(0, Ordering::SeqCst));
     }
 }

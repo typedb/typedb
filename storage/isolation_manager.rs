@@ -38,6 +38,7 @@ use crate::{
 
 #[derive(Debug)]
 pub(crate) struct IsolationManager {
+    initial_sequence_number: SequenceNumber,
     timeline: Timeline,
 }
 
@@ -49,7 +50,10 @@ impl fmt::Display for IsolationManager {
 
 impl IsolationManager {
     pub(crate) fn new(next_sequence_number: SequenceNumber) -> IsolationManager {
-        IsolationManager { timeline: Timeline::new(next_sequence_number) }
+        IsolationManager {
+            initial_sequence_number: next_sequence_number,
+            timeline: Timeline::new(next_sequence_number)
+        }
     }
 
     pub(crate) fn opened_for_read(&self, sequence_number: SequenceNumber) {
@@ -246,6 +250,10 @@ impl IsolationManager {
                 _ => panic!("get_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
             }
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.timeline = Timeline::new(self.initial_sequence_number)
     }
 }
 

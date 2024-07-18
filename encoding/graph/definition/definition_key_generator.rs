@@ -28,4 +28,8 @@ impl DefinitionKeyGenerator {
         snapshot.put(definition_key.as_storage_key().into_owned_array());
         Ok(definition_key)
     }
+
+    pub fn reset(&mut self) {
+        self.next_struct.reset()
+    }
 }

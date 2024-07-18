@@ -73,4 +73,11 @@ impl TypeVertexGenerator {
         snapshot.put(vertex.as_storage_key().into_owned_array());
         Ok(vertex)
     }
+
+    pub fn reset(&mut self) {
+        self.next_entity.reset();
+        self.next_relation.reset();
+        self.next_attribute.reset();
+        self.next_role.reset();
+    }
 }

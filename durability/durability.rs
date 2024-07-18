@@ -48,6 +48,8 @@ pub trait DurabilityService {
     ) -> Result<Option<RawRecord<'static>>, DurabilityServiceError>;
 
     fn delete_durability(self) -> Result<(), DurabilityServiceError>;
+
+    fn reset(&mut self) -> Result<(), DurabilityServiceError>;
 }
 
 pub type DurabilityRecordType = u8;

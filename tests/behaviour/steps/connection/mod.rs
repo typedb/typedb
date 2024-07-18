@@ -4,21 +4,28 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::cell::OnceCell;
+use std::sync::Arc;
 use macro_rules_attribute::apply;
 use server::typedb;
-use test_utils::create_tmp_dir;
+use test_utils::{create_tmp_dir, TempDir};
 
 use crate::{generic_step, Context};
 
 mod database;
 mod transaction;
 
+static TYPEDB: OnceCell<(TempDir, Arc<typedb::Server>)> = OnceCell::new();
+
 #[apply(generic_step)]
 #[step("typedb starts")]
 pub async fn typedb_starts(context: &mut Context) {
-    let server_dir = create_tmp_dir();
-    context.server = Some(typedb::Server::open(&server_dir).unwrap());
-    context.server_dir = Some(server_dir);
+    let (_, server) = TYPEDB.get_or_init(|| {
+        let server_dir = create_tmp_dir();
+        let server = typedb::Server::open(&server_dir).unwrap();
+        (server_dir, Arc::new(server))
+    });
+    context.server = Some(server.clone());
 }
 
 #[apply(generic_step)]

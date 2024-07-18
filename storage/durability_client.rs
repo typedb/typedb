@@ -94,6 +94,8 @@ pub trait DurabilityClient {
     ) -> Result<Option<Record>, DurabilityClientError>;
 
     fn delete_durability(self) -> Result<(), DurabilityClientError>;
+
+    fn reset(&mut self) -> Result<(), DurabilityClientError>;
 }
 
 #[derive(Debug)]
@@ -224,6 +226,10 @@ impl DurabilityClient for WALClient {
 
     fn delete_durability(self) -> Result<(), DurabilityClientError> {
         self.wal.delete_durability().map_err(|err| DurabilityClientError::ServiceError { source: err })
+    }
+
+    fn reset(&mut self) -> Result<(), DurabilityClientError> {
+        self.wal.reset().map_err(|err| DurabilityClientError::ServiceError { source: err })
     }
 }
 

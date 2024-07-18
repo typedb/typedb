@@ -415,6 +415,17 @@ impl<Durability> MVCCStorage<Durability> {
         debug_assert!(!range.start().bytes().is_empty());
         self.keyspaces.get(range.start().keyspace_id()).iterate_range(range.map(|k| k.into_bytes(), |fixed| fixed))
     }
+
+    pub fn reset(&mut self) -> Result<(), StorageResetError>
+        where Durability: DurabilityClient
+    {
+        self.isolation_manager.reset();
+        self.keyspaces.reset()
+            .map_err(|err| StorageResetError::KeyspaceError { name: self.name.to_owned(), source: err })?;
+        self.durability_client.reset()
+            .map_err(|err| StorageResetError::Durability { name: self.name.to_owned(), source: err })?;
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -539,6 +550,27 @@ impl Error for StorageDeleteError {
             Self::KeyspaceDelete { source, .. } => Some(source),
             Self::DirectoryDelete { source, .. } => Some(source),
             Self::DurabilityDelete { source, .. } => Some(source),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum StorageResetError {
+    KeyspaceError { name: String, source: KeyspaceError },
+    Durability { name: String, source: DurabilityClientError },
+}
+
+impl fmt::Display for StorageResetError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for StorageResetError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::KeyspaceError { source, .. } => Some(source),
+            Self::Durability{ source, .. } => Some(source),
         }
     }
 }

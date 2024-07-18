@@ -168,6 +168,11 @@ impl DurabilityService for WAL {
         let files = self.files.into_inner().unwrap();
         files.delete().map_err(|err| DurabilityServiceError::DeleteFailed { source: err })
     }
+
+    fn reset(&mut self) -> Result<(), DurabilityServiceError> {
+        self.next_sequence_number.store(0, Ordering::SeqCst);
+        self.files.write().unwrap().reset().map_err(|err| DurabilityServiceError::IO { source: err })
+    }
 }
 
 #[derive(Debug)]
@@ -204,6 +209,11 @@ struct Files {
 
 impl Files {
     fn open(directory: PathBuf) -> io::Result<Self> {
+        let (files, writer) = Self::init_files_writer(&directory)?;
+        Ok(Self { directory, writer, files })
+    }
+
+    fn init_files_writer(directory: &PathBuf) -> io::Result<(Vec<File>, BufWriter<std::fs::File>)> {
         let mut files: Vec<File> = directory
             .read_dir()?
             .map_ok(|entry| entry.path())
@@ -219,8 +229,7 @@ impl Files {
         }
 
         let writer = files.last().unwrap().writer()?;
-
-        Ok(Self { directory, writer, files })
+        Ok((files, writer))
     }
 
     fn open_new_file_at(&mut self, start: DurabilitySequenceNumber) -> io::Result<()> {
@@ -257,6 +266,16 @@ impl Files {
     fn delete(self) -> Result<(), io::Error> {
         drop(self.files);
         std::fs::remove_dir_all(&self.directory)
+    }
+
+    fn reset(&mut self) -> Result<(), io::Error> {
+        std::fs::remove_dir_all(&self.directory)?;
+        std::fs::create_dir(&self.directory)?;
+        self.files.clear();
+        let (files, writer) = Self::init_files_writer(&self.directory)?;
+        self.files = files;
+        self.writer = writer;
+        Ok(())
     }
 }
 
