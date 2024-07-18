@@ -19,7 +19,7 @@ use crate::{
     pattern::constraint::Constraint,
     program::{
         function::FunctionIR,
-        program::{AnnotatedProgram, LocalFunctionCache, Program, SchemaFunctionCache},
+        program::{AnnotatedProgram, CompiledLocalFunctions, CompiledSchemaFunctions, Program},
     },
 };
 
@@ -44,7 +44,7 @@ pub fn infer_types(
     program: Program,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    schema_functions: Arc<SchemaFunctionCache>,
+    schema_functions: Arc<CompiledSchemaFunctions>,
 ) -> Result<AnnotatedProgram, TypeInferenceError> {
     let (entry, functions) = program.into_parts();
     let preamble_functions = infer_types_for_functions(functions, snapshot, type_manager, &schema_functions)?;
@@ -57,15 +57,15 @@ pub fn infer_types_for_functions(
     functions: Vec<FunctionIR>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    schema_functions: &SchemaFunctionCache,
-) -> Result<LocalFunctionCache, TypeInferenceError> {
+    schema_functions: &CompiledSchemaFunctions,
+) -> Result<CompiledLocalFunctions, TypeInferenceError> {
     // In the preliminary annotations, functions are annotated based only on the variable categories of the called function.
     let preliminary_annotations_res: Result<Vec<FunctionAnnotations>, TypeInferenceError> = functions
         .iter()
         .map(|function| infer_types_for_function(function, snapshot, type_manager, schema_functions, None))
         .collect();
     let preliminary_annotations =
-        LocalFunctionCache::new(functions.into_boxed_slice(), preliminary_annotations_res?.into_boxed_slice());
+        CompiledLocalFunctions::new(functions.into_boxed_slice(), preliminary_annotations_res?.into_boxed_slice());
 
     // In the second round, finer annotations are available at the function calls so the annotations in function bodies can be refined.
     let annotations_res: Result<Vec<FunctionAnnotations>, TypeInferenceError> = preliminary_annotations
@@ -80,7 +80,7 @@ pub fn infer_types_for_functions(
     // Further, In a chain of three functions where the first two bodies have no function calls
     // but rely on the third function to infer annotations, the annotations will not reach the first function.
     let (ir, annotation) = preliminary_annotations.into_parts();
-    let compiled = LocalFunctionCache::new(ir, annotations_res?.into_boxed_slice());
+    let compiled = CompiledLocalFunctions::new(ir, annotations_res?.into_boxed_slice());
 
     Ok(compiled)
 }
@@ -89,8 +89,8 @@ pub fn infer_types_for_function(
     function: &FunctionIR,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    schema_functions: &SchemaFunctionCache,
-    local_functions: Option<&LocalFunctionCache>,
+    schema_functions: &CompiledSchemaFunctions,
+    local_functions: Option<&CompiledLocalFunctions>,
 ) -> Result<FunctionAnnotations, TypeInferenceError> {
     let root_tig = infer_types_for_block(snapshot, function.block(), type_manager, schema_functions, local_functions)?;
     let body_annotations = TypeAnnotations::build(root_tig);
@@ -270,7 +270,7 @@ pub mod tests {
             block::{BlockContext, FunctionalBlock},
             function::{FunctionIR, ReturnOperationIR},
             function_signature::{FunctionID, FunctionSignature},
-            program::{Program, SchemaFunctionCache},
+            program::{CompiledSchemaFunctions, Program},
         },
     };
 
@@ -455,7 +455,8 @@ pub mod tests {
         let f_annotations = {
             let (_, f_ir) = &with_no_cache;
             let f_annotations =
-                infer_types_for_function(f_ir, &snapshot, &type_manager, &SchemaFunctionCache::empty(), None).unwrap();
+                infer_types_for_function(f_ir, &snapshot, &type_manager, &CompiledSchemaFunctions::empty(), None)
+                    .unwrap();
             let isa = f_ir.block().conjunction().constraints()[0].clone();
             let f_var_animal = f_ir.block().context().get_variable("called_animal").unwrap();
             let f_var_animal_type = f_ir.block().context().get_variable("called_animal_type").unwrap();
@@ -476,7 +477,8 @@ pub mod tests {
             let (entry, _) = with_no_cache;
             let var_animal = entry.context().get_variable("animal").unwrap();
             let annotations_without_schema_cache = TypeAnnotations::build(
-                infer_types_for_block(&snapshot, &entry, &type_manager, &SchemaFunctionCache::empty(), None).unwrap(),
+                infer_types_for_block(&snapshot, &entry, &type_manager, &CompiledSchemaFunctions::empty(), None)
+                    .unwrap(),
             );
             assert_eq!(
                 annotations_without_schema_cache.variables,
@@ -491,7 +493,7 @@ pub mod tests {
                 Program::new(entry, vec![f_ir]),
                 &snapshot,
                 &type_manager,
-                Arc::new(SchemaFunctionCache::empty()),
+                Arc::new(CompiledSchemaFunctions::empty()),
             )
             .unwrap();
             assert_eq!(
@@ -505,7 +507,7 @@ pub mod tests {
             let (entry, f_ir) = with_schema_cache;
             let var_animal = entry.context().get_variable("animal").unwrap();
             let f_id = FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0)));
-            let schema_cache = SchemaFunctionCache::new(Box::new([Some(f_ir)]), Box::new([Some(f_annotations)]));
+            let schema_cache = CompiledSchemaFunctions::new(Box::new([Some(f_ir)]), Box::new([Some(f_annotations)]));
             let annotations_with_schema_cache =
                 infer_types(Program::new(entry, vec![]), &snapshot, &type_manager, Arc::new(schema_cache)).unwrap();
             assert_eq!(

@@ -37,23 +37,23 @@ use crate::{
         block::BlockContext,
         function::FunctionIR,
         function_signature::FunctionID,
-        program::{CompiledFunctionCache, LocalFunctionCache, SchemaFunctionCache},
+        program::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions},
     },
 };
 
 pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
-    schema_functions: &'this SchemaFunctionCache,
-    local_functions: Option<&'this LocalFunctionCache>,
+    schema_functions: &'this CompiledSchemaFunctions,
+    local_functions: Option<&'this CompiledLocalFunctions>,
 }
 
 impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     pub(crate) fn new(
         snapshot: &'this Snapshot,
         type_manager: &'this TypeManager,
-        schema_functions: &'this SchemaFunctionCache,
-        local_functions: Option<&'this LocalFunctionCache>,
+        schema_functions: &'this CompiledSchemaFunctions,
+        local_functions: Option<&'this CompiledLocalFunctions>,
     ) -> Self {
         TypeSeeder { snapshot, type_manager, schema_functions, local_functions }
     }
@@ -1078,7 +1078,7 @@ pub mod tests {
             },
         },
         pattern::constraint::IsaKind,
-        program::{block::FunctionalBlock, program::SchemaFunctionCache},
+        program::{block::FunctionalBlock, program::CompiledSchemaFunctions},
     };
 
     #[test]
@@ -1160,7 +1160,7 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let empty_function_cache = SchemaFunctionCache::empty();
+            let empty_function_cache = CompiledSchemaFunctions::empty();
             let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), &conjunction).unwrap();
             assert_eq!(expected_tig, tig);
@@ -1216,7 +1216,7 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let empty_function_cache = SchemaFunctionCache::empty();
+            let empty_function_cache = CompiledSchemaFunctions::empty();
             let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), &conjunction).unwrap();
             if expected_tig != tig {
@@ -1289,7 +1289,7 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let empty_function_cache = SchemaFunctionCache::empty();
+            let empty_function_cache = CompiledSchemaFunctions::empty();
             let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), &conjunction).unwrap();
             assert_eq!(expected_tig.vertices, tig.vertices);

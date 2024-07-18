@@ -13,7 +13,7 @@ use ir::{
     program::{
         function::FunctionIR,
         function_signature::{FunctionIDTrait, FunctionSignature, HashMapFunctionIndex},
-        program::{CompiledFunctionCache, Program, SchemaFunctionCache},
+        program::{CompiledFunctions, CompiledSchemaFunctions, Program},
     },
 };
 use storage::{sequence_number::SequenceNumber, MVCCStorage};
@@ -22,7 +22,7 @@ use crate::{function::SchemaFunction, function_manager::FunctionReader, Function
 
 pub struct FunctionCache {
     uncompiled: Box<[Option<SchemaFunction>]>,
-    compiled: SchemaFunctionCache,
+    compiled: CompiledSchemaFunctions,
     index: HashMap<String, FunctionSignature>,
 }
 
@@ -45,7 +45,7 @@ impl FunctionCache {
         let ir = Program::compile_functions(&function_index, functions.iter().map(|f| &f.parsed)).unwrap();
         // Run type-inference
         let local_function_cache =
-            infer_types_for_functions(ir, &snapshot, &type_manager, &SchemaFunctionCache::empty())
+            infer_types_for_functions(ir, &snapshot, &type_manager, &CompiledSchemaFunctions::empty())
                 .map_err(|source| FunctionManagerError::TypeInference { source })?;
 
         // Convert them to our cache
@@ -68,7 +68,7 @@ impl FunctionCache {
             ir_cache[cache_index] = Some(ir);
             annotations_cache[cache_index] = Some(annotations);
         }
-        let compiled_functions = SchemaFunctionCache::new(ir_cache, annotations_cache);
+        let compiled_functions = CompiledSchemaFunctions::new(ir_cache, annotations_cache);
         let index = function_index.into_parts();
         Ok(Self { uncompiled: uncompiled_functions, compiled: compiled_functions, index })
     }

@@ -86,16 +86,16 @@ impl Program {
 pub struct AnnotatedProgram {
     pub(crate) entry: FunctionalBlock,
     pub(crate) entry_annotations: TypeAnnotations,
-    pub(crate) local_functions: LocalFunctionCache,
-    pub(crate) schema_functions: Arc<SchemaFunctionCache>,
+    pub(crate) local_functions: CompiledLocalFunctions,
+    pub(crate) schema_functions: Arc<CompiledSchemaFunctions>,
 }
 
 impl AnnotatedProgram {
     pub(crate) fn new(
         entry: FunctionalBlock,
         entry_annotations: TypeAnnotations,
-        local_functions: LocalFunctionCache,
-        schema_functions: Arc<SchemaFunctionCache>,
+        local_functions: CompiledLocalFunctions,
+        schema_functions: Arc<CompiledSchemaFunctions>,
     ) -> Self {
         Self { entry, entry_annotations, local_functions, schema_functions }
     }
@@ -115,12 +115,12 @@ impl AnnotatedProgram {
     }
 }
 
-pub struct SchemaFunctionCache {
+pub struct CompiledSchemaFunctions {
     ir: Box<[Option<FunctionIR>]>,
     annotations: Box<[Option<FunctionAnnotations>]>,
 }
 
-impl SchemaFunctionCache {
+impl CompiledSchemaFunctions {
     pub fn new(ir: Box<[Option<FunctionIR>]>, annotations: Box<[Option<FunctionAnnotations>]>) -> Self {
         Self { ir, annotations }
     }
@@ -130,7 +130,7 @@ impl SchemaFunctionCache {
     }
 }
 
-pub trait CompiledFunctionCache {
+pub trait CompiledFunctions {
     type KeyType;
 
     fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR>;
@@ -138,7 +138,7 @@ pub trait CompiledFunctionCache {
     fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations>;
 }
 
-impl CompiledFunctionCache for SchemaFunctionCache {
+impl CompiledFunctions for CompiledSchemaFunctions {
     type KeyType = DefinitionKey<'static>;
 
     fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR> {
@@ -152,12 +152,12 @@ impl CompiledFunctionCache for SchemaFunctionCache {
 
 // May hold IR & Annotations for either Schema functions or Preamble functions
 // For schema functions, The index does not correspond to function_id.as_usize().
-pub struct LocalFunctionCache {
+pub struct CompiledLocalFunctions {
     ir: Box<[FunctionIR]>,
     annotations: Box<[FunctionAnnotations]>,
 }
 
-impl LocalFunctionCache {
+impl CompiledLocalFunctions {
     pub fn new(ir: Box<[FunctionIR]>, annotations: Box<[FunctionAnnotations]>) -> Self {
         Self { ir, annotations }
     }
@@ -172,7 +172,7 @@ impl LocalFunctionCache {
     }
 }
 
-impl CompiledFunctionCache for LocalFunctionCache {
+impl CompiledFunctions for CompiledLocalFunctions {
     type KeyType = usize;
 
     fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR> {
@@ -198,7 +198,7 @@ pub mod tests {
         pattern::{constraint::Constraint, Scope},
         program::{
             function_signature::{FunctionID, HashMapFunctionIndex},
-            program::{CompiledFunctionCache, Program, SchemaFunctionCache},
+            program::{CompiledFunctions, CompiledSchemaFunctions, Program},
             ProgramDefinitionError,
         },
         PatternDefinitionError,
@@ -246,7 +246,7 @@ pub mod tests {
         let (type_manager, _) = managers();
         let ((type_animal, type_cat, type_dog), _, _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
-        let empty_cache = Arc::new(SchemaFunctionCache::empty());
+        let empty_cache = Arc::new(CompiledSchemaFunctions::empty());
 
         let snapshot = storage.clone().open_snapshot_read();
         let var_f_c = program.functions[0]

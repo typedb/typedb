@@ -24,7 +24,7 @@ use ir::{
         function_signature::{
             FunctionID, FunctionIDTrait, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex,
         },
-        program::{Program, SchemaFunctionCache},
+        program::{CompiledSchemaFunctions, Program},
         FunctionReadError,
     },
     translator::function_builder::TypeQLFunctionBuilder,
@@ -69,7 +69,7 @@ impl FunctionManager {
             HashMapFunctionIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let ir = Program::compile_functions(&function_index, functions.iter().map(|f| &f.parsed)).unwrap();
         // Run type-inference
-        infer_types_for_functions(ir, snapshot, &type_manager, &SchemaFunctionCache::empty())
+        infer_types_for_functions(ir, snapshot, &type_manager, &CompiledSchemaFunctions::empty())
             .map_err(|source| FunctionManagerError::TypeInference { source })?;
         Ok(())
     }

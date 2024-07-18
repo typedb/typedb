@@ -272,7 +272,7 @@ impl Error for DatabaseCheckpointError {
 #[derive(Debug)]
 pub enum DatabaseDeleteError {
     DirectoryDelete { source: io::Error },
-    InUse { },
+    InUse {},
 }
 
 impl fmt::Display for DatabaseDeleteError {
