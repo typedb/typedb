@@ -4,10 +4,9 @@
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
-# TODO: Add test_ prefix to target names
 
 rust_test(
-    name = "attribute",
+    name = "test_attribute",
     srcs = ["attribute.rs"],
     deps = [
         "//tests/behaviour/steps:steps",
@@ -18,7 +17,7 @@ rust_test(
 )
 
 rust_test(
-    name = "entity",
+    name = "test_entity",
     srcs = ["entity.rs"],
     deps = [
         "//tests/behaviour/steps:steps",
@@ -29,7 +28,7 @@ rust_test(
 )
 
 rust_test(
-    name = "has",
+    name = "test_has",
     srcs = ["has.rs"],
     deps = [
         "//tests/behaviour/steps:steps",
@@ -40,7 +39,7 @@ rust_test(
 )
 
 rust_test(
-    name = "relation",
+    name = "test_relation",
     srcs = ["relation.rs"],
     deps = [
         "//tests/behaviour/steps:steps",
@@ -51,7 +50,7 @@ rust_test(
 )
 
 rust_test(
-    name = "roleplayer",
+    name = "test_roleplayer",
     srcs = ["roleplayer.rs"],
     deps = [
         "//tests/behaviour/steps:steps",

@@ -97,8 +97,7 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
     }
 
     fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
-        // TODO: validation (Or better, do it in type_manager)
-        type_manager.delete_relation_type(snapshot, self)
+        type_manager.delete_relation_type(snapshot, self.clone().into_owned())
     }
 
     fn get_label<'m>(
@@ -113,6 +112,22 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
 impl<'a> KindAPI<'a> for RelationType<'a> {
     type AnnotationType = RelationTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Relation;
+
+    fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<RelationTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_relation_type_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<RelationTypeAnnotation, RelationType<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_annotations(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {
@@ -184,22 +199,6 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_subtypes_transitive(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_annotations_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<RelationTypeAnnotation>>, ConceptReadError> {
-        type_manager.get_relation_type_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RelationTypeAnnotation, RelationType<'static>>>, ConceptReadError> {
-        type_manager.get_relation_type_annotations(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -227,7 +226,7 @@ impl<'a> RelationType<'a> {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match relation_type_annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.unset_owner_annotation_abstract(snapshot, self.clone().into_owned())?
+                type_manager.unset_relation_type_annotation_abstract(snapshot, self.clone().into_owned())?
             }
             RelationTypeAnnotation::Cascade(_) => {
                 type_manager.unset_annotation_cascade(snapshot, self.clone().into_owned())?
@@ -244,7 +243,7 @@ impl<'a> RelationType<'a> {
         ordering: Ordering,
     ) -> Result<Relates<'static>, ConceptWriteError> {
         let label = Label::build_scoped(name, self.get_label(snapshot, type_manager).unwrap().name().as_str());
-        let role_type = type_manager.create_role_type(snapshot, &label, self.clone().into_owned(), false, ordering)?;
+        let role_type = type_manager.create_role_type(snapshot, &label, self.clone().into_owned(), ordering)?;
         Ok(Relates::new(self.clone().into_owned(), role_type))
     }
 
@@ -296,7 +295,7 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
-        type_manager.set_owns(snapshot, self.clone().into_owned(), attribute_type.clone(), ordering)?;
+        type_manager.set_owns(snapshot, self.clone().into_owned_object_type(), attribute_type.clone(), ordering)?;
         Ok(Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type))
     }
 
@@ -343,7 +342,7 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
-        type_manager.set_plays(snapshot, self.clone().into_owned(), role_type.clone())
+        type_manager.set_plays(snapshot, self.clone().into_owned_object_type(), role_type.clone())
     }
 
     fn unset_plays(
@@ -393,18 +392,16 @@ impl From<Annotation> for Result<RelationTypeAnnotation, AnnotationError> {
             Annotation::Abstract(annotation) => Ok(RelationTypeAnnotation::Abstract(annotation)),
             Annotation::Cascade(annotation) => Ok(RelationTypeAnnotation::Cascade(annotation)),
 
-            Annotation::Distinct(_) => {
+            | Annotation::Distinct(_)
+            | Annotation::Independent(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Cardinality(_)
+            | Annotation::Regex(_)
+            | Annotation::Range(_)
+            | Annotation::Values(_) => {
                 Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
             }
-            Annotation::Independent(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
-            }
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
-            Annotation::Cardinality(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
-            }
-            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
         }
     }
 }

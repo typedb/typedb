@@ -8,17 +8,22 @@ use std::{
     borrow::Cow,
     cmp::Ordering,
     fmt::{Display, Formatter},
+    hash::Hash,
 };
 
+use bytes::byte_array::ByteArray;
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
 
 use super::date_bytes::DateBytes;
-use crate::value::{
-    boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
-    decimal_bytes::DecimalBytes, decimal_value::Decimal, double_bytes::DoubleBytes, duration_bytes::DurationBytes,
-    duration_value::Duration, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
-    value_struct::StructValue, value_type::ValueType, ValueEncodable,
+use crate::{
+    value::{
+        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
+        decimal_bytes::DecimalBytes, decimal_value::Decimal, double_bytes::DoubleBytes, duration_bytes::DurationBytes,
+        duration_value::Duration, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
+        value_struct::StructValue, value_type::ValueType, ValueEncodable,
+    },
+    AsBytes,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -95,10 +100,38 @@ impl<'a> Value<'a> {
         }
     }
 
+    pub fn unwrap_decimal(self) -> Decimal {
+        match self {
+            Self::Decimal(decimal) => decimal,
+            _ => panic!("Cannot unwrap Double if not a double value."),
+        }
+    }
+
+    pub fn unwrap_date(self) -> NaiveDate {
+        match self {
+            Self::Date(date) => date,
+            _ => panic!("Cannot unwrap Date if not a date value."),
+        }
+    }
+
     pub fn unwrap_date_time(self) -> NaiveDateTime {
         match self {
             Self::DateTime(date_time) => date_time,
             _ => panic!("Cannot unwrap DateTime if not a datetime value."),
+        }
+    }
+
+    pub fn unwrap_date_time_tz(self) -> DateTime<Tz> {
+        match self {
+            Self::DateTimeTZ(date_time_tz) => date_time_tz,
+            _ => panic!("Cannot unwrap DateTimeTZ if not a datetime-tz value."),
+        }
+    }
+
+    pub fn unwrap_duration(self) -> Duration {
+        match self {
+            Self::Duration(duration) => duration,
+            _ => panic!("Cannot unwrap DateTimeTZ if not a datetime-tz value."),
         }
     }
 
@@ -215,6 +248,21 @@ impl<'a> ValueEncodable for Value<'a> {
         match self {
             Value::Struct(struct_) => StructBytes::build(struct_),
             _ => panic!("Cannot encode non-Struct as StructBytes"),
+        }
+    }
+
+    fn encode_bytes<const INLINE_LENGTH: usize>(&self) -> ByteArray<INLINE_LENGTH> {
+        match self {
+            Value::Boolean(_) => ByteArray::copy(&self.encode_boolean().bytes()),
+            Value::Long(_) => ByteArray::copy(&self.encode_long().bytes()),
+            Value::Double(_) => ByteArray::copy(&self.encode_double().bytes()),
+            Value::Decimal(_) => ByteArray::copy(&self.encode_decimal().bytes()),
+            Value::Date(_) => ByteArray::copy(&self.encode_date().bytes()),
+            Value::DateTime(_) => ByteArray::copy(&self.encode_date_time().bytes()),
+            Value::DateTimeTZ(_) => ByteArray::copy(&self.encode_date_time_tz().bytes()),
+            Value::Duration(_) => ByteArray::copy(&self.encode_duration().bytes()),
+            Value::String(_) => ByteArray::copy(&self.encode_string::<INLINE_LENGTH>().bytes().bytes()),
+            Value::Struct(_) => ByteArray::copy(&self.encode_struct::<INLINE_LENGTH>().bytes().bytes()),
         }
     }
 }

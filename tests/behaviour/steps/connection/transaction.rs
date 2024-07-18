@@ -4,7 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use database::transaction::{TransactionRead, TransactionSchema, TransactionWrite};
+use concept::error::ConceptWriteError;
+use database::transaction::{SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use macro_rules_attribute::apply;
 
 use crate::{
@@ -47,26 +48,23 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
 #[apply(generic_step)]
 #[step(expr = "transaction commits{may_error}")]
 pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
-    // match context.take_transaction().unwrap() {
-    //     ActiveTransaction::Read(_) => {}
-    //     ActiveTransaction::Write(tx) => may_error.check(&tx.commit()),
-    //     ActiveTransaction::Schema(tx) => may_error.check(&tx.commit()),
-    // }
-    // TODO: Temporary implementation until transaction-time validations are implemented
     match context.take_transaction().unwrap() {
         ActiveTransaction::Read(_) => {}
         ActiveTransaction::Write(tx) => {
-            if may_error.expects_error() {
-                tx.close()
-            } else {
-                may_error.check(&tx.commit())
+            if let Some(errors) = may_error.check(&tx.commit()) {
+                errors
+                    .iter()
+                    .for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone())))
             }
         }
         ActiveTransaction::Schema(tx) => {
-            if may_error.expects_error() {
-                tx.close()
-            } else {
-                may_error.check(&tx.commit())
+            if let Some(schema_commit_error) = may_error.check(&tx.commit()) {
+                match schema_commit_error {
+                    SchemaCommitError::ConceptWrite { errors } => errors
+                        .iter()
+                        .for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone()))),
+                    _ => {}
+                }
             }
         }
     }

@@ -24,7 +24,7 @@ const MAX_MONTHS: u32 = (MAX_YEAR - MIN_YEAR + 1) as u32 * MONTHS_PER_YEAR;
 
 const DAYS_PER_WEEK: u32 = 7;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash)]
 pub struct Duration {
     pub(super) months: u32,
     pub(super) days: u32,

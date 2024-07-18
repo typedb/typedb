@@ -9,7 +9,10 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use ::concept::thing::{attribute::Attribute, object::Object};
+use ::concept::{
+    thing::{attribute::Attribute, object::Object},
+    type_::attribute_type::AttributeType,
+};
 use cucumber::{StatsWriter, World};
 use database::Database;
 use server::typedb;

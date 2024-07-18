@@ -250,3 +250,13 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         }
     }
 }
+
+macro_rules! with_object_type {
+    ($object_type:ident, |$type_:ident| $expr:expr) => {
+        match $object_type.clone() {
+            ObjectType::Entity($type_) => $expr,
+            ObjectType::Relation($type_) => $expr,
+        }
+    };
+}
+pub(crate) use with_object_type;

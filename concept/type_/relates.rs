@@ -6,7 +6,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
+use encoding::{
+    graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
+    layout::prefix::Prefix,
+};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -19,7 +22,7 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        InterfaceImplementation,
+        Capability, Ordering,
     },
 };
 
@@ -30,6 +33,9 @@ pub struct Relates<'a> {
 }
 
 impl<'a> Relates<'a> {
+    pub const DEFAULT_UNORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(1, Some(1));
+    pub const DEFAULT_ORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
+
     pub(crate) fn new(relation: RelationType<'a>, role: RoleType<'a>) -> Self {
         Relates { relation, role }
     }
@@ -57,40 +63,6 @@ impl<'a> Relates<'a> {
         type_manager: &TypeManager,
     ) -> Result<(), ConceptWriteError> {
         type_manager.unset_relates_overridden(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_cardinality(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<AnnotationCardinality, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        let ordering = self.role.get_ordering(snapshot, type_manager)?;
-        let card = annotations
-            .iter()
-            .filter_map(|(annotation, _)| match annotation {
-                RelatesAnnotation::Cardinality(card) => Some(*card),
-                _ => None,
-            })
-            .next()
-            .unwrap_or_else(|| type_manager.role_default_cardinality(ordering));
-        Ok(card)
-    }
-
-    pub fn get_annotations_declared<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<RelatesAnnotation>>, ConceptReadError> {
-        type_manager.get_relates_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RelatesAnnotation, Relates<'static>>>, ConceptReadError> {
-        type_manager.get_relates_annotations(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(
@@ -153,10 +125,11 @@ impl<'a> TypeEdgeEncoding<'a> for Relates<'a> {
     }
 }
 
-impl<'a> InterfaceImplementation<'a> for Relates<'a> {
+impl<'a> Capability<'a> for Relates<'a> {
     type AnnotationType = RelatesAnnotation;
     type ObjectType = RelationType<'a>;
     type InterfaceType = RoleType<'a>;
+    const KIND: CapabilityKind = CapabilityKind::Relates;
 
     fn object(&self) -> RelationType<'a> {
         self.relation.clone()
@@ -164,6 +137,34 @@ impl<'a> InterfaceImplementation<'a> for Relates<'a> {
 
     fn interface(&self) -> RoleType<'a> {
         self.role.clone()
+    }
+
+    fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<RelatesAnnotation>>, ConceptReadError> {
+        type_manager.get_relates_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<RelatesAnnotation, Relates<'static>>>, ConceptReadError> {
+        type_manager.get_relates_annotations(snapshot, self.clone().into_owned())
+    }
+
+    fn get_default_cardinality<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<AnnotationCardinality, ConceptReadError> {
+        let ordering = self.role.get_ordering(snapshot, type_manager)?;
+        Ok(match ordering {
+            Ordering::Unordered => Self::DEFAULT_UNORDERED_CARDINALITY,
+            Ordering::Ordered => Self::DEFAULT_ORDERED_CARDINALITY,
+        })
     }
 }
 
@@ -179,12 +180,14 @@ impl From<Annotation> for Result<RelatesAnnotation, AnnotationError> {
             Annotation::Distinct(annotation) => Ok(RelatesAnnotation::Distinct(annotation)),
             Annotation::Cardinality(annotation) => Ok(RelatesAnnotation::Cardinality(annotation)),
 
-            Annotation::Abstract(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-            Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
+            | Annotation::Abstract(_)
+            | Annotation::Independent(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Regex(_)
+            | Annotation::Cascade(_)
+            | Annotation::Range(_)
+            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
         }
     }
 }

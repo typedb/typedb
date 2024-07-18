@@ -39,7 +39,8 @@ async fn attribute_put_instance_with_value(
     value: params::Value,
     may_error: params::MayError,
 ) {
-    may_error.check(&attribute_put_instance_with_value_impl(context, type_label, value));
+    may_error
+        .check_concept_write_without_read_errors(&attribute_put_instance_with_value_impl(context, type_label, value));
 }
 
 #[apply(generic_step)]

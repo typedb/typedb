@@ -29,7 +29,7 @@ use crate::{
     },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, owns::Owns, role_type::RoleType,
-        type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI,
+        type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering, OwnerAPI,
     },
     ConceptStatus,
 };
@@ -219,17 +219,16 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
             }
         }
 
-        if let Some(cardinality) = owns.get_cardinality(snapshot, thing_manager.type_manager())? {
-            let count = self
-                .get_has_type_unordered(snapshot, thing_manager, owns.attribute())
-                .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
-                .count();
-            if !cardinality.is_valid(count as u64 + 1) {
-                return Err(ConceptWriteError::MultipleKeys {
-                    owner: self.clone().into_owned_object(),
-                    key_type: owns.attribute(),
-                });
-            }
+        let cardinality = owns.get_cardinality(snapshot, thing_manager.type_manager())?;
+        let count = self
+            .get_has_type_unordered(snapshot, thing_manager, owns.attribute())
+            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
+            .count();
+        if !cardinality.value_valid(count as u64 + 1) {
+            return Err(ConceptWriteError::MultipleKeys {
+                owner: self.clone().into_owned_object(),
+                key_type: owns.attribute(),
+            });
         }
 
         thing_manager.set_has_unordered(snapshot, self, attribute.as_reference());

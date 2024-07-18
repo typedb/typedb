@@ -25,7 +25,7 @@ use crate::{
 #[step(expr = "create struct: {type_label}{may_error}")]
 pub async fn struct_create(context: &mut Context, type_label: Label, may_error: MayError) {
     with_schema_tx!(context, |tx| {
-        may_error.check(
+        may_error.check_concept_write_without_read_errors(
             &tx.type_manager
                 .create_struct(&mut tx.snapshot, type_label.into_typedb().scoped_name().as_str().to_owned()),
         );
@@ -36,12 +36,17 @@ pub async fn struct_create(context: &mut Context, type_label: Label, may_error: 
 #[step(expr = "delete struct: {type_label}{may_error}")]
 pub async fn struct_delete(context: &mut Context, type_label: Label, may_error: MayError) {
     with_schema_tx!(context, |tx| {
-        let definition_key = &tx
+        if let Some(definition_key) = &tx
             .type_manager
             .get_struct_definition_key(&tx.snapshot, type_label.into_typedb().scoped_name().as_str())
             .unwrap()
-            .unwrap();
-        may_error.check(&tx.type_manager.delete_struct(&mut tx.snapshot, definition_key));
+        {
+            may_error.check_concept_write_without_read_errors(
+                &tx.type_manager.delete_struct(&mut tx.snapshot, definition_key),
+            );
+        } else {
+            assert!(may_error.expects_error());
+        }
     });
 }
 
@@ -81,7 +86,7 @@ pub async fn struct_create_field_with_value_type(
             .unwrap()
             .unwrap();
         let parsed_value_type = value_type.into_typedb(&tx.type_manager, &tx.snapshot);
-        may_error.check(&tx.type_manager.create_struct_field(
+        may_error.check_concept_write_without_read_errors(&tx.type_manager.create_struct_field(
             &mut tx.snapshot,
             definition_key.clone(),
             field_label.into_typedb().scoped_name().as_str().to_owned(),
@@ -100,7 +105,7 @@ pub async fn struct_delete_field(context: &mut Context, type_label: Label, field
             .get_struct_definition_key(&tx.snapshot, type_label.into_typedb().scoped_name().as_str())
             .unwrap()
             .unwrap();
-        may_error.check(&tx.type_manager.delete_struct_field(
+        may_error.check_concept_write_without_read_errors(&tx.type_manager.delete_struct_field(
             &mut tx.snapshot,
             definition_key.clone(),
             field_label.into_typedb().scoped_name().as_str().to_owned(),

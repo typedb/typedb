@@ -4,9 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::Bytes;
 use encoding::graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding};
-use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
+use storage::snapshot::ReadableSnapshot;
+
+use crate::type_::type_manager::type_reader::TypeReader;
 
 pub struct StructDefinitionCache {
     pub(super) definition_key: DefinitionKey<'static>,
@@ -15,15 +16,7 @@ pub struct StructDefinitionCache {
 
 impl StructDefinitionCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<StructDefinitionCache>]> {
-        let definitions = snapshot
-            .iterate_range(KeyRange::new_within(
-                DefinitionKey::build_prefix(StructDefinition::PREFIX),
-                StructDefinition::PREFIX.fixed_width_keys(),
-            ))
-            .collect_cloned_hashmap(|key, value| {
-                (DefinitionKey::new(Bytes::Array(key.byte_ref().into())), StructDefinition::from_bytes(value))
-            })
-            .unwrap();
+        let definitions = TypeReader::get_struct_definitions_all(snapshot).unwrap();
 
         let max_definition_id = definitions.iter().map(|(d, _)| d.definition_id().as_uint()).max().unwrap_or(0);
         let mut caches = (0..=max_definition_id).map(|_| None).collect::<Box<[_]>>();

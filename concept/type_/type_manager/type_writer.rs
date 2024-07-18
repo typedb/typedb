@@ -34,7 +34,7 @@ pub struct TypeWriter<Snapshot: WritableSnapshot> {
 
 // TODO: Make everything pub(super) and make this submodule of type_manager.
 impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
-    pub(crate) fn storage_put_struct(
+    pub(crate) fn storage_insert_struct(
         snapshot: &mut Snapshot,
         definition_key: DefinitionKey<'static>,
         struct_definition: StructDefinition,
@@ -44,7 +44,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         ));
         snapshot
             .put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(definition_key.bytes().bytes()));
-        snapshot.put_val(
+        snapshot.insert_val(
             definition_key.into_storage_key().into_owned_array(),
             struct_definition.into_bytes().unwrap().into_array(),
         );
@@ -133,20 +133,20 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.delete(relates.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_put_interface_impl<IMPL>(snapshot: &mut Snapshot, implementation: IMPL)
+    pub(crate) fn storage_put_capability<CAP>(snapshot: &mut Snapshot, capability: CAP)
     where
-        IMPL: TypeEdgeEncoding<'static> + Clone,
+        CAP: TypeEdgeEncoding<'static> + Clone,
     {
-        snapshot.put(implementation.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-        snapshot.put(implementation.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(capability.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(capability.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_interface_impl<IMPL>(snapshot: &mut Snapshot, implementation: IMPL)
+    pub(crate) fn storage_delete_capability<CAP>(snapshot: &mut Snapshot, capability: CAP)
     where
-        IMPL: TypeEdgeEncoding<'static> + Clone,
+        CAP: TypeEdgeEncoding<'static> + Clone,
     {
-        snapshot.delete(implementation.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-        snapshot.delete(implementation.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+        snapshot.delete(capability.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.delete(capability.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_insert_type_vertex_property<'a, P>(

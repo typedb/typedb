@@ -25,7 +25,7 @@ use encoding::{
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use super::annotation::{AnnotationCategory, AnnotationRegex};
+use super::annotation::{AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
@@ -98,8 +98,7 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
     }
 
     fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
-        // TODO: Validation
-        type_manager.delete_attribute_type(snapshot, self)
+        type_manager.delete_attribute_type(snapshot, self.clone().into_owned())
     }
 
     fn get_label<'m>(
@@ -114,6 +113,22 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
 impl<'a> KindAPI<'a> for AttributeType<'a> {
     type AnnotationType = AttributeTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Attribute;
+
+    fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_attribute_type_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<AttributeTypeAnnotation, AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_annotations(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> AttributeType<'a> {
@@ -216,22 +231,6 @@ impl<'a> AttributeType<'a> {
             .contains_key(&AttributeTypeAnnotation::Independent(AnnotationIndependent)))
     }
 
-    pub fn get_annotations_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, ConceptReadError> {
-        type_manager.get_attribute_type_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<AttributeTypeAnnotation, AttributeType<'static>>>, ConceptReadError> {
-        type_manager.get_attribute_type_annotations(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -247,6 +246,12 @@ impl<'a> AttributeType<'a> {
             }
             AttributeTypeAnnotation::Regex(regex) => {
                 type_manager.set_annotation_regex(snapshot, self.clone().into_owned(), regex)?
+            }
+            AttributeTypeAnnotation::Range(range) => {
+                type_manager.set_annotation_range(snapshot, self.clone().into_owned(), range)?
+            }
+            AttributeTypeAnnotation::Values(values) => {
+                type_manager.set_annotation_values(snapshot, self.clone().into_owned(), values)?
             }
         };
         Ok(())
@@ -269,6 +274,12 @@ impl<'a> AttributeType<'a> {
             }
             AttributeTypeAnnotation::Regex(_) => {
                 type_manager.unset_annotation_regex(snapshot, self.clone().into_owned())?
+            }
+            AttributeTypeAnnotation::Range(_) => {
+                type_manager.unset_annotation_range(snapshot, self.clone().into_owned())?
+            }
+            AttributeTypeAnnotation::Values(_) => {
+                type_manager.unset_annotation_values(snapshot, self.clone().into_owned())?
             }
         }
         Ok(())
@@ -314,6 +325,8 @@ pub enum AttributeTypeAnnotation {
     Abstract(AnnotationAbstract),
     Independent(AnnotationIndependent),
     Regex(AnnotationRegex),
+    Range(AnnotationRange),
+    Values(AnnotationValues),
 }
 
 impl From<Annotation> for Result<AttributeTypeAnnotation, AnnotationError> {
@@ -322,16 +335,14 @@ impl From<Annotation> for Result<AttributeTypeAnnotation, AnnotationError> {
             Annotation::Abstract(annotation) => Ok(AttributeTypeAnnotation::Abstract(annotation)),
             Annotation::Independent(annotation) => Ok(AttributeTypeAnnotation::Independent(annotation)),
             Annotation::Regex(annotation) => Ok(AttributeTypeAnnotation::Regex(annotation)),
+            Annotation::Range(annotation) => Ok(AttributeTypeAnnotation::Range(annotation)),
+            Annotation::Values(annotation) => Ok(AttributeTypeAnnotation::Values(annotation)),
 
-            Annotation::Distinct(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
-            }
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category())),
-            Annotation::Cardinality(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
-            }
-            Annotation::Cascade(_) => {
+            | Annotation::Distinct(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Cardinality(_)
+            | Annotation::Cascade(_) => {
                 Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
             }
         }
@@ -354,6 +365,8 @@ impl Into<Annotation> for AttributeTypeAnnotation {
             AttributeTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
             AttributeTypeAnnotation::Independent(annotation) => Annotation::Independent(annotation),
             AttributeTypeAnnotation::Regex(annotation) => Annotation::Regex(annotation),
+            AttributeTypeAnnotation::Range(annotation) => Annotation::Range(annotation),
+            AttributeTypeAnnotation::Values(annotation) => Annotation::Values(annotation),
         }
     }
 }

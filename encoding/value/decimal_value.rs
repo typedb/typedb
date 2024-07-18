@@ -16,7 +16,7 @@ const _ASSERT: () = {
     assert!(FRACTIONAL_PART_DENOMINATOR > u64::MAX / 10);
 };
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal {
     integer: i64,
     fractional: u64,
@@ -26,16 +26,16 @@ impl Decimal {
     pub const MIN: Self = Self::new(i64::MIN, 0);
     pub const MAX: Self = Self::new(i64::MAX, FRACTIONAL_PART_DENOMINATOR - 1);
 
-    pub(crate) const fn new(integer: i64, fractional: u64) -> Self {
+    pub const fn new(integer: i64, fractional: u64) -> Self {
         assert!(fractional < FRACTIONAL_PART_DENOMINATOR);
         Self { integer, fractional }
     }
 
-    pub(crate) fn integer_part(&self) -> i64 {
+    pub fn integer_part(&self) -> i64 {
         self.integer
     }
 
-    pub(crate) fn fractional_part(&self) -> u64 {
+    pub fn fractional_part(&self) -> u64 {
         self.fractional
     }
 }

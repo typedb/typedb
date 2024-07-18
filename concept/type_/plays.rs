@@ -6,7 +6,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
+use encoding::{
+    graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
+    layout::prefix::Prefix,
+};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -17,7 +20,7 @@ use crate::{
         object_type::ObjectType,
         role_type::RoleType,
         type_manager::TypeManager,
-        InterfaceImplementation, TypeAPI,
+        Capability, Ordering, TypeAPI,
     },
 };
 
@@ -28,6 +31,8 @@ pub struct Plays<'a> {
 }
 
 impl<'a> Plays<'a> {
+    pub const DEFAULT_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
+
     pub(crate) fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
         Self { player, role }
     }
@@ -63,22 +68,6 @@ impl<'a> Plays<'a> {
         type_manager: &TypeManager,
     ) -> Result<(), ConceptWriteError> {
         type_manager.unset_plays_overridden(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations_declared<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<PlaysAnnotation>>, ConceptReadError> {
-        type_manager.get_plays_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashMap<PlaysAnnotation, Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_annotations(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(
@@ -135,10 +124,11 @@ impl<'a> TypeEdgeEncoding<'a> for Plays<'a> {
     }
 }
 
-impl<'a> InterfaceImplementation<'a> for Plays<'a> {
+impl<'a> Capability<'a> for Plays<'a> {
     type AnnotationType = PlaysAnnotation;
     type ObjectType = ObjectType<'a>;
     type InterfaceType = RoleType<'a>;
+    const KIND: CapabilityKind = CapabilityKind::Plays;
 
     fn object(&self) -> ObjectType<'a> {
         self.player.clone()
@@ -146,6 +136,30 @@ impl<'a> InterfaceImplementation<'a> for Plays<'a> {
 
     fn interface(&self) -> RoleType<'a> {
         self.role.clone()
+    }
+
+    fn get_annotations_declared<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<PlaysAnnotation>>, ConceptReadError> {
+        type_manager.get_plays_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashMap<PlaysAnnotation, Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_annotations(snapshot, self.clone().into_owned())
+    }
+
+    fn get_default_cardinality<'this>(
+        &'this self,
+        _snapshot: &impl ReadableSnapshot,
+        _type_manager: &TypeManager,
+    ) -> Result<AnnotationCardinality, ConceptReadError> {
+        Ok(Self::DEFAULT_CARDINALITY)
     }
 }
 
@@ -159,13 +173,15 @@ impl From<Annotation> for Result<PlaysAnnotation, AnnotationError> {
         match annotation {
             Annotation::Cardinality(annotation) => Ok(PlaysAnnotation::Cardinality(annotation)),
 
-            Annotation::Abstract(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Distinct(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
+            | Annotation::Abstract(_)
+            | Annotation::Independent(_)
+            | Annotation::Distinct(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Regex(_)
+            | Annotation::Cascade(_)
+            | Annotation::Range(_)
+            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
         }
     }
 }
@@ -206,6 +222,8 @@ impl PartialEq<Annotation> for PlaysAnnotation {
             Annotation::Key(_) => false,
             Annotation::Regex(_) => false,
             Annotation::Cascade(_) => false,
+            Annotation::Range(_) => false,
+            Annotation::Values(_) => false,
         }
     }
 }

@@ -47,7 +47,7 @@ impl Error for ConceptError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ConceptWriteError {
     RootModification,
     SnapshotGet {
@@ -153,6 +153,9 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::SnapshotGet { source } => Self::SnapshotGet { source },
             ConceptReadError::SnapshotIterate { source } => Self::SnapshotIterate { source },
             ConceptReadError::Encoding { source, .. } => Self::Encoding { source },
+            ConceptReadError::CorruptMissingLabelOfType => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryProperty => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryRelatesForRole => Self::ConceptRead { source: error },
         }
     }
 }
@@ -162,6 +165,9 @@ pub enum ConceptReadError {
     SnapshotGet { source: SnapshotGetError },
     SnapshotIterate { source: Arc<SnapshotIteratorError> },
     Encoding { source: EncodingError },
+    CorruptMissingLabelOfType,
+    CorruptMissingMandatoryProperty,
+    CorruptMissingMandatoryRelatesForRole,
 }
 
 impl fmt::Display for ConceptReadError {
@@ -175,7 +181,10 @@ impl Error for ConceptReadError {
         match self {
             Self::SnapshotGet { source, .. } => Some(source),
             Self::SnapshotIterate { source, .. } => Some(source),
-            ConceptReadError::Encoding { source, .. } => Some(source),
+            Self::Encoding { source, .. } => Some(source),
+            Self::CorruptMissingLabelOfType => None,
+            Self::CorruptMissingMandatoryProperty => None,
+            Self::CorruptMissingMandatoryRelatesForRole => None,
         }
     }
 }

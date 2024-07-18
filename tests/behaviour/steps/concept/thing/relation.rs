@@ -41,7 +41,7 @@ async fn relation_add_player_for_role(
             .role();
         relation.add_player(&mut tx.snapshot, &tx.thing_manager, role_type, player)
     });
-    may_error.check(&res);
+    may_error.check_concept_write_without_read_errors(&res);
 }
 
 #[apply(generic_step)]
@@ -65,7 +65,7 @@ async fn relation_set_players_for_role(
             .role();
         relation.set_players_ordered(&mut tx.snapshot, &tx.thing_manager, role_type, players)
     });
-    may_error.check(&res);
+    may_error.check_concept_write_without_read_errors(&res);
 }
 
 #[apply(generic_step)]

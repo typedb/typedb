@@ -40,7 +40,7 @@ use crate::{
     },
     type_::{
         annotation::AnnotationDistinct, relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType,
-        ObjectTypeAPI, Ordering, TypeAPI,
+        Capability, ObjectTypeAPI, Ordering, TypeAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
@@ -193,7 +193,7 @@ impl<'a> Relation<'a> {
             return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
         }
 
-        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
+        let relates = role_type.get_relates_declared(snapshot, thing_manager.type_manager())?;
         let relates_annotations = relates.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
         let distinct = relates_annotations.contains_key(&RelatesAnnotation::Distinct(AnnotationDistinct));
         if distinct {
@@ -288,7 +288,7 @@ impl<'a> Relation<'a> {
         player: Object<'_>,
         delete_count: u64,
     ) -> Result<(), ConceptWriteError> {
-        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
+        let relates = role_type.get_relates_declared(snapshot, thing_manager.type_manager())?;
         let relates_annotations = relates.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
         let distinct = relates_annotations.contains_key(&RelatesAnnotation::Distinct(AnnotationDistinct));
         if distinct {
@@ -338,7 +338,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
             let cardinality = relates.get_cardinality(snapshot, thing_manager.type_manager())?;
             let role_type = relates.role();
             let player_count = role_player_count.get(&role_type).map_or(0, |c| *c);
-            if !cardinality.is_valid(player_count) {
+            if !cardinality.value_valid(player_count) {
                 errors.push(ConceptWriteError::RelationRoleCardinality {
                     relation: self.clone().into_owned(),
                     role_type: role_type.clone(),

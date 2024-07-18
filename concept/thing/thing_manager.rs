@@ -67,7 +67,7 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        ObjectTypeAPI, OwnerAPI, TypeAPI,
+        Capability, ObjectTypeAPI, OwnerAPI, TypeAPI,
     },
     ConceptStatus,
 };
@@ -848,28 +848,24 @@ impl<'txn> ThingManager {
             .get_owns_attribute(snapshot, self.type_manager(), attribute_type.clone())?
             .expect("encountered a has edge without a corresponding owns in the schema");
 
-        if let Some(cardinality) = owns.get_cardinality(snapshot, self.type_manager())? {
-            let count = owner.get_has_type_unordered(snapshot, self, attribute_type.clone())?.count();
-            if !cardinality.is_valid(count as u64) {
-                if owns.is_key(snapshot, &*self.type_manager)? {
-                    if count == 0 {
-                        errors
-                            .push(ConceptWriteError::KeyMissing { owner: owner.into_owned(), key_type: attribute_type })
-                    } else {
-                        errors.push(ConceptWriteError::MultipleKeys {
-                            owner: owner.into_owned(),
-                            key_type: attribute_type,
-                        })
-                    }
+        let cardinality = owns.get_cardinality(snapshot, self.type_manager())?;
+        let count = owner.get_has_type_unordered(snapshot, self, attribute_type.clone())?.count();
+        if !cardinality.value_valid(count as u64) {
+            if owns.is_key(snapshot, &*self.type_manager)? {
+                if count == 0 {
+                    errors.push(ConceptWriteError::KeyMissing { owner: owner.into_owned(), key_type: attribute_type })
                 } else {
-                    errors.push(ConceptWriteError::CardinalityViolation {
-                        owner: owner.into_owned(),
-                        attribute_type,
-                        cardinality,
-                    })
+                    errors.push(ConceptWriteError::MultipleKeys { owner: owner.into_owned(), key_type: attribute_type })
                 }
+            } else {
+                errors.push(ConceptWriteError::CardinalityViolation {
+                    owner: owner.into_owned(),
+                    attribute_type,
+                    cardinality,
+                })
             }
-        };
+        }
+
         Ok(())
     }
 
@@ -987,6 +983,8 @@ impl<'txn> ThingManager {
                                     });
                                 }
                             }
+                            AttributeTypeAnnotation::Range(_) => todo!("create attribute with range"),
+                            AttributeTypeAnnotation::Values(_) => todo!("create attribute with values"),
                         }
                     }
                     let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);

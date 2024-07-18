@@ -93,8 +93,7 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
     }
 
     fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
-        // todo!("Validation");
-        type_manager.delete_entity_type(snapshot, self)
+        type_manager.delete_entity_type(snapshot, self.clone().into_owned())
     }
 
     fn get_label<'m>(
@@ -115,6 +114,22 @@ impl<'a> ObjectTypeAPI<'a> for EntityType<'a> {
 impl<'a> KindAPI<'a> for EntityType<'a> {
     type AnnotationType = EntityTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Entity;
+
+    fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<EntityTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_entity_type_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<EntityTypeAnnotation, EntityType<'static>>>, ConceptReadError> {
+        type_manager.get_entity_type_annotations(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> EntityType<'a> {
@@ -180,22 +195,6 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_subtypes_transitive(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_annotations_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<EntityTypeAnnotation>>, ConceptReadError> {
-        type_manager.get_entity_type_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<EntityTypeAnnotation, EntityType<'static>>>, ConceptReadError> {
-        type_manager.get_entity_type_annotations(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -220,7 +219,7 @@ impl<'a> EntityType<'a> {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match entity_annotation {
             EntityTypeAnnotation::Abstract(_) => {
-                type_manager.unset_owner_annotation_abstract(snapshot, self.clone().into_owned())?
+                type_manager.unset_object_type_annotation_abstract(snapshot, self.clone().into_owned())?
             }
         }
 
@@ -240,7 +239,7 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
-        type_manager.set_owns(snapshot, self.clone().into_owned(), attribute_type.clone(), ordering)?;
+        type_manager.set_owns(snapshot, self.clone().into_owned_object_type(), attribute_type.clone(), ordering)?;
         Ok(Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type))
     }
 
@@ -287,7 +286,7 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
-        type_manager.set_plays(snapshot, self.clone().into_owned(), role_type.clone())
+        type_manager.set_plays(snapshot, self.clone().into_owned_object_type(), role_type.clone())
     }
 
     fn unset_plays(
@@ -341,17 +340,15 @@ impl From<Annotation> for Result<EntityTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(EntityTypeAnnotation::Abstract(annotation)),
 
-            Annotation::Distinct(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
-            Annotation::Independent(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category()))
-            }
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
-            Annotation::Cardinality(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category()))
-            }
-            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
-            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
+            | Annotation::Distinct(_)
+            | Annotation::Independent(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Cardinality(_)
+            | Annotation::Regex(_)
+            | Annotation::Cascade(_)
+            | Annotation::Range(_)
+            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
         }
     }
 }

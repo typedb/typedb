@@ -4,9 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
+use std::{borrow::Cow, convert::Infallible, error::Error, fmt, str::FromStr, sync::Arc};
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono_tz::Tz;
 use concept::type_::{
     annotation::{
         Annotation as TypeDBAnnotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade,
@@ -31,14 +32,31 @@ pub(crate) enum MayError {
 }
 
 impl MayError {
-    pub fn check<T: fmt::Debug, E: fmt::Debug>(&self, res: &Result<T, E>) {
+    pub fn check<'a, T: fmt::Debug, E: fmt::Debug>(&self, res: &'a Result<T, E>) -> Option<&'a E> {
+        match self {
+            MayError::False => {
+                res.as_ref().unwrap();
+                None
+            }
+            MayError::True => Some(res.as_ref().unwrap_err()),
+        }
+    }
+
+    pub fn check_concept_write_without_read_errors<T: fmt::Debug>(&self, res: &Result<T, ConceptWriteError>) {
         match self {
             MayError::False => {
                 res.as_ref().unwrap();
             }
-            MayError::True => {
-                res.as_ref().unwrap_err();
-            }
+            MayError::True => match res.as_ref().unwrap_err() {
+                ConceptWriteError::ConceptRead { source } => panic!("Expected error is ConceptRead {:?}", source),
+                ConceptWriteError::SchemaValidation { source } => match source {
+                    SchemaValidationError::ConceptRead(source) => {
+                        panic!("Expected error is SchemaValidation::ConceptRead {:?}", source)
+                    }
+                    _ => {}
+                },
+                _ => {}
+            },
         };
     }
 
@@ -77,13 +95,16 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
-use concept::type_::{
-    annotation::{AnnotationDistinct, AnnotationUnique},
-    type_manager::TypeManager,
+use concept::{
+    error::ConceptWriteError,
+    type_::{
+        annotation::{AnnotationDistinct, AnnotationRange, AnnotationUnique, AnnotationValues},
+        type_manager::{validation::SchemaValidationError, TypeManager},
+    },
 };
-use database::transaction::TransactionRead;
-use encoding::graph::definition::definition_key::DefinitionKey;
-use storage::{durability_client::WALClient, snapshot::ReadableSnapshot};
+use database::transaction::SchemaCommitError;
+use encoding::value::decimal_value::Decimal;
+use storage::snapshot::ReadableSnapshot;
 
 impl FromStr for Boolean {
     type Err = String;
@@ -348,25 +369,132 @@ pub(crate) struct Value {
 }
 
 impl Value {
+    const DATETIME_FORMATS: [&'static str; 8] = [
+        "%Y-%m-%dT%H:%M:%S%.3f",
+        "%Y-%m-%d %H:%M:%S%.3f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%dT%H",
+        "%Y-%m-%d %H",
+    ];
+    const DATE_FORMAT: &'static str = "%Y-%m-%d";
+
+    const FRACTIONAL_ZEROES: usize = 18;
+
     pub fn into_typedb(self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
         match value_type {
             TypeDBValueType::Boolean => TypeDBValue::Boolean(self.raw_value.parse().unwrap()),
             TypeDBValueType::Long => TypeDBValue::Long(self.raw_value.parse().unwrap()),
             TypeDBValueType::Double => TypeDBValue::Double(self.raw_value.parse().unwrap()),
-            TypeDBValueType::Decimal => todo!(),
-            TypeDBValueType::Date => todo!(),
+            TypeDBValueType::Decimal => {
+                let (integer, fractional) = if let Some(split) = self.raw_value.split_once(".") {
+                    split
+                } else {
+                    (self.raw_value.as_str(), "0")
+                };
+
+                let integer_parsed = integer.trim().parse().unwrap();
+                let fractional_parsed = Self::parse_decimal_fraction_part(fractional);
+                if integer.starts_with('-') && integer_parsed == 0 {
+                    TypeDBValue::Decimal(Decimal::new(-1, 0) + Decimal::new(0, fractional_parsed))
+                } else {
+                    TypeDBValue::Decimal(Decimal::new(integer_parsed, fractional_parsed))
+                }
+            }
+            TypeDBValueType::Date => {
+                TypeDBValue::Date(NaiveDate::parse_from_str(&self.raw_value, Self::DATE_FORMAT).unwrap())
+            }
             TypeDBValueType::DateTime => {
-                TypeDBValue::DateTime(NaiveDateTime::parse_from_str(&self.raw_value, "%Y-%m-%d %H:%M:%S").unwrap())
+                let (datetime, remainder) = Self::parse_date_time_and_remainder(self.raw_value.as_str());
+                assert!(
+                    remainder.is_empty(),
+                    "Unexpected remainder when parsing {:?} with result of {:?}",
+                    self.raw_value,
+                    datetime
+                );
+                TypeDBValue::DateTime(datetime)
             }
             TypeDBValueType::DateTimeTZ => {
-                let (date_time, tz) = self.raw_value.rsplit_once(' ').unwrap();
-                let date_time = NaiveDateTime::parse_from_str(date_time.trim(), "%Y-%m-%d %H:%M:%S");
-                let tz = tz.trim().parse().unwrap();
-                TypeDBValue::DateTimeTZ(date_time.unwrap().and_local_timezone(tz).unwrap())
+                let (datetime, timezone) = Self::parse_date_time_and_remainder(self.raw_value.as_str());
+
+                if timezone.is_empty() {
+                    TypeDBValue::DateTimeTZ(datetime.and_local_timezone(Tz::default()).unwrap())
+                } else if timezone.starts_with('+') || timezone.starts_with('-') {
+                    // TODO: Temporarily create a TZ for this format as well. It should be a separate DateTimeTZ format later!
+                    let hours: i32 = timezone[1..3].parse().unwrap();
+                    let minutes: i32 = timezone[3..].parse().unwrap();
+                    let total_minutes = hours * 60 + minutes;
+                    let fixed_offset = if &timezone[0..1] == "+" {
+                        FixedOffset::east_opt(total_minutes * 60)
+                    } else {
+                        FixedOffset::west_opt(total_minutes * 60)
+                    };
+                    TypeDBValue::DateTimeTZ(
+                        datetime.and_local_timezone(Self::fixed_offset_to_tz(fixed_offset.unwrap()).unwrap()).unwrap(),
+                    )
+                } else {
+                    TypeDBValue::DateTimeTZ(datetime.and_local_timezone(timezone.parse().unwrap()).unwrap())
+                }
             }
             TypeDBValueType::Duration => TypeDBValue::Duration(self.raw_value.parse().unwrap()),
-            TypeDBValueType::String => TypeDBValue::String(Cow::Owned(self.raw_value)),
+            TypeDBValueType::String => {
+                let value = if self.raw_value.starts_with('"') && self.raw_value.ends_with('"') {
+                    &self.raw_value[1..&self.raw_value.len() - 1]
+                } else {
+                    self.raw_value.as_str()
+                };
+                TypeDBValue::String(Cow::Owned(value.to_string()))
+            }
             TypeDBValueType::Struct(_) => todo!(),
+        }
+    }
+
+    fn parse_decimal_fraction_part(value: &str) -> u64 {
+        assert!(Self::FRACTIONAL_ZEROES >= value.len());
+        10_u64.pow((Self::FRACTIONAL_ZEROES - value.len() + 1) as u32) * value.trim().parse::<u64>().unwrap()
+    }
+
+    fn parse_date_time_and_remainder(value: &str) -> (NaiveDateTime, &str) {
+        for format in Self::DATETIME_FORMATS {
+            if let Ok((datetime, remainder)) = NaiveDateTime::parse_and_remainder(&value, format) {
+                return (datetime, remainder.trim());
+            }
+        }
+        if let Ok((date, remainder)) = NaiveDate::parse_and_remainder(&value, Self::DATE_FORMAT) {
+            return (date.and_time(NaiveTime::default()), remainder.trim());
+        }
+        panic!(
+            "Cannot parse DateTime: none of the formats {:?} or {:?} fits for {:?}",
+            Self::DATETIME_FORMATS,
+            Self::DATE_FORMAT,
+            value
+        )
+    }
+
+    // TODO: A temporary hack
+    fn fixed_offset_to_tz(offset: FixedOffset) -> Option<Tz> {
+        // A predefined mapping of FixedOffset to Tz
+        // This is a simplified example and may not cover all cases
+        let offset_seconds = offset.local_minus_utc();
+        match offset_seconds {
+            0 => Some(chrono_tz::UTC),                      // UTC
+            3600 => Some(chrono_tz::Europe::London),        // GMT+1
+            7200 => Some(chrono_tz::Europe::Berlin),        // GMT+2
+            36000 => Some(chrono_tz::Australia::Brisbane),  // GMT+10
+            -36000 => Some(chrono_tz::Pacific::Honolulu),   // GMT-10
+            600 => Some(chrono_tz::Australia::Adelaide),    // GMT+10:00 (Common in Oceania)
+            -600 => Some(chrono_tz::Pacific::Pago_Pago),    // GMT-10:00 (Common in Pacific)
+            -3600 => Some(chrono_tz::Atlantic::Cape_Verde), // GMT-1:00 (Common in Atlantic)
+            180 => Some(chrono_tz::Etc::GMTPlus3),          // GMT+00:03
+            -180 => Some(chrono_tz::Etc::GMTMinus3),        // GMT-00:03
+            120 => Some(chrono_tz::Etc::GMTPlus2),          // GMT+00:02
+            -120 => Some(chrono_tz::Etc::GMTMinus2),        // GMT-00:02
+            60 => Some(chrono_tz::Etc::GMTPlus0),           // GMT+00:01 (Example for custom mapping)
+            -60 => Some(chrono_tz::Etc::GMTMinus0),         // GMT-00:01 (Example for custom mapping)
+            // Add more mappings as needed
+            _ => None,
         }
     }
 }
@@ -381,61 +509,18 @@ impl FromStr for Value {
 #[derive(Debug, Parameter)]
 #[param(name = "annotation", regex = r"@[a-z]+(?:\(.+\))?")]
 pub(crate) struct Annotation {
-    typedb_annotation: TypeDBAnnotation,
+    raw_annotation: String,
 }
 
 impl Annotation {
-    pub fn into_typedb(self) -> TypeDBAnnotation {
-        self.typedb_annotation
-    }
-}
-
-impl FromStr for Annotation {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // This will have to be smarter to parse annotations out.
-        let typedb_annotation = match s {
+    pub fn into_typedb(self, value_type: Option<TypeDBValueType>) -> TypeDBAnnotation {
+        match self.raw_annotation.as_str() {
             "@abstract" => TypeDBAnnotation::Abstract(AnnotationAbstract),
             "@independent" => TypeDBAnnotation::Independent(AnnotationIndependent),
             "@key" => TypeDBAnnotation::Key(AnnotationKey),
             "@unique" => TypeDBAnnotation::Unique(AnnotationUnique),
             "@distinct" => TypeDBAnnotation::Distinct(AnnotationDistinct),
             "@cascade" => TypeDBAnnotation::Cascade(AnnotationCascade),
-            "@replace" => return Err("Not implemented!".to_owned()), //TypeDBAnnotation::Replace(AnnotationReplace),
-            subkey if subkey.starts_with("@subkey") => {
-                return Err("Not implemented!".to_owned());
-                // assert!(
-                //     subkey.starts_with(r#"@subkey("#) && subkey.ends_with(r#")"#),
-                //     r#"Invalid @subkey format: {subkey:?}. Expected "@subkey(LABEL)""#
-                // );
-                // let label = &subkey[r#"@subkey("#.len()..subkey.len() - r#")"#.len()];
-                // TypeDBAnnotation::Subkey(AnnotationSubkey::new(label.to_owned()))
-            }
-            values if values.starts_with("@values") => {
-                return Err("Not implemented!".to_owned());
-                // assert!(
-                //     values.starts_with("@values(") && values.ends_with(')'),
-                //     r#"Invalid @values format: {values:?}. Expected "@values(val1, val2, ..., valN)""#
-                // );
-                // let values = values["@card(".len()..values.len() - ")".len()].trim();
-                // let values =
-                //     values.split(',');
-                // TypeDBAnnotation::Values(AnnotationValues::new(values))
-            }
-            range if range.starts_with("@range") => {
-                return Err("Not implemented!".to_owned());
-                // assert!(
-                //     range.starts_with("@range(") && range.ends_with(')'),
-                //     r#"Invalid @range format: {range:?}. Expected "@range(min, max)""#
-                // );
-                // let range = range["@range(".len()..range.len() - ")".len()].trim();
-                // let (min, max) =
-                //     range.split_once(',').map(|(min, max)| (min.trim(), Some(max.trim()))).unwrap_or((range, None));
-                // TypeDBAnnotation::Range(AnnotationRange::new(
-                //     min.parse().unwrap(),
-                //     max.map(str::parse).transpose().unwrap(),
-                // ))
-            }
             regex if regex.starts_with("@regex") => {
                 assert!(
                     regex.starts_with(r#"@regex(""#) && regex.ends_with(r#"")"#),
@@ -450,22 +535,64 @@ impl FromStr for Annotation {
                     r#"Invalid @card format: {card:?}. Expected "@card(min, max)""#
                 );
                 let card = card["@card(".len()..card.len() - ")".len()].trim();
-                let (min, max) =
-                    card.split_once(',').map(|(min, max)| (min.trim(), Some(max.trim()))).unwrap_or((card, None));
+                let (min, max) = card.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
 
                 TypeDBAnnotation::Cardinality(AnnotationCardinality::new(
                     min.parse().unwrap(),
-                    max.map(|val| match val {
-                        "*" => Ok(None),
-                        _ => val.parse().map(Some).map_err(|_| "Failed to parse max"),
-                    })
-                    .unwrap()
-                    .unwrap(),
+                    if max.is_empty() { None } else { Some(max.parse().unwrap()) },
                 ))
             }
-            _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
-        };
-        Ok(Self { typedb_annotation })
+            values if values.starts_with("@values") => {
+                assert!(
+                    values.starts_with("@values(") && values.ends_with(')'),
+                    r#"Invalid @values format: {values:?}. Expected "@values(val1, val2, ..., valN)""#
+                );
+                assert!(value_type.is_some(), "ValueType is expected to parse annotation @values");
+                let value_type = value_type.unwrap();
+                let values = values["@values(".len()..values.len() - ")".len()].trim();
+                let values = values.split(',');
+                TypeDBAnnotation::Values(AnnotationValues::new(
+                    values
+                        .map(|value| Value::from_str(value.trim()).unwrap().into_typedb(value_type.clone()))
+                        .collect_vec(),
+                ))
+            }
+            range if range.starts_with("@range") => {
+                assert!(
+                    range.starts_with("@range(") && range.ends_with(')'),
+                    r#"Invalid @range format: {range:?}. Expected "@range(min..max)""#
+                );
+                assert!(value_type.is_some(), "ValueType is expected to parse annotation @range");
+                let value_type = value_type.unwrap();
+                let range = range["@range(".len()..range.len() - ")".len()].trim();
+                let (min, max) = range.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
+                TypeDBAnnotation::Range(AnnotationRange::new(
+                    if min.is_empty() {
+                        None
+                    } else {
+                        Some(Value::from_str(min).unwrap().into_typedb(value_type.clone()))
+                    },
+                    if max.is_empty() { None } else { Some(Value::from_str(max).unwrap().into_typedb(value_type)) },
+                ))
+            }
+            subkey if subkey.starts_with("@subkey") => {
+                unreachable!("Subkey is not implemented for tests!");
+                // assert!(
+                //     subkey.starts_with(r#"@subkey("#) && subkey.ends_with(r#")"#),
+                //     r#"Invalid @subkey format: {subkey:?}. Expected "@subkey(LABEL)""#
+                // );
+                // let label = &subkey[r#"@subkey("#.len()..subkey.len() - r#")"#.len()];
+                // TypeDBAnnotation::Subkey(AnnotationSubkey::new(label.to_owned()))
+            }
+            _ => unreachable!("Cannot parse annotation {:?}", self.raw_annotation),
+        }
+    }
+}
+
+impl FromStr for Annotation {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self { raw_annotation: s.to_owned() })
     }
 }
 
@@ -494,10 +621,9 @@ impl FromStr for AnnotationCategory {
             "@cascade" => TypeDBAnnotationCategory::Cascade,
             "@regex" => TypeDBAnnotationCategory::Regex,
             "@card" => TypeDBAnnotationCategory::Cardinality,
+            "@range" => TypeDBAnnotationCategory::Range,
+            "@values" => TypeDBAnnotationCategory::Values,
             "@subkey" => return Err("Not implemented!".to_owned()), //TypeDBAnnotationCategory::Subkey,
-            "@values" => return Err("Not implemented!".to_owned()), //TypeDBAnnotationCategory::Values,
-            "@range" => return Err("Not implemented!".to_owned()),  //TypeDBAnnotationCategory::Range,
-            "@replace" => return Err("Not implemented!".to_owned()), //TypeDBAnnotationCategory::Replace,
             _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
         };
         Ok(Self { typedb_annotation_category })
@@ -528,7 +654,8 @@ impl FromStr for Annotations {
                 let next_at = if let Some(index) = s[cursor..].find('@') { cursor + index } else { s.len() };
                 let anno = s[cursor..next_at].trim();
                 cursor = next_at;
-                Some(anno.parse::<Annotation>().map(|anno| anno.typedb_annotation))
+                Some(anno.parse::<Annotation>().map(|anno| anno.into_typedb(None)))
+                // TODO: Refactor parsing to support passing ValueTypes into anno.into_typedb
             }
         })
         .try_collect()?;

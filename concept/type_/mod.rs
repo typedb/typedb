@@ -15,7 +15,7 @@ use encoding::{
         edge::TypeEdgeEncoding,
         property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
         vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
-        Kind,
+        CapabilityKind, Kind,
     },
     layout::infix::Infix,
     value::label::Label,
@@ -29,8 +29,14 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::Annotation, attribute_type::AttributeType, object_type::ObjectType, owns::Owns, plays::Plays,
-        role_type::RoleType, type_manager::TypeManager,
+        annotation::{Annotation, AnnotationCardinality},
+        attribute_type::AttributeType,
+        object_type::ObjectType,
+        owns::{Owns, OwnsAnnotation},
+        plays::{Plays, PlaysAnnotation},
+        relates::RelatesAnnotation,
+        role_type::RoleType,
+        type_manager::TypeManager,
     },
     ConceptAPI,
 };
@@ -75,6 +81,18 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
 pub trait KindAPI<'a>: TypeAPI<'a> {
     type AnnotationType: Hash + Eq + Clone + From<Annotation> + Into<Annotation>;
     const ROOT_KIND: Kind;
+
+    fn get_annotations_declared<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, ConceptReadError>;
+
+    fn get_annotations<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashMap<Self::AnnotationType, Self>>, ConceptReadError>;
 }
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> {
@@ -197,6 +215,12 @@ pub enum Ordering {
     Ordered,
 }
 
+impl Ordering {
+    pub fn default() -> Ordering {
+        Ordering::Unordered
+    }
+}
+
 impl<'a> TypeVertexPropertyEncoding<'a> for Ordering {
     const INFIX: Infix = Infix::PropertyOrdering;
 
@@ -221,16 +245,43 @@ impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
     }
 }
 
-pub(crate) trait InterfaceImplementation<'a>:
+pub trait Capability<'a>:
     TypeEdgeEncoding<'a, From = Self::ObjectType, To = Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
 {
-    type AnnotationType;
+    type AnnotationType: Hash + Eq + Clone + From<Annotation> + Into<Annotation>;
     type ObjectType: TypeAPI<'a>;
     type InterfaceType: KindAPI<'a>;
+    const KIND: CapabilityKind;
 
     fn object(&self) -> Self::ObjectType;
 
     fn interface(&self) -> Self::InterfaceType;
+
+    fn get_annotations_declared<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, ConceptReadError>;
+
+    fn get_annotations<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashMap<Self::AnnotationType, Self>>, ConceptReadError>;
+
+    fn get_cardinality<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<AnnotationCardinality, ConceptReadError> {
+        type_manager.get_cardinality(snapshot, self.clone())
+    }
+
+    fn get_default_cardinality<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<AnnotationCardinality, ConceptReadError>;
 }
 
 pub struct EdgeOverride<EDGE: TypeEdgeEncoding<'static>> {

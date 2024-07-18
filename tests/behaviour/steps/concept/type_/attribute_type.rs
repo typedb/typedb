@@ -28,7 +28,7 @@ pub async fn attribute_type_set_value_type(
             tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
         let parsed_value_type = value_type.into_typedb(&tx.type_manager, &tx.snapshot);
         let res = attribute_type.set_value_type(&mut tx.snapshot, &tx.type_manager, parsed_value_type);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -43,7 +43,7 @@ pub async fn attribute_type_unset_value_type(
         let attribute_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
         let res = attribute_type.unset_value_type(&mut tx.snapshot, &tx.type_manager);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 

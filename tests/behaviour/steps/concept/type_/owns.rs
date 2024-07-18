@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::type_::{annotation, owns::OwnsAnnotation, Ordering, OwnerAPI, TypeAPI};
+use concept::type_::{annotation, owns::OwnsAnnotation, Capability, Ordering, OwnerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
@@ -30,7 +30,7 @@ pub async fn set_owns(
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
         let res = object_type.set_owns(&mut tx.snapshot, &tx.type_manager, attr_type, Ordering::Unordered);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -48,7 +48,7 @@ pub async fn set_owns_ordered(
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
         let res = object_type.set_owns(&mut tx.snapshot, &tx.type_manager, attr_type, Ordering::Ordered);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -66,7 +66,7 @@ pub async fn unset_owns(
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
         let res = object_type.unset_owns(&mut tx.snapshot, &tx.type_manager, attr_type);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -95,7 +95,7 @@ pub async fn get_owns_set_override(
             .unwrap(); // This may also error
         if let Some(overridden_owns) = overridden_owns_opt {
             let res = owns.set_override(&mut tx.snapshot, &tx.type_manager, overridden_owns);
-            may_error.check(&res);
+            may_error.check_concept_write_without_read_errors(&res);
         } else {
             assert!(may_error.expects_error()); // We error by not finding the type to override
         }
@@ -117,7 +117,7 @@ pub async fn get_owns_unset_override(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = owner.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let res = owns.unset_override(&mut tx.snapshot, &tx.type_manager);
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -135,9 +135,10 @@ pub async fn get_owns_set_annotation(
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let res = owns.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb().into());
-        may_error.check(&res);
+        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type.clone()).unwrap().unwrap();
+        let value_type = attr_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
+        let res = owns.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(value_type).into());
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -159,7 +160,7 @@ pub async fn get_owns_unset_annotation(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let res = owns.unset_annotation(&mut tx.snapshot, &tx.type_manager, annotation_category.into_typedb());
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 
@@ -181,10 +182,11 @@ pub async fn get_owns_annotations_contains(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns =
             object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
         let actual_contains = owns
             .get_annotations(&tx.snapshot, &tx.type_manager)
             .unwrap()
-            .contains_key(&annotation.into_typedb().into());
+            .contains_key(&annotation.into_typedb(value_type).into());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -237,10 +239,11 @@ pub async fn get_owns_declared_annotations_contains(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns =
             object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
         let actual_contains = owns
             .get_annotations_declared(&tx.snapshot, &tx.type_manager)
             .unwrap()
-            .contains(&annotation.into_typedb().into());
+            .contains(&annotation.into_typedb(value_type).into());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -284,6 +287,30 @@ pub async fn get_owns_declared_annotations_is_empty(
 
         let actual_is_empty = owns.get_annotations_declared(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get cardinality: {annotation}")]
+pub async fn get_owns_cardinality(
+    context: &mut Context,
+    root_label: params::RootLabel,
+    type_label: params::Label,
+    attr_type_label: params::Label,
+    cardinality_annotation: params::Annotation,
+) {
+    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    with_read_tx!(context, |tx| {
+        let attr_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns =
+            object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
+        let actual_cardinality = owns.get_cardinality(&tx.snapshot, &tx.type_manager).unwrap();
+        match cardinality_annotation.into_typedb(None) {
+            annotation::Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
+            _ => panic!("Expected annotations is not Cardinality"),
+        }
     });
 }
 
@@ -436,7 +463,7 @@ pub async fn get_owns_set_ordering(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let res = owns.set_ordering(&mut tx.snapshot, &tx.type_manager, ordering.into_typedb().into());
-        may_error.check(&res);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 

@@ -39,6 +39,7 @@ use crate::{
         object_type::ObjectType,
         plays::Plays,
         relates::Relates,
+        relation_type::RelationType,
         type_manager::TypeManager,
         KindAPI, TypeAPI,
     },
@@ -67,20 +68,20 @@ impl<'a> RoleType<'a> {
         type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_relation<'m, Snapshot: ReadableSnapshot>(
+    pub fn get_relates_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Relates<'static>>, ConceptReadError> {
-        type_manager.get_relates_for_role_type(snapshot, self.clone().into_owned())
+        type_manager.get_relates_for_role_type_declared(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_relations_transitive<'m>(
+    pub fn get_relations<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {
-        type_manager.get_relates_for_role_type_transitive(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashMap<RelationType<'static>, Relates<'static>>>, ConceptReadError> {
+        type_manager.get_relates_for_role_type(snapshot, self.clone().into_owned())
     }
 
     pub fn get_ordering(
@@ -97,7 +98,7 @@ impl<'a> RoleType<'a> {
         type_manager: &TypeManager,
         ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_role_ordering(snapshot, self.clone(), ordering)
+        type_manager.set_role_ordering(snapshot, self.clone().into_owned(), ordering)
     }
 }
 
@@ -147,8 +148,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
     }
 
     fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
-        // TODO: validation (Or better it in type_manager)
-        type_manager.delete_role_type(snapshot, self)
+        type_manager.delete_role_type(snapshot, self.clone().into_owned())
     }
 
     fn get_label<'m>(
@@ -157,6 +157,27 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_role_type_label(snapshot, self.clone().into_owned())
+    }
+}
+
+impl<'a> KindAPI<'a> for RoleType<'a> {
+    type AnnotationType = RoleTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Role;
+
+    fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_role_type_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_annotations<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<RoleTypeAnnotation, RoleType<'static>>>, ConceptReadError> {
+        type_manager.get_role_type_annotations(snapshot, self.clone().into_owned())
     }
 }
 
@@ -214,22 +235,6 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_subtypes_transitive(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_annotations<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RoleTypeAnnotation, RoleType<'static>>>, ConceptReadError> {
-        type_manager.get_role_type_annotations(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_annotations_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, ConceptReadError> {
-        type_manager.get_role_type_annotations_declared(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -238,7 +243,7 @@ impl<'a> RoleType<'a> {
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
-                type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())?
+                type_manager.set_role_type_annotation_abstract(snapshot, self.clone().into_owned())?
             }
         };
         Ok(())
@@ -271,11 +276,6 @@ impl<'a> RoleType<'a> {
     pub fn into_owned(self) -> RoleType<'static> {
         RoleType { vertex: self.vertex.into_owned() }
     }
-}
-
-impl<'a> KindAPI<'a> for RoleType<'a> {
-    type AnnotationType = RoleTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Role;
 }
 
 impl<'a> Display for RoleType<'a> {
@@ -313,13 +313,15 @@ impl From<Annotation> for Result<RoleTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(RoleTypeAnnotation::Abstract(annotation)),
 
-            Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Distinct(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Cardinality(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
+            | Annotation::Independent(_)
+            | Annotation::Distinct(_)
+            | Annotation::Cardinality(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Regex(_)
+            | Annotation::Cascade(_)
+            | Annotation::Range(_)
+            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
         }
     }
 }

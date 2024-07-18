@@ -65,6 +65,8 @@ rust_test(
 
         "@crates//:rand",
         "@crates//:tracing",
+        "@crates//:chrono",
+        "@crates//:chrono-tz",
     ]
 )
 
