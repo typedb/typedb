@@ -13,7 +13,17 @@ use std::{
 };
 
 use chrono_tz::Tz;
-use concept::type_::{annotation::{AnnotationAbstract, AnnotationRange, AnnotationValues}, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::{Owns, OwnsAnnotation}, relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_manager::{type_cache::TypeCache, TypeManager}, Ordering, OwnerAPI, PlayerAPI, TypeAPI, Capability, KindAPI};
+use concept::type_::{
+    annotation::{AnnotationAbstract, AnnotationRange, AnnotationValues},
+    attribute_type::AttributeTypeAnnotation,
+    entity_type::EntityTypeAnnotation,
+    object_type::ObjectType,
+    owns::{Owns, OwnsAnnotation},
+    relation_type::RelationTypeAnnotation,
+    role_type::RoleTypeAnnotation,
+    type_manager::{type_cache::TypeCache, TypeManager},
+    Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+};
 use durability::wal::WAL;
 use encoding::{
     graph::{

@@ -7,20 +7,32 @@
 use bytes::Bytes;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
-// TODO: we can probably just treat the function as a string blob, since we don't have to
-//       index or assign anything in the internals
+use crate::{layout::prefix::Prefix, value::string_bytes::StringBytes, AsBytes};
 
-struct FunctionDefinition<'a> {
+pub struct FunctionDefinition<'a> {
     bytes: Bytes<'a, BUFFER_VALUE_INLINE>,
 }
 
 impl<'a> FunctionDefinition<'a> {
-    fn new(bytes: Bytes<'a, BUFFER_VALUE_INLINE>) -> Self {
+    pub const PREFIX: Prefix = Prefix::DefinitionFunction;
+
+    pub fn new(bytes: Bytes<'a, BUFFER_VALUE_INLINE>) -> Self {
         Self { bytes }
     }
 
-    // TODO: take in TypeQL or string version?
-    fn build(definition: &str) -> Self {
-        todo!()
+    pub fn build_owned<'b>(definition: &str) -> FunctionDefinition<'static> {
+        FunctionDefinition { bytes: StringBytes::build_owned(definition).into_bytes() }
+    }
+
+    pub fn build_ref(definition: &'a str) -> Self {
+        Self { bytes: StringBytes::build_owned(definition).into_bytes() }
+    }
+
+    pub fn as_str(&self) -> String {
+        StringBytes::<0>::new(Bytes::Reference(self.bytes.as_reference())).as_str().to_owned()
+    }
+
+    pub fn into_bytes(self) -> Bytes<'a, BUFFER_VALUE_INLINE> {
+        self.bytes
     }
 }

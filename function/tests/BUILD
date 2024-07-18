@@ -3,37 +3,33 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library")
-package(default_visibility = ["//visibility:public"])
+load("@rules_rust//rust:defs.bzl", "rust_test")
+package(default_visibility = ["//visibility:public",])
 
-rust_library(
-    name = "function",
-    crate_root = "lib.rs",
+rust_test(
+    name = "test_definition",
     srcs = glob([
-        "*.rs",
+        "test_definition.rs",
     ]),
     deps = [
         "//answer",
         "//common/bytes",
-        "//common/primitive",
-        "//resource",
+        "//common/logger",
         "//concept",
         "//durability",
         "//encoding",
-        "//ir",
         "//storage",
+        "//ir",
+        "//resource",
+        "//util/test:test_utils",
 
-        "@vaticle_typeql//rust:typeql",
-    ],
+        "@crates//:rand",
+        "@crates//:tracing",
+    ]
 )
-
-
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
-    exclude = glob([
-        "Cargo.*",
-    ]),
+    include = glob(["*", "*/*", "*/*/*"]),
     license_type = "mpl-header",
 )

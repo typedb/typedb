@@ -22,7 +22,7 @@ impl QueryManager {
         // match clause
     }
 
-    fn create_match_executor(&self, query_functions: Vec<Function>) {
+    fn create_match_executor(&self, query_functions: Vec<Function<usize>>) {
         // let conjunction = Conjunction::new();
         // ... build conjunction...
     }

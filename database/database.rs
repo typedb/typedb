@@ -26,7 +26,12 @@ use encoding::{
     },
     EncodingKeyspace,
 };
-use storage::{durability_client::{DurabilityClient, DurabilityClientError, WALClient}, recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError}, sequence_number::SequenceNumber, MVCCStorage, StorageOpenError, StorageResetError};
+use storage::{
+    durability_client::{DurabilityClient, DurabilityClientError, WALClient},
+    recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
+    sequence_number::SequenceNumber,
+    MVCCStorage, StorageOpenError, StorageResetError,
+};
 
 #[derive(Debug, Clone)]
 pub(super) struct Schema {
@@ -176,7 +181,7 @@ impl Database<WALClient> {
         Ok(())
     }
 
-    pub fn reset(&mut self) -> Result<(), DatabaseResetError>{
+    pub fn reset(&mut self) -> Result<(), DatabaseResetError> {
         let _schema_read_lock = self.schema.write().unwrap();
         let _schema_write_lock = self.schema_txn_lock.write().unwrap();
 
@@ -185,8 +190,7 @@ impl Database<WALClient> {
                 return Err(DatabaseResetError::StorageInUse {});
             }
             Some(storage) => {
-                storage.reset()
-                    .map_err(|err| DatabaseResetError::CorruptionStorageReset { source: err })?
+                storage.reset().map_err(|err| DatabaseResetError::CorruptionStorageReset { source: err })?
             }
         }
         match Arc::get_mut(&mut self.definition_key_generator) {
@@ -272,7 +276,7 @@ impl Error for DatabaseCheckpointError {
 #[derive(Debug)]
 pub enum DatabaseDeleteError {
     DirectoryDelete { source: io::Error },
-    InUse { },
+    InUse {},
 }
 
 impl fmt::Display for DatabaseDeleteError {
@@ -292,11 +296,11 @@ impl Error for DatabaseDeleteError {
 
 #[derive(Debug)]
 pub enum DatabaseResetError {
-    StorageInUse { },
+    StorageInUse {},
     CorruptionStorageReset { source: StorageResetError },
     CorruptionDefinitionKeyGeneratorInUse {},
     CorruptionTypeVertexGeneratorInUse {},
-    TypeVertexGeneratorInUse {}
+    TypeVertexGeneratorInUse {},
 }
 
 impl fmt::Display for DatabaseResetError {

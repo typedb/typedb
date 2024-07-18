@@ -31,14 +31,8 @@ pub struct FunctionalBlock {
 }
 
 impl FunctionalBlock {
-    pub fn builder() -> FunctionalBlockBuilder {
+    pub fn builder<'func>() -> FunctionalBlockBuilder {
         FunctionalBlockBuilder::new()
-    }
-
-    pub fn from_match(match_: &typeql::query::stage::Match) -> Result<Self, PatternDefinitionError> {
-        let mut builder = Self::builder();
-        builder.conjunction_mut().and_typeql_patterns(&match_.patterns)?;
-        Ok(builder.finish())
     }
 
     pub fn context(&self) -> &BlockContext {
@@ -76,7 +70,7 @@ impl FunctionalBlockBuilder {
     }
 
     pub fn finish(self) -> FunctionalBlock {
-        let Self { context, conjunction, modifiers } = self;
+        let Self { context, conjunction, modifiers, .. } = self;
         FunctionalBlock { context, conjunction, modifiers }
     }
 

@@ -12,7 +12,7 @@ use std::{
     sync::Arc,
 };
 
-use database::{Database, DatabaseOpenError, DatabaseDeleteError};
+use database::{Database, DatabaseDeleteError, DatabaseOpenError};
 use itertools::Itertools;
 use storage::durability_client::WALClient;
 
@@ -62,12 +62,12 @@ impl Server {
         if let Some(db) = db {
             match Arc::try_unwrap(db) {
                 Ok(unwrapped) => {
-                   unwrapped.delete()?;
+                    unwrapped.delete()?;
                 }
                 Err(arc) => {
                     // failed to delete since it's in use - let's re-insert for now instead of losing the reference
                     self.databases.insert(name.as_ref().to_owned(), arc);
-                    return Err(DatabaseDeleteError::InUse {})
+                    return Err(DatabaseDeleteError::InUse {});
                 }
             }
         }

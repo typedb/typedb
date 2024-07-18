@@ -23,7 +23,10 @@ use crate::{
         TypeInferenceError,
     },
     pattern::{conjunction::Conjunction, constraint::Constraint},
-    program::block::FunctionalBlock,
+    program::{
+        block::FunctionalBlock,
+        program::{CompiledLocalFunctions, CompiledSchemaFunctions},
+    },
 };
 
 /*
@@ -57,8 +60,11 @@ pub(crate) fn infer_types_for_block<'graph>(
     snapshot: &impl ReadableSnapshot,
     block: &'graph FunctionalBlock,
     type_manager: &TypeManager,
+    schema_functions: &CompiledSchemaFunctions,
+    local_function_cache: Option<&CompiledLocalFunctions>,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
-    let mut tig = TypeSeeder::new(snapshot, type_manager).seed_types(block.context(), block.conjunction())?;
+    let mut tig = TypeSeeder::new(snapshot, type_manager, schema_functions, local_function_cache)
+        .seed_types(block.context(), block.conjunction())?;
     run_type_inference(&mut tig);
     Ok(tig)
 }
@@ -326,7 +332,7 @@ pub mod tests {
             },
         },
         pattern::constraint::{Constraint, IsaKind},
-        program::block::FunctionalBlock,
+        program::{block::FunctionalBlock, function_signature::HashMapFunctionIndex, program::CompiledSchemaFunctions},
     };
 
     pub(crate) fn expected_edge(
@@ -355,6 +361,7 @@ pub mod tests {
         // Some version of `$a isa animal, has name $n;`
         let storage = setup_storage();
         let (type_manager, thing_manager) = managers();
+        let function_index = HashMapFunctionIndex::empty();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -381,8 +388,8 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
+            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
+                .unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: block.conjunction(),
@@ -440,7 +447,8 @@ pub mod tests {
             let block = builder.finish();
 
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
+            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
+                .unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: block.conjunction(),
@@ -496,7 +504,8 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
+            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
+                .unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: block.conjunction(),
@@ -539,7 +548,8 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
+            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
+                .unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: block.conjunction(),
@@ -594,6 +604,7 @@ pub mod tests {
         // Some version of `$a isa animal, has name $n;`
         let storage = setup_storage();
         let (type_manager, thing_manager) = managers();
+        let function_index = HashMapFunctionIndex::empty();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -611,6 +622,9 @@ pub mod tests {
         {
             // Case 1: {$a isa cat;} or {$a isa dog;} $a has animal-name $n;
 
+            conjunction.constraints_mut().add_label(var_name_type, "name").unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
             let (b1_var_animal_type, b2_var_animal_type) = {
                 let mut disj = conjunction.add_disjunction();
 
@@ -626,17 +640,14 @@ pub mod tests {
 
                 (b1_var_animal_type, b2_var_animal_type)
             };
-            conjunction.constraints_mut().add_label(var_name_type, "name").unwrap();
-            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
-            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
 
             let snapshot = storage.clone().open_snapshot_write();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
+            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
+                .unwrap();
 
             let conjunction = block.conjunction();
-
             let disj = conjunction.nested_patterns().first().unwrap().as_disjunction().unwrap();
             let [b1, b2] = &disj.conjunctions()[..] else { unreachable!() };
             let b1_isa = &b1.constraints()[0];
@@ -713,6 +724,7 @@ pub mod tests {
     fn no_type_constraints() {
         let storage = setup_storage();
         let (type_manager, thing_manager) = managers();
+        let function_index = HashMapFunctionIndex::empty();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -736,7 +748,8 @@ pub mod tests {
             let block = builder.finish();
             let conjunction = block.conjunction();
             let constraints = conjunction.constraints();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
+            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
+                .unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: &conjunction,
@@ -767,6 +780,7 @@ pub mod tests {
     fn role_players() {
         let storage = setup_storage();
         let (type_manager, thing_manager) = managers();
+        let function_index = HashMapFunctionIndex::empty();
 
         let ((type_animal, type_cat, type_dog), _, (type_fears, type_has_fear, type_is_feared)) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -814,8 +828,8 @@ pub mod tests {
 
             let conjunction = block.conjunction();
             let constraints = conjunction.constraints();
-
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager).unwrap();
+            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
+                .unwrap();
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: &conjunction,

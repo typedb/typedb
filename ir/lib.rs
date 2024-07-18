@@ -12,12 +12,16 @@ use std::{error::Error, fmt};
 
 use answer::variable::Variable;
 
-use crate::pattern::{constraint::Constraint, variable_category::VariableCategory};
+use crate::{
+    pattern::{constraint::Constraint, variable_category::VariableCategory},
+    program::FunctionReadError,
+};
 
 pub mod inference;
 mod optimisation;
 pub mod pattern;
 pub mod program;
+pub mod translator;
 
 #[derive(Debug)]
 pub enum PatternDefinitionError {
@@ -32,12 +36,29 @@ pub enum PatternDefinitionError {
         category_2: VariableCategory,
         category_2_source: Constraint<Variable>,
     },
-    FunctionArgumentUnused {
-        argument_variable: String,
-    },
     FunctionCallReturnArgCountMismatch {
         assigned_var_count: usize,
         function_return_count: usize,
+    },
+    FunctionCallArgumentCountMismatch {
+        expected: usize,
+        actual: usize,
+    },
+    FunctionRequiredArgumentReceivedOptionalVariable {
+        variable: Variable,
+    },
+    UnresolvedFunction {
+        function_name: String,
+    },
+    FunctionDoesNotReturnStream {
+        function_name: String,
+    },
+    OptionalVariableForRequiredArgument {
+        function_name: String,
+        index: usize,
+    },
+    FunctionRead {
+        source: FunctionReadError,
     },
 }
 
@@ -52,8 +73,13 @@ impl Error for PatternDefinitionError {
         match self {
             Self::DisjointVariableReuse { .. } => None,
             Self::VariableCategoryMismatch { .. } => None,
-            Self::FunctionArgumentUnused { .. } => None,
             Self::FunctionCallReturnArgCountMismatch { .. } => None,
+            Self::FunctionCallArgumentCountMismatch { .. } => None,
+            Self::FunctionRequiredArgumentReceivedOptionalVariable { .. } => None,
+            Self::UnresolvedFunction { .. } => None,
+            Self::FunctionDoesNotReturnStream { .. } => None,
+            Self::OptionalVariableForRequiredArgument { .. } => None,
+            Self::FunctionRead { source } => Some(source),
         }
     }
 }

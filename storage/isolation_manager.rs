@@ -52,7 +52,7 @@ impl IsolationManager {
     pub(crate) fn new(next_sequence_number: SequenceNumber) -> IsolationManager {
         IsolationManager {
             initial_sequence_number: next_sequence_number,
-            timeline: Timeline::new(next_sequence_number)
+            timeline: Timeline::new(next_sequence_number),
         }
     }
 

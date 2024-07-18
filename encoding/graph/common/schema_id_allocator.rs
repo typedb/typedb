@@ -6,9 +6,8 @@
 
 use std::{
     marker::PhantomData,
-    sync::atomic::{AtomicU64, Ordering::Relaxed},
+    sync::atomic::{AtomicU64, Ordering, Ordering::Relaxed},
 };
-use std::sync::atomic::Ordering;
 
 use bytes::Bytes;
 use lending_iterator::LendingIterator;

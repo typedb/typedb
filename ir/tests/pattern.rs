@@ -4,18 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use ir::{program::block::FunctionalBlock, PatternDefinitionError};
+use ir::{
+    program::function_signature::HashMapFunctionIndex, translator::block_builder::TypeQLBuilder, PatternDefinitionError,
+};
 use typeql::query::stage::Stage;
 
 #[test]
 fn build_conjunction_constraints() {
+    let empty_function_index = HashMapFunctionIndex::empty();
+
     let query = "match $person isa person, has name $name;";
     let parsed = typeql::parse_query(query).unwrap();
     let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
-    eprintln!("{}\n", FunctionalBlock::from_match(match_).unwrap().conjunction());
+    eprintln!("{}\n", TypeQLBuilder::build_match(&empty_function_index, match_).unwrap().conjunction());
 
     let query = "match
         $person isa $person-type, has $name-type $name;
@@ -27,7 +31,7 @@ fn build_conjunction_constraints() {
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
-    eprintln!("{}\n", FunctionalBlock::from_match(match_).unwrap().conjunction());
+    eprintln!("{}\n", TypeQLBuilder::build_match(&empty_function_index, match_).unwrap().conjunction());
 
     let query = "match
         $person isa $person-type;
@@ -41,7 +45,7 @@ fn build_conjunction_constraints() {
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
-    eprintln!("{}\n", FunctionalBlock::from_match(match_).unwrap().conjunction());
+    eprintln!("{}\n", TypeQLBuilder::build_match(&empty_function_index, match_).unwrap().conjunction());
 
     // let mut block = FunctionalBlock::new();
     // let conjunction = block.conjunction_mut();
@@ -60,6 +64,8 @@ fn build_conjunction_constraints() {
 
 #[test]
 fn variable_category_mismatch() {
+    let empty_function_index = HashMapFunctionIndex::empty();
+
     let query = "match
         $person isa $person-type;
         $person-type isa $person;
@@ -68,7 +74,7 @@ fn variable_category_mismatch() {
     let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     assert!(matches!(
-        FunctionalBlock::from_match(match_),
+        TypeQLBuilder::build_match(&empty_function_index, match_),
         Err(PatternDefinitionError::VariableCategoryMismatch { .. })
     ));
 
@@ -94,13 +100,15 @@ fn variable_category_mismatch() {
 
 #[test]
 fn variable_category_narrowing() {
+    let empty_function_index = HashMapFunctionIndex::empty();
+
     let query = "match $person isa $person-type, has $name-type $name;";
     let parsed = typeql::parse_query(query).unwrap(); // TODO
     let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
-    eprintln!("{}\n", FunctionalBlock::from_match(match_).unwrap().conjunction());
+    eprintln!("{}\n", TypeQLBuilder::build_match(&empty_function_index, match_).unwrap().conjunction());
 
     // let mut block = FunctionalBlock::new();
     // let conjunction = block.conjunction_mut();

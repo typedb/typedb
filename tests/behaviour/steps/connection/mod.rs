@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cell::OnceCell;
-use std::sync::Arc;
+use std::{cell::OnceCell, sync::Arc};
+
 use macro_rules_attribute::apply;
 use server::typedb;
 use test_utils::{create_tmp_dir, TempDir};

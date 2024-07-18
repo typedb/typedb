@@ -16,6 +16,7 @@ use concept::{
     thing::{statistics::StatisticsError, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
 };
+use function::{function_manager::FunctionManager, FunctionManagerError};
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot},
@@ -117,6 +118,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 pub struct TransactionSchema<D> {
     pub snapshot: SchemaSnapshot<D>,
     pub type_manager: Arc<TypeManager>, // TODO: krishnan: Should this be an arc or direct ownership?
+    pub function_manager: FunctionManager, // TODO: krishnan: Should this be an arc or direct ownership?
     pub thing_manager: ThingManager,
 
     // NOTE: The fields of a struct are dropped in declaration order. `_schema_guard` conceptually
@@ -145,14 +147,20 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             None,
         ));
         let thing_manager = ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
-
-        Self { snapshot, type_manager, thing_manager, _schema_txn_guard: schema_txn_guard, database }
+        let function_manager = FunctionManager::new(database.definition_key_generator.clone(), None); // TODO: pass cache
+        Self { snapshot, type_manager, thing_manager, function_manager, _schema_txn_guard: schema_txn_guard, database }
     }
 
     pub fn commit(mut self) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{ConceptWrite, Statistics};
+
         self.thing_manager.finalise(&mut self.snapshot).map_err(|errors| ConceptWrite { errors })?;
         drop(self.thing_manager);
+
+        self.function_manager
+            .finalise(&self.snapshot, &self.type_manager)
+            .map_err(|source| SchemaCommitError::FunctionManager { source })?;
+
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap type_manager Arc");
         type_manager.finalise(&self.snapshot).map_err(|errors| ConceptWrite { errors })?;
 
@@ -194,6 +202,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 pub enum SchemaCommitError {
     ConceptWrite { errors: Vec<ConceptWriteError> },
     Statistics { source: StatisticsError },
+    FunctionManager { source: FunctionManagerError },
 }
 
 impl fmt::Display for SchemaCommitError {

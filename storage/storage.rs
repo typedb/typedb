@@ -417,12 +417,15 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     pub fn reset(&mut self) -> Result<(), StorageResetError>
-        where Durability: DurabilityClient
+    where
+        Durability: DurabilityClient,
     {
         self.isolation_manager.reset();
-        self.keyspaces.reset()
+        self.keyspaces
+            .reset()
             .map_err(|err| StorageResetError::KeyspaceError { name: self.name.to_owned(), source: err })?;
-        self.durability_client.reset()
+        self.durability_client
+            .reset()
             .map_err(|err| StorageResetError::Durability { name: self.name.to_owned(), source: err })?;
         Ok(())
     }
@@ -570,7 +573,7 @@ impl Error for StorageResetError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::KeyspaceError { source, .. } => Some(source),
-            Self::Durability{ source, .. } => Some(source),
+            Self::Durability { source, .. } => Some(source),
         }
     }
 }
