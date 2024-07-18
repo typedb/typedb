@@ -74,21 +74,29 @@ impl Server {
         Ok(())
     }
 
-    pub fn reset_else_delete_database(&mut self, name: impl AsRef<str>) -> Result<bool, DatabaseDeleteError> {
+    pub fn reset_else_create_database(&mut self, name: impl AsRef<str>) -> Result<bool, DatabaseDeleteError> {
         // TODO: this is a partial implementation, only single threaded and without cooperative transaction shutdown
         // remove from map to make DB unavailable
         let mut db = self.databases.remove(name.as_ref());
         let result = if let Some(db) = db {
             match Arc::try_unwrap(db) {
-                Ok(mut unwrapped) => unwrapped.reset(),
+                Ok(mut unwrapped) => {
+                    println!("TRYING RESET!");
+                    let reset_result = unwrapped.reset();
+                    self.databases.insert(name.as_ref().to_owned(), Arc::new(unwrapped));
+                    reset_result
+                },
                 Err(arc) => {
-                    // failed to delete since it's in use - let's re-insert for now instead of losing the reference
+                    println!("BAD UNWRAP!");
+                    // failed to reset since it's in use - let's re-insert for now instead of losing the reference
                     self.databases.insert(name.as_ref().to_owned(), arc);
                     Err(DatabaseResetError::InUse {})
                 }
             }
         } else {
-            return Ok(false); // deleted already
+            println!("NO DB CREATE!");
+            self.create_database(name);
+            return Ok(false); // did not exist
         };
 
         match result {

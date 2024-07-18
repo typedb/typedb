@@ -12,6 +12,7 @@ use server::typedb;
 use test_utils::{create_tmp_dir, TempDir};
 
 use crate::{generic_step, Context};
+use crate::connection::transaction::{transaction_closes, transaction_is_open};
 
 mod database;
 mod transaction;
@@ -26,13 +27,11 @@ pub async fn typedb_starts(context: &mut Context) {
         let server = typedb::Server::open(&server_dir).unwrap();
         (server_dir, Arc::new(Mutex::new(server)))
     });
+
     context.server = Some(server.clone());
-    if let Some(server) = context.server.as_mut() {
-        let names = server.lock().unwrap().databases().keys().cloned().collect_vec();
-        for name in names {
-            server.lock().unwrap().delete_database(name).unwrap()
-        }
-    }
+    // if context.transaction().is_some() { // TODO: We probably need to ask the server for all transactions
+    //     transaction_closes(context).await;
+    // }
 }
 
 #[apply(generic_step)]
