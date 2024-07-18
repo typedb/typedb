@@ -126,11 +126,11 @@ impl CommitTimeValidation {
         Self::validate_relation_type_has_relates(type_manager, snapshot, type_.clone(), validation_errors)?;
         Self::validate_relation_type_role_types(type_manager, snapshot, type_.clone(), validation_errors)?;
 
-        let ill_relates = produced_errors!(
+        let invalid_relates = produced_errors!(
             validation_errors,
             Self::validate_declared_relates(type_manager, snapshot, type_.clone(), validation_errors)?
         );
-        if !ill_relates {
+        if !invalid_relates {
             Self::validate_abstractness_matches_with_capability::<Relates<'static>>(
                 type_manager,
                 snapshot,
@@ -154,12 +154,12 @@ impl CommitTimeValidation {
         type_: AttributeType<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        let ill_value_type = produced_errors!(
+        let invalid_value_type = produced_errors!(
             validation_errors,
             Self::validate_attribute_type_value_type(type_manager, snapshot, type_.clone(), validation_errors)?
         );
 
-        if !ill_value_type {
+        if !invalid_value_type {
             Self::validate_type_annotations(type_manager, snapshot, type_.clone(), validation_errors)?;
         }
 
@@ -212,11 +212,11 @@ impl CommitTimeValidation {
         type_: T,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        let ill_owns = produced_errors!(
+        let invalid_owns = produced_errors!(
             validation_errors,
             Self::validate_declared_owns(type_manager, snapshot, type_.clone(), validation_errors)?
         );
-        if !ill_owns {
+        if !invalid_owns {
             Self::validate_abstractness_matches_with_capability::<Owns<'static>>(
                 type_manager,
                 snapshot,
@@ -231,11 +231,11 @@ impl CommitTimeValidation {
             )?;
         }
 
-        let ill_plays = produced_errors!(
+        let invalid_plays = produced_errors!(
             validation_errors,
             Self::validate_declared_plays(type_manager, snapshot, type_.clone(), validation_errors)?
         );
-        if !ill_plays {
+        if !invalid_plays {
             Self::validate_abstractness_matches_with_capability::<Plays<'static>>(
                 type_manager,
                 snapshot,
@@ -265,7 +265,7 @@ impl CommitTimeValidation {
         let owns_declared: HashSet<Owns<'static>> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
 
         for owns in owns_declared {
-            let ill_overrides = produced_errors!(
+            let invalid_overrides = produced_errors!(
                 validation_errors,
                 Self::validate_overridden_owns(type_manager, snapshot, owns.clone(), validation_errors)?
             );
@@ -277,7 +277,7 @@ impl CommitTimeValidation {
                 validation_errors,
             )?;
 
-            if !ill_overrides {
+            if !invalid_overrides {
                 Self::validate_redundant_capabilities::<Owns<'static>>(
                     type_manager,
                     snapshot,
@@ -309,7 +309,7 @@ impl CommitTimeValidation {
         let plays_declared: HashSet<Plays<'static>> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
 
         for plays in plays_declared {
-            let ill_overrides = produced_errors!(
+            let invalid_overrides = produced_errors!(
                 validation_errors,
                 Self::validate_overridden_plays(type_manager, snapshot, plays.clone(), validation_errors)?
             );
@@ -321,7 +321,7 @@ impl CommitTimeValidation {
                 validation_errors,
             )?;
 
-            if !ill_overrides {
+            if !invalid_overrides {
                 Self::validate_redundant_capabilities::<Plays<'static>>(
                     type_manager,
                     snapshot,
@@ -350,12 +350,12 @@ impl CommitTimeValidation {
             TypeReader::get_capabilities_declared(snapshot, relation_type.clone())?;
 
         for relates in relates_declared {
-            let ill_overrides = produced_errors!(
+            let invalid_overrides = produced_errors!(
                 validation_errors,
                 Self::validate_overridden_relates(type_manager, snapshot, relates.clone(), validation_errors)?
             );
 
-            if !ill_overrides {
+            if !invalid_overrides {
                 Self::validate_capabilities_annotations::<Relates<'static>>(
                     type_manager,
                     snapshot,
@@ -762,7 +762,7 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
         let role_label =
-            TypeReader::get_label(snapshot, role_type)?.ok_or(ConceptReadError::CannotGetLabelForExistingType)?;
+            TypeReader::get_label(snapshot, role_type)?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?;
         let relation_supertypes = TypeReader::get_supertypes(snapshot, relation_type.clone())?;
         let relation_subtypes = TypeReader::get_subtypes_transitive(snapshot, relation_type.clone())?;
 

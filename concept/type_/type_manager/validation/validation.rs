@@ -40,7 +40,7 @@ pub(crate) fn get_label_or_concept_read_err<'a>(
     snapshot: &impl ReadableSnapshot,
     type_: impl TypeAPI<'a>,
 ) -> Result<Label<'static>, ConceptReadError> {
-    TypeReader::get_label(snapshot, type_)?.ok_or(ConceptReadError::CannotGetLabelForExistingType)
+    TypeReader::get_label(snapshot, type_)?.ok_or(ConceptReadError::CorruptMissingLabelOfType)
 }
 
 pub(crate) fn get_label_or_schema_err<'a>(

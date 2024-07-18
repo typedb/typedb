@@ -1923,7 +1923,6 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: It can be ignored for operation time validations, but we may be strict as well
         OperationTimeValidation::validate_no_subtypes_for_type_abstractness_unset(snapshot, type_.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 

@@ -31,7 +31,7 @@ pub struct Plays<'a> {
 }
 
 impl<'a> Plays<'a> {
-    pub const DEFAULT_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(1, Some(1));
+    pub const DEFAULT_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 
     pub(crate) fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
         Self { player, role }

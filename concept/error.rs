@@ -153,9 +153,9 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::SnapshotGet { source } => Self::SnapshotGet { source },
             ConceptReadError::SnapshotIterate { source } => Self::SnapshotIterate { source },
             ConceptReadError::Encoding { source, .. } => Self::Encoding { source },
-            ConceptReadError::CannotGetLabelForExistingType => Self::ConceptRead { source: error },
-            ConceptReadError::CannotGetMandatoryProperty => Self::ConceptRead { source: error },
-            ConceptReadError::CannotGetMandatoryRelatesForRole => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingLabelOfType => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryProperty => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryRelatesForRole => Self::ConceptRead { source: error },
         }
     }
 }
@@ -165,9 +165,9 @@ pub enum ConceptReadError {
     SnapshotGet { source: SnapshotGetError },
     SnapshotIterate { source: Arc<SnapshotIteratorError> },
     Encoding { source: EncodingError },
-    CannotGetLabelForExistingType,
-    CannotGetMandatoryProperty,
-    CannotGetMandatoryRelatesForRole,
+    CorruptMissingLabelOfType,
+    CorruptMissingMandatoryProperty,
+    CorruptMissingMandatoryRelatesForRole,
 }
 
 impl fmt::Display for ConceptReadError {
@@ -182,9 +182,9 @@ impl Error for ConceptReadError {
             Self::SnapshotGet { source, .. } => Some(source),
             Self::SnapshotIterate { source, .. } => Some(source),
             Self::Encoding { source, .. } => Some(source),
-            Self::CannotGetLabelForExistingType => None,
-            Self::CannotGetMandatoryProperty => None,
-            Self::CannotGetMandatoryRelatesForRole => None,
+            Self::CorruptMissingLabelOfType => None,
+            Self::CorruptMissingMandatoryProperty => None,
+            Self::CorruptMissingMandatoryRelatesForRole => None,
         }
     }
 }

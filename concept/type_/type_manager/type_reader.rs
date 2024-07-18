@@ -118,7 +118,7 @@ impl TypeReader {
         let mut usages: HashMap<DefinitionKey<'static>, HashSet<AttributeType<'static>>> = HashMap::new();
 
         let root = TypeReader::get_labelled_type::<AttributeType<'static>>(snapshot, &Kind::Attribute.root_label())?
-            .ok_or(ConceptReadError::CannotGetLabelForExistingType)?;
+            .ok_or(ConceptReadError::CorruptMissingLabelOfType)?;
         let attribute_types = TypeReader::get_subtypes_transitive(snapshot, root)?;
         for attribute_type in attribute_types {
             if let Some(ValueType::Struct(definition_key)) =
@@ -261,7 +261,7 @@ impl TypeReader {
                 if let Some(supertype) = Self::get_supertype(snapshot, capability.interface())? {
                     if Kind::is_root_label(
                         &Self::get_label(snapshot, supertype.clone())?
-                            .ok_or(ConceptReadError::CannotGetLabelForExistingType)?,
+                            .ok_or(ConceptReadError::CorruptMissingLabelOfType)?,
                     ) {
                         overridden_interfaces.add(supertype);
                     }
@@ -376,7 +376,7 @@ impl TypeReader {
             .iter()
             .next()
             .map(|relates| relates.to_owned())
-            .ok_or(ConceptReadError::CannotGetMandatoryRelatesForRole)
+            .ok_or(ConceptReadError::CorruptMissingMandatoryRelatesForRole)
     }
 
     pub(crate) fn get_role_type_relates(
@@ -462,7 +462,7 @@ impl TypeReader {
     ) -> Result<Ordering, ConceptReadError> {
         match Self::get_type_property_declared(snapshot, role_type)? {
             Some(ordering) => Ok(ordering),
-            None => Err(ConceptReadError::CannotGetMandatoryProperty),
+            None => Err(ConceptReadError::CorruptMissingMandatoryProperty),
         }
     }
 
@@ -609,7 +609,7 @@ impl TypeReader {
     ) -> Result<Ordering, ConceptReadError> {
         match Self::get_type_edge_property::<Ordering>(snapshot, owns)? {
             Some(ordering) => Ok(ordering),
-            None => Err(ConceptReadError::CannotGetMandatoryProperty),
+            None => Err(ConceptReadError::CorruptMissingMandatoryProperty),
         }
     }
 
