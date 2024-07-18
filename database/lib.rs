@@ -10,4 +10,4 @@
 mod database;
 pub mod transaction;
 
-pub use self::database::{Database, DatabaseDeleteError, DatabaseOpenError};
+pub use self::database::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};

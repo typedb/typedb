@@ -296,6 +296,7 @@ impl Error for DatabaseDeleteError {
 
 #[derive(Debug)]
 pub enum DatabaseResetError {
+    InUse {},
     StorageInUse {},
     CorruptionStorageReset { source: StorageResetError },
     CorruptionDefinitionKeyGeneratorInUse {},
@@ -312,7 +313,8 @@ impl fmt::Display for DatabaseResetError {
 impl Error for DatabaseResetError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::StorageInUse { .. }
+            Self::InUse { .. }
+            | Self::StorageInUse { .. }
             | Self::CorruptionDefinitionKeyGeneratorInUse { .. }
             | Self::CorruptionTypeVertexGeneratorInUse { .. }
             | Self::TypeVertexGeneratorInUse { .. } => None,
