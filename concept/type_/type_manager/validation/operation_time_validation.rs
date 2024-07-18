@@ -146,7 +146,7 @@ impl OperationTimeValidation {
             .try_for_each(|interface_type| {
                 if interface_type.is_abstract(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)? {
                     Err(SchemaValidationError::CannotUnsetAbstractnessAsItHasDeclaredCapabilityOfAbstractInterface(
-                        CapabilityKind::Owns,
+                        CAP::KIND,
                         get_label_or_schema_err(snapshot, type_.clone())?,
                         get_label_or_schema_err(snapshot, interface_type)?,
                     ))
