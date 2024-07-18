@@ -42,8 +42,8 @@ use crate::{
 };
 
 pub struct ThingVertexGenerator {
-    entity_ids: Box<[AtomicU64; TypeIDUInt::MAX as usize]>,
-    relation_ids: Box<[AtomicU64; TypeIDUInt::MAX as usize]>,
+    entity_ids: Box<[AtomicU64]>,
+    relation_ids: Box<[AtomicU64]>,
     large_value_hasher: fn(&[u8]) -> u64,
 }
 
@@ -126,8 +126,8 @@ impl ThingVertexGenerator {
         Ok(ThingVertexGenerator { entity_ids, relation_ids, large_value_hasher })
     }
 
-    fn allocate_empty_ids() -> Box<[AtomicU64; TypeIDUInt::MAX as usize]> {
-        Box::new(std::array::from_fn(|_| AtomicU64::new(0)))
+    fn allocate_empty_ids() -> Box<[AtomicU64]> {
+        (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice()
     }
 
     pub fn hasher(&self) -> &impl Fn(&[u8]) -> u64 {

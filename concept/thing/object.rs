@@ -236,9 +236,10 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
             .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
             .count();
         if !cardinality.value_valid(count as u64 + 1) {
-            return Err(ConceptWriteError::MultipleKeys {
+            return Err(ConceptWriteError::CardinalityViolation {
                 owner: self.clone().into_owned_object(),
-                key_type: owns.attribute(),
+                attribute_type: owns.attribute(),
+                cardinality,
             });
         }
 

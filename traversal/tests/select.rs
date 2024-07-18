@@ -11,6 +11,8 @@ use concept::{
     thing::object::ObjectAPI,
     type_::{Ordering, OwnerAPI},
 };
+use concept::type_::annotation::AnnotationCardinality;
+use concept::type_::owns::OwnsAnnotation;
 use encoding::{
     graph::type_::Kind,
     value::{label::Label, value::Value, value_type::ValueType},
@@ -20,6 +22,7 @@ use ir::{
     pattern::constraint::IsaKind,
     program::{block::FunctionalBlock, program::Program},
 };
+use ir::program::program::CompiledSchemaFunctions;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -52,11 +55,32 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL, false).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+    let person_owns_age = person_type
+        .set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered)
+        .unwrap();
+    person_owns_age.set_annotation(
+        &mut snapshot,
+        &type_manager,
+        OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10)))
+    ).unwrap();
+    let person_owns_name = person_type
+        .set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered)
+        .unwrap();
+    person_owns_name.set_annotation(
+        &mut snapshot,
+        &type_manager,
+        OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10)))
+    ).unwrap();
     let email_type = type_manager.create_attribute_type(&mut snapshot, &EMAIL_LABEL, false).unwrap();
     email_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, email_type.clone(), Ordering::Unordered).unwrap();
+    let person_owns_email = person_type
+        .set_owns(&mut snapshot, &type_manager, email_type.clone(), Ordering::Unordered)
+        .unwrap();
+    person_owns_email.set_annotation(
+        &mut snapshot,
+        &type_manager,
+        OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10)))
+    ).unwrap();
 
     let _person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
     let _person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
@@ -130,12 +154,12 @@ fn anonymous_vars_not_enumerated_or_counted() {
         .constraints_mut()
         .add_label(var_attribute_type, Kind::Attribute.root_label().scoped_name().as_str())
         .unwrap();
-    let program = Program::new(block.finish(), HashMap::new());
+    let program = Program::new(block.finish(), Vec::new());
 
-    let type_annotations = {
+    let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&program, &snapshot, &type_manager).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -144,14 +168,14 @@ fn anonymous_vars_not_enumerated_or_counted() {
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
         &vec![var_person],
     ))];
-    let pattern_plan = PatternPlan::new(steps, program.entry().context().clone());
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
     };
 
     {
@@ -206,12 +230,12 @@ fn unselected_named_vars_counted() {
         .constraints_mut()
         .add_label(var_attribute_type, Kind::Attribute.root_label().scoped_name().as_str())
         .unwrap();
-    let program = Program::new(block.finish(), HashMap::new());
+    let program = Program::new(block.finish(), Vec::new());
 
-    let type_annotations = {
+    let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&program, &snapshot, &type_manager).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -220,14 +244,14 @@ fn unselected_named_vars_counted() {
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
         &vec![var_person],
     ))];
-    let pattern_plan = PatternPlan::new(steps, program.entry().context().clone());
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
     };
 
     {
@@ -289,12 +313,12 @@ fn cartesian_named_counted_checked() {
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_email_type, EMAIL_LABEL.scoped_name().as_str()).unwrap();
-    let program = Program::new(block.finish(), HashMap::new());
+    let program = Program::new(block.finish(), Vec::new());
 
-    let type_annotations = {
+    let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&program, &snapshot, &type_manager).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -307,14 +331,14 @@ fn cartesian_named_counted_checked() {
         ],
         &vec![var_person, var_age],
     ))];
-    let pattern_plan = PatternPlan::new(steps, program.entry().context().clone());
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
     };
 
     {

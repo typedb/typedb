@@ -622,8 +622,8 @@ impl TypeManager {
     ) -> Result<bool, ConceptReadError> {
         // TODO: it would be good if this doesn't require recomputation
         let mut max_card = 0;
-        let relates = relation_type.get_relates_declared(snapshot, self)?;
-        for relates in relates.iter() {
+        let relates = relation_type.get_relates(snapshot, self)?;
+        for (_, relates) in relates.iter() {
             let card = relates.get_cardinality(snapshot, self)?;
             match card.end() {
                 None => return Ok(false),

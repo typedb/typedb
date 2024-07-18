@@ -406,6 +406,12 @@ fn role_player_distinct() {
         employee_relates
             .set_annotation(&mut snapshot, &type_manager, RelatesAnnotation::Distinct(AnnotationDistinct))
             .unwrap();
+        employee_relates
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(2)))
+            ).unwrap();
         let employee_type = employee_relates.role();
 
         employment_type.create_relates(&mut snapshot, &type_manager, employer_role, Ordering::Ordered).unwrap();

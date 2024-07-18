@@ -20,6 +20,7 @@ use ir::{
     pattern::constraint::IsaKind,
     program::{block::FunctionalBlock, program::Program},
 };
+use ir::program::program::CompiledSchemaFunctions;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -180,12 +181,12 @@ fn traverse_rp_unbounded_sorted_from() {
         .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
-    let program = Program::new(block.finish(), HashMap::new());
+    let program = Program::new(block.finish(), Vec::new());
 
-    let type_annotations = {
+    let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&program, &snapshot, &type_manager).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -198,14 +199,14 @@ fn traverse_rp_unbounded_sorted_from() {
         &vec![var_membership, var_group, var_person],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, program.entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry_annotations().context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
     };
 
     {
@@ -253,12 +254,12 @@ fn traverse_has_unbounded_sorted_to_merged() {
         .constraints_mut()
         .add_label(var_attribute_type, Kind::Attribute.root_label().scoped_name().as_str())
         .unwrap();
-    let program = Program::new(block.finish(), HashMap::new());
+    let program = Program::new(block.finish(), Vec::new());
 
-    let type_annotations = {
+    let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&program, &snapshot, &type_manager).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -267,14 +268,14 @@ fn traverse_has_unbounded_sorted_to_merged() {
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
         &vec![var_person, var_attribute],
     ))];
-    let pattern_plan = PatternPlan::new(steps, program.entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
     };
 
     {
