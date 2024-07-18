@@ -8,6 +8,7 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use std::{collections::HashMap, sync::Arc};
+use std::sync::Mutex;
 
 use ::concept::{
     thing::{attribute::Attribute, object::Object},
@@ -16,6 +17,7 @@ use ::concept::{
 use cucumber::{StatsWriter, World};
 use database::Database;
 use server::typedb;
+use server::typedb::Server;
 use storage::durability_client::WALClient;
 use test_utils::TempDir;
 
@@ -51,8 +53,8 @@ mod thing_util {
 
 #[derive(Debug, Default, World)]
 pub struct Context {
-    server_dir: Option<TempDir>,
-    server: Option<typedb::Server>,
+    server_dir: Option<&'static TempDir>,
+    server: Option<Arc<Mutex<typedb::Server>>>,
     active_transaction: Option<ActiveTransaction>,
 
     objects: HashMap<String, Option<ObjectWithKey>>,
@@ -90,16 +92,16 @@ impl Context {
         Ok(())
     }
 
-    pub fn server(&self) -> Option<&typedb::Server> {
+    pub fn server(&self) -> Option<&Arc<Mutex<Server>>> {
         self.server.as_ref()
     }
 
-    pub fn server_mut(&mut self) -> Option<&mut typedb::Server> {
+    pub fn server_mut(&mut self) -> Option<&mut Arc<Mutex<Server>>> {
         self.server.as_mut()
     }
 
-    pub fn databases(&self) -> &HashMap<String, Arc<Database<WALClient>>> {
-        self.server().unwrap().databases()
+    pub fn databases(&self) -> HashMap<String, Arc<Database<WALClient>>> {
+        self.server().unwrap().lock().unwrap().databases().clone()
     }
 
     pub fn set_transaction(&mut self, txn: ActiveTransaction) {

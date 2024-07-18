@@ -12,7 +12,7 @@ use crate::{generic_step, util, Context};
 #[apply(generic_step)]
 #[step(expr = "connection create database: {word}")]
 pub async fn connection_create_database(context: &mut Context, name: String) {
-    context.server_mut().unwrap().create_database(name);
+    context.server_mut().unwrap().lock().unwrap().create_database(name);
 }
 
 #[apply(generic_step)]

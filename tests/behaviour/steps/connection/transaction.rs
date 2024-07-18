@@ -18,7 +18,8 @@ use crate::{
 #[apply(generic_step)]
 #[step(expr = "connection open {word} transaction for database: {word}")]
 pub async fn connection_open_transaction(context: &mut Context, tx_type: String, db_name: String) {
-    let db = context.databases().get(&db_name).unwrap();
+    let dbs =context.databases();
+    let db = dbs.get(&db_name).unwrap();
     let tx = match tx_type.as_str() {
         "read" => ActiveTransaction::Read(TransactionRead::open(db.clone())),
         "write" => ActiveTransaction::Write(TransactionWrite::open(db.clone())),
