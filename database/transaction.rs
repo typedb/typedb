@@ -144,7 +144,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let type_manager = Arc::new(TypeManager::new(
             database.definition_key_generator.clone(),
             database.type_vertex_generator.clone(),
-            None, // TODO: pass cache
+            None,
         ));
         let thing_manager = ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
         let function_manager = FunctionManager::new(database.definition_key_generator.clone(), None); // TODO: pass cache
