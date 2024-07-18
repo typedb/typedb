@@ -12,7 +12,7 @@ use std::{
     sync::Arc,
 };
 
-use database::{Database, DatabaseOpenError};
+use database::{Database, DatabaseOpenError, DatabaseDeleteError};
 use itertools::Itertools;
 use storage::durability_client::WALClient;
 
@@ -53,6 +53,25 @@ impl Server {
         self.databases
             .entry(name.to_owned())
             .or_insert_with(|| Arc::new(Database::<WALClient>::open(&self.data_directory.join(name)).unwrap()));
+    }
+
+    pub fn delete_database(&mut self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
+        // TODO: this is a partial implementation, only single threaded and without cooperative transaction shutdown
+        // remove from map to make DB unavailable
+        let db = self.databases.remove(name.as_ref());
+        if let Some(db) = db {
+            match Arc::try_unwrap(db) {
+                Ok(unwrapped) => {
+                   unwrapped.delete()?;
+                }
+                Err(arc) => {
+                    // failed to delete since it's in use - let's re-insert for now instead of losing the reference
+                    self.databases.insert(name.to_owned(), arc);
+                    return Err(DatabaseDeleteError::InUse {})
+                }
+            }
+        }
+        Ok(())
     }
 
     pub fn database(&self, name: &str) -> Option<&Database<WALClient>> {

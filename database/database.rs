@@ -174,6 +174,12 @@ impl Database<WALClient> {
         checkpoint.finish().map_err(|err| DatabaseCheckpointError::CheckpointCreate { source: err })?;
         Ok(())
     }
+
+    pub fn delete(self) -> Result<(), DatabaseDeleteError> {
+        let path = self.path;
+        fs::remove_dir_all(path).map_err(|err| DatabaseDeleteError::DirectoryDelete { source: err })?;
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -230,6 +236,27 @@ impl Error for DatabaseCheckpointError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::CheckpointCreate { source } => Some(source),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum DatabaseDeleteError {
+    DirectoryDelete { source: io::Error },
+    InUse { },
+}
+
+impl fmt::Display for DatabaseDeleteError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for DatabaseDeleteError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::DirectoryDelete { source } => Some(source),
+            Self::InUse { .. } => None,
         }
     }
 }
