@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use ir::{
     program::{
         block::FunctionalBlock,
-        function_signature::{EmptySchemaFunctionIndex, FunctionSignatureIndex},
+        function_signature::{FunctionSignatureIndex, HashMapFunctionIndex},
     },
     translator::block_builder::TypeQLBuilder,
     PatternDefinitionError,
@@ -18,7 +18,7 @@ use typeql::query::stage::Stage;
 
 #[test]
 fn build_conjunction_constraints() {
-    let empty_function_index = FunctionSignatureIndex::new(&EmptySchemaFunctionIndex {}, HashMap::new());
+    let empty_function_index = HashMapFunctionIndex::empty();
 
     let query = "match $person isa person, has name $name;";
     let parsed = typeql::parse_query(query).unwrap();
@@ -71,7 +71,7 @@ fn build_conjunction_constraints() {
 
 #[test]
 fn variable_category_mismatch() {
-    let empty_function_index = FunctionSignatureIndex::new(&EmptySchemaFunctionIndex {}, HashMap::new());
+    let empty_function_index = HashMapFunctionIndex::empty();
 
     let query = "match
         $person isa $person-type;
@@ -107,7 +107,7 @@ fn variable_category_mismatch() {
 
 #[test]
 fn variable_category_narrowing() {
-    let empty_function_index = FunctionSignatureIndex::new(&EmptySchemaFunctionIndex {}, HashMap::new());
+    let empty_function_index = HashMapFunctionIndex::empty();
 
     let query = "match $person isa $person-type, has $name-type $name;";
     let parsed = typeql::parse_query(query).unwrap(); // TODO

@@ -17,7 +17,7 @@ use ir::{
     },
     program::{
         block::FunctionalBlock,
-        function_signature::{EmptySchemaFunctionIndex, FunctionID, FunctionSignature, FunctionSignatureIndex},
+        function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
         modifier::ModifierDefinitionError,
         program::Program,
     },

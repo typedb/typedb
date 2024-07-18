@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{iter::zip, sync::Arc};
+use std::{collections::HashMap, iter::zip, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use concept::type_::type_manager::TypeManager;
@@ -22,8 +22,7 @@ use ir::{
     inference::type_inference::infer_types_for_functions,
     program::{
         function_signature::{
-            EmptySchemaFunctionIndex, FunctionID, FunctionIDTrait, FunctionManagerIndexInjectionTrait,
-            FunctionSignature, FunctionSignatureIndex,
+            FunctionID, FunctionIDTrait, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex,
         },
         program::{Program, SchemaFunctionCache},
         FunctionReadError,
@@ -66,10 +65,8 @@ impl FunctionManager {
             .map_err(|source| FunctionManagerError::FunctionRead { source })?;
         // TODO: Optimise: We recompile & redo type-inference on all functions here.
         // Prepare ir
-        let function_index = FunctionSignatureIndex::build(
-            &EmptySchemaFunctionIndex {},
-            functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)),
-        );
+        let function_index =
+            HashMapFunctionIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let ir = Program::compile_functions(&function_index, functions.iter().map(|f| &f.parsed)).unwrap();
         // Run type-inference
         infer_types_for_functions(ir, snapshot, &type_manager, &SchemaFunctionCache::empty())
@@ -102,11 +99,8 @@ impl FunctionManager {
             }
         }
 
-        let function_manager_index = FunctionManagerIndex::new(snapshot, self);
-        let function_index = FunctionSignatureIndex::build(
-            &function_manager_index,
-            functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)),
-        );
+        let buffered = HashMapFunctionIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
+        let function_index = ReadThroughFunctionSignatureIndex::new(snapshot, self, buffered);
         // Compile to ensure the function calls are consistent. Type-inference is done at commit-time.
         Program::compile_functions(&function_index, functions.iter().map(|function| &function.parsed))
             .map_err(|source| FunctionManagerError::FunctionDefinition { source })?;
@@ -147,35 +141,6 @@ impl FunctionManager {
         } else {
             Ok(MaybeOwns::Owned(FunctionReader::get_function(snapshot, definition_key)?))
         }
-    }
-}
-
-pub struct FunctionManagerIndex<'this, Snapshot: ReadableSnapshot> {
-    snapshot: &'this Snapshot,
-    function_manager: &'this FunctionManager,
-}
-
-impl<'this, Snapshot: ReadableSnapshot> FunctionManagerIndex<'this, Snapshot> {
-    pub(crate) fn new(snapshot: &'this Snapshot, function_manager: &'this FunctionManager) -> Self {
-        Self { snapshot, function_manager }
-    }
-}
-
-impl<'this, Snapshot: ReadableSnapshot> FunctionManagerIndexInjectionTrait for FunctionManagerIndex<'this, Snapshot> {
-    fn get_function_signature(
-        &self,
-        name: &str,
-    ) -> Result<Option<MaybeOwns<'_, FunctionSignature>>, FunctionReadError> {
-        Ok(if let Some(key) = self.function_manager.get_function_key(self.snapshot, name)? {
-            let function = self.function_manager.get_function(self.snapshot, key)?;
-            let signature = TypeQLFunctionBuilder::build_signature(
-                FunctionID::Schema(function.function_id.clone()),
-                &function.parsed,
-            );
-            Some(MaybeOwns::Owned(signature))
-        } else {
-            None
-        })
     }
 }
 
@@ -225,6 +190,44 @@ impl FunctionReader {
     }
 }
 
+pub struct ReadThroughFunctionSignatureIndex<'this, Snapshot: ReadableSnapshot> {
+    snapshot: &'this Snapshot,
+    function_manager: &'this FunctionManager,
+    buffered: HashMapFunctionIndex,
+}
+
+impl<'this, Snapshot: ReadableSnapshot> ReadThroughFunctionSignatureIndex<'this, Snapshot> {
+    pub(crate) fn new(
+        snapshot: &'this Snapshot,
+        function_manager: &'this FunctionManager,
+        buffered: HashMapFunctionIndex,
+    ) -> Self {
+        Self { snapshot, function_manager, buffered }
+    }
+}
+
+impl<'snapshot, Snapshot: ReadableSnapshot> FunctionSignatureIndex
+    for ReadThroughFunctionSignatureIndex<'snapshot, Snapshot>
+{
+    fn get_function_signature(
+        &self,
+        name: &str,
+    ) -> Result<Option<MaybeOwns<'_, FunctionSignature>>, FunctionReadError> {
+        Ok(if let Some(signature) = self.buffered.get_function_signature(name)? {
+            Some(signature)
+        } else if let Some(key) = self.function_manager.get_function_key(self.snapshot, name)? {
+            let function = self.function_manager.get_function(self.snapshot, key)?;
+            let signature = TypeQLFunctionBuilder::build_signature(
+                FunctionID::Schema(function.function_id.clone()),
+                &function.parsed,
+            );
+            Some(MaybeOwns::Owned(signature))
+        } else {
+            None
+        })
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use std::{collections::HashSet, sync::Arc};
@@ -244,7 +247,7 @@ pub mod tests {
     };
     use ir::{
         pattern::variable_category::{VariableCategory, VariableOptionality},
-        program::function_signature::{FunctionID, FunctionManagerIndexInjectionTrait, FunctionSignature},
+        program::function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
     };
     use storage::{
         durability_client::WALClient,
@@ -255,7 +258,7 @@ pub mod tests {
 
     use crate::{
         function_cache::FunctionCache,
-        function_manager::{tests::test_schema::setup_types, FunctionManager, FunctionManagerIndex},
+        function_manager::{tests::test_schema::setup_types, FunctionManager, ReadThroughFunctionSignatureIndex},
     };
 
     fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
@@ -327,7 +330,8 @@ pub mod tests {
                 expected_name,
                 function_manager.get_function(&snapshot, expected_function_id.clone()).unwrap().name().as_str()
             );
-            let index = FunctionManagerIndex::new(&snapshot, &function_manager);
+            let index =
+                ReadThroughFunctionSignatureIndex::new(&snapshot, &function_manager, HashMapFunctionIndex::empty());
             assert!(matches!(index.get_function_signature("unresolved"), Ok(None)));
             let looked_up = index.get_function_signature("cat_names").unwrap().unwrap();
             assert_eq!(expected_signature.function_id(), looked_up.function_id());
@@ -338,7 +342,8 @@ pub mod tests {
             let cache = Arc::new(FunctionCache::new(storage.clone(), &type_manager, sequence_number).unwrap());
             let snapshot = storage.clone().open_snapshot_read();
             let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), Some(cache.clone()));
-            let index = FunctionManagerIndex::new(&snapshot, &function_manager);
+            let index =
+                ReadThroughFunctionSignatureIndex::new(&snapshot, &function_manager, HashMapFunctionIndex::empty());
             assert!(matches!(index.get_function_signature("unresolved"), Ok(None)));
             let looked_up = index.get_function_signature("cat_names").unwrap().unwrap();
             assert_eq!(expected_signature.function_id(), looked_up.function_id());

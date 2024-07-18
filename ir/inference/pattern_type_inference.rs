@@ -334,7 +334,7 @@ pub mod tests {
         pattern::constraint::{Constraint, IsaKind},
         program::{
             block::FunctionalBlock,
-            function_signature::{EmptySchemaFunctionIndex, FunctionSignatureIndex},
+            function_signature::{FunctionSignatureIndex, HashMapFunctionIndex},
             program::SchemaFunctionCache,
         },
     };
@@ -365,7 +365,7 @@ pub mod tests {
         // Some version of `$a isa animal, has name $n;`
         let storage = setup_storage();
         let (type_manager, thing_manager) = managers();
-        let function_index = FunctionSignatureIndex::new(&EmptySchemaFunctionIndex {}, HashMap::new());
+        let function_index = HashMapFunctionIndex::empty();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -608,7 +608,7 @@ pub mod tests {
         // Some version of `$a isa animal, has name $n;`
         let storage = setup_storage();
         let (type_manager, thing_manager) = managers();
-        let function_index = FunctionSignatureIndex::new(&EmptySchemaFunctionIndex {}, HashMap::new());
+        let function_index = HashMapFunctionIndex::empty();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -728,7 +728,7 @@ pub mod tests {
     fn no_type_constraints() {
         let storage = setup_storage();
         let (type_manager, thing_manager) = managers();
-        let function_index = FunctionSignatureIndex::new(&EmptySchemaFunctionIndex {}, HashMap::new());
+        let function_index = HashMapFunctionIndex::empty();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -784,7 +784,7 @@ pub mod tests {
     fn role_players() {
         let storage = setup_storage();
         let (type_manager, thing_manager) = managers();
-        let function_index = FunctionSignatureIndex::new(&EmptySchemaFunctionIndex {}, HashMap::new());
+        let function_index = HashMapFunctionIndex::empty();
 
         let ((type_animal, type_cat, type_dog), _, (type_fears, type_has_fear, type_is_feared)) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);

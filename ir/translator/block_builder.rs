@@ -8,20 +8,20 @@ use crate::{
     pattern::conjunction::ConjunctionBuilder,
     program::{
         block::{FunctionalBlock, FunctionalBlockBuilder},
-        function_signature::{FunctionManagerIndexInjectionTrait, FunctionSignatureIndex},
+        function_signature::FunctionSignatureIndex,
     },
     translator::constraint_builder::TypeQLConstraintBuilder,
     PatternDefinitionError,
 };
 
-pub struct TypeQLBuilder<'func, SchemaIndex: FunctionManagerIndexInjectionTrait> {
-    function_index: &'func FunctionSignatureIndex<'func, SchemaIndex>,
+pub struct TypeQLBuilder<'func, FunctionIndex: FunctionSignatureIndex> {
+    function_index: &'func FunctionIndex,
 }
 
-impl<'func, SchemaIndex: FunctionManagerIndexInjectionTrait> TypeQLBuilder<'func, SchemaIndex> {
+impl<'func, FunctionIndex: FunctionSignatureIndex> TypeQLBuilder<'func, FunctionIndex> {
     pub fn build_match(
         // TODO: Accept modifiers
-        function_index: &'func FunctionSignatureIndex<'func, SchemaIndex>,
+        function_index: &'func FunctionIndex,
         match_: &typeql::query::stage::Match,
     ) -> Result<FunctionalBlock, PatternDefinitionError> {
         let mut builder = FunctionalBlock::builder();
@@ -31,7 +31,7 @@ impl<'func, SchemaIndex: FunctionManagerIndexInjectionTrait> TypeQLBuilder<'func
     }
 
     pub fn build_match_but_dont_finish(
-        function_index: &'func FunctionSignatureIndex<'func, SchemaIndex>,
+        function_index: &'func FunctionIndex,
         match_: &typeql::query::stage::Match,
     ) -> Result<FunctionalBlockBuilder, PatternDefinitionError> {
         let mut builder = FunctionalBlock::builder();

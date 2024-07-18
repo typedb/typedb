@@ -110,32 +110,18 @@ impl Into<FunctionID> for DefinitionKey<'static> {
     }
 }
 
-pub trait FunctionManagerIndexInjectionTrait {
+pub trait FunctionSignatureIndex {
     fn get_function_signature(&self, name: &str)
         -> Result<Option<MaybeOwns<'_, FunctionSignature>>, FunctionReadError>;
 }
 
-pub struct FunctionSignatureIndex<'func, SchemaIndex: FunctionManagerIndexInjectionTrait> {
-    schema: &'func SchemaIndex,
-    buffered: HashMap<String, FunctionSignature>,
+pub struct HashMapFunctionIndex {
+    index: HashMap<String, FunctionSignature>,
 }
 
-impl<'func, SchemaIndex: FunctionManagerIndexInjectionTrait> FunctionSignatureIndex<'func, SchemaIndex> {
-    pub fn into_parts(self) -> (&'func SchemaIndex, HashMap<String, FunctionSignature>) {
-        (self.schema, self.buffered)
-    }
-}
-
-impl<'func, SchemaIndex: FunctionManagerIndexInjectionTrait> FunctionSignatureIndex<'func, SchemaIndex> {
-    pub fn new(schema: &'func SchemaIndex, buffered: HashMap<String, FunctionSignature>) -> Self {
-        Self { schema, buffered }
-    }
-
-    pub fn build<'a>(
-        schema: &'func SchemaIndex,
-        buffered_typeql: impl Iterator<Item = (FunctionID, &'a typeql::Function)>,
-    ) -> Self {
-        let buffered = buffered_typeql
+impl HashMapFunctionIndex {
+    pub fn build<'func>(buffered_typeql: impl Iterator<Item = (FunctionID, &'func typeql::Function)>) -> Self {
+        let index = buffered_typeql
             .map(|(function_id, function)| {
                 (
                     function.signature.ident.ident.clone(),
@@ -143,30 +129,27 @@ impl<'func, SchemaIndex: FunctionManagerIndexInjectionTrait> FunctionSignatureIn
                 )
             })
             .collect();
-        FunctionSignatureIndex::new(schema, buffered)
+        Self { index }
+    }
+
+    pub fn empty() -> Self {
+        Self::build([].into_iter())
+    }
+
+    pub fn into_parts(self) -> HashMap<String, FunctionSignature> {
+        self.index
     }
 }
 
-impl<'func, SchemaIndex: FunctionManagerIndexInjectionTrait> FunctionSignatureIndex<'func, SchemaIndex> {
-    pub fn get_function_signature(
-        &self,
-        name: &str,
-    ) -> Result<Option<MaybeOwns<'_, FunctionSignature>>, FunctionReadError> {
-        if let Some(signature) = self.buffered.get(name) {
-            Ok(Some(MaybeOwns::Borrowed(signature)))
-        } else {
-            self.schema.get_function_signature(name)
-        }
-    }
-}
-
-pub struct EmptySchemaFunctionIndex {}
-
-impl FunctionManagerIndexInjectionTrait for EmptySchemaFunctionIndex {
+impl FunctionSignatureIndex for HashMapFunctionIndex {
     fn get_function_signature(
         &self,
         name: &str,
     ) -> Result<Option<MaybeOwns<'_, FunctionSignature>>, FunctionReadError> {
-        Ok(None)
+        if let Some(signature) = self.index.get(name) {
+            Ok(Some(MaybeOwns::Borrowed(signature)))
+        } else {
+            Ok(None)
+        }
     }
 }

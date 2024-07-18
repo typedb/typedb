@@ -13,7 +13,7 @@ use crate::{
     program::{
         block::FunctionalBlock,
         function::FunctionIR,
-        function_signature::{FunctionID, FunctionIDTrait, FunctionManagerIndexInjectionTrait, FunctionSignatureIndex},
+        function_signature::{FunctionID, FunctionIDTrait, FunctionSignatureIndex},
         FunctionDefinitionError, ProgramDefinitionError,
     },
     translator::{block_builder::TypeQLBuilder, function_builder::TypeQLFunctionBuilder},
@@ -49,37 +49,26 @@ impl Program {
         (entry, functions)
     }
 
-    pub fn compile(
-        schema_functions: &impl FunctionManagerIndexInjectionTrait,
+    pub fn compile<'index>(
+        function_index: &impl FunctionSignatureIndex,
         match_: &typeql::query::stage::Match,
         preamble_functions: Vec<&typeql::Function>,
     ) -> Result<Self, ProgramDefinitionError> {
-        let preamble_index = preamble_functions
-            .iter()
-            .enumerate()
-            .map(|(idx, function)| {
-                (
-                    function.signature.ident.ident.clone(),
-                    TypeQLFunctionBuilder::build_signature(FunctionID::Preamble(idx), *function),
-                )
-            })
-            .collect();
-        let function_index = FunctionSignatureIndex::new(schema_functions, preamble_index);
         let functions: Vec<FunctionIR> = preamble_functions
             .iter()
             .map(|function| {
-                TypeQLFunctionBuilder::build_ir(&function_index, &function)
+                TypeQLFunctionBuilder::build_ir(function_index, &function)
                     .map_err(|source| ProgramDefinitionError::FunctionDefinition { source })
             })
             .collect::<Result<Vec<FunctionIR>, ProgramDefinitionError>>()?;
-        let entry = TypeQLBuilder::build_match(&function_index, match_)
+        let entry = TypeQLBuilder::build_match(function_index, match_)
             .map_err(|source| ProgramDefinitionError::PatternDefinition { source })?;
 
         Ok(Self { entry, functions })
     }
 
     pub fn compile_functions<'index, 'functions>(
-        function_index: &FunctionSignatureIndex<'index, impl FunctionManagerIndexInjectionTrait>,
+        function_index: &impl FunctionSignatureIndex,
         functions_to_compile: impl Iterator<Item = &'functions typeql::Function>,
     ) -> Result<Vec<FunctionIR>, FunctionDefinitionError> {
         let ir: Result<Vec<FunctionIR>, FunctionDefinitionError> =
@@ -197,7 +186,10 @@ impl CompiledFunctionCache for LocalFunctionCache {
 
 #[cfg(test)]
 pub mod tests {
-    use std::{collections::HashSet, sync::Arc};
+    use std::{
+        collections::{HashMap, HashSet},
+        sync::Arc,
+    };
 
     use typeql::query::Pipeline;
 
@@ -208,9 +200,9 @@ pub mod tests {
         },
         pattern::{constraint::Constraint, Scope},
         program::{
-            function::FunctionDefinitionError,
-            function_signature::{EmptySchemaFunctionIndex, FunctionID},
+            function_signature::{FunctionID, HashMapFunctionIndex},
             program::{CompiledFunctionCache, Program, SchemaFunctionCache},
+            FunctionDefinitionError, ProgramDefinitionError,
         },
         PatternDefinitionError,
     };
@@ -235,15 +227,17 @@ pub mod tests {
         let function = preambles.into_iter().map(|preamble| preamble.function).find(|_| true).unwrap();
 
         let function_id = FunctionID::Preamble(0);
-        let should_be_unresolved_error = Program::compile(&EmptySchemaFunctionIndex {}, &entry, vec![]);
+
+        let should_be_unresolved_error = Program::compile(&HashMapFunctionIndex::empty(), &entry, vec![]);
         assert!(matches!(
             should_be_unresolved_error,
-            Err(FunctionDefinitionError::PatternDefinition {
+            Err(ProgramDefinitionError::PatternDefinition {
                 source: PatternDefinitionError::UnresolvedFunction { .. }
             })
         ));
 
-        let program = Program::compile(&EmptySchemaFunctionIndex {}, &entry, vec![&function]).unwrap();
+        let function_index = HashMapFunctionIndex::build([(FunctionID::Preamble(0), &function)].into_iter());
+        let program = Program::compile(&function_index, &entry, vec![&function]).unwrap();
         match &program.entry.conjunction().constraints()[2] {
             Constraint::FunctionCallBinding(call) => {
                 assert_eq!(function_id, call.function_call().function_id())

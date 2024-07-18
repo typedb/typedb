@@ -7,13 +7,11 @@
 use std::fmt;
 
 use answer::variable::Variable;
-use itertools::Itertools;
 
 use super::conjunction::ConjunctionBuilder;
 use crate::{
     pattern::{conjunction::Conjunction, Scope, ScopeId},
-    program::{block::BlockContext, function_signature::FunctionManagerIndexInjectionTrait},
-    PatternDefinitionError,
+    program::block::BlockContext,
 };
 
 #[derive(Debug)]

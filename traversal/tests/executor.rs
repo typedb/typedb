@@ -27,7 +27,7 @@ use ir::{
     inference::type_inference::infer_types,
     program::{
         block::FunctionalBlock,
-        function_signature::{EmptySchemaFunctionIndex, FunctionSignatureIndex},
+        function_signature::{FunctionSignatureIndex, HashMapFunctionIndex},
         program::Program,
     },
     translator::block_builder::TypeQLBuilder,
@@ -146,7 +146,7 @@ fn traverse_has() {
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
 
     // IR
-    let empty_function_index = FunctionSignatureIndex::new(&EmptySchemaFunctionIndex {}, HashMap::new());
+    let empty_function_index = FunctionSignatureIndex::new(&HashMapFunctionIndex {}, HashMap::new());
     let mut builder = TypeQLBuilder::build_match_but_dont_finish(&empty_function_index, &match_).unwrap();
     builder.conjunction_mut().and_typeql_patterns(&match_.patterns).unwrap();
     // builder.add_limit(3);

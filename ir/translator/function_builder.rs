@@ -15,9 +15,7 @@ use crate::{
     program::{
         block::FunctionalBlock,
         function::{FunctionIR, Reducer, ReturnOperationIR},
-        function_signature::{
-            FunctionID, FunctionManagerIndexInjectionTrait, FunctionSignature, FunctionSignatureIndex,
-        },
+        function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
         FunctionDefinitionError,
     },
     translator::block_builder::TypeQLBuilder,
@@ -26,8 +24,8 @@ use crate::{
 pub struct TypeQLFunctionBuilder {}
 
 impl TypeQLFunctionBuilder {
-    pub fn build_ir<'func, SchemaIndex: FunctionManagerIndexInjectionTrait>(
-        function_index: &FunctionSignatureIndex<'func, SchemaIndex>,
+    pub fn build_ir(
+        function_index: &impl FunctionSignatureIndex,
         function: &typeql::Function,
     ) -> Result<FunctionIR, FunctionDefinitionError> {
         let block = TypeQLBuilder::build_match(function_index, &function.body)

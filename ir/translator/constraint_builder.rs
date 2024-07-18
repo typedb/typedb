@@ -9,20 +9,20 @@ use typeql::expression::FunctionName;
 
 use crate::{
     pattern::constraint::{ConstraintsBuilder, IsaKind},
-    program::function_signature::{FunctionManagerIndexInjectionTrait, FunctionSignatureIndex},
+    program::function_signature::FunctionSignatureIndex,
     PatternDefinitionError,
 };
 
-pub struct TypeQLConstraintBuilder<'cx, SchemaIndex: FunctionManagerIndexInjectionTrait> {
+pub struct TypeQLConstraintBuilder<'cx, FunctionIndex> {
     constraints: ConstraintsBuilder<'cx>,
-    function_index: &'cx FunctionSignatureIndex<'cx, SchemaIndex>,
+    function_index: &'cx FunctionIndex,
 }
 
-impl<'cx, SchemaIndex: FunctionManagerIndexInjectionTrait> TypeQLConstraintBuilder<'cx, SchemaIndex> {
+impl<'cx, FunctionIndex: FunctionSignatureIndex> TypeQLConstraintBuilder<'cx, FunctionIndex> {
     pub(crate) fn new<'func>(
         constraints: ConstraintsBuilder<'cx>,
-        function_index: &'cx FunctionSignatureIndex<'func, SchemaIndex>,
-    ) -> TypeQLConstraintBuilder<'cx, SchemaIndex>
+        function_index: &'cx FunctionIndex,
+    ) -> TypeQLConstraintBuilder<'cx, FunctionIndex>
     where
         'func: 'cx,
     {
