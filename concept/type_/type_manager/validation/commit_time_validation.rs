@@ -31,7 +31,7 @@ use crate::{
             type_reader::TypeReader,
             validation::{
                 validation::{
-                    get_label_or_concept_read_err, is_interface_overridden,
+                    get_label_or_concept_read_err, get_label_or_schema_err, is_interface_overridden,
                     is_overridden_interface_object_declared_supertype_or_self,
                     is_overridden_interface_object_one_of_supertypes_or_self,
                     validate_declared_annotation_is_compatible_with_other_inherited_annotations,
@@ -217,7 +217,7 @@ impl CommitTimeValidation {
             Self::validate_declared_owns(type_manager, snapshot, type_.clone(), validation_errors)?
         );
         if !ill_owns {
-            Self::validate_abstractness_matches_with_capability::<Plays<'static>>(
+            Self::validate_abstractness_matches_with_capability::<Owns<'static>>(
                 type_manager,
                 snapshot,
                 type_.clone().into_owned_object_type(),
@@ -265,26 +265,33 @@ impl CommitTimeValidation {
         let owns_declared: HashSet<Owns<'static>> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
 
         for owns in owns_declared {
-            Self::validate_overridden_owns(type_manager, snapshot, owns.clone(), validation_errors)?;
+            let ill_overrides = produced_errors!(
+                validation_errors,
+                Self::validate_overridden_owns(type_manager, snapshot, owns.clone(), validation_errors)?
+            );
+
             Self::validate_declared_capability_not_overridden_by_supertypes::<Owns<'static>>(
                 type_manager,
                 snapshot,
                 owns.clone(),
                 validation_errors,
             )?;
-            Self::validate_redundant_capabilities::<Owns<'static>>(
-                type_manager,
-                snapshot,
-                owns.clone(),
-                validation_errors,
-            )?;
-            Self::validate_capabilities_annotations::<Owns<'static>>(
-                type_manager,
-                snapshot,
-                owns.clone(),
-                validation_errors,
-            )?;
-            Self::validate_capabilities_ordering(type_manager, snapshot, owns.clone(), validation_errors)?;
+
+            if !ill_overrides {
+                Self::validate_redundant_capabilities::<Owns<'static>>(
+                    type_manager,
+                    snapshot,
+                    owns.clone(),
+                    validation_errors,
+                )?;
+                Self::validate_capabilities_annotations::<Owns<'static>>(
+                    type_manager,
+                    snapshot,
+                    owns.clone(),
+                    validation_errors,
+                )?;
+                Self::validate_capabilities_ordering(type_manager, snapshot, owns.clone(), validation_errors)?;
+            }
         }
 
         Ok(())
@@ -302,25 +309,32 @@ impl CommitTimeValidation {
         let plays_declared: HashSet<Plays<'static>> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
 
         for plays in plays_declared {
-            Self::validate_overridden_plays(type_manager, snapshot, plays.clone(), validation_errors)?;
+            let ill_overrides = produced_errors!(
+                validation_errors,
+                Self::validate_overridden_plays(type_manager, snapshot, plays.clone(), validation_errors)?
+            );
+
             Self::validate_declared_capability_not_overridden_by_supertypes::<Plays<'static>>(
                 type_manager,
                 snapshot,
                 plays.clone(),
                 validation_errors,
             )?;
-            Self::validate_redundant_capabilities::<Plays<'static>>(
-                type_manager,
-                snapshot,
-                plays.clone(),
-                validation_errors,
-            )?;
-            Self::validate_capabilities_annotations::<Plays<'static>>(
-                type_manager,
-                snapshot,
-                plays.clone(),
-                validation_errors,
-            )?;
+
+            if !ill_overrides {
+                Self::validate_redundant_capabilities::<Plays<'static>>(
+                    type_manager,
+                    snapshot,
+                    plays.clone(),
+                    validation_errors,
+                )?;
+                Self::validate_capabilities_annotations::<Plays<'static>>(
+                    type_manager,
+                    snapshot,
+                    plays.clone(),
+                    validation_errors,
+                )?;
+            }
         }
 
         Ok(())
@@ -336,13 +350,19 @@ impl CommitTimeValidation {
             TypeReader::get_capabilities_declared(snapshot, relation_type.clone())?;
 
         for relates in relates_declared {
-            Self::validate_overridden_relates(type_manager, snapshot, relates.clone(), validation_errors)?;
-            Self::validate_capabilities_annotations::<Relates<'static>>(
-                type_manager,
-                snapshot,
-                relates,
+            let ill_overrides = produced_errors!(
                 validation_errors,
-            )?;
+                Self::validate_overridden_relates(type_manager, snapshot, relates.clone(), validation_errors)?
+            );
+
+            if !ill_overrides {
+                Self::validate_capabilities_annotations::<Relates<'static>>(
+                    type_manager,
+                    snapshot,
+                    relates,
+                    validation_errors,
+                )?;
+            }
         }
 
         Ok(())

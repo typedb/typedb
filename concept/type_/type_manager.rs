@@ -1590,7 +1590,7 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
-        TypeWriter::storage_put_interface_impl(snapshot, owns.clone());
+        TypeWriter::storage_put_capability(snapshot, owns.clone());
         TypeWriter::storage_put_type_edge_property(snapshot, owns, Some(ordering));
         Ok(())
     }
@@ -1612,7 +1612,7 @@ impl TypeManager {
 
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
         TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
-        TypeWriter::storage_delete_interface_impl(snapshot, owns.clone());
+        TypeWriter::storage_delete_capability(snapshot, owns.clone());
         Ok(())
     }
 
@@ -1708,7 +1708,7 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
-        TypeWriter::storage_put_interface_impl(snapshot, plays.clone());
+        TypeWriter::storage_put_capability(snapshot, plays.clone());
         Ok(plays)
     }
 
@@ -1728,7 +1728,7 @@ impl TypeManager {
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
-        TypeWriter::storage_delete_interface_impl(snapshot, plays);
+        TypeWriter::storage_delete_capability(snapshot, plays);
         Ok(())
     }
 
