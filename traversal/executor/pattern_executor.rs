@@ -4,32 +4,35 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, sync::Arc};
+use std::{cmp::Ordering, collections::HashMap, fmt::Display, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::inference::type_inference::TypeAnnotations;
+use ir::{inference::type_inference::TypeAnnotations, program::block::BlockContext};
 use itertools::Itertools;
-use lending_iterator::{AsLendingIterator, LendingIterator};
+use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     executor::{
-        iterator::{ConstraintIterator, ConstraintIteratorProvider},
-        Position,
+        batch::{Batch, BatchRowIterator, ImmutableRow, Row},
+        instruction::{iterator::InstructionIterator, InstructionExecutor},
+        Position, SelectedPositions,
     },
-    planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, Step},
+    planner::pattern_plan::{
+        AssignmentStep, DisjunctionStep, Instruction, NegationStep, OptionalStep, PatternPlan, SortedJoinStep, Step,
+        UnsortedJoinStep,
+    },
 };
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, Position>,
     variable_positions_index: Vec<Variable>,
 
-    steps: Vec<StepExecutor>,
+    step_executors: Vec<StepExecutor>,
     // modifiers: Modifier,
     initialised: bool,
     outputs: Option<Batch>,
-    output_index: usize,
 }
 
 impl PatternExecutor {
@@ -42,15 +45,18 @@ impl PatternExecutor {
         // 1. assign positions based on the output variables of each step
         // 2. create step executors that have an output Batch corresponding to the total size of the variables we care about
 
+        let PatternPlan { steps, context } = plan;
+
         let mut variable_positions = HashMap::new();
-        let mut steps = Vec::with_capacity(plan.steps().len());
-        for step in plan.into_steps() {
-            for variable in step.generated_variables() {
+        let mut step_executors = Vec::with_capacity(steps.len());
+        for step in steps {
+            for variable in step.unbound_variables() {
                 let previous = variable_positions.insert(*variable, Position::new(variable_positions.len() as u32));
                 debug_assert_eq!(previous, Option::None);
             }
-            let executor = StepExecutor::new(step, &variable_positions, type_annotations, snapshot, thing_manager)?;
-            steps.push(executor)
+            let executor =
+                StepExecutor::new(step, &context, &variable_positions, type_annotations, snapshot, thing_manager)?;
+            step_executors.push(executor)
         }
         let mut variable_positions_index = vec![Variable::new(0); variable_positions.len()];
         for (variable, position) in &variable_positions {
@@ -60,12 +66,19 @@ impl PatternExecutor {
         Ok(PatternExecutor {
             variable_positions,
             variable_positions_index,
-            steps,
+            step_executors,
             // modifiers:
             initialised: false,
             outputs: None,
-            output_index: 0,
         })
+    }
+
+    pub(crate) fn variable_positions(&self) -> &HashMap<Variable, Position> {
+        &self.variable_positions
+    }
+
+    pub(crate) fn variable_positions_index(&self) -> &Vec<Variable> {
+        &self.variable_positions_index
     }
 
     pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
@@ -73,7 +86,8 @@ impl PatternExecutor {
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
     ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
-        AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager)).flat_map(BatchRowIterator::new)
+        AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager))
+            .flat_map(|batch| BatchRowIterator::new(batch))
     }
 
     fn compute_next_batch(
@@ -81,7 +95,7 @@ impl PatternExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
-        let steps_len = self.steps.len();
+        let steps_len = self.step_executors.len();
 
         let (mut current_step, mut last_batch, mut direction) = if self.initialised {
             (steps_len - 1, None, Direction::Backward)
@@ -96,8 +110,11 @@ impl PatternExecutor {
                     if current_step >= steps_len {
                         return Ok(last_batch);
                     } else {
-                        let batch =
-                            self.steps[current_step].batch_from(last_batch.take().unwrap(), snapshot, thing_manager)?;
+                        let batch = self.step_executors[current_step].batch_from(
+                            last_batch.take().unwrap(),
+                            snapshot,
+                            thing_manager,
+                        )?;
                         match batch {
                             None => {
                                 direction = Direction::Backward;
@@ -115,7 +132,7 @@ impl PatternExecutor {
                     }
                 }
                 Direction::Backward => {
-                    let batch = self.steps[current_step].batch_continue(snapshot, thing_manager)?;
+                    let batch = self.step_executors[current_step].batch_continue(snapshot, thing_manager)?;
                     match batch {
                         None => {
                             if current_step == 0 {
@@ -164,9 +181,9 @@ impl<Snapshot: ReadableSnapshot> Iterator for BatchIterator<Snapshot> {
 }
 
 enum StepExecutor {
-    Sorted(SortedExecutor),
-    Unsorted(UnsortedExecutor),
-    Single(SingleExecutor),
+    SortedJoin(SortedJoinExecutor),
+    UnsortedJoin(UnsortedJoinExecutor),
+    Assignment(AssignExecutor),
 
     Disjunction(DisjunctionExecutor),
     Negation(NegationExecutor),
@@ -176,44 +193,48 @@ enum StepExecutor {
 impl StepExecutor {
     fn new(
         step: Step,
+        block_context: &BlockContext,
         variable_positions: &HashMap<Variable, Position>,
         type_annotations: &TypeAnnotations,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
-        let vars_count = variable_positions.len() as u32;
-        let Step { execution, .. } = step;
-        match execution {
-            Execution::SortedIterators(iterates) => {
-                let executor = SortedExecutor::new(
-                    iterates,
-                    vars_count,
+        let row_width = variable_positions.len() as u32;
+        match step {
+            Step::SortedJoin(SortedJoinStep { sort_variable, instructions, selected_variables, .. }) => {
+                let executor = SortedJoinExecutor::new(
+                    sort_variable,
+                    instructions,
+                    row_width,
+                    selected_variables,
+                    block_context.get_variables_named(),
                     variable_positions,
                     type_annotations,
                     snapshot,
                     thing_manager,
                 )?;
-                Ok(Self::Sorted(executor))
+                Ok(Self::SortedJoin(executor))
             }
-            Execution::UnsortedIterator(iterate, checks) => {
-                Ok(Self::Unsorted(UnsortedExecutor::new(iterate, checks, vars_count, variable_positions)))
+            Step::UnsortedJoin(UnsortedJoinStep { iterate_instruction, check_instructions, .. }) => {
+                let executor =
+                    UnsortedJoinExecutor::new(iterate_instruction, check_instructions, row_width, variable_positions);
+                Ok(Self::UnsortedJoin(executor))
             }
-            Execution::Single(single, checks) => {
-                Ok(Self::Single(SingleExecutor::new(single, checks, variable_positions)))
-            }
-            Execution::Disjunction(plans) => {
+            Step::Assignment(AssignmentStep { .. }) => {
                 todo!()
+            }
+            Step::Disjunction(DisjunctionStep { disjunction: disjunction_plans, .. }) => {
                 // let executors = plans.into_iter().map(|pattern_plan| PatternExecutor::new(pattern_plan, )).collect();
                 // Self::Disjunction(DisjunctionExecutor::new(executors, variable_positions))
-            }
-            Execution::Negation(plan) => {
                 todo!()
-                // let executor = PatternExecutor::new(plan, );
-                // // TODO: add limit 1, filters if they aren't there already?
-                // Self::Negation(NegationExecutor::new(executor, variable_positions))
             }
-            Execution::Optional(plan) => {
-                let pattern_executor = PatternExecutor::new(plan, type_annotations, snapshot, thing_manager)?;
+            Step::Negation(NegationStep { negation: negation_plan, .. }) => {
+                let executor = PatternExecutor::new(negation_plan, type_annotations, snapshot, thing_manager)?;
+                // // TODO: add limit 1, filters if they aren't there already?
+                Ok(Self::Negation(NegationExecutor::new(executor, variable_positions)))
+            }
+            Step::Optional(OptionalStep { optional: optional_plan, .. }) => {
+                let pattern_executor = PatternExecutor::new(optional_plan, type_annotations, snapshot, thing_manager)?;
                 Ok(Self::Optional(OptionalExecutor::new(pattern_executor)))
             }
         }
@@ -226,9 +247,9 @@ impl StepExecutor {
         thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
         match self {
-            StepExecutor::Sorted(sorted) => sorted.batch_from(input_batch, snapshot, thing_manager),
-            StepExecutor::Unsorted(unsorted) => unsorted.batch_from(input_batch),
-            StepExecutor::Single(single) => single.batch_from(input_batch),
+            StepExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, snapshot, thing_manager),
+            StepExecutor::UnsortedJoin(unsorted) => unsorted.batch_from(input_batch),
+            StepExecutor::Assignment(single) => single.batch_from(input_batch),
             StepExecutor::Disjunction(disjunction) => disjunction.batch_from(input_batch),
             StepExecutor::Negation(negation) => negation.batch_from(input_batch),
             StepExecutor::Optional(optional) => optional.batch_from(input_batch),
@@ -241,53 +262,73 @@ impl StepExecutor {
         thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
         match self {
-            StepExecutor::Sorted(sorted) => sorted.batch_continue(snapshot, thing_manager),
-            StepExecutor::Unsorted(unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
+            StepExecutor::SortedJoin(sorted) => sorted.batch_continue(snapshot, thing_manager),
+            StepExecutor::UnsortedJoin(unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
             StepExecutor::Disjunction(disjunction) => todo!(),
             StepExecutor::Optional(optional) => todo!(),
-            StepExecutor::Single(_) | StepExecutor::Negation(_) => Ok(None),
+            StepExecutor::Assignment(_) | StepExecutor::Negation(_) => Ok(None),
         }
     }
 }
 
-struct SortedExecutor {
-    iterator_providers: Vec<ConstraintIteratorProvider>,
-    intersection_iterators: Vec<ConstraintIterator>,
-    cartesian_iterator: CartesianIterator,
+struct SortedJoinExecutor {
+    instruction_executors: Vec<InstructionExecutor>,
     sort_variable_position: Position,
     output_width: u32,
+    outputs_selected: SelectedPositions,
 
-    input: Option<BatchRowIterator>,
+    iterators: Vec<InstructionIterator>,
+    cartesian_iterator: CartesianIterator,
+    input: Option<Peekable<BatchRowIterator>>,
     intersection_row: Vec<VariableValue<'static>>,
+    intersection_multiplicity: u64,
     output: Option<Batch>,
 }
 
-impl SortedExecutor {
+impl SortedJoinExecutor {
     fn new(
-        iterates: Vec<Iterate>,
-        vars_count: u32,
+        sort_variable: Variable,
+        instructions: Vec<Instruction>,
+        output_width: u32,
+        select_variables: Vec<Variable>,
+        named_variables: &HashMap<Variable, String>,
         variable_positions: &HashMap<Variable, Position>,
         type_annotations: &TypeAnnotations,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
-        let sort_variable = iterates[0].sort_variable().unwrap();
-        let sort_variable_position = variable_positions[&sort_variable];
-        let providers: Vec<ConstraintIteratorProvider> = iterates
+        let sort_variable_position = *variable_positions.get(&sort_variable).unwrap();
+        let instruction_count = instructions.len();
+        let executors: Vec<InstructionExecutor> = instructions
             .into_iter()
-            .map(|iterate| {
-                ConstraintIteratorProvider::new(iterate, variable_positions, type_annotations, snapshot, thing_manager)
+            .map(|instruction| {
+                InstructionExecutor::new(
+                    instruction,
+                    &select_variables,
+                    named_variables,
+                    variable_positions,
+                    type_annotations,
+                    snapshot,
+                    thing_manager,
+                    Some(sort_variable),
+                )
             })
             .collect::<Result<Vec<_>, ConceptReadError>>()?;
 
         Ok(Self {
-            intersection_iterators: Vec::with_capacity(providers.len()),
-            cartesian_iterator: CartesianIterator::new(vars_count as usize, providers.len(), sort_variable_position),
-            iterator_providers: providers,
+            instruction_executors: executors,
             sort_variable_position,
-            output_width: vars_count,
+            output_width,
+            outputs_selected: SelectedPositions::new(&select_variables, variable_positions),
+            iterators: Vec::with_capacity(instruction_count),
+            cartesian_iterator: CartesianIterator::new(
+                output_width as usize,
+                instruction_count,
+                sort_variable_position,
+            ),
             input: None,
-            intersection_row: (0..vars_count).map(|_| VariableValue::Empty).collect_vec(),
+            intersection_row: (0..output_width).map(|_| VariableValue::Empty).collect_vec(),
+            intersection_multiplicity: 1,
             output: None,
         })
     }
@@ -298,9 +339,12 @@ impl SortedExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
-        debug_assert!(self.output.is_none() && (self.input.is_none() || !self.input.as_ref().unwrap().has_next()));
-        self.input = Some(BatchRowIterator::new(Ok(input_batch)));
-        debug_assert!(self.input.as_ref().unwrap().has_next());
+        debug_assert!(
+            self.output.is_none() && (self.input.is_none() || !self.input.as_mut().unwrap().peek().is_some())
+        );
+        self.input = Some(Peekable::new(BatchRowIterator::new(Ok(input_batch))));
+        debug_assert!(self.input.as_mut().unwrap().peek().is_some());
+        self.may_create_intersection_iterators(snapshot, thing_manager)?;
         self.may_compute_next_batch(snapshot, thing_manager)?;
         Ok(self.output.take())
     }
@@ -311,6 +355,7 @@ impl SortedExecutor {
         thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
         debug_assert!(self.output.is_none());
+        self.may_create_intersection_iterators(snapshot, thing_manager)?;
         self.may_compute_next_batch(snapshot, thing_manager)?;
         Ok(self.output.take())
     }
@@ -336,7 +381,7 @@ impl SortedExecutor {
         if self.cartesian_iterator.is_active() {
             self.cartesian_iterator.write_into(row)
         } else {
-            row.copy_from(&self.intersection_row);
+            row.copy_from(&self.intersection_row, self.intersection_multiplicity);
             Ok(())
         }
     }
@@ -347,49 +392,44 @@ impl SortedExecutor {
         thing_manager: &ThingManager,
     ) -> Result<bool, ConceptReadError> {
         if self.cartesian_iterator.is_active() {
-            let found = self.cartesian_iterator.find_next(snapshot, thing_manager, &self.iterator_providers)?;
+            let found = self.cartesian_iterator.find_next(snapshot, thing_manager, &self.instruction_executors)?;
             if found {
                 Ok(true)
             } else {
                 // advance the first iterator past the intersection point to move to the next intersection
                 let intersection = &self.intersection_row[self.sort_variable_position.as_usize()];
-                let iterator = &mut self.intersection_iterators[0];
+                let iterator = &mut self.iterators[0];
                 while iterator.has_value() && iterator.peek_sorted_value_equals(intersection)? {
-                    iterator.advance()?;
+                    iterator.advance_single()?;
                 }
                 self.compute_next_row(snapshot, thing_manager)
             }
         } else {
-            loop {
-                if self.intersection_iterators.is_empty() {
-                    let failed = !self.create_intersection_iterators(snapshot, thing_manager)?;
-                    if failed {
-                        return Ok(false);
-                    }
-                }
-                let found = self.find_intersection(snapshot, thing_manager)?;
+            while !self.iterators.is_empty() {
+                let found = self.find_intersection()?;
                 if found {
                     self.record_intersection()?;
-                    self.advance_intersection_iterators()?;
+                    self.advance_intersection_iterators_with_multiplicity()?;
                     self.may_activate_cartesian(snapshot, thing_manager)?;
                     return Ok(true);
                 } else {
-                    self.intersection_iterators.clear();
+                    self.iterators.clear();
+                    let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone())?;
+                    if self.input.as_mut().unwrap().peek().is_some() {
+                        self.may_create_intersection_iterators(snapshot, thing_manager)?;
+                    }
                 }
             }
+            Ok(false)
         }
     }
 
-    fn find_intersection(
-        &mut self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-    ) -> Result<bool, ConceptReadError> {
-        debug_assert!(!self.intersection_iterators.is_empty());
-        if self.intersection_iterators.len() == 1 {
+    fn find_intersection(&mut self) -> Result<bool, ConceptReadError> {
+        debug_assert!(!self.iterators.is_empty());
+        if self.iterators.len() == 1 {
             // if there's only 1 iterator, we can just use it without any intersection
-            return Ok(self.intersection_iterators[0].has_value());
-        } else if self.intersection_iterators[0].peek_sorted_value().transpose().map_err(|err| err.clone())?.is_none() {
+            return Ok(self.iterators[0].has_value());
+        } else if self.iterators[0].peek_sorted_value().transpose().map_err(|err| err.clone())?.is_none() {
             // short circuit if the first iterator doesn't have any more outputs
             self.clear_intersection_iterators();
             return Ok(false);
@@ -399,16 +439,16 @@ impl SortedExecutor {
         loop {
             let mut failed = false;
             let mut retry = false;
-            for i in 0..self.intersection_iterators.len() {
+            for i in 0..self.iterators.len() {
                 if i == current_max_index {
                     continue;
                 }
 
                 let (containing_i, containing_max, i_index, max_index) = if current_max_index > i {
-                    let (containing_i, containing_max) = self.intersection_iterators.split_at_mut(current_max_index);
+                    let (containing_i, containing_max) = self.iterators.split_at_mut(current_max_index);
                     (containing_i, containing_max, i, 0)
                 } else {
-                    let (containing_max, containing_i) = self.intersection_iterators.split_at_mut(i);
+                    let (containing_max, containing_i) = self.iterators.split_at_mut(i);
                     (containing_i, containing_max, 0, current_max_index)
                 };
                 let max_cmp_peek = match containing_i[i_index].peek_sorted_value() {
@@ -432,10 +472,11 @@ impl SortedExecutor {
                     }
                     Ordering::Equal => {}
                     Ordering::Greater => {
+                        // TODO: use seek()
                         let current_max = &mut containing_max[max_index].peek_sorted_value().unwrap().unwrap();
                         let iter_i = &mut containing_i[i_index];
-                        let iterator_status = iter_i.skip_to_sorted_value(current_max)?;
-                        match iterator_status {
+                        let (_, next_value_cmp) = iter_i.counting_skip_to_sorted_value(current_max)?;
+                        match next_value_cmp {
                             None => {
                                 failed = true;
                                 break;
@@ -462,37 +503,38 @@ impl SortedExecutor {
         }
     }
 
-    fn create_intersection_iterators(
+    fn may_create_intersection_iterators(
         &mut self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<bool, ConceptReadError> {
-        debug_assert!(self.intersection_iterators.is_empty());
-        let next_row = self.input.as_mut().unwrap().next().transpose().map_err(|err| err.clone())?;
-        match next_row {
-            None => Ok(false),
-            Some(row) => {
-                for provider in &self.iterator_providers {
-                    self.intersection_iterators.push(provider.get_iterator(snapshot, thing_manager, row)?);
-                }
-                Ok(true)
+    ) -> Result<(), ConceptReadError> {
+        debug_assert!(self.iterators.is_empty());
+        let peek = self.input.as_mut().unwrap().peek();
+        if let Some(input) = peek {
+            let next_row: &ImmutableRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
+            for executor in &self.instruction_executors {
+                self.iterators.push(executor.get_iterator(snapshot, thing_manager, next_row.as_reference())?);
             }
-        }
-    }
-
-    fn advance_intersection_iterators(&mut self) -> Result<(), ConceptReadError> {
-        for iter in &mut self.intersection_iterators {
-            iter.advance()?;
         }
         Ok(())
     }
 
+    fn advance_intersection_iterators_with_multiplicity(&mut self) -> Result<(), ConceptReadError> {
+        let mut multiplicity: u64 = 1;
+        for iter in &mut self.iterators {
+            let row = ImmutableRow::new(&self.intersection_row, self.intersection_multiplicity);
+            multiplicity *= iter.count_until_next_answer(row)? as u64;
+        }
+        self.intersection_multiplicity = multiplicity;
+        Ok(())
+    }
+
     fn clear_intersection_iterators(&mut self) {
-        self.intersection_iterators.clear()
+        self.iterators.clear()
     }
 
     fn all_iterators_intersect(&mut self) -> bool {
-        let (first, rest) = self.intersection_iterators.split_at_mut(1);
+        let (first, rest) = self.iterators.split_at_mut(1);
         let peek_0 = first[0].peek_sorted_value().unwrap().unwrap();
         for iter in rest {
             if iter.peek_sorted_value().unwrap().unwrap() != peek_0 {
@@ -503,13 +545,19 @@ impl SortedExecutor {
     }
 
     fn record_intersection(&mut self) -> Result<(), ConceptReadError> {
-        for value in &mut self.intersection_row {
-            *value = VariableValue::Empty
+        self.intersection_row.fill(VariableValue::Empty);
+        let mut row = Row::new(&mut self.intersection_row, &mut self.intersection_multiplicity);
+        for iter in &mut self.iterators {
+            iter.write_values(&mut row)?
         }
-        let mut row = Row::new(&mut self.intersection_row);
-        for iter in &mut self.intersection_iterators {
-            iter.write_values(&mut row).map_err(|err| err.clone())?
+
+        let input_row = self.input.as_mut().unwrap().peek().unwrap().as_ref().map_err(|err| (*err).clone())?;
+        for position in self.outputs_selected.iter_selected() {
+            if position.as_usize() < input_row.width() {
+                row.set(position, input_row.get(position).clone().into_owned())
+            }
         }
+        self.intersection_multiplicity = 1;
         Ok(())
     }
 
@@ -518,8 +566,12 @@ impl SortedExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptReadError> {
+        if self.iterators.len() == 1 {
+            // don't delegate to cartesian iterator and incur new iterator costs if there cannot be a cartesian product
+            return Ok(());
+        }
         let mut cartesian = false;
-        for iter in &mut self.intersection_iterators {
+        for iter in &mut self.iterators {
             if iter.peek_sorted_value_equals(&self.intersection_row[self.sort_variable_position.as_usize()])? {
                 cartesian = true;
                 break;
@@ -529,9 +581,10 @@ impl SortedExecutor {
             self.cartesian_iterator.activate(
                 snapshot,
                 thing_manager,
-                &self.iterator_providers,
+                &self.instruction_executors,
                 &self.intersection_row,
-                &mut self.intersection_iterators,
+                self.intersection_multiplicity,
+                &mut self.iterators,
             )?
         }
         Ok(())
@@ -542,18 +595,20 @@ struct CartesianIterator {
     sort_variable_position: Position,
     is_active: bool,
     intersection_source: Vec<VariableValue<'static>>,
-    cartesian_provider_indices: Vec<usize>,
-    iterators: Vec<Option<ConstraintIterator>>,
+    intersection_multiplicity: u64,
+    cartesian_executor_indices: Vec<usize>,
+    iterators: Vec<Option<InstructionIterator>>,
 }
 
 impl CartesianIterator {
-    fn new(width: usize, iterator_provider_count: usize, sort_variable_position: Position) -> Self {
+    fn new(width: usize, iterator_executor_count: usize, sort_variable_position: Position) -> Self {
         CartesianIterator {
             sort_variable_position,
             is_active: false,
             intersection_source: vec![VariableValue::Empty; width],
-            cartesian_provider_indices: Vec::with_capacity(iterator_provider_count),
-            iterators: (0..iterator_provider_count).into_iter().map(|_| Option::None).collect_vec(),
+            intersection_multiplicity: 1,
+            cartesian_executor_indices: Vec::with_capacity(iterator_executor_count),
+            iterators: (0..iterator_executor_count).into_iter().map(|_| Option::None).collect_vec(),
         }
     }
 
@@ -565,34 +620,36 @@ impl CartesianIterator {
         &mut self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        iterator_providers: &Vec<ConstraintIteratorProvider>,
+        iterator_executors: &Vec<InstructionExecutor>,
         source_intersection: &Vec<VariableValue<'static>>,
-        intersection_iterators: &mut Vec<ConstraintIterator>,
+        source_multiplicity: u64,
+        intersection_iterators: &mut Vec<InstructionIterator>,
     ) -> Result<(), ConceptReadError> {
         debug_assert!(source_intersection.len() == self.intersection_source.len());
         self.is_active = true;
         self.intersection_source.clone_from_slice(source_intersection);
+        self.intersection_multiplicity = source_multiplicity;
 
-        // we should be able to re-use existing iterators since they should only move forward
-        self.cartesian_provider_indices.clear();
+        // we are able to re-use existing iterators since they should only move forward. We only reset the indices
+        self.cartesian_executor_indices.clear();
 
         let intersection = &source_intersection[self.sort_variable_position.as_usize()];
         for (index, iter) in intersection_iterators.iter_mut().enumerate() {
             if iter.peek_sorted_value_equals(intersection)? {
-                self.cartesian_provider_indices.push(index);
+                self.cartesian_executor_indices.push(index);
 
                 // reopen/move existing cartesian iterators forward to the intersection point
-                let iterator = self.iterators[index].take();
-                match iterator {
-                    None => {
-                        let reopened = self.reopen_iterator(snapshot, thing_manager, &iterator_providers[index])?;
-                        self.iterators[index] = Some(reopened);
-                    }
+                let preexisting_iterator = self.iterators[index].take();
+                let iterator = match preexisting_iterator {
+                    None => self.reopen_iterator(snapshot, thing_manager, &iterator_executors[index])?,
                     Some(mut iter) => {
-                        let ordering = iter.skip_to_sorted_value(intersection)?;
-                        debug_assert!(ordering.is_some() && ordering.unwrap().is_eq());
+                        // TODO: use seek()
+                        let (_, next_value_cmp) = iter.counting_skip_to_sorted_value(intersection)?;
+                        debug_assert!(next_value_cmp.is_some() && next_value_cmp.unwrap().is_eq());
+                        iter
                     }
-                }
+                };
+                self.iterators[index] = Some(iterator);
             }
         }
         Ok(())
@@ -602,25 +659,25 @@ impl CartesianIterator {
         &mut self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        providers: &Vec<ConstraintIteratorProvider>,
+        executors: &Vec<InstructionExecutor>,
     ) -> Result<bool, ConceptReadError> {
         debug_assert!(self.is_active);
         // precondition: all required iterators are open to the intersection point
 
         let intersection = &self.intersection_source[self.sort_variable_position.as_usize()];
-        let mut provider_index = self.cartesian_provider_indices.len() - 1;
+        let mut executor_index = self.cartesian_executor_indices.len() - 1;
         loop {
-            let iterator_index = self.cartesian_provider_indices[provider_index];
+            let iterator_index = self.cartesian_executor_indices[executor_index];
             let iter = (&mut self.iterators)[iterator_index].as_mut().unwrap();
-            iter.advance()?;
+            iter.advance_single()?;
             if !iter.peek_sorted_value_equals(intersection)? {
-                if provider_index == 0 {
+                if executor_index == 0 {
                     self.is_active = false;
                     return Ok(false);
                 } else {
-                    let reopened = self.reopen_iterator(snapshot, thing_manager, &providers[provider_index])?;
+                    let reopened = self.reopen_iterator(snapshot, thing_manager, &executors[executor_index])?;
                     self.iterators[iterator_index] = Some(reopened);
-                    provider_index -= 1;
+                    executor_index -= 1;
                 }
             } else {
                 return Ok(true);
@@ -632,18 +689,22 @@ impl CartesianIterator {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        provider: &ConstraintIteratorProvider,
-    ) -> Result<ConstraintIterator, ConceptReadError> {
-        let mut reopened =
-            provider.get_iterator(snapshot, thing_manager, ImmutableRow::new(&self.intersection_source))?;
+        executor: &InstructionExecutor,
+    ) -> Result<InstructionIterator, ConceptReadError> {
+        let mut reopened = executor.get_iterator(
+            snapshot,
+            thing_manager,
+            ImmutableRow::new(&self.intersection_source, self.intersection_multiplicity),
+        )?;
         let intersection = &self.intersection_source[self.sort_variable_position.as_usize()];
-        reopened.skip_to_sorted_value(intersection)?;
+        // TODO: use seek()
+        reopened.counting_skip_to_sorted_value(intersection)?;
         Ok(reopened)
     }
 
     fn write_into(&mut self, row: &mut Row) -> Result<(), ConceptReadError> {
-        for &provider_index in &self.cartesian_provider_indices {
-            let iterator = self.iterators[provider_index].as_mut().unwrap();
+        for &executor_index in &self.cartesian_executor_indices {
+            let iterator = self.iterators[executor_index].as_mut().unwrap();
             iterator.write_values(row).map_err(|err| err.clone())?
         }
         for (index, value) in self.intersection_source.iter().enumerate() {
@@ -651,22 +712,23 @@ impl CartesianIterator {
                 row.set(Position::new(index as u32), value.clone());
             }
         }
+        row.set_multiplicity(self.intersection_multiplicity);
         Ok(())
     }
 }
 
-struct UnsortedExecutor {
-    iterate: Iterate,
-    checks: Vec<Check>,
+struct UnsortedJoinExecutor {
+    iterate: Instruction,
+    checks: Vec<Instruction>,
 
     output_width: u32,
     output: Option<Batch>,
 }
 
-impl UnsortedExecutor {
+impl UnsortedJoinExecutor {
     fn new(
-        iterate: Iterate,
-        checks: Vec<Check>,
+        iterate: Instruction,
+        checks: Vec<Instruction>,
         total_vars: u32,
         variable_positions: &HashMap<Variable, Position>,
     ) -> Self {
@@ -682,16 +744,12 @@ impl UnsortedExecutor {
     }
 }
 
-struct SingleExecutor {
-    provider: Single,
-    checks: Vec<Check>,
+struct AssignExecutor {
+    // executor: AssignInstruction,
+    // checks: Vec<CheckInstruction>,
 }
 
-impl SingleExecutor {
-    fn new(provider: Single, checks: Vec<Check>, variable_positions: &HashMap<Variable, Position>) -> SingleExecutor {
-        Self { provider, checks }
-    }
-
+impl AssignExecutor {
     fn batch_from(&mut self, input_batch: Batch) -> Result<Option<Batch>, ConceptReadError> {
         todo!()
     }
@@ -744,145 +802,5 @@ impl OptionalExecutor {
 
     fn batch_continue(&mut self) -> Result<Option<Batch>, ConceptReadError> {
         todo!()
-    }
-}
-
-const BATCH_ROWS_MAX: u32 = 64;
-
-#[derive(Debug)]
-struct Batch {
-    width: u32,
-    entries: u32,
-    data: Vec<VariableValue<'static>>,
-}
-
-impl Batch {
-    const EMPTY_SINGLE_ROW: Batch = Batch { width: 0, entries: 1, data: Vec::new() };
-
-    fn new(width: u32) -> Self {
-        let size = width * BATCH_ROWS_MAX;
-        Batch { width, data: vec![VariableValue::Empty; size as usize], entries: 0 }
-    }
-
-    fn rows_count(&self) -> u32 {
-        self.entries
-    }
-
-    fn is_full(&self) -> bool {
-        (self.entries * self.width) as usize == self.data.len()
-    }
-
-    fn get_row(&self, index: u32) -> ImmutableRow<'_> {
-        debug_assert!(index <= self.entries);
-        let start = (index * self.width) as usize;
-        let end = ((index + 1) * self.width) as usize;
-        let slice = &self.data[start..end];
-        ImmutableRow::new(slice)
-    }
-
-    fn get_row_mut(&mut self, index: u32) -> Row<'_> {
-        debug_assert!(index <= self.entries);
-        self.row_internal_mut(index)
-    }
-
-    fn append<T>(&mut self, mut writer: impl FnMut(Row<'_>) -> T) -> T {
-        debug_assert!(!self.is_full());
-        let row = self.row_internal_mut(self.entries);
-        let result = writer(row);
-        self.entries += 1;
-        result
-    }
-
-    fn row_internal_mut(&mut self, index: u32) -> Row<'_> {
-        let start = (index * self.width) as usize;
-        let end = ((index + 1) * self.width) as usize;
-        let slice = &mut self.data[start..end];
-        Row::new(slice)
-    }
-}
-
-struct BatchRowIterator {
-    batch: Result<Batch, ConceptReadError>,
-    index: u32,
-}
-
-impl BatchRowIterator {
-    fn new(batch: Result<Batch, ConceptReadError>) -> Self {
-        Self { batch, index: 0 }
-    }
-
-    fn has_next(&self) -> bool {
-        self.batch.as_ref().is_ok_and(|batch| self.index < batch.rows_count())
-    }
-}
-
-impl LendingIterator for BatchRowIterator {
-    type Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>;
-
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        match self.batch.as_mut() {
-            Ok(batch) => {
-                if self.index >= batch.rows_count() {
-                    None
-                } else {
-                    let row = batch.get_row(self.index);
-                    self.index += 1;
-                    Some(Ok(row))
-                }
-            }
-            Err(err) => Some(Err(err)),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Row<'a> {
-    row: &'a mut [VariableValue<'static>],
-}
-
-impl<'a> Row<'a> {
-    fn new(row: &'a mut [VariableValue<'static>]) -> Self {
-        Self { row }
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.row.len()
-    }
-
-    pub(crate) fn get(&self, position: Position) -> &VariableValue {
-        &self.row[position.as_usize()]
-    }
-
-    pub(crate) fn set(&mut self, position: Position, value: VariableValue<'static>) {
-        debug_assert!(*self.get(position) == VariableValue::Empty || *self.get(position) == value);
-        self.row[position.as_usize()] = value;
-    }
-
-    fn copy_from(&mut self, row: &[VariableValue<'static>]) {
-        debug_assert!(self.len() == row.len());
-        self.row.clone_from_slice(row)
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct ImmutableRow<'a> {
-    row: &'a [VariableValue<'static>],
-}
-
-impl<'a> ImmutableRow<'a> {
-    fn new(row: &'a [VariableValue<'static>]) -> Self {
-        Self { row }
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.row.len()
-    }
-
-    pub(crate) fn get(&self, position: Position) -> &VariableValue {
-        &self.row[position.as_usize()]
-    }
-
-    pub fn to_vec(&self) -> Vec<VariableValue<'static>> {
-        self.row.to_vec()
     }
 }

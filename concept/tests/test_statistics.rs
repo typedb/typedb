@@ -181,7 +181,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: ThingMan
         }
     }
 
-    let mut attribute_iter = thing_manager.get_attributes(&snapshot);
+    let mut attribute_iter = thing_manager.get_attributes(&snapshot).unwrap();
     while let Some(attribute) = attribute_iter.next() {
         let attribute = attribute.unwrap();
         statistics.total_attribute_count += 1;

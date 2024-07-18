@@ -6,15 +6,17 @@
 
 use std::{
     cmp::Ordering,
+    collections::HashSet,
     fmt::{Display, Formatter},
+    hash::{Hash, Hasher},
     marker::PhantomData,
     sync::Arc,
 };
 
-use bytes::Bytes;
+use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
-        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
+        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
         type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
     },
@@ -23,7 +25,7 @@ use encoding::{
         value::Value,
         value_struct::{StructIndexEntry, StructIndexEntryKey},
     },
-    AsBytes, Keyable, Prefixed,
+    AsBytes, Keyable,
 };
 use iterator::State;
 use lending_iterator::LendingIterator;
@@ -36,8 +38,8 @@ use storage::{
 use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{entity::Entity, object::Object, thing_manager::ThingManager, ThingAPI},
-    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI},
+    thing::{object::Object, thing_manager::ThingManager, ThingAPI},
+    type_::{attribute_type::AttributeType, ObjectTypeAPI, TypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -106,6 +108,12 @@ impl<'a> Attribute<'a> {
 
     pub(crate) fn vertex<'this: 'a>(&'this self) -> AttributeVertex<'this> {
         self.vertex.as_reference()
+    }
+
+    pub fn next_possible(&self) -> Attribute<'static> {
+        let mut bytes = ByteArray::from(self.vertex.bytes());
+        bytes.increment().unwrap();
+        Attribute::new(AttributeVertex::new(Bytes::Array(bytes)))
     }
 
     pub(crate) fn into_vertex(self) -> AttributeVertex<'a> {
@@ -177,21 +185,25 @@ impl<'a> Ord for Attribute<'a> {
 }
 
 /// Attribute iterators handle hiding dependent attributes that were not deleted yet
-trait ExtractAttributeFromKey {
+trait KeyAttributeExtractor {
     fn storage_key_to_attribute_vertex<'bytes>(
         storage_key: StorageKey<'bytes, BUFFER_KEY_INLINE>,
     ) -> AttributeVertex<'bytes>;
 }
+
 pub struct StandardAttributeExtractor;
-impl ExtractAttributeFromKey for StandardAttributeExtractor {
+
+impl KeyAttributeExtractor for StandardAttributeExtractor {
     fn storage_key_to_attribute_vertex<'bytes>(
         storage_key: StorageKey<'bytes, BUFFER_KEY_INLINE>,
     ) -> AttributeVertex<'bytes> {
         AttributeVertex::new(storage_key.into_bytes())
     }
 }
+
 pub struct StructIndexAttributeExtractor;
-impl ExtractAttributeFromKey for StructIndexAttributeExtractor {
+
+impl KeyAttributeExtractor for StructIndexAttributeExtractor {
     fn storage_key_to_attribute_vertex<'bytes>(
         storage_key: StorageKey<'bytes, BUFFER_KEY_INLINE>,
     ) -> AttributeVertex<'bytes> {
@@ -199,31 +211,25 @@ impl ExtractAttributeFromKey for StructIndexAttributeExtractor {
     }
 }
 
-pub struct AttributeIteratorImpl<'a, Snapshot: ReadableSnapshot, AttributeExtractor: ExtractAttributeFromKey> {
-    snapshot: Option<&'a Snapshot>,
-    type_manager: Option<&'a TypeManager>,
+pub struct AttributeIteratorImpl<AttributeExtractor: KeyAttributeExtractor> {
+    independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
     attributes_iterator: Option<SnapshotRangeIterator>,
     has_reverse_iterator: Option<SnapshotRangeIterator>,
     state: State<ConceptReadError>,
     key_interpreter: PhantomData<AttributeExtractor>,
 }
 
-pub type AttributeIterator<'a, Snapshot> = AttributeIteratorImpl<'a, Snapshot, StandardAttributeExtractor>;
-pub type StructIndexToAttributeIterator<'a, Snapshot> =
-    AttributeIteratorImpl<'a, Snapshot, StructIndexAttributeExtractor>;
+pub type AttributeIterator = AttributeIteratorImpl<StandardAttributeExtractor>;
+pub type StructIndexToAttributeIterator = AttributeIteratorImpl<StructIndexAttributeExtractor>;
 
-impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>
-    AttributeIteratorImpl<'a, Snapshot, KeyInterpreter>
-{
+impl<KeyExtractor: KeyAttributeExtractor> AttributeIteratorImpl<KeyExtractor> {
     pub(crate) fn new(
         attributes_iterator: SnapshotRangeIterator,
         has_reverse_iterator: SnapshotRangeIterator,
-        snapshot: &'a Snapshot,
-        type_manager: &'a TypeManager,
+        independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
     ) -> Self {
         Self {
-            snapshot: Some(snapshot),
-            type_manager: Some(type_manager),
+            independent_attribute_types,
             attributes_iterator: Some(attributes_iterator),
             has_reverse_iterator: Some(has_reverse_iterator),
             state: State::Init,
@@ -233,8 +239,7 @@ impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>
 
     pub(crate) fn new_empty() -> Self {
         Self {
-            snapshot: None,
-            type_manager: None,
+            independent_attribute_types: Arc::new(HashSet::new()),
             attributes_iterator: None,
             has_reverse_iterator: None,
             state: State::Done,
@@ -245,16 +250,7 @@ impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>
     pub fn peek(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
         self.iter_peek().map(|result| {
             result.map(|(storage_key, _value_bytes)| {
-                Attribute::new(KeyInterpreter::storage_key_to_attribute_vertex(StorageKey::Reference(storage_key)))
-            })
-        })
-    }
-
-    #[allow(clippy::should_implement_trait)]
-    pub fn next(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
-        self.iter_next().map(|result| {
-            result.map(|(storage_key, _value_bytes)| {
-                Attribute::new(KeyInterpreter::storage_key_to_attribute_vertex(storage_key))
+                Attribute::new(KeyExtractor::storage_key_to_attribute_vertex(StorageKey::Reference(storage_key)))
             })
         })
     }
@@ -315,25 +311,23 @@ impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>
             match self.attributes_iterator.as_mut().unwrap().peek() {
                 None => self.state = State::Done,
                 Some(Ok((key, _))) => {
-                    let attribute_vertex = KeyInterpreter::storage_key_to_attribute_vertex(StorageKey::Reference(key));
-                    let independent = Attribute::new(attribute_vertex.as_reference())
-                        .type_()
-                        .is_independent(self.snapshot.unwrap(), self.type_manager.unwrap());
-                    match independent {
-                        Ok(true) => self.state = State::ItemReady,
-                        Ok(false) => {
-                            match Self::has_owner(self.has_reverse_iterator.as_mut().unwrap(), attribute_vertex) {
-                                Ok(has_owner) => {
-                                    if has_owner {
-                                        self.state = State::ItemReady
-                                    } else {
-                                        advance_attribute = true
-                                    }
+                    let attribute_vertex = KeyExtractor::storage_key_to_attribute_vertex(StorageKey::Reference(key));
+                    let independent = self
+                        .independent_attribute_types
+                        .contains(&Attribute::new(attribute_vertex.as_reference()).type_());
+                    if independent {
+                        self.state = State::ItemReady;
+                    } else {
+                        match Self::has_owner(self.has_reverse_iterator.as_mut().unwrap(), attribute_vertex) {
+                            Ok(has_owner) => {
+                                if has_owner {
+                                    self.state = State::ItemReady
+                                } else {
+                                    advance_attribute = true
                                 }
-                                Err(err) => self.state = State::Error(err),
                             }
+                            Err(err) => self.state = State::Error(err),
                         }
-                        Err(err) => self.state = State::Error(err.clone()),
                     }
                 }
                 Some(Err(err)) => self.state = State::Error(ConceptReadError::SnapshotIterate { source: err.clone() }),
@@ -366,26 +360,16 @@ impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>
             }
         }
     }
+}
 
-    pub fn collect_cloned(mut self) -> Vec<Attribute<'static>> {
-        let mut vec = Vec::new();
-        loop {
-            let item = self.next();
-            if item.is_none() {
-                break;
-            }
-            let key = item.unwrap().unwrap().into_owned();
-            vec.push(key);
-        }
-        vec
-    }
-
-    pub fn count(mut self) -> usize {
-        let mut count = 0;
-        while self.next().is_some() {
-            count += 1;
-        }
-        count
+impl<KeyExtractor: KeyAttributeExtractor + 'static> LendingIterator for AttributeIteratorImpl<KeyExtractor> {
+    type Item<'a> = Result<Attribute<'a>, ConceptReadError>;
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.iter_next().map(|result| {
+            result.map(|(storage_key, _value_bytes)| {
+                Attribute::new(KeyExtractor::storage_key_to_attribute_vertex(storage_key))
+            })
+        })
     }
 }
 
@@ -412,5 +396,11 @@ impl<'a> Display for Attribute<'a> {
             self.type_().vertex().type_id_(),
             self.vertex.attribute_id()
         )
+    }
+}
+
+impl<'a> Hash for Attribute<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Hash::hash(&self.vertex, state)
     }
 }

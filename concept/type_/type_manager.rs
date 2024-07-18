@@ -21,7 +21,7 @@ use encoding::{
         type_::{
             edge::TypeEdgeEncoding,
             property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
-            vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
+            vertex::TypeVertexEncoding,
             vertex_generator::TypeVertexGenerator,
             Kind,
         },
@@ -56,7 +56,7 @@ use crate::{
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
         type_manager::{type_reader::TypeReader, validation::SchemaValidationError},
-        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        Capability, KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
     },
 };
 
@@ -622,8 +622,8 @@ impl TypeManager {
     ) -> Result<bool, ConceptReadError> {
         // TODO: it would be good if this doesn't require recomputation
         let mut max_card = 0;
-        let relates = relation_type.get_relates_declared(snapshot, self)?;
-        for relates in relates.iter() {
+        let relates = relation_type.get_relates(snapshot, self)?;
+        for (_, relates) in relates.iter() {
             let card = relates.get_cardinality(snapshot, self)?;
             match card.end() {
                 None => return Ok(false),
@@ -935,6 +935,27 @@ impl TypeManager {
             .next()
             .unwrap_or(interface_impl.get_default_cardinality(snapshot, self)?);
         Ok(card)
+    }
+
+
+    // Specialised APIs to simplify architectures
+
+    pub(crate) fn get_independent_attribute_types(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<Arc<HashSet<AttributeType<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(cache.get_independent_attribute_types())
+        } else {
+            let root_type = self.get_attribute_type(snapshot, &AttributeType::ROOT_KIND.root_label())?.unwrap();
+            let mut independent = HashSet::new();
+            for type_ in self.get_attribute_type_subtypes_transitive(snapshot, root_type)?.into_iter() {
+                if type_.is_independent(snapshot, self)? {
+                    independent.insert(type_.clone());
+                }
+            }
+            Ok(Arc::new(independent))
+        }
     }
 }
 

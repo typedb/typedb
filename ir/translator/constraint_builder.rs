@@ -135,7 +135,7 @@ impl<'cx, FunctionIndex: FunctionSignatureIndex> TypeQLConstraintBuilder<'cx, Fu
 
     fn register_typeql_var(&mut self, var: &typeql::Variable) -> Result<Variable, PatternDefinitionError> {
         match var {
-            typeql::Variable::Named(_, name) => self.constraints.get_or_declare_variable_named(name.as_str()),
+            typeql::Variable::Named(_, name) => self.constraints.get_or_declare_variable(name.as_str()),
             typeql::Variable::Anonymous(_) => self.constraints.create_anonymous_variable(),
         }
     }
@@ -190,7 +190,7 @@ impl<'cx, FunctionIndex: FunctionSignatureIndex> TypeQLConstraintBuilder<'cx, Fu
             typeql::statement::thing::HasValue::Expression(_) => todo!(),
             typeql::statement::thing::HasValue::Comparison(_) => todo!(),
         };
-        let attribute = self.constraints.get_or_declare_variable_named(attr.name().unwrap())?;
+        let attribute = self.constraints.get_or_declare_variable(attr.name().unwrap())?;
         self.constraints.add_has(owner, attribute)?;
         if let Some(type_) = &has.type_ {
             let attribute_type = self.register_typeql_type_var_any(type_)?;

@@ -36,8 +36,6 @@ impl<'a> DefinitionKey<'a> {
     pub(crate) const RANGE_DEFINITION_ID: Range<usize> =
         Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + DefinitionID::LENGTH;
 
-    pub(crate) const LABEL_KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
-
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         Self { bytes }

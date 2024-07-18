@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, fmt::Debug};
+use std::{
+    collections::BTreeMap,
+    fmt::{Debug, Display, Formatter},
+};
 
 use bytes::Bytes;
 use encoding::{
@@ -16,7 +19,6 @@ use encoding::{
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
-    key_range::KeyRange,
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
@@ -138,14 +140,23 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
 
     fn into_owned_object(self) -> Object<'static>;
 
-    fn has_attribute(
+    fn has_attribute_with_value(
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<bool, ConceptReadError> {
-        thing_manager.has_attribute(snapshot, self, attribute_type, value)
+        thing_manager.has_attribute_with_value(snapshot, self, attribute_type, value)
+    }
+
+    fn has_attribute(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        attribute: Attribute<'_>,
+    ) -> Result<bool, ConceptReadError> {
+        thing_manager.has_attribute(snapshot, self, attribute)
     }
 
     fn get_has_unordered<'m>(
@@ -225,9 +236,10 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
             .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
             .count();
         if !cardinality.value_valid(count as u64 + 1) {
-            return Err(ConceptWriteError::MultipleKeys {
+            return Err(ConceptWriteError::CardinalityViolation {
                 owner: self.clone().into_owned_object(),
-                key_type: owns.attribute(),
+                attribute_type: owns.attribute(),
+                cardinality,
             });
         }
 
@@ -391,6 +403,15 @@ impl<'a> ObjectAPI<'a> for Object<'a> {
 
 impl Hkt for Object<'static> {
     type HktSelf<'a> = Object<'a>;
+}
+
+impl<'a> Display for Object<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Object::Entity(entity) => Display::fmt(entity, f),
+            Object::Relation(relation) => Display::fmt(relation, f),
+        }
+    }
 }
 
 fn storage_key_to_object(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> Object<'_> {

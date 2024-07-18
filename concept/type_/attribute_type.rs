@@ -30,7 +30,6 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
-        entity_type::EntityType,
         object_type::ObjectType,
         owns::Owns,
         type_manager::TypeManager,
@@ -147,7 +146,7 @@ impl<'a> AttributeType<'a> {
     ) -> Result<Option<ValueType>, ConceptReadError> {
         type_manager
             .get_attribute_type_value_type(snapshot, self.clone().into_owned())
-            .map(|value_type_opt| value_type_opt.map(|(value_type, source)| value_type))
+            .map(|value_type_opt| value_type_opt.map(|(value_type, _)| value_type))
     }
 
     pub fn set_value_type(

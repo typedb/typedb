@@ -8,7 +8,7 @@ use std::{
     borrow::Cow,
     cmp::Ordering,
     fmt::{Display, Formatter},
-    hash::Hash,
+    hash::{Hash, Hasher},
 };
 
 use bytes::byte_array::ByteArray;
@@ -59,6 +59,23 @@ impl<'a> PartialOrd for Value<'a> {
             }
             (Self::String(self_string), Self::String(other_string)) => self_string.partial_cmp(other_string),
             _ => None,
+        }
+    }
+}
+
+impl<'a> Hash for Value<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Value::Boolean(value) => Hash::hash(value, state),
+            Value::Long(value) => Hash::hash(value, state),
+            Value::Double(value) => Hash::hash(&self.encode_double(), state), // same bitwise representation as storage of values
+            Value::Decimal(value) => Hash::hash(value, state),
+            Value::Date(value) => Hash::hash(value, state),
+            Value::DateTime(value) => Hash::hash(value, state),
+            Value::DateTimeTZ(value) => Hash::hash(value, state),
+            Value::Duration(value) => Hash::hash(value, state),
+            Value::String(value) => Hash::hash(value, state),
+            Value::Struct(value) => Hash::hash(value, state),
         }
     }
 }

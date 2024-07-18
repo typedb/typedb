@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::{Display, Formatter};
+
 use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
 
 use crate::thing::{attribute::Attribute, object::Object};
@@ -35,5 +37,11 @@ impl<'a> Has<'a> {
             Has::Edge(edge) => Attribute::new(edge.to()),
             Has::EdgeReverse(edge_reverse) => Attribute::new(edge_reverse.from()),
         }
+    }
+}
+
+impl<'a> Display for Has<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} has {}", self.owner(), self.attribute())
     }
 }

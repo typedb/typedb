@@ -92,8 +92,12 @@ async fn object_is_deleted(
     let object = &context.objects[&var.name].as_ref().unwrap().object;
     object_root.assert(&object.type_());
     let object_type = object.type_();
-    let objects =
-        with_read_tx!(context, |tx| { tx.thing_manager.get_objects_in(&tx.snapshot, object_type).collect_cloned() });
+    let objects: Vec<Object<'static>> = with_read_tx!(context, |tx| {
+        tx.thing_manager
+            .get_objects_in(&tx.snapshot, object_type)
+            .map_static(|result| result.unwrap().clone().into_owned())
+            .collect()
+    });
     check_boolean!(is_deleted, !objects.contains(object));
 }
 
@@ -171,7 +175,11 @@ async fn object_instances_contain(
     object_root.assert(&object.type_());
     with_read_tx!(context, |tx| {
         let object_type = tx.type_manager.get_object_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        let actuals = tx.thing_manager.get_objects_in(&tx.snapshot, object_type).collect_cloned();
+        let actuals: Vec<Object<'static>> = tx
+            .thing_manager
+            .get_objects_in(&tx.snapshot, object_type)
+            .map_static(|result| result.unwrap().clone().into_owned())
+            .collect();
         containment.check(std::slice::from_ref(object), &actuals);
     });
 }

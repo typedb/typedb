@@ -18,7 +18,8 @@ use encoding::{
 use storage::{sequence_number::SequenceNumber, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{
-    attribute_type::AttributeType,
+    annotation::{Annotation, AnnotationIndependent},
+    attribute_type::{AttributeType, AttributeTypeAnnotation},
     entity_type::EntityType,
     object_type::ObjectType,
     owns::{Owns, OwnsAnnotation},
@@ -59,6 +60,9 @@ pub struct TypeCache {
     role_types_index_label: HashMap<Label<'static>, RoleType<'static>>,
     attribute_types_index_label: HashMap<Label<'static>, AttributeType<'static>>,
     struct_definition_index_by_name: HashMap<String, DefinitionKey<'static>>,
+
+    // specific caches to simplify architectures
+    independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
 }
 
 selection::impl_cache_getter!(EntityTypeCache, EntityType, entity_types);
@@ -100,6 +104,22 @@ impl TypeCache {
         let attribute_types_index_label = Self::build_label_to_type_index(&attribute_type_caches);
         let struct_definition_index_by_name = Self::build_name_to_struct_definition_index(&struct_definition_caches);
 
+        let independent_attribute_types = attribute_type_caches
+            .iter()
+            .filter_map(|cache| cache.as_ref())
+            .filter_map(|cache| {
+                if cache
+                    .common_type_cache()
+                    .annotations
+                    .contains_key(&AttributeTypeAnnotation::Independent(AnnotationIndependent {}))
+                {
+                    Some(cache.common_type_cache.type_.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
         Ok(TypeCache {
             open_sequence_number,
             entity_types: entity_type_caches,
@@ -116,6 +136,8 @@ impl TypeCache {
             role_types_index_label,
             attribute_types_index_label,
             struct_definition_index_by_name,
+
+            independent_attribute_types: Arc::new(independent_attribute_types),
         })
     }
 
@@ -410,6 +432,10 @@ impl TypeCache {
 
     pub(crate) fn get_struct_definition(&self, definition_key: DefinitionKey<'static>) -> &StructDefinition {
         &self.struct_definitions[definition_key.definition_id().as_uint() as usize].as_ref().unwrap().definition
+    }
+
+    pub(crate) fn get_independent_attribute_types(&self) -> Arc<HashSet<AttributeType<'static>>> {
+        self.independent_attribute_types.clone()
     }
 }
 

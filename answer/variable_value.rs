@@ -14,14 +14,46 @@ use encoding::value::value::Value;
 
 use crate::{Thing, Type};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum VariableValue<'a> {
     Empty,
     Type(Type),
     Thing(Thing<'a>),
     Value(Value<'a>),
-    ThingList(Arc<[Thing<'a>]>),
-    ValueList(Arc<[Value<'a>]>),
+    ThingList(Arc<[Thing<'static>]>),
+    ValueList(Arc<[Value<'static>]>),
+}
+
+impl<'a> VariableValue<'a> {
+    pub fn as_thing(&self) -> &Thing<'a> {
+        match self {
+            VariableValue::Thing(thing) => thing,
+            _ => panic!("VariableValue is not a THing"),
+        }
+    }
+
+    pub fn into_owned(self) -> VariableValue<'static> {
+        match self {
+            VariableValue::Empty => VariableValue::Empty,
+            VariableValue::Type(type_) => VariableValue::Type(type_),
+            VariableValue::Thing(thing) => VariableValue::Thing(thing.into_owned()),
+            VariableValue::Value(value) => VariableValue::Value(value.into_owned()),
+            VariableValue::ThingList(list) => VariableValue::ThingList(list),
+            VariableValue::ValueList(list) => VariableValue::ValueList(list),
+        }
+    }
+
+    pub fn next_possible(&self) -> VariableValue<'static> {
+        match self {
+            VariableValue::Empty => unreachable!("No next value for an Empty value."),
+            VariableValue::Type(type_) => VariableValue::Type(type_.next_possible()),
+            VariableValue::Thing(thing) => VariableValue::Thing(thing.next_possible()),
+            VariableValue::Value(_) => unreachable!("Value instances don't have a well defined order."),
+            VariableValue::ThingList(_) | VariableValue::ValueList(_) => {
+                unreachable!("Lists have no well defined order.")
+            }
+        }
+    }
 }
 
 impl<'a> PartialOrd for VariableValue<'a> {

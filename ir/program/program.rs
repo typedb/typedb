@@ -100,6 +100,14 @@ impl AnnotatedProgram {
         Self { entry, entry_annotations, local_functions, schema_functions }
     }
 
+    pub fn get_entry(&self) -> &FunctionalBlock {
+        &self.entry
+    }
+
+    pub fn get_entry_annotations(&self) -> &TypeAnnotations {
+        &self.entry_annotations
+    }
+
     fn get_function_ir(&self, function_id: FunctionID) -> Option<&FunctionIR> {
         match function_id {
             FunctionID::Schema(definition_key) => self.schema_functions.get_function_ir(definition_key),

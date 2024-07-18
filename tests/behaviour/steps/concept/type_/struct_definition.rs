@@ -6,10 +6,9 @@
 
 use std::ascii::escape_default;
 
-use concept::type_::{object_type::ObjectType, PlayerAPI, TypeAPI};
+use concept::type_::{object_type::ObjectType, PlayerAPI};
 use cucumber::gherkin::Step;
 use encoding::graph::type_::Kind;
-use itertools::Itertools;
 use macro_rules_attribute::apply;
 
 use crate::{

@@ -24,7 +24,7 @@ use ir::{
 };
 
 #[test]
-fn build_program_modifiers() {
+fn build_modifiers() {
     let mut builder = FunctionalBlock::builder();
     let mut conjunction = builder.conjunction_mut();
 
@@ -48,7 +48,7 @@ fn build_program_modifiers() {
 }
 
 #[test]
-fn build_invalid_program_modifiers() {
+fn build_invalid_modifiers() {
     let mut builder = FunctionalBlock::builder();
     let mut conjunction = builder.conjunction_mut();
 

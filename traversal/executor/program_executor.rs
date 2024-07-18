@@ -6,6 +6,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
+use answer::variable::Variable;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::inference::type_inference::TypeAnnotations;
@@ -13,10 +14,7 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    executor::{
-        function_executor::FunctionExecutor,
-        pattern_executor::{ImmutableRow, PatternExecutor, Row},
-    },
+    executor::{batch::ImmutableRow, function_executor::FunctionExecutor, pattern_executor::PatternExecutor, Position},
     planner::program_plan::ProgramPlan,
 };
 
@@ -38,6 +36,10 @@ impl ProgramExecutor {
         // TODO: functions
 
         Ok(Self { entry: entry, functions: HashMap::new() })
+    }
+
+    pub fn entry_variable_positions(&self) -> &HashMap<Variable, Position> {
+        self.entry.variable_positions()
     }
 
     pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(

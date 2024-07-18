@@ -26,7 +26,7 @@ pub fn load_commit_data_from(
 
     let mut recovered_commits = BTreeMap::new();
 
-    let mut records =
+    let records =
         durability_client.iter_from(start).map_err(|error| DurabilityClientRead { source: error })?.peekable();
     let mut first_record = true;
 

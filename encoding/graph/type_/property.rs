@@ -34,7 +34,6 @@ impl<'a> TypeVertexProperty<'a> {
 
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeVertex::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
-    const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeVertex::LENGTH;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
@@ -152,7 +151,6 @@ impl<'a> TypeEdgeProperty<'a> {
 
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeEdge::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
-    const LENGTH_PREFIX_EDGE: usize = PrefixID::LENGTH + TypeEdge::LENGTH;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);

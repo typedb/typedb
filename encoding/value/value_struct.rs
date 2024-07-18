@@ -10,7 +10,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, ops::Range, sync::Arc};
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+    ops::Range,
+    sync::Arc,
+};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use primitive::either::Either;
@@ -137,21 +142,24 @@ impl<'a> StructValue<'a> {
         for (idx, value) in fields.iter() {
             path.push(*idx);
             if let Value::Struct(struct_val) = value {
-                Self::create_index_entries_recursively(
-                    snapshot,
-                    hasher.clone(),
-                    attribute,
-                    struct_val.fields(),
-                    path,
-                    acc,
-                )?;
+                Self::create_index_entries_recursively(snapshot, hasher, attribute, struct_val.fields(), path, acc)?;
             } else {
-                acc.push(StructIndexEntry::build(snapshot, hasher.clone(), path, value, attribute)?);
+                acc.push(StructIndexEntry::build(snapshot, hasher, path, value, attribute)?);
             }
             let popped = path.pop().unwrap();
             debug_assert_eq!(*idx, popped);
         }
         Ok(())
+    }
+}
+
+impl<'a> Hash for StructValue<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Hash::hash(&self.definition_key, state);
+        for (id, value) in self.fields.iter() {
+            Hash::hash(id, state);
+            Hash::hash(value, state);
+        }
     }
 }
 
@@ -192,16 +200,6 @@ impl StructIndexEntry<'static> {
         Self::ENCODING_PREFIX_RANGE.end..{ Self::ENCODING_PREFIX_RANGE.end + 1 };
     const ENCODING_TYPEID_RANGE: Range<usize> =
         Self::ENCODING_VALUE_TYPE_RANGE.end..{ Self::ENCODING_VALUE_TYPE_RANGE.end + TypeID::LENGTH };
-
-    const ENCODING_VALUE_RANGE_SHORT: Range<usize> =
-        Self::ENCODING_TYPEID_RANGE.end..{ Self::ENCODING_TYPEID_RANGE.end + AttributeIDLength::Short.length() };
-    const ENCODING_STRUCT_ATTRIBUTE_ID_RANGE_LONG: Range<usize> =
-        Self::ENCODING_VALUE_RANGE_LONG.end..{ Self::ENCODING_VALUE_RANGE_LONG.end + StructAttributeID::LENGTH };
-
-    const ENCODING_VALUE_RANGE_LONG: Range<usize> =
-        Self::ENCODING_TYPEID_RANGE.end..{ Self::ENCODING_TYPEID_RANGE.end + AttributeIDLength::Long.length() };
-    const ENCODING_STRUCT_ATTRIBUTE_ID_RANGE_SHORT: Range<usize> =
-        Self::ENCODING_VALUE_RANGE_SHORT.end..{ Self::ENCODING_VALUE_RANGE_SHORT.end + StructAttributeID::LENGTH };
 
     pub fn build<'b, 'c>(
         snapshot: &impl ReadableSnapshot,
@@ -268,7 +266,7 @@ impl StructIndexEntry<'static> {
                 StructAttributeID::LENGTH, // ID of the attribute being indexed
         );
 
-        buf.extend_from_slice(&Prefix::IndexValueToStruct.prefix_id().bytes);
+        buf.extend_from_slice(&Self::PREFIX.prefix_id().bytes);
         buf.extend_from_slice(&value.value_type().category().to_bytes());
         buf.extend_from_slice(&attribute_type_id.bytes());
         for p in path_to_field {
@@ -297,9 +295,6 @@ impl<'a> StructIndexEntry<'a> {
     const STRING_FIELD_LENGTH: usize = 17;
     const STRING_FIELD_HASHID_LENGTH: usize = 9;
     const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = { Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_HASHID_LENGTH };
-    const STRING_FIELD_HASHED_FLAG: u8 = 0b1000_0000;
-    const STRING_FIELD_HASHED_FLAG_INDEX: usize = Self::STRING_FIELD_HASHED_HASH_LENGTH;
-    const STRING_FIELD_HASHED_HASH_LENGTH: usize = Self::STRING_FIELD_HASHID_LENGTH - 1;
     const STRING_FIELD_INLINE_LENGTH: usize = { Self::STRING_FIELD_LENGTH - 1 };
 
     fn encode_string_into<const INLINE_SIZE: usize>(

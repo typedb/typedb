@@ -103,14 +103,14 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         self.seed_vertex_annotations_from_type_and_function_return(tig)?;
         let mut some_vertex_was_directly_annotated = true;
         while some_vertex_was_directly_annotated {
-            let mut something_changed = true;
-            while something_changed {
-                something_changed = self
+            let mut changed = true;
+            while changed {
+                changed = self
                     .propagate_vertex_annotations(tig)
                     .map_err(|source| TypeInferenceError::ConceptRead { source })?;
             }
             some_vertex_was_directly_annotated = self
-                .annotate_unannotated_vertex(tig, context)
+                .annotate_some_unannotated_vertex(tig, context)
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?;
         }
         self.seed_edges(tig).map_err(|source| TypeInferenceError::ConceptRead { source })?;
@@ -211,7 +211,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         context.get_variable_scopes().filter(move |(v, scope)| **scope == conjunction_scope_id).map(|(v, _)| *v)
     }
 
-    fn annotate_unannotated_vertex<'graph>(
+    fn annotate_some_unannotated_vertex<'graph>(
         &self,
         tig: &mut TypeInferenceGraph<'graph>,
         context: &BlockContext,
@@ -227,7 +227,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             let mut any = false;
             for disj in &mut tig.nested_disjunctions {
                 for nested_tig in &mut disj.disjunction {
-                    any |= self.annotate_unannotated_vertex(nested_tig, context)?;
+                    any |= self.annotate_some_unannotated_vertex(nested_tig, context)?;
                 }
             }
             Ok(any)
@@ -598,6 +598,7 @@ trait BinaryConstraint {
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError>;
+
     fn annotate_right_to_left_for_type(
         &self,
         seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
@@ -790,7 +791,7 @@ impl BinaryConstraint for Sub<Variable> {
                 attribute
                     .get_supertypes(seeder.snapshot, seeder.type_manager)?
                     .iter()
-                    .map(|subtype| TypeAnnotation::Attribute(subtype.clone().into_owned()))
+                    .map(|subtype| subtype.clone().into_owned().into())
                     .for_each(|subtype| {
                         collector.insert(subtype);
                     });
@@ -1070,12 +1071,12 @@ pub mod tests {
     use crate::{
         inference::{
             pattern_type_inference::{tests::expected_edge, TypeInferenceGraph},
-            seed_types::TypeSeeder,
             tests::{
                 managers,
                 schema_consts::{setup_types, LABEL_CAT, LABEL_NAME},
                 setup_storage,
             },
+            type_seeder::TypeSeeder,
         },
         pattern::constraint::IsaKind,
         program::{block::FunctionalBlock, program::CompiledSchemaFunctions},

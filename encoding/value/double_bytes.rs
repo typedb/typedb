@@ -7,7 +7,7 @@
 use super::primitive_encoding::decode_u64;
 use crate::{graph::thing::vertex_attribute::AttributeIDLength, value::primitive_encoding::encode_u64};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct DoubleBytes {
     bytes: [u8; Self::LENGTH],
 }
