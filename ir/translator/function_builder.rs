@@ -71,7 +71,7 @@ impl TypeQLFunctionBuilder {
         FunctionSignature::new(function_id.clone().into(), args, returns, return_is_stream)
     }
 
-    fn type_any_to_category_and_optionality(type_any: &typeql::TypeAny) -> (VariableCategory, VariableOptionality) {
+    fn type_any_to_category_and_optionality(type_any: &TypeAny) -> (VariableCategory, VariableOptionality) {
         match type_any {
             TypeAny::Type(_) => (VariableCategory::Thing, VariableOptionality::Required),
             TypeAny::Optional(_) => (VariableCategory::Thing, VariableOptionality::Optional),

@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{collections::HashMap, iter::zip, sync::Arc};
+use std::{iter::zip, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use concept::type_::type_manager::TypeManager;
@@ -363,7 +363,7 @@ pub mod tests {
         use answer::Type as TypeAnnotation;
         use concept::type_::{
             annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation,
-            type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
+            type_manager::TypeManager, Ordering, OwnerAPI,
         };
         use encoding::value::{label::Label, value_type::ValueType};
         use storage::{

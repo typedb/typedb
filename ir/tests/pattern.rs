@@ -4,15 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-
 use ir::{
-    program::{
-        block::FunctionalBlock,
-        function_signature::{FunctionSignatureIndex, HashMapFunctionIndex},
-    },
-    translator::block_builder::TypeQLBuilder,
-    PatternDefinitionError,
+    program::function_signature::HashMapFunctionIndex, translator::block_builder::TypeQLBuilder, PatternDefinitionError,
 };
 use typeql::query::stage::Stage;
 

@@ -12,17 +12,13 @@ use ir::{
     inference::type_inference::{infer_types_for_functions, FunctionAnnotations},
     program::{
         function::FunctionIR,
-        function_signature::{FunctionIDTrait, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
+        function_signature::{FunctionIDTrait, FunctionSignature, HashMapFunctionIndex},
         program::{CompiledFunctionCache, Program, SchemaFunctionCache},
     },
 };
 use storage::{sequence_number::SequenceNumber, MVCCStorage};
 
-use crate::{
-    function::SchemaFunction,
-    function_manager::{FunctionReader, ReadThroughFunctionSignatureIndex},
-    FunctionManagerError,
-};
+use crate::{function::SchemaFunction, function_manager::FunctionReader, FunctionManagerError};
 
 pub struct FunctionCache {
     uncompiled: Box<[Option<SchemaFunction>]>,

@@ -312,7 +312,7 @@ impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
 #[cfg(test)]
 pub mod tests {
 
-    use std::collections::{BTreeMap, BTreeSet, HashMap};
+    use std::collections::{BTreeMap, BTreeSet};
 
     use answer::{variable::Variable, Type as TypeAnnotation};
     use itertools::Itertools;
@@ -332,11 +332,7 @@ pub mod tests {
             },
         },
         pattern::constraint::{Constraint, IsaKind},
-        program::{
-            block::FunctionalBlock,
-            function_signature::{FunctionSignatureIndex, HashMapFunctionIndex},
-            program::SchemaFunctionCache,
-        },
+        program::{block::FunctionalBlock, function_signature::HashMapFunctionIndex, program::SchemaFunctionCache},
     };
 
     pub(crate) fn expected_edge(

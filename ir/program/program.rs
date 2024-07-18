@@ -186,10 +186,7 @@ impl CompiledFunctionCache for LocalFunctionCache {
 
 #[cfg(test)]
 pub mod tests {
-    use std::{
-        collections::{HashMap, HashSet},
-        sync::Arc,
-    };
+    use std::{collections::HashSet, sync::Arc};
 
     use typeql::query::Pipeline;
 
@@ -202,7 +199,7 @@ pub mod tests {
         program::{
             function_signature::{FunctionID, HashMapFunctionIndex},
             program::{CompiledFunctionCache, Program, SchemaFunctionCache},
-            FunctionDefinitionError, ProgramDefinitionError,
+            ProgramDefinitionError,
         },
         PatternDefinitionError,
     };
