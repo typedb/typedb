@@ -66,7 +66,7 @@ impl Server {
                 }
                 Err(arc) => {
                     // failed to delete since it's in use - let's re-insert for now instead of losing the reference
-                    self.databases.insert(name.to_owned(), arc);
+                    self.databases.insert(name.as_ref().to_owned(), arc);
                     return Err(DatabaseDeleteError::InUse {})
                 }
             }
