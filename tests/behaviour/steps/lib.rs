@@ -89,7 +89,18 @@ impl Context {
     }
 
     async fn after_scenario(&mut self) -> Result<(), ()> {
+        if let Some(tx) = &self.active_transaction {
+            self.close_transaction()
+        }
         Ok(())
+    }
+
+    pub fn close_transaction(&mut self) {
+        match self.take_transaction().unwrap() {
+            ActiveTransaction::Read(tx) => tx.close(),
+            ActiveTransaction::Write(tx) => tx.close(),
+            ActiveTransaction::Schema(tx) => tx.close(),
+        }
     }
 
     pub fn server(&self) -> Option<&Arc<Mutex<Server>>> {

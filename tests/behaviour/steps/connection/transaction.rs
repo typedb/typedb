@@ -74,11 +74,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
 #[apply(generic_step)]
 #[step(expr = "transaction closes")]
 pub async fn transaction_closes(context: &mut Context) {
-    match context.take_transaction().unwrap() {
-        ActiveTransaction::Read(tx) => tx.close(),
-        ActiveTransaction::Write(tx) => tx.close(),
-        ActiveTransaction::Schema(tx) => tx.close(),
-    }
+    context.close_transaction()
 }
 
 #[apply(generic_step)]

@@ -29,8 +29,10 @@ pub async fn typedb_starts(context: &mut Context) {
     });
 
     context.server = Some(server.clone());
-    // if context.transaction().is_some() { // TODO: We probably need to ask the server for all transactions
-    //     transaction_closes(context).await;
+    // TODO: Remove after testing
+    // let names = context.server().unwrap().lock().unwrap().databases().keys().cloned().collect_vec();
+    // for name in names {
+    //     context.server().unwrap().lock().unwrap().delete_database(name).unwrap();
     // }
 }
 
