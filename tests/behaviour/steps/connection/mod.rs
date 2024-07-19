@@ -4,15 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cell::OnceCell;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::{
+    cell::OnceCell,
+    sync::{Arc, Mutex, OnceLock},
+};
+
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use server::typedb;
 use test_utils::{create_tmp_dir, TempDir};
 
-use crate::{generic_step, Context};
-use crate::connection::transaction::{transaction_closes, transaction_is_open};
+use crate::{
+    connection::transaction::{transaction_closes, transaction_is_open},
+    generic_step, Context,
+};
 
 mod database;
 mod transaction;

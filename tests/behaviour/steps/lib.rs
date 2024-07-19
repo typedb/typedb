@@ -7,20 +7,18 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{collections::HashMap, sync::Arc};
-use std::collections::HashSet;
-use std::ops::Deref;
-use std::sync::Mutex;
-
-use ::concept::{
-    thing::{attribute::Attribute, object::Object},
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+    sync::{Arc, Mutex},
 };
+
+use ::concept::thing::{attribute::Attribute, object::Object};
 use cucumber::{StatsWriter, World};
-use itertools::Itertools;
 use database::Database;
+use itertools::Itertools;
 use server::typedb;
 use storage::durability_client::WALClient;
-use test_utils::TempDir;
 
 mod assert;
 mod concept;

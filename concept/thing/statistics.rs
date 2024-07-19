@@ -336,12 +336,12 @@ impl Statistics {
 
     pub fn reset(&mut self, sequence_number: SequenceNumber) {
         self.sequence_number = sequence_number;
-        self.total_thing_count= 0;
-        self.total_entity_count= 0;
-        self.total_relation_count= 0;
-        self.total_attribute_count= 0;
-        self.total_role_count= 0;
-        self.total_has_count= 0;
+        self.total_thing_count = 0;
+        self.total_entity_count = 0;
+        self.total_relation_count = 0;
+        self.total_attribute_count = 0;
+        self.total_role_count = 0;
+        self.total_has_count = 0;
         self.entity_counts.clear();
         self.relation_counts.clear();
         self.attribute_counts.clear();

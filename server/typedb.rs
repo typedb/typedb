@@ -84,7 +84,7 @@ impl Server {
                     let reset_result = unwrapped.reset();
                     self.databases.insert(name.as_ref().to_owned(), Arc::new(unwrapped));
                     reset_result
-                },
+                }
                 Err(arc) => {
                     // failed to reset since it's in use - let's re-insert for now instead of losing the reference
                     self.databases.insert(name.as_ref().to_owned(), arc);
@@ -101,7 +101,7 @@ impl Server {
             Err(_) => {
                 self.delete_database(name.as_ref())?;
                 self.create_database(name)
-            },
+            }
         })
     }
 
