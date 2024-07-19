@@ -16,8 +16,8 @@ rust_test(
 )
 
 rust_test(
-    name = "test_datavalidation",
-    srcs = ["data-validation.rs"],
+    name = "test_data_validation",
+    srcs = ["data_validation"],
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
