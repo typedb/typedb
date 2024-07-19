@@ -18,12 +18,12 @@ use crate::{
 #[apply(generic_step)]
 #[step(expr = "connection open {word} transaction for database: {word}")]
 pub async fn connection_open_transaction(context: &mut Context, tx_type: String, db_name: String) {
-    let dbs =context.databases();
-    let db = dbs.get(&db_name).unwrap();
+    let databases = context.databases();
+    let database = databases.get(&db_name).unwrap();
     let tx = match tx_type.as_str() {
-        "read" => ActiveTransaction::Read(TransactionRead::open(db.clone())),
-        "write" => ActiveTransaction::Write(TransactionWrite::open(db.clone())),
-        "schema" => ActiveTransaction::Schema(TransactionSchema::open(db.clone())),
+        "read" => ActiveTransaction::Read(TransactionRead::open(database.clone())),
+        "write" => ActiveTransaction::Write(TransactionWrite::open(database.clone())),
+        "schema" => ActiveTransaction::Schema(TransactionSchema::open(database.clone())),
         _ => unreachable!("Unrecognised transaction type"),
     };
     context.set_transaction(tx);

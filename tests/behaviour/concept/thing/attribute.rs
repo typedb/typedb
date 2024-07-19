@@ -17,5 +17,5 @@ async fn test() {
     #[cfg(not(feature = "bazel"))]
     let path = "bazel-typedb/external/vaticle_typedb_behaviour/concept/thing/attribute.feature";
 
-    assert!(Context::test(path).await);
+    assert!(Context::test(path, true).await);
 }
