@@ -29,11 +29,6 @@ pub async fn typedb_starts(context: &mut Context) {
     });
 
     context.server = Some(server.clone());
-    // TODO: Remove after testing
-    // let names = context.server().unwrap().lock().unwrap().databases().keys().cloned().collect_vec();
-    // for name in names {
-    //     context.server().unwrap().lock().unwrap().delete_database(name).unwrap();
-    // }
 }
 
 #[apply(generic_step)]

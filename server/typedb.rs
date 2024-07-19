@@ -81,20 +81,17 @@ impl Server {
         let result = if let Some(db) = db {
             match Arc::try_unwrap(db) {
                 Ok(mut unwrapped) => {
-                    println!("TRYING RESET!"); // TODO: Remove prints
                     let reset_result = unwrapped.reset();
                     self.databases.insert(name.as_ref().to_owned(), Arc::new(unwrapped));
                     reset_result
                 },
                 Err(arc) => {
-                    println!("BAD UNWRAP!"); // TODO: Remove prints
                     // failed to reset since it's in use - let's re-insert for now instead of losing the reference
                     self.databases.insert(name.as_ref().to_owned(), arc);
                     Err(DatabaseResetError::InUse {})
                 }
             }
         } else {
-            println!("NO DB, CREATE!"); // TODO: Remove prints
             self.create_database(name);
             return Ok(());
         };
