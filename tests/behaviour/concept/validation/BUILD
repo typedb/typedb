@@ -7,7 +7,7 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 
 rust_test(
     name = "test_function",
-    srcs = ["function"],
+    srcs = ["function.rs"],
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
@@ -17,7 +17,7 @@ rust_test(
 
 rust_test(
     name = "test_data_validation",
-    srcs = ["data_validation"],
+    srcs = ["data_validation.rs"],
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
