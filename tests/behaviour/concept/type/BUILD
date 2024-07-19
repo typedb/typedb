@@ -57,6 +57,17 @@ rust_test(
     data = ["@vaticle_typedb_behaviour//concept/type:owns.feature"],
 )
 
+rust_test(
+    name = "test_owns_annotations",
+    srcs = ["owns-annotations.rs"],
+    timeout = "eternal",
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@vaticle_typedb_behaviour//concept/type:owns-annotations.feature"],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
