@@ -333,6 +333,25 @@ impl Statistics {
             *player_2_to_1_index_count = player_2_to_1_index_count.checked_add_signed(delta).unwrap();
         }
     }
+
+    pub fn reset(&mut self, sequence_number: SequenceNumber) {
+        self.sequence_number = sequence_number;
+        self.total_thing_count= 0;
+        self.total_entity_count= 0;
+        self.total_relation_count= 0;
+        self.total_attribute_count= 0;
+        self.total_role_count= 0;
+        self.total_has_count= 0;
+        self.entity_counts.clear();
+        self.relation_counts.clear();
+        self.attribute_counts.clear();
+        self.role_counts.clear();
+        self.has_attribute_counts.clear();
+        self.attribute_owner_counts.clear();
+        self.role_player_counts.clear();
+        self.relation_role_counts.clear();
+        self.player_index_counts.clear();
+    }
 }
 
 fn write_to_delta<D>(

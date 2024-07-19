@@ -96,9 +96,9 @@ impl Database<WALClient> {
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
+        let statistics = Statistics::new(storage.read_watermark());
         TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
             .map_err(|err| SchemaInitialise { source: err })?;
-        let statistics = Statistics::new(storage.read_watermark());
 
         Ok(Database::<WALClient> {
             name: name.to_owned(),
@@ -190,7 +190,7 @@ impl Database<WALClient> {
             SchemaInitialise
         };
 
-        let _schema_read_lock = self.schema.write().unwrap();
+        let mut locked_schema = self.schema.write().unwrap();
         let _schema_write_lock = self.schema_txn_lock.write().unwrap();
 
         match Arc::get_mut(&mut self.storage) {
@@ -219,8 +219,13 @@ impl Database<WALClient> {
             }
             Some(thing_vertex_generator) => thing_vertex_generator.reset(),
         }
+
+        let mut schema = Arc::get_mut(&mut *locked_schema).unwrap();
+        schema.thing_statistics.reset(self.storage.read_watermark());
+
         TypeManager::initialise_types(self.storage.clone(), self.definition_key_generator.clone(), self.type_vertex_generator.clone())
             .map_err(|err| SchemaInitialise { source: err })?;
+
         Ok(())
     }
 }
