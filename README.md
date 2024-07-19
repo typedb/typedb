@@ -11,7 +11,9 @@
 
 # Introducing TypeDB
 
-**TypeDB** is a fast and versatile database featuring a new kind of high-level, declarative query language, **TypeQL**, that significantly simplifies the management of complex data and logic. It is engineered to meet the performance, maintainability, safety, and scalability requirements of modern applications, and is specifically optimized for cloud-based development.
+**TypeDB** is a next-gen database with a modern programming paradigm that lets you build data applications faster, safer, and more elegantly. Its intuitive and powerful data model unifies the strengths of relational, document and graph databases without their shortcomings. **TypeQL**, its groundbreaking query language, is declarative, functional, and strongly-typed, drastically simplifying data handling and logic. So now, even the most nested and interconnected datasets can be managed with ease. With TypeDB, we’ve reinvented the database for the modern programming era.
+
+## Getting started
 
 - Get started by [installing TypeDB](https://typedb.com/docs/home/install/overview).
 - Explore the basics of TypeDB in our [Quickstart](https://typedb.com/docs/home/quickstart) and [Crash Course](https://typedb.com/docs/home/crash-course).
@@ -21,30 +23,15 @@
 
 > **IMPORTANT NOTE:** TypeDB & TypeQL are in the process of being rewritten in [Rust](https://www.rust-lang.org). There will be significant refinement to the language, and minor breaks in backwards compatibility. Learn about the changes on our [roadmap blog post](https://typedb.com/blog/typedb-3-roadmap). The biggest change to TypeDB 3.0 will be our storage data structure and architecture that significantly boosts performance. We’re aiming to release 3.0 in the summer this year, along with preliminary benchmarks of TypeDB.
 
-## Polymorphic databases
+##  Why TypeDB?
 
-###  Why TypeDB was built
-
-Data frequently exhibits polymorphic features in the form of inheritance hierarchies and interface dependencies. TypeDB was crafted to solve the inability of current database paradigms to natively express these polymorphic features.
-
-- Relational schemas have [no native capability for modeling polymorphic data](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database).
-- Unstructured databases eliminate the schemas entirely, but this [prevents declarative data retrieval](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database).
-- [ORMs work around the fundamental problem](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database) by trading off performance.
+* TypeDB was crafted to natively express and combine diverse data features, allowing users to build advanced data models from a set of simple and intuitive building blocks.
+* TypeDB's type system provides safety and flexibility at the same time, which makes both prototyping and building performant, production-ready data applications fast, elegant, and _enjoyable_.
+* With TypeDB, and its query language TypeQL, we envision databases catching up with modern typed programming languages, allowing users to write clear, intuitive, and easy to maintain code.
+* TypeDB comes with a mature ecosystem include language drivers and a graphical user interface: **TypeDB Studio!**
 
 
-### Providing full support for polymorphism
-
-<!-- Polymorphism in programming languages and data modeling comes in the form of [interface](https://typedb.com/philosophy#what-defines-a-polymorphic-database), [inheritance](https://typedb.com/philosophy#what-defines-a-polymorphic-database), and [parametric polymorphism](https://typedb.com/philosophy#what-defines-a-polymorphic-database).  -->
-
-In order to fully support polymorphism, a database needs to implement three key components:
-
-- Support for [**polymorphic** **schemas**](https://typedb.com/features#conceptual-modeling) that can express inheritance hierarchies and interface implementations.
-- Implementation of a fully [**variablizable** **query language**](https://typedb.com/features#polymorphic-queries) to support powerful [parametric](https://typedb.com/philosophy#what-defines-a-polymorphic-database) database operations.
-- Integration of an [**inference engine**](https://typedb.com/features#strong-type-system) to interpret variables in the semantic context given by the schema.
-
-
-
-## The TypeDB database
+## Database Fundamentals
 
 ### The schema
 
