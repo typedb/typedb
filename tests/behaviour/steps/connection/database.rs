@@ -33,7 +33,7 @@ async fn connection_create_databases_in_parallel(context: &mut Context, step: &S
 #[apply(generic_step)]
 #[step(expr = "connection reset database: {word}")]
 pub async fn connection_reset_database(context: &mut Context, name: String) {
-    context.server_mut().unwrap().lock().unwrap().reset_else_create_database(name).unwrap();
+    context.server_mut().unwrap().lock().unwrap().reset_else_recreate_database(name).unwrap();
 }
 
 #[apply(generic_step)]
