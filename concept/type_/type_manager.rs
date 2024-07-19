@@ -51,6 +51,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::thing::thing_manager::ThingManager;
 
 pub mod type_cache;
 pub mod type_reader;
@@ -930,7 +931,7 @@ impl TypeManager {
 //      (If this feels like unnecessary indirection, feel free to refactor. I just need structure)
 //  Avoid cross-calling methods if it violates the above.
 impl TypeManager {
-    pub fn finalise(self, snapshot: &impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
+    pub fn validate(&self, snapshot: &impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
         let type_errors = CommitTimeValidation::validate(&self, snapshot);
         match type_errors {
             Ok(errors) => {
@@ -981,6 +982,7 @@ impl TypeManager {
     pub fn delete_struct_field(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         definition_key: DefinitionKey<'static>,
         field_name: String,
     ) -> Result<(), ConceptWriteError> {
@@ -994,6 +996,7 @@ impl TypeManager {
     pub fn delete_struct(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         definition_key: &DefinitionKey<'static>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_deleted_struct_is_not_used(snapshot, definition_key)
@@ -1117,6 +1120,7 @@ impl TypeManager {
     pub(crate) fn delete_entity_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         entity_type: EntityType<'static>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_can_modify_type(snapshot, entity_type.clone())
@@ -1136,6 +1140,7 @@ impl TypeManager {
     pub(crate) fn delete_relation_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         relation_type: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_can_modify_type(snapshot, relation_type.clone())
@@ -1150,7 +1155,7 @@ impl TypeManager {
 
         let declared_relates = TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation_type.clone())?;
         for (_role_type, relates) in declared_relates.iter() {
-            self.delete_role_type(snapshot, relates.role())?;
+            self.delete_role_type(snapshot, thing_manager, relates.role())?;
         }
 
         TypeWriter::storage_delete_label(snapshot, relation_type.clone());
@@ -1161,6 +1166,7 @@ impl TypeManager {
     pub(crate) fn delete_attribute_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_can_modify_type(snapshot, attribute_type.clone())
@@ -1176,7 +1182,7 @@ impl TypeManager {
         for owns in
             TypeReader::get_capabilities_for_interface_declared::<Owns<'static>>(snapshot, attribute_type.clone())?
         {
-            self.unset_owns(snapshot, owns.owner(), owns.attribute())?
+            self.unset_owns(snapshot, thing_manager, owns.owner(), owns.attribute())?
         }
 
         TypeWriter::storage_delete_label(snapshot, attribute_type.clone());
@@ -1187,6 +1193,7 @@ impl TypeManager {
     pub(crate) fn delete_role_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: We have a commit-time check for overrides not being left hanging, but maybe we should clean it/reject here. We DO check that there are no subtypes for type deletion.
@@ -1202,7 +1209,7 @@ impl TypeManager {
 
         for plays in TypeReader::get_capabilities_for_interface_declared::<Plays<'static>>(snapshot, role_type.clone())?
         {
-            self.unset_plays(snapshot, plays.player(), plays.role())?
+            self.unset_plays(snapshot, thing_manager, plays.player(), plays.role())?
         }
 
         let relates = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone())?;
@@ -1576,6 +1583,7 @@ impl TypeManager {
     pub(crate) fn unset_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         owner: ObjectType<'static>,
         attribute: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
@@ -1693,6 +1701,7 @@ impl TypeManager {
     pub(crate) fn unset_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         player: ObjectType<'static>,
         role: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {

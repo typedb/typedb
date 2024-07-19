@@ -45,6 +45,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::thing::thing_manager::ThingManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -147,8 +148,8 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         Ok(annotations.contains_key(&RoleTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
-    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
-        type_manager.delete_role_type(snapshot, self.clone().into_owned())
+    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, thing_manager: &ThingManager) -> Result<(), ConceptWriteError> {
+        type_manager.delete_role_type(snapshot, thing_manager, self.clone().into_owned())
     }
 
     fn get_label<'m>(

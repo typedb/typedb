@@ -120,7 +120,7 @@ pub async fn type_create(context: &mut Context, root_label: RootLabel, type_labe
 pub async fn type_delete(context: &mut Context, root_label: RootLabel, type_label: Label, may_error: MayError) {
     with_schema_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
-            let res = type_.delete(&mut tx.snapshot, &tx.type_manager);
+            let res = type_.delete(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
             may_error.check_concept_write_without_read_errors(&res);
         });
     });

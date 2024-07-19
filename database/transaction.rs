@@ -170,6 +170,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     pub fn commit(mut self) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
 
+        self.type_manager.validate(&self.snapshot).map_err(|errors| ConceptWrite { errors })?;
+
         self.thing_manager.finalise(&mut self.snapshot).map_err(|errors| ConceptWrite { errors })?;
         drop(self.thing_manager);
 
@@ -178,7 +180,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             .map_err(|source| SchemaCommitError::FunctionError { source })?;
 
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap type_manager Arc");
-        type_manager.finalise(&self.snapshot).map_err(|errors| ConceptWrite { errors })?;
+        drop(type_manager);
 
         // Schema commits must wait for all other data operations to finish. No new read or write
         // transaction may open until the commit completes.

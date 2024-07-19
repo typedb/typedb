@@ -49,6 +49,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::thing::thing_manager::ThingManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
@@ -102,8 +103,8 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         Ok(annotations.contains_key(&RelationTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
-    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
-        type_manager.delete_relation_type(snapshot, self.clone().into_owned())
+    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, thing_manager: &ThingManager) -> Result<(), ConceptWriteError> {
+        type_manager.delete_relation_type(snapshot, thing_manager, self.clone().into_owned())
     }
 
     fn get_label<'m>(
@@ -311,9 +312,10 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.unset_owns(snapshot, self.clone().into_owned_object_type(), attribute_type)?;
+        type_manager.unset_owns(snapshot, thing_manager, self.clone().into_owned_object_type(), attribute_type)?;
         Ok(())
     }
 
@@ -357,9 +359,10 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.unset_plays(snapshot, self.clone().into_owned_object_type(), role_type)
+        type_manager.unset_plays(snapshot, thing_manager, self.clone().into_owned_object_type(), role_type)
     }
 
     fn get_plays_declared<'m>(

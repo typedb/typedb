@@ -40,6 +40,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::thing::thing_manager::ThingManager;
 
 pub mod annotation;
 pub mod attribute_type;
@@ -69,7 +70,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError>;
 
-    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError>;
+    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, thing_manager: &ThingManager) -> Result<(), ConceptWriteError>;
 
     fn get_label<'m>(
         &self,
@@ -116,6 +117,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError>;
 
@@ -178,6 +180,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError>;
 

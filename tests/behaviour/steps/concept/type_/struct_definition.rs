@@ -35,7 +35,7 @@ pub async fn struct_delete(context: &mut Context, type_label: Label, may_error: 
             .unwrap()
         {
             may_error.check_concept_write_without_read_errors(
-                &tx.type_manager.delete_struct(&mut tx.snapshot, definition_key),
+                &tx.type_manager.delete_struct(&mut tx.snapshot, &tx.thing_manager, definition_key),
             );
         } else {
             assert!(may_error.expects_error());
@@ -100,6 +100,7 @@ pub async fn struct_delete_field(context: &mut Context, type_label: Label, field
             .unwrap();
         may_error.check_concept_write_without_read_errors(&tx.type_manager.delete_struct_field(
             &mut tx.snapshot,
+            &tx.thing_manager,
             definition_key.clone(),
             field_label.into_typedb().scoped_name().as_str().to_owned(),
         ));

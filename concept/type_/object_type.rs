@@ -97,11 +97,12 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
         match self {
-            ObjectType::Entity(entity) => entity.unset_owns(snapshot, type_manager, attribute_type),
-            ObjectType::Relation(relation) => relation.unset_owns(snapshot, type_manager, attribute_type),
+            ObjectType::Entity(entity) => entity.unset_owns(snapshot, type_manager, thing_manager, attribute_type),
+            ObjectType::Relation(relation) => relation.unset_owns(snapshot, type_manager, thing_manager, attribute_type),
         }
     }
 
@@ -167,10 +168,10 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
+    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, thing_manager: &ThingManager) -> Result<(), ConceptWriteError> {
         match self {
-            ObjectType::Entity(entity) => entity.delete(snapshot, type_manager),
-            ObjectType::Relation(relation) => relation.delete(snapshot, type_manager),
+            ObjectType::Entity(entity) => entity.delete(snapshot, type_manager, thing_manager),
+            ObjectType::Relation(relation) => relation.delete(snapshot, type_manager, thing_manager),
         }
     }
 
@@ -209,11 +210,12 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
         match self {
-            ObjectType::Entity(entity) => entity.unset_plays(snapshot, type_manager, role_type),
-            ObjectType::Relation(relation) => relation.unset_plays(snapshot, type_manager, role_type),
+            ObjectType::Entity(entity) => entity.unset_plays(snapshot, type_manager, thing_manager, role_type),
+            ObjectType::Relation(relation) => relation.unset_plays(snapshot, type_manager, thing_manager, role_type),
         }
     }
 
@@ -265,3 +267,4 @@ macro_rules! with_object_type {
     };
 }
 pub(crate) use with_object_type;
+use crate::thing::thing_manager::ThingManager;

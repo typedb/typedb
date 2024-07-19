@@ -265,7 +265,7 @@ pub async fn relation_type_delete_role(
             .unwrap()
             .unwrap()
             .role();
-        let res = role.delete(&mut tx.snapshot, &tx.type_manager);
+        let res = role.delete(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
