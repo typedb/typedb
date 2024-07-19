@@ -290,20 +290,11 @@ impl Keyspace {
 
     pub(crate) fn reset(&mut self) -> Result<(), KeyspaceError> {
         let mut iterator = self.kv_storage.iterator(IteratorMode::Start);
-        let first =
-            iterator.next().transpose().map_err(|err| KeyspaceError::Iterate { name: self.name, source: err })?;
-        if first.is_none() {
-            return Ok(());
+        for entry in iterator {
+            let (key, _) = entry.map_err(|err| KeyspaceError::Iterate { name: self.name, source: err })?;
+            self.kv_storage.delete(key).map_err(|err| KeyspaceError::Iterate { name: self.name, source: err })?;
         }
-        let first_key = first.unwrap().0;
-
-        iterator = self.kv_storage.iterator(IteratorMode::End);
-        let last = iterator.next().unwrap().map_err(|err| KeyspaceError::Iterate { name: self.name, source: err })?;
-        let last_key = last.0;
-        let default_cf = self.kv_storage.cf_handle(DEFAULT_COLUMN_FAMILY_NAME).unwrap();
-        self.kv_storage
-            .delete_range_cf(default_cf, first_key, last_key)
-            .map_err(|err| KeyspaceError::DeleteRange { name: self.name, source: err })
+        Ok(())
     }
 }
 

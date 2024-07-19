@@ -96,9 +96,9 @@ impl Database<WALClient> {
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
+        let statistics = Statistics::new(storage.read_watermark());
         TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
             .map_err(|err| SchemaInitialise { source: err })?;
-        let statistics = Statistics::new(storage.read_watermark());
 
         Ok(Database::<WALClient> {
             name: name.to_owned(),
@@ -182,35 +182,49 @@ impl Database<WALClient> {
     }
 
     pub fn reset(&mut self) -> Result<(), DatabaseResetError> {
-        let _schema_read_lock = self.schema.write().unwrap();
+        use DatabaseResetError::{
+            CorruptionDefinitionKeyGeneratorInUse, CorruptionStorageReset, CorruptionTypeVertexGeneratorInUse,
+            SchemaInitialise, TypeVertexGeneratorInUse,
+        };
+
+        let mut locked_schema = self.schema.write().unwrap();
         let _schema_write_lock = self.schema_txn_lock.write().unwrap();
 
         match Arc::get_mut(&mut self.storage) {
             None => {
                 return Err(DatabaseResetError::StorageInUse {});
             }
-            Some(storage) => {
-                storage.reset().map_err(|err| DatabaseResetError::CorruptionStorageReset { source: err })?
-            }
+            Some(storage) => storage.reset().map_err(|err| CorruptionStorageReset { source: err })?,
         }
         match Arc::get_mut(&mut self.definition_key_generator) {
             None => {
-                return Err(DatabaseResetError::CorruptionDefinitionKeyGeneratorInUse {});
+                return Err(CorruptionDefinitionKeyGeneratorInUse {});
             }
             Some(definition_key_generator) => definition_key_generator.reset(),
         }
         match Arc::get_mut(&mut self.type_vertex_generator) {
             None => {
-                return Err(DatabaseResetError::CorruptionTypeVertexGeneratorInUse {});
+                return Err(CorruptionTypeVertexGeneratorInUse {});
             }
             Some(type_vertex_generator) => type_vertex_generator.reset(),
         }
         match Arc::get_mut(&mut self.thing_vertex_generator) {
             None => {
-                return Err(DatabaseResetError::TypeVertexGeneratorInUse {});
+                return Err(TypeVertexGeneratorInUse {});
             }
             Some(thing_vertex_generator) => thing_vertex_generator.reset(),
         }
+
+        let mut schema = Arc::get_mut(&mut *locked_schema).unwrap();
+        schema.thing_statistics.reset(self.storage.read_watermark());
+
+        TypeManager::initialise_types(
+            self.storage.clone(),
+            self.definition_key_generator.clone(),
+            self.type_vertex_generator.clone(),
+        )
+        .map_err(|err| SchemaInitialise { source: err })?;
+
         Ok(())
     }
 }
@@ -302,6 +316,7 @@ pub enum DatabaseResetError {
     CorruptionDefinitionKeyGeneratorInUse {},
     CorruptionTypeVertexGeneratorInUse {},
     TypeVertexGeneratorInUse {},
+    SchemaInitialise { source: ConceptWriteError },
 }
 
 impl fmt::Display for DatabaseResetError {
@@ -319,6 +334,7 @@ impl Error for DatabaseResetError {
             | Self::CorruptionTypeVertexGeneratorInUse { .. }
             | Self::TypeVertexGeneratorInUse { .. } => None,
             Self::CorruptionStorageReset { source, .. } => Some(source),
+            Self::SchemaInitialise { source } => Some(source),
         }
     }
 }

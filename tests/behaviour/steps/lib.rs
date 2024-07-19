@@ -7,17 +7,18 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{collections::HashMap, sync::Arc};
-
-use ::concept::{
-    thing::{attribute::Attribute, object::Object},
-    type_::attribute_type::AttributeType,
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+    sync::{Arc, Mutex},
 };
+
+use ::concept::thing::{attribute::Attribute, object::Object};
 use cucumber::{StatsWriter, World};
 use database::Database;
+use itertools::Itertools;
 use server::typedb;
 use storage::durability_client::WALClient;
-use test_utils::TempDir;
 
 mod assert;
 mod concept;
@@ -51,8 +52,7 @@ mod thing_util {
 
 #[derive(Debug, Default, World)]
 pub struct Context {
-    server_dir: Option<TempDir>,
-    server: Option<typedb::Server>,
+    server: Option<Arc<Mutex<typedb::Server>>>,
     active_transaction: Option<ActiveTransaction>,
 
     objects: HashMap<String, Option<ObjectWithKey>>,
@@ -62,7 +62,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub async fn test(glob: &'static str) -> bool {
+    pub async fn test(glob: &'static str, clean_databases_after: bool) -> bool {
         let default_panic = std::panic::take_hook();
         std::panic::set_hook(Box::new(move |info| {
             default_panic(info);
@@ -73,9 +73,9 @@ impl Context {
             .repeat_failed()
             .fail_on_skipped()
             .with_default_cli()
-            .after(|_, _, _, _, context| {
-                Box::pin(async {
-                    context.unwrap().after_scenario().await.unwrap();
+            .after(move |_, _, _, _, context| {
+                Box::pin(async move {
+                    context.unwrap().after_scenario(clean_databases_after).await.unwrap();
                 })
             })
             .filter_run(glob, |_, _, sc| {
@@ -86,20 +86,43 @@ impl Context {
             .execution_has_failed()
     }
 
-    async fn after_scenario(&mut self) -> Result<(), ()> {
+    async fn after_scenario(&mut self, clean_databases: bool) -> Result<(), ()> {
+        if let Some(_) = &self.active_transaction {
+            self.close_transaction()
+        }
+
+        if clean_databases {
+            let database_names = self.database_names();
+            for database_name in database_names {
+                self.server_mut().unwrap().lock().unwrap().delete_database(database_name).unwrap();
+            }
+        }
+
         Ok(())
     }
 
-    pub fn server(&self) -> Option<&typedb::Server> {
+    pub fn close_transaction(&mut self) {
+        match self.take_transaction().unwrap() {
+            ActiveTransaction::Read(tx) => tx.close(),
+            ActiveTransaction::Write(tx) => tx.close(),
+            ActiveTransaction::Schema(tx) => tx.close(),
+        }
+    }
+
+    pub fn server(&self) -> Option<&Arc<Mutex<typedb::Server>>> {
         self.server.as_ref()
     }
 
-    pub fn server_mut(&mut self) -> Option<&mut typedb::Server> {
+    pub fn server_mut(&mut self) -> Option<&mut Arc<Mutex<typedb::Server>>> {
         self.server.as_mut()
     }
 
-    pub fn databases(&self) -> &HashMap<String, Arc<Database<WALClient>>> {
-        self.server().unwrap().databases()
+    pub fn databases(&self) -> HashMap<String, Arc<Database<WALClient>>> {
+        self.server().unwrap().lock().unwrap().databases().clone()
+    }
+
+    pub fn database_names(&self) -> HashSet<String> {
+        self.server().unwrap().lock().unwrap().databases().keys().map(|name| name.to_owned()).collect()
     }
 
     pub fn set_transaction(&mut self, txn: ActiveTransaction) {

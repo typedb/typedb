@@ -170,7 +170,7 @@ impl DurabilityService for WAL {
     }
 
     fn reset(&mut self) -> Result<(), DurabilityServiceError> {
-        self.next_sequence_number.store(0, Ordering::SeqCst);
+        self.next_sequence_number.store(DurabilitySequenceNumber::MIN.next().number, Ordering::SeqCst);
         self.files.write().unwrap().reset().map_err(|err| DurabilityServiceError::IO { source: err })
     }
 }

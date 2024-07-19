@@ -6,18 +6,18 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
 
 rust_test(
-    name = "test_schemavalidation",
-    srcs = ["schema-validation.rs"],
+    name = "test_function",
+    srcs = ["function"],
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
     ],
-    data = ["@vaticle_typedb_behaviour//concept/validation:schema-validation.feature"],
+    data = ["@vaticle_typedb_behaviour//concept/validation:function.feature"],
 )
 
 rust_test(
-    name = "test_datavalidation",
-    srcs = ["data-validation.rs"],
+    name = "test_data_validation",
+    srcs = ["data_validation"],
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
