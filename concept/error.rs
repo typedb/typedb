@@ -13,7 +13,7 @@ use encoding::{
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 
 use crate::{
-    thing::{object::Object, relation::Relation},
+    thing::{object::Object, relation::Relation, thing_manager::validation::DataValidationError},
     type_::{
         annotation::{AnnotationCardinality, AnnotationError},
         attribute_type::AttributeType,
@@ -61,6 +61,9 @@ pub enum ConceptWriteError {
     },
     SchemaValidation {
         source: SchemaValidationError,
+    },
+    DataValidation {
+        source: DataValidationError,
     },
     Encoding {
         source: EncodingError,
@@ -130,6 +133,7 @@ impl Error for ConceptWriteError {
             Self::ConceptRead { source } => Some(source),
             Self::Encoding { source, .. } => Some(source),
             Self::SchemaValidation { source, .. } => Some(source),
+            Self::DataValidation { source, .. } => Some(source),
             Self::ValueTypeMismatch { .. } => None,
             Self::RelationRoleCardinality { .. } => None,
             Self::RootModification { .. } => None,

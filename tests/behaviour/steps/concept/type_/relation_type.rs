@@ -478,6 +478,7 @@ pub async fn relation_role_set_annotation(
                 res = relates.role().set_annotation(
                     &mut tx.snapshot,
                     &tx.type_manager,
+                    &tx.thing_manager,
                     parsed_annotation.try_into().unwrap(),
                 );
             }

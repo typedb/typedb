@@ -34,6 +34,7 @@ use super::Ordering;
 use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
+    thing::thing_manager::ThingManager,
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
         object_type::ObjectType,
@@ -45,7 +46,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::thing::thing_manager::ThingManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -148,7 +148,12 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         Ok(annotations.contains_key(&RoleTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
-    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, thing_manager: &ThingManager) -> Result<(), ConceptWriteError> {
+    fn delete(
+        self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptWriteError> {
         type_manager.delete_role_type(snapshot, thing_manager, self.clone().into_owned())
     }
 
@@ -228,11 +233,12 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         annotation: RoleTypeAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
-                type_manager.set_role_type_annotation_abstract(snapshot, self.clone().into_owned())?
+                type_manager.set_role_type_annotation_abstract(snapshot, thing_manager, self.clone().into_owned())?
             }
         };
         Ok(())

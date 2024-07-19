@@ -33,7 +33,7 @@ use storage::{
 use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::relation::Relation,
+    thing::{relation::Relation, thing_manager::ThingManager},
     type_::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationError, DefaultFrom,
@@ -49,7 +49,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::thing::thing_manager::ThingManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
@@ -103,7 +102,12 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         Ok(annotations.contains_key(&RelationTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
-    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, thing_manager: &ThingManager) -> Result<(), ConceptWriteError> {
+    fn delete(
+        self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptWriteError> {
         type_manager.delete_relation_type(snapshot, thing_manager, self.clone().into_owned())
     }
 
@@ -202,11 +206,12 @@ impl<'a> RelationType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         annotation: RelationTypeAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())?
+                type_manager.set_annotation_abstract(snapshot, thing_manager, self.clone().into_owned())?
             }
             RelationTypeAnnotation::Cascade(_) => {
                 type_manager.set_annotation_cascade(snapshot, self.clone().into_owned())?

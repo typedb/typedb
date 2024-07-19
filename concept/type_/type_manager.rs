@@ -33,6 +33,7 @@ use validation::{commit_time_validation::CommitTimeValidation, operation_time_va
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
+    thing::thing_manager::ThingManager,
     type_::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
@@ -51,7 +52,6 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::thing::thing_manager::ThingManager;
 
 pub mod type_cache;
 pub mod type_reader;
@@ -1129,9 +1129,9 @@ impl TypeManager {
         OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, entity_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        // TODO: Re-enable when we get the thing_manager
-        // OperationTimeValidation::validate_exact_type_no_instances_entity(snapshot, entity_type.clone())
-        //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        OperationTimeValidation::validate_no_instances_to_delete(snapshot, thing_manager, entity_type.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         TypeWriter::storage_delete_label(snapshot, entity_type.clone());
         TypeWriter::storage_may_delete_supertype(snapshot, entity_type)?;
         Ok(())
@@ -1149,9 +1149,8 @@ impl TypeManager {
         OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, relation_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        // TODO: Re-enable when we get the thing_manager
-        // OperationTimeValidation::validate_exact_type_no_instances_relation(snapshot, relation_type.clone())
-        //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        OperationTimeValidation::validate_no_instances_to_delete(snapshot, thing_manager, relation_type.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let declared_relates = TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation_type.clone())?;
         for (_role_type, relates) in declared_relates.iter() {
@@ -1175,9 +1174,8 @@ impl TypeManager {
         OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, attribute_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        // TODO: Re-enable when we get the thing_manager
-        // OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, self, attribute.clone())
-        //     .map_err(|source| ConceptWriteError::SchemaValidation {  source } )?;
+        OperationTimeValidation::validate_no_instances_to_delete(snapshot, thing_manager, attribute_type.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         for owns in
             TypeReader::get_capabilities_for_interface_declared::<Owns<'static>>(snapshot, attribute_type.clone())?
@@ -1203,9 +1201,12 @@ impl TypeManager {
         OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, role_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        // TODO: Re-enable when we get the thing_manager
-        // OperationTimeValidation::validate_exact_type_no_instances_role(snapshot, role_type.clone().into_owned())
-        //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        OperationTimeValidation::validate_no_instances_to_delete(
+            snapshot,
+            thing_manager,
+            role_type.clone().into_owned(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         for plays in TypeReader::get_capabilities_for_interface_declared::<Plays<'static>>(snapshot, role_type.clone())?
         {
@@ -1821,6 +1822,7 @@ impl TypeManager {
     pub(crate) fn set_role_type_annotation_abstract(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
         let relates = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone())?;
@@ -1834,12 +1836,13 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_annotation_abstract(snapshot, role_type)
+        self.set_annotation_abstract(snapshot, thing_manager, role_type)
     }
 
     pub(crate) fn set_annotation_abstract(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_can_modify_type(snapshot, type_.clone())
@@ -1853,7 +1856,8 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        // TODO: Validation: existing instances (or is it schema/data validation?)
+        OperationTimeValidation::validate_no_instances_to_set_abstract(snapshot, thing_manager, type_.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation::<AnnotationAbstract>(snapshot, type_, AnnotationCategory::Abstract, None)
     }

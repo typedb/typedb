@@ -45,15 +45,20 @@ async fn attribute_put_instance_with_value(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{var} = attribute\({type_label}\) put instance with value: {value}")]
+#[step(expr = r"{var} = attribute\({type_label}\) put instance with value: {value}{may_error}")]
 async fn attribute_put_instance_with_value_var(
     context: &mut Context,
     var: params::Var,
     type_label: params::Label,
     value: params::Value,
+    may_error: params::MayError,
 ) {
-    let attribute = attribute_put_instance_with_value_impl(context, type_label, value).unwrap();
-    context.attributes.insert(var.name, Some(attribute));
+    let result = attribute_put_instance_with_value_impl(context, type_label, value);
+    may_error.check(&result);
+    if !may_error.expects_error() {
+        let attribute = result.unwrap();
+        context.attributes.insert(var.name, Some(attribute));
+    }
 }
 
 #[apply(generic_step)]

@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use encoding::{
     graph::{
         definition::definition_key::DefinitionKey,
-        thing::edge::ThingEdgeLinks,
+        thing::{edge::ThingEdgeLinks, ThingVertex},
         type_::{CapabilityKind, Kind},
     },
     value::{label::Label, value_type::ValueType},
@@ -19,7 +19,12 @@ use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    thing::{relation::RolePlayerIterator, thing_manager::ThingManager, ThingAPI},
+    error::ConceptReadError,
+    thing::{
+        object::ObjectAPI,
+        relation::{RolePlayerIterator},
+        thing_manager::ThingManager,
+    },
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues,
@@ -60,6 +65,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::thing::ThingAPI;
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -1340,7 +1346,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub fn validate_value_type_compatible_with_all_owns_annotations(
+    pub(crate) fn validate_value_type_compatible_with_all_owns_annotations(
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
@@ -1405,91 +1411,86 @@ impl OperationTimeValidation {
         }
     }
 
-    // TODO: Refactor / implement and include into type_manager
-    pub(crate) fn validate_exact_type_no_instances_entity(
+    pub(crate) fn validate_no_instances_to_delete<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        entity_type: EntityType<'_>,
+        type_: impl KindAPI<'a>,
     ) -> Result<(), SchemaValidationError> {
-        let mut entity_iterator = thing_manager.get_entities_in(snapshot, entity_type.clone().into_owned());
-        match entity_iterator.next() {
-            None => Ok(()),
-            Some(Ok(_)) => Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(
-                snapshot,
-                entity_type,
-            )?)),
-            Some(Err(concept_read_error)) => Err(SchemaValidationError::ConceptRead(concept_read_error)),
-        }
-    }
-
-    // TODO: Refactor / implement and include into type_manager
-    pub(crate) fn validate_exact_type_no_instances_relation(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        relation_type: RelationType<'_>,
-    ) -> Result<(), SchemaValidationError> {
-        let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
-        match relation_iterator.next() {
-            None => Ok(()),
-            Some(Ok(_)) => Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(
-                snapshot,
-                relation_type,
-            )?)),
-            Some(Err(concept_read_error)) => Err(SchemaValidationError::ConceptRead(concept_read_error)),
-        }
-    }
-
-    // TODO: Refactor / implement and include into type_manager
-    pub(crate) fn validate_exact_type_no_instances_attribute(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        attribute_type: AttributeType<'_>,
-    ) -> Result<(), SchemaValidationError> {
-        let mut attribute_iterator = thing_manager
-            .get_attributes_in(snapshot, attribute_type.clone())
+        let has_instances = Self::has_instances_of_type(snapshot, thing_manager, type_.clone())
             .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
-        match attribute_iterator.next() {
-            None => Ok(()),
-            Some(Ok(_)) => Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(
-                snapshot,
-                attribute_type,
-            )?)),
-            Some(Err(err)) => Err(SchemaValidationError::ConceptRead(err.clone())),
+
+        if has_instances {
+            Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(snapshot, type_)?))
+        } else {
+            Ok(())
         }
     }
 
-    // TODO: Refactor / implement and include into type_manager
-    pub(crate) fn validate_exact_type_no_instances_role(
+    pub(crate) fn validate_no_instances_to_set_abstract<'a>(
         snapshot: &impl ReadableSnapshot,
-        _thing_manager: &ThingManager,
-        role_type: RoleType<'_>,
+        thing_manager: &ThingManager,
+        type_: impl KindAPI<'a>,
     ) -> Result<(), SchemaValidationError> {
-        // TODO: See if we can use existing methods from the ThingManager
-        let relation_type = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone().into_owned())
-            .map_err(SchemaValidationError::ConceptRead)?
-            .relation();
-        let mut relation_iterator = _thing_manager.get_relations(snapshot);
-        while let Some(result) = relation_iterator.next() {
-            let relation_instance = result.map_err(SchemaValidationError::ConceptRead)?;
-            let prefix = ThingEdgeLinks::prefix_from_relation(relation_instance.into_vertex());
-            let mut role_player_iterator = RolePlayerIterator::new(
-                snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING)),
-            );
-            match role_player_iterator.next() {
-                None => (),
-                Some(Ok(_)) => {
-                    let role_type_clone = role_type.clone();
-                    Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(
-                        snapshot,
-                        role_type_clone,
-                    )?))?;
-                }
-                Some(Err(concept_read_error)) => {
-                    Err(SchemaValidationError::ConceptRead(concept_read_error))?;
+        let has_instances = Self::has_instances_of_type(snapshot, thing_manager, type_.clone())
+            .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+
+        if has_instances {
+            Err(SchemaValidationError::CannotSetAbstractToTypeWithExistingInstances(get_label_or_schema_err(
+                snapshot, type_,
+            )?))
+        } else {
+            Ok(())
+        }
+    }
+
+    fn has_instances_of_type<'a, T: KindAPI<'a>>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        type_: T,
+    ) -> Result<bool, ConceptReadError> {
+        match T::ROOT_KIND {
+            Kind::Entity => {
+                let entity_type = EntityType::new(type_.vertex().into_owned());
+                let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone().into_owned());
+                match iterator.next() {
+                    None => Ok(false),
+                    Some(result) => result.map(|_| true),
                 }
             }
+            Kind::Attribute => {
+                let attribute_type = AttributeType::new(type_.vertex().into_owned());
+                let mut iterator = thing_manager.get_attributes_in(snapshot, attribute_type.clone().into_owned())?;
+                match iterator.next() {
+                    None => Ok(false),
+                    Some(result) => result.map(|_| true),
+                }
+            }
+            Kind::Relation => {
+                let relation_type = RelationType::new(type_.vertex().into_owned());
+                let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
+                match iterator.next() {
+                    None => Ok(false),
+                    Some(result) => result.map(|_| true),
+                }
+            }
+            Kind::Role => {
+                let role_type = RoleType::new(type_.vertex().into_owned());
+                // TODO: See if we can use existing methods from the ThingManager
+                let relation_type =
+                    TypeReader::get_role_type_relates_declared(snapshot, role_type.clone().into_owned())?.relation();
+                let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.into_owned());
+                while let Some(result) = relation_iterator.next() {
+                    let prefix = ThingEdgeLinks::prefix_from_relation(result?.into_vertex());
+                    let mut role_player_iterator = RolePlayerIterator::new(
+                        snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING)),
+                    );
+                    if let Some(result) = role_player_iterator.next() {
+                        return result.map(|_| true);
+                    }
+                }
+                Ok(false)
+            }
         }
-        Ok(())
     }
 
     pub(crate) fn validate_deleted_struct_is_not_used(

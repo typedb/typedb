@@ -205,6 +205,7 @@ pub async fn type_set_annotation(
             let res = type_.set_annotation(
                 &mut tx.snapshot,
                 &tx.type_manager,
+                &tx.thing_manager,
                 annotation.into_typedb(value_type).try_into().unwrap(),
             );
             may_error.check_concept_write_without_read_errors(&res);

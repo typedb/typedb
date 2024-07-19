@@ -58,8 +58,14 @@ use crate::{
         decode_attribute_ids, decode_role_players, encode_attribute_ids, encode_role_players,
         entity::Entity,
         object::{HasAttributeIterator, HasIterator, HasReverseIterator, Object, ObjectAPI},
+<<<<<<< HEAD
         relation::{IndexedPlayersIterator, LinksIterator, Relation, RelationRoleIterator, RolePlayerIterator},
         HKInstance, ThingAPI,
+=======
+        relation::{IndexedPlayersIterator, Relation, RelationRoleIterator, RolePlayerIterator},
+        thing_manager::validation::operation_time_validation::OperationTimeValidation,
+        ThingAPI,
+>>>>>>> 038bf93d6 (Add checks for instances for types deletion and set abstract operations)
     },
     type_::{
         attribute_type::{AttributeType, AttributeTypeAnnotation},
@@ -72,6 +78,8 @@ use crate::{
     },
     ConceptStatus,
 };
+
+pub mod validation;
 
 pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
@@ -1019,6 +1027,9 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         entity_type: EntityType<'static>,
     ) -> Result<Entity<'a>, ConceptWriteError> {
+        OperationTimeValidation::validate_type_instance_is_not_abstract(snapshot, self, entity_type.clone())
+            .map_err(|source| ConceptWriteError::DataValidation { source })?;
+
         Ok(Entity::new(self.vertex_generator.create_entity(entity_type.vertex().type_id_(), snapshot)))
     }
 
@@ -1027,6 +1038,9 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType<'static>,
     ) -> Result<Relation<'a>, ConceptWriteError> {
+        OperationTimeValidation::validate_type_instance_is_not_abstract(snapshot, self, relation_type.clone())
+            .map_err(|source| ConceptWriteError::DataValidation { source })?;
+
         Ok(Relation::new(self.vertex_generator.create_relation(relation_type.vertex().type_id_(), snapshot)))
     }
 
@@ -1036,6 +1050,11 @@ impl ThingManager {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<Attribute<'a>, ConceptWriteError> {
+        OperationTimeValidation::validate_type_instance_is_not_abstract(snapshot, self, attribute_type.clone())
+            .map_err(|source| ConceptWriteError::DataValidation { source })?;
+
+        // TODO: Compare value.value_type and attribute_type value type
+
         self.put_attribute(snapshot, attribute_type, value)
     }
 
@@ -1318,7 +1337,12 @@ impl ThingManager {
         snapshot.delete(order_property.into_storage_key().into_owned_array())
     }
 
+<<<<<<< HEAD
     pub(crate) fn put_links_unordered<'a>(
+=======
+    pub(crate) fn put_role_player_unordered<'a>(
+        // TODO: put or set???
+>>>>>>> 038bf93d6 (Add checks for instances for types deletion and set abstract operations)
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,

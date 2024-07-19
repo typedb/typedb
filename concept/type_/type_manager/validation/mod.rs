@@ -46,7 +46,6 @@ pub enum SchemaValidationError {
     ChangingAttributeTypeSupertypeWillImplicitlyChangeItsValueType(Label<'static>, Option<ValueType>),
     CannotUnsetAbstractnessOfAttributeTypeAsItHasSubtypes(Label<'static>),
     CannotDeleteTypeWithExistingSubtypes(Label<'static>),
-    CannotDeleteTypeWithExistingInstances(Label<'static>),
     RelatesNotInherited(RelationType<'static>, RoleType<'static>),
     OwnsNotInherited(ObjectType<'static>, AttributeType<'static>),
     PlaysNotInherited(ObjectType<'static>, RoleType<'static>),
@@ -156,6 +155,8 @@ pub enum SchemaValidationError {
         Label<'static>,
         Label<'static>,
     ),
+    CannotDeleteTypeWithExistingInstances(Label<'static>),
+    CannotSetAbstractToTypeWithExistingInstances(Label<'static>),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -178,7 +179,6 @@ impl Error for SchemaValidationError {
             Self::ChangingAttributeTypeSupertypeWillImplicitlyChangeItsValueType(_, _) => None,
             Self::CannotUnsetAbstractnessOfAttributeTypeAsItHasSubtypes(_) => None,
             Self::CannotDeleteTypeWithExistingSubtypes(_) => None,
-            Self::CannotDeleteTypeWithExistingInstances(_) => None,
             Self::RelatesNotInherited(_, _) => None,
             Self::OwnsNotInherited(_, _) => None,
             Self::PlaysNotInherited(_, _) => None,
@@ -238,6 +238,8 @@ impl Error for SchemaValidationError {
                 None
             }
             Self::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(_, _) => None,
+            Self::CannotDeleteTypeWithExistingInstances(_) => None,
+            Self::CannotSetAbstractToTypeWithExistingInstances(_) => None,
         }
     }
 }

@@ -7,6 +7,8 @@
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
 };
 
 use bytes::{byte_reference::ByteReference, Bytes};
@@ -28,7 +30,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::ThingAPI,
+    thing::{ThingAPI, thing_manager::ThingManager},
     type_::{
         annotation::{Annotation, AnnotationCardinality, AnnotationError},
         attribute_type::AttributeType,
@@ -40,7 +42,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::thing::thing_manager::ThingManager;
 
 pub mod annotation;
 pub mod attribute_type;
@@ -70,7 +71,12 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError>;
 
-    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, thing_manager: &ThingManager) -> Result<(), ConceptWriteError>;
+    fn delete(
+        self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptWriteError>;
 
     fn get_label<'m>(
         &self,

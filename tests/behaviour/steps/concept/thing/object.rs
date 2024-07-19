@@ -44,6 +44,22 @@ fn object_create_instance_impl(
 }
 
 #[apply(generic_step)]
+#[step(expr = r"{object_root_label}\({type_label}\) create new instance{may_error}")]
+async fn object_create_instance(
+    context: &mut Context,
+    object_root: params::ObjectRootLabel,
+    object_type_label: params::Label,
+    may_error: params::MayError,
+) {
+    let result = object_create_instance_impl(context, object_type_label);
+    may_error.check(&result);
+    if !may_error.expects_error() {
+        let object = result.unwrap();
+        object_root.assert(&object.type_());
+    }
+}
+
+#[apply(generic_step)]
 #[step(expr = r"{var} = {object_root_label}\({type_label}\) create new instance{may_error}")]
 async fn object_create_instance_var(
     context: &mut Context,

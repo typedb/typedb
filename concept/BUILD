@@ -22,7 +22,7 @@ rust_library(
     srcs = glob([
         "*.rs",
         "type_/**/*.rs",
-        "thing/*.rs",
+        "thing/**/*.rs",
     ]),
     deps = [
         "//common/bytes",

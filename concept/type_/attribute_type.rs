@@ -29,7 +29,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use super::annotation::{AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::attribute::Attribute,
+    thing::{attribute::Attribute, thing_manager::ThingManager},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
         object_type::ObjectType,
@@ -39,7 +39,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::thing::thing_manager::ThingManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
@@ -103,7 +102,12 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         Ok(annotations.contains_key(&AttributeTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
-    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, thing_manager: &ThingManager) -> Result<(), ConceptWriteError> {
+    fn delete(
+        self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptWriteError> {
         type_manager.delete_attribute_type(snapshot, thing_manager, self.clone().into_owned())
     }
 
@@ -233,11 +237,12 @@ impl<'a> AttributeType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         annotation: AttributeTypeAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())?
+                type_manager.set_annotation_abstract(snapshot, thing_manager, self.clone().into_owned())?
             }
             AttributeTypeAnnotation::Independent(_) => {
                 type_manager.set_annotation_independent(snapshot, self.clone().into_owned())?
