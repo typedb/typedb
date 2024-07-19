@@ -61,8 +61,6 @@ pub struct Context {
     object_lists: HashMap<String, Vec<Object<'static>>>,
     attributes: HashMap<String, Option<Attribute<'static>>>,
     attribute_lists: HashMap<String, Vec<Attribute<'static>>>,
-
-    clean_databases_after: bool,
 }
 
 impl Context {
