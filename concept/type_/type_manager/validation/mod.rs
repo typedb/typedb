@@ -157,6 +157,7 @@ pub enum SchemaValidationError {
     ),
     CannotDeleteTypeWithExistingInstances(Label<'static>),
     CannotSetAbstractToTypeWithExistingInstances(Label<'static>),
+    CannotUnsetCapabilityWithExistingInstances(CapabilityKind, Label<'static>, Label<'static>),
     CannotChangeSupertypeAsOwnsIsLostWhileHavingHasInstances(Label<'static>, Label<'static>, Label<'static>),
     CannotChangeSupertypeAsPlaysIsLostWhileHavingRolePlayerInstances(Label<'static>, Label<'static>, Label<'static>),
 }
@@ -242,6 +243,7 @@ impl Error for SchemaValidationError {
             Self::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(_, _) => None,
             Self::CannotDeleteTypeWithExistingInstances(_) => None,
             Self::CannotSetAbstractToTypeWithExistingInstances(_) => None,
+            Self::CannotUnsetCapabilityWithExistingInstances(_, _, _) => None,
             Self::CannotChangeSupertypeAsOwnsIsLostWhileHavingHasInstances(_, _, _) => None,
             Self::CannotChangeSupertypeAsPlaysIsLostWhileHavingRolePlayerInstances(_, _, _) => None,
         }

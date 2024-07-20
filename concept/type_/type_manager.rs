@@ -1467,14 +1467,14 @@ impl TypeManager {
             object_subtype.clone(),
             object_supertype.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_lost_owns_do_not_cause_lost_instances(
             snapshot,
@@ -1489,14 +1489,14 @@ impl TypeManager {
             object_subtype.clone(),
             object_supertype.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_lost_plays_do_not_cause_lost_instances(
             snapshot,
@@ -1504,7 +1504,7 @@ impl TypeManager {
             object_subtype,
             object_supertype,
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_supertype(snapshot, subtype, supertype)
     }
@@ -1554,7 +1554,7 @@ impl TypeManager {
             subtype.clone(),
             supertype.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_object_type_supertype(snapshot, thing_manager, subtype, supertype)
     }
@@ -1608,6 +1608,14 @@ impl TypeManager {
         // TODO: We have a commit-time check for overrides not being left hanging, but maybe we should clean it/reject here. We DO check that there are no subtypes for type deletion.
         OperationTimeValidation::validate_unset_owns_is_not_inherited(snapshot, owner.clone(), attribute.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_no_instances_to_unset_owns(
+            snapshot,
+            thing_manager,
+            owner.clone(),
+            attribute.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
         TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
@@ -1716,7 +1724,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         player: ObjectType<'static>,
-        role: RoleType<'static>,
+        role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
         with_object_type!(player, |type_| {
             OperationTimeValidation::validate_can_modify_type(snapshot, type_)
@@ -1724,10 +1732,18 @@ impl TypeManager {
         });
 
         // TODO: We have a commit-time check for overrides not being left hanging, but maybe we should clean it/reject here. We DO check that there are no subtypes for type deletion.
-        OperationTimeValidation::validate_unset_plays_is_not_inherited(snapshot, player.clone(), role.clone())
+        OperationTimeValidation::validate_unset_plays_is_not_inherited(snapshot, player.clone(), role_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
+        OperationTimeValidation::validate_no_instances_to_unset_plays(
+            snapshot,
+            thing_manager,
+            player.clone(),
+            role_type.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        let plays = Plays::new(ObjectType::new(player.into_vertex()), role_type);
         TypeWriter::storage_delete_capability(snapshot, plays);
         Ok(())
     }

@@ -520,7 +520,7 @@ impl ThingManager {
         &'this self,
         snapshot: &'this impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType<'a>,
     ) -> Result<HasAttributeIterator, ConceptReadError> {
         let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
         let value_type = match attribute_value_type.as_ref() {

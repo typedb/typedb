@@ -35,7 +35,7 @@ use crate::{
     },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, owns::Owns, role_type::RoleType,
-        type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering, OwnerAPI,
+        type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
     },
     ConceptStatus,
 };
@@ -292,7 +292,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
         {
             Ordering::Unordered => (),
-            Ordering::Ordered => return Err(ConceptWriteError::SetHasUnorderedOwnsOrdered {}),
+            Ordering::Ordered => return Err(ConceptWriteError::UnsetHasUnorderedOwnsOrdered {}),
         }
         thing_manager.unset_has(snapshot, self, attribute);
         Ok(())
@@ -365,9 +365,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             .get_ordering(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
-            Ordering::Unordered => {
-                todo!("throw good error")
-            }
+            Ordering::Unordered => Err(ConceptWriteError::UnsetHasOrderedOwnsUnordered {}),
             Ordering::Ordered => {
                 // TODO: 1. get owned list 2. Delete each ownership has 3. delete owned list
                 todo!()
@@ -381,11 +379,12 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         type_manager: &'m TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Owns<'m>, ConceptReadError> {
-        let owns = self.type_().get_owns_attribute(snapshot, type_manager, attribute_type)?;
+        let owns = self.type_().get_owns_attribute(snapshot, type_manager, attribute_type.clone())?;
         match owns {
-            None => {
-                todo!("throw useful schema error")
-            }
+            None => Err(ConceptReadError::CannotGetOwnsDoesntExist(
+                self.type_().get_label(snapshot, type_manager)?.clone(),
+                attribute_type.get_label(snapshot, type_manager)?.clone(),
+            )),
             Some(owns) => Ok(owns),
         }
     }

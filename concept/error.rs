@@ -8,7 +8,7 @@ use std::{error::Error, fmt, sync::Arc};
 
 use encoding::{
     error::EncodingError,
-    value::{value::Value, value_type::ValueType},
+    value::{label::Label, value::Value, value_type::ValueType},
 };
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 
@@ -113,6 +113,8 @@ pub enum ConceptWriteError {
 
     SetHasOrderedOwnsUnordered {},
     SetHasUnorderedOwnsOrdered {},
+    UnsetHasOrderedOwnsUnordered {},
+    UnsetHasUnorderedOwnsOrdered {},
 
     Annotation {
         source: AnnotationError,
@@ -146,6 +148,8 @@ impl Error for ConceptWriteError {
             Self::CardinalityViolation { .. } => None,
             Self::SetHasOrderedOwnsUnordered { .. } => None,
             Self::SetHasUnorderedOwnsOrdered { .. } => None,
+            Self::UnsetHasOrderedOwnsUnordered { .. } => None,
+            Self::UnsetHasUnorderedOwnsOrdered { .. } => None,
             Self::Annotation { .. } => None,
         }
     }
@@ -160,6 +164,7 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::CorruptMissingLabelOfType => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryProperty => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryRelatesForRole => Self::ConceptRead { source: error },
+            ConceptReadError::CannotGetOwnsDoesntExist(_, _) => Self::ConceptRead { source: error },
         }
     }
 }
@@ -172,6 +177,7 @@ pub enum ConceptReadError {
     CorruptMissingLabelOfType,
     CorruptMissingMandatoryProperty,
     CorruptMissingMandatoryRelatesForRole,
+    CannotGetOwnsDoesntExist(Label<'static>, Label<'static>),
 }
 
 impl fmt::Display for ConceptReadError {
@@ -189,6 +195,7 @@ impl Error for ConceptReadError {
             Self::CorruptMissingLabelOfType => None,
             Self::CorruptMissingMandatoryProperty => None,
             Self::CorruptMissingMandatoryRelatesForRole => None,
+            Self::CannotGetOwnsDoesntExist(_, _) => None,
         }
     }
 }
