@@ -1452,46 +1452,77 @@ impl TypeManager {
         self.set_supertype(snapshot, subtype, supertype)
     }
 
-    pub(crate) fn set_entity_type_supertype(
+    pub(crate) fn set_object_type_supertype<T: ObjectTypeAPI<'static> + KindAPI<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        subtype: EntityType<'static>,
-        supertype: EntityType<'static>,
+        thing_manager: &ThingManager,
+        subtype: T,
+        supertype: T,
     ) -> Result<(), ConceptWriteError> {
+        let object_subtype = subtype.clone().into_owned_object_type();
+        let object_supertype = supertype.clone().into_owned_object_type();
+
         OperationTimeValidation::validate_owns_compatible_with_new_supertype(
             snapshot,
-            subtype.clone().into_owned_object_type(),
-            supertype.clone().into_owned_object_type(),
+            object_subtype.clone(),
+            object_supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_lost_owns_do_not_cause_lost_instances(
+            snapshot,
+            thing_manager,
+            object_subtype.clone(),
+            object_supertype.clone(),
+        )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_compatible_with_new_supertype(
             snapshot,
-            subtype.clone().into_owned_object_type(),
-            supertype.clone().into_owned_object_type(),
+            object_subtype.clone(),
+            object_supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
         )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_lost_plays_do_not_cause_lost_instances(
+            snapshot,
+            thing_manager,
+            object_subtype,
+            object_supertype,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_supertype(snapshot, subtype, supertype)
+    }
+
+    pub(crate) fn set_entity_type_supertype(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        subtype: EntityType<'static>,
+        supertype: EntityType<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        self.set_object_type_supertype(snapshot, thing_manager, subtype, supertype)
     }
 
     pub(crate) fn set_relation_type_supertype(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         subtype: RelationType<'static>,
         supertype: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
@@ -1509,34 +1540,6 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_owns_compatible_with_new_supertype(
-            snapshot,
-            subtype.clone().into_owned_object_type(),
-            supertype.clone().into_owned_object_type(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
-            snapshot,
-            subtype.clone(),
-            supertype.clone(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        OperationTimeValidation::validate_plays_compatible_with_new_supertype(
-            snapshot,
-            subtype.clone().into_owned_object_type(),
-            supertype.clone().into_owned_object_type(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
-            snapshot,
-            subtype.clone(),
-            supertype.clone(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
         OperationTimeValidation::validate_relation_type_does_not_acquire_cascade_annotation_with_new_supertype(
             snapshot,
             subtype.clone(),
@@ -1544,7 +1547,16 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_supertype(snapshot, subtype, supertype)
+        // TODO: Looks like we do not need it?
+        OperationTimeValidation::validate_lost_relates_do_not_cause_lost_instances(
+            snapshot,
+            thing_manager,
+            subtype.clone(),
+            supertype.clone(),
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        self.set_object_type_supertype(snapshot, thing_manager, subtype, supertype)
     }
 
     pub(crate) fn set_owns(

@@ -274,14 +274,11 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_owns_overrides_compatible_with_new_supertype<T>(
+    pub(crate) fn validate_owns_overrides_compatible_with_new_supertype<T: ObjectTypeAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
         owner_subtype: T,
         owner_supertype: T,
-    ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
-    {
+    ) -> Result<(), SchemaValidationError> {
         let supertype_owns_with_attributes: HashMap<AttributeType<'static>, Owns<'static>> =
             TypeReader::get_capabilities(snapshot, owner_supertype.clone().into_owned_object_type())
                 .map_err(SchemaValidationError::ConceptRead)?;
@@ -336,14 +333,11 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_plays_overrides_compatible_with_new_supertype<T>(
+    pub(crate) fn validate_plays_overrides_compatible_with_new_supertype<T: ObjectTypeAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
         player_subtype: T,
         player_supertype: T,
-    ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static> + KindAPI<'static>,
-    {
+    ) -> Result<(), SchemaValidationError> {
         let supertype_plays_with_roles: HashMap<RoleType<'static>, Plays<'static>> =
             TypeReader::get_capabilities(snapshot, player_supertype.clone().into_owned_object_type())
                 .map_err(SchemaValidationError::ConceptRead)?;
@@ -1441,6 +1435,151 @@ impl OperationTimeValidation {
         } else {
             Ok(())
         }
+    }
+
+    pub(crate) fn validate_lost_owns_do_not_cause_lost_instances(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        owner_subtype: ObjectType<'static>,
+        owner_supertype: ObjectType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let lost_owns = Self::get_lost_capabilities_if_supertype_is_changed::<Owns<'static>>(
+            snapshot,
+            owner_subtype.clone(),
+            owner_supertype.clone())?;
+        println!("LOST OWNS: {:?}", lost_owns.len());
+
+        for owns in lost_owns {
+            let attribute_type = owns.attribute();
+            let mut has_instances = false;
+
+            match owner_subtype.clone() {
+                ObjectType::Entity(entity_type) => {
+                    while let Some(instance) = thing_manager.get_entities_in(snapshot, entity_type.clone()).next() {
+                        let instance = instance.map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+                        let mut iterator = thing_manager.get_has_from_thing_to_type_unordered(snapshot, &instance, attribute_type.clone())
+                            .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+
+                        // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
+                        if iterator.next().is_some() {
+                            has_instances = true;
+                            break;
+                        }
+                    }
+                }
+                ObjectType::Relation(relation_type) => {
+                    while let Some(instance) = thing_manager.get_relations_in(snapshot, relation_type.clone()).next() {
+                        let instance = instance.map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+                        let mut iterator = thing_manager.get_has_from_thing_to_type_unordered(snapshot, &instance, attribute_type.clone())
+                            .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+
+                        // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
+                        if iterator.next().is_some() {
+                            has_instances = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if has_instances {
+                return Err(SchemaValidationError::CannotChangeSupertypeAsOwnsIsLostWhileHavingHasInstances(
+                    get_label_or_schema_err(snapshot, owner_subtype)?,
+                    get_label_or_schema_err(snapshot, owner_supertype)?,
+                    get_label_or_schema_err(snapshot, attribute_type)?,
+                ));
+            }
+        }
+
+        // TODO: call this check for all subtypes (here in the operation time!)
+
+        Ok(())
+    }
+
+    pub(crate) fn validate_lost_plays_do_not_cause_lost_instances(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        player_subtype: ObjectType<'static>,
+        player_supertype: ObjectType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let lost_plays = Self::get_lost_capabilities_if_supertype_is_changed::<Plays<'static>>(
+            snapshot,
+            player_subtype.clone(),
+            player_supertype.clone())?;
+        println!("LOST PLAYS: {:?}", lost_plays.len());
+        // TODO: Add iterator over role players for objects!
+        // for plays in lost_plays {
+        //     let attribute_type = plays.attribute();
+        //     let mut has_instances = false;
+        //     match player_subtype.clone() {
+        //         ObjectType::Entity(entity_type) => {
+        //             while let Some(instance) = thing_manager.get_entities_in(snapshot, entity_type.clone()).next() {
+        //                 let instance = instance.map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+        //                 let mut iterator = thing_manager.get_has_from_thing_to_type_unordered(snapshot, &instance, attribute_type.clone())
+        //                     .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+        //
+        //                 // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
+        //                 iterator.next().is_some() { has_instances = true; break; }
+        //             }
+        //         }
+        //         ObjectType::Relation(relation_type) => {
+        //             while let Some(instance) = thing_manager.get_relations_in(snapshot, relation_type.clone()).next() {
+        //                 let instance = instance.map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+        //                 let mut iterator = thing_manager.get_has_from_thing_to_type_unordered(snapshot, &instance, attribute_type.clone())
+        //                     .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+        //
+        //                 // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
+        //                 iterator.next().is_some() { has_instances = true; break; }
+        //             }
+        //         }
+        //     };
+        //
+        //     if has_instances {
+        //         return Err(SchemaValidationError::CannotChangeSupertypeAsPlaysIsLostWhileHavingRolePlayerInstances(
+        //             get_label_or_schema_err(snapshot, player_subtype)?,
+        //             get_label_or_schema_err(snapshot, player_supertype)?,
+        //             get_label_or_schema_err(snapshot, attribute_type)?,
+        //         ));
+        //     }
+        // }
+
+        // TODO: call this check for all subtypes (here in the operation time!)
+
+        Ok(())
+    }
+
+    pub(crate) fn validate_lost_relates_do_not_cause_lost_instances(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation_type: RelationType<'static>,
+        new_supertype: RelationType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let lost_relates = Self::get_lost_capabilities_if_supertype_is_changed::<Relates<'static>>(
+            snapshot,
+            relation_type.clone(),
+            new_supertype.clone())?;
+        println!("LOST RELATES: {:?}", lost_relates.len());
+        Ok(())
+    }
+
+    fn get_lost_capabilities_if_supertype_is_changed<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        type_: CAP::ObjectType,
+        new_supertype: CAP::ObjectType,
+    ) -> Result<HashSet<CAP>, SchemaValidationError> {
+        let new_inherited_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, new_supertype.clone())
+            .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+
+        let current_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, type_.clone())
+            .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+        let current_inherited_capabilities = current_capabilities
+            .values()
+            .filter(|capability| capability.object() != type_);
+
+        Ok(current_inherited_capabilities
+            .filter(|capability| !new_inherited_capabilities.contains_key(&capability.interface()))
+            .map(|capability| capability.clone())
+            .collect())
     }
 
     fn has_instances_of_type<'a, T: KindAPI<'a>>(

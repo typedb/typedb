@@ -157,6 +157,8 @@ pub enum SchemaValidationError {
     ),
     CannotDeleteTypeWithExistingInstances(Label<'static>),
     CannotSetAbstractToTypeWithExistingInstances(Label<'static>),
+    CannotChangeSupertypeAsOwnsIsLostWhileHavingHasInstances(Label<'static>, Label<'static>, Label<'static>),
+    CannotChangeSupertypeAsPlaysIsLostWhileHavingRolePlayerInstances(Label<'static>, Label<'static>, Label<'static>),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -240,6 +242,8 @@ impl Error for SchemaValidationError {
             Self::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(_, _) => None,
             Self::CannotDeleteTypeWithExistingInstances(_) => None,
             Self::CannotSetAbstractToTypeWithExistingInstances(_) => None,
+            Self::CannotChangeSupertypeAsOwnsIsLostWhileHavingHasInstances(_, _, _) => None,
+            Self::CannotChangeSupertypeAsPlaysIsLostWhileHavingRolePlayerInstances(_, _, _) => None,
         }
     }
 }

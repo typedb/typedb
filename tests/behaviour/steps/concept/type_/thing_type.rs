@@ -380,7 +380,7 @@ pub async fn type_set_supertype(
                     tx.type_manager.get_entity_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
                 let supertype =
                     tx.type_manager.get_entity_type(&tx.snapshot, &supertype_label.into_typedb()).unwrap().unwrap();
-                let res = thistype.set_supertype(&mut tx.snapshot, &tx.type_manager, supertype);
+                let res = thistype.set_supertype(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, supertype);
                 may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Relation => {
@@ -388,7 +388,7 @@ pub async fn type_set_supertype(
                     tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
                 let supertype =
                     tx.type_manager.get_relation_type(&tx.snapshot, &supertype_label.into_typedb()).unwrap().unwrap();
-                let res = thistype.set_supertype(&mut tx.snapshot, &tx.type_manager, supertype);
+                let res = thistype.set_supertype(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, supertype);
                 may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),

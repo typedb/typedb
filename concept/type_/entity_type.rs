@@ -169,9 +169,10 @@ impl<'a> EntityType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         supertype: EntityType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_entity_type_supertype(snapshot, self.clone().into_owned(), supertype)
+        type_manager.set_entity_type_supertype(snapshot, thing_manager, self.clone().into_owned(), supertype)
     }
 
     pub fn get_supertypes<'m>(
