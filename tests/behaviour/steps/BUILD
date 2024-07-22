@@ -24,6 +24,7 @@ rust_library(
         "@crates//:chrono",
         "@crates//:chrono-tz",
         "@crates//:cucumber",
+        "@crates//:futures",
         "@crates//:itertools",
         "@crates//:macro_rules_attribute",
     ],
