@@ -15,6 +15,7 @@ use concept::{
     type_::TypeAPI,
 };
 use ir::inference::type_inference::TypeAnnotations;
+use ir::pattern::constraint::Constraint;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -33,7 +34,8 @@ use crate::{
     },
     planner::pattern_plan::Instruction,
 };
-use crate::executor::instruction::iterator::InstructionTuplesIterator;
+use crate::executor::instruction::iterator::TupleIterator;
+use crate::planner::pattern_plan::IterateBounds;
 
 mod comparison_executor;
 mod comparison_reverse_executor;
@@ -139,7 +141,7 @@ impl InstructionExecutor {
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
         row: ImmutableRow<'_>,
-    ) -> Result<InstructionTuplesIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, ConceptReadError> {
         match self {
             InstructionExecutor::Isa(executor) => todo!(), // executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
@@ -183,13 +185,27 @@ impl VariableMode {
 }
 
 pub(crate) struct VariableModes {
-    modes: HashMap<Position, VariableMode>
+    modes: HashMap<Position, VariableMode>,
 }
 
 impl VariableModes {
-
-    pub(crate) fn new() -> Self {
+    fn new() -> Self {
         VariableModes { modes: HashMap::new() }
+    }
+
+    pub(crate) fn new_from(
+        constraint: impl Into<Constraint<Variable>>,
+        variable_positions: &HashMap<Variable, Position>,
+        bounds: &IterateBounds<Variable>,
+        selected: &Vec<Variable>,
+        named: &HashMap<Variable, String>
+    ) -> Self {
+        let mut modes = Self::new();
+        constraint.into().ids_foreach(|id, _| {
+            let as_position = *variable_positions.get(&id).unwrap();
+            modes.insert(as_position, VariableMode::new(bounds.contains(id), selected.contains(&id), named.contains_key(&id)))
+        });
+        modes
     }
 
     pub(crate) fn insert(&mut self, variable_position: Position, mode: VariableMode) {

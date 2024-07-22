@@ -17,7 +17,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     executor::{
         batch::{Batch, BatchRowIterator, ImmutableRow, Row},
-        instruction::iterator::InstructionTuplesIterator,
+        instruction::iterator::TupleIterator,
         Position, SelectedPositions,
     },
     planner::pattern_plan::{
@@ -279,7 +279,7 @@ struct SortedJoinExecutor {
     output_width: u32,
     outputs_selected: SelectedPositions,
 
-    iterators: Vec<InstructionTuplesIterator>,
+    iterators: Vec<TupleIterator>,
     cartesian_iterator: CartesianIterator,
     input: Option<Peekable<BatchRowIterator>>,
     intersection_row: Vec<VariableValue<'static>>,
@@ -594,7 +594,7 @@ struct CartesianIterator {
     intersection_source: Vec<VariableValue<'static>>,
     intersection_multiplicity: u64,
     cartesian_executor_indices: Vec<usize>,
-    iterators: Vec<Option<InstructionTuplesIterator>>,
+    iterators: Vec<Option<TupleIterator>>,
 }
 
 impl CartesianIterator {
@@ -620,7 +620,7 @@ impl CartesianIterator {
         iterator_executors: &Vec<InstructionExecutor>,
         source_intersection: &Vec<VariableValue<'static>>,
         source_multiplicity: u64,
-        intersection_iterators: &mut Vec<InstructionTuplesIterator>,
+        intersection_iterators: &mut Vec<TupleIterator>,
     ) -> Result<(), ConceptReadError> {
         debug_assert!(source_intersection.len() == self.intersection_source.len());
         self.is_active = true;
@@ -687,7 +687,7 @@ impl CartesianIterator {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         executor: &InstructionExecutor,
-    ) -> Result<InstructionTuplesIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, ConceptReadError> {
         let mut reopened = executor.get_iterator(
             snapshot,
             thing_manager,

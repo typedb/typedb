@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod common;
-
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use concept::{
@@ -28,8 +26,8 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
 use traversal::{
     executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
@@ -41,6 +39,8 @@ use traversal::{
 use typeql::builder::type_;
 
 use crate::common::{load_managers, setup_storage};
+
+mod common;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const AGE_LABEL: Label = Label::new_static("age");
