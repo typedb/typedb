@@ -142,7 +142,7 @@ impl Context {
         if clean_databases {
             let database_names = self.database_names();
             for database_name in database_names {
-                self.server_mut().unwrap().lock().unwrap().delete_database(database_name).unwrap();
+                self.server().unwrap().lock().unwrap().delete_database(database_name).unwrap();
             }
         }
 
@@ -157,12 +157,8 @@ impl Context {
         }
     }
 
-    pub fn server(&self) -> Option<&Arc<Mutex<typedb::Server>>> {
-        self.server.as_ref()
-    }
-
-    pub fn server_mut(&mut self) -> Option<&mut Arc<Mutex<typedb::Server>>> {
-        self.server.as_mut()
+    pub fn server(&self) -> Option<&Mutex<typedb::Server>> {
+        self.server.as_deref()
     }
 
     pub fn databases(&self) -> HashMap<String, Arc<Database<WALClient>>> {

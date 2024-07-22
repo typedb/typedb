@@ -12,7 +12,7 @@ use crate::{generic_step, util, Context};
 #[apply(generic_step)]
 #[step(expr = "connection create database: {word}")]
 pub async fn connection_create_database(context: &mut Context, name: String) {
-    context.server_mut().unwrap().lock().unwrap().create_database(name);
+    context.server().unwrap().lock().unwrap().create_database(name);
 }
 
 #[apply(generic_step)]
@@ -33,7 +33,7 @@ async fn connection_create_databases_in_parallel(context: &mut Context, step: &S
 #[apply(generic_step)]
 #[step(expr = "connection reset database: {word}")]
 pub async fn connection_reset_database(context: &mut Context, name: String) {
-    context.server_mut().unwrap().lock().unwrap().reset_else_recreate_database(name).unwrap();
+    context.server().unwrap().lock().unwrap().reset_else_recreate_database(name).unwrap();
 }
 
 #[apply(generic_step)]
