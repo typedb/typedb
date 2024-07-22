@@ -5,9 +5,15 @@
  */
 
 
+use std::ops::Range;
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
+use concept::thing::attribute::Attribute;
+use concept::thing::entity::Entity;
+use concept::thing::has::Has;
+use concept::thing::relation::Relation;
 use lending_iterator::higher_order::Hkt;
+use crate::executor::instruction::{VariableMode, VariableModes};
 use crate::executor::Position;
 
 #[derive(Debug, Clone)]
@@ -54,7 +60,6 @@ impl<'a> Tuple<'a> {
                 todo!()
             }
         }
-
     }
 }
 
@@ -119,3 +124,96 @@ impl TuplePositions {
 pub(crate) type TupleIndex = u16;
 
 pub(crate) type TupleResult<'a> = Result<Tuple<'a>, ConceptReadError>;
+
+pub(crate) fn enumerated_range(
+    variable_modes: &VariableModes,
+    positions: &TuplePositions,
+) -> Range<TupleIndex> {
+    let mut last_enumerated = None;
+    for (i, position) in positions.positions().iter().enumerate() {
+        match variable_modes.get(*position).unwrap() {
+            VariableMode::BoundSelect | VariableMode::UnboundSelect => {
+                last_enumerated = Some(i as TupleIndex);
+            }
+            VariableMode::UnboundCount => {}
+            VariableMode::UnboundCheck => {}
+        }
+    }
+    last_enumerated.map_or(0..0, |last| 0..last + 1)
+}
+
+pub(crate) fn enumerated_or_counted_range(
+    variable_modes: &VariableModes,
+    positions: &TuplePositions,
+) -> Range<TupleIndex> {
+    let mut last_enumerated_or_counted = None;
+    for (i, position) in positions.positions().iter().enumerate() {
+        match variable_modes.get(*position).unwrap() {
+            VariableMode::BoundSelect | VariableMode::UnboundSelect | VariableMode::UnboundCount => {
+                last_enumerated_or_counted = Some(i as TupleIndex)
+            }
+            VariableMode::UnboundCheck => {}
+        }
+    }
+    last_enumerated_or_counted.map_or(0..0, |last| 0..last + 1)
+}
+
+
+pub(crate) fn isa_entity_to_tuple_thing_type<'a>(result: Result<Entity<'a>, ConceptReadError>) -> TupleResult<'a> {
+    match result {
+        Ok(entity) => {
+            let type_ = entity.type_();
+            Ok(Tuple::Pair([VariableValue::Thing(entity.into()), VariableValue::Type(type_.into())]))
+        },
+        Err(err) => Err(err)
+    }
+}
+pub(crate) fn isa_relation_to_tuple_thing_type<'a>(result: Result<Relation<'a>, ConceptReadError>) -> TupleResult<'a> {
+    match result {
+        Ok(relation) => {
+            let type_ = relation.type_();
+            Ok(Tuple::Pair([VariableValue::Thing(relation.into()), VariableValue::Type(type_.into())]))
+        },
+        Err(err) => Err(err)
+    }
+}
+
+pub(crate) fn isa_attribute_to_tuple_thing_type<'a>(result: Result<Attribute<'a>, ConceptReadError>) -> TupleResult<'a> {
+    match result {
+        Ok(attribute) =>{
+            let type_ = attribute.type_();
+            Ok(Tuple::Pair([VariableValue::Thing(attribute.into()), VariableValue::Type(type_.into())]))
+        }
+        Err(err) => Err(err)
+    }
+}
+
+pub(crate) fn has_to_tuple_owner_attribute<'a>(
+    result: Result<(Has<'a>, u64), ConceptReadError>
+) -> TupleResult<'a> {
+    match result {
+        Ok((has, count)) => {
+            let (owner, attribute) = has.into_owner_attribute();
+            Ok(Tuple::Pair([
+                VariableValue::Thing(owner.into()),
+                VariableValue::Thing(attribute.into()),
+            ]))
+        }
+        Err(err) => Err(err)
+    }
+}
+
+pub(crate) fn has_to_tuple_attribute_owner<'a>(
+    result: Result<(Has<'a>, u64), ConceptReadError>
+) -> TupleResult<'a> {
+    match result {
+        Ok((has, count)) => {
+            let (owner, attribute) = has.into_owner_attribute();
+            Ok(Tuple::Pair([
+                VariableValue::Thing(attribute.into()),
+                VariableValue::Thing(owner.into()),
+            ]))
+        }
+        Err(err) => Err(err)
+    }
+}

@@ -9,11 +9,11 @@ use std::sync::Arc;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use durability::wal::WAL;
 use encoding::{
+    EncodingKeyspace,
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
-    EncodingKeyspace,
 };
 use storage::{durability_client::WALClient, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging, TempDir};

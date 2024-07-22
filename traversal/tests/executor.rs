@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod common;
-
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use concept::{
@@ -16,7 +14,6 @@ use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use ir::{
     inference::type_inference::infer_types,
     program::{
-        block::FunctionalBlock,
         function_signature::{FunctionSignatureIndex, HashMapFunctionIndex},
         program::Program,
     },
@@ -33,6 +30,8 @@ use traversal::{
 };
 
 use crate::common::{load_managers, setup_storage};
+
+mod common;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const AGE_LABEL: Label = Label::new_static("age");

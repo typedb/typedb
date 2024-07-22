@@ -24,8 +24,8 @@ use ir::program::program::CompiledSchemaFunctions;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
 use traversal::{
     executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
