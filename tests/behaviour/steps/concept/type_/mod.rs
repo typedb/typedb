@@ -20,6 +20,7 @@ mod thing_type;
 #[derive(Debug, Clone)]
 pub enum BehaviourConceptTestExecutionError {
     CannotFindRoleToOverride,
+    CannotFindRoleToAddPlayerTo,
 }
 
 impl Display for BehaviourConceptTestExecutionError {
@@ -32,6 +33,7 @@ impl Error for BehaviourConceptTestExecutionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::CannotFindRoleToOverride => None,
+            Self::CannotFindRoleToAddPlayerTo => None,
         }
     }
 }

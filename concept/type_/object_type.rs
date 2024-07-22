@@ -4,7 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -14,6 +16,7 @@ use encoding::{
     Prefixed,
 };
 use lending_iterator::higher_order::Hkt;
+use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -41,6 +44,25 @@ impl<'a> ObjectType<'a> {
         Ok(match self {
             ObjectType::Entity(entity) => entity.get_supertype(snapshot, type_manager)?.map(ObjectType::Entity),
             ObjectType::Relation(relation) => relation.get_supertype(snapshot, type_manager)?.map(ObjectType::Relation),
+        })
+    }
+
+    pub fn get_subtypes<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<Vec<ObjectType<'m>>, ConceptReadError> {
+        Ok(match self {
+            ObjectType::Entity(entity) => entity
+                .get_subtypes(snapshot, type_manager)?
+                .into_iter()
+                .map(|arg0: &EntityType<'_>| ObjectType::Entity(arg0.clone()))
+                .collect_vec(),
+            ObjectType::Relation(relation) => relation
+                .get_subtypes(snapshot, type_manager)?
+                .into_iter()
+                .map(|arg0: &RelationType<'_>| ObjectType::Relation(arg0.clone()))
+                .collect_vec(),
         })
     }
 

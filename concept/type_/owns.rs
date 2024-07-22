@@ -15,6 +15,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
+    thing::thing_manager::ThingManager,
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationError, AnnotationKey,
@@ -95,9 +96,10 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         overridden: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
+        type_manager.set_owns_overridden(snapshot, thing_manager, self.clone().into_owned(), overridden)
     }
 
     pub fn unset_override(

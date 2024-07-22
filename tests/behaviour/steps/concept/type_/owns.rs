@@ -94,7 +94,7 @@ pub async fn get_owns_set_override(
             .get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, overridden_attr_type)
             .unwrap(); // This may also error
         if let Some(overridden_owns) = overridden_owns_opt {
-            let res = owns.set_override(&mut tx.snapshot, &tx.type_manager, overridden_owns);
+            let res = owns.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_owns);
             may_error.check_concept_write_without_read_errors(&res);
         } else {
             assert!(may_error.expects_error()); // We error by not finding the type to override

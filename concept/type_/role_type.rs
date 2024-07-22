@@ -82,7 +82,7 @@ impl<'a> RoleType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<RelationType<'static>, Relates<'static>>>, ConceptReadError> {
-        type_manager.get_relates_for_role_type(snapshot, self.clone().into_owned())
+        type_manager.get_relations_for_role_type(snapshot, self.clone().into_owned())
     }
 
     pub fn get_ordering(

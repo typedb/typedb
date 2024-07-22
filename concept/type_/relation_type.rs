@@ -268,8 +268,9 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_relates(snapshot, self.clone().into_owned())
     }
 
-    // TODO: It looks like a hack to me right now..... Why don't we search it, but build a new one?
-    pub fn get_relates_of_role(
+    // TODO: Maybe we just don't need this method and it's better to use the undeclared one!
+    // TODO: Rewrite to search as get_relates_of_role. TODO: Do we want to move it to type_manager? Cache it?
+    pub fn get_relates_of_role_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -279,6 +280,24 @@ impl<'a> RelationType<'a> {
         Ok(type_manager
             .get_role_type(snapshot, &role_label)?
             .map(|role_type| Relates::new(self.clone().into_owned(), role_type)))
+    }
+
+    pub fn get_relates_of_role(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_name: &str,
+    ) -> Result<Option<Relates<'static>>, ConceptReadError> {
+        for (role_type, relates) in
+            type_manager.get_relation_type_relates(snapshot, self.clone().into_owned())?.into_iter()
+        {
+            let role_label = role_type.get_label(snapshot, type_manager)?;
+            if role_label.name.as_str() == role_name {
+                return Ok(Some(relates.to_owned()));
+            }
+        }
+
+        Ok(None)
     }
 
     pub fn into_owned(self) -> RelationType<'static> {

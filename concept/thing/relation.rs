@@ -36,8 +36,9 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         object::{Object, ObjectAPI},
-        thing_manager::ThingManager,
-        HKInstance, ThingAPI,
+        HKInstance,
+        thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
+        ThingAPI,
     },
     type_::{
         annotation::AnnotationDistinct, relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType,
@@ -173,13 +174,20 @@ impl<'a> Relation<'a> {
         role_type: RoleType<'static>,
         player: Object<'_>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: validate schema
         if !thing_manager
             .object_exists(snapshot, self)
             .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
         {
             return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
         }
+
+        OperationTimeValidation::validate_object_type_plays_role_type(
+            snapshot,
+            thing_manager,
+            player.type_(),
+            role_type.clone(),
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         let relates = role_type.get_relates_declared(snapshot, thing_manager.type_manager())?;
         let relates_annotations = relates.get_annotations(snapshot, thing_manager.type_manager()).unwrap();

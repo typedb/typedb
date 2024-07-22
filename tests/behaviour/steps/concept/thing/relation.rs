@@ -16,6 +16,7 @@ use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
 use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
     transaction_context::{with_read_tx, with_write_tx},
     Context,
@@ -32,16 +33,23 @@ async fn relation_add_player_for_role(
 ) {
     let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
     let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object.clone();
-    let res = with_write_tx!(context, |tx| {
-        let role_type = relation
+    with_write_tx!(context, |tx| {
+        if let Some(relates) = relation
             .type_()
             .get_relates_of_role(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
-            .unwrap()
-            .role();
-        relation.add_player(&mut tx.snapshot, &tx.thing_manager, role_type, player)
+        {
+            let role_type = relates.role();
+            let res = relation.add_player(&mut tx.snapshot, &tx.thing_manager, role_type, player);
+            may_error.check_concept_write_without_read_errors(&res);
+        } else {
+            // TODO: It is a little hacky as we don't test the concept api itself, but it is a correct behavior for TypeQL, so
+            // it's easier to support such tests here as well
+            may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
+                BehaviourConceptTestExecutionError::CannotFindRoleToAddPlayerTo,
+            ));
+        }
     });
-    may_error.check_concept_write_without_read_errors(&res);
 }
 
 #[apply(generic_step)]

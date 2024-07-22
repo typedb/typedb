@@ -506,7 +506,7 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relates_for_role_type(
+    pub(crate) fn get_relations_for_role_type(
         &self,
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'static>,
@@ -1476,13 +1476,23 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_lost_owns_do_not_cause_lost_instances(
+        OperationTimeValidation::validate_lost_owns_do_not_cause_lost_instances_while_changing_supertype(
             snapshot,
+            self,
             thing_manager,
             object_subtype.clone(),
             object_supertype.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_modified_owns_cardinality_does_not_violate_existing_instances_while_changing_supertype(
+            snapshot,
+            self,
+            thing_manager,
+            object_subtype.clone(),
+            object_supertype.clone(),
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_compatible_with_new_supertype(
             snapshot,
@@ -1498,8 +1508,18 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_lost_plays_do_not_cause_lost_instances(
+        OperationTimeValidation::validate_lost_plays_do_not_cause_lost_instances_while_changing_supertype(
             snapshot,
+            self,
+            thing_manager,
+            object_subtype.clone(),
+            object_supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_modified_plays_cardinality_does_not_violate_existing_instances_while_changing_supertype(
+            snapshot,
+            self,
             thing_manager,
             object_subtype,
             object_supertype,
@@ -1542,15 +1562,6 @@ impl TypeManager {
 
         OperationTimeValidation::validate_relation_type_does_not_acquire_cascade_annotation_with_new_supertype(
             snapshot,
-            subtype.clone(),
-            supertype.clone(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        // TODO: Looks like we do not need it?
-        OperationTimeValidation::validate_lost_relates_do_not_cause_lost_instances(
-            snapshot,
-            thing_manager,
             subtype.clone(),
             supertype.clone(),
         )
@@ -1611,6 +1622,7 @@ impl TypeManager {
 
         OperationTimeValidation::validate_no_instances_to_unset_owns(
             snapshot,
+            self,
             thing_manager,
             owner.clone(),
             attribute.clone(),
@@ -1626,10 +1638,10 @@ impl TypeManager {
     pub(crate) fn set_owns_overridden(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         owns: Owns<'static>,
         overridden: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: More validation - instances exist.
         OperationTimeValidation::validate_owns_is_inherited(snapshot, owns.owner(), overridden.attribute())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1673,6 +1685,17 @@ impl TypeManager {
             value_type.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        if owns.attribute() != overridden.attribute() {
+            OperationTimeValidation::validate_no_instances_to_override_owns(
+                snapshot,
+                self,
+                thing_manager,
+                owns.owner(),
+                overridden.attribute(),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         TypeWriter::storage_set_type_edge_overridden(snapshot, owns, overridden);
         Ok(())
@@ -1737,6 +1760,7 @@ impl TypeManager {
 
         OperationTimeValidation::validate_no_instances_to_unset_plays(
             snapshot,
+            self,
             thing_manager,
             player.clone(),
             role_type.clone(),
@@ -1751,6 +1775,7 @@ impl TypeManager {
     pub(crate) fn set_plays_overridden(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         plays: Plays<'static>,
         overridden: Plays<'static>,
     ) -> Result<(), ConceptWriteError> {
@@ -1771,6 +1796,17 @@ impl TypeManager {
             overridden.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        if plays.role() != overridden.role() {
+            OperationTimeValidation::validate_no_instances_to_override_plays(
+                snapshot,
+                self,
+                thing_manager,
+                plays.player(),
+                overridden.role(),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         TypeWriter::storage_set_type_edge_overridden(snapshot, plays, overridden);
         Ok(())

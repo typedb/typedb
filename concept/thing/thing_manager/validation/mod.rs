@@ -10,6 +10,8 @@ pub mod operation_time_validation;
 pub enum DataValidationError {
     ConceptRead(ConceptReadError),
     CannotCreateInstanceOfAbstractType(Label<'static>),
+    CannotAddOwnerInstanceForNotOwnedAttributeType(Label<'static>, Label<'static>),
+    CannotAddPlayerInstanceForNotPlayedRoleType(Label<'static>, Label<'static>),
 }
 
 impl fmt::Display for DataValidationError {
@@ -23,6 +25,8 @@ impl Error for DataValidationError {
         match self {
             Self::ConceptRead(source) => Some(source),
             Self::CannotCreateInstanceOfAbstractType(_) => None,
+            Self::CannotAddOwnerInstanceForNotOwnedAttributeType(_, _) => None,
+            Self::CannotAddPlayerInstanceForNotPlayedRoleType(_, _) => None,
         }
     }
 }

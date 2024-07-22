@@ -30,7 +30,12 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        attribute::Attribute, entity::Entity, has::Has, relation::Relation, thing_manager::ThingManager, HKInstance,
+        HKInstance,
+        attribute::Attribute,
+        entity::Entity,
+        has::Has,
+        relation::Relation,
+        thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
         ThingAPI,
     },
     type_::{
@@ -235,6 +240,14 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
         }
 
+        OperationTimeValidation::validate_object_type_owns_attribute_type(
+            snapshot,
+            thing_manager,
+            self.type_(),
+            attribute.type_(),
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
         let owns = self
             .get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
@@ -308,6 +321,14 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         if !thing_manager.object_exists(snapshot, self)? {
             return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
         }
+
+        OperationTimeValidation::validate_object_type_owns_attribute_type(
+            snapshot,
+            thing_manager,
+            self.type_(),
+            attribute_type.clone(),
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         let owns = self
             .get_type_owns(snapshot, thing_manager.type_manager(), attribute_type.clone())

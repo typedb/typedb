@@ -3,8 +3,14 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
-    thing::thing_manager::{validation::DataValidationError, ThingManager},
-    type_::{type_manager::TypeManager, TypeAPI},
+    thing::{
+        object::Object,
+        thing_manager::{validation::DataValidationError, ThingManager},
+    },
+    type_::{
+        attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, type_manager::TypeManager,
+        ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
+    },
 };
 
 pub struct OperationTimeValidation {}
@@ -39,6 +45,46 @@ impl OperationTimeValidation {
             )?))
         } else {
             Ok(())
+        }
+    }
+
+    pub(crate) fn validate_object_type_plays_role_type(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        object_type: ObjectType<'_>,
+        role_type: RoleType<'_>,
+    ) -> Result<(), DataValidationError> {
+        let has_plays = object_type
+            .get_plays(snapshot, &thing_manager.type_manager)
+            .map_err(DataValidationError::ConceptRead)?
+            .contains_key(&role_type.clone());
+        if has_plays {
+            Ok(())
+        } else {
+            Err(DataValidationError::CannotAddPlayerInstanceForNotPlayedRoleType(
+                Self::get_label_or_schema_err(snapshot, &thing_manager.type_manager, object_type)?,
+                Self::get_label_or_schema_err(snapshot, &thing_manager.type_manager, role_type)?,
+            ))
+        }
+    }
+
+    pub(crate) fn validate_object_type_owns_attribute_type<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        object_type: impl ObjectTypeAPI<'a>,
+        attribute_type: AttributeType<'_>,
+    ) -> Result<(), DataValidationError> {
+        let has_owns = object_type
+            .get_owns(snapshot, &thing_manager.type_manager)
+            .map_err(DataValidationError::ConceptRead)?
+            .contains_key(&attribute_type.clone());
+        if has_owns {
+            Ok(())
+        } else {
+            Err(DataValidationError::CannotAddOwnerInstanceForNotOwnedAttributeType(
+                Self::get_label_or_schema_err(snapshot, &thing_manager.type_manager, object_type)?,
+                Self::get_label_or_schema_err(snapshot, &thing_manager.type_manager, attribute_type)?,
+            ))
         }
     }
 }

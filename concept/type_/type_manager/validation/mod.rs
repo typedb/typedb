@@ -157,9 +157,23 @@ pub enum SchemaValidationError {
     ),
     CannotDeleteTypeWithExistingInstances(Label<'static>),
     CannotSetAbstractToTypeWithExistingInstances(Label<'static>),
-    CannotUnsetCapabilityWithExistingInstances(CapabilityKind, Label<'static>, Label<'static>),
-    CannotChangeSupertypeAsOwnsIsLostWhileHavingHasInstances(Label<'static>, Label<'static>, Label<'static>),
-    CannotChangeSupertypeAsPlaysIsLostWhileHavingRolePlayerInstances(Label<'static>, Label<'static>, Label<'static>),
+    CannotUnsetCapabilityWithExistingInstances(CapabilityKind, Label<'static>, Label<'static>, Label<'static>),
+    CannotOverrideCapabilityWithExistingInstances(CapabilityKind, Label<'static>, Label<'static>, Label<'static>),
+    CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(
+        CapabilityKind,
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+    ),
+    CannotChangeSupertypeAsUpdatedCardinalityIsViolatedByExistingInstances(
+        CapabilityKind,
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        AnnotationCardinality,
+    ),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -243,9 +257,10 @@ impl Error for SchemaValidationError {
             Self::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(_, _) => None,
             Self::CannotDeleteTypeWithExistingInstances(_) => None,
             Self::CannotSetAbstractToTypeWithExistingInstances(_) => None,
-            Self::CannotUnsetCapabilityWithExistingInstances(_, _, _) => None,
-            Self::CannotChangeSupertypeAsOwnsIsLostWhileHavingHasInstances(_, _, _) => None,
-            Self::CannotChangeSupertypeAsPlaysIsLostWhileHavingRolePlayerInstances(_, _, _) => None,
+            Self::CannotUnsetCapabilityWithExistingInstances(_, _, _, _) => None,
+            Self::CannotOverrideCapabilityWithExistingInstances(_, _, _, _) => None,
+            Self::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(_, _, _, _, _) => None,
+            Self::CannotChangeSupertypeAsUpdatedCardinalityIsViolatedByExistingInstances(_, _, _, _, _, _) => None,
         }
     }
 }

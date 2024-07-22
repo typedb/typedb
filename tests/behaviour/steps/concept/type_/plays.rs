@@ -135,7 +135,12 @@ pub async fn get_plays_set_override(
         let overridden_plays_opt =
             player_supertype.get_plays_role(&tx.snapshot, &tx.type_manager, overridden_role_type).unwrap();
         if let Some(overridden_plays) = overridden_plays_opt {
-            let res = plays.set_override(&mut tx.snapshot, &tx.type_manager, overridden_plays);
+            let res = plays.set_override(
+                &mut tx.snapshot,
+                &tx.type_manager,
+                &tx.thing_manager,
+                overridden_plays,
+            );
             may_error.check_concept_write_without_read_errors(&res);
         } else {
             assert!(may_error.expects_error());
