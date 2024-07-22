@@ -13,6 +13,7 @@ rust_library(
         "*.rs",
         "*/*.rs",
         "*/*/*.rs",
+        "*/*/*/*.rs",
     ], exclude=["tests/**"]),
     deps = [
         "//answer",
@@ -32,7 +33,7 @@ rust_library(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*.rs", "*/*/*.rs"]),
+    include = glob(["*", "**/*.rs"]),
     exclude = glob([
         "Cargo.*",
     ]),
