@@ -24,7 +24,7 @@ const MAX_MONTHS: u32 = (MAX_YEAR - MIN_YEAR + 1) as u32 * MONTHS_PER_YEAR;
 
 const DAYS_PER_WEEK: u32 = 7;
 
-#[derive(Clone, Copy, Debug, Hash)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Duration {
     pub(super) months: u32,
     pub(super) days: u32,
@@ -73,15 +73,6 @@ impl Duration {
         Self { months: 0, days: 0, nanos }
     }
 }
-
-// Equivalent to derive(PartialEq), but spelled out to be clear this is the intended behaviour
-impl PartialEq for Duration {
-    fn eq(&self, other: &Self) -> bool {
-        (self.months, self.days, self.nanos) == (other.months, other.days, other.nanos)
-    }
-}
-
-impl Eq for Duration {}
 
 impl Add for Duration {
     type Output = Self;

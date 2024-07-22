@@ -9,12 +9,13 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    ops::Deref,
+    iter, mem,
+    path::Path,
     sync::{Arc, Mutex},
 };
 
 use ::concept::thing::{attribute::Attribute, object::Object};
-use cucumber::{StatsWriter, World};
+use cucumber::{gherkin::Feature, StatsWriter, World};
 use database::Database;
 use itertools::Itertools;
 use server::typedb;
@@ -27,6 +28,10 @@ mod params;
 mod transaction_context;
 mod util;
 
+use futures::{
+    future::Either,
+    stream::{self, StreamExt},
+};
 use thing_util::ObjectWithKey;
 use transaction_context::ActiveTransaction;
 
@@ -50,6 +55,48 @@ mod thing_util {
     }
 }
 
+#[derive(Debug, Default)]
+struct SingletonParser {
+    basic: cucumber::parser::Basic,
+}
+
+impl<I: AsRef<Path>> cucumber::Parser<I> for SingletonParser {
+    type Cli = <cucumber::parser::Basic as cucumber::Parser<I>>::Cli;
+    type Output = stream::FlatMap<
+        stream::Iter<std::vec::IntoIter<Result<Feature, cucumber::parser::Error>>>,
+        Either<
+            stream::Iter<std::vec::IntoIter<Result<Feature, cucumber::parser::Error>>>,
+            stream::Iter<iter::Once<Result<Feature, cucumber::parser::Error>>>,
+        >,
+        fn(
+            Result<Feature, cucumber::parser::Error>,
+        ) -> Either<
+            stream::Iter<std::vec::IntoIter<Result<Feature, cucumber::parser::Error>>>,
+            stream::Iter<iter::Once<Result<Feature, cucumber::parser::Error>>>,
+        >,
+    >;
+
+    fn parse(self, input: I, cli: Self::Cli) -> Self::Output {
+        self.basic.parse(input, cli).flat_map(|res| match res {
+            Ok(mut feature) => {
+                let scenarios = mem::take(&mut feature.scenarios);
+                let singleton_features = scenarios
+                    .into_iter()
+                    .map(|scenario| {
+                        Ok(Feature {
+                            name: feature.name.clone() + " :: " + &scenario.name,
+                            scenarios: vec![scenario],
+                            ..feature.clone()
+                        })
+                    })
+                    .collect_vec();
+                Either::Left(stream::iter(singleton_features))
+            }
+            Err(err) => Either::Right(stream::iter(iter::once(Err(err)))),
+        })
+    }
+}
+
 #[derive(Debug, Default, World)]
 pub struct Context {
     server: Option<Arc<Mutex<typedb::Server>>>,
@@ -62,14 +109,15 @@ pub struct Context {
 }
 
 impl Context {
-    pub async fn test(glob: &'static str, clean_databases_after: bool) -> bool {
+    pub async fn test<I: AsRef<Path>>(glob: I, clean_databases_after: bool) -> bool {
         let default_panic = std::panic::take_hook();
         std::panic::set_hook(Box::new(move |info| {
             default_panic(info);
             std::process::exit(1);
         }));
 
-        !Self::cucumber()
+        !Self::cucumber::<I>()
+            .with_parser(SingletonParser::default())
             .repeat_failed()
             .fail_on_skipped()
             .with_default_cli()
@@ -87,14 +135,14 @@ impl Context {
     }
 
     async fn after_scenario(&mut self, clean_databases: bool) -> Result<(), ()> {
-        if let Some(_) = &self.active_transaction {
+        if self.active_transaction.is_some() {
             self.close_transaction()
         }
 
         if clean_databases {
             let database_names = self.database_names();
             for database_name in database_names {
-                self.server_mut().unwrap().lock().unwrap().delete_database(database_name).unwrap();
+                self.server().unwrap().lock().unwrap().delete_database(database_name).unwrap();
             }
         }
 
@@ -109,12 +157,8 @@ impl Context {
         }
     }
 
-    pub fn server(&self) -> Option<&Arc<Mutex<typedb::Server>>> {
-        self.server.as_ref()
-    }
-
-    pub fn server_mut(&mut self) -> Option<&mut Arc<Mutex<typedb::Server>>> {
-        self.server.as_mut()
+    pub fn server(&self) -> Option<&Mutex<typedb::Server>> {
+        self.server.as_deref()
     }
 
     pub fn databases(&self) -> HashMap<String, Arc<Database<WALClient>>> {
