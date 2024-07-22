@@ -1,0 +1,121 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+
+use answer::variable_value::VariableValue;
+use concept::error::ConceptReadError;
+use lending_iterator::higher_order::Hkt;
+use crate::executor::Position;
+
+#[derive(Debug, Clone)]
+pub(crate) enum Tuple<'a> {
+    Single([VariableValue<'a>; 1]),
+    Pair([VariableValue<'a>; 2]),
+    Triple([VariableValue<'a>; 3]),
+    Quintuple([VariableValue<'a>; 5]),
+    Arbitrary(), // TODO: unknown sized tuples, for functions
+}
+
+impl<'a> Tuple<'a> {
+    pub(crate) fn values(&self) -> &[VariableValue<'a>] {
+        match self {
+            Tuple::Single(values) => values,
+            Tuple::Pair(values) => values,
+            Tuple::Triple(values) => values,
+            Tuple::Quintuple(values) => values,
+            Tuple::Arbitrary() => {
+                todo!()
+            }
+        }
+    }
+
+    pub(crate) fn into_owned(self) -> Tuple<'static> {
+        match self {
+            Tuple::Single([value]) => Tuple::Single([value.into_owned()]),
+            Tuple::Pair([value_1, value_2]) => {
+                Tuple::Pair([value_1.into_owned(), value_2.into_owned()])
+            }
+            Tuple::Triple([value_1, value_2, value_3]) => {
+                Tuple::Triple([value_1.into_owned(), value_2.into_owned(), value_3.into_owned()])
+            }
+            Tuple::Quintuple([value_1, value_2, value_3, value_4, value_5]) => {
+                Tuple::Quintuple([
+                    value_1.into_owned(),
+                    value_2.into_owned(),
+                    value_3.into_owned(),
+                    value_4.into_owned(),
+                    value_5.into_owned()
+                ])
+            }
+            Tuple::Arbitrary() => {
+                todo!()
+            }
+        }
+
+    }
+}
+
+impl Hkt for Tuple<'static> {
+    type HktSelf<'a> = Tuple<'a>;
+}
+
+pub(crate) enum TuplePositions {
+    Single([Position; 1]),
+    Pair([Position; 2]),
+    Triple([Position; 3]),
+    Quintuple([Position; 5]),
+    Arbitrary(), // TODO: unknown sized tuples, for functions
+}
+
+impl TuplePositions {
+    pub(crate) fn as_single(&self) -> &[Position; 1] {
+        match self {
+            Self::Single(positions) => positions,
+            _ => unreachable!("Cannot read tuple as Single."),
+        }
+    }
+
+    pub(crate) fn as_pair(&self) -> &[Position; 2] {
+        match self {
+            Self::Pair(positions) => positions,
+            _ => unreachable!("Cannot read tuple as Pair."),
+        }
+    }
+
+    pub(crate) fn as_triple(&self) -> &[Position; 3] {
+        match self {
+            Self::Triple(positions) => positions,
+            _ => unreachable!("Cannot read tuple as Single."),
+        }
+    }
+
+    pub(crate) fn as_quintuple(&self) -> &[Position; 5] {
+        match self {
+            Self::Quintuple(positions) => positions,
+            _ => unreachable!("Cannot read tuple as Single."),
+        }
+    }
+
+    pub(crate) fn as_arbitrary(&self) {
+        todo!()
+    }
+
+    pub(crate) fn positions(&self) -> &[Position] {
+        match self {
+            TuplePositions::Single(positions) => positions,
+            TuplePositions::Pair(positions) => positions,
+            TuplePositions::Triple(positions) => positions,
+            TuplePositions::Quintuple(positions) => positions,
+            TuplePositions::Arbitrary() => {
+                todo!()
+            }
+        }
+    }
+}
+
+pub(crate) type TupleIndex = u16;
+
+pub(crate) type TupleResult<'a> = Result<Tuple<'a>, ConceptReadError>;

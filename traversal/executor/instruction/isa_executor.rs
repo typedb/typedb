@@ -25,7 +25,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     executor::{
         batch::ImmutableRow,
-        instruction::{iterator::InstructionIterator, VariableMode},
+        instruction::{VariableMode},
         Position,
     },
     planner::pattern_plan::IterateBounds,
@@ -171,57 +171,57 @@ impl IsaExecutor {
         }
     }
 
-    pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        thing_manager: &ThingManager,
-        row: ImmutableRow<'_>,
-    ) -> Result<InstructionIterator, ConceptReadError> {
-        match self.iterate_mode {
-            IterateMode::UnboundSortedFrom => {
-                todo!()
-            }
-            IterateMode::UnboundSortedTo => {
-                debug_assert!(self.type_cache.is_some());
-                if self.type_cache.as_ref().unwrap().len() == 1 {
-                    // no heap allocs needed if there is only 1 iterator
-                    match &self.type_cache.iter().flat_map(|types| types.iter()).next().unwrap() {
-                        Type::Entity(entity_type) => {
-                            let iterator = InstructionIterator::IsaEntitySortedThing(
-                                Peekable::new(thing_manager.get_entities_in(snapshot, entity_type.clone())),
-                                self.isa.clone(),
-                                self.variable_modes,
-                                None,
-                            );
-                            Ok(iterator)
-                        }
-                        Type::Relation(relation_type) => {
-                            let iterator = InstructionIterator::IsaRelationSortedThing(
-                                Peekable::new(thing_manager.get_relations_in(snapshot, relation_type.clone())),
-                                self.isa.clone(),
-                                self.variable_modes,
-                                None,
-                            );
-                            Ok(iterator)
-                        }
-                        Type::Attribute(attribute_type) => {
-                            let iterator = InstructionIterator::IsaAttributeSortedThing(
-                                Peekable::new(thing_manager.get_attributes_in(snapshot, attribute_type.clone())?),
-                                self.isa.clone(),
-                                self.variable_modes,
-                                None,
-                            );
-                            Ok(iterator)
-                        }
-                        Type::RoleType(_) => unreachable!("Cannot get instances of role types."),
-                    }
-                } else {
-                    todo!()
-                }
-            }
-            IterateMode::BoundFromSortedTo => {
-                todo!()
-            }
-        }
-    }
+    // pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
+    //     &self,
+    //     snapshot: &Snapshot,
+    //     thing_manager: &ThingManager,
+    //     row: ImmutableRow<'_>,
+    // ) -> Result<InstructionIterator, ConceptReadError> {
+    //     match self.iterate_mode {
+    //         IterateMode::UnboundSortedFrom => {
+    //             todo!()
+    //         }
+    //         IterateMode::UnboundSortedTo => {
+    //             debug_assert!(self.type_cache.is_some());
+    //             if self.type_cache.as_ref().unwrap().len() == 1 {
+    //                 // no heap allocs needed if there is only 1 iterator
+    //                 match &self.type_cache.iter().flat_map(|types| types.iter()).next().unwrap() {
+    //                     Type::Entity(entity_type) => {
+    //                         let iterator = InstructionIterator::IsaEntitySortedThing(
+    //                             Peekable::new(thing_manager.get_entities_in(snapshot, entity_type.clone())),
+    //                             self.isa.clone(),
+    //                             self.variable_modes,
+    //                             None,
+    //                         );
+    //                         Ok(iterator)
+    //                     }
+    //                     Type::Relation(relation_type) => {
+    //                         let iterator = InstructionIterator::IsaRelationSortedThing(
+    //                             Peekable::new(thing_manager.get_relations_in(snapshot, relation_type.clone())),
+    //                             self.isa.clone(),
+    //                             self.variable_modes,
+    //                             None,
+    //                         );
+    //                         Ok(iterator)
+    //                     }
+    //                     Type::Attribute(attribute_type) => {
+    //                         let iterator = InstructionIterator::IsaAttributeSortedThing(
+    //                             Peekable::new(thing_manager.get_attributes_in(snapshot, attribute_type.clone())?),
+    //                             self.isa.clone(),
+    //                             self.variable_modes,
+    //                             None,
+    //                         );
+    //                         Ok(iterator)
+    //                     }
+    //                     Type::RoleType(_) => unreachable!("Cannot get instances of role types."),
+    //                 }
+    //             } else {
+    //                 todo!()
+    //             }
+    //         }
+    //         IterateMode::BoundFromSortedTo => {
+    //             todo!()
+    //         }
+    //     }
+    // }
 }

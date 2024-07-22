@@ -5,8 +5,8 @@
  */
 
 use ir::pattern::constraint::RolePlayer;
+use crate::executor::Position;
 
-use crate::executor::{batch::Row, instruction::iterator::InstructionIterator, Position};
 
 pub(crate) struct RolePlayerIteratorExecutor {
     role_player: RolePlayer<Position>,
@@ -19,7 +19,4 @@ impl RolePlayerIteratorExecutor {
 }
 
 impl RolePlayerIteratorExecutor {
-    pub(crate) fn get_iterator(&self, row: &Row) -> InstructionIterator {
-        todo!()
-    }
 }

@@ -401,6 +401,18 @@ impl<'a> ObjectAPI<'a> for Object<'a> {
     }
 }
 
+impl<'a> Ord for Object<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.vertex().cmp(&other.vertex())
+    }
+}
+
+impl<'a> PartialOrd for Object<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl Hkt for Object<'static> {
     type HktSelf<'a> = Object<'a>;
 }

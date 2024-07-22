@@ -4,530 +4,328 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashSet};
+use std::cmp::Ordering;
+use std::iter::Iterator;
+use std::ops::Range;
 
-use answer::{variable_value::VariableValue, Thing};
-use concept::{
-    error::ConceptReadError,
-    thing::{
-        attribute::AttributeIterator, entity::EntityIterator, has::Has, object::HasAttributeIterator,
-        relation::RelationIterator,
-    },
-};
+use answer::variable_value::VariableValue;
+use concept::error::ConceptReadError;
 use lending_iterator::{LendingIterator, Peekable};
-use tracing::warn;
 
 use crate::executor::{
-    batch::{ImmutableRow, Row},
-    instruction::{
-        has_executor::{
-            HasBoundedSortedAttributeIterator, HasUnboundedSortedAttributeMergedIterator,
-            HasUnboundedSortedAttributeSingleIterator, HasUnboundedSortedOwnerIterator, HasVariableModes,
-        },
-        isa_executor::IsaVariableModes,
-        iterator_advance::{
-            counting_advance_attribute_iterator, counting_advance_entity_iterator,
-            counting_advance_has_bounded_sorted_attribute_iterator,
-            counting_advance_has_unbounded_sorted_attribute_merged_iterator,
-            counting_advance_has_unbounded_sorted_attribute_single_iterator,
-            counting_advance_has_unbounded_sorted_owner_iterator, counting_advance_relation_iterator,
-        },
-        VariableMode,
-    },
-    Position,
+    batch::Row,
+    instruction::has_executor::HasUnboundedSortedOwnerIterator,
 };
+use crate::executor::instruction::has_executor::{HasBoundedSortedAttributeIterator, HasUnboundedSortedAttributeMergedIterator, HasUnboundedSortedAttributeSingleIterator};
+use crate::executor::instruction::tuple::{Tuple, TupleIndex, TuplePositions, TupleResult};
 
-pub(crate) enum HasSortedAttributeIterator {
-    // Unbounded()
-    UnboundedMerged(Peekable<HasUnboundedSortedAttributeMergedIterator>),
-    UnboundedSingle(Peekable<HasUnboundedSortedAttributeSingleIterator>),
-    Bounded(Peekable<HasBoundedSortedAttributeIterator>),
+// TODO: the 'check' can deduplicate against all relevant variables as soon as an anonymous variable is no longer relevant.
+//       if the deduplicated answer leads to an answer, we should not re-emit it again (we will rediscover the same answers)
+//       if the deduplicated answer fails to lead to an answer, we should not re-emit it again as it will fail again
+
+pub(crate) enum InstructionTuplesIterator {
+    HasUnbounded(SortedTupleIterator<HasUnboundedSortedOwnerIterator>),
+    HasUnboundedInvertedOrderSingle(SortedTupleIterator<HasUnboundedSortedAttributeSingleIterator>),
+    HasUnboundedInvertedOrderMerged(SortedTupleIterator<HasUnboundedSortedAttributeMergedIterator>),
+    HasBounded(SortedTupleIterator<HasBoundedSortedAttributeIterator>),
 }
 
-impl HasSortedAttributeIterator {
-    fn peek(&mut self) -> Option<&Result<(Has, u64), ConceptReadError>> {
+impl InstructionTuplesIterator {
+    pub(crate) fn write_values(&mut self, row: &mut Row<'_>) {
         match self {
-            HasSortedAttributeIterator::UnboundedMerged(iter) => iter.peek(),
-            HasSortedAttributeIterator::UnboundedSingle(iter) => iter.peek(),
-            HasSortedAttributeIterator::Bounded(iter) => iter.peek(),
+            InstructionTuplesIterator::HasUnbounded(iter) => iter.write_values(row),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderSingle(iter) => iter.write_values(row),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderMerged(iter) => iter.write_values(row),
+            InstructionTuplesIterator::HasBounded(iter) => iter.write_values(row),
         }
     }
 
-    fn peek_sorted_value(&mut self) -> Option<Result<VariableValue<'_>, &ConceptReadError>> {
-        match self {
-            HasSortedAttributeIterator::UnboundedMerged(iter) => iter.peek().map(|result| {
-                result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute())))
-            }),
-            HasSortedAttributeIterator::UnboundedSingle(iter) => iter.peek().map(|result| {
-                result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute())))
-            }),
-            HasSortedAttributeIterator::Bounded(iter) => iter.peek().map(|result| {
-                result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute())))
-            }),
-        }
-    }
-
-    fn counting_skip_to_sorted_value(
-        &mut self,
-        value: &VariableValue<'_>,
-    ) -> Result<(usize, Option<Ordering>), ConceptReadError> {
-        match self {
-            HasSortedAttributeIterator::UnboundedMerged(iter) => {
-                counting_advance_has_unbounded_sorted_attribute_merged_iterator(iter, value)
-            }
-            HasSortedAttributeIterator::UnboundedSingle(iter) => {
-                counting_advance_has_unbounded_sorted_attribute_single_iterator(iter, value)
-            }
-            HasSortedAttributeIterator::Bounded(iter) => {
-                counting_advance_has_bounded_sorted_attribute_iterator(iter, value)
-            }
-        }
-    }
-
-    fn advance_single(&mut self) -> Result<(), ConceptReadError> {
-        match self {
-            HasSortedAttributeIterator::UnboundedMerged(iter) => iter.next().unwrap()?,
-            HasSortedAttributeIterator::UnboundedSingle(iter) => iter.next().unwrap()?,
-            HasSortedAttributeIterator::Bounded(iter) => iter.next().unwrap()?,
+    pub(crate) fn peek(&mut self) -> Option<Result<&Tuple<'_>, ConceptReadError>> {
+        let value = match self {
+            InstructionTuplesIterator::HasUnbounded(iter) => iter.peek(),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderSingle(iter) => iter.peek(),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderMerged(iter) => iter.peek(),
+            InstructionTuplesIterator::HasBounded(iter) => iter.peek(),
         };
-        Ok(())
+        value.map(|result| result.as_ref().map_err(|err| err.clone()))
     }
 
-    fn count(&mut self) -> usize {
+    pub(crate) fn advance_past(&mut self) -> Result<usize, ConceptReadError> {
         match self {
-            HasSortedAttributeIterator::UnboundedMerged(iter) => iter.count_as_ref(),
-            HasSortedAttributeIterator::UnboundedSingle(iter) => iter.count_as_ref(),
-            HasSortedAttributeIterator::Bounded(iter) => iter.count_as_ref(),
-        }
-    }
-}
-
-pub(crate) enum HasSortedOwnerIterator {
-    Unbounded(Peekable<HasUnboundedSortedOwnerIterator>),
-}
-
-impl HasSortedOwnerIterator {
-    fn peek(&mut self) -> Option<&Result<(Has, u64), ConceptReadError>> {
-        match self {
-            Self::Unbounded(iter) => iter.peek(),
+            InstructionTuplesIterator::HasUnbounded(iter) => iter.advance_past(),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderSingle(iter) => iter.advance_past(),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderMerged(iter) => iter.advance_past(),
+            InstructionTuplesIterator::HasBounded(iter) => iter.advance_past(),
         }
     }
 
-    fn peek_sorted_value(&mut self) -> Option<Result<VariableValue<'_>, &ConceptReadError>> {
-        match self {
-            Self::Unbounded(iter) => {
-                iter.peek().map(|result| result.as_ref().map(|(has, count)| VariableValue::Thing(has.owner().into())))
-            }
-        }
-    }
-
-    fn counting_skip_to_sorted_value(
+    pub(crate) fn advance_until_index_is(
         &mut self,
+        index: TupleIndex,
         value: &VariableValue<'_>,
-    ) -> Result<(usize, Option<Ordering>), ConceptReadError> {
+    ) -> Result<Option<Ordering>, ConceptReadError> {
         match self {
-            Self::Unbounded(iter) => counting_advance_has_unbounded_sorted_owner_iterator(iter, value),
-        }
-    }
-
-    fn advance_single(&mut self) -> Result<(), ConceptReadError> {
-        match self {
-            Self::Unbounded(iter) => iter.next().unwrap()?,
-        };
-        Ok(())
-    }
-
-    fn count(&mut self) -> usize {
-        match self {
-            HasSortedOwnerIterator::Unbounded(iter) => iter.count_as_ref(),
-        }
-    }
-}
-
-pub(crate) enum InstructionIterator {
-    IsaEntitySortedThing(
-        Peekable<EntityIterator>,
-        ir::pattern::constraint::Isa<Position>,
-        IsaVariableModes,
-        Option<HashSet<VariableValue<'static>>>,
-    ),
-    IsaRelationSortedThing(
-        Peekable<RelationIterator>,
-        ir::pattern::constraint::Isa<Position>,
-        IsaVariableModes,
-        Option<HashSet<VariableValue<'static>>>,
-    ),
-    IsaAttributeSortedThing(
-        Peekable<AttributeIterator>,
-        ir::pattern::constraint::Isa<Position>,
-        IsaVariableModes,
-        Option<HashSet<VariableValue<'static>>>,
-    ),
-
-    HasSortedAttribute(
-        HasSortedAttributeIterator,
-        ir::pattern::constraint::Has<Position>,
-        HasVariableModes,
-        Option<HashSet<VariableValue<'static>>>,
-    ),
-    HasSortedOwner(
-        HasSortedOwnerIterator,
-        ir::pattern::constraint::Has<Position>,
-        HasVariableModes,
-        Option<HashSet<VariableValue<'static>>>,
-    ),
-}
-
-impl InstructionIterator {
-    pub(crate) fn peek_sorted_value_equals(&mut self, value: &VariableValue<'_>) -> Result<bool, ConceptReadError> {
-        Ok(self.peek_sorted_value().transpose().map_err(|err| err.clone())?.is_some_and(|peek| peek == *value))
-    }
-
-    pub(crate) fn peek_sorted_value(&mut self) -> Option<Result<VariableValue<'_>, &ConceptReadError>> {
-        debug_assert!(self.is_sorted());
-        match self {
-            InstructionIterator::IsaEntitySortedThing(iter, _, _, _) => iter
-                .peek()
-                .map(|result| result.as_ref().map(|entity| VariableValue::Thing(entity.as_reference().into()))),
-            InstructionIterator::IsaRelationSortedThing(iter, _, _, _) => iter
-                .peek()
-                .map(|result| result.as_ref().map(|relation| VariableValue::Thing(relation.as_reference().into()))),
-            InstructionIterator::IsaAttributeSortedThing(iter, _, _, _) => iter
-                .peek()
-                .map(|result| result.as_ref().map(|attribute| VariableValue::Thing(attribute.as_reference().into()))),
-            InstructionIterator::HasSortedAttribute(iter, _, _, _) => iter.peek_sorted_value(),
-            InstructionIterator::HasSortedOwner(iter, _, _, _) => iter.peek_sorted_value(),
-        }
-    }
-
-    pub(crate) fn counting_skip_to_sorted_value(
-        &mut self,
-        value: &VariableValue<'_>,
-    ) -> Result<(usize, Option<Ordering>), ConceptReadError> {
-        debug_assert!(self.is_sorted());
-        match self {
-            InstructionIterator::IsaEntitySortedThing(iter, _, _, _) => counting_advance_entity_iterator(iter, value),
-            InstructionIterator::IsaRelationSortedThing(iter, _, _, _) => {
-                counting_advance_relation_iterator(iter, value)
-            }
-            InstructionIterator::IsaAttributeSortedThing(iter, _, _, _) => {
-                counting_advance_attribute_iterator(iter, value)
-            }
-            InstructionIterator::HasSortedAttribute(iter, _, _, _) => iter.counting_skip_to_sorted_value(value),
-            InstructionIterator::HasSortedOwner(iter, _, _, _) => iter.counting_skip_to_sorted_value(value),
+            InstructionTuplesIterator::HasUnbounded(iter) => iter.skip_until_value(index, value),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderSingle(iter) => iter.skip_until_value(index, value),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderMerged(iter) => iter.skip_until_value(index, value),
+            InstructionTuplesIterator::HasBounded(iter) => iter.skip_until_value(index, value),
         }
     }
 
     pub(crate) fn advance_single(&mut self) -> Result<(), ConceptReadError> {
-        assert!(self.has_value());
         match self {
-            InstructionIterator::IsaEntitySortedThing(iter, _, _, _) => {
-                iter.next().unwrap()?;
-            }
-            InstructionIterator::IsaRelationSortedThing(iter, _, _, _) => {
-                iter.next().unwrap()?;
-            }
-            InstructionIterator::IsaAttributeSortedThing(iter, _, _, _) => {
-                iter.next().unwrap()?;
-            }
-            InstructionIterator::HasSortedAttribute(iter, _, _, _) => return iter.advance_single(),
-            InstructionIterator::HasSortedOwner(iter, _, _, _) => return iter.advance_single(),
-        }
-        Ok(())
-    }
-
-    pub(crate) fn count_until_next_answer(&mut self, answer_row: ImmutableRow) -> Result<usize, ConceptReadError> {
-        assert!(self.has_value());
-        match self {
-            InstructionIterator::IsaEntitySortedThing(iter, _, _, _) => {
-                todo!()
-            }
-            InstructionIterator::IsaRelationSortedThing(iter, _, _, _) => {
-                todo!()
-            }
-            InstructionIterator::IsaAttributeSortedThing(iter, _, _, _) => {
-                todo!()
-            }
-            InstructionIterator::HasSortedAttribute(iter, has, variable_modes, dedup) => {
-                Self::count_until_next_answer_has_sorted_attribute(answer_row, iter, has, *variable_modes, dedup)
-            }
-            InstructionIterator::HasSortedOwner(iter, has, variable_modes, dedup) => {
-                Self::count_until_next_answer_has_sorted_owner(answer_row, iter, has, *variable_modes, dedup)
-            }
+            InstructionTuplesIterator::HasUnbounded(iter) => iter.advance_single(),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderSingle(iter) => iter.advance_single(),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderMerged(iter) => iter.advance_single(),
+            InstructionTuplesIterator::HasBounded(iter) => iter.advance_single(),
         }
     }
 
-    fn count_until_next_answer_has_sorted_owner(
-        answer_row: ImmutableRow,
-        iterator: &mut HasSortedOwnerIterator,
-        has: &ir::pattern::constraint::Has<Position>,
-        variable_modes: HasVariableModes,
-        mut deduplication_set: &mut Option<HashSet<VariableValue<'static>>>,
-    ) -> Result<usize, ConceptReadError> {
-        match (variable_modes.owner(), variable_modes.attribute()) {
-            (VariableMode::UnboundSelect, VariableMode::UnboundSelect)
-            | (VariableMode::BoundSelect, VariableMode::UnboundSelect) => {
-                iterator.advance_single()?;
-                Ok(1)
+    pub(crate) fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, ConceptReadError>> {
+        match self {
+            InstructionTuplesIterator::HasUnbounded(iter) => iter.peek_first_unbound_value(),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderSingle(iter) => iter.peek_first_unbound_value(),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderMerged(iter) => iter.peek_first_unbound_value(),
+            InstructionTuplesIterator::HasBounded(iter) => iter.peek_first_unbound_value(),
+        }
+    }
+
+    pub(crate) fn first_unbound_index(&self) -> TupleIndex {
+        match self {
+            InstructionTuplesIterator::HasUnbounded(iter) => iter.first_unbound_index(),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderSingle(iter) => iter.first_unbound_index(),
+            InstructionTuplesIterator::HasUnboundedInvertedOrderMerged(iter) => iter.first_unbound_index(),
+            InstructionTuplesIterator::HasBounded(iter) => iter.first_unbound_index(),
+        }
+    }
+}
+
+pub(crate) trait TupleIterator {
+    fn write_values(&mut self, row: &mut Row<'_>);
+
+    fn peek(&mut self) -> Option<&Result<Tuple<'_>, ConceptReadError>>;
+
+    /// Advance the iterator past the current answer, and return the number duplicate answers were skipped
+    fn advance_past(&mut self) -> Result<usize, ConceptReadError>;
+
+    fn advance_single(&mut self) -> Result<(), ConceptReadError>;
+
+    fn positions(&self) -> &TuplePositions;
+}
+
+pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a>=TupleResult<'a>>> {
+    iterator: Peekable<Iterator>,
+    positions: TuplePositions,
+    tuple_length: usize,
+    first_unbound: TupleIndex,
+    enumerate_range: Range<TupleIndex>,
+    enumerate_or_count_range: Range<TupleIndex>,
+
+    // examples:
+    //   [ enumerate, enumerate ] --> no special action, just advance()
+    //   [ enumerate, count ] --> advance() until POSITION changes
+    //   [ enumerate, check ] --> (same) or seek to POSITION+1
+    //   [ count, count ] --> count all (TODO: how to unifiy with other counts until POSITION changes)
+    //   [ count, check ] --> match $x has name "john"; $y; select $y;
+
+    // [ enumerate, count, count ] --> match $r links! ($rt: $x); select $r;
+    // [ enumerate, count, check ] -->
+
+    // basically: we can have 1 Enumerate, 1 Count and 1 Check position (most RHS count....) what about check, check?
+
+    // Count position: last Enumerated. Optimisation: advance() until Enumerated changes, return Count.
+    //  Checks: advance() must loop until a counted or enumerated variable changes
+    //  We store two positions: LastEnumerated position, and LastEnumeratedOrCounted position.
+    //    --> advance_past_enumerated() will advance_past_counted() until LastEnumerated changes.
+    //    --> advance_past_counted() will advance() until LastEnumeratedOrCounted changes.
+    //    --> advance() will move forward 1 position... or it could seek to `lastEnumerateOrCounted` + 1?
+}
+
+impl<Iterator: for<'a> LendingIterator<Item<'a>=TupleResult<'a>>> SortedTupleIterator<Iterator> {
+    pub(crate) fn new(
+        iterator: Iterator,
+        tuple_positions: TuplePositions,
+        first_unbound: TupleIndex,
+        enumerate_range: Range<TupleIndex>,
+        enumerate_or_count_range: Range<TupleIndex>,
+    ) -> Self {
+        debug_assert!(!enumerate_or_count_range.is_empty());
+        Self {
+            iterator: Peekable::new(iterator),
+            tuple_length: tuple_positions.positions().len(),
+            positions: tuple_positions,
+            first_unbound,
+            enumerate_range,
+            enumerate_or_count_range,
+        }
+    }
+
+    fn count_until_changes(&mut self, range: Range<TupleIndex>) -> Result<usize, ConceptReadError> {
+        debug_assert!(self.peek().is_some() && !range.is_empty());
+
+        if range.len() == self.tuple_length {
+            self.advance_single()?;
+            return Ok(1)
+        }
+
+        let current = self.peek().unwrap().as_ref().map_err(|err| err.clone())?.clone().into_owned();
+        let current_range = &current.values()[range.start as usize..range.end as usize];
+        self.iterator.next().unwrap()?;
+        let mut count = 1;
+        loop {
+            let peek = self.iterator.peek();
+            match peek {
+                None => return Ok(count),
+                Some(Ok(tuple)) => {
+                    let values = &tuple.values()[range.start as usize..range.end as usize];
+                    if values != current_range {
+                        return Ok(count);
+                    } else {
+                        count += 1;
+                        let _ = self.iterator.next().unwrap()?;
+                    }
+                }
+                Some(Err(err)) => return Err(err.clone()),
             }
-            (VariableMode::UnboundSelect, VariableMode::UnboundCount) => {
-                let target = answer_row.get(has.owner()).next_possible();
-                let (count, _) = iterator.counting_skip_to_sorted_value(&target)?;
-                Ok(count)
+        }
+    }
+
+    fn first_unbound_index(&self) -> TupleIndex {
+        self.first_unbound
+    }
+
+    fn skip_until_changes(&mut self, range: Range<TupleIndex>) -> Result<(), ConceptReadError> {
+        // TODO: this should be optimisable with seek(to peek[index].increment())
+        self.count_until_changes(range).map(|_| ())
+    }
+
+    fn skip_until_value(&mut self, index: TupleIndex, target: &VariableValue<'_>) -> Result<Option<Ordering>, ConceptReadError> {
+        // TODO: this should use seek if index == self.first_unbound()
+        loop {
+            let peek = self.peek();
+            match peek {
+                None => return Ok(None),
+                Some(Ok(tuple)) => {
+                    let value = &tuple.values()[index as usize];
+                    match value.partial_cmp(target).unwrap() {
+                        Ordering::Less => {
+                            self.advance_single()?;
+                        }
+                        Ordering::Equal => {
+                            // matched exactly
+                            return Ok(Some(Ordering::Equal));
+                        }
+                        Ordering::Greater => {
+                            // overshot
+                            return Ok(Some(Ordering::Greater));
+                        }
+                    }
+                }
+                Some(Err(err)) => return Err(err.clone()),
             }
-            (VariableMode::UnboundSelect, VariableMode::UnboundCheck) => {
-                let target = answer_row.get(has.owner()).next_possible();
-                // TODO: replace with seek()
-                let (_, _) = iterator.counting_skip_to_sorted_value(&target)?;
-                Ok(1)
+        }
+    }
+
+    fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, ConceptReadError>> {
+        self.peek_current_value_at(self.first_unbound)
+    }
+
+    fn peek_current_value_at(&mut self, index: TupleIndex) -> Option<Result<&VariableValue<'_>, ConceptReadError>> {
+        self.peek().map(|result| result.as_ref().map(|tuple| &tuple.values()[index as usize]).map_err(|err| err.clone()))
+    }
+}
+
+impl<Iterator: for<'a> LendingIterator<Item<'a>=TupleResult<'a>>> TupleIterator for SortedTupleIterator<Iterator> {
+    fn write_values(&mut self, row: &mut Row<'_>) {
+        debug_assert!(self.peek().is_some() && self.peek().unwrap().is_ok());
+        // note: can't use self.peek() since it will cause mut and immutable reference to self
+        let tuple = self.iterator.peek().unwrap().as_ref().unwrap();
+        match tuple {
+            Tuple::Single([value]) => {
+                row.set(self.positions.as_single()[0], value.clone().into_owned());
             }
-            (VariableMode::UnboundCount, VariableMode::UnboundSelect) => {
-                iterator.advance_single()?;
-                Ok(1)
+            Tuple::Pair([value_1, value_2]) => {
+                let positions = self.positions.as_pair();
+                row.set(positions[0], value_1.clone().into_owned());
+                row.set(positions[1], value_2.clone().into_owned());
             }
-            (VariableMode::UnboundCount, VariableMode::UnboundCount)
-            | (VariableMode::BoundSelect, VariableMode::UnboundCount) => Ok(iterator.count()),
-            (VariableMode::UnboundCount, VariableMode::UnboundCheck) => {
+            Tuple::Triple([value_1, value_2, value_3]) => {
+                let positions = self.positions.as_triple();
+                row.set(positions[0], value_1.clone().into_owned());
+                row.set(positions[1], value_2.clone().into_owned());
+                row.set(positions[2], value_3.clone().into_owned());
+            }
+            Tuple::Quintuple([value_1, value_2, value_3, value_4, value_5]) => {
+                let positions = self.positions.as_quintuple();
+                row.set(positions[0], value_1.clone().into_owned());
+                row.set(positions[1], value_2.clone().into_owned());
+                row.set(positions[2], value_3.clone().into_owned());
+                row.set(positions[3], value_4.clone().into_owned());
+                row.set(positions[4], value_5.clone().into_owned());
+            }
+            Tuple::Arbitrary() => {
+                todo!()
+            }
+        }
+    }
+
+    fn peek(&mut self) -> Option<&Result<Tuple<'_>, ConceptReadError>> {
+        self.iterator.peek()
+    }
+
+    fn advance_past(&mut self) -> Result<usize, ConceptReadError> {
+        debug_assert!(self.peek().is_some());
+
+        match (!self.enumerate_range.is_empty(), self.enumerate_range != self.enumerate_or_count_range) {
+            (true, true) => {
                 let mut count = 1;
-                iterator.advance_single()?;
-                let mut target = answer_row.get(has.owner()).next_possible();
-                // TODO: replace with seek()
-                while iterator.counting_skip_to_sorted_value(&target)?.1.is_some() {
-                    count += 1;
-                    // TODO: incorporate has count
-                    let (has, count) = iterator.peek().unwrap().as_ref().unwrap();
-                    target = VariableValue::Thing(Thing::from(has.owner()).next_possible());
-                }
-                Ok(count)
-            }
-            (VariableMode::UnboundCheck, VariableMode::UnboundSelect) => {
-                warn!(
-                    "Sorted variable Check and unsorted variable Select is unperformant as it requires deduplicating."
-                );
-                if deduplication_set.is_none() {
-                    *deduplication_set = Some(HashSet::new());
-                }
-                let dedup = deduplication_set.as_mut().unwrap();
+                let current = self.peek().unwrap().as_ref().map_err(|err| err.clone())?.clone().into_owned();
+                let enumerated = &current.values()[self.enumerate_range.start as usize..self.enumerate_range.end as usize];
                 loop {
-                    let peek = iterator.peek();
-                    match peek {
-                        None => return Ok(1),
-                        Some(Ok((has, count))) => {
-                            // TODO: handle has count
-                            let attribute: Thing<'static> = has.attribute().clone().into_owned().into();
-                            let new_element = dedup.insert(VariableValue::Thing(attribute));
-                            if new_element {
-                                return Ok(1);
+                    // TODO: this feels inefficient since each skip() call does a copy of the current tuple
+                    self.skip_until_changes(self.enumerate_or_count_range.clone())?;
+                    match self.iterator.peek() {
+                        None => return Ok(count),
+                        Some(Ok(tuple)) => {
+                            if &tuple.values()[self.enumerate_range.start as usize..self.enumerate_range.end as usize] != enumerated {
+                                return Ok(count);
                             } else {
-                                iterator.advance_single()?;
+                                count += 1;
                             }
                         }
                         Some(Err(err)) => return Err(err.clone()),
                     }
                 }
             }
-            (VariableMode::UnboundCheck, VariableMode::UnboundCount) => {
-                warn!(
-                    "Sorted variable Check and unsorted variable Count is unperformant as it requires deduplicating."
-                );
-                let mut multiplicity = 1;
-                let mut dedup = HashSet::new();
-                loop {
-                    let peek = iterator.peek();
-                    match peek {
-                        None => return Ok(multiplicity),
-                        Some(Ok((has, count))) => {
-                            // TODO: handle has count
-                            let attribute: Thing<'static> = has.attribute().clone().into_owned().into();
-                            let new_element = dedup.insert(VariableValue::Thing(attribute));
-                            if new_element {
-                                multiplicity += 1;
-                            } else {
-                                iterator.advance_single()?;
-                            }
-                        }
-                        Some(Err(err)) => return Err(err.clone()),
+            (true, false) => {
+                return self.count_until_changes(self.enumerate_range.clone())
+            }
+            (false, true) => {
+                if self.enumerate_or_count_range.len() == self.tuple_length {
+                    return Ok(self.iterator.count_as_ref())
+                } else {
+                    let mut count = 1;
+                    // TODO: this feels inefficient since each skip() call does a copy of the current tuple
+                    while self.peek().is_some() {
+                        self.skip_until_changes(self.enumerate_or_count_range.clone())?;
+                        count += 1;
                     }
+                    return Ok(count)
                 }
             }
-            (VariableMode::BoundSelect, VariableMode::UnboundCheck)
-            | (VariableMode::UnboundCheck, VariableMode::UnboundCheck) => {
-                // TODO: how do end iterator immediately?
-                todo!();
-                Ok(1)
-            }
-            (_, VariableMode::BoundSelect) => {
-                unreachable!("Should never traverse to a bounded attribute, even as a check. Instead, invert the instruction direction or use a Check instruction.")
+            (false, false) => {
+                // just check it exists and end the iterator
+                todo!()
             }
         }
     }
 
-    fn count_until_next_answer_has_sorted_attribute(
-        answer_row: ImmutableRow,
-        iterator: &mut HasSortedAttributeIterator,
-        has: &ir::pattern::constraint::Has<Position>,
-        variable_modes: HasVariableModes,
-        mut deduplication_set: &mut Option<HashSet<VariableValue<'static>>>,
-    ) -> Result<usize, ConceptReadError> {
-        match (variable_modes.attribute(), variable_modes.owner()) {
-            (VariableMode::UnboundSelect, VariableMode::UnboundSelect)
-            | (VariableMode::BoundSelect, VariableMode::UnboundSelect) => {
-                iterator.advance_single()?;
-                Ok(1)
-            }
-            (VariableMode::UnboundSelect, VariableMode::UnboundCount) => {
-                let target = answer_row.get(has.attribute()).next_possible();
-                let (count, _) = iterator.counting_skip_to_sorted_value(&target)?;
-                Ok(count)
-            }
-            (VariableMode::UnboundSelect, VariableMode::UnboundCheck) => {
-                let target = answer_row.get(has.attribute()).next_possible();
-                // TODO: replace with seek()
-                let (_, _) = iterator.counting_skip_to_sorted_value(&target)?;
-                Ok(1)
-            }
-            (VariableMode::UnboundCount, VariableMode::UnboundSelect) => {
-                iterator.advance_single()?;
-                Ok(1)
-            }
-            (VariableMode::UnboundCount, VariableMode::UnboundCount)
-            | (VariableMode::BoundSelect, VariableMode::UnboundCount) => Ok(iterator.count()),
-            (VariableMode::UnboundCount, VariableMode::UnboundCheck) => {
-                let mut count = 1;
-                iterator.advance_single()?;
-                let mut target = answer_row.get(has.attribute()).next_possible();
-                // TODO: replace with seek()
-                while iterator.counting_skip_to_sorted_value(&target)?.1.is_some() {
-                    count += 1;
-                    // TODO: incorporate has count
-                    let (has, count) = iterator.peek().unwrap().as_ref().unwrap();
-                    target = VariableValue::Thing(Thing::from(has.attribute()).next_possible());
-                }
-                Ok(count)
-            }
-            (VariableMode::UnboundCheck, VariableMode::UnboundSelect) => {
-                warn!(
-                    "Sorted variable Check and unsorted variable Select is unperformant as it requires deduplicating."
-                );
-                if deduplication_set.is_none() {
-                    *deduplication_set = Some(HashSet::new());
-                }
-                let dedup = deduplication_set.as_mut().unwrap();
-                loop {
-                    let peek = iterator.peek();
-                    match peek {
-                        None => return Ok(1),
-                        Some(Ok((has, count))) => {
-                            // TODO: handle has count
-                            let owner: Thing<'static> = has.owner().clone().into_owned().into();
-                            let new_element = dedup.insert(VariableValue::Thing(owner));
-                            if new_element {
-                                return Ok(1);
-                            } else {
-                                iterator.advance_single()?;
-                            }
-                        }
-                        Some(Err(err)) => return Err(err.clone()),
-                    }
-                }
-            }
-            (VariableMode::UnboundCheck, VariableMode::UnboundCount) => {
-                warn!(
-                    "Sorted variable Check and unsorted variable Count is unperformant as it requires deduplicating."
-                );
-                let mut multiplicity = 1;
-                let mut dedup = HashSet::new();
-                loop {
-                    let peek = iterator.peek();
-                    match peek {
-                        None => return Ok(multiplicity),
-                        Some(Ok((has, count))) => {
-                            // TODO: handle has count
-                            let owner: Thing<'static> = has.owner().clone().into_owned().into();
-                            let new_element = dedup.insert(VariableValue::Thing(owner));
-                            if new_element {
-                                multiplicity += 1;
-                            } else {
-                                iterator.advance_single()?;
-                            }
-                        }
-                        Some(Err(err)) => return Err(err.clone()),
-                    }
-                }
-            }
-            (VariableMode::BoundSelect, VariableMode::UnboundCheck)
-            | (VariableMode::UnboundCheck, VariableMode::UnboundCheck) => {
-                // TODO: how do end iterator immediately?
-                todo!();
-                Ok(1)
-            }
-            (_, VariableMode::BoundSelect) => {
-                unreachable!("Should never traverse to a bounded attribute, even as a check. Instead, invert the instruction direction or use a Check instruction.")
-            }
-        }
-    }
-
-    pub(crate) fn write_values(&mut self, row: &mut Row) -> Result<(), ConceptReadError> {
-        debug_assert!(self.has_value());
-        // TODO: how to handle multiple answers found in an iterator?
-        // TODO: when do we copy the selected values from the input Row into the output Row?
-        match self {
-            InstructionIterator::IsaEntitySortedThing(iter, isa, _, _) => {
-                let thing: Thing<'_> = iter.peek().unwrap().as_ref().map_err(|err| err.clone())?.clone().into();
-                Self::write_values_isa(thing, isa, row)
-            }
-            InstructionIterator::IsaRelationSortedThing(iter, isa, _, _) => {
-                let thing: Thing<'_> = iter.peek().unwrap().as_ref().map_err(|err| err.clone())?.clone().into();
-                Self::write_values_isa(thing, isa, row)
-            }
-            InstructionIterator::IsaAttributeSortedThing(iter, isa, _, _) => {
-                let thing: Thing<'_> = iter.peek().unwrap().as_ref().map_err(|err| err.clone())?.clone().into();
-                Self::write_values_isa(thing, isa, row)
-            }
-            InstructionIterator::HasSortedOwner(iter, has, _, _) => {
-                // TODO: incorporate the repetitions/count
-                let (has_value, count) = iter.peek().unwrap().as_ref().map_err(|err| err.clone())?;
-                Self::write_values_has(has_value, has, row)
-            }
-            InstructionIterator::HasSortedAttribute(iter, has, _, _) => {
-                // TODO: incorporate the repetitions/count
-                let (has_value, count) = iter.peek().unwrap().as_ref().map_err(|err| err.clone())?;
-                Self::write_values_has(has_value, has, row)
-            }
-        }
-    }
-
-    fn write_values_isa(
-        thing: Thing<'_>,
-        isa_constraint: &ir::pattern::constraint::Isa<Position>,
-        row: &mut Row,
-    ) -> Result<(), ConceptReadError> {
-        row.set(isa_constraint.type_(), VariableValue::Type(thing.type_()));
-        row.set(isa_constraint.thing(), VariableValue::Thing(thing.into_owned()));
+    fn advance_single(&mut self) -> Result<(), ConceptReadError> {
+        let _ = self.iterator.next().unwrap()?;
         Ok(())
     }
 
-    fn write_values_has(
-        has: &Has<'_>,
-        has_constraint: &ir::pattern::constraint::Has<Position>,
-        row: &mut Row,
-    ) -> Result<(), ConceptReadError> {
-        row.set(has_constraint.owner(), VariableValue::Thing(has.owner().into_owned().into()));
-        row.set(has_constraint.attribute(), VariableValue::Thing(has.attribute().into_owned().into()));
-        Ok(())
-    }
-
-    pub(crate) fn has_value(&mut self) -> bool {
-        self.peek_sorted_value().is_some()
-    }
-
-    const fn is_sorted(&self) -> bool {
-        match self {
-            InstructionIterator::IsaEntitySortedThing(_, _, _, _)
-            | InstructionIterator::IsaRelationSortedThing(_, _, _, _)
-            | InstructionIterator::IsaAttributeSortedThing(_, _, _, _)
-            | InstructionIterator::HasSortedAttribute(_, _, _, _)
-            | InstructionIterator::HasSortedOwner(_, _, _, _) => true,
-        }
+    fn positions(&self) -> &TuplePositions {
+        &self.positions
     }
 }

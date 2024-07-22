@@ -6,6 +6,8 @@
 
 use std::collections::HashMap;
 
+pub use tracing::{error, info, trace, warn};
+
 use answer::variable::Variable;
 use concept::{
     error::ConceptReadError,
@@ -13,10 +15,8 @@ use concept::{
     type_::TypeAPI,
 };
 use ir::inference::type_inference::TypeAnnotations;
-use iterator::InstructionIterator;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
-pub use tracing::{error, info, trace, warn};
 
 use crate::{
     executor::{
@@ -24,7 +24,7 @@ use crate::{
         instruction::{
             comparison_executor::ComparisonIteratorExecutor,
             comparison_reverse_executor::ComparisonReverseIteratorExecutor,
-            function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasIteratorExecutor,
+            function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
             has_reverse_executor::HasReverseIteratorExecutor, isa_executor::IsaExecutor,
             role_player_executor::RolePlayerIteratorExecutor,
             role_player_reverse_executor::RolePlayerReverseIteratorExecutor,
@@ -33,6 +33,7 @@ use crate::{
     },
     planner::pattern_plan::Instruction,
 };
+use crate::executor::instruction::iterator::InstructionTuplesIterator;
 
 mod comparison_executor;
 mod comparison_reverse_executor;
@@ -41,14 +42,14 @@ mod has_executor;
 mod has_reverse_executor;
 mod isa_executor;
 pub(crate) mod iterator;
-mod iterator_advance;
 mod role_player_executor;
 mod role_player_reverse_executor;
+pub(crate) mod tuple;
 
 pub(crate) enum InstructionExecutor {
     Isa(IsaExecutor),
 
-    Has(HasIteratorExecutor),
+    Has(HasExecutor),
     HasReverse(HasReverseIteratorExecutor),
 
     RolePlayer(RolePlayerIteratorExecutor),
@@ -89,7 +90,7 @@ impl InstructionExecutor {
             }
             Instruction::Has(has, bounds) => {
                 let has_attribute = has.attribute();
-                let executor = HasIteratorExecutor::new(
+                let executor = HasExecutor::new(
                     has.clone(),
                     bounds,
                     selected_variables,
@@ -138,9 +139,9 @@ impl InstructionExecutor {
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
         row: ImmutableRow<'_>,
-    ) -> Result<InstructionIterator, ConceptReadError> {
+    ) -> Result<InstructionTuplesIterator, ConceptReadError> {
         match self {
-            InstructionExecutor::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            InstructionExecutor::Isa(executor) => todo!(), // executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::HasReverse(executor) => todo!(),
             InstructionExecutor::RolePlayer(executor) => todo!(),
@@ -178,6 +179,34 @@ impl VariableMode {
 
     pub(crate) fn is_unbound(&self) -> bool {
         !self.is_bound()
+    }
+}
+
+pub(crate) struct VariableModes {
+    modes: HashMap<Position, VariableMode>
+}
+
+impl VariableModes {
+
+    pub(crate) fn new() -> Self {
+        VariableModes { modes: HashMap::new() }
+    }
+
+    pub(crate) fn insert(&mut self, variable_position: Position, mode: VariableMode) {
+        let existing = self.modes.insert(variable_position, mode);
+        debug_assert!(existing.is_none())
+    }
+
+    pub(crate) fn get(&self, variable_position: Position) -> Option<&VariableMode> {
+        self.modes.get(&variable_position)
+    }
+
+    pub(crate) fn is_fully_bound(&self) -> bool {
+        self.modes.values().all(|mode| mode.is_bound())
+    }
+
+    pub(crate) fn is_fully_unbound(&self) -> bool {
+        self.modes.values().all(|mode| mode.is_unbound())
     }
 }
 
