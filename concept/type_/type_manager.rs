@@ -937,7 +937,6 @@ impl TypeManager {
         Ok(card)
     }
 
-
     // Specialised APIs to simplify architectures
 
     pub(crate) fn get_independent_attribute_types(

@@ -59,7 +59,7 @@ rust_test(
 
 rust_test(
     name = "test_owns_annotations",
-    srcs = ["owns_annotations"],
+    srcs = ["owns_annotations.rs"],
     timeout = "eternal",
     deps = [
         "//tests/behaviour/steps:steps",

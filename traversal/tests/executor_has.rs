@@ -7,15 +7,12 @@
 mod common;
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
-use typeql::builder::type_;
 
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
-    type_::{Ordering, OwnerAPI},
+    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
 };
-use concept::type_::annotation::AnnotationCardinality;
-use concept::type_::owns::OwnsAnnotation;
 use encoding::{
     graph::type_::Kind,
     value::{label::Label, value::Value, value_type::ValueType},
@@ -23,9 +20,11 @@ use encoding::{
 use ir::{
     inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
-    program::{block::FunctionalBlock, program::Program},
+    program::{
+        block::FunctionalBlock,
+        program::{CompiledSchemaFunctions, Program},
+    },
 };
-use ir::program::program::CompiledSchemaFunctions;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -39,6 +38,7 @@ use traversal::{
         program_plan::ProgramPlan,
     },
 };
+use typeql::builder::type_;
 
 use crate::common::{load_managers, setup_storage};
 
@@ -55,22 +55,24 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL, false).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
-    let person_owns_age = person_type
-        .set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered)
+    let person_owns_age =
+        person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
+    person_owns_age
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10))),
+        )
         .unwrap();
-    person_owns_age.set_annotation(
-        &mut snapshot,
-        &type_manager,
-        OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10)))
-    ).unwrap();
-    let person_owns_name = person_type
-        .set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered)
+    let person_owns_name =
+        person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+    person_owns_name
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10))),
+        )
         .unwrap();
-    person_owns_name.set_annotation(
-        &mut snapshot,
-        &type_manager,
-        OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10)))
-    ).unwrap();
 
     let _person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
     let _person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
@@ -168,7 +170,8 @@ fn traverse_has_unbounded_sorted_from() {
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager)
+            .unwrap()
     };
 
     {
@@ -236,7 +239,8 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager)
+            .unwrap()
     };
 
     {
