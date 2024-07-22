@@ -4,21 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use answer::variable_value::VariableValue;
-use concept::{
-    error::ConceptReadError,
-    thing::object::ObjectAPI,
-    type_::OwnerAPI,
-};
-use encoding::{
-    graph::type_::Kind,
-    value::label::Label,
-};
+use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::OwnerAPI};
+use encoding::{graph::type_::Kind, value::label::Label};
 use ir::{
     inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
@@ -27,18 +17,16 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use traversal::{
-    executor::program_executor::ProgramExecutor,
+    executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
-        pattern_plan::{Instruction, PatternPlan, SortedJoinStep, Step},
+        pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
         program_plan::ProgramPlan,
     },
 };
-use traversal::executor::batch::ImmutableRow;
-use traversal::planner::pattern_plan::IterateBounds;
 
 use crate::common::{load_managers, setup_storage};
 
@@ -101,9 +89,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     // Plan
     let steps = vec![Step::SortedJoin(SortedJoinStep::new(
         var_dog,
-        vec![
-            Instruction::Isa(isa.clone(), IterateBounds::None([])),
-        ],
+        vec![Instruction::Isa(isa.clone(), IterateBounds::None([]))],
         &vec![var_dog, var_dog_type],
     ))];
     // TODO: incorporate the filter
@@ -124,9 +110,8 @@ fn traverse_isa_unbounded_sorted_thing() {
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
 
-        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
-            .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
-            .collect();
+        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+            iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
         assert_eq!(rows.len(), 3);
 
         for row in rows {
