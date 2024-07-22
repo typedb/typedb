@@ -14,7 +14,7 @@ use ir::pattern::IrID;
 
 pub mod batch;
 mod function_executor;
-mod instruction;
+pub(crate) mod instruction;
 pub mod pattern_executor;
 pub mod program_executor;
 

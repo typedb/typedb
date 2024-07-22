@@ -7,6 +7,7 @@
 use std::fmt::{Display, Formatter};
 
 use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
+use lending_iterator::higher_order::Hkt;
 
 use crate::thing::{attribute::Attribute, object::Object};
 
@@ -38,6 +39,17 @@ impl<'a> Has<'a> {
             Has::EdgeReverse(edge_reverse) => Attribute::new(edge_reverse.from()),
         }
     }
+
+    pub fn into_owner_attribute(self) -> (Object<'a>, Attribute<'a>) {
+        match self {
+            Has::Edge(edge) => (Object::new(edge.clone().into_from()), Attribute::new(edge.clone().into_to())),
+            Has::EdgeReverse(edge_reverse) => (Object::new(edge_reverse.clone().into_to()), Attribute::new(edge_reverse.into_from()))
+        }
+    }
+}
+
+impl Hkt for Has<'static> {
+    type HktSelf<'a> = Has<'a>;
 }
 
 impl<'a> Display for Has<'a> {

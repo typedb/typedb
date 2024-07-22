@@ -116,6 +116,11 @@ impl<'a> ThingEdgeHas<'a> {
         AttributeVertex::new(Bytes::Reference(reference))
     }
 
+    pub fn into_from(self) -> ObjectVertex<'a> {
+        let range = Self::range_from();
+        ObjectVertex::new(self.bytes.into_range(range))
+    }
+
     pub fn into_to(self) -> AttributeVertex<'a> {
         let range = self.range_to();
         AttributeVertex::new(self.bytes.into_range(range))
@@ -267,6 +272,11 @@ impl<'a> ThingEdgeHasReverse<'a> {
     pub fn to(&'a self) -> ObjectVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[self.range_to()]);
         ObjectVertex::new(Bytes::Reference(reference))
+    }
+
+    pub fn into_from(self) -> AttributeVertex<'a> {
+        let range = self.range_from();
+        AttributeVertex::new(self.bytes.into_range(range))
     }
 
     pub fn into_to(self) -> ObjectVertex<'a> {
