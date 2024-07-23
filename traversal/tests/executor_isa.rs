@@ -14,6 +14,7 @@ use ir::{
     pattern::constraint::IsaKind,
     program::{block::FunctionalBlock, program::Program},
 };
+use ir::program::program::CompiledSchemaFunctions;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -62,7 +63,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 
 #[test]
 fn traverse_isa_unbounded_sorted_thing() {
-    let (tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, storage) = setup_storage();
     setup_database(storage.clone());
 
     // query:
@@ -77,13 +78,12 @@ fn traverse_isa_unbounded_sorted_thing() {
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
-    let filter = block.add_filter(vec!["dog"]).unwrap().clone();
-    let program = Program::new(block.finish(), HashMap::new());
+    let program = Program::new(block.finish(), Vec::new());
 
-    let type_annotations = {
+    let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&program, &snapshot, &type_manager).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -93,14 +93,14 @@ fn traverse_isa_unbounded_sorted_thing() {
         &vec![var_dog, var_dog_type],
     ))];
     // TODO: incorporate the filter
-    let pattern_plan = PatternPlan::new(steps, program.entry().context().clone());
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
     };
 
     {
@@ -116,92 +116,8 @@ fn traverse_isa_unbounded_sorted_thing() {
 
         for row in rows {
             let r = row.unwrap();
-            assert_eq!(r.get_mutiplicity(), 1);
+            assert_eq!(r.get_multiplicity(), 1);
             print!("{}", r);
-        }
-    }
-}
-
-#[test]
-fn traverse_has_unbounded_sorted_to_merged() {
-    let (tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
-
-    // query:
-    //   match
-    //    $person has attribute $attribute;
-
-    // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
-    let var_attribute_type = conjunction.get_or_declare_variable(&"attr_type").unwrap();
-    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-    let var_attribute = conjunction.get_or_declare_variable(&"attr").unwrap();
-    let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();
-    conjunction.constraints_mut().add_label(var_person_type, ANIMAL_LABEL.scoped_name().as_str()).unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_attribute_type, Kind::Attribute.root_label().scoped_name().as_str())
-        .unwrap();
-    let program = Program::new(block.finish(), HashMap::new());
-
-    let type_annotations = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&program, &snapshot, &type_manager).unwrap()
-    };
-
-    // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
-        var_attribute,
-        vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
-        &vec![var_person, var_attribute],
-    ))];
-    let pattern_plan = PatternPlan::new(steps, program.entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
-
-    // Executor
-    let executor = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap()
-    };
-
-    {
-        let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-        let (_, thing_manager) = load_managers(storage.clone());
-        let thing_manager = Arc::new(thing_manager);
-
-        let variable_positions = executor.entry_variable_positions().clone();
-
-        let iterator = executor.into_iterator(snapshot, thing_manager);
-
-        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
-            iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
-
-        // person 1 - has age 1, has age 2, has age 3, has name 1, has name 2 => 5 answers
-        // person 2 - has age 1, has age 4, has age 5 => 3 answers
-        // person 3 - has age 4, has name 3 => 2 answers
-
-        assert_eq!(rows.len(), 10);
-
-        for row in &rows {
-            let r = row.as_ref().unwrap();
-            debug_assert_eq!(r.get_multiplicity(), 1);
-            print!("{}", r);
-        }
-
-        let attribute_position = variable_positions.get(&var_attribute).unwrap().as_usize();
-        let mut last_attribute = &rows[0].as_ref().unwrap()[attribute_position];
-        for row in &rows {
-            let r = row.as_ref().unwrap();
-            let attribute = &r[attribute_position];
-            assert!(last_attribute <= attribute, "{} <= {} failed", &last_attribute, &attribute);
-            last_attribute = attribute;
         }
     }
 }

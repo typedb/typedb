@@ -134,7 +134,7 @@ impl InstructionExecutor {
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
-            InstructionExecutor::Isa(executor) => todo!(), // executor.get_iterator(snapshot, thing_manager, row),
+            InstructionExecutor::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::HasReverse(executor) => todo!(),
             InstructionExecutor::RolePlayer(executor) => todo!(),
