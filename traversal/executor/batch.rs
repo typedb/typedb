@@ -13,7 +13,7 @@ use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
 use lending_iterator::LendingIterator;
 
-use crate::executor::Position;
+use crate::executor::VariablePosition;
 
 const BATCH_ROWS_MAX: u32 = 64;
 
@@ -130,11 +130,11 @@ impl<'a> Row<'a> {
         self.row.len()
     }
 
-    pub(crate) fn get(&self, position: Position) -> &VariableValue {
+    pub(crate) fn get(&self, position: VariablePosition) -> &VariableValue {
         &self.row[position.as_usize()]
     }
 
-    pub(crate) fn set(&mut self, position: Position, value: VariableValue<'static>) {
+    pub(crate) fn set(&mut self, position: VariablePosition, value: VariableValue<'static>) {
         debug_assert!(*self.get(position) == VariableValue::Empty || *self.get(position) == value);
         self.row[position.as_usize()] = value;
     }
@@ -169,7 +169,7 @@ impl<'a> ImmutableRow<'a> {
         self.row.len()
     }
 
-    pub fn get(&self, position: Position) -> &VariableValue {
+    pub fn get(&self, position: VariablePosition) -> &VariableValue {
         &self.row[position.as_usize()]
     }
 

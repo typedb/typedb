@@ -6,8 +6,8 @@
 
 use ir::pattern::constraint::Comparison;
 
-use crate::executor::Position;
+use crate::executor::VariablePosition;
 
 pub(crate) struct ComparisonIteratorExecutor {
-    comparison: Comparison<Position>,
+    comparison: Comparison<VariablePosition>,
 }

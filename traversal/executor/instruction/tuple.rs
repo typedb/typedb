@@ -14,7 +14,7 @@ use concept::thing::has::Has;
 use concept::thing::relation::Relation;
 use lending_iterator::higher_order::Hkt;
 use crate::executor::instruction::{VariableMode, VariableModes};
-use crate::executor::Position;
+use crate::executor::VariablePosition;
 
 #[derive(Debug, Clone)]
 pub(crate) enum Tuple<'a> {
@@ -68,36 +68,36 @@ impl Hkt for Tuple<'static> {
 }
 
 pub(crate) enum TuplePositions {
-    Single([Position; 1]),
-    Pair([Position; 2]),
-    Triple([Position; 3]),
-    Quintuple([Position; 5]),
+    Single([VariablePosition; 1]),
+    Pair([VariablePosition; 2]),
+    Triple([VariablePosition; 3]),
+    Quintuple([VariablePosition; 5]),
     Arbitrary(), // TODO: unknown sized tuples, for functions
 }
 
 impl TuplePositions {
-    pub(crate) fn as_single(&self) -> &[Position; 1] {
+    pub(crate) fn as_single(&self) -> &[VariablePosition; 1] {
         match self {
             Self::Single(positions) => positions,
             _ => unreachable!("Cannot read tuple as Single."),
         }
     }
 
-    pub(crate) fn as_pair(&self) -> &[Position; 2] {
+    pub(crate) fn as_pair(&self) -> &[VariablePosition; 2] {
         match self {
             Self::Pair(positions) => positions,
             _ => unreachable!("Cannot read tuple as Pair."),
         }
     }
 
-    pub(crate) fn as_triple(&self) -> &[Position; 3] {
+    pub(crate) fn as_triple(&self) -> &[VariablePosition; 3] {
         match self {
             Self::Triple(positions) => positions,
             _ => unreachable!("Cannot read tuple as Single."),
         }
     }
 
-    pub(crate) fn as_quintuple(&self) -> &[Position; 5] {
+    pub(crate) fn as_quintuple(&self) -> &[VariablePosition; 5] {
         match self {
             Self::Quintuple(positions) => positions,
             _ => unreachable!("Cannot read tuple as Single."),
@@ -108,7 +108,7 @@ impl TuplePositions {
         todo!()
     }
 
-    pub(crate) fn positions(&self) -> &[Position] {
+    pub(crate) fn positions(&self) -> &[VariablePosition] {
         match self {
             TuplePositions::Single(positions) => positions,
             TuplePositions::Pair(positions) => positions,

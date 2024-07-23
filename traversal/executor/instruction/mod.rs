@@ -15,8 +15,6 @@ use concept::{
     type_::TypeAPI,
 };
 use ir::inference::type_inference::TypeAnnotations;
-use ir::pattern::constraint::Constraint;
-use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -30,12 +28,12 @@ use crate::{
             role_player_executor::RolePlayerIteratorExecutor,
             role_player_reverse_executor::RolePlayerReverseIteratorExecutor,
         },
-        Position,
+        VariablePosition,
     },
     planner::pattern_plan::Instruction,
 };
 use crate::executor::instruction::iterator::TupleIterator;
-use crate::planner::pattern_plan::IterateBounds;
+use crate::planner::pattern_plan::InstructionAPI;
 
 mod comparison_executor;
 mod comparison_reverse_executor;
@@ -67,38 +65,34 @@ pub(crate) enum InstructionExecutor {
 impl InstructionExecutor {
     pub(crate) fn new<Snapshot: ReadableSnapshot>(
         instruction: Instruction,
-        selected_variables: &Vec<Variable>,
-        named_variables: &HashMap<Variable, String>,
-        variable_positions: &HashMap<Variable, Position>,
+        selected: &Vec<Variable>,
+        named: &HashMap<Variable, String>,
+        positions: &HashMap<Variable, VariablePosition>,
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
         sort_by: Option<Variable>,
     ) -> Result<Self, ConceptReadError> {
+        let variable_modes = VariableModes::new_for(&instruction, positions, selected, named);
+        let sort_by_position = sort_by.map(|var| *positions.get(&var).unwrap());
         match instruction {
-            Instruction::Isa(isa, bounds) => {
+            Instruction::Isa(isa, _) => {
                 let thing = isa.thing();
                 let provider = IsaExecutor::new(
-                    isa.clone(),
-                    bounds,
-                    selected_variables,
-                    named_variables,
-                    variable_positions,
-                    sort_by,
+                    isa.clone().into_ids(positions),
+                    variable_modes,
+                    sort_by_position,
                     type_annotations.constraint_annotations(isa.into()).unwrap().get_left_right().left_to_right(),
                     type_annotations.variable_annotations(thing).unwrap().clone(),
                 );
                 Ok(Self::Isa(provider))
             }
-            Instruction::Has(has, bounds) => {
+            Instruction::Has(has, _) => {
                 let has_attribute = has.attribute();
                 let executor = HasExecutor::new(
-                    has.clone(),
-                    bounds,
-                    selected_variables,
-                    named_variables,
-                    variable_positions,
-                    sort_by,
+                    has.clone().into_ids(positions),
+                    variable_modes,
+                    sort_by_position,
                     type_annotations.constraint_annotations(has.into()).unwrap().get_left_right().left_to_right(),
                     type_annotations.variable_annotations(has_attribute).unwrap().clone(),
                     snapshot,
@@ -185,7 +179,7 @@ impl VariableMode {
 }
 
 pub(crate) struct VariableModes {
-    modes: HashMap<Position, VariableMode>,
+    modes: HashMap<VariablePosition, VariableMode>,
 }
 
 impl VariableModes {
@@ -193,35 +187,40 @@ impl VariableModes {
         VariableModes { modes: HashMap::new() }
     }
 
-    pub(crate) fn new_from(
-        constraint: impl Into<Constraint<Variable>>,
-        variable_positions: &HashMap<Variable, Position>,
-        bounds: &IterateBounds<Variable>,
+    pub(crate) fn new_for(
+        instruction: &Instruction,
+        variable_positions: &HashMap<Variable, VariablePosition>,
         selected: &Vec<Variable>,
         named: &HashMap<Variable, String>
     ) -> Self {
+        let constraint = instruction.constraint();
         let mut modes = Self::new();
-        constraint.into().ids_foreach(|id, _| {
+        constraint.ids_foreach(|id, _| {
             let as_position = *variable_positions.get(&id).unwrap();
-            modes.insert(as_position, VariableMode::new(bounds.contains(id), selected.contains(&id), named.contains_key(&id)))
+            let var_mode = VariableMode::new(
+                instruction.contains_bound_var(id),
+                selected.contains(&id),
+                named.contains_key(&id)
+            );
+            modes.insert(as_position, var_mode)
         });
         modes
     }
 
-    pub(crate) fn insert(&mut self, variable_position: Position, mode: VariableMode) {
+    fn insert(&mut self, variable_position: VariablePosition, mode: VariableMode) {
         let existing = self.modes.insert(variable_position, mode);
         debug_assert!(existing.is_none())
     }
 
-    pub(crate) fn get(&self, variable_position: Position) -> Option<&VariableMode> {
+    pub(crate) fn get(&self, variable_position: VariablePosition) -> Option<&VariableMode> {
         self.modes.get(&variable_position)
     }
 
-    pub(crate) fn is_fully_bound(&self) -> bool {
+    pub(crate) fn fully_bound(&self) -> bool {
         self.modes.values().all(|mode| mode.is_bound())
     }
 
-    pub(crate) fn is_fully_unbound(&self) -> bool {
+    pub(crate) fn fully_unbound(&self) -> bool {
         self.modes.values().all(|mode| mode.is_unbound())
     }
 }

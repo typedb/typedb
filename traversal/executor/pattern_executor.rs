@@ -18,17 +18,17 @@ use crate::{
     executor::{
         batch::{Batch, BatchRowIterator, ImmutableRow, Row},
         instruction::iterator::TupleIterator,
-        Position, SelectedPositions,
+        VariablePosition, SelectedPositions,
     },
     planner::pattern_plan::{
-        AssignmentStep, DisjunctionStep, Instruction, NegationStep, OptionalStep, PatternPlan, SortedJoinStep, Step,
+        AssignmentStep, DisjunctionStep, Instruction, NegationStep, OptionalStep, PatternPlan, IntersectionStep, Step,
         UnsortedJoinStep,
     },
 };
 use crate::executor::instruction::InstructionExecutor;
 
 pub(crate) struct PatternExecutor {
-    variable_positions: HashMap<Variable, Position>,
+    variable_positions: HashMap<Variable, VariablePosition>,
     variable_positions_index: Vec<Variable>,
 
     step_executors: Vec<StepExecutor>,
@@ -44,16 +44,12 @@ impl PatternExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
-        // 1. assign positions based on the output variables of each step
-        // 2. create step executors that have an output Batch corresponding to the total size of the variables we care about
-
         let PatternPlan { steps, context } = plan;
-
         let mut variable_positions = HashMap::new();
         let mut step_executors = Vec::with_capacity(steps.len());
         for step in steps {
             for variable in step.unbound_variables() {
-                let previous = variable_positions.insert(*variable, Position::new(variable_positions.len() as u32));
+                let previous = variable_positions.insert(*variable, VariablePosition::new(variable_positions.len() as u32));
                 debug_assert_eq!(previous, Option::None);
             }
             let executor =
@@ -75,7 +71,7 @@ impl PatternExecutor {
         })
     }
 
-    pub(crate) fn variable_positions(&self) -> &HashMap<Variable, Position> {
+    pub(crate) fn variable_positions(&self) -> &HashMap<Variable, VariablePosition> {
         &self.variable_positions
     }
 
@@ -183,7 +179,7 @@ impl<Snapshot: ReadableSnapshot> Iterator for BatchIterator<Snapshot> {
 }
 
 enum StepExecutor {
-    SortedJoin(SortedJoinExecutor),
+    SortedJoin(IntersectionExecutor),
     UnsortedJoin(UnsortedJoinExecutor),
     Assignment(AssignExecutor),
 
@@ -196,15 +192,15 @@ impl StepExecutor {
     fn new(
         step: Step,
         block_context: &BlockContext,
-        variable_positions: &HashMap<Variable, Position>,
+        variable_positions: &HashMap<Variable, VariablePosition>,
         type_annotations: &TypeAnnotations,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         let row_width = variable_positions.len() as u32;
         match step {
-            Step::SortedJoin(SortedJoinStep { sort_variable, instructions, selected_variables, .. }) => {
-                let executor = SortedJoinExecutor::new(
+            Step::Intersection(IntersectionStep { sort_variable, instructions, selected_variables, .. }) => {
+                let executor = IntersectionExecutor::new(
                     sort_variable,
                     instructions,
                     row_width,
@@ -218,8 +214,9 @@ impl StepExecutor {
                 Ok(Self::SortedJoin(executor))
             }
             Step::UnsortedJoin(UnsortedJoinStep { iterate_instruction, check_instructions, .. }) => {
-                let executor =
-                    UnsortedJoinExecutor::new(iterate_instruction, check_instructions, row_width, variable_positions);
+                let executor = UnsortedJoinExecutor::new(
+                    iterate_instruction, check_instructions, row_width, variable_positions
+                );
                 Ok(Self::UnsortedJoin(executor))
             }
             Step::Assignment(AssignmentStep { .. }) => {
@@ -273,9 +270,9 @@ impl StepExecutor {
     }
 }
 
-struct SortedJoinExecutor {
+struct IntersectionExecutor {
     instruction_executors: Vec<InstructionExecutor>,
-    sort_variable_position: Position,
+    sort_variable_position: VariablePosition,
     output_width: u32,
     outputs_selected: SelectedPositions,
 
@@ -287,14 +284,14 @@ struct SortedJoinExecutor {
     output: Option<Batch>,
 }
 
-impl SortedJoinExecutor {
+impl IntersectionExecutor {
     fn new(
         sort_variable: Variable,
         instructions: Vec<Instruction>,
         output_width: u32,
         select_variables: Vec<Variable>,
         named_variables: &HashMap<Variable, String>,
-        variable_positions: &HashMap<Variable, Position>,
+        variable_positions: &HashMap<Variable, VariablePosition>,
         type_annotations: &TypeAnnotations,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
@@ -589,7 +586,7 @@ impl SortedJoinExecutor {
 }
 
 struct CartesianIterator {
-    sort_variable_position: Position,
+    sort_variable_position: VariablePosition,
     is_active: bool,
     intersection_source: Vec<VariableValue<'static>>,
     intersection_multiplicity: u64,
@@ -598,7 +595,7 @@ struct CartesianIterator {
 }
 
 impl CartesianIterator {
-    fn new(width: usize, iterator_executor_count: usize, sort_variable_position: Position) -> Self {
+    fn new(width: usize, iterator_executor_count: usize, sort_variable_position: VariablePosition) -> Self {
         CartesianIterator {
             sort_variable_position,
             is_active: false,
@@ -705,8 +702,8 @@ impl CartesianIterator {
             iterator.write_values(row)
         }
         for (index, value) in self.intersection_source.iter().enumerate() {
-            if *row.get(Position::new(index as u32)) == VariableValue::Empty {
-                row.set(Position::new(index as u32), value.clone());
+            if *row.get(VariablePosition::new(index as u32)) == VariableValue::Empty {
+                row.set(VariablePosition::new(index as u32), value.clone());
             }
         }
         row.set_multiplicity(self.intersection_multiplicity);
@@ -726,7 +723,7 @@ impl UnsortedJoinExecutor {
         iterate: Instruction,
         checks: Vec<Instruction>,
         total_vars: u32,
-        variable_positions: &HashMap<Variable, Position>,
+        variable_positions: &HashMap<Variable, VariablePosition>,
     ) -> Self {
         Self { iterate, checks, output_width: total_vars, output: None }
     }
@@ -756,7 +753,7 @@ struct DisjunctionExecutor {
 }
 
 impl DisjunctionExecutor {
-    fn new(executors: Vec<PatternExecutor>, variable_positions: &HashMap<Variable, Position>) -> DisjunctionExecutor {
+    fn new(executors: Vec<PatternExecutor>, variable_positions: &HashMap<Variable, VariablePosition>) -> DisjunctionExecutor {
         Self { executors }
     }
 
@@ -774,7 +771,7 @@ struct NegationExecutor {
 }
 
 impl NegationExecutor {
-    fn new(executor: PatternExecutor, variable_positions: &HashMap<Variable, Position>) -> NegationExecutor {
+    fn new(executor: PatternExecutor, variable_positions: &HashMap<Variable, VariablePosition>) -> NegationExecutor {
         Self { executor }
     }
 
