@@ -5,9 +5,10 @@
  */
 
 use ir::{
-    program::function_signature::HashMapFunctionIndex, translator::block_builder::TypeQLBuilder, PatternDefinitionError,
+    program::function_signature::HashMapFunctionIndex, PatternDefinitionError,
 };
 use typeql::query::stage::Stage;
+use ir::translator::match_::translate_match;
 
 #[test]
 fn build_conjunction_constraints() {
@@ -19,7 +20,7 @@ fn build_conjunction_constraints() {
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
-    eprintln!("{}\n", TypeQLBuilder::build_match(&empty_function_index, match_).unwrap().conjunction());
+    eprintln!("{}\n", translate_match(&empty_function_index, match_).unwrap().conjunction());
 
     let query = "match
         $person isa $person-type, has $name-type $name;
@@ -31,7 +32,7 @@ fn build_conjunction_constraints() {
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
-    eprintln!("{}\n", TypeQLBuilder::build_match(&empty_function_index, match_).unwrap().conjunction());
+    eprintln!("{}\n", translate_match(&empty_function_index, match_).unwrap().conjunction());
 
     let query = "match
         $person isa $person-type;
@@ -45,7 +46,7 @@ fn build_conjunction_constraints() {
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
-    eprintln!("{}\n", TypeQLBuilder::build_match(&empty_function_index, match_).unwrap().conjunction());
+    eprintln!("{}\n", translate_match(&empty_function_index, match_).unwrap().conjunction());
 
     // let mut block = FunctionalBlock::new();
     // let conjunction = block.conjunction_mut();
@@ -74,7 +75,7 @@ fn variable_category_mismatch() {
     let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     assert!(matches!(
-        TypeQLBuilder::build_match(&empty_function_index, match_),
+        translate_match(&empty_function_index, match_),
         Err(PatternDefinitionError::VariableCategoryMismatch { .. })
     ));
 
@@ -108,7 +109,7 @@ fn variable_category_narrowing() {
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
-    eprintln!("{}\n", TypeQLBuilder::build_match(&empty_function_index, match_).unwrap().conjunction());
+    eprintln!("{}\n", translate_match(&empty_function_index, match_).unwrap().finish().conjunction());
 
     // let mut block = FunctionalBlock::new();
     // let conjunction = block.conjunction_mut();

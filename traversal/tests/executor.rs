@@ -17,7 +17,7 @@ use ir::{
         function_signature::{FunctionSignatureIndex, HashMapFunctionIndex},
         program::Program,
     },
-    translator::block_builder::TypeQLBuilder,
+    translator::match_::TypeQLBlockBuilder,
 };
 use storage::{
     durability_client::WALClient,
@@ -102,8 +102,7 @@ fn test_planning_traversal() {
 
     // IR
     let empty_function_index = FunctionSignatureIndex::new(&HashMapFunctionIndex {}, HashMap::new());
-    let mut builder = TypeQLBuilder::build_match_but_dont_finish(&empty_function_index, &match_).unwrap();
-    builder.conjunction_mut().and_typeql_patterns(&match_.patterns).unwrap();
+    let mut builder = TypeQLBlockBuilder::build_match_but_dont_finish(&empty_function_index, &match_).unwrap();
     // builder.add_limit(3);
     // builder.add_filter(vec!["person", "age"]).unwrap();
     let block = builder.finish();

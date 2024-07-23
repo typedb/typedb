@@ -201,7 +201,7 @@ fn traverse_rp_unbounded_sorted_from() {
         &vec![var_membership, var_group, var_person],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry_annotations().context().clone());
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor

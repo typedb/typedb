@@ -16,8 +16,9 @@ use crate::{
         function_signature::{FunctionID, FunctionIDTrait, FunctionSignatureIndex},
         FunctionDefinitionError, ProgramDefinitionError,
     },
-    translator::{block_builder::TypeQLBuilder, function_builder::TypeQLFunctionBuilder},
 };
+use crate::translator::function::translate_function;
+use crate::translator::match_::translate_match;
 
 pub struct Program {
     entry: FunctionalBlock,
@@ -57,12 +58,13 @@ impl Program {
         let functions: Vec<FunctionIR> = preamble_functions
             .iter()
             .map(|function| {
-                TypeQLFunctionBuilder::build_ir(function_index, &function)
+                translate_function(function_index, &function)
                     .map_err(|source| ProgramDefinitionError::FunctionDefinition { source })
             })
             .collect::<Result<Vec<FunctionIR>, ProgramDefinitionError>>()?;
-        let entry = TypeQLBuilder::build_match(function_index, match_)
-            .map_err(|source| ProgramDefinitionError::PatternDefinition { source })?;
+        let entry = translate_match(function_index, match_)
+            .map_err(|source| ProgramDefinitionError::PatternDefinition { source })?
+            .finish();
 
         Ok(Self { entry, functions })
     }
@@ -72,7 +74,7 @@ impl Program {
         functions_to_compile: impl Iterator<Item = &'functions typeql::Function>,
     ) -> Result<Vec<FunctionIR>, FunctionDefinitionError> {
         let ir: Result<Vec<FunctionIR>, FunctionDefinitionError> =
-            functions_to_compile.map(|function| TypeQLFunctionBuilder::build_ir(function_index, &function)).collect();
+            functions_to_compile.map(|function| translate_function(function_index, &function)).collect();
         Ok(ir?)
     }
 

@@ -15,8 +15,8 @@ use primitive::maybe_owns::MaybeOwns;
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
     program::FunctionReadError,
-    translator::function_builder::TypeQLFunctionBuilder,
 };
+use crate::translator::function::build_signature;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum FunctionID {
@@ -125,7 +125,7 @@ impl HashMapFunctionIndex {
             .map(|(function_id, function)| {
                 (
                     function.signature.ident.as_str().to_owned(),
-                    TypeQLFunctionBuilder::build_signature(function_id.into(), &function),
+                    build_signature(function_id.into(), &function),
                 )
             })
             .collect();

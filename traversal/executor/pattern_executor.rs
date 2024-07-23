@@ -633,7 +633,7 @@ impl CartesianIterator {
 
         let intersection = &source_intersection[self.sort_variable_position.as_usize()];
         for (index, iter) in intersection_iterators.iter_mut().enumerate() {
-            if iter.peek_first_unbound_value().unwrap()? == intersection {
+            if iter.peek_first_unbound_value().transpose()?.is_some_and(|value| value == intersection) {
                 self.cartesian_executor_indices.push(index);
 
                 // reopen/move existing cartesian iterators forward to the intersection point
