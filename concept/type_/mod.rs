@@ -45,6 +45,7 @@ use crate::{
 
 pub mod annotation;
 pub mod attribute_type;
+mod constraint;
 pub mod entity_type;
 pub mod object_type;
 pub mod owns;
@@ -298,17 +299,17 @@ pub trait Capability<'a>:
 }
 
 pub struct EdgeOverride<EDGE: TypeEdgeEncoding<'static>> {
-    overridden: EDGE, // TODO: Consider storing EDGE::To instead
+    overrides: EDGE, // TODO: Consider storing EDGE::To instead
 }
 
 impl<'a, EDGE: TypeEdgeEncoding<'static>> TypeEdgePropertyEncoding<'a> for EdgeOverride<EDGE> {
     const INFIX: Infix = Infix::PropertyOverride;
 
     fn from_value_bytes(value: ByteReference<'_>) -> Self {
-        Self { overridden: EDGE::decode_canonical_edge(Bytes::Reference(value).into_owned()) }
+        Self { overrides: EDGE::decode_canonical_edge(Bytes::Reference(value).into_owned()) }
     }
 
     fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::Reference(self.overridden.to_canonical_type_edge().bytes()).into_owned())
+        Some(Bytes::Reference(self.overrides.to_canonical_type_edge().bytes()).into_owned())
     }
 }

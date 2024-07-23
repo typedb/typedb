@@ -195,7 +195,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     where
         E: TypeEdgeEncoding<'static>,
     {
-        let overridden_to = EdgeOverride::<E> { overridden };
+        let overridden_to = EdgeOverride::<E> { overrides: overridden };
         Self::storage_put_type_edge_property(snapshot, edge, Some(overridden_to))
     }
 

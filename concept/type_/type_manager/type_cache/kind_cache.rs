@@ -37,7 +37,7 @@ use crate::type_::{
 #[derive(Debug)]
 pub(crate) struct EntityTypeCache {
     pub(super) common_type_cache: CommonTypeCache<EntityType<'static>>,
-    pub(super) owner_player_cache: OwnerPlayerCache,
+    pub(super) object_cache: ObjectCache,
 }
 
 #[derive(Debug)]
@@ -45,7 +45,7 @@ pub(crate) struct RelationTypeCache {
     pub(super) common_type_cache: CommonTypeCache<RelationType<'static>>,
     pub(super) relates_declared: HashSet<Relates<'static>>,
     pub(super) relates: HashMap<RoleType<'static>, Relates<'static>>,
-    pub(super) owner_player_cache: OwnerPlayerCache,
+    pub(super) object_cache: ObjectCache,
 }
 
 #[derive(Debug)]
@@ -102,13 +102,13 @@ pub(crate) struct CommonTypeCache<T: KindAPI<'static>> {
 }
 
 #[derive(Debug)]
-pub struct OwnerPlayerCache {
+pub struct ObjectCache {
     pub(super) owns_declared: HashSet<Owns<'static>>,
     pub(super) owns: HashMap<AttributeType<'static>, Owns<'static>>,
-    pub(super) owns_overridden: HashMap<AttributeType<'static>, Owns<'static>>,
+    pub(super) owns_overrides: HashMap<Owns<'static>, Owns<'static>>,
     pub(super) plays_declared: HashSet<Plays<'static>>,
     pub(super) plays: HashMap<RoleType<'static>, Plays<'static>>,
-    pub(super) plays_overridden: HashMap<RoleType<'static>, Plays<'static>>,
+    pub(super) plays_overrides: HashMap<Plays<'static>, Plays<'static>>,
 }
 
 impl EntityTypeCache {
@@ -123,7 +123,7 @@ impl EntityTypeCache {
         for entity in entities.into_iter() {
             let cache = EntityTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, entity.clone()),
-                owner_player_cache: OwnerPlayerCache::create(snapshot, entity.clone()),
+                object_cache: ObjectCache::create(snapshot, entity.clone()),
             };
             caches[entity.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -145,7 +145,7 @@ impl RelationTypeCache {
         for relation in relations.into_iter() {
             let cache = RelationTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, relation.clone()),
-                owner_player_cache: OwnerPlayerCache::create(snapshot, relation.clone()),
+                object_cache: ObjectCache::create(snapshot, relation.clone()),
                 relates_declared: TypeReader::get_capabilities_declared::<Relates<'static>>(snapshot, relation.clone())
                     .unwrap(),
                 relates: TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation.clone()).unwrap(),
@@ -330,24 +330,30 @@ impl<T: KindAPI<'static, SelfStatic = T>> CommonTypeCache<T> {
     }
 }
 
-impl OwnerPlayerCache {
-    fn create<Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnerPlayerCache
+impl ObjectCache {
+    fn create<Snapshot, T>(snapshot: &Snapshot, type_: T) -> ObjectCache
     where
         Snapshot: ReadableSnapshot,
         T: KindAPI<'static> + ObjectTypeAPI<'static> + PlayerAPI<'static>,
     {
         let object_type = type_.into_owned_object_type();
-        OwnerPlayerCache {
+        ObjectCache {
             owns_declared: TypeReader::get_capabilities_declared::<Owns<'static>>(snapshot, object_type.clone())
                 .unwrap(),
             owns: TypeReader::get_capabilities::<Owns<'static>>(snapshot, object_type.clone()).unwrap(),
-            owns_overridden: TypeReader::get_overridden_interfaces::<Owns<'static>>(snapshot, object_type.clone())
-                .unwrap(),
+            owns_overrides: TypeReader::get_object_capabilities_overrides::<Owns<'static>>(
+                snapshot,
+                object_type.clone(),
+            )
+            .unwrap(),
             plays_declared: TypeReader::get_capabilities_declared::<Plays<'static>>(snapshot, object_type.clone())
                 .unwrap(),
             plays: TypeReader::get_capabilities::<Plays<'static>>(snapshot, object_type.clone()).unwrap(),
-            plays_overridden: TypeReader::get_overridden_interfaces::<Plays<'static>>(snapshot, object_type.clone())
-                .unwrap(),
+            plays_overrides: TypeReader::get_object_capabilities_overrides::<Plays<'static>>(
+                snapshot,
+                object_type.clone(),
+            )
+            .unwrap(),
         }
     }
 }

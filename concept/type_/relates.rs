@@ -15,6 +15,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
+    thing::thing_manager::ThingManager,
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationError, DefaultFrom,
@@ -25,7 +26,6 @@ use crate::{
         Capability, Ordering,
     },
 };
-use crate::thing::thing_manager::ThingManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Relates<'a> {

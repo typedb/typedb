@@ -85,8 +85,25 @@ pub(crate) fn is_interface_overridden<CAP: Capability<'static>>(
     object_type: CAP::ObjectType,
     interface_type: CAP::InterfaceType,
 ) -> Result<bool, ConceptReadError> {
-    let all_overridden = TypeReader::get_overridden_interfaces::<CAP>(snapshot, object_type)?;
-    Ok(all_overridden.contains_key(&interface_type))
+    let capabilities_overrides = TypeReader::get_object_capabilities_overrides::<CAP>(snapshot, object_type)?;
+    Ok(capabilities_overrides
+        .values()
+        .map(|overridden_capability| overridden_capability.interface())
+        .contains(&interface_type))
+}
+
+pub(crate) fn is_interface_hidden_by_overrides<CAP: Capability<'static>>(
+    snapshot: &impl ReadableSnapshot,
+    object_type: CAP::ObjectType,
+    interface_type: CAP::InterfaceType,
+) -> Result<bool, ConceptReadError> {
+    let capabilities_overrides = TypeReader::get_object_capabilities_overrides::<CAP>(snapshot, object_type)?;
+    Ok(capabilities_overrides
+        .iter()
+        .find(|(capability, overridden_capability)| {
+            interface_type == overridden_capability.interface() && interface_type != capability.interface()
+        })
+        .is_some())
 }
 
 pub(crate) fn validate_declared_annotation_is_compatible_with_other_inherited_annotations(

@@ -25,7 +25,7 @@ use crate::{
             type_reader::TypeReader,
             validation::{
                 validation::{
-                    get_label_or_concept_read_err, is_interface_overridden,
+                    get_label_or_concept_read_err, is_interface_hidden_by_overrides,
                     is_overridden_interface_object_declared_supertype_or_self,
                     is_overridden_interface_object_one_of_supertypes_or_self,
                     validate_declared_annotation_is_compatible_with_other_inherited_annotations,
@@ -264,7 +264,7 @@ impl CommitTimeValidation {
                 Self::validate_overridden_owns(type_manager, snapshot, owns.clone(), validation_errors)?
             );
 
-            Self::validate_declared_capability_not_overridden_by_supertypes::<Owns<'static>>(
+            Self::validate_declared_capability_not_hidden_by_supertypes_overrides::<Owns<'static>>(
                 type_manager,
                 snapshot,
                 owns.clone(),
@@ -308,7 +308,7 @@ impl CommitTimeValidation {
                 Self::validate_overridden_plays(type_manager, snapshot, plays.clone(), validation_errors)?
             );
 
-            Self::validate_declared_capability_not_overridden_by_supertypes::<Plays<'static>>(
+            Self::validate_declared_capability_not_hidden_by_supertypes_overrides::<Plays<'static>>(
                 type_manager,
                 snapshot,
                 plays.clone(),
@@ -535,7 +535,7 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_declared_capability_not_overridden_by_supertypes<CAP: Capability<'static>>(
+    fn validate_declared_capability_not_hidden_by_supertypes_overrides<CAP: Capability<'static>>(
         _type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
@@ -543,7 +543,7 @@ impl CommitTimeValidation {
     ) -> Result<(), ConceptReadError> {
         if let Some(supertype) = TypeReader::get_supertype(snapshot, capability.object())? {
             let interface_type = capability.interface();
-            if is_interface_overridden::<CAP>(snapshot, supertype.clone(), interface_type.clone())? {
+            if is_interface_hidden_by_overrides::<CAP>(snapshot, supertype.clone(), interface_type.clone())? {
                 validation_errors.push(SchemaValidationError::OverriddenCapabilityCannotBeRedeclared(
                     CAP::KIND,
                     get_label_or_concept_read_err(snapshot, capability.object())?,

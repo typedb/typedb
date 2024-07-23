@@ -41,6 +41,7 @@ use crate::{
             AnnotationUnique, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
+        constraint::Constraint,
         entity_type::{EntityType, EntityTypeAnnotation},
         object_type::{with_object_type, ObjectType},
         owns::{Owns, OwnsAnnotation},
@@ -558,34 +559,19 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_entity_type_overridden_owns(
+    pub(crate) fn get_object_owns_overrides(
         &self,
         snapshot: &impl ReadableSnapshot,
-        entity_type: EntityType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
-        if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_overridden_owns(entity_type)))
-        } else {
-            let owns =
-                TypeReader::get_overridden_interfaces::<Owns<'static>>(snapshot, entity_type.into_owned_object_type())?;
-            Ok(MaybeOwns::Owned(owns))
-        }
-    }
-
-    pub(crate) fn get_relation_type_overridden_owns(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
-        if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_overridden_owns(relation_type)))
-        } else {
-            let owns = TypeReader::get_overridden_interfaces::<Owns<'static>>(
-                snapshot,
-                relation_type.into_owned_object_type(),
-            )?;
-            Ok(MaybeOwns::Owned(owns))
-        }
+        object_type: ObjectType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError> {
+        with_object_type!(object_type, |type_| {
+            if let Some(cache) = &self.type_cache {
+                Ok(MaybeOwns::Borrowed(cache.get_object_owns_overrides(type_)))
+            } else {
+                let plays = TypeReader::get_object_capabilities_overrides::<Owns<'static>>(snapshot, object_type)?;
+                Ok(MaybeOwns::Owned(plays))
+            }
+        })
     }
 
     pub(crate) fn relation_index_available(
@@ -632,22 +618,6 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_entity_type_overridden_plays(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        entity_type: EntityType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
-        if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_overridden_plays(entity_type)))
-        } else {
-            let plays = TypeReader::get_overridden_interfaces::<Plays<'static>>(
-                snapshot,
-                entity_type.into_owned_object_type(),
-            )?;
-            Ok(MaybeOwns::Owned(plays))
-        }
-    }
-
     pub(crate) fn get_relation_type_plays_declared<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
@@ -675,22 +645,6 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relation_type_overridden_plays(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
-        if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_overridden_plays(relation_type)))
-        } else {
-            let plays = TypeReader::get_overridden_interfaces::<Plays<'static>>(
-                snapshot,
-                relation_type.into_owned_object_type(),
-            )?;
-            Ok(MaybeOwns::Owned(plays))
-        }
-    }
-
     pub(crate) fn get_plays_override(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -701,6 +655,21 @@ impl TypeManager {
         } else {
             Ok(MaybeOwns::Owned(TypeReader::get_capability_override(snapshot, plays)?))
         }
+    }
+
+    pub(crate) fn get_object_plays_overrides(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        object_type: ObjectType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<Plays<'static>, Plays<'static>>>, ConceptReadError> {
+        with_object_type!(object_type, |type_| {
+            if let Some(cache) = &self.type_cache {
+                Ok(MaybeOwns::Borrowed(cache.get_object_plays_overrides(type_)))
+            } else {
+                let plays = TypeReader::get_object_capabilities_overrides::<Plays<'static>>(snapshot, object_type)?;
+                Ok(MaybeOwns::Owned(plays))
+            }
+        })
     }
 
     pub(crate) fn get_attribute_type_value_type(
@@ -891,21 +860,11 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         interface_impl: CAP,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
-        let annotations = interface_impl.get_annotations(snapshot, self)?;
-        let card = annotations
-            .iter()
-            .filter_map(|(annotation, _)| match annotation.clone().into() {
-                // Cardinality and Key cannot be set together
-                Annotation::Cardinality(card) => Some(card),
-                Annotation::Key(_) => Some(AnnotationKey::CARDINALITY),
-                _ => None,
-            })
-            .next()
-            .unwrap_or(interface_impl.get_default_cardinality(snapshot, self)?);
-        Ok(card)
+        Ok(Constraint::compute_cardinality(
+            interface_impl.get_annotations(snapshot, self)?,
+            interface_impl.get_default_cardinality(snapshot, self)?,
+        ))
     }
-
-    // Specialised APIs to simplify architectures
 
     pub(crate) fn get_independent_attribute_types(
         &self,
@@ -925,11 +884,6 @@ impl TypeManager {
     }
 }
 
-// TODO: Remove this set of comments
-// DO: Do all validation, and call TypeWriter methods.
-//  All validation must occur before any writes.  All writes must be done through TypeWriter
-//      (If this feels like unnecessary indirection, feel free to refactor. I just need structure)
-//  Avoid cross-calling methods if it violates the above.
 impl TypeManager {
     pub fn validate(&self, snapshot: &impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
         let type_errors = CommitTimeValidation::validate(&self, snapshot);
@@ -2113,6 +2067,12 @@ impl TypeManager {
             TypeReader::get_value_type_without_source(snapshot, owns.attribute())?,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_new_unique_annotation_compatible_with_capability_and_subcapabilities_instances(
+            snapshot,
+            owns.clone(),
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_edge_annotation::<AnnotationUnique>(snapshot, owns, AnnotationCategory::Unique, None)
     }

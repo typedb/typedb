@@ -6,7 +6,7 @@
 
 use crate::type_::{
     type_manager::type_cache::{
-        kind_cache::{CommonTypeCache, OwnerPlayerCache},
+        kind_cache::{CommonTypeCache, ObjectCache},
         TypeCache,
     },
     KindAPI,
@@ -16,8 +16,8 @@ pub(crate) trait HasCommonTypeCache<T: KindAPI<'static>> {
     fn common_type_cache(&self) -> &CommonTypeCache<T>;
 }
 
-pub trait HasOwnerPlayerCache {
-    fn owner_player_cache(&self) -> &OwnerPlayerCache;
+pub trait HasObjectCache {
+    fn object_cache(&self) -> &ObjectCache;
 }
 
 pub(crate) trait CacheGetter {
@@ -51,13 +51,13 @@ macro_rules! impl_has_common_type_cache {
 }
 pub(super) use impl_has_common_type_cache;
 
-macro_rules! impl_has_owner_player_cache {
+macro_rules! impl_has_object_cache {
     ($cache_type: ty, $inner_type: ty) => {
-        impl HasOwnerPlayerCache for $cache_type {
-            fn owner_player_cache(&self) -> &OwnerPlayerCache {
-                &self.owner_player_cache
+        impl HasObjectCache for $cache_type {
+            fn object_cache(&self) -> &ObjectCache {
+                &self.object_cache
             }
         }
     };
 }
-pub(super) use impl_has_owner_player_cache;
+pub(super) use impl_has_object_cache;

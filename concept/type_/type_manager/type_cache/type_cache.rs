@@ -29,11 +29,11 @@ use crate::type_::{
     role_type::RoleType,
     type_manager::type_cache::{
         kind_cache::{
-            AttributeTypeCache, CommonTypeCache, EntityTypeCache, OwnerPlayerCache, OwnsCache, PlaysCache,
-            RelatesCache, RelationTypeCache, RoleTypeCache,
+            AttributeTypeCache, CommonTypeCache, EntityTypeCache, ObjectCache, OwnsCache, PlaysCache, RelatesCache,
+            RelationTypeCache, RoleTypeCache,
         },
         selection,
-        selection::{CacheGetter, HasCommonTypeCache, HasOwnerPlayerCache},
+        selection::{CacheGetter, HasCommonTypeCache, HasObjectCache},
         struct_definition_cache::StructDefinitionCache,
     },
     KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
@@ -77,8 +77,8 @@ selection::impl_has_common_type_cache!(AttributeTypeCache, AttributeType<'static
 selection::impl_has_common_type_cache!(RelationTypeCache, RelationType<'static>);
 selection::impl_has_common_type_cache!(RoleTypeCache, RoleType<'static>);
 
-selection::impl_has_owner_player_cache!(EntityTypeCache, EntityType<'static>);
-selection::impl_has_owner_player_cache!(RelationTypeCache, RelationType<'static>);
+selection::impl_has_object_cache!(EntityTypeCache, EntityType<'static>);
+selection::impl_has_object_cache!(RelationTypeCache, RelationType<'static>);
 
 impl TypeCache {
     // If creation becomes slow, We should restore pre-fetching of the schema
@@ -298,9 +298,9 @@ impl TypeCache {
     pub(crate) fn get_owns_declared<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasOwnerPlayerCache + 'this,
+        CACHE: HasObjectCache + 'this,
     {
-        &T::get_cache(self, type_).owner_player_cache().owns_declared
+        &T::get_cache(self, type_).object_cache().owns_declared
     }
 
     pub(crate) fn get_owns<'a, 'this, T, CACHE>(
@@ -309,20 +309,20 @@ impl TypeCache {
     ) -> &HashMap<AttributeType<'static>, Owns<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasOwnerPlayerCache + 'this,
+        CACHE: HasObjectCache + 'this,
     {
-        &T::get_cache(self, type_).owner_player_cache().owns
+        &T::get_cache(self, type_).object_cache().owns
     }
 
-    pub(crate) fn get_overridden_owns<'a, 'this, T, CACHE>(
+    pub(crate) fn get_object_owns_overrides<'a, 'this, T, CACHE>(
         &'this self,
         type_: T,
-    ) -> &HashMap<AttributeType<'static>, Owns<'static>>
+    ) -> &HashMap<Owns<'static>, Owns<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasOwnerPlayerCache + 'this,
+        CACHE: HasObjectCache + 'this,
     {
-        &T::get_cache(self, type_).owner_player_cache().owns_overridden
+        &T::get_cache(self, type_).object_cache().owns_overrides
     }
 
     pub(crate) fn get_role_type_ordering(&self, role_type: RoleType<'_>) -> Ordering {
@@ -386,9 +386,9 @@ impl TypeCache {
     pub(crate) fn get_plays_declared<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasOwnerPlayerCache + 'this,
+        CACHE: HasObjectCache + 'this,
     {
-        &T::get_cache(self, type_).owner_player_cache().plays_declared
+        &T::get_cache(self, type_).object_cache().plays_declared
     }
 
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(
@@ -397,20 +397,20 @@ impl TypeCache {
     ) -> &'this HashMap<RoleType<'static>, Plays<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasOwnerPlayerCache + 'this,
+        CACHE: HasObjectCache + 'this,
     {
-        &T::get_cache(self, type_).owner_player_cache().plays
+        &T::get_cache(self, type_).object_cache().plays
     }
 
-    pub(crate) fn get_overridden_plays<'a, 'this, T, CACHE>(
+    pub(crate) fn get_object_plays_overrides<'a, 'this, T, CACHE>(
         &'this self,
         type_: T,
-    ) -> &'this HashMap<RoleType<'static>, Plays<'static>>
+    ) -> &'this HashMap<Plays<'static>, Plays<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasOwnerPlayerCache + 'this,
+        CACHE: HasObjectCache + 'this,
     {
-        &T::get_cache(self, type_).owner_player_cache().plays_overridden
+        &T::get_cache(self, type_).object_cache().plays_overrides
     }
 
     pub(crate) fn get_plays_override<'c>(&'c self, plays: Plays<'c>) -> &'c Option<Plays<'static>> {

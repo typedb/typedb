@@ -277,13 +277,10 @@ impl TypeReader {
         Self::get_type_property_declared::<Label<'static>>(snapshot, type_)
     }
 
-    pub(crate) fn get_capabilities_declared<CAP>(
+    pub(crate) fn get_capabilities_declared<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         owner: impl TypeAPI<'static>,
-    ) -> Result<HashSet<CAP>, ConceptReadError>
-    where
-        CAP: Capability<'static>,
-    {
+    ) -> Result<HashSet<CAP>, ConceptReadError> {
         let owns_prefix = CAP::prefix_for_canonical_edges_from(CAP::ObjectType::new(owner.into_vertex()));
         snapshot
             .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
@@ -291,13 +288,10 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn get_capabilities<CAP>(
+    pub(crate) fn get_capabilities<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         object_type: CAP::ObjectType,
-    ) -> Result<HashMap<CAP::InterfaceType, CAP>, ConceptReadError>
-    where
-        CAP: Capability<'static>,
-    {
+    ) -> Result<HashMap<CAP::InterfaceType, CAP>, ConceptReadError> {
         let mut transitive_capabilities: HashMap<CAP::InterfaceType, CAP> = HashMap::new();
         let mut overridden_interfaces: HashSet<CAP::InterfaceType> = HashSet::new();
         let mut current_type = Some(object_type);
@@ -318,30 +312,25 @@ impl TypeReader {
         Ok(transitive_capabilities)
     }
 
-    pub(crate) fn get_overridden_interfaces<CAP>(
+    pub(crate) fn get_object_capabilities_overrides<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         object_type: CAP::ObjectType,
-    ) -> Result<HashMap<CAP::InterfaceType, CAP>, ConceptReadError>
-    where
-        CAP: Capability<'static>,
-    {
-        let mut overridden_interfaces: HashMap<CAP::InterfaceType, CAP> = HashMap::new();
+    ) -> Result<HashMap<CAP, CAP>, ConceptReadError> {
+        let mut capability_to_override: HashMap<CAP, CAP> = HashMap::new();
         let mut current_type = Some(object_type);
         while current_type.is_some() {
             let declared_capabilities =
                 Self::get_capabilities_declared::<CAP>(snapshot, current_type.as_ref().unwrap().clone())?;
             for capability in declared_capabilities.into_iter() {
-                if let Some(overridden) = Self::get_capability_override(snapshot, capability.clone())? {
-                    if overridden.interface() != capability.interface()
-                        && !overridden_interfaces.contains_key(&overridden.interface())
-                    {
-                        overridden_interfaces.insert(overridden.interface(), overridden);
+                if !capability_to_override.contains_key(&capability) {
+                    if let Some(overridden) = Self::get_capability_override(snapshot, capability.clone())? {
+                        capability_to_override.insert(capability, overridden);
                     }
                 }
             }
             current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
         }
-        Ok(overridden_interfaces)
+        Ok(capability_to_override)
     }
 
     pub(crate) fn get_capability_override<CAP>(
@@ -354,7 +343,7 @@ impl TypeReader {
         let override_property_key = EdgeOverride::<CAP>::build_key(capability);
         snapshot
             .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
-                EdgeOverride::<CAP>::from_value_bytes(overridden_edge_bytes).overridden
+                EdgeOverride::<CAP>::from_value_bytes(overridden_edge_bytes).overrides
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
