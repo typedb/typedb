@@ -516,7 +516,6 @@ impl IntersectionExecutor {
     fn advance_intersection_iterators_with_multiplicity(&mut self) -> Result<(), ConceptReadError> {
         let mut multiplicity: u64 = 1;
         for iter in &mut self.iterators {
-            // let row = ImmutableRow::new(&self.intersection_row, self.intersection_multiplicity);
             multiplicity *= iter.advance_past()? as u64;
         }
         self.intersection_multiplicity = multiplicity;

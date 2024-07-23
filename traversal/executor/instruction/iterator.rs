@@ -159,24 +159,6 @@ pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a>
     first_unbound: TupleIndex,
     enumerate_range: Range<TupleIndex>,
     enumerate_or_count_range: Range<TupleIndex>,
-    // examples:
-    //   [ enumerate, enumerate ] --> no special action, just advance()
-    //   [ enumerate, count ] --> advance() until POSITION changes
-    //   [ enumerate, check ] --> (same) or seek to POSITION+1
-    //   [ count, count ] --> count all (TODO: how to unifiy with other counts until POSITION changes)
-    //   [ count, check ] --> match $x has name "john"; $y; select $y;
-
-    // [ enumerate, count, count ] --> match $r links! ($rt: $x); select $r;
-    // [ enumerate, count, check ] -->
-
-    // basically: we can have 1 Enumerate, 1 Count and 1 Check position (most RHS count....) what about check, check?
-
-    // Count position: last Enumerated. Optimisation: advance() until Enumerated changes, return Count.
-    //  Checks: advance() must loop until a counted or enumerated variable changes
-    //  We store two positions: LastEnumerated position, and LastEnumeratedOrCounted position.
-    //    --> advance_past_enumerated() will advance_past_counted() until LastEnumerated changes.
-    //    --> advance_past_counted() will advance() until LastEnumeratedOrCounted changes.
-    //    --> advance() will move forward 1 position... or it could seek to `lastEnumerateOrCounted` + 1?
 }
 
 impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleIterator<Iterator> {
