@@ -54,7 +54,7 @@ impl PatternPlan {
         Self { steps, context }
     }
 
-    pub fn from_block(block: FunctionalBlock, type_annotations: &TypeAnnotations, statistics: &Statistics) -> Self {
+    pub fn from_block(block: &FunctionalBlock, type_annotations: &TypeAnnotations, statistics: &Statistics) -> Self {
         assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
         let conjunction = block.conjunction();
         assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");

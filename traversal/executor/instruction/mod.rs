@@ -97,11 +97,11 @@ impl InstructionExecutor {
                 )?;
                 Ok(Self::Has(executor))
             }
-            Instruction::HasReverse(has, mode) => {
+            Instruction::HasReverse(has, _) => {
                 todo!()
                 // Ok(Self::HasReverse(HasReverseExecutor::new(has.into_ids(variable_to_position), mode)))
             }
-            Instruction::RolePlayer(rp, mode) => {
+            Instruction::RolePlayer(rp, _) => {
                 todo!()
                 // Ok(Self::RolePlayer(RolePlayerExecutor::new(rp.into_ids(variable_to_position), mode)))
             }

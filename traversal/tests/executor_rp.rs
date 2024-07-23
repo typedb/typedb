@@ -134,7 +134,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 
 #[test]
 fn traverse_rp_unbounded_sorted_from() {
-    let (tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
 
@@ -202,14 +202,13 @@ fn traverse_rp_unbounded_sorted_from() {
     ))];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager)
-            .unwrap()
+        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {
@@ -234,7 +233,7 @@ fn traverse_rp_unbounded_sorted_from() {
 
 #[test]
 fn traverse_has_unbounded_sorted_to_merged() {
-    let (tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
 
@@ -272,14 +271,13 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &vec![var_person, var_attribute],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager)
-            .unwrap()
+        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {

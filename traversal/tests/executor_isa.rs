@@ -94,13 +94,13 @@ fn traverse_isa_unbounded_sorted_thing() {
     ))];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {

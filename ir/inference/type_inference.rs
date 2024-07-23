@@ -98,7 +98,7 @@ pub fn infer_types_for_function(
     Ok(FunctionAnnotations { return_annotations, block_annotations: body_annotations })
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeAnnotations {
     variables: HashMap<Variable, Arc<HashSet<Type>>>,
     constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -128,7 +128,7 @@ impl TypeAnnotations {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConstraintTypeAnnotations {
     LeftRight(LeftRightAnnotations),
     LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here, since they do not actually co-constrain Schema types possible.
@@ -144,7 +144,7 @@ impl ConstraintTypeAnnotations {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LeftRightAnnotations {
     left_to_right: Arc<BTreeMap<Type, Vec<Type>>>,
     right_to_left: Arc<BTreeMap<Type, Vec<Type>>>,
@@ -175,7 +175,7 @@ impl LeftRightAnnotations {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LeftRightFilteredAnnotations {
     // Filtered edges are encoded as  (left,right,filter) and (right,left,filter).
     pub(crate) left_to_right: BTreeMap<Type, Vec<Type>>,

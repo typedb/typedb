@@ -28,12 +28,11 @@ pub struct ProgramExecutor {
 impl ProgramExecutor {
     pub fn new<Snapshot: ReadableSnapshot>(
         program_plan: ProgramPlan,
-        type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
-        let ProgramPlan { entry: entry_plan, functions: function_plans } = program_plan;
-        let entry = PatternExecutor::new(entry_plan, type_annotations, snapshot, thing_manager)?;
+        let ProgramPlan { entry: entry_plan, entry_annotations, functions: function_plans } = program_plan;
+        let entry = PatternExecutor::new(entry_plan, &entry_annotations, snapshot, thing_manager)?;
 
         // TODO: functions
 

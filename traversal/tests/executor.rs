@@ -14,11 +14,12 @@ use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use ir::{
     inference::type_inference::infer_types,
     program::{
-        function_signature::{FunctionSignatureIndex, HashMapFunctionIndex},
+        function_signature::{HashMapFunctionIndex},
         program::Program,
     },
-    translator::match_::TypeQLBlockBuilder,
 };
+use ir::program::program::CompiledSchemaFunctions;
+use ir::translator::match_::translate_match;
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,
@@ -39,7 +40,7 @@ const NAME_LABEL: Label = Label::new_static("name");
 
 #[test]
 fn test_planning_traversal() {
-    let (tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, storage) = setup_storage();
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
@@ -101,8 +102,8 @@ fn test_planning_traversal() {
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
 
     // IR
-    let empty_function_index = FunctionSignatureIndex::new(&HashMapFunctionIndex {}, HashMap::new());
-    let mut builder = TypeQLBlockBuilder::build_match_but_dont_finish(&empty_function_index, &match_).unwrap();
+    let empty_function_index = HashMapFunctionIndex::empty();
+    let builder = translate_match(&empty_function_index, &match_).unwrap();
     // builder.add_limit(3);
     // builder.add_filter(vec!["person", "age"]).unwrap();
     let block = builder.finish();
@@ -110,11 +111,17 @@ fn test_planning_traversal() {
     // Executor
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let program = Program::new(block, HashMap::new());
-    let type_annotations = infer_types(&program, &snapshot, &type_manager).unwrap();
-    let pattern_plan = PatternPlan::from_block(program.entry, &type_annotations, &statistics);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
-    let executor = ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap();
+    let program = Program::new(block, Vec::new());
+    let annotated_program = infer_types(
+        program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())
+    ).unwrap();
+    let pattern_plan = PatternPlan::from_block(
+        annotated_program.get_entry(), annotated_program.get_entry_annotations(), &statistics
+    );
+    let program_plan = ProgramPlan::new(
+        pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new()
+    );
+    let executor = ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap();
 
     {
         let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());

@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
 
 use encoding::{
     graph::definition::definition_key::{DefinitionID, DefinitionKey},
@@ -17,7 +16,7 @@ use ir::{
     },
     program::{
         block::FunctionalBlock,
-        function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
+        function_signature::{FunctionID, FunctionSignature},
         modifier::ModifierDefinitionError,
         program::Program,
     },
