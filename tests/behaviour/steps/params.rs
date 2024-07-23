@@ -275,7 +275,7 @@ impl FromStr for RootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "object_root_label", regex = r"(entity|relation)")]
+#[param(name = "object_root_label", regex = r"(entity|relation|entities|relations)")]
 pub(crate) struct ObjectRootLabel {
     kind: TypeDBTypeKind,
 }
@@ -298,8 +298,8 @@ impl FromStr for ObjectRootLabel {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let kind = match s {
-            "entity" => TypeDBTypeKind::Entity,
-            "relation" => TypeDBTypeKind::Relation,
+            "entity" | "entities" => TypeDBTypeKind::Entity,
+            "relation" | "relations" => TypeDBTypeKind::Relation,
             _ => unreachable!(),
         };
         Ok(Self { kind })

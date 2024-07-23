@@ -82,8 +82,8 @@ macro_rules! object_type_match {
 
 pub struct OperationTimeValidation {}
 
-macro_rules! type_or_subtype_capabilities_instances_existence_validation {
-    ($func_name:ident, $object_type:ident, $interface_type:ident, $single_type_validation_func:path) => {
+macro_rules! type_or_subtype_without_declared_capability_instances_existence_validation {
+    ($func_name:ident, $capability_type:ident, $object_type:ident, $interface_type:ident, $single_type_validation_func:path) => {
         fn $func_name<'a>(
             snapshot: &impl ReadableSnapshot,
             type_manager: &'a TypeManager,
@@ -96,7 +96,16 @@ macro_rules! type_or_subtype_capabilities_instances_existence_validation {
             let mut object_types = VecDeque::new();
             object_types.push_front(object_type);
 
+            let mut first = true;
             while let Some(current_object_type) = object_types.pop_back() {
+                if !first {
+                    let current_object_type_capabilities =
+                        TypeReader::get_capabilities_declared::<$capability_type<'static>>(snapshot, current_object_type.clone().into_owned())?;
+                    if current_object_type_capabilities.iter().map(|capability| capability.interface()).contains(&interface_type) {
+                        continue;
+                    }
+                }
+
                 if $single_type_validation_func(
                     snapshot,
                     thing_manager,
@@ -111,6 +120,8 @@ macro_rules! type_or_subtype_capabilities_instances_existence_validation {
                     .get_subtypes(snapshot, type_manager)?
                     .iter()
                     .for_each(|subtype| object_types.push_front(subtype.clone()));
+
+                first = false;
             }
 
             Ok(type_that_has_instances)
@@ -2128,22 +2139,22 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    type_or_subtype_capabilities_instances_existence_validation!(
-        type_or_subtype_that_has_instances_of_owns,
+    type_or_subtype_without_declared_capability_instances_existence_validation!(
+        type_or_subtype_without_declared_capability_that_has_instances_of_owns,
         Owns,
         ObjectType,
         AttributeType,
         Self::has_instances_of_owns
     );
-    type_or_subtype_capabilities_instances_existence_validation!(
-        type_or_subtype_that_has_instances_of_plays,
+    type_or_subtype_without_declared_capability_instances_existence_validation!(
+        type_or_subtype_without_declared_capability_that_has_instances_of_plays,
         Plays,
         ObjectType,
         RoleType,
         Self::has_instances_of_plays
     );
-    type_or_subtype_capabilities_instances_existence_validation!(
-        type_or_subtype_that_has_instances_of_relates,
+    type_or_subtype_without_declared_capability_instances_existence_validation!(
+        type_or_subtype_without_declared_capability_that_has_instances_of_relates,
         Relates,
         RelationType,
         RoleType,
@@ -2153,9 +2164,10 @@ impl OperationTimeValidation {
     cannot_unset_capability_with_existing_instances_validation!(
         validate_no_instances_to_unset_owns,
         CapabilityKind::Owns,
+        Owns,
         ObjectType,
         AttributeType,
-        Self::type_or_subtype_that_has_instances_of_owns
+        Self::type_or_subtype_without_declared_capability_that_has_instances_of_owns
     );
     cannot_unset_capability_with_existing_instances_validation!(
         validate_no_instances_to_unset_plays,
@@ -2163,7 +2175,7 @@ impl OperationTimeValidation {
         Plays,
         ObjectType,
         RoleType,
-        Self::type_or_subtype_that_has_instances_of_plays
+        Self::type_or_subtype_without_declared_capability_that_has_instances_of_plays
     );
     cannot_unset_capability_with_existing_instances_validation!(
         validate_no_instances_to_unset_relates,
@@ -2171,7 +2183,7 @@ impl OperationTimeValidation {
         Relates,
         RelationType,
         RoleType,
-        Self::type_or_subtype_that_has_instances_of_relates
+        Self::type_or_subtype_without_declared_capability_that_has_instances_of_relates
     );
 
     cannot_override_capability_with_existing_instances_validation!(
@@ -2179,21 +2191,21 @@ impl OperationTimeValidation {
         CapabilityKind::Owns,
         ObjectType,
         AttributeType,
-        Self::type_or_subtype_that_has_instances_of_owns
+        Self::type_or_subtype_without_declared_capability_that_has_instances_of_owns
     );
     cannot_override_capability_with_existing_instances_validation!(
         validate_no_instances_to_override_plays,
         CapabilityKind::Plays,
         ObjectType,
         RoleType,
-        Self::type_or_subtype_that_has_instances_of_plays
+        Self::type_or_subtype_without_declared_capability_that_has_instances_of_plays
     );
     cannot_override_capability_with_existing_instances_validation!(
         validate_no_instances_to_override_relates,
         CapabilityKind::Relates,
         RelationType,
         RoleType,
-        Self::type_or_subtype_that_has_instances_of_relates
+        Self::type_or_subtype_without_declared_capability_that_has_instances_of_relates
     );
 
     cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation!(
@@ -2201,20 +2213,20 @@ impl OperationTimeValidation {
         CapabilityKind::Owns,
         ObjectType,
         Self::get_lost_capabilities_if_supertype_is_changed::<Owns<'static>>,
-        Self::type_or_subtype_that_has_instances_of_owns
+        Self::type_or_subtype_without_declared_capability_that_has_instances_of_owns
     );
     cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation!(
         validate_lost_plays_do_not_cause_lost_instances_while_changing_supertype,
         CapabilityKind::Plays,
         ObjectType,
         Self::get_lost_capabilities_if_supertype_is_changed::<Plays<'static>>,
-        Self::type_or_subtype_that_has_instances_of_plays
+        Self::type_or_subtype_without_declared_capability_that_has_instances_of_plays
     );
     cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation!(
         validate_lost_relates_do_not_cause_lost_instances_while_changing_supertype,
         CapabilityKind::Relates,
         RelationType,
         Self::get_lost_capabilities_if_supertype_is_changed::<Relates<'static>>,
-        Self::type_or_subtype_that_has_instances_of_relates
+        Self::type_or_subtype_without_declared_capability_that_has_instances_of_relates
     );
 }
