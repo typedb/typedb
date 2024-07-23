@@ -4,17 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::ops::Range;
+
 use answer::variable_value::VariableValue;
-use concept::error::ConceptReadError;
-use concept::thing::attribute::Attribute;
-use concept::thing::entity::Entity;
-use concept::thing::has::Has;
-use concept::thing::relation::Relation;
+use concept::{
+    error::ConceptReadError,
+    thing::{attribute::Attribute, entity::Entity, has::Has, relation::Relation},
+};
 use lending_iterator::higher_order::Hkt;
-use crate::executor::instruction::{VariableMode, VariableModes};
-use crate::executor::VariablePosition;
+
+use crate::executor::{
+    instruction::{VariableMode, VariableModes},
+    VariablePosition,
+};
 
 #[derive(Debug, Clone)]
 pub(crate) enum Tuple<'a> {
@@ -41,21 +43,17 @@ impl<'a> Tuple<'a> {
     pub(crate) fn into_owned(self) -> Tuple<'static> {
         match self {
             Tuple::Single([value]) => Tuple::Single([value.into_owned()]),
-            Tuple::Pair([value_1, value_2]) => {
-                Tuple::Pair([value_1.into_owned(), value_2.into_owned()])
-            }
+            Tuple::Pair([value_1, value_2]) => Tuple::Pair([value_1.into_owned(), value_2.into_owned()]),
             Tuple::Triple([value_1, value_2, value_3]) => {
                 Tuple::Triple([value_1.into_owned(), value_2.into_owned(), value_3.into_owned()])
             }
-            Tuple::Quintuple([value_1, value_2, value_3, value_4, value_5]) => {
-                Tuple::Quintuple([
-                    value_1.into_owned(),
-                    value_2.into_owned(),
-                    value_3.into_owned(),
-                    value_4.into_owned(),
-                    value_5.into_owned()
-                ])
-            }
+            Tuple::Quintuple([value_1, value_2, value_3, value_4, value_5]) => Tuple::Quintuple([
+                value_1.into_owned(),
+                value_2.into_owned(),
+                value_3.into_owned(),
+                value_4.into_owned(),
+                value_5.into_owned(),
+            ]),
             Tuple::Arbitrary() => {
                 todo!()
             }
@@ -125,10 +123,7 @@ pub(crate) type TupleIndex = u16;
 
 pub(crate) type TupleResult<'a> = Result<Tuple<'a>, ConceptReadError>;
 
-pub(crate) fn enumerated_range(
-    variable_modes: &VariableModes,
-    positions: &TuplePositions,
-) -> Range<TupleIndex> {
+pub(crate) fn enumerated_range(variable_modes: &VariableModes, positions: &TuplePositions) -> Range<TupleIndex> {
     let mut last_enumerated = None;
     for (i, position) in positions.positions().iter().enumerate() {
         match variable_modes.get(*position).unwrap() {
@@ -158,14 +153,13 @@ pub(crate) fn enumerated_or_counted_range(
     last_enumerated_or_counted.map_or(0..0, |last| 0..last + 1)
 }
 
-
 pub(crate) fn isa_entity_to_tuple_thing_type<'a>(result: Result<Entity<'a>, ConceptReadError>) -> TupleResult<'a> {
     match result {
         Ok(entity) => {
             let type_ = entity.type_();
             Ok(Tuple::Pair([VariableValue::Thing(entity.into()), VariableValue::Type(type_.into())]))
-        },
-        Err(err) => Err(err)
+        }
+        Err(err) => Err(err),
     }
 }
 pub(crate) fn isa_relation_to_tuple_thing_type<'a>(result: Result<Relation<'a>, ConceptReadError>) -> TupleResult<'a> {
@@ -173,47 +167,39 @@ pub(crate) fn isa_relation_to_tuple_thing_type<'a>(result: Result<Relation<'a>, 
         Ok(relation) => {
             let type_ = relation.type_();
             Ok(Tuple::Pair([VariableValue::Thing(relation.into()), VariableValue::Type(type_.into())]))
-        },
-        Err(err) => Err(err)
+        }
+        Err(err) => Err(err),
     }
 }
 
-pub(crate) fn isa_attribute_to_tuple_thing_type<'a>(result: Result<Attribute<'a>, ConceptReadError>) -> TupleResult<'a> {
+pub(crate) fn isa_attribute_to_tuple_thing_type<'a>(
+    result: Result<Attribute<'a>, ConceptReadError>,
+) -> TupleResult<'a> {
     match result {
-        Ok(attribute) =>{
+        Ok(attribute) => {
             let type_ = attribute.type_();
             Ok(Tuple::Pair([VariableValue::Thing(attribute.into()), VariableValue::Type(type_.into())]))
         }
-        Err(err) => Err(err)
+        Err(err) => Err(err),
     }
 }
 
-pub(crate) fn has_to_tuple_owner_attribute<'a>(
-    result: Result<(Has<'a>, u64), ConceptReadError>
-) -> TupleResult<'a> {
+pub(crate) fn has_to_tuple_owner_attribute<'a>(result: Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a> {
     match result {
         Ok((has, count)) => {
             let (owner, attribute) = has.into_owner_attribute();
-            Ok(Tuple::Pair([
-                VariableValue::Thing(owner.into()),
-                VariableValue::Thing(attribute.into()),
-            ]))
+            Ok(Tuple::Pair([VariableValue::Thing(owner.into()), VariableValue::Thing(attribute.into())]))
         }
-        Err(err) => Err(err)
+        Err(err) => Err(err),
     }
 }
 
-pub(crate) fn has_to_tuple_attribute_owner<'a>(
-    result: Result<(Has<'a>, u64), ConceptReadError>
-) -> TupleResult<'a> {
+pub(crate) fn has_to_tuple_attribute_owner<'a>(result: Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a> {
     match result {
         Ok((has, count)) => {
             let (owner, attribute) = has.into_owner_attribute();
-            Ok(Tuple::Pair([
-                VariableValue::Thing(attribute.into()),
-                VariableValue::Thing(owner.into()),
-            ]))
+            Ok(Tuple::Pair([VariableValue::Thing(attribute.into()), VariableValue::Thing(owner.into())]))
         }
-        Err(err) => Err(err)
+        Err(err) => Err(err),
     }
 }

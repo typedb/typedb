@@ -8,33 +8,35 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
-use itertools::Position;
 
-use answer::{Type, variable::Variable};
+use answer::{variable::Variable, Type};
 use concept::{
     error::ConceptReadError,
     thing::{
-        attribute::AttributeIterator, entity::EntityIterator, relation::RelationIterator, thing_manager::ThingManager,
+        attribute::{Attribute, AttributeIterator},
+        entity::{Entity, EntityIterator},
+        relation::{Relation, RelationIterator},
+        thing_manager::ThingManager,
     },
 };
-use concept::thing::attribute::Attribute;
-use concept::thing::entity::Entity;
-use concept::thing::relation::Relation;
 use ir::pattern::constraint::Isa;
-use lending_iterator::adaptors::Map;
-use lending_iterator::{AsHkt, LendingIterator};
+use itertools::Position;
+use lending_iterator::{adaptors::Map, AsHkt, LendingIterator};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{
-    executor::{
-        batch::ImmutableRow,
-        VariablePosition,
+use crate::executor::{
+    batch::ImmutableRow,
+    instruction::{
+        iterator::{SortedTupleIterator, TupleIterator},
+        tuple::{
+            enumerated_or_counted_range, enumerated_range, isa_attribute_to_tuple_thing_type,
+            isa_entity_to_tuple_thing_type, isa_relation_to_tuple_thing_type, TuplePositions, TupleResult,
+        },
+        VariableModes,
     },
+    VariablePosition,
 };
-use crate::executor::instruction::iterator::{SortedTupleIterator, TupleIterator};
-use crate::executor::instruction::tuple::{enumerated_or_counted_range, enumerated_range, isa_attribute_to_tuple_thing_type, isa_entity_to_tuple_thing_type, isa_relation_to_tuple_thing_type, TuplePositions, TupleResult};
-use crate::executor::instruction::VariableModes;
 
 pub(crate) struct IsaExecutor {
     isa: Isa<VariablePosition>,
@@ -53,13 +55,14 @@ enum IterateMode {
 }
 
 pub(crate) type IsaUnboundedSortedThingEntitySingle = Map<EntityIterator, EntityToTupleFn, AsHkt![TupleResult<'_>]>;
-pub(crate) type IsaUnboundedSortedThingRelationSingle = Map<RelationIterator, RelationToTupleFn, AsHkt![TupleResult<'_>]>;
-pub(crate) type IsaUnboundedSortedThingAttributeSingle = Map<AttributeIterator, AttributeToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type IsaUnboundedSortedThingRelationSingle =
+    Map<RelationIterator, RelationToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type IsaUnboundedSortedThingAttributeSingle =
+    Map<AttributeIterator, AttributeToTupleFn, AsHkt![TupleResult<'_>]>;
 
 type EntityToTupleFn = for<'a> fn(Result<Entity<'a>, ConceptReadError>) -> TupleResult<'a>;
 type RelationToTupleFn = for<'a> fn(Result<Relation<'a>, ConceptReadError>) -> TupleResult<'a>;
 type AttributeToTupleFn = for<'a> fn(Result<Attribute<'a>, ConceptReadError>) -> TupleResult<'a>;
-
 
 impl IterateMode {
     fn new(isa: &Isa<VariablePosition>, var_modes: &VariableModes, sort_by: Option<VariablePosition>) -> IterateMode {
@@ -102,14 +105,7 @@ impl IsaExecutor {
             None
         };
 
-        Self {
-            isa,
-            iterate_mode,
-            variable_modes,
-            type_instance_types: constraint_types,
-            thing_types,
-            type_cache,
-        }
+        Self { isa, iterate_mode, variable_modes, type_instance_types: constraint_types, thing_types, type_cache }
     }
 
     pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
@@ -132,8 +128,8 @@ impl IsaExecutor {
                     match &self.type_cache.iter().flat_map(|types| types.iter()).next().unwrap() {
                         Type::Entity(entity_type) => {
                             let iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
-                            let as_tuples: IsaUnboundedSortedThingEntitySingle = iterator
-                                .map(isa_entity_to_tuple_thing_type);
+                            let as_tuples: IsaUnboundedSortedThingEntitySingle =
+                                iterator.map(isa_entity_to_tuple_thing_type);
                             Ok(TupleIterator::IsaEntityInvertedSingle(SortedTupleIterator::new(
                                 as_tuples,
                                 positions,
@@ -144,8 +140,8 @@ impl IsaExecutor {
                         }
                         Type::Relation(relation_type) => {
                             let iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
-                            let as_tuples: IsaUnboundedSortedThingRelationSingle = iterator
-                                .map(isa_relation_to_tuple_thing_type);
+                            let as_tuples: IsaUnboundedSortedThingRelationSingle =
+                                iterator.map(isa_relation_to_tuple_thing_type);
                             Ok(TupleIterator::IsaRelationInvertedSingle(SortedTupleIterator::new(
                                 as_tuples,
                                 positions,
@@ -156,8 +152,8 @@ impl IsaExecutor {
                         }
                         Type::Attribute(attribute_type) => {
                             let iterator = thing_manager.get_attributes_in(snapshot, attribute_type.clone())?;
-                            let as_tuples: IsaUnboundedSortedThingAttributeSingle = iterator
-                                .map(isa_attribute_to_tuple_thing_type);
+                            let as_tuples: IsaUnboundedSortedThingAttributeSingle =
+                                iterator.map(isa_attribute_to_tuple_thing_type);
                             Ok(TupleIterator::IsaAttributeInvertedSingle(SortedTupleIterator::new(
                                 as_tuples,
                                 positions,

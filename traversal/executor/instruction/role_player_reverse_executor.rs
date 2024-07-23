@@ -17,4 +17,3 @@ impl RolePlayerReverseIteratorExecutor {
         Self { role_player }
     }
 }
-

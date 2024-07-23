@@ -43,7 +43,9 @@ impl<'a> Has<'a> {
     pub fn into_owner_attribute(self) -> (Object<'a>, Attribute<'a>) {
         match self {
             Has::Edge(edge) => (Object::new(edge.clone().into_from()), Attribute::new(edge.clone().into_to())),
-            Has::EdgeReverse(edge_reverse) => (Object::new(edge_reverse.clone().into_to()), Attribute::new(edge_reverse.into_from()))
+            Has::EdgeReverse(edge_reverse) => {
+                (Object::new(edge_reverse.clone().into_to()), Attribute::new(edge_reverse.into_from()))
+            }
         }
     }
 }

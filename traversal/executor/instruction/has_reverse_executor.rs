@@ -18,5 +18,4 @@ impl HasReverseIteratorExecutor {
     }
 }
 
-impl HasReverseIteratorExecutor {
-}
+impl HasReverseIteratorExecutor {}

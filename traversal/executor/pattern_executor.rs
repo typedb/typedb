@@ -6,26 +6,24 @@
 
 use std::{cmp::Ordering, collections::HashMap, fmt::Display, sync::Arc};
 
-use itertools::Itertools;
-
 use answer::{variable::Variable, variable_value::VariableValue};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::{inference::type_inference::TypeAnnotations, program::block::BlockContext};
+use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     executor::{
         batch::{Batch, BatchRowIterator, ImmutableRow, Row},
-        instruction::iterator::TupleIterator,
-        VariablePosition, SelectedPositions,
+        instruction::{iterator::TupleIterator, InstructionExecutor},
+        SelectedPositions, VariablePosition,
     },
     planner::pattern_plan::{
-        AssignmentStep, DisjunctionStep, Instruction, NegationStep, OptionalStep, PatternPlan, IntersectionStep, Step,
+        AssignmentStep, DisjunctionStep, Instruction, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
         UnsortedJoinStep,
     },
 };
-use crate::executor::instruction::InstructionExecutor;
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, VariablePosition>,
@@ -49,7 +47,8 @@ impl PatternExecutor {
         let mut step_executors = Vec::with_capacity(steps.len());
         for step in steps {
             for variable in step.unbound_variables() {
-                let previous = variable_positions.insert(*variable, VariablePosition::new(variable_positions.len() as u32));
+                let previous =
+                    variable_positions.insert(*variable, VariablePosition::new(variable_positions.len() as u32));
                 debug_assert_eq!(previous, Option::None);
             }
             let executor =
@@ -83,7 +82,7 @@ impl PatternExecutor {
         self,
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
-    ) -> impl for<'a> LendingIterator<Item<'a>=Result<ImmutableRow<'a>, &'a ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager))
             .flat_map(|batch| BatchRowIterator::new(batch))
     }
@@ -214,9 +213,8 @@ impl StepExecutor {
                 Ok(Self::SortedJoin(executor))
             }
             Step::UnsortedJoin(UnsortedJoinStep { iterate_instruction, check_instructions, .. }) => {
-                let executor = UnsortedJoinExecutor::new(
-                    iterate_instruction, check_instructions, row_width, variable_positions
-                );
+                let executor =
+                    UnsortedJoinExecutor::new(iterate_instruction, check_instructions, row_width, variable_positions);
                 Ok(Self::UnsortedJoin(executor))
             }
             Step::Assignment(AssignmentStep { .. }) => {
@@ -470,7 +468,8 @@ impl IntersectionExecutor {
                     Ordering::Equal => {}
                     Ordering::Greater => {
                         let iter_i = &mut containing_i[i_index];
-                        let next_value_cmp = iter_i.advance_until_index_is(iter_i.first_unbound_index(), current_max)?;
+                        let next_value_cmp =
+                            iter_i.advance_until_index_is(iter_i.first_unbound_index(), current_max)?;
                         match next_value_cmp {
                             None => {
                                 failed = true;
@@ -567,9 +566,11 @@ impl IntersectionExecutor {
         }
         let mut cartesian = false;
         for iter in &mut self.iterators {
-            if iter.peek_first_unbound_value().transpose()?.is_some_and(|value|
-                value == &self.intersection_row[self.sort_variable_position.as_usize()]
-            ) {
+            if iter
+                .peek_first_unbound_value()
+                .transpose()?
+                .is_some_and(|value| value == &self.intersection_row[self.sort_variable_position.as_usize()])
+            {
                 cartesian = true;
                 break;
             }
@@ -756,7 +757,10 @@ struct DisjunctionExecutor {
 }
 
 impl DisjunctionExecutor {
-    fn new(executors: Vec<PatternExecutor>, variable_positions: &HashMap<Variable, VariablePosition>) -> DisjunctionExecutor {
+    fn new(
+        executors: Vec<PatternExecutor>,
+        variable_positions: &HashMap<Variable, VariablePosition>,
+    ) -> DisjunctionExecutor {
         Self { executors }
     }
 

@@ -14,7 +14,9 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    executor::{batch::ImmutableRow, function_executor::FunctionExecutor, pattern_executor::PatternExecutor, VariablePosition},
+    executor::{
+        batch::ImmutableRow, function_executor::FunctionExecutor, pattern_executor::PatternExecutor, VariablePosition,
+    },
     planner::program_plan::ProgramPlan,
 };
 

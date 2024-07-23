@@ -18,19 +18,21 @@ use encoding::{
 use ir::{
     inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
-    program::{block::FunctionalBlock, program::Program},
+    program::{
+        block::FunctionalBlock,
+        program::{CompiledSchemaFunctions, Program},
+    },
 };
-use ir::program::program::CompiledSchemaFunctions;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use traversal::{
     executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
-        pattern_plan::{Instruction, IterateBounds, PatternPlan, IntersectionStep, Step},
+        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
         program_plan::ProgramPlan,
     },
 };
@@ -206,7 +208,8 @@ fn traverse_rp_unbounded_sorted_from() {
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager)
+            .unwrap()
     };
 
     {
@@ -275,7 +278,8 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager)
+            .unwrap()
     };
 
     {

@@ -9,34 +9,42 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
-use itertools::Position;
 
-use answer::{Thing, Type, variable::Variable, variable_value::VariableValue};
+use answer::{variable::Variable, variable_value::VariableValue, Thing, Type};
 use concept::{
     error::ConceptReadError,
     thing::{
         attribute::Attribute,
+        has::Has,
         object::{HasIterator, Object, ObjectAPI},
         thing_manager::ThingManager,
     },
 };
-use concept::thing::has::Has;
-use lending_iterator::{adaptors::Filter, AsHkt, higher_order::FnHktHelper, kmerge::KMergeBy, LendingIterator, Peekable};
-use lending_iterator::adaptors::Map;
+use itertools::Position;
+use lending_iterator::{
+    adaptors::{Filter, Map},
+    higher_order::FnHktHelper,
+    kmerge::KMergeBy,
+    AsHkt, LendingIterator, Peekable,
+};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
     executor::{
         batch::ImmutableRow,
-        instruction::VariableMode,
+        instruction::{
+            iterator::{SortedTupleIterator, TupleIterator},
+            tuple::{
+                enumerated_or_counted_range, enumerated_range, has_to_tuple_attribute_owner,
+                has_to_tuple_owner_attribute, Tuple, TupleIndex, TuplePositions, TupleResult,
+            },
+            VariableMode, VariableModes,
+        },
         VariablePosition,
     },
     planner::pattern_plan::IterateBounds,
 };
-use crate::executor::instruction::iterator::{TupleIterator, SortedTupleIterator};
-use crate::executor::instruction::tuple::{enumerated_or_counted_range, enumerated_range, has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TupleIndex, TuplePositions, TupleResult};
-use crate::executor::instruction::VariableModes;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<VariablePosition>,
@@ -89,22 +97,25 @@ enum HasExecutorFilter {
     AttributeFilter(Arc<AttributeFilterFn>),
 }
 
-pub(crate) type HasUnboundedSortedOwner = Map<Filter<HasIterator, Arc<HasFilterBothFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
-pub(crate) type HasUnboundedSortedAttributeMerged =
-Map<Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterAttributeFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
-pub(crate) type HasUnboundedSortedAttributeSingle = Map<Filter<HasIterator, Arc<HasFilterAttributeFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
-pub(crate) type HasBoundedSortedAttribute = Map<Filter<HasIterator, Arc<HasFilterAttributeFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type HasUnboundedSortedOwner =
+    Map<Filter<HasIterator, Arc<HasFilterBothFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type HasUnboundedSortedAttributeMerged = Map<
+    Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterAttributeFn>>,
+    HasToTupleFn,
+    AsHkt![TupleResult<'_>],
+>;
+pub(crate) type HasUnboundedSortedAttributeSingle =
+    Map<Filter<HasIterator, Arc<HasFilterAttributeFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type HasBoundedSortedAttribute =
+    Map<Filter<HasIterator, Arc<HasFilterAttributeFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
 
 type HasFilterBothFn =
-dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
+    dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
 type AttributeFilterFn = dyn for<'a, 'b> FnHktHelper<&'a Result<(Attribute<'b>, u64), ConceptReadError>, bool>;
 type HasFilterAttributeFn =
-dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
+    dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
 type HasOrderByAttributeFn = for<'a, 'b> fn(
-    (
-        &'a Result<(Has<'a>, u64), ConceptReadError>,
-        &'b Result<(Has<'b>, u64), ConceptReadError>,
-    ),
+    (&'a Result<(Has<'a>, u64), ConceptReadError>, &'b Result<(Has<'b>, u64), ConceptReadError>),
 ) -> Ordering;
 
 type HasToTupleFn = for<'a> fn(Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a>;
@@ -211,8 +222,8 @@ impl HasExecutor {
                 let iterator: Filter<HasIterator, Arc<HasFilterBothFn>> = thing_manager
                     .get_has_from_type_range_unordered(snapshot, key_range)
                     .filter::<_, HasFilterBothFn>(filter_fn);
-                let as_tuples: Map<Filter<HasIterator, Arc<HasFilterBothFn>>, HasToTupleFn, TupleResult> = iterator
-                    .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
+                let as_tuples: Map<Filter<HasIterator, Arc<HasFilterBothFn>>, HasToTupleFn, TupleResult> =
+                    iterator.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
                 let positions = TuplePositions::Pair([self.has.owner(), self.has.attribute()]);
                 let enumerated = enumerated_range(&self.variable_modes, &positions);
                 let enumerated_or_counted = enumerated_or_counted_range(&self.variable_modes, &positions);
@@ -239,14 +250,14 @@ impl HasExecutor {
                             self.attribute_types.iter().map(|t| t.as_attribute_type()),
                         )?
                         .filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
-                    let as_tuples: HasUnboundedSortedAttributeSingle = iterator
-                        .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
+                    let as_tuples: HasUnboundedSortedAttributeSingle =
+                        iterator.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
                     Ok(TupleIterator::HasUnboundedInvertedSingle(SortedTupleIterator::new(
                         as_tuples,
                         positions,
                         0,
                         enumerated,
-                        enumerated_or_counted
+                        enumerated_or_counted,
                     )))
                 } else {
                     // // TODO: we could create a reusable space for these temporarily held iterators so we don't have allocate again before the merging iterator
@@ -267,15 +278,15 @@ impl HasExecutor {
                         KMergeBy::new(iterators, Self::compare_has_by_attribute_then_owner);
                     let filtered: Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterAttributeFn>> =
                         merged.filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
-                    let as_tuples: HasUnboundedSortedAttributeMerged = filtered
-                        .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
+                    let as_tuples: HasUnboundedSortedAttributeMerged =
+                        filtered.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
 
                     Ok(TupleIterator::HasUnboundedInvertedMerged(SortedTupleIterator::new(
                         as_tuples,
                         positions,
                         0,
                         enumerated,
-                        enumerated_or_counted
+                        enumerated_or_counted,
                     )))
                 }
             }
@@ -296,8 +307,8 @@ impl HasExecutor {
                     _ => unreachable!("Has owner must be an entity or relation."),
                 };
                 let filtered = iterator.filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
-                let as_tuples: HasBoundedSortedAttribute = filtered
-                    .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
+                let as_tuples: HasBoundedSortedAttribute =
+                    filtered.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
                 let positions = TuplePositions::Pair([self.has.owner(), self.has.attribute()]);
                 let enumerated = enumerated_range(&self.variable_modes, &positions);
                 let enumerated_or_counted = enumerated_or_counted_range(&self.variable_modes, &positions);
@@ -313,16 +324,12 @@ impl HasExecutor {
     }
 
     fn compare_has_by_attribute_then_owner<'a, 'b>(
-        pair: (
-            &'a Result<(Has<'a>, u64), ConceptReadError>,
-            &'b Result<(Has<'b>, u64), ConceptReadError>,
-        ),
+        pair: (&'a Result<(Has<'a>, u64), ConceptReadError>, &'b Result<(Has<'b>, u64), ConceptReadError>),
     ) -> Ordering {
         let (result_1, result_2) = pair;
         match (result_1, result_2) {
             (Ok((has_1, _)), Ok((has_2, _))) => {
-                has_1.attribute().cmp(&has_2.attribute())
-                    .then(has_1.owner().cmp(&has_2.owner()))
+                has_1.attribute().cmp(&has_2.attribute()).then(has_1.owner().cmp(&has_2.owner()))
             }
             _ => Ordering::Equal,
         }

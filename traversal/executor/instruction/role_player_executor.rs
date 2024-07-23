@@ -5,8 +5,8 @@
  */
 
 use ir::pattern::constraint::RolePlayer;
-use crate::executor::VariablePosition;
 
+use crate::executor::VariablePosition;
 
 pub(crate) struct RolePlayerIteratorExecutor {
     role_player: RolePlayer<VariablePosition>,
@@ -18,5 +18,4 @@ impl RolePlayerIteratorExecutor {
     }
 }
 
-impl RolePlayerIteratorExecutor {
-}
+impl RolePlayerIteratorExecutor {}

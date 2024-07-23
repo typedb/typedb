@@ -26,13 +26,13 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use traversal::{
     executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
-        pattern_plan::{Instruction, IterateBounds, PatternPlan, IntersectionStep, Step},
+        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
         program_plan::ProgramPlan,
     },
 };

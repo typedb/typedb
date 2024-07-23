@@ -44,7 +44,7 @@ impl SelectedPositions {
         Self { selected: selected_variables.iter().map(|pos| variable_positions[pos]).collect() }
     }
 
-    fn iter_selected(&self) -> impl Iterator<Item =VariablePosition> + '_ {
+    fn iter_selected(&self) -> impl Iterator<Item = VariablePosition> + '_ {
         self.selected.iter().copied()
     }
 }
