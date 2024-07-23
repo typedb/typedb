@@ -20,6 +20,7 @@ use concept::{
         thing_manager::ThingManager,
     },
 };
+use ir::pattern::constraint::{Constraint, ConstraintIDSide};
 use lending_iterator::{
     adaptors::{Filter, Map},
     higher_order::FnHktHelper,
@@ -38,50 +39,17 @@ use crate::executor::{
     },
     VariablePosition,
 };
+use crate::executor::instruction::BinaryIterateMode;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<VariablePosition>,
-    iterate_mode: IterateMode,
+    iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
     attribute_types: Arc<HashSet<Type>>,
     filter_fn: HasExecutorFilter,
 
     owner_cache: Option<Vec<Object<'static>>>,
-}
-
-#[derive(Debug, Copy, Clone)]
-enum IterateMode {
-    UnboundSortedFrom,
-    UnboundSortedTo,
-    BoundFromSortedTo,
-}
-
-impl IterateMode {
-    fn new(
-        has: &ir::pattern::constraint::Has<VariablePosition>,
-        var_modes: &VariableModes,
-        sort_by: Option<VariablePosition>,
-    ) -> IterateMode {
-        debug_assert!(!var_modes.fully_bound());
-        if var_modes.fully_unbound() {
-            match sort_by {
-                None => {
-                    // arbitrarily pick from sorted
-                    IterateMode::UnboundSortedFrom
-                }
-                Some(variable) => {
-                    if has.owner() == variable {
-                        IterateMode::UnboundSortedFrom
-                    } else {
-                        IterateMode::UnboundSortedTo
-                    }
-                }
-            }
-        } else {
-            IterateMode::BoundFromSortedTo
-        }
-    }
 }
 
 enum HasExecutorFilter {
@@ -143,9 +111,9 @@ impl HasExecutor {
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(owner_attribute_types.len() > 0);
         debug_assert!(!variable_modes.fully_bound());
-        let iterate_mode = IterateMode::new(&has, &variable_modes, sort_by);
+        let iterate_mode = BinaryIterateMode::new(has.clone(), false, &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
-            IterateMode::UnboundSortedFrom => HasExecutorFilter::HasFilterBoth(Arc::new({
+            BinaryIterateMode::Unbound => HasExecutorFilter::HasFilterBoth(Arc::new({
                 let owner_att_types = owner_attribute_types.clone();
                 let att_types = attribute_types.clone();
                 move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
@@ -156,7 +124,7 @@ impl HasExecutor {
                     Err(_) => true,
                 }
             })),
-            IterateMode::UnboundSortedTo | IterateMode::BoundFromSortedTo => {
+            BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {
                 HasExecutorFilter::HasFilterAttribute(Arc::new({
                     let att_types = attribute_types.clone();
                     move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
@@ -167,7 +135,7 @@ impl HasExecutor {
             }
         };
 
-        let owner_cache = if matches!(iterate_mode, IterateMode::UnboundSortedTo) {
+        let owner_cache = if matches!(iterate_mode, BinaryIterateMode::UnboundInverted) {
             let mut cache = Vec::new();
             for owner_type in owner_attribute_types.keys() {
                 for result in thing_manager
@@ -205,7 +173,7 @@ impl HasExecutor {
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self.iterate_mode {
-            IterateMode::UnboundSortedFrom => {
+            BinaryIterateMode::Unbound => {
                 let first_from_type = self.owner_attribute_types.first_key_value().unwrap().0;
                 let last_key_from_type = self.owner_attribute_types.last_key_value().unwrap().0;
                 let key_range =
@@ -223,7 +191,7 @@ impl HasExecutor {
                     &self.variable_modes,
                 )))
             }
-            IterateMode::UnboundSortedTo => {
+            BinaryIterateMode::UnboundInverted => {
                 debug_assert!(self.owner_cache.is_some());
                 let positions = TuplePositions::Pair([self.has.attribute(), self.has.owner()]);
                 if let Some([iter]) = self.owner_cache.as_deref() {
@@ -271,7 +239,7 @@ impl HasExecutor {
                     )))
                 }
             }
-            IterateMode::BoundFromSortedTo => {
+            BinaryIterateMode::BoundFrom => {
                 debug_assert!(row.width() > self.has.owner().as_usize());
                 let owner = row.get(self.has.owner());
                 let iterator = match owner {

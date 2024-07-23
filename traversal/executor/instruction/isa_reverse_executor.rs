@@ -36,10 +36,11 @@ use crate::executor::{
     },
     VariablePosition,
 };
+use crate::executor::instruction::BinaryIterateMode;
 
-pub(crate) struct IsaExecutor {
+pub(crate) struct IsaReverseExecutor {
     isa: Isa<VariablePosition>,
-    iterate_mode: IterateMode,
+    iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     // TODO: if we ever want to implement transitivity directly in Executor, we could leverage type instances
     type_instance_types: Arc<BTreeMap<Type, Vec<Type>>>,
@@ -63,30 +64,7 @@ type EntityToTupleFn = for<'a> fn(Result<Entity<'a>, ConceptReadError>) -> Tuple
 type RelationToTupleFn = for<'a> fn(Result<Relation<'a>, ConceptReadError>) -> TupleResult<'a>;
 type AttributeToTupleFn = for<'a> fn(Result<Attribute<'a>, ConceptReadError>) -> TupleResult<'a>;
 
-impl IterateMode {
-    fn new(isa: &Isa<VariablePosition>, var_modes: &VariableModes, sort_by: Option<VariablePosition>) -> IterateMode {
-        debug_assert!(!var_modes.fully_bound());
-        if var_modes.fully_unbound() {
-            match sort_by {
-                None => {
-                    // arbitrarily pick from sorted
-                    IterateMode::UnboundSortedFrom
-                }
-                Some(variable) => {
-                    if isa.type_() == variable {
-                        IterateMode::UnboundSortedFrom
-                    } else {
-                        IterateMode::UnboundSortedTo
-                    }
-                }
-            }
-        } else {
-            IterateMode::BoundFromSortedTo
-        }
-    }
-}
-
-impl IsaExecutor {
+impl IsaReverseExecutor {
     pub(crate) fn new(
         isa: Isa<VariablePosition>,
         variable_modes: VariableModes,
@@ -95,8 +73,8 @@ impl IsaExecutor {
         thing_types: Arc<HashSet<Type>>,
     ) -> Self {
         debug_assert!(thing_types.len() > 0);
-        let iterate_mode = IterateMode::new(&isa, &variable_modes, sort_by);
-        let type_cache = if matches!(iterate_mode, IterateMode::UnboundSortedTo) {
+        let iterate_mode = BinaryIterateMode::new(isa.clone(), false, &variable_modes, sort_by);
+        let type_cache = if matches!(iterate_mode, BinaryIterateMode::UnboundInverted) {
             let mut cache = thing_types.clone();
             debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
             Some(cache)
@@ -114,10 +92,10 @@ impl IsaExecutor {
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self.iterate_mode {
-            IterateMode::UnboundSortedFrom => {
+            BinaryIterateMode::Unbound => {
                 todo!()
             }
-            IterateMode::UnboundSortedTo => {
+            BinaryIterateMode::UnboundInverted => {
                 debug_assert!(self.type_cache.is_some());
                 let positions = TuplePositions::Pair([self.isa.thing(), self.isa.type_()]);
                 if self.type_cache.as_ref().unwrap().len() == 1 {
@@ -159,7 +137,7 @@ impl IsaExecutor {
                     todo!()
                 }
             }
-            IterateMode::BoundFromSortedTo => {
+            BinaryIterateMode::BoundFrom => {
                 todo!()
             }
         }

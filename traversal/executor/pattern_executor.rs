@@ -47,12 +47,13 @@ impl PatternExecutor {
         let mut step_executors = Vec::with_capacity(steps.len());
         for step in steps {
             for variable in step.unbound_variables() {
-                let previous =
-                    variable_positions.insert(*variable, VariablePosition::new(variable_positions.len() as u32));
+                let previous = variable_positions
+                    .insert(*variable, VariablePosition::new(variable_positions.len() as u32));
                 debug_assert_eq!(previous, Option::None);
             }
-            let executor =
-                StepExecutor::new(step, &context, &variable_positions, type_annotations, snapshot, thing_manager)?;
+            let executor = StepExecutor::new(
+                step, &context, &variable_positions, type_annotations, snapshot, thing_manager
+            )?;
             step_executors.push(executor)
         }
         let mut variable_positions_index = vec![Variable::new(0); variable_positions.len()];

@@ -17,7 +17,7 @@ use crate::executor::{
             HasBoundedSortedAttribute, HasUnboundedSortedAttributeMerged, HasUnboundedSortedAttributeSingle,
             HasUnboundedSortedOwner,
         },
-        isa_executor::{
+        isa_reverse_executor::{
             IsaUnboundedSortedThingAttributeSingle, IsaUnboundedSortedThingEntitySingle,
             IsaUnboundedSortedThingRelationSingle,
         },
