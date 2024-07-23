@@ -85,7 +85,7 @@ pub async fn relation_role_set_override(
             .resolve_relates(&tx.snapshot, relation_supertype, supertype_label.into_typedb().name().as_str())
             .unwrap()
         {
-            let res = relates.set_override(&mut tx.snapshot, &tx.type_manager, overridden_relates);
+            let res = relates.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_relates);
             may_error.check_concept_write_without_read_errors(&res);
         } else {
             // TODO: It is a little hacky as we don't test the concept api itself, but it is a correct behavior for TypeQL, so

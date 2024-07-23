@@ -81,6 +81,143 @@ macro_rules! object_type_match {
 
 pub struct OperationTimeValidation {}
 
+macro_rules! type_or_subtype_capabilities_instances_existence_validation {
+    ($func_name:ident, $object_type:ident, $interface_type:ident, $single_type_validation_func:path) => {
+        fn $func_name<'a>(
+            snapshot: &impl ReadableSnapshot,
+            type_manager: &'a TypeManager,
+            thing_manager: &'a ThingManager,
+            object_type: $object_type<'a>,
+            interface_type: $interface_type<'a>,
+        ) -> Result<Option<$object_type<'a>>, ConceptReadError> {
+            let mut type_that_has_instances = None;
+
+            let mut object_types = VecDeque::new();
+            object_types.push_front(object_type);
+
+            while let Some(current_object_type) = object_types.pop_back() {
+                if $single_type_validation_func(snapshot, thing_manager, current_object_type.clone(), interface_type.clone())? {
+                    type_that_has_instances = Some(current_object_type.clone());
+                    break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
+                }
+
+                current_object_type
+                    .get_subtypes(snapshot, type_manager)?
+                    .iter()
+                    .for_each(|subtype| object_types.push_front(subtype.clone()));
+            }
+
+            Ok(type_that_has_instances)
+        }
+    };
+}
+
+macro_rules! cannot_unset_capability_with_existing_instances_validation {
+    ($func_name:ident, $capability_kind:path, $object_type:ident, $interface_type:ident, $existing_instances_validation_func:path) => {
+        pub(crate) fn $func_name<'a>(
+            snapshot: &impl ReadableSnapshot,
+            type_manager: &TypeManager,
+            thing_manager: &ThingManager,
+            object_type: $object_type<'a>,
+            interface_type: $interface_type<'a>,
+        ) -> Result<(), SchemaValidationError> {
+            let type_having_instances = $existing_instances_validation_func(
+                snapshot,
+                type_manager,
+                thing_manager,
+                object_type.clone(),
+                interface_type.clone(),
+            )
+                .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+
+            if let Some(type_having_instances) = type_having_instances {
+                Err(SchemaValidationError::CannotUnsetCapabilityWithExistingInstances(
+                    $capability_kind,
+                    get_label_or_schema_err(snapshot, object_type)?,
+                    get_label_or_schema_err(snapshot, type_having_instances)?,
+                    get_label_or_schema_err(snapshot, interface_type)?,
+                ))
+            } else {
+                Ok(())
+            }
+        }
+    };
+}
+
+macro_rules! cannot_override_capability_with_existing_instances_validation {
+    ($func_name:ident, $capability_kind:path, $object_type:ident, $interface_type:ident, $existing_instances_validation_func:path) => {
+        pub(crate) fn $func_name<'a>(
+            snapshot: &impl ReadableSnapshot,
+            type_manager: &TypeManager,
+            thing_manager: &ThingManager,
+            object_type: $object_type<'a>,
+            interface_type: $interface_type<'a>,
+        ) -> Result<(), SchemaValidationError> {
+            let type_having_instances = $existing_instances_validation_func(
+                snapshot,
+                type_manager,
+                thing_manager,
+                object_type.clone(),
+                interface_type.clone(),
+            )
+                .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+
+            if let Some(type_having_instances) = type_having_instances {
+                Err(SchemaValidationError::CannotOverrideCapabilityWithExistingInstances(
+                    $capability_kind,
+                    get_label_or_schema_err(snapshot, object_type)?,
+                    get_label_or_schema_err(snapshot, type_having_instances)?,
+                    get_label_or_schema_err(snapshot, interface_type)?,
+                ))
+            } else {
+                Ok(())
+            }
+        }
+    };
+}
+
+macro_rules! cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation {
+    ($func_name:ident, $capability_kind:path, $object_type:ident, $get_lost_capabilities_func:path, $existing_instances_validation_func:path) => {
+        pub(crate) fn $func_name(
+            snapshot: &impl ReadableSnapshot,
+            type_manager: &TypeManager,
+            thing_manager: &ThingManager,
+            subtype: $object_type<'static>,
+            supertype: $object_type<'static>,
+        ) -> Result<(), SchemaValidationError> {
+            let lost_capabilities = $get_lost_capabilities_func(
+                snapshot,
+                subtype.clone(),
+                supertype.clone(),
+            )?;
+
+            for capability in lost_capabilities {
+                let interface_type = capability.interface();
+                let type_having_instances = $existing_instances_validation_func(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    subtype.clone(),
+                    interface_type.clone(),
+                )
+                .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+
+                if let Some(type_having_instances) = type_having_instances {
+                    return Err(SchemaValidationError::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(
+                        $capability_kind,
+                        get_label_or_schema_err(snapshot, subtype)?,
+                        get_label_or_schema_err(snapshot, supertype)?,
+                        get_label_or_schema_err(snapshot, type_having_instances)?,
+                        get_label_or_schema_err(snapshot, interface_type)?,
+                    ));
+                }
+            }
+
+            Ok(())
+        }
+    };
+}
+
 impl OperationTimeValidation {
     pub(crate) fn validate_type_exists(
         snapshot: &impl ReadableSnapshot,
@@ -1490,194 +1627,6 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_no_instances_to_unset_owns<'a>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        owner: ObjectType<'a>,
-        attribute_type: AttributeType<'a>,
-    ) -> Result<(), SchemaValidationError> {
-        let type_having_instances = Self::type_or_subtype_that_has_instances_of_owns(
-            snapshot,
-            type_manager,
-            thing_manager,
-            owner.clone(),
-            attribute_type.clone(),
-        )
-        .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
-
-        if let Some(type_having_instances) = type_having_instances {
-            Err(SchemaValidationError::CannotUnsetCapabilityWithExistingInstances(
-                CapabilityKind::Owns,
-                get_label_or_schema_err(snapshot, owner)?,
-                get_label_or_schema_err(snapshot, type_having_instances)?,
-                get_label_or_schema_err(snapshot, attribute_type)?,
-            ))
-        } else {
-            Ok(())
-        }
-    }
-
-    pub(crate) fn validate_no_instances_to_unset_plays<'a>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        player: ObjectType<'a>,
-        role_type: RoleType<'a>,
-    ) -> Result<(), SchemaValidationError> {
-        let type_having_instances = Self::type_or_subtype_that_has_instances_of_plays(
-            snapshot,
-            type_manager,
-            thing_manager,
-            player.clone(),
-            role_type.clone(),
-        )
-        .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
-
-        if let Some(type_having_instances) = type_having_instances {
-            Err(SchemaValidationError::CannotUnsetCapabilityWithExistingInstances(
-                CapabilityKind::Plays,
-                get_label_or_schema_err(snapshot, player)?,
-                get_label_or_schema_err(snapshot, type_having_instances)?,
-                get_label_or_schema_err(snapshot, role_type)?,
-            ))
-        } else {
-            Ok(())
-        }
-    }
-
-    pub(crate) fn validate_no_instances_to_override_owns<'a>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        owner: ObjectType<'a>,
-        attribute_type: AttributeType<'a>,
-    ) -> Result<(), SchemaValidationError> {
-        let type_having_instances = Self::type_or_subtype_that_has_instances_of_owns(
-            snapshot,
-            type_manager,
-            thing_manager,
-            owner.clone(),
-            attribute_type.clone(),
-        )
-        .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
-
-        if let Some(type_having_instances) = type_having_instances {
-            Err(SchemaValidationError::CannotOverrideCapabilityWithExistingInstances(
-                CapabilityKind::Owns,
-                get_label_or_schema_err(snapshot, owner)?,
-                get_label_or_schema_err(snapshot, type_having_instances)?,
-                get_label_or_schema_err(snapshot, attribute_type)?,
-            ))
-        } else {
-            Ok(())
-        }
-    }
-
-    pub(crate) fn validate_no_instances_to_override_plays<'a>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        player: ObjectType<'a>,
-        role_type: RoleType<'a>,
-    ) -> Result<(), SchemaValidationError> {
-        let type_having_instances = Self::type_or_subtype_that_has_instances_of_plays(
-            snapshot,
-            type_manager,
-            thing_manager,
-            player.clone(),
-            role_type.clone(),
-        )
-        .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
-
-        if let Some(type_having_instances) = type_having_instances {
-            Err(SchemaValidationError::CannotOverrideCapabilityWithExistingInstances(
-                CapabilityKind::Plays,
-                get_label_or_schema_err(snapshot, player)?,
-                get_label_or_schema_err(snapshot, type_having_instances)?,
-                get_label_or_schema_err(snapshot, role_type)?,
-            ))
-        } else {
-            Ok(())
-        }
-    }
-
-    pub(crate) fn validate_lost_owns_do_not_cause_lost_instances_while_changing_supertype(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        owner_subtype: ObjectType<'static>,
-        owner_supertype: ObjectType<'static>,
-    ) -> Result<(), SchemaValidationError> {
-        let lost_owns = Self::get_lost_capabilities_if_supertype_is_changed::<Owns<'static>>(
-            snapshot,
-            owner_subtype.clone(),
-            owner_supertype.clone(),
-        )?;
-
-        for owns in lost_owns {
-            let attribute_type = owns.attribute();
-            let type_having_instances = Self::type_or_subtype_that_has_instances_of_owns(
-                snapshot,
-                type_manager,
-                thing_manager,
-                owner_subtype.clone(),
-                attribute_type.clone(),
-            )
-            .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
-
-            if let Some(type_having_instances) = type_having_instances {
-                return Err(SchemaValidationError::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(
-                    CapabilityKind::Owns,
-                    get_label_or_schema_err(snapshot, owner_subtype)?,
-                    get_label_or_schema_err(snapshot, owner_supertype)?,
-                    get_label_or_schema_err(snapshot, type_having_instances)?,
-                    get_label_or_schema_err(snapshot, attribute_type)?,
-                ));
-            }
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn validate_lost_plays_do_not_cause_lost_instances_while_changing_supertype(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        player_subtype: ObjectType<'static>,
-        player_supertype: ObjectType<'static>,
-    ) -> Result<(), SchemaValidationError> {
-        let lost_plays = Self::get_lost_capabilities_if_supertype_is_changed::<Plays<'static>>(
-            snapshot,
-            player_subtype.clone(),
-            player_supertype.clone(),
-        )?;
-
-        for plays in lost_plays {
-            let role_type = plays.role();
-            let type_having_instances = Self::type_or_subtype_that_has_instances_of_plays(
-                snapshot,
-                type_manager,
-                thing_manager,
-                player_subtype.clone(),
-                role_type.clone(),
-            )
-            .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
-
-            if let Some(type_having_instances) = type_having_instances {
-                return Err(SchemaValidationError::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(
-                    CapabilityKind::Plays,
-                    get_label_or_schema_err(snapshot, player_subtype)?,
-                    get_label_or_schema_err(snapshot, player_supertype)?,
-                    get_label_or_schema_err(snapshot, type_having_instances)?,
-                    get_label_or_schema_err(snapshot, role_type)?,
-                ));
-            }
-        }
-
-        Ok(())
-    }
-
     pub(crate) fn validate_modified_owns_cardinality_does_not_violate_existing_instances_while_changing_supertype(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -1757,60 +1706,6 @@ impl OperationTimeValidation {
         }
 
         Ok(())
-    }
-
-    fn type_or_subtype_that_has_instances_of_owns<'a>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        owner: ObjectType<'a>,
-        attribute_type: AttributeType<'a>,
-    ) -> Result<Option<ObjectType<'static>>, ConceptReadError> {
-        let mut type_that_has_instances = None;
-
-        let mut owners = VecDeque::new();
-        owners.push_front(owner.into_owned_object_type());
-
-        while let Some(current_owner) = owners.pop_back() {
-            if Self::has_instances_of_owns(snapshot, thing_manager, current_owner.clone(), attribute_type.clone())? {
-                type_that_has_instances = Some(current_owner.clone());
-                break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
-            }
-
-            current_owner
-                .get_subtypes(snapshot, type_manager)?
-                .iter()
-                .for_each(|subowner| owners.push_front(subowner.clone().into_owned_object_type()));
-        }
-
-        Ok(type_that_has_instances)
-    }
-
-    fn type_or_subtype_that_has_instances_of_plays<'a>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        player: ObjectType<'a>,
-        role_type: RoleType<'a>,
-    ) -> Result<Option<ObjectType<'static>>, ConceptReadError> {
-        let mut type_that_has_instances = None;
-
-        let mut players = VecDeque::new();
-        players.push_front(player.into_owned_object_type());
-
-        while let Some(current_player) = players.pop_back() {
-            if Self::has_instances_of_plays(snapshot, thing_manager, current_player.clone(), role_type.clone())? {
-                type_that_has_instances = Some(current_player.clone());
-                break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
-            }
-
-            current_player
-                .get_subtypes(snapshot, type_manager)?
-                .iter()
-                .for_each(|subplayer| players.push_front(subplayer.clone().into_owned_object_type()));
-        }
-
-        Ok(type_that_has_instances)
     }
 
     // TODO: Do we want to check subtypes in operation time?
@@ -1931,36 +1826,48 @@ impl OperationTimeValidation {
             ObjectType::Entity(entity_type) => {
                 let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
                 while let Some(instance) = iterator.next() {
+                    let mut iterator = instance?.get_relations_by_role(snapshot, thing_manager, role_type.clone().into_owned());
 
-                    // let mut iterator = instance?.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?; // change to this call
-                    //     let mut iterator = thing_manager.get_has_from_thing_to_type_unordered( // TODO: get_role_players.....!
-                    //         snapshot,
-                    //         &instance?,
-                    //         role_type.clone(),
-                    //     )?;
-                    //
-                    //     if iterator.next().is_some() {
-                    //         has_instances = true;
-                    //         break;
-                    //     }
+                    if let Some(first) = iterator.next() {
+                        first?;
+                        has_instances = true;
+                        break;
+                    }
                 }
             }
             ObjectType::Relation(relation_type) => {
                 let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
                 while let Some(instance) = iterator.next() {
+                    let mut iterator = instance?.get_relations_by_role(snapshot, thing_manager, role_type.clone().into_owned());
 
-                    // let mut iterator = instance?.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?; // change to this call
-                    //     let mut iterator = thing_manager.get_has_from_thing_to_type_unordered( // TODO: get_role_players.....!
-                    //         snapshot,
-                    //         &instance?,
-                    //         role_type.clone(),
-                    //     )?;
-                    //
-                    //     if iterator.next().is_some() {
-                    //         has_instances = true;
-                    //         break;
-                    //     }
+                    if let Some(first) = iterator.next() {
+                        first?;
+                        has_instances = true;
+                        break;
+                    }
                 }
+            }
+        }
+
+        Ok(has_instances)
+    }
+
+    fn has_instances_of_relates<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation_type: RelationType<'a>,
+        role_type: RoleType<'a>,
+    ) -> Result<bool, ConceptReadError> {
+        let mut has_instances = false;
+
+        let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
+        while let Some(instance) = iterator.next() {
+            let mut iterator = instance?.get_players_role_type(snapshot, thing_manager, role_type.clone().into_owned());
+
+            if let Some(first) = iterator.next() {
+                first?;
+                has_instances = true;
+                break;
             }
         }
 
@@ -2126,4 +2033,20 @@ impl OperationTimeValidation {
 
         Ok(())
     }
+
+    type_or_subtype_capabilities_instances_existence_validation!(type_or_subtype_that_has_instances_of_owns, ObjectType, AttributeType, Self::has_instances_of_owns);
+    type_or_subtype_capabilities_instances_existence_validation!(type_or_subtype_that_has_instances_of_plays, ObjectType, RoleType, Self::has_instances_of_plays);
+    type_or_subtype_capabilities_instances_existence_validation!(type_or_subtype_that_has_instances_of_relates, RelationType, RoleType, Self::has_instances_of_relates);
+
+    cannot_unset_capability_with_existing_instances_validation!(validate_no_instances_to_unset_owns, CapabilityKind::Owns, ObjectType, AttributeType, Self::type_or_subtype_that_has_instances_of_owns);
+    cannot_unset_capability_with_existing_instances_validation!(validate_no_instances_to_unset_plays, CapabilityKind::Plays, ObjectType, RoleType, Self::type_or_subtype_that_has_instances_of_plays);
+    cannot_unset_capability_with_existing_instances_validation!(validate_no_instances_to_unset_relates, CapabilityKind::Relates, RelationType, RoleType, Self::type_or_subtype_that_has_instances_of_relates);
+
+    cannot_override_capability_with_existing_instances_validation!(validate_no_instances_to_override_owns, CapabilityKind::Owns, ObjectType, AttributeType, Self::type_or_subtype_that_has_instances_of_owns);
+    cannot_override_capability_with_existing_instances_validation!(validate_no_instances_to_override_plays, CapabilityKind::Plays, ObjectType, RoleType, Self::type_or_subtype_that_has_instances_of_plays);
+    cannot_override_capability_with_existing_instances_validation!(validate_no_instances_to_override_relates, CapabilityKind::Relates, RelationType, RoleType, Self::type_or_subtype_that_has_instances_of_relates);
+
+    cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation!(validate_lost_owns_do_not_cause_lost_instances_while_changing_supertype, CapabilityKind::Owns, ObjectType, Self::get_lost_capabilities_if_supertype_is_changed::<Owns<'static>>, Self::type_or_subtype_that_has_instances_of_owns);
+    cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation!(validate_lost_plays_do_not_cause_lost_instances_while_changing_supertype, CapabilityKind::Plays, ObjectType, Self::get_lost_capabilities_if_supertype_is_changed::<Plays<'static>>, Self::type_or_subtype_that_has_instances_of_plays);
+    cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation!(validate_lost_relates_do_not_cause_lost_instances_while_changing_supertype, CapabilityKind::Relates, RelationType, Self::get_lost_capabilities_if_supertype_is_changed::<Relates<'static>>, Self::type_or_subtype_that_has_instances_of_relates);
 }

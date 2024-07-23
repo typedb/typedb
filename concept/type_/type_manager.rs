@@ -1567,6 +1567,15 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_lost_relates_do_not_cause_lost_instances_while_changing_supertype(
+            snapshot,
+            self,
+            thing_manager,
+            subtype.clone(),
+            supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         self.set_object_type_supertype(snapshot, thing_manager, subtype, supertype)
     }
 
@@ -2005,10 +2014,10 @@ impl TypeManager {
     pub(crate) fn set_relates_overridden(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         relates: Relates<'static>,
         overridden: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: More validation - instances exist.
         OperationTimeValidation::validate_relates_is_inherited(snapshot, relates.relation(), overridden.role())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -2027,6 +2036,17 @@ impl TypeManager {
             overridden.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        if relates.role() != overridden.role() {
+            OperationTimeValidation::validate_no_instances_to_override_relates(
+                snapshot,
+                self,
+                thing_manager,
+                relates.relation(),
+                overridden.role(),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         self.set_supertype(snapshot, relates.role(), overridden.role())?;
         TypeWriter::storage_set_type_edge_overridden(snapshot, relates, overridden);

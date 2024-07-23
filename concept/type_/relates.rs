@@ -25,6 +25,7 @@ use crate::{
         Capability, Ordering,
     },
 };
+use crate::thing::thing_manager::ThingManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Relates<'a> {
@@ -52,9 +53,10 @@ impl<'a> Relates<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         overridden: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_relates_overridden(snapshot, self.clone().into_owned(), overridden)
+        type_manager.set_relates_overridden(snapshot, thing_manager, self.clone().into_owned(), overridden)
     }
 
     pub fn unset_override(
