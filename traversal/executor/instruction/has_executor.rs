@@ -9,6 +9,7 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
+use itertools::Position;
 
 use answer::{Thing, Type, variable::Variable, variable_value::VariableValue};
 use concept::{
@@ -29,7 +30,7 @@ use crate::{
     executor::{
         batch::ImmutableRow,
         instruction::VariableMode,
-        Position,
+        VariablePosition,
     },
     planner::pattern_plan::IterateBounds,
 };
@@ -38,7 +39,7 @@ use crate::executor::instruction::tuple::{enumerated_or_counted_range, enumerate
 use crate::executor::instruction::VariableModes;
 
 pub(crate) struct HasExecutor {
-    has: ir::pattern::constraint::Has<Position>,
+    has: ir::pattern::constraint::Has<VariablePosition>,
     iterate_mode: IterateMode,
     variable_modes: VariableModes,
     owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
@@ -56,9 +57,13 @@ enum IterateMode {
 }
 
 impl IterateMode {
-    fn new(has: &ir::pattern::constraint::Has<Variable>, variable_modes: &VariableModes, sort_by: Option<Variable>) -> IterateMode {
-        debug_assert!(!variable_modes.is_fully_bound());
-        if variable_modes.is_fully_unbound() {
+    fn new(
+        has: &ir::pattern::constraint::Has<VariablePosition>,
+        var_modes: &VariableModes,
+        sort_by: Option<VariablePosition>,
+    ) -> IterateMode {
+        debug_assert!(!var_modes.fully_bound());
+        if var_modes.fully_unbound() {
             match sort_by {
                 None => {
                     // arbitrarily pick from sorted
@@ -122,39 +127,24 @@ impl HasExecutorFilter {
     }
 }
 
-// TODO: basically, we can't type anything that explicitly returns something with a lfietime bound?
-// --> We could create a TupleIterator that implements LendingIterator, with a generic over the input? This is
-//     how we achieve HasIterator which returns Has<'a> !
-//     Alternatively, we could copy into 'static values.
-enum Test {
-    Has(Map<Filter<HasIterator, Arc<HasFilterBothFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>),
-}
-
 impl HasExecutor {
     pub(crate) fn new<Snapshot: ReadableSnapshot>(
-        has: ir::pattern::constraint::Has<Variable>,
-        bounds: IterateBounds<Variable>,
-        selected_variables: &Vec<Variable>,
-        named_variables: &HashMap<Variable, String>,
-        variable_positions: &HashMap<Variable, Position>,
-        sort_by: Option<Variable>,
+        has: ir::pattern::constraint::Has<VariablePosition>,
+        variable_modes: VariableModes,
+        sort_by: Option<VariablePosition>,
         owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
         attribute_types: Arc<HashSet<Type>>,
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(owner_attribute_types.len() > 0);
-
-        let variable_modes = VariableModes::new_from(
-            has.clone(), variable_positions, &bounds, selected_variables, named_variables
-        );
-        debug_assert!(!variable_modes.is_fully_bound());
+        debug_assert!(!variable_modes.fully_bound());
         let iterate_mode = IterateMode::new(&has, &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
             IterateMode::UnboundSortedFrom => HasExecutorFilter::HasFilterBoth(Arc::new({
                 let owner_att_types = owner_attribute_types.clone();
                 let att_types = attribute_types.clone();
-                move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
+                move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
                     Ok((has, _)) => {
                         owner_att_types.contains_key(&Type::from(has.owner().type_()))
                             && att_types.contains(&Type::Attribute(has.attribute().type_()))
@@ -165,7 +155,7 @@ impl HasExecutor {
             IterateMode::UnboundSortedTo | IterateMode::BoundFromSortedTo => {
                 HasExecutorFilter::HasFilterAttribute(Arc::new({
                     let att_types = attribute_types.clone();
-                    move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
+                    move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
                         Ok((has, _)) => att_types.contains(&Type::Attribute(has.attribute().type_())),
                         Err(_) => true,
                     }
@@ -194,7 +184,7 @@ impl HasExecutor {
         };
 
         Ok(Self {
-            has: has.into_ids(variable_positions),
+            has,
             iterate_mode,
             variable_modes,
             owner_attribute_types: owner_attribute_types,

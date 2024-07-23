@@ -14,7 +14,7 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    executor::{batch::ImmutableRow, function_executor::FunctionExecutor, pattern_executor::PatternExecutor, Position},
+    executor::{batch::ImmutableRow, function_executor::FunctionExecutor, pattern_executor::PatternExecutor, VariablePosition},
     planner::program_plan::ProgramPlan,
 };
 
@@ -38,7 +38,7 @@ impl ProgramExecutor {
         Ok(Self { entry: entry, functions: HashMap::new() })
     }
 
-    pub fn entry_variable_positions(&self) -> &HashMap<Variable, Position> {
+    pub fn entry_variable_positions(&self) -> &HashMap<Variable, VariablePosition> {
         self.entry.variable_positions()
     }
 

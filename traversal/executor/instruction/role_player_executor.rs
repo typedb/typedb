@@ -5,15 +5,15 @@
  */
 
 use ir::pattern::constraint::RolePlayer;
-use crate::executor::Position;
+use crate::executor::VariablePosition;
 
 
 pub(crate) struct RolePlayerIteratorExecutor {
-    role_player: RolePlayer<Position>,
+    role_player: RolePlayer<VariablePosition>,
 }
 
 impl RolePlayerIteratorExecutor {
-    pub(crate) fn new(role_player: RolePlayer<Position>) -> RolePlayerIteratorExecutor {
+    pub(crate) fn new(role_player: RolePlayer<VariablePosition>) -> RolePlayerIteratorExecutor {
         Self { role_player }
     }
 }

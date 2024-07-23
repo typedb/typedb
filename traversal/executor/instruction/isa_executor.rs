@@ -8,6 +8,7 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
+use itertools::Position;
 
 use answer::{Type, variable::Variable};
 use concept::{
@@ -28,16 +29,15 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     executor::{
         batch::ImmutableRow,
-        Position,
+        VariablePosition,
     },
-    planner::pattern_plan::IterateBounds,
 };
 use crate::executor::instruction::iterator::{SortedTupleIterator, TupleIterator};
 use crate::executor::instruction::tuple::{enumerated_or_counted_range, enumerated_range, isa_attribute_to_tuple_thing_type, isa_entity_to_tuple_thing_type, isa_relation_to_tuple_thing_type, TuplePositions, TupleResult};
 use crate::executor::instruction::VariableModes;
 
 pub(crate) struct IsaExecutor {
-    isa: Isa<Position>,
+    isa: Isa<VariablePosition>,
     iterate_mode: IterateMode,
     variable_modes: VariableModes,
     // TODO: if we ever want to implement transitivity directly in Executor, we could leverage type instances
@@ -62,9 +62,9 @@ type AttributeToTupleFn = for<'a> fn(Result<Attribute<'a>, ConceptReadError>) ->
 
 
 impl IterateMode {
-    fn new(isa: &Isa<Variable>, variable_modes: &VariableModes, sort_by: Option<Variable>) -> IterateMode {
-        debug_assert!(!variable_modes.is_fully_bound());
-        if variable_modes.is_fully_unbound() {
+    fn new(isa: &Isa<VariablePosition>, var_modes: &VariableModes, sort_by: Option<VariablePosition>) -> IterateMode {
+        debug_assert!(!var_modes.fully_bound());
+        if var_modes.fully_unbound() {
             match sort_by {
                 None => {
                     // arbitrarily pick from sorted
@@ -86,19 +86,13 @@ impl IterateMode {
 
 impl IsaExecutor {
     pub(crate) fn new(
-        isa: Isa<Variable>,
-        iterate_bounds: IterateBounds<Variable>,
-        selected_variables: &Vec<Variable>,
-        variable_names: &HashMap<Variable, String>,
-        variable_positions: &HashMap<Variable, Position>,
-        sort_by: Option<Variable>,
+        isa: Isa<VariablePosition>,
+        variable_modes: VariableModes,
+        sort_by: Option<VariablePosition>,
         constraint_types: Arc<BTreeMap<Type, Vec<Type>>>,
         thing_types: Arc<HashSet<Type>>,
     ) -> Self {
         debug_assert!(thing_types.len() > 0);
-        let variable_modes = VariableModes::new_from(
-            isa.clone(), variable_positions, &iterate_bounds, selected_variables, variable_names
-        );
         let iterate_mode = IterateMode::new(&isa, &variable_modes, sort_by);
         let type_cache = if matches!(iterate_mode, IterateMode::UnboundSortedTo) {
             let mut cache = thing_types.clone();
@@ -109,7 +103,7 @@ impl IsaExecutor {
         };
 
         Self {
-            isa: isa.into_ids(variable_positions),
+            isa,
             iterate_mode,
             variable_modes,
             type_instance_types: constraint_types,

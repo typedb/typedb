@@ -32,7 +32,7 @@ use storage::{
 use traversal::{
     executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
-        pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
+        pattern_plan::{Instruction, IterateBounds, PatternPlan, IntersectionStep, Step},
         program_plan::ProgramPlan,
     },
 };
@@ -163,7 +163,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
         &vec![var_person],
@@ -239,7 +239,7 @@ fn unselected_named_vars_counted() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
         &vec![var_person],
@@ -322,7 +322,7 @@ fn cartesian_named_counted_checked() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![
             Instruction::Has(has_name.clone(), IterateBounds::None([])),

@@ -202,7 +202,7 @@ impl PatternPlan {
 // }
 
 pub enum Step {
-    SortedJoin(SortedJoinStep),
+    Intersection(IntersectionStep),
     UnsortedJoin(UnsortedJoinStep),
     Assignment(AssignmentStep),
     Disjunction(DisjunctionStep),
@@ -213,7 +213,7 @@ pub enum Step {
 impl Step {
     pub(crate) fn unbound_variables(&self) -> &[Variable] {
         match self {
-            Step::SortedJoin(step) => step.unbound_variables(),
+            Step::Intersection(step) => step.unbound_variables(),
             Step::UnsortedJoin(step) => step.unbound_variables(),
             Step::Assignment(step) => step.unbound_variables(),
             Step::Disjunction(_) => todo!(),
@@ -223,7 +223,7 @@ impl Step {
     }
 }
 
-pub struct SortedJoinStep {
+pub struct IntersectionStep {
     pub(crate) sort_variable: Variable,
     pub(crate) instructions: Vec<Instruction>,
     // filters: Vec<Filter>, // local filtering operations without storage lookups
@@ -234,7 +234,7 @@ pub struct SortedJoinStep {
     pub(crate) selected_variables: Vec<Variable>,
 }
 
-impl SortedJoinStep {
+impl IntersectionStep {
     pub fn new(sort_variable: Variable, instructions: Vec<Instruction>, selected_variables: &Vec<Variable>) -> Self {
         let mut bound = Vec::with_capacity(instructions.len() * 2);
         let mut unbound = Vec::with_capacity(instructions.len() * 2);
@@ -336,7 +336,7 @@ pub struct OptionalStep {
     pub(crate) optional: PatternPlan,
 }
 
-trait InstructionAPI {
+pub(crate) trait InstructionAPI {
     fn constraint(&self) -> Constraint<Variable>;
 }
 
@@ -370,6 +370,16 @@ pub enum Instruction {
 }
 
 impl Instruction {
+    pub(crate) fn contains_bound_var(&self, var: Variable) -> bool {
+        let mut found = false;
+        self.bound_vars_foreach(|v| {
+            if v == var {
+                found = true;
+            }
+        });
+        found
+    }
+
     fn bound_vars_foreach(&self, mut apply: impl FnMut(Variable) -> ()) {
         match self {
             Instruction::Isa(_, bounds) => bounds.bounds().iter().cloned().for_each(apply),
@@ -416,69 +426,6 @@ impl Instruction {
             Instruction::ExpressionBinding(binding) => binding.ids_assigned().for_each(apply),
         }
     }
-    //
-    // match self {
-    //     Instruction::Has(has, mode) => match mode {
-    //         IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
-    //             debug_assert!(!has.ids().any(|var| bound_variables.contains(&var)));
-    //             has.ids().for_each(apply)
-    //         }
-    //         IterateMode::BoundFromSortedTo => {
-    //             debug_assert!(bound_variables.contains(&has.owner()));
-    //             apply(has.attribute())
-    //         }
-    //     },
-    //     Instruction::HasReverse(has, mode) => match mode {
-    //         IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
-    //             debug_assert!(!has.ids().any(|var| bound_variables.contains(&var)));
-    //             has.ids().for_each(apply);
-    //         }
-    //         IterateMode::BoundFromSortedTo => {
-    //             debug_assert!(bound_variables.contains(&has.attribute()));
-    //             apply(has.owner())
-    //         }
-    //     },
-    //     Instruction::RolePlayer(rp, mode) => match mode {
-    //         IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
-    //             debug_assert!(!rp.ids().any(|var| bound_variables.contains(&var)));
-    //             rp.ids().for_each(apply);
-    //         }
-    //         IterateMode::BoundFromSortedTo => {
-    //             debug_assert!(bound_variables.contains(&rp.relation()));
-    //             apply(rp.player());
-    //             // TODO: the filter could be not generated?
-    //             rp.role_type().map(|role_type| apply(role_type));
-    //         }
-    //     },
-    //     Instruction::RolePlayerReverse(rp, mode) => match mode {
-    //         IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
-    //             debug_assert!(!rp.ids().any(|var| bound_variables.contains(&var)));
-    //             rp.ids().for_each(apply)
-    //         }
-    //         IterateMode::BoundFromSortedTo => {
-    //             debug_assert!(bound_variables.contains(&rp.player()));
-    //             apply(rp.player());
-    //             rp.role_type().map(|role_type| apply(role_type));
-    //         }
-    //     },
-    //     Instruction::FunctionCallBinding(call) => {
-    //         debug_assert!(!call.ids_assigned().any(|var| bound_variables.contains(&var)));
-    //         call.ids_assigned().for_each(apply)
-    //     }
-    //     Instruction::Comparison(comparison) => {
-    //         debug_assert!(
-    //             bound_variables.contains(&comparison.rhs()) && !bound_variables.contains(&comparison.lhs())
-    //         );
-    //         apply(comparison.lhs());
-    //     }
-    //     Instruction::ComparisonReverse(comparison) => {
-    //         debug_assert!(
-    //             bound_variables.contains(&comparison.lhs()) && !bound_variables.contains(&comparison.rhs())
-    //         );
-    //         apply(comparison.rhs());
-    //     }
-    // }
-    // }
 }
 
 impl InstructionAPI for Instruction {

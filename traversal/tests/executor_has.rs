@@ -32,7 +32,7 @@ use storage::{
 use traversal::{
     executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
-        pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
+        pattern_plan::{Instruction, IterateBounds, PatternPlan, IntersectionStep, Step},
         program_plan::ProgramPlan,
     },
 };
@@ -151,7 +151,7 @@ fn traverse_has_unbounded_sorted_from() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![
             Instruction::Has(has_age.clone(), IterateBounds::None([])),
@@ -223,7 +223,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_attribute,
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
         &vec![var_person, var_attribute],

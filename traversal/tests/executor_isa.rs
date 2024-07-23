@@ -33,7 +33,7 @@ use storage::{
 use traversal::{
     executor::program_executor::ProgramExecutor,
     planner::{
-        pattern_plan::{Instruction, PatternPlan, SortedJoinStep, Step},
+        pattern_plan::{Instruction, PatternPlan, IntersectionStep, Step},
         program_plan::ProgramPlan,
     },
 };
@@ -99,7 +99,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_dog,
         vec![
             Instruction::Isa(isa.clone(), IterateBounds::None([])),
@@ -171,7 +171,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_attribute,
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
         &vec![var_person, var_attribute],
