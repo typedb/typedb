@@ -270,6 +270,9 @@ impl StepExecutor {
     }
 }
 
+/// Performs an n-way intersection/join using sorted iterators.
+/// To avoid missing cartesian outputs when multiple variables are unbound, the executor can leverage a
+/// Cartesian sub-step, which generates all cartesian answers within one intersection, if there are any.
 struct IntersectionExecutor {
     instruction_executors: Vec<InstructionExecutor>,
     sort_variable_position: VariablePosition,

@@ -321,7 +321,8 @@ impl<Iterator: for<'a> LendingIterator<Item<'a>=TupleResult<'a>>> TupleIteratorA
                     match self.iterator.peek() {
                         None => return Ok(count),
                         Some(Ok(tuple)) => {
-                            if &tuple.values()[self.enumerate_range.start as usize..self.enumerate_range.end as usize] != enumerated {
+                            let tuple_range = &tuple.values()[self.enumerate_range.start as usize..self.enumerate_range.end as usize];
+                            if tuple_range != enumerated {
                                 return Ok(count);
                             } else {
                                 count += 1;
@@ -332,7 +333,8 @@ impl<Iterator: for<'a> LendingIterator<Item<'a>=TupleResult<'a>>> TupleIteratorA
                 }
             }
             (true, false) => {
-                return self.count_until_changes(self.enumerate_range.clone());
+                self.skip_until_changes(self.enumerate_range.clone())?;
+                Ok(1)
             }
             (false, true) => {
                 if self.enumerate_or_count_range.len() == self.tuple_length {
