@@ -14,7 +14,6 @@ use concept::{
 use lending_iterator::higher_order::Hkt;
 
 use crate::executor::{
-    instruction::{VariableMode, VariableModes},
     VariablePosition,
 };
 
@@ -122,36 +121,6 @@ impl TuplePositions {
 pub(crate) type TupleIndex = u16;
 
 pub(crate) type TupleResult<'a> = Result<Tuple<'a>, ConceptReadError>;
-
-pub(crate) fn enumerated_range(variable_modes: &VariableModes, positions: &TuplePositions) -> Range<TupleIndex> {
-    let mut last_enumerated = None;
-    for (i, position) in positions.positions().iter().enumerate() {
-        match variable_modes.get(*position).unwrap() {
-            VariableMode::BoundSelect | VariableMode::UnboundSelect => {
-                last_enumerated = Some(i as TupleIndex);
-            }
-            VariableMode::UnboundCount => {}
-            VariableMode::UnboundCheck => {}
-        }
-    }
-    last_enumerated.map_or(0..0, |last| 0..last + 1)
-}
-
-pub(crate) fn enumerated_or_counted_range(
-    variable_modes: &VariableModes,
-    positions: &TuplePositions,
-) -> Range<TupleIndex> {
-    let mut last_enumerated_or_counted = None;
-    for (i, position) in positions.positions().iter().enumerate() {
-        match variable_modes.get(*position).unwrap() {
-            VariableMode::BoundSelect | VariableMode::UnboundSelect | VariableMode::UnboundCount => {
-                last_enumerated_or_counted = Some(i as TupleIndex)
-            }
-            VariableMode::UnboundCheck => {}
-        }
-    }
-    last_enumerated_or_counted.map_or(0..0, |last| 0..last + 1)
-}
 
 pub(crate) fn isa_entity_to_tuple_thing_type<'a>(result: Result<Entity<'a>, ConceptReadError>) -> TupleResult<'a> {
     match result {

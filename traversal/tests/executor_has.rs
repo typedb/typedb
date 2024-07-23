@@ -9,7 +9,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
+    type_::{annotation::AnnotationCardinality, Ordering, OwnerAPI, owns::OwnsAnnotation},
 };
 use encoding::{
     graph::type_::Kind,
@@ -26,8 +26,8 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
 use traversal::{
     executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
@@ -36,7 +36,6 @@ use traversal::{
         program_plan::ProgramPlan,
     },
 };
-use typeql::builder::type_;
 
 use crate::common::{load_managers, setup_storage};
 

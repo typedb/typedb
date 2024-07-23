@@ -10,9 +10,9 @@ use crate::{
         block::{FunctionalBlock, FunctionalBlockBuilder},
         function_signature::FunctionSignatureIndex,
     },
+    translator::constraints::add_statement,
     PatternDefinitionError,
 };
-use crate::translator::constraints::add_statement;
 
 pub fn translate_match(
     // TODO: Accept modifiers
@@ -25,7 +25,7 @@ pub fn translate_match(
 }
 
 fn add_patterns(
-    function_index:&impl FunctionSignatureIndex,
+    function_index: &impl FunctionSignatureIndex,
     conjunction: &mut ConjunctionBuilder<'_>,
     patterns: &Vec<typeql::pattern::Pattern>,
 ) -> Result<(), PatternDefinitionError> {
@@ -35,7 +35,7 @@ fn add_patterns(
         typeql::pattern::Pattern::Negation(negation) => add_negation(function_index, conjunction, negation),
         typeql::pattern::Pattern::Optional(optional) => add_optional(function_index, conjunction, optional),
         typeql::pattern::Pattern::Statement(statement) => {
-           add_statement(function_index, &mut conjunction.constraints_mut(), statement)
+            add_statement(function_index, &mut conjunction.constraints_mut(), statement)
         }
     })?;
     Ok(())

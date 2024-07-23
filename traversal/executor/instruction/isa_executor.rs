@@ -5,11 +5,11 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashSet},
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::Type;
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -20,7 +20,6 @@ use concept::{
     },
 };
 use ir::pattern::constraint::Isa;
-use itertools::Position;
 use lending_iterator::{adaptors::Map, AsHkt, LendingIterator};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
@@ -30,8 +29,8 @@ use crate::executor::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{
-            enumerated_or_counted_range, enumerated_range, isa_attribute_to_tuple_thing_type,
-            isa_entity_to_tuple_thing_type, isa_relation_to_tuple_thing_type, TuplePositions, TupleResult,
+            isa_attribute_to_tuple_thing_type, isa_entity_to_tuple_thing_type, isa_relation_to_tuple_thing_type,
+            TuplePositions, TupleResult,
         },
         VariableModes,
     },
@@ -121,8 +120,6 @@ impl IsaExecutor {
             IterateMode::UnboundSortedTo => {
                 debug_assert!(self.type_cache.is_some());
                 let positions = TuplePositions::Pair([self.isa.thing(), self.isa.type_()]);
-                let enumerated = enumerated_range(&self.variable_modes, &positions);
-                let enumerated_or_counted = enumerated_or_counted_range(&self.variable_modes, &positions);
                 if self.type_cache.as_ref().unwrap().len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
                     match &self.type_cache.iter().flat_map(|types| types.iter()).next().unwrap() {
@@ -133,9 +130,7 @@ impl IsaExecutor {
                             Ok(TupleIterator::IsaEntityInvertedSingle(SortedTupleIterator::new(
                                 as_tuples,
                                 positions,
-                                0,
-                                enumerated,
-                                enumerated_or_counted,
+                                &self.variable_modes,
                             )))
                         }
                         Type::Relation(relation_type) => {
@@ -145,9 +140,7 @@ impl IsaExecutor {
                             Ok(TupleIterator::IsaRelationInvertedSingle(SortedTupleIterator::new(
                                 as_tuples,
                                 positions,
-                                0,
-                                enumerated,
-                                enumerated_or_counted,
+                                &self.variable_modes,
                             )))
                         }
                         Type::Attribute(attribute_type) => {
@@ -157,9 +150,7 @@ impl IsaExecutor {
                             Ok(TupleIterator::IsaAttributeInvertedSingle(SortedTupleIterator::new(
                                 as_tuples,
                                 positions,
-                                0,
-                                enumerated,
-                                enumerated_or_counted,
+                                &self.variable_modes,
                             )))
                         }
                         Type::RoleType(_) => unreachable!("Cannot get instances of role types."),

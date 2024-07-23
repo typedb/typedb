@@ -4,6 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod match_;
 mod constraints;
 pub mod function;
+pub mod match_;

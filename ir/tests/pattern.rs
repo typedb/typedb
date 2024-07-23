@@ -5,10 +5,9 @@
  */
 
 use ir::{
-    program::function_signature::HashMapFunctionIndex, PatternDefinitionError,
+    program::function_signature::HashMapFunctionIndex, translator::match_::translate_match, PatternDefinitionError,
 };
 use typeql::query::stage::Stage;
-use ir::translator::match_::translate_match;
 
 #[test]
 fn build_conjunction_constraints() {

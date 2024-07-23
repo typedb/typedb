@@ -18,8 +18,8 @@ use crate::{
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
         FunctionDefinitionError,
     },
+    translator::match_::translate_match,
 };
-use crate::translator::match_::translate_match;
 
 pub fn translate_function(
     function_index: &impl FunctionSignatureIndex,
@@ -39,10 +39,8 @@ pub fn translate_function(
         .args
         .iter()
         .map(|typeql_arg| {
-            get_variable_in_block(&block, &typeql_arg.var, |var| {
-                FunctionDefinitionError::FunctionArgumentUnused {
-                    argument_variable: var.name().unwrap().to_string(),
-                }
+            get_variable_in_block(&block, &typeql_arg.var, |var| FunctionDefinitionError::FunctionArgumentUnused {
+                argument_variable: var.name().unwrap().to_string(),
             })
         })
         .collect::<Result<Vec<_>, FunctionDefinitionError>>()?;
@@ -51,20 +49,17 @@ pub fn translate_function(
 }
 
 pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> FunctionSignature {
-    let args = function
-        .signature
-        .args
-        .iter()
-        .map(|arg| type_any_to_category_and_optionality(&arg.type_))
-        .collect::<Vec<_>>();
+    let args =
+        function.signature.args.iter().map(|arg| type_any_to_category_and_optionality(&arg.type_)).collect::<Vec<_>>();
 
     let return_is_stream = matches!(function.signature.output, Output::Stream(_));
     let returns = match &function.signature.output {
         Output::Stream(stream) => &stream.types,
         Output::Single(single) => &single.types,
-    }.iter()
-        .map(|type_any| type_any_to_category_and_optionality(type_any))
-        .collect::<Vec<_>>();
+    }
+    .iter()
+    .map(|type_any| type_any_to_category_and_optionality(type_any))
+    .collect::<Vec<_>>();
     FunctionSignature::new(function_id.clone().into(), args, returns, return_is_stream)
 }
 
@@ -84,8 +79,8 @@ fn build_return_stream(
         .vars
         .iter()
         .map(|typeql_var| {
-            get_variable_in_block(block, typeql_var, |var| {
-                FunctionDefinitionError::ReturnVariableUnavailable { variable: var.name().unwrap().to_string() }
+            get_variable_in_block(block, typeql_var, |var| FunctionDefinitionError::ReturnVariableUnavailable {
+                variable: var.name().unwrap().to_string(),
             })
         })
         .collect::<Result<Vec<Variable>, FunctionDefinitionError>>()?;
@@ -116,8 +111,8 @@ fn get_variable_in_block<F>(
     typeql_var: &typeql::Variable,
     err: F,
 ) -> Result<Variable, FunctionDefinitionError>
-    where
-        F: FnOnce(&typeql::Variable) -> FunctionDefinitionError,
+where
+    F: FnOnce(&typeql::Variable) -> FunctionDefinitionError,
 {
     block
         .context()

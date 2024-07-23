@@ -22,6 +22,7 @@ use crate::executor::{
             IsaUnboundedSortedThingRelationSingle,
         },
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
+        VariableMode, VariableModes,
     },
 };
 
@@ -179,13 +180,10 @@ pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a>
 }
 
 impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleIterator<Iterator> {
-    pub(crate) fn new(
-        iterator: Iterator,
-        tuple_positions: TuplePositions,
-        first_unbound: TupleIndex,
-        enumerate_range: Range<TupleIndex>,
-        enumerate_or_count_range: Range<TupleIndex>,
-    ) -> Self {
+    pub(crate) fn new(iterator: Iterator, tuple_positions: TuplePositions, variable_modes: &VariableModes) -> Self {
+        let first_unbound = first_unbound(variable_modes, &tuple_positions);
+        let enumerate_range = enumerated_range(variable_modes, &tuple_positions);
+        let enumerate_or_count_range = enumerated_or_counted_range(variable_modes, &tuple_positions);
         debug_assert!(!enumerate_or_count_range.is_empty());
         Self {
             iterator: Peekable::new(iterator),
@@ -374,4 +372,40 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
     fn positions(&self) -> &TuplePositions {
         &self.positions
     }
+}
+
+fn first_unbound(variable_modes: &VariableModes, positions: &TuplePositions) -> TupleIndex {
+    for (i, position) in positions.positions().iter().enumerate() {
+        if variable_modes.get(*position).unwrap().is_unbound() {
+            return i as TupleIndex;
+        }
+    }
+    panic!("No unbound variable found")
+}
+
+fn enumerated_range(variable_modes: &VariableModes, positions: &TuplePositions) -> Range<TupleIndex> {
+    let mut last_enumerated = None;
+    for (i, position) in positions.positions().iter().enumerate() {
+        match variable_modes.get(*position).unwrap() {
+            VariableMode::BoundSelect | VariableMode::UnboundSelect => {
+                last_enumerated = Some(i as TupleIndex);
+            }
+            VariableMode::UnboundCount => {}
+            VariableMode::UnboundCheck => {}
+        }
+    }
+    last_enumerated.map_or(0..0, |last| 0..last + 1)
+}
+
+fn enumerated_or_counted_range(variable_modes: &VariableModes, positions: &TuplePositions) -> Range<TupleIndex> {
+    let mut last_enumerated_or_counted = None;
+    for (i, position) in positions.positions().iter().enumerate() {
+        match variable_modes.get(*position).unwrap() {
+            VariableMode::BoundSelect | VariableMode::UnboundSelect | VariableMode::UnboundCount => {
+                last_enumerated_or_counted = Some(i as TupleIndex)
+            }
+            VariableMode::UnboundCheck => {}
+        }
+    }
+    last_enumerated_or_counted.map_or(0..0, |last| 0..last + 1)
 }

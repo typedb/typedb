@@ -16,9 +16,8 @@ use crate::{
         function_signature::{FunctionID, FunctionIDTrait, FunctionSignatureIndex},
         FunctionDefinitionError, ProgramDefinitionError,
     },
+    translator::{function::translate_function, match_::translate_match},
 };
-use crate::translator::function::translate_function;
-use crate::translator::match_::translate_match;
 
 pub struct Program {
     entry: FunctionalBlock,

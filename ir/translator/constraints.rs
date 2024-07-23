@@ -16,7 +16,7 @@ use crate::{
 pub(super) fn add_statement(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
-    stmt: &typeql::Statement
+    stmt: &typeql::Statement,
 ) -> Result<(), PatternDefinitionError> {
     match stmt {
         typeql::Statement::Is(_) => todo!(),
@@ -31,7 +31,10 @@ pub(super) fn add_statement(
     Ok(())
 }
 
-fn add_thing_statement(constraints: &mut ConstraintsBuilder<'_>, thing: &typeql::statement::Thing) -> Result<(), PatternDefinitionError> {
+fn add_thing_statement(
+    constraints: &mut ConstraintsBuilder<'_>,
+    thing: &typeql::statement::Thing,
+) -> Result<(), PatternDefinitionError> {
     let var = match &thing.head {
         typeql::statement::thing::Head::Variable(var) => register_typeql_var(constraints, var)?,
         typeql::statement::thing::Head::Relation(rel) => {
@@ -45,13 +48,18 @@ fn add_thing_statement(constraints: &mut ConstraintsBuilder<'_>, thing: &typeql:
             typeql::statement::thing::Constraint::Isa(isa) => add_typeql_isa(constraints, var, isa)?,
             typeql::statement::thing::Constraint::Iid(_) => todo!(),
             typeql::statement::thing::Constraint::Has(has) => add_typeql_has(constraints, var, has)?,
-            typeql::statement::thing::Constraint::Links(links) => add_typeql_relation(constraints, var, &links.relation)?,
+            typeql::statement::thing::Constraint::Links(links) => {
+                add_typeql_relation(constraints, var, &links.relation)?
+            }
         }
     }
     Ok(())
 }
 
-fn add_type_statement(constraints: &mut ConstraintsBuilder<'_>, type_: &typeql::statement::Type) -> Result<(), PatternDefinitionError> {
+fn add_type_statement(
+    constraints: &mut ConstraintsBuilder<'_>,
+    type_: &typeql::statement::Type,
+) -> Result<(), PatternDefinitionError> {
     let var = register_typeql_type_var(constraints, &type_.type_)?;
     for constraint in &type_.constraints {
         assert!(constraint.annotations.is_empty(), "TODO: handle type statement annotations");
@@ -121,14 +129,20 @@ fn extend_from_inline_typeql_expression(
     Ok(var)
 }
 
-fn register_typeql_var(constraints: &mut ConstraintsBuilder<'_>, var: &typeql::Variable) -> Result<Variable, PatternDefinitionError> {
+fn register_typeql_var(
+    constraints: &mut ConstraintsBuilder<'_>,
+    var: &typeql::Variable,
+) -> Result<Variable, PatternDefinitionError> {
     match var {
         typeql::Variable::Named(_, name) => constraints.get_or_declare_variable(name.as_str()),
         typeql::Variable::Anonymous(_) => constraints.create_anonymous_variable(),
     }
 }
 
-fn register_typeql_type_var_any(constraints: &mut ConstraintsBuilder<'_>, type_: &typeql::TypeAny) -> Result<Variable, PatternDefinitionError> {
+fn register_typeql_type_var_any(
+    constraints: &mut ConstraintsBuilder<'_>,
+    type_: &typeql::TypeAny,
+) -> Result<Variable, PatternDefinitionError> {
     match type_ {
         typeql::TypeAny::Type(type_) => register_typeql_type_var(constraints, type_),
         typeql::TypeAny::Optional(_) => todo!(),
@@ -136,7 +150,10 @@ fn register_typeql_type_var_any(constraints: &mut ConstraintsBuilder<'_>, type_:
     }
 }
 
-fn register_typeql_type_var(constraints: &mut ConstraintsBuilder<'_>, type_: &typeql::Type) -> Result<Variable, PatternDefinitionError> {
+fn register_typeql_type_var(
+    constraints: &mut ConstraintsBuilder<'_>,
+    type_: &typeql::Type,
+) -> Result<Variable, PatternDefinitionError> {
     match type_ {
         typeql::Type::Label(label) => register_type_label_var(constraints, label),
         typeql::Type::ScopedLabel(_) => todo!(),
@@ -145,7 +162,10 @@ fn register_typeql_type_var(constraints: &mut ConstraintsBuilder<'_>, type_: &ty
     }
 }
 
-fn register_type_label_var(constraints: &mut ConstraintsBuilder<'_>, label: &typeql::Label) -> Result<Variable, PatternDefinitionError> {
+fn register_type_label_var(
+    constraints: &mut ConstraintsBuilder<'_>,
+    label: &typeql::Label,
+) -> Result<Variable, PatternDefinitionError> {
     let var = constraints.create_anonymous_variable()?;
     match label {
         typeql::Label::Identifier(ident) => constraints.add_label(var, ident.as_str())?,
