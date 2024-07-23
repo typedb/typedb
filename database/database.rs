@@ -215,7 +215,7 @@ impl Database<WALClient> {
             Some(thing_vertex_generator) => thing_vertex_generator.reset(),
         }
 
-        let mut schema = Arc::get_mut(&mut *locked_schema).unwrap();
+        let schema = Arc::get_mut(&mut *locked_schema).unwrap();
         schema.thing_statistics.reset(self.storage.read_watermark());
 
         TypeManager::initialise_types(

@@ -7,16 +7,22 @@
 use std::collections::HashMap;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
+use ir::inference::type_inference::TypeAnnotations;
 
 use crate::planner::{function_plan::FunctionPlan, pattern_plan::PatternPlan};
 
 pub struct ProgramPlan {
     pub(crate) entry: PatternPlan,
+    pub(crate) entry_annotations: TypeAnnotations,
     pub(crate) functions: HashMap<DefinitionKey<'static>, FunctionPlan>,
 }
 
 impl ProgramPlan {
-    pub fn new(entry: PatternPlan, functions: HashMap<DefinitionKey<'static>, FunctionPlan>) -> Self {
-        Self { entry, functions }
+    pub fn new(
+        entry: PatternPlan,
+        entry_annotations: TypeAnnotations,
+        functions: HashMap<DefinitionKey<'static>, FunctionPlan>
+    ) -> Self {
+        Self { entry, entry_annotations, functions }
     }
 }

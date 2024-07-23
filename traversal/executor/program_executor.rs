@@ -14,7 +14,9 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    executor::{batch::ImmutableRow, function_executor::FunctionExecutor, pattern_executor::PatternExecutor, Position},
+    executor::{
+        batch::ImmutableRow, function_executor::FunctionExecutor, pattern_executor::PatternExecutor, VariablePosition,
+    },
     planner::program_plan::ProgramPlan,
 };
 
@@ -26,19 +28,18 @@ pub struct ProgramExecutor {
 impl ProgramExecutor {
     pub fn new<Snapshot: ReadableSnapshot>(
         program_plan: ProgramPlan,
-        type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
-        let ProgramPlan { entry: entry_plan, functions: function_plans } = program_plan;
-        let entry = PatternExecutor::new(entry_plan, type_annotations, snapshot, thing_manager)?;
+        let ProgramPlan { entry: entry_plan, entry_annotations, functions: function_plans } = program_plan;
+        let entry = PatternExecutor::new(entry_plan, &entry_annotations, snapshot, thing_manager)?;
 
         // TODO: functions
 
         Ok(Self { entry: entry, functions: HashMap::new() })
     }
 
-    pub fn entry_variable_positions(&self) -> &HashMap<Variable, Position> {
+    pub fn entry_variable_positions(&self) -> &HashMap<Variable, VariablePosition> {
         self.entry.variable_positions()
     }
 

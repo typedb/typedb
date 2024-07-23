@@ -32,7 +32,7 @@ use storage::{
 use traversal::{
     executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
-        pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
+        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
         program_plan::ProgramPlan,
     },
 };
@@ -134,7 +134,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 
 #[test]
 fn anonymous_vars_not_enumerated_or_counted() {
-    let (tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
 
@@ -166,20 +166,19 @@ fn anonymous_vars_not_enumerated_or_counted() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager)
-            .unwrap()
+        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {
@@ -210,7 +209,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
 
 #[test]
 fn unselected_named_vars_counted() {
-    let (tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
 
@@ -243,20 +242,19 @@ fn unselected_named_vars_counted() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager)
-            .unwrap()
+        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {
@@ -287,7 +285,7 @@ fn unselected_named_vars_counted() {
 
 #[test]
 fn cartesian_named_counted_checked() {
-    let (tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
 
@@ -327,7 +325,7 @@ fn cartesian_named_counted_checked() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![
             Instruction::Has(has_name.clone(), IterateBounds::None([])),
@@ -337,14 +335,13 @@ fn cartesian_named_counted_checked() {
         &vec![var_person, var_age],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager)
-            .unwrap()
+        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {

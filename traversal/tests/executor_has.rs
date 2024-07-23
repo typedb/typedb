@@ -4,14 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod common;
-
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
+    type_::{annotation::AnnotationCardinality, Ordering, OwnerAPI, owns::OwnsAnnotation},
 };
 use encoding::{
     graph::type_::Kind,
@@ -28,19 +26,20 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
 use traversal::{
     executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
-        pattern_plan::{Instruction, IterateBounds, PatternPlan, SortedJoinStep, Step},
+        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
         program_plan::ProgramPlan,
     },
 };
-use typeql::builder::type_;
 
 use crate::common::{load_managers, setup_storage};
+
+mod common;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const AGE_LABEL: Label = Label::new_static("age");
@@ -114,7 +113,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 
 #[test]
 fn traverse_has_unbounded_sorted_from() {
-    let (tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
 
@@ -142,8 +141,6 @@ fn traverse_has_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
-    block.add_limit(3);
-    let filter = block.add_filter(vec![&"person", &"age"]).unwrap().clone();
 
     let program = Program::new(block.finish(), Vec::new());
 
@@ -154,7 +151,7 @@ fn traverse_has_unbounded_sorted_from() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![
             Instruction::Has(has_age.clone(), IterateBounds::None([])),
@@ -164,14 +161,13 @@ fn traverse_has_unbounded_sorted_from() {
     ))];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager)
-            .unwrap()
+        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {
@@ -195,7 +191,7 @@ fn traverse_has_unbounded_sorted_from() {
 
 #[test]
 fn traverse_has_unbounded_sorted_to_merged() {
-    let (tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
 
@@ -227,20 +223,19 @@ fn traverse_has_unbounded_sorted_to_merged() {
     };
 
     // Plan
-    let steps = vec![Step::SortedJoin(SortedJoinStep::new(
+    let steps = vec![Step::Intersection(IntersectionStep::new(
         var_attribute,
         vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
         &vec![var_person, var_attribute],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, annotated_program.get_entry_annotations(), &snapshot, &thing_manager)
-            .unwrap()
+        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {

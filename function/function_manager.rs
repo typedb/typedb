@@ -27,7 +27,7 @@ use ir::{
         program::{CompiledSchemaFunctions, Program},
         FunctionReadError,
     },
-    translator::function_builder::TypeQLFunctionBuilder,
+    translator::function::{build_signature, translate_function},
 };
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -217,10 +217,7 @@ impl<'snapshot, Snapshot: ReadableSnapshot> FunctionSignatureIndex
             Some(signature)
         } else if let Some(key) = self.function_manager.get_function_key(self.snapshot, name)? {
             let function = self.function_manager.get_function(self.snapshot, key)?;
-            let signature = TypeQLFunctionBuilder::build_signature(
-                FunctionID::Schema(function.function_id.clone()),
-                &function.parsed,
-            );
+            let signature = build_signature(FunctionID::Schema(function.function_id.clone()), &function.parsed);
             Some(MaybeOwns::Owned(signature))
         } else {
             None

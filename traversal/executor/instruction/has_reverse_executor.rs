@@ -6,20 +6,16 @@
 
 use ir::pattern::constraint::Has;
 
-use crate::executor::{batch::Row, instruction::iterator::InstructionIterator, Position};
+use crate::executor::VariablePosition;
 
 pub(crate) struct HasReverseIteratorExecutor {
-    has: Has<Position>,
+    has: Has<VariablePosition>,
 }
 
 impl HasReverseIteratorExecutor {
-    pub(crate) fn new(has: Has<Position>) -> HasReverseIteratorExecutor {
+    pub(crate) fn new(has: Has<VariablePosition>) -> HasReverseIteratorExecutor {
         Self { has }
     }
 }
 
-impl HasReverseIteratorExecutor {
-    pub(crate) fn get_iterator(&self, row: &Row) -> InstructionIterator {
-        todo!()
-    }
-}
+impl HasReverseIteratorExecutor {}
