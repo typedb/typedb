@@ -83,6 +83,27 @@ macro_rules! object_type_match {
 
 pub struct OperationTimeValidation {}
 
+macro_rules! while_some_object_instance_in_type {
+    ($snapshot:ident, $thing_manager:ident, $object_type:ident, |$type_:ident, $object:ident| $expr:expr) => {
+        match $object_type.clone() {
+            ObjectType::Entity($type_) => {
+                let mut object_iterator = $thing_manager.get_entities_in($snapshot, $type_.clone());
+
+                while let Some($object) = object_iterator.next() {
+                    $expr
+                }
+            },
+            ObjectType::Relation($type_) => {
+                let mut object_iterator = $thing_manager.get_relations_in($snapshot, $type_.clone());
+
+                while let Some($object) = object_iterator.next() {
+                    $expr
+                }
+            }
+        }
+    };
+}
+
 macro_rules! type_or_subtype_without_declared_capability_instances_existence_validation {
     ($func_name:ident, $capability_type:ident, $object_type:ident, $interface_type:ident, $single_type_validation_func:path) => {
         fn $func_name<'a>(
@@ -1549,83 +1570,66 @@ impl OperationTimeValidation {
         let range = Constraint::compute_range(annotations);
         let values = Constraint::compute_values(annotations);
 
-        match object_type.clone() {
-            ObjectType::Entity(entity_type) => {
-                let mut object_iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
+        while_some_object_instance_in_type!(snapshot, thing_manager, object_type, |type_, object| {
+            let mut real_cardinality = 0;
+            let mut has_attribute_iterator =
+                object?.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?;
 
-                while let Some(object) = object_iterator.next() {
-                    let mut real_cardinality = 0;
-                    let mut has_attribute_iterator =
-                        object?.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?;
+            while let Some(attribute) = has_attribute_iterator.next() {
+                let (mut attribute, attribute_count) = attribute?;
+                real_cardinality += attribute_count;
 
-                    while let Some(attribute) = has_attribute_iterator.next() {
-                        let (mut attribute, attribute_count) = attribute?;
-                        real_cardinality += attribute_count;
-
-                        if distinct.is_some() {
-                            if attribute_count > 1 {
-                                return Ok(Some(AnnotationCategory::Distinct));
-                            }
-                        }
-
-                        // TODO: Might be more efficient to just iterate over all attributes and get owners of object_type to check?
-                        if unique.is_some() {
-                            if attribute.get_owners_by_type(snapshot, thing_manager, object_type.clone()).count() > 1 {
-                                return Ok(Some(if is_key {
-                                    AnnotationCategory::Key
-                                } else {
-                                    AnnotationCategory::Unique
-                                }));
-                            }
-                        }
-
-                        let value = attribute.get_value(snapshot, thing_manager)?;
-
-                        if let Some(regex) = &regex {
-                            match &value {
-                                Value::String(string_value) => {
-                                    if !regex.value_valid(&string_value) {
-                                        return Ok(Some(AnnotationCategory::Regex));
-                                    }
-                                }
-                                _ => {
-                                    return Err(
-                                        ConceptReadError::CorruptAttributeValueDoesntMatchAttributeTypeValueType(
-                                            get_label_or_concept_read_err(snapshot, attribute_type)?,
-                                        ),
-                                    )
-                                }
-                            }
-                        }
-
-                        if let Some(range) = &range {
-                            if !range.value_valid(value.clone()) {
-                                return Ok(Some(AnnotationCategory::Range));
-                            }
-                        }
-
-                        if let Some(values) = &values {
-                            if !values.value_valid(value) {
-                                return Ok(Some(AnnotationCategory::Values));
-                            }
-                        }
+                if distinct.is_some() {
+                    if attribute_count > 1 {
+                        return Ok(Some(AnnotationCategory::Distinct));
                     }
+                }
 
-                    if let Some(cardinality) = &cardinality {
-                        if !cardinality.value_valid(real_cardinality) {
-                            return Ok(Some(if is_key {
-                                AnnotationCategory::Key
-                            } else {
-                                AnnotationCategory::Cardinality
-                            }));
+                // TODO: Might be more efficient to just iterate over all attributes and get owners of object_type to check?
+                if unique.is_some() {
+                    let owners_count =
+                        attribute.get_owners_by_type(snapshot, thing_manager, object_type.clone()).count();
+                    if owners_count > 1 {
+                        return Ok(Some(if is_key { AnnotationCategory::Key } else { AnnotationCategory::Unique }));
+                    }
+                }
+
+                let value = attribute.get_value(snapshot, thing_manager)?;
+
+                if let Some(regex) = &regex {
+                    match &value {
+                        Value::String(string_value) => {
+                            if !regex.value_valid(&string_value) {
+                                return Ok(Some(AnnotationCategory::Regex));
+                            }
+                        }
+                        _ => {
+                            return Err(ConceptReadError::CorruptAttributeValueDoesntMatchAttributeTypeValueType(
+                                get_label_or_concept_read_err(snapshot, attribute_type)?,
+                            ))
                         }
                     }
                 }
+
+                if let Some(range) = &range {
+                    if !range.value_valid(value.clone()) {
+                        return Ok(Some(AnnotationCategory::Range));
+                    }
+                }
+
+                if let Some(values) = &values {
+                    if !values.value_valid(value) {
+                        return Ok(Some(AnnotationCategory::Values));
+                    }
+                }
             }
-            ObjectType::Relation(relation_type) => {
-                // TODO: Same for relation
+
+            if let Some(cardinality) = &cardinality {
+                if !cardinality.value_valid(real_cardinality) {
+                    return Ok(Some(if is_key { AnnotationCategory::Key } else { AnnotationCategory::Cardinality }));
+                }
             }
-        }
+        });
 
         Ok(None)
     }
