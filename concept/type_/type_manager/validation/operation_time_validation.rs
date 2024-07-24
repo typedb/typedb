@@ -15,7 +15,7 @@ use encoding::{
         thing::{edge::ThingEdgeLinks, ThingVertex},
         type_::{CapabilityKind, Kind},
     },
-    value::{label::Label, value_type::ValueType},
+    value::{label::Label, value::Value, value_type::ValueType},
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
@@ -30,13 +30,14 @@ use crate::{
     },
     type_::{
         annotation::{
-            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationUnique,
-            AnnotationValues,
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationRange,
+            AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
+        constraint::Constraint,
         entity_type::EntityType,
         object_type::{with_object_type, ObjectType},
-        owns::Owns,
+        owns::{Owns, OwnsAnnotation},
         plays::Plays,
         relates::Relates,
         relation_type::RelationType,
@@ -96,16 +97,7 @@ macro_rules! type_or_subtype_without_declared_capability_instances_existence_val
             let mut object_types = VecDeque::new();
             object_types.push_front(object_type);
 
-            let mut first = true;
             while let Some(current_object_type) = object_types.pop_back() {
-                if !first {
-                    let current_object_type_capabilities =
-                        TypeReader::get_capabilities_declared::<$capability_type<'static>>(snapshot, current_object_type.clone().into_owned())?;
-                    if current_object_type_capabilities.iter().map(|capability| capability.interface()).contains(&interface_type) {
-                        continue;
-                    }
-                }
-
                 if $single_type_validation_func(
                     snapshot,
                     thing_manager,
@@ -116,12 +108,16 @@ macro_rules! type_or_subtype_without_declared_capability_instances_existence_val
                     break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
                 }
 
-                current_object_type
-                    .get_subtypes(snapshot, type_manager)?
-                    .iter()
-                    .for_each(|subtype| object_types.push_front(subtype.clone()));
-
-                first = false;
+                let subtypes = current_object_type.get_subtypes(snapshot, type_manager)?;
+                for subtype in subtypes.into_iter() {
+                    let subtype_capabilities = TypeReader::get_capabilities_declared::<$capability_type<'static>>(
+                        snapshot,
+                        subtype.clone().into_owned(),
+                    )?;
+                    if !subtype_capabilities.iter().map(|capability| capability.interface()).contains(&interface_type) {
+                        object_types.push_front(subtype.clone());
+                    }
+                }
             }
 
             Ok(type_that_has_instances)
@@ -238,6 +234,93 @@ macro_rules! cannot_change_supertype_as_capability_with_existing_instances_is_lo
             }
 
             Ok(())
+        }
+    };
+}
+
+macro_rules! capability_or_its_overriding_capability_with_violated_new_annotation_constraints {
+    ($func_name:ident, $capability_type:ident, $object_type:ident, $interface_type:ident, $existing_instances_validation_func:path) => {
+        fn $func_name<'a>(
+            snapshot: &impl ReadableSnapshot,
+            type_manager: &'a TypeManager,
+            thing_manager: &ThingManager,
+            capability: $capability_type<'static>,
+            annotations: HashSet<Annotation>,
+        ) -> Result<Option<($object_type<'a>, $interface_type<'a>, AnnotationCategory)>, ConceptReadError> {
+            if annotations.is_empty() {
+                return Ok(None);
+            }
+
+            let mut type_and_interface_with_violations = None;
+
+            // If the constraint is already in the schema, we don't need to revalidate it as the data should've been validated when this constraint was set
+            let mut annotations_to_revalidate = annotations;
+            let declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())?;
+            annotations_to_revalidate.retain(|annotation| !declared_annotations.contains(annotation));
+
+            let mut capabilities_and_annotations_to_check = VecDeque::new();
+            capabilities_and_annotations_to_check.push_front((
+                capability.object(),
+                capability.interface(),
+                annotations_to_revalidate,
+            ));
+
+            while let Some((current_object_type, current_interface_type, annotations_to_revalidate)) =
+                capabilities_and_annotations_to_check.pop_back()
+            {
+                if let Some(violated_constraint) = $existing_instances_validation_func(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    current_object_type.clone(),
+                    current_interface_type.clone(),
+                    &annotations_to_revalidate,
+                )? {
+                    type_and_interface_with_violations =
+                        Some((current_object_type, current_interface_type, violated_constraint));
+                    break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
+                }
+
+                let subtypes = current_object_type.get_subtypes(snapshot, type_manager)?;
+                for subtype in subtypes.into_iter() {
+                    // If subtype has another capability of the same interface (subtype -> interface), but it doesn't override (type -> interface), we ignore its existence
+                    // and still validate the capability against these constraints
+                    if let Some(overriding) =
+                        TypeReader::get_object_capabilities_overrides::<$capability_type<'static>>(
+                            snapshot,
+                            subtype.clone().into_owned(),
+                        )?
+                        .iter()
+                        .find_map(|(overriding, overridden)| {
+                            if &capability == overridden {
+                                Some(overriding.clone())
+                            } else {
+                                None
+                            }
+                        })
+                    {
+                        let mut overriding_annotations_to_revalidate = annotations_to_revalidate.clone();
+                        let declared_annotations =
+                            TypeReader::get_type_edge_annotations_declared(snapshot, overriding.clone())?;
+                        overriding_annotations_to_revalidate
+                            .retain(|annotation| !declared_annotations.contains(annotation));
+
+                        capabilities_and_annotations_to_check.push_front((
+                            subtype.clone(),
+                            overriding.interface(),
+                            overriding_annotations_to_revalidate,
+                        ));
+                    } else {
+                        capabilities_and_annotations_to_check.push_front((
+                            subtype.clone(),
+                            current_interface_type.clone(),
+                            annotations_to_revalidate.clone(),
+                        ));
+                    }
+                }
+            }
+
+            Ok(type_and_interface_with_violations)
         }
     };
 }
@@ -1407,7 +1490,7 @@ impl OperationTimeValidation {
                 return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
                     annotation_category,
                     existing_annotation_category,
-                    get_label_or_concept_read_err(snapshot, type_).map_err(SchemaValidationError::ConceptRead)?,
+                    get_label_or_schema_err(snapshot, type_)?,
                 ));
             }
         }
@@ -1415,63 +1498,136 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_new_unique_annotation_compatible_with_capability_and_subcapabilities_instances<
-        CAP: Capability<'static>,
-    >(
+    pub(crate) fn validate_new_unique_annotation_compatible_with_capability_and_subcapabilities_instances(
         snapshot: &impl ReadableSnapshot,
-        capability: CAP,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        capability: Owns<'static>,
     ) -> Result<(), SchemaValidationError> {
         let annotation = Annotation::Unique(AnnotationUnique);
 
-        let existing_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())
-            .map_err(SchemaValidationError::ConceptRead)?;
+        let violation = Self::get_owns_or_its_overriding_owns_with_violated_new_annotation_constraints(
+            snapshot,
+            type_manager,
+            thing_manager,
+            capability.clone(),
+            HashSet::from([annotation]),
+        )
+        .map_err(SchemaValidationError::ConceptRead)?;
 
-        // if !existing_annotations.contains(&annotation) {
-        //
-        // }
-        //
-        // for existing_annotation in existing_annotations {
-        //     let existing_annotation_category = existing_annotation.category();
-        //     if !existing_annotation_category.declarable_alongside(annotation_category) {
-        //         let interface = edge.interface();
-        //         return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
-        //             annotation_category,
-        //             existing_annotation_category,
-        //             get_label_or_concept_read_err(snapshot, interface).map_err(SchemaValidationError::ConceptRead)?,
-        //         ));
-        //     }
-        // }
-
-        Ok(())
+        if let Some((violating_object, violating_interface, violated_constraint)) = violation {
+            Err(SchemaValidationError::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
+                CapabilityKind::Owns,
+                violated_constraint,
+                get_label_or_schema_err(snapshot, capability.object())?,
+                get_label_or_schema_err(snapshot, capability.interface())?,
+                get_label_or_schema_err(snapshot, violating_object)?,
+                get_label_or_schema_err(snapshot, violating_interface)?,
+            ))
+        } else {
+            Ok(())
+        }
     }
 
-    // TODO: Impelement
-    fn get_capability_or_its_subcapability_with_violated_annotation_constraints<CAP: Capability<'static>>(
+    fn get_annotation_constraint_violated_by_instances_of_owns<'a>(
         snapshot: &impl ReadableSnapshot,
-        capability: CAP,
-        annotations: HashSet<Annotation>,
-    ) -> Result<(), SchemaValidationError> {
-        // let mut capabilities = VecDeque::new();
-        // owners.push_front(owner.into_owned_object_type());
-        //
-        // while let Some(current_owner) = owners.pop_back() {
-        //     if Self::do_instances_of_owns_violate_cardinality(
-        //         snapshot,
-        //         thing_manager,
-        //         current_owner.clone(),
-        //         attribute_type.clone(),
-        //         cardinality,
-        //     )? {
-        //         type_with_instances_violating_cardinality = Some(current_owner.clone());
-        //         break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
-        //     }
-        //
-        //     current_owner
-        //         .get_subtypes(snapshot, type_manager)?
-        //         .iter()
-        //         .for_each(|subowner| owners.push_front(subowner.clone().into_owned_object_type()));
-        // }
-        Ok(())
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        object_type: ObjectType<'a>,
+        attribute_type: AttributeType<'a>,
+        annotations: &HashSet<Annotation>,
+    ) -> Result<Option<AnnotationCategory>, ConceptReadError> {
+        if annotations.is_empty() {
+            return Ok(None);
+        }
+
+        let distinct = Constraint::compute_distinct(annotations);
+        let is_key = Constraint::compute_key(annotations).is_some();
+        let unique = Constraint::compute_unique(annotations);
+        let cardinality = Constraint::compute_cardinality(annotations, None);
+        let regex = Constraint::compute_regex(annotations);
+        let range = Constraint::compute_range(annotations);
+        let values = Constraint::compute_values(annotations);
+
+        match object_type.clone() {
+            ObjectType::Entity(entity_type) => {
+                let mut object_iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
+
+                while let Some(object) = object_iterator.next() {
+                    let mut real_cardinality = 0;
+                    let mut has_attribute_iterator =
+                        object?.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?;
+
+                    while let Some(attribute) = has_attribute_iterator.next() {
+                        let (mut attribute, attribute_count) = attribute?;
+                        real_cardinality += attribute_count;
+
+                        if distinct.is_some() {
+                            if attribute_count > 1 {
+                                return Ok(Some(AnnotationCategory::Distinct));
+                            }
+                        }
+
+                        // TODO: Might be more efficient to just iterate over all attributes and get owners of object_type to check?
+                        if unique.is_some() {
+                            if attribute.get_owners_by_type(snapshot, thing_manager, object_type.clone()).count() > 1 {
+                                return Ok(Some(if is_key {
+                                    AnnotationCategory::Key
+                                } else {
+                                    AnnotationCategory::Unique
+                                }));
+                            }
+                        }
+
+                        let value = attribute.get_value(snapshot, thing_manager)?;
+
+                        if let Some(regex) = &regex {
+                            match &value {
+                                Value::String(string_value) => {
+                                    if !regex.value_valid(&string_value) {
+                                        return Ok(Some(AnnotationCategory::Regex));
+                                    }
+                                }
+                                _ => {
+                                    return Err(
+                                        ConceptReadError::CorruptAttributeValueDoesntMatchAttributeTypeValueType(
+                                            get_label_or_concept_read_err(snapshot, attribute_type)?,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+
+                        if let Some(range) = &range {
+                            if !range.value_valid(value.clone()) {
+                                return Ok(Some(AnnotationCategory::Range));
+                            }
+                        }
+
+                        if let Some(values) = &values {
+                            if !values.value_valid(value) {
+                                return Ok(Some(AnnotationCategory::Values));
+                            }
+                        }
+                    }
+
+                    if let Some(cardinality) = &cardinality {
+                        if !cardinality.value_valid(real_cardinality) {
+                            return Ok(Some(if is_key {
+                                AnnotationCategory::Key
+                            } else {
+                                AnnotationCategory::Cardinality
+                            }));
+                        }
+                    }
+                }
+            }
+            ObjectType::Relation(relation_type) => {
+                // TODO: Same for relation
+            }
+        }
+
+        Ok(None)
     }
 
     pub(crate) fn validate_declared_edge_annotation_is_compatible_with_declared_annotations<CAP>(
@@ -1492,7 +1648,7 @@ impl OperationTimeValidation {
                 return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
                     annotation_category,
                     existing_annotation_category,
-                    get_label_or_concept_read_err(snapshot, interface).map_err(SchemaValidationError::ConceptRead)?,
+                    get_label_or_schema_err(snapshot, interface)?,
                 ));
             }
         }
@@ -2139,6 +2295,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
+    // TODO: Think what if we have redundant declarations without overrides? We don't need to validate them. Be more careful. Check the logic from annotations validation.
     type_or_subtype_without_declared_capability_instances_existence_validation!(
         type_or_subtype_without_declared_capability_that_has_instances_of_owns,
         Owns,
@@ -2229,4 +2386,26 @@ impl OperationTimeValidation {
         Self::get_lost_capabilities_if_supertype_is_changed::<Relates<'static>>,
         Self::type_or_subtype_without_declared_capability_that_has_instances_of_relates
     );
+
+    capability_or_its_overriding_capability_with_violated_new_annotation_constraints!(
+        get_owns_or_its_overriding_owns_with_violated_new_annotation_constraints,
+        Owns,
+        ObjectType,
+        AttributeType,
+        Self::get_annotation_constraint_violated_by_instances_of_owns
+    );
+    // capability_or_its_overriding_capability_with_violated_new_annotation_constraints!(
+    //     get_plays_or_its_overriding_plays_with_violated_new_annotation_constraints,
+    //     Plays,
+    //     ObjectType,
+    //     RoleType,
+    //     Self::get_annotation_constraint_violated_by_instances_of_plays
+    // );
+    // capability_or_its_overriding_capability_with_violated_new_annotation_constraints!(
+    //     get_relates_or_its_overriding_relates_with_violated_new_annotation_constraints,
+    //     Relates,
+    //     RelationType,
+    //     RoleType,
+    //     Self::get_annotation_constraint_violated_by_instances_of_relates
+    // );
 }

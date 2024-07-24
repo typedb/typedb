@@ -31,7 +31,7 @@ use crate::type_::{
     relation_type::RelationType,
     role_type::RoleType,
     type_manager::type_reader::TypeReader,
-    KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
+    Capability, KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
 };
 
 #[derive(Debug)]

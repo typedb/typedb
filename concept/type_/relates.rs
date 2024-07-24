@@ -37,10 +37,6 @@ impl<'a> Relates<'a> {
     pub const DEFAULT_UNORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(1, Some(1));
     pub const DEFAULT_ORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 
-    pub(crate) fn new(relation: RelationType<'a>, role: RoleType<'a>) -> Self {
-        Relates { relation, role }
-    }
-
     pub fn relation(&self) -> RelationType<'a> {
         self.relation.clone()
     }
@@ -132,6 +128,10 @@ impl<'a> Capability<'a> for Relates<'a> {
     type ObjectType = RelationType<'a>;
     type InterfaceType = RoleType<'a>;
     const KIND: CapabilityKind = CapabilityKind::Relates;
+
+    fn new(relation: RelationType<'a>, role: RoleType<'a>) -> Self {
+        Relates { relation, role }
+    }
 
     fn object(&self) -> RelationType<'a> {
         self.relation.clone()

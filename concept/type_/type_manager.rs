@@ -559,19 +559,36 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_object_owns_overrides(
+    pub(crate) fn get_entity_type_owns_overrides(
         &self,
         snapshot: &impl ReadableSnapshot,
-        object_type: ObjectType<'static>,
+        entity_type: EntityType<'static>,
     ) -> Result<MaybeOwns<'_, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError> {
-        with_object_type!(object_type, |type_| {
-            if let Some(cache) = &self.type_cache {
-                Ok(MaybeOwns::Borrowed(cache.get_object_owns_overrides(type_)))
-            } else {
-                let plays = TypeReader::get_object_capabilities_overrides::<Owns<'static>>(snapshot, object_type)?;
-                Ok(MaybeOwns::Owned(plays))
-            }
-        })
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_object_owns_overrides(entity_type)))
+        } else {
+            let plays = TypeReader::get_object_capabilities_overrides::<Owns<'static>>(
+                snapshot,
+                entity_type.into_owned_object_type(),
+            )?;
+            Ok(MaybeOwns::Owned(plays))
+        }
+    }
+
+    pub(crate) fn get_relation_type_owns_overrides(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_object_owns_overrides(relation_type)))
+        } else {
+            let plays = TypeReader::get_object_capabilities_overrides::<Owns<'static>>(
+                snapshot,
+                relation_type.into_owned_object_type(),
+            )?;
+            Ok(MaybeOwns::Owned(plays))
+        }
     }
 
     pub(crate) fn relation_index_available(
@@ -618,6 +635,22 @@ impl TypeManager {
         }
     }
 
+    pub(crate) fn get_entity_type_plays_overrides(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        entity_type: EntityType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<Plays<'static>, Plays<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_object_plays_overrides(entity_type)))
+        } else {
+            let plays = TypeReader::get_object_capabilities_overrides::<Plays<'static>>(
+                snapshot,
+                entity_type.into_owned_object_type(),
+            )?;
+            Ok(MaybeOwns::Owned(plays))
+        }
+    }
+
     pub(crate) fn get_relation_type_plays_declared<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
@@ -645,6 +678,22 @@ impl TypeManager {
         }
     }
 
+    pub(crate) fn get_relation_type_plays_overrides(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<Plays<'static>, Plays<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_object_plays_overrides(relation_type)))
+        } else {
+            let plays = TypeReader::get_object_capabilities_overrides::<Plays<'static>>(
+                snapshot,
+                relation_type.into_owned_object_type(),
+            )?;
+            Ok(MaybeOwns::Owned(plays))
+        }
+    }
+
     pub(crate) fn get_plays_override(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -655,21 +704,6 @@ impl TypeManager {
         } else {
             Ok(MaybeOwns::Owned(TypeReader::get_capability_override(snapshot, plays)?))
         }
-    }
-
-    pub(crate) fn get_object_plays_overrides(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        object_type: ObjectType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<Plays<'static>, Plays<'static>>>, ConceptReadError> {
-        with_object_type!(object_type, |type_| {
-            if let Some(cache) = &self.type_cache {
-                Ok(MaybeOwns::Borrowed(cache.get_object_plays_overrides(type_)))
-            } else {
-                let plays = TypeReader::get_object_capabilities_overrides::<Plays<'static>>(snapshot, object_type)?;
-                Ok(MaybeOwns::Owned(plays))
-            }
-        })
     }
 
     pub(crate) fn get_attribute_type_value_type(
@@ -860,10 +894,14 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         interface_impl: CAP,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
-        Ok(Constraint::compute_cardinality(
-            interface_impl.get_annotations(snapshot, self)?,
-            interface_impl.get_default_cardinality(snapshot, self)?,
-        ))
+        let cardinality = Constraint::compute_cardinality(
+            interface_impl.get_annotations(snapshot, self)?.keys(),
+            Some(interface_impl.get_default_cardinality(snapshot, self)?),
+        );
+        match cardinality {
+            Some(cardinality) => Ok(cardinality),
+            None => Err(ConceptReadError::CorruptMissingMandatoryCardinality),
+        }
     }
 
     pub(crate) fn get_independent_attribute_types(
@@ -1423,6 +1461,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        // TODO: check updated inherited annotations for updated overrides!!!!!!!!!!!!!
         OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
@@ -1455,6 +1494,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        // TODO: check updated inherited annotations for updated overrides!!!!!!!!!!!!!
         OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
@@ -1507,6 +1547,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        // TODO: check updated inherited annotations for updated overrides!!!!!!!!!!!!!
         OperationTimeValidation::validate_relates_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
@@ -2059,6 +2100,7 @@ impl TypeManager {
     pub(crate) fn set_owns_annotation_unique(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_owns_value_type_compatible_with_unique_annotation(
@@ -2070,6 +2112,8 @@ impl TypeManager {
 
         OperationTimeValidation::validate_new_unique_annotation_compatible_with_capability_and_subcapabilities_instances(
             snapshot,
+            self,
+            thing_manager,
             owns.clone(),
         )
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;

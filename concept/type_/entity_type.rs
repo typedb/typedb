@@ -42,7 +42,7 @@ use crate::{
         plays::Plays,
         role_type::RoleType,
         type_manager::TypeManager,
-        KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
+        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, ThingTypeAPI
     },
     ConceptAPI,
 };
@@ -273,6 +273,14 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_owns(snapshot, self.clone().into_owned())
+    }
+
+    fn get_owns_overrides<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError> {
+        type_manager.get_entity_type_owns_overrides(snapshot, self.clone().into_owned())
     }
 
     fn get_owns_attribute(

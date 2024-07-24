@@ -38,10 +38,6 @@ impl<'a> Owns<'a> {
     pub const DEFAULT_UNORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, Some(1));
     pub const DEFAULT_ORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 
-    pub fn new(owner_type: ObjectType<'a>, attribute_type: AttributeType<'a>) -> Self {
-        Owns { owner: owner_type, attribute: attribute_type }
-    }
-
     pub fn owner(&self) -> ObjectType<'a> {
         self.owner.clone()
     }
@@ -114,6 +110,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         annotation: OwnsAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
@@ -125,7 +122,7 @@ impl<'a> Owns<'a> {
                 type_manager.set_edge_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)?
             }
             OwnsAnnotation::Unique(_) => {
-                type_manager.set_owns_annotation_unique(snapshot, self.clone().into_owned())?
+                type_manager.set_owns_annotation_unique(snapshot, thing_manager, self.clone().into_owned())?
             }
             OwnsAnnotation::Regex(regex) => {
                 type_manager.set_owns_annotation_regex(snapshot, self.clone().into_owned(), regex)?
@@ -218,6 +215,10 @@ impl<'a> Capability<'a> for Owns<'a> {
     type ObjectType = ObjectType<'a>;
     type InterfaceType = AttributeType<'a>;
     const KIND: CapabilityKind = CapabilityKind::Owns;
+
+    fn new(owner_type: ObjectType<'a>, attribute_type: AttributeType<'a>) -> Self {
+        Owns { owner: owner_type, attribute: attribute_type }
+    }
 
     fn object(&self) -> ObjectType<'a> {
         self.owner.clone()

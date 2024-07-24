@@ -564,13 +564,10 @@ impl TypeReader {
     }
 
     // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs
-    pub(crate) fn get_type_edge_annotations_declared<'b, EDGE>(
+    pub(crate) fn get_type_edge_annotations_declared<'b, EDGE: Capability<'b>>(
         snapshot: &impl ReadableSnapshot,
         edge: EDGE,
-    ) -> Result<HashSet<Annotation>, ConceptReadError>
-    where
-        EDGE: Capability<'b>,
-    {
+    ) -> Result<HashSet<Annotation>, ConceptReadError> {
         let type_edge = edge.to_canonical_type_edge();
         snapshot
             .iterate_range(KeyRange::new_inclusive(

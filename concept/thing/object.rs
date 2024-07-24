@@ -270,7 +270,12 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
                     owner_type: self.type_().into_owned_object_type(),
                 });
             } else {
-                todo!()
+                return Err(ConceptWriteError::UniqueValueTaken {
+                    owner: self.clone().into_owned_object(),
+                    key_type: attribute.type_(),
+                    value: attribute.get_value(snapshot, thing_manager)?.into_owned(),
+                    owner_type: self.type_().into_owned_object_type(),
+                });
             }
         }
 

@@ -1139,8 +1139,7 @@ impl ThingManager {
                             AttributeTypeAnnotation::Abstract(_) => todo!("create abstract attribute"),
                             AttributeTypeAnnotation::Independent(_) => (),
                             AttributeTypeAnnotation::Regex(regex) => {
-                                let regex = regex.regex();
-                                if !Regex::new(regex).unwrap().is_match(&string) {
+                                if !regex.value_valid(&string) {
                                     return Err(ConceptWriteError::StringAttributeRegex {
                                         regex: regex.to_owned(),
                                         value: string.into_owned(),

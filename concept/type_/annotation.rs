@@ -27,6 +27,7 @@ use encoding::{
     },
     value::{value::Value, value_type::ValueType, ValueEncodable},
 };
+use regex::Regex;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
 
@@ -159,11 +160,11 @@ impl AnnotationRegex {
     }
 
     pub fn valid(&self) -> bool {
-        !self.regex.is_empty()
+        !self.regex.is_empty() && Regex::new(&self.regex).is_ok()
     }
 
     pub fn value_valid(&self, value: &str) -> bool {
-        todo!()
+        Regex::new(&self.regex).is_ok_and(|regex| regex.is_match(value))
     }
 
     pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
@@ -245,7 +246,7 @@ impl AnnotationRange {
         }
     }
 
-    pub fn value_valid(&self, value: Value<'static>) -> bool {
+    pub fn value_valid(&self, value: Value<'_>) -> bool {
         self.value_satisfies_start(Some(value.clone())) && self.value_satisfies_end(Some(value))
     }
 
@@ -271,7 +272,7 @@ impl AnnotationRange {
         self.value_satisfies_start(other.start()) && self.value_satisfies_end(other.end())
     }
 
-    fn value_satisfies_start(&self, value: Option<Value<'static>>) -> bool {
+    fn value_satisfies_start(&self, value: Option<Value<'_>>) -> bool {
         match self.start() {
             None => true,
             Some(start) => match &value {
@@ -292,7 +293,7 @@ impl AnnotationRange {
         }
     }
 
-    fn value_satisfies_end(&self, value: Option<Value<'static>>) -> bool {
+    fn value_satisfies_end(&self, value: Option<Value<'_>>) -> bool {
         match self.end() {
             None => true,
             Some(end) => match &value {
@@ -372,7 +373,7 @@ impl AnnotationValues {
         true
     }
 
-    pub fn value_valid(&self, value: Value<'static>) -> bool {
+    pub fn value_valid(&self, value: Value<'_>) -> bool {
         self.contains(&value)
     }
 
@@ -404,7 +405,7 @@ impl AnnotationValues {
         true
     }
 
-    fn contains(&self, value: &Value<'static>) -> bool {
+    fn contains(&self, value: &Value<'_>) -> bool {
         self.values.contains(value)
     }
 }

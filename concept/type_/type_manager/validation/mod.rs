@@ -174,6 +174,14 @@ pub enum SchemaValidationError {
         Label<'static>,
         AnnotationCardinality,
     ),
+    CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
+        CapabilityKind,
+        AnnotationCategory,
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+    ),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -261,6 +269,7 @@ impl Error for SchemaValidationError {
             Self::CannotOverrideCapabilityWithExistingInstances(_, _, _, _) => None,
             Self::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(_, _, _, _, _) => None,
             Self::CannotChangeSupertypeAsUpdatedCardinalityIsViolatedByExistingInstances(_, _, _, _, _, _) => None,
+            Self::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(_, _, _, _, _, _) => None,
         }
     }
 }

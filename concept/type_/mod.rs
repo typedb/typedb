@@ -140,6 +140,12 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError>;
 
+    fn get_owns_overrides<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError>;
+
     fn get_owns_attribute(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -266,6 +272,8 @@ pub trait Capability<'a>:
     type ObjectType: TypeAPI<'a>;
     type InterfaceType: KindAPI<'a>;
     const KIND: CapabilityKind;
+
+    fn new(object_type: Self::ObjectType, interface_type: Self::InterfaceType) -> Self;
 
     fn object(&self) -> Self::ObjectType;
 

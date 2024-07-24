@@ -34,10 +34,6 @@ pub struct Plays<'a> {
 impl<'a> Plays<'a> {
     pub const DEFAULT_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 
-    pub(crate) fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
-        Self { player, role }
-    }
-
     pub fn player(&self) -> ObjectType<'a> {
         self.player.clone()
     }
@@ -131,6 +127,10 @@ impl<'a> Capability<'a> for Plays<'a> {
     type ObjectType = ObjectType<'a>;
     type InterfaceType = RoleType<'a>;
     const KIND: CapabilityKind = CapabilityKind::Plays;
+
+    fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
+        Self { player, role }
+    }
 
     fn object(&self) -> ObjectType<'a> {
         self.player.clone()

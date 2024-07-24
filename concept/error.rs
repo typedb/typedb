@@ -15,7 +15,7 @@ use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 use crate::{
     thing::{object::Object, relation::Relation, thing_manager::validation::DataValidationError},
     type_::{
-        annotation::{AnnotationCardinality, AnnotationError},
+        annotation::{AnnotationCardinality, AnnotationError, AnnotationRegex},
         attribute_type::AttributeType,
         object_type::ObjectType,
         role_type::RoleType,
@@ -79,7 +79,7 @@ pub enum ConceptWriteError {
         actual_cardinality: u64,
     },
     StringAttributeRegex {
-        regex: String,
+        regex: AnnotationRegex,
         value: String,
     },
 
@@ -92,6 +92,12 @@ pub enum ConceptWriteError {
         key_type: AttributeType<'static>,
     },
     KeyTaken {
+        owner: Object<'static>,
+        key_type: AttributeType<'static>,
+        value: Value<'static>,
+        owner_type: ObjectType<'static>,
+    },
+    UniqueValueTaken {
         owner: Object<'static>,
         key_type: AttributeType<'static>,
         value: Value<'static>,
@@ -142,6 +148,7 @@ impl Error for ConceptWriteError {
             Self::StringAttributeRegex { .. } => None,
             Self::KeyMissing { .. } => None,
             Self::KeyTaken { .. } => None,
+            Self::UniqueValueTaken { .. } => None,
             Self::SetHasOnDeleted { .. } => None,
             Self::MultipleKeys { .. } => None,
             Self::AddPlayerOnDeleted { .. } => None,
@@ -162,8 +169,12 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::SnapshotIterate { source } => Self::SnapshotIterate { source },
             ConceptReadError::Encoding { source, .. } => Self::Encoding { source },
             ConceptReadError::CorruptMissingLabelOfType => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryCardinality => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryProperty => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryRelatesForRole => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptAttributeValueDoesntMatchAttributeTypeValueType(_) => {
+                Self::ConceptRead { source: error }
+            }
             ConceptReadError::CannotGetOwnsDoesntExist(_, _) => Self::ConceptRead { source: error },
         }
     }
@@ -175,8 +186,10 @@ pub enum ConceptReadError {
     SnapshotIterate { source: Arc<SnapshotIteratorError> },
     Encoding { source: EncodingError },
     CorruptMissingLabelOfType,
+    CorruptMissingMandatoryCardinality,
     CorruptMissingMandatoryProperty,
     CorruptMissingMandatoryRelatesForRole,
+    CorruptAttributeValueDoesntMatchAttributeTypeValueType(Label<'static>),
     CannotGetOwnsDoesntExist(Label<'static>, Label<'static>),
 }
 
@@ -193,7 +206,9 @@ impl Error for ConceptReadError {
             Self::SnapshotIterate { source, .. } => Some(source),
             Self::Encoding { source, .. } => Some(source),
             Self::CorruptMissingLabelOfType => None,
+            Self::CorruptMissingMandatoryCardinality => None,
             Self::CorruptMissingMandatoryProperty => None,
+            Self::CorruptAttributeValueDoesntMatchAttributeTypeValueType(_) => None,
             Self::CorruptMissingMandatoryRelatesForRole => None,
             Self::CannotGetOwnsDoesntExist(_, _) => None,
         }

@@ -163,6 +163,17 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
             ObjectType::Relation(relation) => relation.get_owns(snapshot, type_manager),
         }
     }
+
+    fn get_owns_overrides<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError> {
+        match self {
+            ObjectType::Entity(entity) => entity.get_owns_overrides(snapshot, type_manager),
+            ObjectType::Relation(relation) => relation.get_owns_overrides(snapshot, type_manager),
+        }
+    }
 }
 
 impl<'a> ConceptAPI<'a> for ObjectType<'a> {}
