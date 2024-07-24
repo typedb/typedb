@@ -28,6 +28,8 @@ pub mod statistics;
 pub mod thing_manager;
 
 pub trait ThingAPI<'a> {
+    type VertexType<'b>;
+
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager);
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once

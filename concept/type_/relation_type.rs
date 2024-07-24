@@ -13,14 +13,14 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
             Kind,
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
         },
         Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexRelationType},
-    value::label::Label,
     Prefixed,
+    value::label::Label,
 };
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -31,22 +31,24 @@ use storage::{
 
 use crate::{
     concept_iterator,
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationError, DefaultFrom,
         },
         attribute_type::AttributeType,
+        KindAPI,
         object_type::ObjectType,
+        ObjectTypeAPI,
+        Ordering,
+        OwnerAPI,
         owns::Owns,
-        plays::Plays,
-        relates::Relates,
-        role_type::RoleType,
-        type_manager::TypeManager,
-        KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        PlayerAPI, plays::Plays, relates::Relates, role_type::RoleType, type_manager::TypeManager, TypeAPI,
     },
-    ConceptAPI,
 };
+use crate::thing::relation::Relation;
+use crate::type_::ThingTypeAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
@@ -128,6 +130,10 @@ impl<'a> KindAPI<'a> for RelationType<'a> {
     ) -> Result<MaybeOwns<'m, HashMap<RelationTypeAnnotation, RelationType<'static>>>, ConceptReadError> {
         type_manager.get_relation_type_annotations(snapshot, self.clone().into_owned())
     }
+}
+
+impl<'a> ThingTypeAPI<'a> for RelationType<'a> {
+    type InstanceType<'b> = Relation<'b>;
 }
 
 impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {

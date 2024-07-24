@@ -240,9 +240,9 @@ impl BinaryIterateMode {
         debug_assert!(!var_modes.fully_bound());
 
         let default_sort_variable_for_direction = if in_reverse_direction {
-            constraint.id_right();
+            constraint.right_id()
         } else {
-            constraint.id_left();
+            constraint.left_id()
         };
 
         if var_modes.fully_unbound() {
@@ -262,6 +262,10 @@ impl BinaryIterateMode {
         } else {
             BinaryIterateMode::BoundFrom
         }
+    }
+
+    pub(crate) fn is_inverted(&self) -> bool {
+        matches!(self, Self::UnboundInverted)
     }
 }
 

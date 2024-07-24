@@ -95,6 +95,8 @@ impl<'a> Object<'a> {
 }
 
 impl<'a> ThingAPI<'a> for Object<'a> {
+    type VertexType<'b> = ObjectVertex<'b>;
+
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
         match self {
             Object::Entity(entity) => entity.set_modified(snapshot, thing_manager),

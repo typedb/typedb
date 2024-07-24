@@ -31,32 +31,32 @@ enum TernaryIterateMode {
     BoundFromBoundTo,
 }
 
-impl TernaryIterateMode {
-    fn new(
-        has: &ir::pattern::constraint::RolePlayer<VariablePosition>,
-        var_modes: &VariableModes,
-        sort_by: Option<VariablePosition>,
-    ) -> TernaryIterateMode {
-        debug_assert!(!var_modes.fully_bound());
-        if var_modes.fully_unbound() {
-            match sort_by {
-                None => {
-                    // arbitrarily pick from sorted
-                    TernaryIterateMode::Unbound
-                }
-                Some(variable) => {
-                    if has.owner() == variable {
-                        TernaryIterateMode::UnboundSortedFrom
-                    } else {
-                        TernaryIterateMode::UnboundSortedTo
-                    }
-                }
-            }
-        } else {
-            TernaryIterateMode::BoundFromSortedTo
-        }
-    }
-}
+// impl TernaryIterateMode {
+//     fn new(
+//         has: &ir::pattern::constraint::RolePlayer<VariablePosition>,
+//         var_modes: &VariableModes,
+//         sort_by: Option<VariablePosition>,
+//     ) -> TernaryIterateMode {
+//         debug_assert!(!var_modes.fully_bound());
+//         if var_modes.fully_unbound() {
+//             match sort_by {
+//                 None => {
+//                     // arbitrarily pick from sorted
+//                     TernaryIterateMode::Unbound
+//                 }
+//                 Some(variable) => {
+//                     if has.owner() == variable {
+//                         TernaryIterateMode::UnboundSortedFrom
+//                     } else {
+//                         TernaryIterateMode::UnboundSortedTo
+//                     }
+//                 }
+//             }
+//         } else {
+//             TernaryIterateMode::BoundFromSortedTo
+//         }
+//     }
+// }
 
 impl RolePlayerIteratorExecutor {
     pub(crate) fn new(
@@ -64,8 +64,7 @@ impl RolePlayerIteratorExecutor {
         var_modes: VariableModes,
         sort_by: Option<VariablePosition>,
     ) -> RolePlayerIteratorExecutor {
-        let iterate_mode = IterateMode::new()
-        Self { role_player, iterate_mode, variable_modes }
+        todo!()
     }
 }
 

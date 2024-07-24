@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes, util::HexBytesFormatter};
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -20,9 +20,10 @@ use storage::{
 };
 
 use crate::{
+    AsBytes,
+    EncodingKeyspace,
     graph::{common::value_hasher::HashedID, type_::vertex::TypeID, Typed},
-    layout::prefix::{Prefix, PrefixID},
-    value::{
+    Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed, value::{
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
         date_time_bytes::DateTimeBytes,
@@ -36,8 +37,8 @@ use crate::{
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::graph::thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex};
 
 #[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct AttributeVertex<'a> {
@@ -45,18 +46,13 @@ pub struct AttributeVertex<'a> {
 }
 
 impl<'a> AttributeVertex<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-
-    pub(crate) const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
-    pub(crate) const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
-
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        debug_assert!(bytes.length() > Self::LENGTH_PREFIX_TYPE);
+        debug_assert!(bytes.length() > THING_VERTEX_LENGTH_PREFIX_TYPE);
         AttributeVertex { bytes }
     }
 
     pub fn build(value_type_category: ValueTypeCategory, type_id: TypeID, attribute_id: AttributeID) -> Self {
-        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id.length());
+        let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + attribute_id.length());
         bytes.bytes_mut()[Self::RANGE_PREFIX]
             .copy_from_slice(&Self::value_type_category_to_prefix_type(value_type_category).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
@@ -69,21 +65,11 @@ impl<'a> AttributeVertex<'a> {
         type_id: TypeID,
         attribute_id_part: &[u8],
     ) -> StorageKey<'static, BUFFER_KEY_INLINE> {
-        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id_part.len());
+        let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + attribute_id_part.len());
         bytes.bytes_mut()[Self::RANGE_PREFIX]
             .copy_from_slice(&Self::value_type_category_to_prefix_type(value_type_category).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id_part.len())].copy_from_slice(attribute_id_part);
-        StorageKey::new_owned(Self::KEYSPACE, bytes)
-    }
-
-    pub fn build_prefix_type(
-        prefix: Prefix,
-        type_id: TypeID,
-    ) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_TYPE }> {
-        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -123,12 +109,6 @@ impl<'a> AttributeVertex<'a> {
             Prefix::VertexAttributeStruct => StructAttributeID::LENGTH,
             _ => unreachable!("Unrecognised attribute vertex prefix type"),
         }
-    }
-
-    pub fn build_prefix_prefix(prefix: Prefix) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_PREFIX }> {
-        let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 
     pub fn value_type_category(&self) -> ValueTypeCategory {
@@ -185,6 +165,11 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
 
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
+
+impl<'a> ThingVertex<'a> for AttributeVertex<'a> {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
+}
+
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
     fn keyspace(&self) -> EncodingKeyspace {

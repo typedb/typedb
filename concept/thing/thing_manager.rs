@@ -42,6 +42,7 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use regex::Regex;
+use encoding::graph::thing::ThingVertex;
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLINE};
 use storage::{
     key_range::KeyRange,
@@ -71,6 +72,7 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::type_::ThingTypeAPI;
 
 pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
@@ -86,6 +88,10 @@ impl ThingManager {
         &self.type_manager
     }
 
+    pub fn get_instances_in<'a, T: ThingTypeAPI<'a>>(&self, snapshot: &impl ReadableSnapshot, thing_type: T) {
+        todo!()
+    }
+
     pub fn get_entities(&self, snapshot: &impl ReadableSnapshot) -> EntityIterator {
         let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexEntity);
         let snapshot_iterator =
@@ -98,13 +104,13 @@ impl ThingManager {
             ObjectType::Entity(_) => Prefix::VertexEntity,
             ObjectType::Relation(_) => Prefix::VertexRelation,
         };
-        let prefix = ObjectVertex::build_prefix_type(vertex_prefix.prefix_id(), object_type.vertex().type_id_());
+        let prefix = ObjectVertex::build_prefix_type(vertex_prefix, object_type.vertex().type_id_());
         let snapshot_iterator = snapshot.iterate_range(KeyRange::new_within(prefix, vertex_prefix.fixed_width_keys()));
         ObjectIterator::new(snapshot_iterator)
     }
 
     pub fn get_entities_in(&self, snapshot: &impl ReadableSnapshot, entity_type: EntityType<'_>) -> EntityIterator {
-        let prefix = ObjectVertex::build_prefix_type(Prefix::VertexEntity.prefix_id(), entity_type.vertex().type_id_());
+        let prefix = ObjectVertex::build_prefix_type(Prefix::VertexEntity, entity_type.vertex().type_id_());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexEntity.fixed_width_keys()));
         EntityIterator::new(snapshot_iterator)
@@ -123,7 +129,7 @@ impl ThingManager {
         relation_type: RelationType<'_>,
     ) -> RelationIterator {
         let prefix =
-            ObjectVertex::build_prefix_type(Prefix::VertexRelation.prefix_id(), relation_type.vertex().type_id_());
+            ObjectVertex::build_prefix_type(Prefix::VertexRelation, relation_type.vertex().type_id_());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
         RelationIterator::new(snapshot_iterator)

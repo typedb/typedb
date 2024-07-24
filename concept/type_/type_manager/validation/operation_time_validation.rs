@@ -20,6 +20,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use itertools::Itertools;
+use encoding::graph::thing::ThingVertex;
 use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
@@ -1485,7 +1486,7 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?
             .relation();
         let prefix =
-            ObjectVertex::build_prefix_type(Prefix::VertexRelation.prefix_id(), relation_type.vertex().type_id_());
+            ObjectVertex::build_prefix_type(Prefix::VertexRelation, relation_type.vertex().type_id_());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
         let mut relation_iterator = RelationIterator::new(snapshot_iterator);

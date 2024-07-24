@@ -48,12 +48,6 @@ pub(crate) struct IsaReverseExecutor {
     type_cache: Option<Arc<HashSet<Type>>>,
 }
 
-enum IterateMode {
-    UnboundSortedFrom,
-    UnboundSortedTo,
-    BoundFromSortedTo,
-}
-
 pub(crate) type IsaUnboundedSortedThingEntitySingle = Map<EntityIterator, EntityToTupleFn, AsHkt![TupleResult<'_>]>;
 pub(crate) type IsaUnboundedSortedThingRelationSingle =
     Map<RelationIterator, RelationToTupleFn, AsHkt![TupleResult<'_>]>;

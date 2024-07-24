@@ -26,6 +26,7 @@ use crate::{
     value::value_type::ValueTypeCategory,
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::graph::thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex};
 
 ///
 /// [has][object][Attribute8|Attribute17]
@@ -42,10 +43,10 @@ impl<'a> ThingEdgeHas<'a> {
     const PREFIX: Prefix = Prefix::EdgeHas;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
-    pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + ObjectVertex::LENGTH_PREFIX_TYPE;
+    pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
     pub const LENGTH_PREFIX_FROM_OBJECT: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
     pub const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize =
-        PrefixID::LENGTH + ObjectVertex::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
+        PrefixID::LENGTH + ObjectVertex::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.bytes()[Self::RANGE_PREFIX], Self::PREFIX.prefix_id().bytes());
@@ -127,7 +128,7 @@ impl<'a> ThingEdgeHas<'a> {
     }
 
     const fn range_from_type() -> Range<usize> {
-        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + ObjectVertex::LENGTH_PREFIX_TYPE
+        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + THING_VERTEX_LENGTH_PREFIX_TYPE
     }
 
     const fn range_from() -> Range<usize> {
@@ -183,13 +184,13 @@ impl<'a> ThingEdgeHasReverse<'a> {
 
     const INDEX_FROM_PREFIX: usize = PrefixID::LENGTH;
     pub const LENGTH_PREFIX_FROM_PREFIX: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_PREFIX;
-    pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
+    pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
     pub const LENGTH_BOUND_PREFIX_FROM: usize =
-        PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE + AttributeID::max_length();
+        PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length();
     pub const LENGTH_BOUND_PREFIX_FROM_TO_TYPE: usize = PrefixID::LENGTH
-        + AttributeVertex::LENGTH_PREFIX_TYPE
+        + THING_VERTEX_LENGTH_PREFIX_TYPE
         + AttributeID::max_length()
-        + ObjectVertex::LENGTH_PREFIX_TYPE;
+        + THING_VERTEX_LENGTH_PREFIX_TYPE;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ThingEdgeHasReverse<'a> {
         debug_assert_eq!(bytes.bytes()[Self::RANGE_PREFIX], Self::PREFIX.prefix_id().bytes());
@@ -294,7 +295,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
         let prefix = PrefixID::new([byte]);
         let id_encoding_length =
             AttributeVertex::prefix_type_to_value_id_encoding_length(Prefix::from_prefix_id(prefix));
-        AttributeVertex::LENGTH_PREFIX_TYPE + id_encoding_length
+        THING_VERTEX_LENGTH_PREFIX_TYPE + id_encoding_length
     }
 
     fn keyspace_for_from(attribute: AttributeVertex<'_>) -> EncodingKeyspace {

@@ -40,6 +40,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::thing::ThingAPI;
 
 pub mod annotation;
 pub mod attribute_type;
@@ -97,6 +98,10 @@ pub trait KindAPI<'a>: TypeAPI<'a> {
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> {
     fn into_owned_object_type(self) -> ObjectType<'static>;
+}
+
+pub trait ThingTypeAPI<'a>: TypeAPI<'a> {
+    type InstanceType<'b>: ThingAPI<'b>;
 }
 
 pub trait OwnerAPI<'a>: TypeAPI<'a> {

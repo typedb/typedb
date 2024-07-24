@@ -13,30 +13,33 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
             Kind,
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
         },
         Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexAttributeType},
-    value::{label::Label, value_type::ValueType},
     Prefixed,
+    value::{label::Label, value_type::ValueType},
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use super::annotation::{AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues};
 use crate::{
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
+        KindAPI,
         object_type::ObjectType,
         owns::Owns,
-        type_manager::TypeManager,
-        KindAPI, TypeAPI,
+        type_manager::TypeManager, TypeAPI,
     },
-    ConceptAPI,
 };
+use crate::thing::attribute::Attribute;
+use crate::type_::ThingTypeAPI;
+
+use super::annotation::{AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
@@ -128,6 +131,10 @@ impl<'a> KindAPI<'a> for AttributeType<'a> {
     ) -> Result<MaybeOwns<'m, HashMap<AttributeTypeAnnotation, AttributeType<'static>>>, ConceptReadError> {
         type_manager.get_attribute_type_annotations(snapshot, self.clone().into_owned())
     }
+}
+
+impl<'a> ThingTypeAPI<'a> for AttributeType<'a> {
+    type InstanceType<'b> = Attribute<'b>;
 }
 
 impl<'a> AttributeType<'a> {

@@ -8,6 +8,7 @@ use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
 };
+use itertools::Itertools;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -66,6 +67,8 @@ impl<'a> Relation<'a> {
     }
 
     pub fn type_(&self) -> RelationType<'static> {
+
+
         RelationType::build_from_type_id(self.vertex.type_id_())
     }
 
@@ -320,6 +323,8 @@ impl<'a> Relation<'a> {
 impl<'a> ConceptAPI<'a> for Relation<'a> {}
 
 impl<'a> ThingAPI<'a> for Relation<'a> {
+    type VertexType<'b> = ObjectVertex<'b>;
+
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing(snapshot, self.as_reference());

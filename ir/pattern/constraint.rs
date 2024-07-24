@@ -143,20 +143,17 @@ impl<'cx> ConstraintsBuilder<'cx> {
         &mut self,
         relation: Variable,
         player: Variable,
-        role_type: Option<Variable>,
+        role_type: Variable,
     ) -> Result<&RolePlayer<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, relation)
                 && self.context.is_variable_available(self.constraints.scope, player)
-                && !role_type
-                    .is_some_and(|role_type| !self.context.is_variable_available(self.constraints.scope, role_type))
+                && self.context.is_variable_available(self.constraints.scope, role_type)
         );
         let role_player = Constraint::from(RolePlayer::new(relation, player, role_type));
         self.context.set_variable_category(relation, VariableCategory::Object, role_player.clone())?;
         self.context.set_variable_category(player, VariableCategory::Object, role_player.clone())?;
-        if let Some(role_type) = role_type {
-            self.context.set_variable_category(role_type, VariableCategory::Type, role_player.clone())?;
-        }
+        self.context.set_variable_category(role_type, VariableCategory::Type, role_player.clone())?;
         let constraint = self.constraints.add_constraint(role_player);
         Ok(constraint.as_role_player().unwrap())
     }

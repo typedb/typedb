@@ -25,6 +25,7 @@ use crate::{
     layout::prefix::{Prefix, PrefixID},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::graph::thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex};
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct ObjectVertex<'a> {
@@ -32,12 +33,9 @@ pub struct ObjectVertex<'a> {
 }
 
 impl<'a> ObjectVertex<'a> {
-    pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
     pub const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
-    pub(crate) const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
-    pub(crate) const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
@@ -60,12 +58,6 @@ impl<'a> ObjectVertex<'a> {
         ObjectVertex { bytes: Bytes::Array(array) }
     }
 
-    pub fn build_prefix_prefix(prefix: Prefix) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_PREFIX }> {
-        let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
-    }
-
     pub fn is_entity_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id()
             && storage_key.bytes().len() == Self::LENGTH
@@ -78,26 +70,15 @@ impl<'a> ObjectVertex<'a> {
             && storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexRelation.prefix_id().bytes
     }
 
-    pub fn build_prefix_type(
-        prefix: PrefixID,
-        type_id: TypeID,
-    ) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_TYPE }> {
-        debug_assert!(prefix == Prefix::VertexEntity.prefix_id() || prefix == Prefix::VertexRelation.prefix_id());
-        let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
-    }
-
-    pub fn build_prefix_from_type_vertex(
+    pub(crate) fn build_prefix_from_type_vertex(
         type_vertex: TypeVertex<'_>,
-    ) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_TYPE }> {
+    ) -> StorageKey<'static, { THING_VERTEX_LENGTH_PREFIX_TYPE }> {
         let prefix = match type_vertex.prefix() {
             Prefix::VertexEntityType => Prefix::VertexEntity,
             Prefix::VertexRelationType => Prefix::VertexRelation,
             _ => unreachable!(),
         };
-        Self::build_prefix_type(prefix.prefix_id(), type_vertex.type_id_())
+        Self::build_prefix_type(prefix, type_vertex.type_id_())
     }
 
     pub fn object_id(&self) -> ObjectID {
@@ -140,6 +121,10 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
 
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
+
+impl<'a> ThingVertex<'a> for ObjectVertex<'a> {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ObjectID {

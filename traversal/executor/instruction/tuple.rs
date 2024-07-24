@@ -64,6 +64,7 @@ impl Hkt for Tuple<'static> {
     type HktSelf<'a> = Tuple<'a>;
 }
 
+#[derive(Debug, Clone)]
 pub(crate) enum TuplePositions {
     Single([VariablePosition; 1]),
     Pair([VariablePosition; 2]),

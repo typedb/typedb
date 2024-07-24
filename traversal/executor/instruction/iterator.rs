@@ -5,10 +5,13 @@
  */
 
 use std::{cmp::Ordering, iter::Iterator, ops::Range};
+use answer::Type;
 
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
+use concept::type_::{KindAPI, ThingTypeAPI};
 use lending_iterator::{LendingIterator, Peekable};
+use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 
 use crate::executor::{
     batch::Row,
@@ -354,6 +357,26 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
     fn positions(&self) -> &TuplePositions {
         &self.positions
     }
+}
+
+fn inverted_instances_cache<'a, T: ThingTypeAPI<'a>>(type_: T) {
+    todo!()
+    // let mut cache = Vec::new();
+    // match type_.into() {
+    //     Type::Entity(_) => {}
+    //     Type::Relation(_) => {}
+    //     Type::Attribute(_) => {}
+    //     Type::RoleType(_) => unreachable!("Cannot retrieve instances of role type"),
+    // }
+    // for attr_type in attribute_owner_types.keys() {
+    //     for attr in thing_manager
+    //         .get_attributes_in(snapshot, attr_type.as_attribute_type())?
+    //         .map_static(|result| result.map(|attr| attr.clone().into_owned()))
+    //         .into_iter() {
+    //         cache.push(attr?);
+    //     }
+    // }
+    // debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
 }
 
 fn first_unbound(variable_modes: &VariableModes, positions: &TuplePositions) -> TupleIndex {

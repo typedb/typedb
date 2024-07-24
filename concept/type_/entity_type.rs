@@ -13,14 +13,14 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
             Kind,
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
         },
         Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexEntityType},
-    value::label::Label,
     Prefixed,
+    value::label::Label,
 };
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -31,19 +31,21 @@ use storage::{
 
 use crate::{
     concept_iterator,
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
         attribute_type::AttributeType,
+        KindAPI,
         object_type::ObjectType,
-        owns::Owns,
-        plays::Plays,
-        role_type::RoleType,
-        type_manager::TypeManager,
-        KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        ObjectTypeAPI,
+        Ordering,
+        OwnerAPI,
+        owns::Owns, PlayerAPI, plays::Plays, role_type::RoleType, type_manager::TypeManager, TypeAPI,
     },
-    ConceptAPI,
 };
+use crate::thing::entity::Entity;
+use crate::type_::ThingTypeAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
@@ -130,6 +132,10 @@ impl<'a> KindAPI<'a> for EntityType<'a> {
     ) -> Result<MaybeOwns<'m, HashMap<EntityTypeAnnotation, EntityType<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_annotations(snapshot, self.clone().into_owned())
     }
+}
+
+impl<'a> ThingTypeAPI<'a> for EntityType<'a> {
+    type InstanceType<'b> = Entity<'b>;
 }
 
 impl<'a> EntityType<'a> {
