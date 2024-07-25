@@ -44,7 +44,7 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError}, thing::{object::Object, thing_manager::ThingManager, ThingAPI}, type_::{attribute_type::AttributeType, ObjectTypeAPI, TypeAPI},
 };
-use crate::thing::{HKInstance, InstanceAPI};
+use crate::thing::{HKInstance};
 use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone)]
@@ -125,6 +125,9 @@ impl<'a> ConceptAPI<'a> for Attribute<'a> {}
 
 impl<'a> ThingAPI<'a> for Attribute<'a> {
     type Vertex<'b> = AttributeVertex<'b>;
+    type TypeAPI<'b> = AttributeType<'b>;
+    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::ATTRIBUTE_MIN, Prefix::ATTRIBUTE_MAX);
+
 
     fn new(vertex: Self::Vertex<'a>) -> Self {
         Attribute { vertex, value: None }
@@ -172,11 +175,6 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
 
         Ok(())
     }
-}
-
-impl<'a> InstanceAPI<'a> for Attribute<'a> {
-    type TypeAPI<'b> = AttributeType<'b>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::ATTRIBUTE_MIN, Prefix::ATTRIBUTE_MAX);
 
     fn prefix_for_type(
         type_: Self::TypeAPI<'_>,
@@ -215,8 +213,8 @@ impl<'a> Ord for Attribute<'a> {
 }
 
 pub struct AttributeIterator<AllAttributesIterator>
-where
-    AllAttributesIterator: for<'a> LendingIterator<Item<'a>=Result<Attribute<'a>, ConceptReadError>>,
+    where
+        AllAttributesIterator: for<'a> LendingIterator<Item<'a>=Result<Attribute<'a>, ConceptReadError>>,
 {
     independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
     attributes_iterator: Option<Peekable<AllAttributesIterator>>,
@@ -225,8 +223,8 @@ where
 }
 
 impl<AllAttributesIterator> AttributeIterator<AllAttributesIterator>
-where
-    AllAttributesIterator: for<'a> LendingIterator<Item<'a>=Result<Attribute<'a>, ConceptReadError>>,
+    where
+        AllAttributesIterator: for<'a> LendingIterator<Item<'a>=Result<Attribute<'a>, ConceptReadError>>,
 {
     pub(crate) fn new(
         attributes_iterator: AllAttributesIterator,
@@ -334,8 +332,8 @@ where
 }
 
 impl<Iterator> LendingIterator for AttributeIterator<Iterator>
-where
-    Iterator: for<'a> LendingIterator<Item<'a>=Result<Attribute<'a>, ConceptReadError>>,
+    where
+        Iterator: for<'a> LendingIterator<Item<'a>=Result<Attribute<'a>, ConceptReadError>>,
 {
     type Item<'a> = Result<Attribute<'a>, ConceptReadError>;
 

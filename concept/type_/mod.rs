@@ -41,7 +41,7 @@ use crate::{
         type_manager::TypeManager,
     },
 };
-use crate::thing::{InstanceAPI, ThingAPI};
+use crate::thing::{ThingAPI};
 
 pub mod annotation;
 pub mod attribute_type;

@@ -45,7 +45,7 @@ use crate::{
         relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType, TypeAPI,
     },
 };
-use crate::thing::{HKInstance, InstanceAPI};
+use crate::thing::{HKInstance};
 use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -314,6 +314,8 @@ impl<'a> ConceptAPI<'a> for Relation<'a> {}
 
 impl<'a> ThingAPI<'a> for Relation<'a> {
     type Vertex<'b> = ObjectVertex<'b>;
+    type TypeAPI<'b> = RelationType<'b>;
+    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
 
     fn new(vertex: Self::Vertex<'a>) -> Self {
         debug_assert_eq!(
@@ -427,11 +429,6 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         }
         Ok(())
     }
-}
-
-impl<'a> InstanceAPI<'a> for Relation<'a> {
-    type TypeAPI<'b> = RelationType<'b>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
 
     fn prefix_for_type(
         _type: Self::TypeAPI<'_>,

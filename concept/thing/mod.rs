@@ -35,7 +35,9 @@ pub mod statistics;
 pub mod thing_manager;
 
 pub trait ThingAPI<'a>: Sized + Clone {
+    type TypeAPI<'b>: TypeAPI<'b>;
     type Vertex<'b>: ThingVertex<'b>;
+    const PREFIX_RANGE: (Prefix, Prefix);
 
     fn new(vertex: Self::Vertex<'a>) -> Self;
 
@@ -59,11 +61,6 @@ pub trait ThingAPI<'a>: Sized + Clone {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError>;
-}
-
-pub trait InstanceAPI<'a>: ThingAPI<'a> {
-    type TypeAPI<'b>: TypeAPI<'b>;
-    const PREFIX_RANGE: (Prefix, Prefix);
 
     fn prefix_for_type(
         type_: Self::TypeAPI<'_>,
@@ -72,7 +69,7 @@ pub trait InstanceAPI<'a>: ThingAPI<'a> {
     ) -> Result<Prefix, ConceptReadError>;
 }
 
-pub trait HKInstance: for<'a> Hkt<HktSelf<'a>: InstanceAPI<'a>> {
+pub trait HKInstance: for<'a> Hkt<HktSelf<'a>: ThingAPI<'a>> {
 }
 
 // TODO: where do these belong? They're encodings of values we store for keys

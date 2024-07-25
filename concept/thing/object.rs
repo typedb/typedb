@@ -35,6 +35,7 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::thing::HKInstance;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Object<'a> {
@@ -80,7 +81,9 @@ impl<'a> Object<'a> {
 }
 
 impl<'a> ThingAPI<'a> for Object<'a> {
+    type TypeAPI<'b> = ObjectType<'b>;
     type Vertex<'b> = ObjectVertex<'b>;
+    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexRelation);
 
     fn new(object_vertex: Self::Vertex<'a>) -> Self {
         match object_vertex.prefix() {
@@ -138,6 +141,17 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         match self {
             Object::Entity(entity) => entity.delete(snapshot, thing_manager),
             Object::Relation(relation) => relation.delete(snapshot, thing_manager),
+        }
+    }
+
+    fn prefix_for_type(
+        type_: Self::TypeAPI<'_>,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager
+    ) -> Result<Prefix, ConceptReadError> {
+        match type_ {
+            ObjectType::Entity(entity) => Entity::prefix_for_type(entity, snapshot, type_manager),
+            ObjectType::Relation(relation) => Relation::prefix_for_type(relation, snapshot, type_manager),
         }
     }
 }
@@ -393,6 +407,8 @@ impl<'a> ObjectAPI<'a> for Object<'a> {
         self.into_owned()
     }
 }
+
+impl HKInstance for Object<'static> { }
 
 impl Hkt for Object<'static> {
     type HktSelf<'a> = Object<'a>;

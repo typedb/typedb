@@ -13,7 +13,7 @@ use lending_iterator::higher_order::Hkt;
 use lending_iterator::LendingIterator;
 use crate::error::ConceptReadError;
 use crate::error::ConceptReadError::SnapshotIterate;
-use crate::thing::{InstanceAPI, ThingAPI};
+use crate::thing::{ThingAPI};
 
 pub struct InstanceIterator<T: Hkt> {
     snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator>,
@@ -33,7 +33,7 @@ impl<T: Hkt> InstanceIterator<T> {
 impl<T> LendingIterator for InstanceIterator<T>
 where
     T: Hkt,
-    for<'a> <T as Hkt>::HktSelf<'a>: InstanceAPI<'a>,
+    for<'a> <T as Hkt>::HktSelf<'a>: ThingAPI<'a>,
 {
     type Item<'a> = Result<T::HktSelf<'a>, ConceptReadError>;
 

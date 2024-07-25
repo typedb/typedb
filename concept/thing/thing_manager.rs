@@ -50,9 +50,8 @@ use storage::{
     key_value::StorageKey,
     snapshot::{write::Write, ReadableSnapshot, WritableSnapshot},
 };
-use storage::snapshot::iterator::SnapshotRangeIterator;
 
-use super::{decode_role_players, encode_role_players, HKInstance, InstanceAPI};
+use super::{decode_role_players, encode_role_players, HKInstance};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
@@ -96,10 +95,10 @@ impl ThingManager {
     fn get_instances_in<'a, T: HKInstance>(
         &self,
         snapshot: &impl ReadableSnapshot,
-        thing_type: <T::HktSelf<'a> as InstanceAPI<'a>>::TypeAPI<'a>,
+        thing_type: <T::HktSelf<'a> as ThingAPI<'a>>::TypeAPI<'a>,
     ) -> InstanceIterator<T>
     {
-        let prefix = <T::HktSelf<'_> as InstanceAPI>::prefix_for_type(thing_type.clone(), snapshot, self.type_manager()).unwrap();
+        let prefix = <T::HktSelf<'_> as ThingAPI>::prefix_for_type(thing_type.clone(), snapshot, self.type_manager()).unwrap();
         let storage_key_prefix = <T::HktSelf<'_> as ThingAPI<'_>>::Vertex::build_prefix_type(
             prefix, thing_type.vertex().type_id_(),
         );
@@ -109,7 +108,7 @@ impl ThingManager {
 
     fn get_instances<T: HKInstance>(&self, snapshot: &impl ReadableSnapshot) -> InstanceIterator<T>
     {
-        let (prefix_start, prefix_end_exclusive) = <T::HktSelf<'_> as InstanceAPI<'_>>::PREFIX_RANGE;
+        let (prefix_start, prefix_end_exclusive) = <T::HktSelf<'_> as ThingAPI<'_>>::PREFIX_RANGE;
         let key_start = <T::HktSelf<'_> as ThingAPI<'_>>::Vertex::build_prefix_prefix(prefix_start);
         let key_end = <T::HktSelf<'_> as ThingAPI<'_>>::Vertex::build_prefix_prefix(prefix_end_exclusive);
         let snapshot_iterator = snapshot.iterate_range(KeyRange::new_exclusive(key_start, key_end));
@@ -154,17 +153,9 @@ impl ThingManager {
         self.get_instances_in(snapshot, type_)
     }
 
-    // pub fn get_objects_in<'b>(&self, snapshot: &impl ReadableSnapshot, object_type: ObjectType<'static>) -> impl LendingIterator<Item<'b>=Object<'b>> {
-    //     match object_type {
-    //         ObjectType::Entity(entity) =>{
-    //             let iter = self.get_entities_in(snapshot, entity);
-    //             iter.map(|entity| Object::Entity(entity))
-    //         }
-    //         ObjectType::Relation(relation) => {
-    //             self.get_relations_in(snapshot, relation).map(|relation| Object::Relation(relation))
-    //         },
-    //     }
-    // }
+    pub fn get_objects_in(&self, snapshot: &impl ReadableSnapshot, object_type: ObjectType<'static>) -> InstanceIterator<AsHkt![Object<'_>]> {
+        self.get_instances_in(snapshot, object_type)
+    }
 
     pub(crate) fn get_relations_player<'o>(
         &self,

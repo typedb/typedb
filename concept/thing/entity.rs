@@ -32,7 +32,7 @@ use crate::{
         ThingAPI,
     }, type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI},
 };
-use crate::thing::{HKInstance, InstanceAPI};
+use crate::thing::{HKInstance};
 use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -84,6 +84,9 @@ impl<'a> ConceptAPI<'a> for Entity<'a> {}
 
 impl<'a> ThingAPI<'a> for Entity<'a> {
     type Vertex<'b> = ObjectVertex<'b>;
+    type TypeAPI<'b> = EntityType<'b>;
+    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
+
 
     fn new(vertex: ObjectVertex<'a>) -> Self {
         debug_assert_eq!(vertex.prefix(), Prefix::VertexEntity);
@@ -159,11 +162,6 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         thing_manager.delete_entity(snapshot, self);
         Ok(())
     }
-}
-
-impl<'a> InstanceAPI<'a> for Entity<'a> {
-    type TypeAPI<'b> = EntityType<'b>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
 
     fn prefix_for_type(
         _type: Self::TypeAPI<'_>,

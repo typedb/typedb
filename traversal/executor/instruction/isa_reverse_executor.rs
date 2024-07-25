@@ -14,11 +14,12 @@ use concept::{
     error::ConceptReadError,
     thing::{
         attribute::{Attribute, AttributeIterator},
-        entity::{Entity, EntityIterator},
-        relation::{Relation, RelationIterator},
+        entity::{Entity},
+        relation::{Relation},
         thing_manager::ThingManager,
     },
 };
+use concept::iterator::InstanceIterator;
 use ir::pattern::constraint::Isa;
 use lending_iterator::{adaptors::Map, AsHkt, LendingIterator};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
@@ -48,11 +49,11 @@ pub(crate) struct IsaReverseExecutor {
     type_cache: Option<Arc<HashSet<Type>>>,
 }
 
-pub(crate) type IsaUnboundedSortedThingEntitySingle = Map<EntityIterator, EntityToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type IsaUnboundedSortedThingEntitySingle = Map<InstanceIterator<AsHkt![Entity<'_>]>, EntityToTupleFn, AsHkt![TupleResult<'_>]>;
 pub(crate) type IsaUnboundedSortedThingRelationSingle =
-    Map<RelationIterator, RelationToTupleFn, AsHkt![TupleResult<'_>]>;
+    Map<InstanceIterator<AsHkt![Relation<'_>]>, RelationToTupleFn, AsHkt![TupleResult<'_>]>;
 pub(crate) type IsaUnboundedSortedThingAttributeSingle =
-    Map<AttributeIterator, AttributeToTupleFn, AsHkt![TupleResult<'_>]>;
+    Map<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, AttributeToTupleFn, AsHkt![TupleResult<'_>]>;
 
 type EntityToTupleFn = for<'a> fn(Result<Entity<'a>, ConceptReadError>) -> TupleResult<'a>;
 type RelationToTupleFn = for<'a> fn(Result<Relation<'a>, ConceptReadError>) -> TupleResult<'a>;
