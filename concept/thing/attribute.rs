@@ -36,6 +36,7 @@ use storage::{
     key_value::StorageKey,
     snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
 };
+use storage::key_range::KeyRange;
 
 use crate::{
     ByteReference,
@@ -45,12 +46,17 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError}, thing::{object::Object, thing_manager::ThingManager, ThingAPI}, type_::{attribute_type::AttributeType, ObjectTypeAPI, TypeAPI},
 };
 use crate::thing::{HKInstance};
+use crate::thing::object::HasReverseIterator;
+use crate::type_::object_type::ObjectType;
 use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone)]
 pub struct Attribute<'a> {
     vertex: AttributeVertex<'a>,
     value: Option<Arc<Value<'a>>>, // TODO: if we end up doing traversals over Vertex instead of Concept, we could embed the Value cache into the AttributeVertex
+}
+
+impl<'a> Attribute<'a> {
 }
 
 impl<'a> Attribute<'a> {
@@ -102,6 +108,14 @@ impl<'a> Attribute<'a> {
         thing_manager.get_owners_by_type(snapshot, self.as_reference(), owner_type)
     }
 
+    pub fn get_owners_by_type_range<'m>(
+        &self,
+        snapshot: &'m impl ReadableSnapshot,
+        type_manager: &'m ThingManager,
+        owner_type_range: KeyRange<ObjectType<'static>>
+    ) -> HasReverseIterator {
+        todo!()
+    }
 
     pub fn next_possible(&self) -> Attribute<'static> {
         let mut bytes = ByteArray::from(self.vertex.bytes());
@@ -126,8 +140,8 @@ impl<'a> ConceptAPI<'a> for Attribute<'a> {}
 impl<'a> ThingAPI<'a> for Attribute<'a> {
     type Vertex<'b> = AttributeVertex<'b>;
     type TypeAPI<'b> = AttributeType<'b>;
+    type Owned = Attribute<'static>;
     const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::ATTRIBUTE_MIN, Prefix::ATTRIBUTE_MAX);
-
 
     fn new(vertex: Self::Vertex<'a>) -> Self {
         Attribute { vertex, value: None }
@@ -139,6 +153,10 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
 
     fn into_vertex(self) -> AttributeVertex<'a> {
         self.vertex
+    }
+
+    fn into_owned(self) -> Self::Owned {
+        Attribute::new(self.vertex.into_owned())
     }
 
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
@@ -184,6 +202,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         let value_type = type_.get_value_type(snapshot, type_manager)?.unwrap();
         Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category()))
     }
+
 }
 
 impl HKInstance for Attribute<'static> {}

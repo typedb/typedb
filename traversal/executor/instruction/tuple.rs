@@ -153,6 +153,7 @@ pub(crate) fn isa_attribute_to_tuple_thing_type<'a>(
         Err(err) => Err(err),
     }
 }
+pub(crate) type HasToTupleFn = for<'a> fn(Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a>;
 
 pub(crate) fn has_to_tuple_owner_attribute<'a>(result: Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a> {
     match result {

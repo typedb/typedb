@@ -85,6 +85,7 @@ impl<'a> ConceptAPI<'a> for Entity<'a> {}
 impl<'a> ThingAPI<'a> for Entity<'a> {
     type Vertex<'b> = ObjectVertex<'b>;
     type TypeAPI<'b> = EntityType<'b>;
+    type Owned = Entity<'static>;
     const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
 
 
@@ -101,6 +102,9 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         self.vertex
     }
 
+    fn into_owned(self) -> Self::Owned {
+        Entity::new(self.vertex.into_owned())
+    }
 
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
@@ -170,6 +174,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
     ) -> Result<Prefix, ConceptReadError> {
         Ok(Prefix::VertexEntity)
     }
+
 }
 
 impl<'a> ObjectAPI<'a> for Entity<'a> {

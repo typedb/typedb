@@ -37,6 +37,8 @@ pub mod thing_manager;
 pub trait ThingAPI<'a>: Sized + Clone {
     type TypeAPI<'b>: TypeAPI<'b>;
     type Vertex<'b>: ThingVertex<'b>;
+    type Owned: ThingAPI<'static>;
+
     const PREFIX_RANGE: (Prefix, Prefix);
 
     fn new(vertex: Self::Vertex<'a>) -> Self;
@@ -44,6 +46,8 @@ pub trait ThingAPI<'a>: Sized + Clone {
     fn vertex(&self) -> Self::Vertex<'_>;
 
     fn into_vertex(self) -> Self::Vertex<'a>;
+
+    fn into_owned(self) -> Self::Owned;
 
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager);
 
@@ -70,6 +74,7 @@ pub trait ThingAPI<'a>: Sized + Clone {
 }
 
 pub trait HKInstance: for<'a> Hkt<HktSelf<'a>: ThingAPI<'a>> {
+
 }
 
 // TODO: where do these belong? They're encodings of values we store for keys

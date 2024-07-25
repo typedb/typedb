@@ -16,6 +16,7 @@ use encoding::{
     value::{decode_value_u64, value::Value},
     Prefixed,
 };
+use encoding::graph::thing::edge::ThingEdgeHasReverse;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
@@ -83,6 +84,7 @@ impl<'a> Object<'a> {
 impl<'a> ThingAPI<'a> for Object<'a> {
     type TypeAPI<'b> = ObjectType<'b>;
     type Vertex<'b> = ObjectVertex<'b>;
+    type Owned = Object<'static>;
     const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexRelation);
 
     fn new(object_vertex: Self::Vertex<'a>) -> Self {
@@ -107,6 +109,12 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         }
     }
 
+    fn into_owned(self) -> Self::Owned {
+        match self {
+            Object::Entity(entity) => Object::Entity(entity.into_owned()),
+            Object::Relation(relation) => Object::Relation(relation.into_owned()),
+        }
+    }
 
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
         match self {
@@ -435,7 +443,7 @@ impl<'a> Display for Object<'a> {
     }
 }
 
-fn storage_key_to_has_attribute<'a>(
+fn storage_key_has_edge_to_has_attribute<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Attribute<'a>, u64) {
@@ -443,21 +451,38 @@ fn storage_key_to_has_attribute<'a>(
     (Attribute::new(edge.into_to()), decode_value_u64(value.as_reference()))
 }
 
-fn storage_key_to_has<'a>(
+fn storage_key_has_edge_to_has<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Has<'a>, u64) {
     (Has::new_from_edge(ThingEdgeHas::new(storage_key.into_bytes())), decode_value_u64(value.as_reference()))
 }
 
+fn storage_key_has_reverse_edge_to_has<'a>(
+    storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
+    value: Bytes<'a, BUFFER_VALUE_INLINE>,
+) -> (Has<'a>, u64) {
+    (
+        Has::new_from_edge_reverse(ThingEdgeHasReverse::new(storage_key.into_bytes())),
+        decode_value_u64(value.as_reference())
+    )
+}
+
+
 edge_iterator!(
     HasAttributeIterator;
     'a -> (Attribute<'a>, u64);
-    storage_key_to_has_attribute
+    storage_key_has_edge_to_has_attribute
 );
 
 edge_iterator!(
     HasIterator;
     'a -> (Has<'a>, u64);
-    storage_key_to_has
+    storage_key_has_edge_to_has
+);
+
+edge_iterator!(
+    HasReverseIterator;
+    'a -> (Has<'a>, u64);
+    storage_key_has_reverse_edge_to_has
 );

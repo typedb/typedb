@@ -5,13 +5,15 @@
  */
 
 use std::{cmp::Ordering, iter::Iterator, ops::Range};
-use answer::Type;
 
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
-use concept::type_::{KindAPI, ThingTypeAPI};
+use concept::thing::{HKInstance, ThingAPI};
+use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{LendingIterator, Peekable};
+use lending_iterator::higher_order::Hkt;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
+use storage::snapshot::ReadableSnapshot;
 
 use crate::executor::{
     batch::Row,
@@ -28,6 +30,7 @@ use crate::executor::{
         VariableMode, VariableModes,
     },
 };
+use crate::executor::instruction::has_reverse_executor::{HasReverseBoundedSortedOwner, HasReverseUnboundedSortedAttribute, HasReverseUnboundedSortedOwnerMerged, HasReverseUnboundedSortedOwnerSingle};
 
 // TODO: the 'check' can deduplicate against all relevant variables as soon as an anonymous variable is no longer relevant.
 //       if the deduplicated answer leads to an answer, we should not re-emit it again (we will rediscover the same answers)
@@ -42,47 +45,77 @@ pub(crate) enum TupleIterator {
     HasUnboundedInvertedSingle(SortedTupleIterator<HasUnboundedSortedAttributeSingle>),
     HasUnboundedInvertedMerged(SortedTupleIterator<HasUnboundedSortedAttributeMerged>),
     HasBounded(SortedTupleIterator<HasBoundedSortedAttribute>),
+
+    HasReverseUnbounded(SortedTupleIterator<HasReverseUnboundedSortedAttribute>),
+    HasReverseUnboundedInvertedSingle(SortedTupleIterator<HasReverseUnboundedSortedOwnerSingle>),
+    HasReverseUnboundedInvertedMerged(SortedTupleIterator<HasReverseUnboundedSortedOwnerMerged>),
+    HasReverseBounded(SortedTupleIterator<HasReverseBoundedSortedOwner>),
+}
+
+macro_rules! dispatch_tuple_iterator {
+    { $self:ident, [$( $name:ident, )*], iter.$method_name:ident $args:tt }=> {
+        match $self {
+            $(
+            Self::$name(iter) => iter.$method_name $args
+            ),*
+        }
+    }
 }
 
 impl TupleIterator {
     pub(crate) fn write_values(&mut self, row: &mut Row<'_>) {
-        match self {
-            TupleIterator::IsaEntityInvertedSingle(iter) => iter.write_values(row),
-            TupleIterator::IsaRelationInvertedSingle(iter) => iter.write_values(row),
-            TupleIterator::IsaAttributeInvertedSingle(iter) => iter.write_values(row),
+        dispatch_tuple_iterator!(self, [
+            IsaEntityInvertedSingle,
+            IsaRelationInvertedSingle,
+            IsaAttributeInvertedSingle,
 
-            TupleIterator::HasUnbounded(iter) => iter.write_values(row),
-            TupleIterator::HasUnboundedInvertedSingle(iter) => iter.write_values(row),
-            TupleIterator::HasUnboundedInvertedMerged(iter) => iter.write_values(row),
-            TupleIterator::HasBounded(iter) => iter.write_values(row),
-        }
+            HasUnbounded,
+            HasUnboundedInvertedSingle,
+            HasUnboundedInvertedMerged,
+            HasBounded,
+
+            HasReverseUnbounded,
+            HasReverseUnboundedInvertedSingle,
+            HasReverseUnboundedInvertedMerged,
+            HasReverseBounded,
+        ], iter.write_values(row))
     }
 
     pub(crate) fn peek(&mut self) -> Option<Result<&Tuple<'_>, ConceptReadError>> {
-        let value = match self {
-            TupleIterator::IsaEntityInvertedSingle(iter) => iter.peek(),
-            TupleIterator::IsaRelationInvertedSingle(iter) => iter.peek(),
-            TupleIterator::IsaAttributeInvertedSingle(iter) => iter.peek(),
+        let value = dispatch_tuple_iterator!(self, [
+            IsaEntityInvertedSingle,
+            IsaRelationInvertedSingle,
+            IsaAttributeInvertedSingle,
 
-            TupleIterator::HasUnbounded(iter) => iter.peek(),
-            TupleIterator::HasUnboundedInvertedSingle(iter) => iter.peek(),
-            TupleIterator::HasUnboundedInvertedMerged(iter) => iter.peek(),
-            TupleIterator::HasBounded(iter) => iter.peek(),
-        };
+            HasUnbounded,
+            HasUnboundedInvertedSingle,
+            HasUnboundedInvertedMerged,
+            HasBounded,
+
+            HasReverseUnbounded,
+            HasReverseUnboundedInvertedSingle,
+            HasReverseUnboundedInvertedMerged,
+            HasReverseBounded,
+        ], iter.peek());
         value.map(|result| result.as_ref().map_err(|err| err.clone()))
     }
 
     pub(crate) fn advance_past(&mut self) -> Result<usize, ConceptReadError> {
-        match self {
-            TupleIterator::IsaEntityInvertedSingle(iter) => iter.advance_past(),
-            TupleIterator::IsaRelationInvertedSingle(iter) => iter.advance_past(),
-            TupleIterator::IsaAttributeInvertedSingle(iter) => iter.advance_past(),
+        dispatch_tuple_iterator!(self, [
+            IsaEntityInvertedSingle,
+            IsaRelationInvertedSingle,
+            IsaAttributeInvertedSingle,
 
-            TupleIterator::HasUnbounded(iter) => iter.advance_past(),
-            TupleIterator::HasUnboundedInvertedSingle(iter) => iter.advance_past(),
-            TupleIterator::HasUnboundedInvertedMerged(iter) => iter.advance_past(),
-            TupleIterator::HasBounded(iter) => iter.advance_past(),
-        }
+            HasUnbounded,
+            HasUnboundedInvertedSingle,
+            HasUnboundedInvertedMerged,
+            HasBounded,
+
+            HasReverseUnbounded,
+            HasReverseUnboundedInvertedSingle,
+            HasReverseUnboundedInvertedMerged,
+            HasReverseBounded,
+        ], iter.advance_past())
     }
 
     pub(crate) fn advance_until_index_is(
@@ -90,55 +123,75 @@ impl TupleIterator {
         index: TupleIndex,
         value: &VariableValue<'_>,
     ) -> Result<Option<Ordering>, ConceptReadError> {
-        match self {
-            TupleIterator::IsaEntityInvertedSingle(iter) => iter.skip_until_value(index, value),
-            TupleIterator::IsaRelationInvertedSingle(iter) => iter.skip_until_value(index, value),
-            TupleIterator::IsaAttributeInvertedSingle(iter) => iter.skip_until_value(index, value),
+        dispatch_tuple_iterator!(self, [
+            IsaEntityInvertedSingle,
+            IsaRelationInvertedSingle,
+            IsaAttributeInvertedSingle,
 
-            TupleIterator::HasUnbounded(iter) => iter.skip_until_value(index, value),
-            TupleIterator::HasUnboundedInvertedSingle(iter) => iter.skip_until_value(index, value),
-            TupleIterator::HasUnboundedInvertedMerged(iter) => iter.skip_until_value(index, value),
-            TupleIterator::HasBounded(iter) => iter.skip_until_value(index, value),
-        }
+            HasUnbounded,
+            HasUnboundedInvertedSingle,
+            HasUnboundedInvertedMerged,
+            HasBounded,
+
+            HasReverseUnbounded,
+            HasReverseUnboundedInvertedSingle,
+            HasReverseUnboundedInvertedMerged,
+            HasReverseBounded,
+        ], iter.skip_until_value(index, value))
     }
 
     pub(crate) fn advance_single(&mut self) -> Result<(), ConceptReadError> {
-        match self {
-            TupleIterator::IsaEntityInvertedSingle(iter) => iter.advance_single(),
-            TupleIterator::IsaRelationInvertedSingle(iter) => iter.advance_single(),
-            TupleIterator::IsaAttributeInvertedSingle(iter) => iter.advance_single(),
+        dispatch_tuple_iterator!(self, [
+            IsaEntityInvertedSingle,
+            IsaRelationInvertedSingle,
+            IsaAttributeInvertedSingle,
 
-            TupleIterator::HasUnbounded(iter) => iter.advance_single(),
-            TupleIterator::HasUnboundedInvertedSingle(iter) => iter.advance_single(),
-            TupleIterator::HasUnboundedInvertedMerged(iter) => iter.advance_single(),
-            TupleIterator::HasBounded(iter) => iter.advance_single(),
-        }
+            HasUnbounded,
+            HasUnboundedInvertedSingle,
+            HasUnboundedInvertedMerged,
+            HasBounded,
+
+            HasReverseUnbounded,
+            HasReverseUnboundedInvertedSingle,
+            HasReverseUnboundedInvertedMerged,
+            HasReverseBounded,
+        ], iter.advance_single())
     }
 
     pub(crate) fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, ConceptReadError>> {
-        match self {
-            TupleIterator::IsaEntityInvertedSingle(iter) => iter.peek_first_unbound_value(),
-            TupleIterator::IsaRelationInvertedSingle(iter) => iter.peek_first_unbound_value(),
-            TupleIterator::IsaAttributeInvertedSingle(iter) => iter.peek_first_unbound_value(),
+        dispatch_tuple_iterator!(self, [
+            IsaEntityInvertedSingle,
+            IsaRelationInvertedSingle,
+            IsaAttributeInvertedSingle,
 
-            TupleIterator::HasUnbounded(iter) => iter.peek_first_unbound_value(),
-            TupleIterator::HasUnboundedInvertedSingle(iter) => iter.peek_first_unbound_value(),
-            TupleIterator::HasUnboundedInvertedMerged(iter) => iter.peek_first_unbound_value(),
-            TupleIterator::HasBounded(iter) => iter.peek_first_unbound_value(),
-        }
+            HasUnbounded,
+            HasUnboundedInvertedSingle,
+            HasUnboundedInvertedMerged,
+            HasBounded,
+
+            HasReverseUnbounded,
+            HasReverseUnboundedInvertedSingle,
+            HasReverseUnboundedInvertedMerged,
+            HasReverseBounded,
+        ], iter.peek_first_unbound_value())
     }
 
     pub(crate) fn first_unbound_index(&self) -> TupleIndex {
-        match self {
-            TupleIterator::IsaEntityInvertedSingle(iter) => iter.first_unbound_index(),
-            TupleIterator::IsaRelationInvertedSingle(iter) => iter.first_unbound_index(),
-            TupleIterator::IsaAttributeInvertedSingle(iter) => iter.first_unbound_index(),
+        dispatch_tuple_iterator!(self, [
+            IsaEntityInvertedSingle,
+            IsaRelationInvertedSingle,
+            IsaAttributeInvertedSingle,
 
-            TupleIterator::HasUnbounded(iter) => iter.first_unbound_index(),
-            TupleIterator::HasUnboundedInvertedSingle(iter) => iter.first_unbound_index(),
-            TupleIterator::HasUnboundedInvertedMerged(iter) => iter.first_unbound_index(),
-            TupleIterator::HasBounded(iter) => iter.first_unbound_index(),
-        }
+            HasUnbounded,
+            HasUnboundedInvertedSingle,
+            HasUnboundedInvertedMerged,
+            HasBounded,
+
+            HasReverseUnbounded,
+            HasReverseUnboundedInvertedSingle,
+            HasReverseUnboundedInvertedMerged,
+            HasReverseBounded,
+        ], iter.first_unbound_index())
     }
 }
 
@@ -155,7 +208,7 @@ pub(crate) trait TupleIteratorAPI {
     fn positions(&self) -> &TuplePositions;
 }
 
-pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> {
+pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a>=TupleResult<'a>>> {
     iterator: Peekable<Iterator>,
     positions: TuplePositions,
     tuple_length: usize,
@@ -164,7 +217,7 @@ pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a>
     enumerate_or_count_range: Range<TupleIndex>,
 }
 
-impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleIterator<Iterator> {
+impl<Iterator: for<'a> LendingIterator<Item<'a>=TupleResult<'a>>> SortedTupleIterator<Iterator> {
     pub(crate) fn new(iterator: Iterator, tuple_positions: TuplePositions, variable_modes: &VariableModes) -> Self {
         let first_unbound = first_unbound(variable_modes, &tuple_positions);
         let enumerate_range = enumerated_range(variable_modes, &tuple_positions);
@@ -260,7 +313,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
     }
 }
 
-impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIteratorAPI for SortedTupleIterator<Iterator> {
+impl<Iterator: for<'a> LendingIterator<Item<'a>=TupleResult<'a>>> TupleIteratorAPI for SortedTupleIterator<Iterator> {
     fn write_values(&mut self, row: &mut Row<'_>) {
         debug_assert!(self.peek().is_some() && self.peek().unwrap().is_ok());
         // note: can't use self.peek() since it will cause mut and immutable reference to self
@@ -359,24 +412,24 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
     }
 }
 
-fn inverted_instances_cache<'a, T: ThingTypeAPI<'a>>(type_: T) {
-    todo!()
-    // let mut cache = Vec::new();
-    // match type_.into() {
-    //     Type::Entity(_) => {}
-    //     Type::Relation(_) => {}
-    //     Type::Attribute(_) => {}
-    //     Type::RoleType(_) => unreachable!("Cannot retrieve instances of role type"),
-    // }
-    // for attr_type in attribute_owner_types.keys() {
-    //     for attr in thing_manager
-    //         .get_attributes_in(snapshot, attr_type.as_attribute_type())?
-    //         .map_static(|result| result.map(|attr| attr.clone().into_owned()))
-    //         .into_iter() {
-    //         cache.push(attr?);
-    //     }
-    // }
-    // debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
+// TODO: this method and assertion on size would make more sense constructing a dedicated type, instead returning Vec
+pub(crate) fn inverted_instances_cache<'a, T: HKInstance>(
+    types: impl Iterator<Item=<T::HktSelf<'a> as ThingAPI<'a>>::TypeAPI<'a>>,
+    snapshot: &impl ReadableSnapshot,
+    thing_manager: &ThingManager,
+) -> Result<Vec<T>, ConceptReadError>
+    where
+        for<'b> <T as Hkt>::HktSelf<'b>: ThingAPI<'b, Owned=T>
+{
+    let mut cache = Vec::new();
+    for type_ in types {
+        let mut instances = thing_manager.get_instances_in::<T>(snapshot, type_);
+        while let Some(result) = instances.next() {
+            cache.push(result?.clone().into_owned());
+        }
+    }
+    debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
+    Ok(cache)
 }
 
 fn first_unbound(variable_modes: &VariableModes, positions: &TuplePositions) -> TupleIndex {

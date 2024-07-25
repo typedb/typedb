@@ -5,6 +5,8 @@
  */
 
 use std::{borrow::Cow, collections::HashSet, sync::Arc};
+use std::any::Any;
+use std::cmp::max;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -43,6 +45,7 @@ use itertools::Itertools;
 use lending_iterator::{AsHkt, LendingIterator};
 use regex::Regex;
 use encoding::graph::thing::ThingVertex;
+use encoding::graph::type_::vertex::TypeID;
 use encoding::value::value_struct::StructIndexEntryKey;
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLINE};
 use storage::{
@@ -75,6 +78,7 @@ use crate::{
 };
 use crate::error::ConceptWriteError::ConceptRead;
 use crate::iterator::InstanceIterator;
+use crate::thing::object::HasReverseIterator;
 
 pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
@@ -92,7 +96,7 @@ impl ThingManager {
 
     /// Return simple iterator of all Concept(Vertex) found for a specific instantiable Type
     /// If this type is an Attribute type, this iterator will not hide the Dependent attributes that have no owners.
-    fn get_instances_in<'a, T: HKInstance>(
+    pub fn get_instances_in<'a, T: HKInstance>(
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_type: <T::HktSelf<'a> as ThingAPI<'a>>::TypeAPI<'a>,
@@ -131,7 +135,7 @@ impl ThingManager {
     pub fn get_entities_in(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_: EntityType<'static>
+        type_: EntityType<'static>,
     ) -> InstanceIterator<AsHkt![Entity<'_>]> {
         self.get_instances_in(snapshot, type_)
     }
@@ -139,7 +143,7 @@ impl ThingManager {
     pub fn get_relations_in(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_: RelationType<'static>
+        type_: RelationType<'static>,
     ) -> InstanceIterator<AsHkt![Relation<'_>]> {
         self.get_instances_in(snapshot, type_)
     }
@@ -148,7 +152,7 @@ impl ThingManager {
     fn get_attributes_in_all(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_: AttributeType<'static>
+        type_: AttributeType<'static>,
     ) -> InstanceIterator<AsHkt![Attribute<'_>]> {
         self.get_instances_in(snapshot, type_)
     }
@@ -211,8 +215,9 @@ impl ThingManager {
         };
 
         let attribute_value_type_prefix = AttributeVertex::value_type_category_to_prefix_type(value_type.category());
-        let has_reverse_prefix =
-            ThingEdgeHasReverse::prefix_from_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_type_with_category(
+            attribute_value_type_prefix, attribute_type.vertex().type_id_()
+        );
         let has_reverse_iterator =
             snapshot.iterate_range(KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING));
 
@@ -432,7 +437,7 @@ impl ThingManager {
         Ok(has_exists)
     }
 
-    pub fn get_has_from_type_range_unordered<'a>(
+    pub fn get_has_from_owner_type_range_unordered<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner_type_range: KeyRange<ObjectType<'static>>,
@@ -442,7 +447,25 @@ impl ThingManager {
         HasIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_attributes_by_struct_field<'this, Snapshot: ReadableSnapshot> (
+    pub fn get_has_from_attribute_type_range<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        attribute_type_range: impl Iterator<Item=AttributeType<'static>>,
+    ) -> Result<HasReverseIterator, ConceptReadError> {
+        let ((min_prefix, min_type_id), (max_prefix, max_type_id)) = self.attribute_instance_range_from_attribute_type_range(
+            snapshot, attribute_type_range,
+        )?;
+        let min_edge_prefix = ThingEdgeHasReverse::prefix_from_type_with_category(min_prefix, min_type_id);
+        let max_edge_prefix = ThingEdgeHasReverse::prefix_from_type_with_category(max_prefix, max_type_id);
+        let range = if min_edge_prefix != max_edge_prefix {
+            KeyRange::new_inclusive(min_edge_prefix, max_edge_prefix)
+        } else {
+            KeyRange::new_within(min_edge_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING)
+        };
+        Ok(HasReverseIterator::new(snapshot.iterate_range(range)))
+    }
+
+    pub fn get_attributes_by_struct_field<'this, Snapshot: ReadableSnapshot>(
         &'this self,
         snapshot: &'this Snapshot,
         attribute_type: AttributeType<'_>,
@@ -471,11 +494,11 @@ impl ThingManager {
                 }).map_err(|err| ConceptReadError::SnapshotIterate { source: err })
             });
 
-        let attribute_value_type_prefix =
-            AttributeVertex::value_type_category_to_prefix_type(ValueTypeCategory::Struct);
+        let attribute_value_type_prefix = AttributeVertex::value_type_category_to_prefix_type(ValueTypeCategory::Struct);
 
-        let has_reverse_prefix =
-            ThingEdgeHasReverse::prefix_from_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_type_with_category(
+            attribute_value_type_prefix, attribute_type.vertex().type_id_()
+        );
         let has_reverse_iterator =
             snapshot.iterate_range(KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING));
 
@@ -510,8 +533,8 @@ impl ThingManager {
         };
         let prefix = ThingEdgeHas::prefix_from_object_to_type(
             owner.vertex(),
-            value_type.category(),
-            attribute_type.into_vertex(),
+            AttributeVertex::value_type_category_to_prefix_type(value_type.category()),
+            attribute_type.into_vertex().type_id_(),
         );
         Ok(HasAttributeIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
@@ -553,38 +576,55 @@ impl ThingManager {
         owner: &impl ObjectAPI<'a>,
         attribute_types_defining_range: impl Iterator<Item=AttributeType<'static>>,
     ) -> Result<HasIterator, ConceptReadError> {
-        let mut min_prefix_inclusive = None;
-        let mut max_prefix_inclusive = None;
-        for result in attribute_types_defining_range.map(|attribute_type| {
+        let ((min_prefix, min_type_id), (max_prefix, max_type_id)) = self.
+            attribute_instance_range_from_attribute_type_range(snapshot, attribute_types_defining_range)?;
+        let min_edge_prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), min_prefix, min_type_id);
+        let max_edge_prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), max_prefix, max_type_id);
+        let range = if min_edge_prefix != max_edge_prefix {
+            KeyRange::new_inclusive(min_edge_prefix, max_edge_prefix)
+        } else {
+            KeyRange::new_within(min_edge_prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)
+        };
+        Ok(HasIterator::new(snapshot.iterate_range(range)))
+    }
+
+    fn attribute_instance_range_from_attribute_type_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        attribute_types: impl Iterator<Item=AttributeType<'static>>,
+    ) -> Result<((Prefix, TypeID), (Prefix, TypeID)), ConceptReadError> {
+        let mut min: Option<(Prefix, TypeID)> = None;
+        let mut max: Option<(Prefix, TypeID)> = None;
+        for result in attribute_types.map(|attribute_type| {
             match attribute_type.get_value_type(snapshot, self.type_manager()) {
-                Ok(Some(vt)) => Ok(Some(ThingEdgeHas::prefix_from_object_to_type(
-                    owner.vertex(),
-                    vt.category(),
-                    attribute_type.vertex(),
-                ))),
+                Ok(Some(value_type)) => {
+                    Ok(Some((
+                        AttributeVertex::value_type_category_to_prefix_type(value_type.category()),
+                        attribute_type.vertex().type_id_()
+                    )))
+                }
                 Ok(None) => Ok(None),
                 Err(err) => Err(err),
             }
         }) {
             match result? {
                 None => {}
-                Some(prefix) => {
-                    if min_prefix_inclusive.is_none() || min_prefix_inclusive.as_ref().unwrap() > &prefix {
-                        min_prefix_inclusive = Some(prefix.clone())
+                Some((prefix, type_id)) => {
+                    if min.is_none() || min.is_some_and(|(prefix, type_id)|
+                        (prefix.prefix_id().bytes(), type_id.bytes()) > (prefix.prefix_id().bytes(), type_id.bytes())
+                    ) {
+                        min = Some((prefix, type_id));
                     }
-                    if max_prefix_inclusive.is_none() || max_prefix_inclusive.as_ref().unwrap() < &prefix {
-                        max_prefix_inclusive = Some(prefix)
+                    if max.is_none() || max.is_some_and(|(prefix, type_id)|
+                        (prefix.prefix_id().bytes(), type_id.bytes()) > (prefix.prefix_id().bytes(), type_id.bytes())
+                    ) {
+                        max = Some((prefix, type_id));
                     }
                 }
             }
         }
-
-        let range = if max_prefix_inclusive.is_some() {
-            KeyRange::new_inclusive(min_prefix_inclusive.unwrap(), max_prefix_inclusive.unwrap())
-        } else {
-            KeyRange::new_within(min_prefix_inclusive.unwrap(), ThingEdgeHas::FIXED_WIDTH_ENCODING)
-        };
-        Ok(HasIterator::new(snapshot.iterate_range(range)))
+        debug_assert!(min.is_some() && max.is_some());
+        Ok((min.unwrap(), max.unwrap()))
     }
 
     pub(crate) fn get_owners<'this>(

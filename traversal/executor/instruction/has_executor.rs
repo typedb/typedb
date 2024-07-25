@@ -14,7 +14,6 @@ use answer::{Thing, Type, variable_value::VariableValue};
 use concept::{
     error::ConceptReadError,
     thing::{
-        attribute::Attribute,
         has::Has,
         object::{HasIterator, Object, ObjectAPI},
         thing_manager::ThingManager,
@@ -26,7 +25,6 @@ use lending_iterator::{
     higher_order::FnHktHelper,
     kmerge::KMergeBy, LendingIterator, Peekable,
 };
-use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::executor::{
@@ -39,6 +37,8 @@ use crate::executor::{
     VariablePosition,
 };
 use crate::executor::instruction::BinaryIterateMode;
+use crate::executor::instruction::iterator::inverted_instances_cache;
+use crate::executor::instruction::tuple::HasToTupleFn;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<VariablePosition>,
@@ -54,7 +54,7 @@ pub(crate) struct HasExecutor {
 pub(crate) type HasUnboundedSortedOwner =
     Map<Filter<HasIterator, Arc<HasFilterFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
 pub(crate) type HasUnboundedSortedAttributeMerged = Map<
-    Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterFn>>,
+    Filter<KMergeBy<HasIterator, HasOrderingFn>, Arc<HasFilterFn>>,
     HasToTupleFn,
     AsHkt![TupleResult<'_>],
 >;
@@ -66,11 +66,9 @@ pub(crate) type HasBoundedSortedAttribute =
 pub(crate) type HasFilterFn =
     dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
 
-type HasOrderByAttributeFn = for<'a, 'b> fn(
+pub(crate) type HasOrderingFn = for<'a, 'b> fn(
     (&'a Result<(Has<'a>, u64), ConceptReadError>, &'b Result<(Has<'b>, u64), ConceptReadError>),
 ) -> Ordering;
-
-type HasToTupleFn = for<'a> fn(Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a>;
 
 
 impl HasExecutor {
@@ -87,25 +85,11 @@ impl HasExecutor {
         debug_assert!(!variable_modes.fully_bound());
         let iterate_mode = BinaryIterateMode::new(has.clone(), false, &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
-            BinaryIterateMode::Unbound => Arc::new({
-                let owner_att_types = owner_attribute_types.clone();
-                let att_types = attribute_types.clone();
-                move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
-                    Ok((has, _)) => {
-                        owner_att_types.contains_key(&Type::from(has.owner().type_()))
-                            && att_types.contains(&Type::Attribute(has.attribute().type_()))
-                    }
-                    Err(_) => true,
-                }
-            }) as Arc<HasFilterFn>,
+            BinaryIterateMode::Unbound => {
+                Self::create_has_filter_owners_attributes(owner_attribute_types.clone(), attribute_types.clone())
+            }
             BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {
-                Arc::new({
-                    let att_types = attribute_types.clone();
-                    move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
-                        Ok((has, _)) => att_types.contains(&Type::Attribute(has.attribute().type_())),
-                        Err(_) => true,
-                    }
-                }) as Arc<HasFilterFn>
+                Self::create_has_filter_attributes(attribute_types.clone())
             }
         };
         let output_tuple_positions = if iterate_mode.is_inverted() {
@@ -115,17 +99,9 @@ impl HasExecutor {
         };
 
         let owner_cache = if matches!(iterate_mode, BinaryIterateMode::UnboundInverted) {
-            let mut cache = Vec::new();
-            for owner_type in owner_attribute_types.keys() {
-                for owner in thing_manager
-                    .get_objects_in(snapshot, owner_type.as_object_type())
-                    .map_static(|result| result.map(|object| object.clone().into_owned()))
-                    .into_iter() {
-                    cache.push(owner?)
-                }
-            }
-            debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
-            Some(cache)
+            Some(inverted_instances_cache(
+                owner_attribute_types.keys().map(|t| t.as_object_type()), snapshot, thing_manager
+            )?)
         } else {
             None
         };
@@ -157,7 +133,7 @@ impl HasExecutor {
                 let filter_fn = self.filter_fn.clone();
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let iterator: Filter<HasIterator, Arc<HasFilterFn>> = thing_manager
-                    .get_has_from_type_range_unordered(snapshot, key_range)
+                    .get_has_from_owner_type_range_unordered(snapshot, key_range)
                     .filter::<_, HasFilterFn>(filter_fn);
                 let as_tuples: Map<Filter<HasIterator, Arc<HasFilterFn>>, HasToTupleFn, TupleResult> =
                     iterator.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
@@ -169,9 +145,9 @@ impl HasExecutor {
             }
             BinaryIterateMode::UnboundInverted => {
                 debug_assert!(self.owner_cache.is_some());
-                if let Some([iter]) = self.owner_cache.as_deref() {
+                if let Some([owner]) = self.owner_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
-                    let iterator = iter
+                    let iterator = owner
                         .get_has_types_range_unordered(
                             snapshot,
                             thing_manager,
@@ -201,9 +177,9 @@ impl HasExecutor {
                     }
 
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
-                    let merged: KMergeBy<HasIterator, HasOrderByAttributeFn> =
+                    let merged: KMergeBy<HasIterator, HasOrderingFn> =
                         KMergeBy::new(iterators, Self::compare_has_by_attribute_then_owner);
-                    let filtered: Filter<KMergeBy<HasIterator, HasOrderByAttributeFn>, Arc<HasFilterFn>> =
+                    let filtered: Filter<KMergeBy<HasIterator, HasOrderingFn>, Arc<HasFilterFn>> =
                         merged.filter::<_, HasFilterFn>(self.filter_fn.clone());
                     let as_tuples: HasUnboundedSortedAttributeMerged =
                         filtered.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
@@ -216,8 +192,7 @@ impl HasExecutor {
             }
             BinaryIterateMode::BoundFrom => {
                 debug_assert!(row.width() > self.has.owner().as_usize());
-                let owner = row.get(self.has.owner());
-                let iterator = match owner {
+                let iterator = match row.get(self.has.owner()) {
                     VariableValue::Thing(Thing::Entity(entity)) => entity.get_has_types_range_unordered(
                         snapshot,
                         thing_manager,
@@ -240,6 +215,32 @@ impl HasExecutor {
                 )))
             }
         }
+    }
+
+    fn create_has_filter_owners_attributes(
+        owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
+        attribute_types: Arc<HashSet<Type>>
+    ) -> Arc<HasFilterFn> {
+        Arc::new({
+            move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
+                Ok((has, _)) => {
+                    owner_attribute_types.contains_key(&Type::from(has.owner().type_()))
+                        && attribute_types.contains(&Type::Attribute(has.attribute().type_()))
+                }
+                Err(_) => true,
+            }
+        }) as Arc<HasFilterFn>
+    }
+
+    fn create_has_filter_attributes(
+        attribute_types: Arc<HashSet<Type>>
+    ) -> Arc<HasFilterFn> {
+        Arc::new({
+            move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
+                Ok((has, _)) => attribute_types.contains(&Type::Attribute(has.attribute().type_())),
+                Err(_) => true,
+            }
+        }) as Arc<HasFilterFn>
     }
 
     fn compare_has_by_attribute_then_owner<'a, 'b>(

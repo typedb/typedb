@@ -315,6 +315,7 @@ impl<'a> ConceptAPI<'a> for Relation<'a> {}
 impl<'a> ThingAPI<'a> for Relation<'a> {
     type Vertex<'b> = ObjectVertex<'b>;
     type TypeAPI<'b> = RelationType<'b>;
+    type Owned = Relation<'static>;
     const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
 
     fn new(vertex: Self::Vertex<'a>) -> Self {
@@ -332,6 +333,10 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
 
     fn into_vertex(self) -> Self::Vertex<'a> {
         self.vertex
+    }
+
+    fn into_owned(self) -> Self::Owned {
+        Relation::new(self.vertex.into_owned())
     }
 
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
@@ -437,6 +442,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
     ) -> Result<Prefix, ConceptReadError> {
         Ok(Prefix::VertexRelation)
     }
+
 }
 
 impl<'a> ObjectAPI<'a> for Relation<'a> {

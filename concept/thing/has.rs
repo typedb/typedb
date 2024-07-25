@@ -22,7 +22,7 @@ impl<'a> Has<'a> {
         Self::Edge(edge)
     }
 
-    fn new_from_edge_reverse(edge: ThingEdgeHasReverse<'a>) -> Self {
+    pub(crate) fn new_from_edge_reverse(edge: ThingEdgeHasReverse<'a>) -> Self {
         Self::EdgeReverse(edge)
     }
 

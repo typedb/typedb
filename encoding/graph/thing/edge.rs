@@ -82,16 +82,13 @@ impl<'a> ThingEdgeHas<'a> {
 
     pub fn prefix_from_object_to_type(
         from: ObjectVertex,
-        to_value_type_category: ValueTypeCategory,
-        to_type: TypeVertex,
+        to_vertex_prefix: Prefix,
+        to_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        let to_prefix = AttributeVertex::build_prefix_type(
-            AttributeVertex::value_type_category_to_prefix_type(to_value_type_category),
-            to_type.type_id_(),
-        );
+        let to_prefix = AttributeVertex::build_prefix_type(to_vertex_prefix, to_type_id);
         let to_type_range = Self::range_from().end..Self::range_from().end + to_prefix.length();
         bytes.bytes_mut()[to_type_range].copy_from_slice(to_prefix.bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
@@ -167,9 +164,9 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {
 }
 
 ///
-/// [has_reverse][8 byte ID][object]
+/// [has_reverse][attribute, 8 byte ID][object]
 /// OR
-/// [has_reverse][17 byte ID][object]
+/// [has_reverse][attribute, 16 byte ID][object]
 ///
 /// Note that these are represented here together, but should go to different keyspaces due to different prefix lengths
 ///
@@ -217,7 +214,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
         StorageKey::new_owned(Self::keyspace_for_from_prefix(from_prefix), bytes)
     }
 
-    pub fn prefix_from_type(
+    pub fn prefix_from_type_with_category(
         from_prefix: Prefix,
         from_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_TYPE }> {
