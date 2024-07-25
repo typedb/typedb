@@ -57,7 +57,7 @@ where
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
         let a1: T1 =
             T1::from_value(builder.pop_mock()?).map_err(|_| ExpressionCompilationError::InternalUnexpectedValueType)?;
-        builder.push_mock(R::MOCK_VALUE);
+        builder.push_mock(R::mock_value());
         builder.append_instruction(Self::OP_CODE);
         Ok(())
     }
@@ -74,4 +74,11 @@ macro_rules! unary_instr {
             }
         })*
     };
+}
+pub(crate) use unary_instr;
+
+unary_instr! {
+    MathRoundDouble = MathRoundDoubleImpl(a1: f64) -> i64 { Ok(f64::round(a1) as i64) }
+    MathCeilDouble = MathCeilImpl(a1: f64) -> i64 { Ok(f64::ceil(a1) as i64) }
+    MathFloorDouble = MathFloorImpl(a1: f64) -> i64 { Ok(f64::ceil(a1) as i64) }
 }

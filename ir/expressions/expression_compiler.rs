@@ -7,14 +7,14 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use encoding::value::{value::Value, value_type::ValueTypeCategory, ValueEncodable};
+use chrono::{NaiveDate, NaiveDateTime};
+use encoding::value::{
+    decimal_value::Decimal, duration_value::Duration, value::Value, value_type::ValueTypeCategory, ValueEncodable,
+};
 
 use crate::{
     expressions::{
-        builtins::{
-            binary::{OpDoubleAddDouble, OpLongAddLong},
-            load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
-        },
+        builtins::load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
         evaluator::ExpressionEvaluationState,
         op_codes::ExpressionOpCode,
         todo__dissolve__builtins::ValueTypeTrait,
@@ -126,7 +126,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    fn compile_recursive(&mut self, index: usize) -> Result<usize, ExpressionCompilationError> {
+    fn compile_recursive(&mut self, index: usize) -> Result<(), ExpressionCompilationError> {
         match &self.ir_tree.tree()[index] {
             Expression::Constant(constant) => self.compile_constant(constant),
             Expression::Variable(variable) => self.compile_variable(variable),
@@ -138,26 +138,26 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    fn compile_constant(&mut self, constant: &Value<'static>) -> Result<usize, ExpressionCompilationError> {
+    fn compile_constant(&mut self, constant: &Value<'static>) -> Result<(), ExpressionCompilationError> {
         self.constant_stack.push(constant.clone());
 
         self.push_mock(Self::get_mock_value_for(constant.value_type().category().clone()));
         self.append_instruction(LoadConstant::OP_CODE);
 
-        Ok(self.instructions.len() - 1)
+        Ok(())
     }
 
-    fn compile_variable(&mut self, variable: &Variable) -> Result<usize, ExpressionCompilationError> {
+    fn compile_variable(&mut self, variable: &Variable) -> Result<(), ExpressionCompilationError> {
         debug_assert!(self.variable_value_categories.contains_key(variable));
 
         self.variable_stack.push(variable.clone());
         self.append_instruction(LoadVariable::OP_CODE);
         self.push_mock(Self::get_mock_value_for(self.variable_value_categories.get(&variable).unwrap().clone()));
 
-        Ok(self.instructions.len() - 1)
+        Ok(())
     }
 
-    fn compile_op(&mut self, operation: &Operation) -> Result<usize, ExpressionCompilationError> {
+    fn compile_op(&mut self, operation: &Operation) -> Result<(), ExpressionCompilationError> {
         let Operation { operator, left_expression_index, right_expression_index } = operation.clone();
         self.compile_recursive(operation.left_expression_index)?;
         let left_category = self.peek_mock()?.value_type().category();
@@ -175,22 +175,21 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    fn compile_op_boolean(&mut self, op: Operator, right: usize) -> Result<usize, ExpressionCompilationError> {
+    fn compile_op_boolean(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         todo!()
     }
 
-    fn compile_op_long(&mut self, op: Operator, right: usize) -> Result<usize, ExpressionCompilationError> {
+    fn compile_op_long(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_mock()?.value_type().category();
         match right_category {
             ValueTypeCategory::Long => {
-                // No casting needed
-                OpLongAddLong::validate_and_append(self)?;
+                self.compile_op_long_long(op)?;
             }
             ValueTypeCategory::Double => {
                 // The left needs to be cast
                 CastLeftLongToDouble::validate_and_append(self)?;
-                OpDoubleAddDouble::validate_and_append(self)?;
+                self.compile_op_double_double(op)?;
             }
             _ => Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
                 op,
@@ -198,21 +197,20 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 right_category,
             })?,
         }
-        Ok(self.instructions.len() - 1)
+        Ok(())
     }
 
-    fn compile_op_double(&mut self, op: Operator, right: usize) -> Result<usize, ExpressionCompilationError> {
+    fn compile_op_double(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_mock()?.value_type().category();
         match right_category {
             ValueTypeCategory::Long => {
                 // The right needs to be cast
                 CastRightLongToDouble::validate_and_append(self)?;
-                OpDoubleAddDouble::validate_and_append(self)?;
+                self.compile_op_double_double(op)?;
             }
             ValueTypeCategory::Double => {
-                // No casting needed
-                OpDoubleAddDouble::validate_and_append(self)?;
+                self.compile_op_double_double(op)?;
             }
             _ => Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
                 op,
@@ -220,30 +218,30 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 right_category,
             })?,
         }
-        Ok(self.instructions.len() - 1)
+        Ok(())
     }
 
-    fn compile_op_string(&mut self, op: Operator, right: usize) -> Result<usize, ExpressionCompilationError> {
+    fn compile_op_string(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         todo!()
     }
 
-    fn compile_op_duration(&mut self, op: Operator, right: usize) -> Result<usize, ExpressionCompilationError> {
+    fn compile_op_duration(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         todo!()
     }
 
-    fn compile_op_datetime_tz(&mut self, op: Operator, right: usize) -> Result<usize, ExpressionCompilationError> {
+    fn compile_op_datetime_tz(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         todo!()
     }
 
-    fn compile_op_datetime(&mut self, op: Operator, right: usize) -> Result<usize, ExpressionCompilationError> {
+    fn compile_op_datetime(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         todo!()
     }
 
-    fn compile_op_date(&mut self, op: Operator, right: usize) -> Result<usize, ExpressionCompilationError> {
+    fn compile_op_date(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         todo!()
     }
 
-    fn compile_op_decimal(&mut self, op: Operator, right: usize) -> Result<usize, ExpressionCompilationError> {
+    fn compile_op_decimal(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         todo!()
     }
 
@@ -258,17 +256,43 @@ impl<'this> ExpressionTreeCompiler<'this> {
     fn get_mock_value_for(category: ValueTypeCategory) -> Value<'static> {
         debug_assert!(category != ValueTypeCategory::Struct);
         match category {
-            // ValueTypeCategory::Boolean => <bool as ValueTypeTrait>::MOCK_VALUE.clone(),
-            ValueTypeCategory::Long => <i64 as ValueTypeTrait>::MOCK_VALUE.clone(),
-            ValueTypeCategory::Double => <f64 as ValueTypeTrait>::MOCK_VALUE.clone(),
-            // ValueTypeCategory::Decimal => <Decimal as ValueTypeTrait>::MOCK_VALUE.clone(),
-            // ValueTypeCategory::Date => <NaiveDate as ValueTypeTrait>::MOCK_VALUE.clone(),
-            // ValueTypeCategory::DateTime => <NaiveDateTime as ValueTypeTrait>::MOCK_VALUE.clone(),
-            // ValueTypeCategory::DateTimeTZ => <DateTime<Tz> as ValueTypeTrait>::MOCK_VALUE.clone(),
-            // ValueTypeCategory::Duration => <Duration as ValueTypeTrait>::MOCK_VALUE.clone(),
-            // ValueTypeCategory::String => <String as ValueTypeTrait>::MOCK_VALUE.clone(),
-            // ValueTypeCategory::Struct => unreachable!(),
-            _ => todo!(),
+            ValueTypeCategory::Boolean => <bool as ValueTypeTrait>::mock_value().clone(),
+            ValueTypeCategory::Long => <i64 as ValueTypeTrait>::mock_value().clone(),
+            ValueTypeCategory::Double => <f64 as ValueTypeTrait>::mock_value().clone(),
+            ValueTypeCategory::Decimal => <Decimal as ValueTypeTrait>::mock_value().clone(),
+            ValueTypeCategory::Date => <NaiveDate as ValueTypeTrait>::mock_value().clone(),
+            ValueTypeCategory::DateTime => <NaiveDateTime as ValueTypeTrait>::mock_value().clone(),
+            ValueTypeCategory::DateTimeTZ => <chrono::DateTime<chrono_tz::Tz> as ValueTypeTrait>::mock_value().clone(),
+            ValueTypeCategory::Duration => <Duration as ValueTypeTrait>::mock_value().clone(),
+            ValueTypeCategory::String => <String as ValueTypeTrait>::mock_value().clone(),
+            ValueTypeCategory::Struct => unreachable!(),
         }
+    }
+
+    // Ops with Left, Right resolved
+    fn compile_op_long_long(&mut self, op: Operator) -> Result<(), ExpressionCompilationError> {
+        use crate::expressions::builtins::operators as ops;
+        match op {
+            Operator::Add => ops::OpLongAddLong::validate_and_append(self)?,
+            Operator::Subtract => ops::OpLongSubtractLong::validate_and_append(self)?,
+            Operator::Multiply => ops::OpLongMultiplyLong::validate_and_append(self)?,
+            Operator::Divide => ops::OpLongDivideLong::validate_and_append(self)?,
+            Operator::Modulo => ops::OpLongModuloLong::validate_and_append(self)?,
+            Operator::Power => ops::OpLongPowerLong::validate_and_append(self)?,
+        }
+        Ok(())
+    }
+
+    fn compile_op_double_double(&mut self, op: Operator) -> Result<(), ExpressionCompilationError> {
+        use crate::expressions::builtins::operators as ops;
+        match op {
+            Operator::Add => ops::OpDoubleAddDouble::validate_and_append(self)?,
+            Operator::Subtract => ops::OpDoubleSubtractDouble::validate_and_append(self)?,
+            Operator::Multiply => ops::OpDoubleMultiplyDouble::validate_and_append(self)?,
+            Operator::Divide => ops::OpDoubleDivideDouble::validate_and_append(self)?,
+            Operator::Modulo => ops::OpDoubleModuloDouble::validate_and_append(self)?,
+            Operator::Power => ops::OpDoublePowerDouble::validate_and_append(self)?,
+        }
+        Ok(())
     }
 }

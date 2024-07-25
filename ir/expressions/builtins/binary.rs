@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::marker::PhantomData;
+use std::{marker::PhantomData, ops::Rem};
 
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
 
@@ -64,7 +64,7 @@ where
             T2::from_value(builder.pop_mock()?).map_err(|_| ExpressionCompilationError::InternalUnexpectedValueType)?;
         let a1: T1 =
             T1::from_value(builder.pop_mock()?).map_err(|_| ExpressionCompilationError::InternalUnexpectedValueType)?;
-        builder.push_mock(R::MOCK_VALUE);
+        builder.push_mock(R::mock_value());
         builder.append_instruction(Self::OP_CODE);
         Ok(())
     }
@@ -82,8 +82,8 @@ macro_rules! binary_instr {
         })*
     };
 }
+pub(crate) use binary_instr;
 
 binary_instr! {
-    OpLongAddLong = OpAddLongImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_add(a1, a2)) }
-    OpDoubleAddDouble = OpDoubleAddDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(a1 + a2) }
+    MathRemainderLong = MathRemainderLongImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }
 }

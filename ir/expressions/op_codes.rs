@@ -11,6 +11,7 @@ pub enum ExpressionOpCode {
     LoadVariable,
 
     // Casts
+    // TODO: We can't cast arguments for functions of arity > 2. It may require rewriting compilation.
     CastUnaryLongToDouble,
     CastLeftLongToDouble,
     CastRightLongToDouble,
@@ -20,7 +21,20 @@ pub enum ExpressionOpCode {
     OpDoubleAddDouble,
     OpLongMultiplyLong,
 
+    OpLongSubtractLong,
+    OpLongDivideLong,
+    OpLongModuloLong,
+    OpLongPowerLong,
+
+    OpDoubleSubtractDouble,
+    OpDoubleMultiplyDouble,
+    OpDoubleDivideDouble,
+    OpDoubleModuloDouble,
+    OpDoublePowerDouble,
+
     // BuiltIns, maybe by domain?
+    MathRemainderLong,
+    MathRoundDouble,
     MathCeilDouble,
     MathFloorDouble,
 }

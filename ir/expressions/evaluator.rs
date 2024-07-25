@@ -16,8 +16,12 @@ use encoding::value::value::Value;
 use crate::{
     expressions::{
         builtins::{
-            binary::{OpDoubleAddDouble, OpLongAddLong},
-            load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
+            binary::MathRemainderLong,
+            load_cast::{
+                CastLeftLongToDouble, CastRightLongToDouble, CastUnaryLongToDouble, LoadConstant, LoadVariable,
+            },
+            operators as ops,
+            unary::{MathCeilDouble, MathFloorDouble, MathRoundDouble},
         },
         expression_compiler::{CompiledExpressionTree, ExpressionInstruction},
         op_codes::ExpressionOpCode,
@@ -72,26 +76,41 @@ impl ExpressionEvaluator {
 
         let mut state = ExpressionEvaluationState::new(variable_stack, compiled.constants());
         for instr in compiled.instructions() {
-            Self::evaluate_instruction(instr, &mut state)?;
+            evaluate_instruction(instr, &mut state)?;
         }
         Ok(state.stack.pop().unwrap())
     }
+}
 
-    fn evaluate_instruction(
-        op_code: &ExpressionOpCode,
-        state: &mut ExpressionEvaluationState<'_>,
-    ) -> Result<(), ExpressionEvaluationError> {
-        match op_code {
-            ExpressionOpCode::LoadConstant => LoadConstant::evaluate(state),
-            ExpressionOpCode::LoadVariable => LoadVariable::evaluate(state),
-            ExpressionOpCode::CastLeftLongToDouble => CastLeftLongToDouble::evaluate(state),
-            ExpressionOpCode::CastRightLongToDouble => CastRightLongToDouble::evaluate(state),
-            ExpressionOpCode::OpLongAddLong => OpLongAddLong::evaluate(state),
-            ExpressionOpCode::OpDoubleAddDouble => OpDoubleAddDouble::evaluate(state),
-            // ExpressionOpCode::OpLongMultiplyLong => OpLongM
-            // ExpressionOpCode::MathCeilDouble => {}
-            // ExpressionOpCode::MathFloorDouble => {}
-            _ => todo!(),
-        }
+// Really huge switch
+fn evaluate_instruction(
+    op_code: &ExpressionOpCode,
+    state: &mut ExpressionEvaluationState<'_>,
+) -> Result<(), ExpressionEvaluationError> {
+    match op_code {
+        ExpressionOpCode::LoadConstant => LoadConstant::evaluate(state),
+        ExpressionOpCode::LoadVariable => LoadVariable::evaluate(state),
+        ExpressionOpCode::CastUnaryLongToDouble => CastUnaryLongToDouble::evaluate(state),
+        ExpressionOpCode::CastLeftLongToDouble => CastLeftLongToDouble::evaluate(state),
+        ExpressionOpCode::CastRightLongToDouble => CastRightLongToDouble::evaluate(state),
+
+        ExpressionOpCode::OpLongAddLong => ops::OpLongAddLong::evaluate(state),
+        ExpressionOpCode::OpLongSubtractLong => ops::OpLongSubtractLong::evaluate(state),
+        ExpressionOpCode::OpLongMultiplyLong => ops::OpLongMultiplyLong::evaluate(state),
+        ExpressionOpCode::OpLongDivideLong => ops::OpLongDivideLong::evaluate(state),
+        ExpressionOpCode::OpLongModuloLong => ops::OpLongModuloLong::evaluate(state),
+        ExpressionOpCode::OpLongPowerLong => ops::OpLongPowerLong::evaluate(state),
+
+        ExpressionOpCode::OpDoubleAddDouble => ops::OpDoubleAddDouble::evaluate(state),
+        ExpressionOpCode::OpDoubleSubtractDouble => ops::OpDoubleSubtractDouble::evaluate(state),
+        ExpressionOpCode::OpDoubleMultiplyDouble => ops::OpDoubleMultiplyDouble::evaluate(state),
+        ExpressionOpCode::OpDoubleDivideDouble => ops::OpDoubleDivideDouble::evaluate(state),
+        ExpressionOpCode::OpDoubleModuloDouble => ops::OpDoubleModuloDouble::evaluate(state),
+        ExpressionOpCode::OpDoublePowerDouble => ops::OpDoublePowerDouble::evaluate(state),
+
+        ExpressionOpCode::MathRemainderLong => MathRemainderLong::evaluate(state),
+        ExpressionOpCode::MathRoundDouble => MathRoundDouble::evaluate(state),
+        ExpressionOpCode::MathCeilDouble => MathCeilDouble::evaluate(state),
+        ExpressionOpCode::MathFloorDouble => MathFloorDouble::evaluate(state),
     }
 }

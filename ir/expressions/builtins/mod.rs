@@ -7,9 +7,10 @@ use crate::expressions::{todo__dissolve__builtins::ValueTypeTrait, ExpressionEva
 
 pub(crate) mod binary;
 pub(crate) mod load_cast;
+pub(crate) mod operators;
 pub(crate) mod unary;
 
-fn check_operation<T: ValueTypeTrait>(checked_operation_result: Option<T>) -> Result<T, ExpressionEvaluationError> {
+fn check_operation<T>(checked_operation_result: Option<T>) -> Result<T, ExpressionEvaluationError> {
     match checked_operation_result {
         None => Err(ExpressionEvaluationError::CheckedOperationFailed),
         Some(result) => Ok(result),

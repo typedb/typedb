@@ -20,6 +20,7 @@ use crate::expressions::{
 pub struct LoadVariable {}
 pub struct LoadConstant {}
 
+pub type CastUnaryLongToDouble = CastUnary<i64, f64>;
 pub type CastLeftLongToDouble = CastBinaryLeft<i64, f64>;
 pub type CastRightLongToDouble = CastBinaryRight<i64, f64>;
 
@@ -47,9 +48,14 @@ impl ExpressionInstruction for LoadConstant {
 
 // Casts
 pub trait ImplicitCast<From: ValueTypeTrait>: ValueTypeTrait {
+    const CAST_UNARY_OPCODE: ExpressionOpCode;
     const CAST_LEFT_OPCODE: ExpressionOpCode;
     const CAST_RIGHT_OPCODE: ExpressionOpCode;
     fn cast(from: From) -> Result<Self, ExpressionEvaluationError>;
+}
+
+pub struct CastUnary<From: ValueTypeTrait, To: ImplicitCast<From>> {
+    phantom: PhantomData<(From, To)>,
 }
 
 pub struct CastBinaryLeft<From: ValueTypeTrait, To: ImplicitCast<From>> {
@@ -58,6 +64,31 @@ pub struct CastBinaryLeft<From: ValueTypeTrait, To: ImplicitCast<From>> {
 
 pub struct CastBinaryRight<From: ValueTypeTrait, To: ImplicitCast<From>> {
     phantom: PhantomData<(From, To)>,
+}
+
+impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for CastUnary<From, To> {
+    const OP_CODE: ExpressionOpCode = To::CAST_UNARY_OPCODE;
+
+    fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
+        let right_before = From::from_value(state.pop()).map_err(|_| ExpressionEvaluationError::CastFailed)?;
+        let right_after = To::cast(right_before)?.into_value();
+        state.push(right_after);
+        Ok(())
+    }
+}
+
+impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastUnary<From, To> {
+    fn return_value_category(&self) -> Option<ValueTypeCategory> {
+        Some(To::VALUE_TYPE_CATEGORY)
+    }
+
+    fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
+        let _right_before = builder.pop_mock()?;
+        builder.push_mock(To::mock_value());
+
+        builder.append_instruction(Self::OP_CODE);
+        Ok(())
+    }
 }
 
 impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for CastBinaryLeft<From, To> {
@@ -81,7 +112,7 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastBinaryL
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
         let right = builder.pop_mock()?;
         let _left_before = builder.pop_mock()?;
-        builder.push_mock(To::MOCK_VALUE);
+        builder.push_mock(To::mock_value());
         builder.push_mock(right);
 
         builder.append_instruction(Self::OP_CODE);
@@ -107,7 +138,7 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastBinaryR
 
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
         let _right_before = builder.pop_mock()?;
-        builder.push_mock(To::MOCK_VALUE);
+        builder.push_mock(To::mock_value());
 
         builder.append_instruction(Self::OP_CODE);
         Ok(())
@@ -115,6 +146,7 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastBinaryR
 }
 
 impl ImplicitCast<i64> for f64 {
+    const CAST_UNARY_OPCODE: ExpressionOpCode = ExpressionOpCode::CastUnaryLongToDouble;
     const CAST_LEFT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastLeftLongToDouble;
     const CAST_RIGHT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastRightLongToDouble;
 
