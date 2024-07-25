@@ -183,7 +183,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
     const INDEX_FROM_PREFIX: usize = PrefixID::LENGTH;
-    pub const LENGTH_PREFIX_FROM_PREFIX: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_PREFIX;
+    pub const LENGTH_PREFIX_FROM_PREFIX: usize = PrefixID::LENGTH + PrefixID::LENGTH;
     pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
     pub const LENGTH_BOUND_PREFIX_FROM: usize =
         PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length();
@@ -212,7 +212,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_PREFIX);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + AttributeVertex::LENGTH_PREFIX_PREFIX]
+        bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + PrefixID::LENGTH]
             .copy_from_slice(&from_prefix.prefix_id().bytes);
         StorageKey::new_owned(Self::keyspace_for_from_prefix(from_prefix), bytes)
     }
@@ -223,7 +223,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        let from_prefix_end = Self::RANGE_PREFIX.end + AttributeVertex::LENGTH_PREFIX_PREFIX;
+        let from_prefix_end = Self::RANGE_PREFIX.end + PrefixID::LENGTH;
         bytes.bytes_mut()[Self::RANGE_PREFIX.end..from_prefix_end].copy_from_slice(&from_prefix.prefix_id().bytes);
         let from_type_id_end = from_prefix_end + TypeID::LENGTH;
         bytes.bytes_mut()[from_prefix_end..from_type_id_end].copy_from_slice(&from_type_id.bytes());

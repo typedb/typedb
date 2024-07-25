@@ -10,7 +10,6 @@ use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
 use crate::{EncodingKeyspace, Prefixed};
-use crate::graph::thing::vertex_attribute::AttributeVertex;
 use crate::graph::type_::vertex::TypeID;
 use crate::graph::Typed;
 use crate::layout::prefix::{Prefix, PrefixID};
@@ -29,8 +28,8 @@ pub trait ThingVertex<'a>: Prefixed<'a, BUFFER_KEY_INLINE> + Typed<'a, BUFFER_KE
 
     fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self;
 
-    fn build_prefix_prefix(prefix: Prefix) -> StorageKey<'static, THING_VERTEX_LENGTH_PREFIX_TYPE> {
-        let mut array = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE);
+    fn build_prefix_prefix(prefix: Prefix) -> StorageKey<'static, { PrefixID::LENGTH }> {
+        let mut array = ByteArray::zeros(PrefixID::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
@@ -39,7 +38,11 @@ pub trait ThingVertex<'a>: Prefixed<'a, BUFFER_KEY_INLINE> + Typed<'a, BUFFER_KE
         prefix: Prefix,
         type_id: TypeID,
     ) -> StorageKey<'static, THING_VERTEX_LENGTH_PREFIX_TYPE> {
-        debug_assert!(prefix == Prefix::VertexEntity || prefix == Prefix::VertexRelation);
+        debug_assert!(
+            prefix == Prefix::VertexEntity || prefix == Prefix::VertexRelation ||
+                (prefix.prefix_id().bytes() >= Prefix::ATTRIBUTE_MIN.prefix_id().bytes
+                    && prefix.prefix_id().bytes() < Prefix::ATTRIBUTE_MAX.prefix_id().bytes)
+        );
         let mut array = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());

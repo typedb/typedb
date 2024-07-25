@@ -77,7 +77,6 @@ pub trait Keyable<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> + Size
 }
 
 pub trait Prefixed<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> {
-    const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
     const RANGE_PREFIX: Range<usize> = 0..PrefixID::LENGTH;
 
     fn prefix(&'a self) -> Prefix {

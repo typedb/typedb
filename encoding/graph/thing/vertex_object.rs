@@ -118,7 +118,7 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
 
 impl<'a> ThingVertex<'a> for ObjectVertex<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
 
     fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);

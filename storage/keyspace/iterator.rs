@@ -4,7 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cmp::Ordering;
+use std::cmp::{max, Ordering};
+use itertools::Itertools;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::{
@@ -57,10 +58,24 @@ impl KeyspaceRangeIterator {
 
         let keyspace_name = keyspace.name();
 
+        let max_required_length = range.end_value()
+            .map(|bytes| max(bytes.length(), range.start().length()))
+            .unwrap_or(range.start().length());
+
+        // TODO: this Box and copy for comparison shouldn't be necessary
         let range_iterator = iterator
-            .take_while(Box::new(move |res: &Result<(&[u8], &[u8]), rocksdb::Error>| match res {
-                Ok((key, _)) => range.within_end(&ByteArray::copy(key)),
-                Err(_) => true,
+            .take_while(Box::new(move |res: &Result<(&[u8], &[u8]), rocksdb::Error>| {
+                match res {
+                    Ok((key, _)) => {
+                        let copy = if key.len() > max_required_length {
+                            ByteArray::copy(&key[0..max_required_length])
+                        }  else {
+                            ByteArray::copy(key)
+                        };
+                        range.within_end(&copy)
+                    }
+                    Err(_) => true,
+                }
             }) as Box<_>)
             .map(error_mapper(keyspace_name))
             .into_seekable(identity as _, raw_iterator::compare_key as _);
