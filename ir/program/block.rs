@@ -71,6 +71,7 @@ impl FunctionalBlockBuilder {
 
     pub fn finish(self) -> FunctionalBlock {
         let Self { context, conjunction, modifiers, .. } = self;
+        // TODO: Validate cyclic assignments
         FunctionalBlock { context, conjunction, modifiers }
     }
 

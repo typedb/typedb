@@ -11,8 +11,9 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
+use encoding::value::value::Value;
 
-use crate::program::block::FunctionalBlock;
+use crate::program::{block::FunctionalBlock, function_signature::FunctionSignature};
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
@@ -81,4 +82,35 @@ pub enum Reducer {
 pub enum ReducerInput {
     Variable,
     Reducer,
+}
+
+// TODO: Initialise & use
+pub type BuiltInFunctionPtr = fn(Vec<&Value<'static>>) -> Value<'static>;
+
+pub struct BuiltInFunctions {
+    index: HashMap<String, usize>,
+    signatures: Vec<FunctionSignature>,
+    ptrs: Vec<BuiltInFunctionPtr>,
+}
+
+impl BuiltInFunctions {
+    pub fn new(
+        index: HashMap<String, usize>,
+        signatures: Vec<FunctionSignature>,
+        ptrs: Vec<BuiltInFunctionPtr>,
+    ) -> Self {
+        Self { index, signatures, ptrs }
+    }
+
+    pub fn get_function_key(&self, name: &str) -> Option<usize> {
+        self.index.get(name).map(|id| *id)
+    }
+
+    pub fn get_function_signature(&self, id: usize) -> Option<&FunctionSignature> {
+        self.signatures.get(id)
+    }
+
+    pub fn get_function(&self, id: usize) -> Option<&BuiltInFunctionPtr> {
+        self.ptrs.get(id)
+    }
 }

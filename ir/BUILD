@@ -11,6 +11,8 @@ rust_library(
     crate_root = "lib.rs",
     srcs = glob([
         "*.rs",
+        "expressions/*.rs",
+        "expressions/builtins/*.rs",
         "inference/*.rs",
         "optimisation/*.rs",
         "pattern/*.rs",
@@ -28,6 +30,10 @@ rust_library(
         "@vaticle_typeql//rust:typeql",
 
         "@crates//:itertools",
+
+        # For the parsing of literals
+        "@crates//:chrono",
+        "@crates//:chrono-tz",
 
         "//util/test:test_utils", # dev dependency
     ],

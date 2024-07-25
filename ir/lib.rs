@@ -8,15 +8,20 @@
 #![deny(elided_lifetimes_in_paths)]
 #![allow(unused_variables)]
 
-use std::{error::Error, fmt};
+use std::{
+    error::Error,
+    fmt,
+    fmt::{Display, Formatter},
+};
 
 use answer::variable::Variable;
 
 use crate::{
-    pattern::{constraint::Constraint, variable_category::VariableCategory},
+    pattern::{constraint::Constraint, expression::ExpressionDefinitionError, variable_category::VariableCategory},
     program::FunctionReadError,
 };
 
+pub mod expressions;
 pub mod inference;
 mod optimisation;
 pub mod pattern;
@@ -50,7 +55,10 @@ pub enum PatternDefinitionError {
     UnresolvedFunction {
         function_name: String,
     },
-    FunctionDoesNotReturnStream {
+    ExpectedStreamReceivedSingle {
+        function_name: String,
+    },
+    ExpectedSingeReceivedStream {
         function_name: String,
     },
     OptionalVariableForRequiredArgument {
@@ -59,6 +67,20 @@ pub enum PatternDefinitionError {
     },
     FunctionRead {
         source: FunctionReadError,
+    },
+    // TODO: Should expressions have their own errors?
+    FunctionCallInExpressionDidNotReturnSingleValue {
+        function_name: String,
+    },
+    ParseError {
+        source: typeql::common::error::Error,
+    },
+    LiteralParseError {
+        literal: String,
+        source: LiteralParseError,
+    },
+    ExpressionDefinition {
+        source: ExpressionDefinitionError,
     },
 }
 
@@ -77,9 +99,39 @@ impl Error for PatternDefinitionError {
             Self::FunctionCallArgumentCountMismatch { .. } => None,
             Self::FunctionRequiredArgumentReceivedOptionalVariable { .. } => None,
             Self::UnresolvedFunction { .. } => None,
-            Self::FunctionDoesNotReturnStream { .. } => None,
+            Self::ExpectedStreamReceivedSingle { .. } => None,
+            Self::ExpectedSingeReceivedStream { .. } => None,
             Self::OptionalVariableForRequiredArgument { .. } => None,
+            Self::FunctionCallInExpressionDidNotReturnSingleValue { .. } => None,
+            Self::LiteralParseError { .. } => None,
             Self::FunctionRead { source } => Some(source),
+            Self::ExpressionDefinition { source } => Some(source),
+            Self::ParseError { source } => Some(source),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum LiteralParseError {
+    FragmentParseError { fragment: String },
+    ScientificNotationNotAllowedForDecimal { literal: String },
+    InvalidDate { year: i32, month: u32, day: u32 },
+    InvalidTime { hour: u32, minute: u32, second: u32, nano: u32 },
+}
+
+impl Display for LiteralParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for LiteralParseError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            LiteralParseError::FragmentParseError { .. } => None,
+            LiteralParseError::ScientificNotationNotAllowedForDecimal { .. } => None,
+            LiteralParseError::InvalidDate { .. } => None,
+            LiteralParseError::InvalidTime { .. } => None,
         }
     }
 }

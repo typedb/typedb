@@ -1,0 +1,77 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+use std::marker::PhantomData;
+
+use encoding::value::{value::Value, value_type::ValueTypeCategory};
+
+use crate::expressions::{
+    evaluator::ExpressionEvaluationState,
+    expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
+    op_codes::ExpressionOpCode,
+    todo__dissolve__builtins::ValueTypeTrait,
+    ExpressionCompilationError, ExpressionEvaluationError,
+};
+
+pub trait UnaryExpression<T1: ValueTypeTrait, R: ValueTypeTrait> {
+    const OP_CODE: ExpressionOpCode; // Until we have a better solution, this helps the macro ensure the op code exists.
+    fn evaluate(a1: T1) -> Result<R, ExpressionEvaluationError>;
+}
+
+pub struct Unary<T1, R, F>
+where
+    T1: ValueTypeTrait,
+    R: ValueTypeTrait,
+    F: UnaryExpression<T1, R>,
+{
+    phantom: PhantomData<(T1, R, F)>,
+}
+
+impl<T1, R, F> ExpressionInstruction for Unary<T1, R, F>
+where
+    T1: ValueTypeTrait,
+    R: ValueTypeTrait,
+    F: UnaryExpression<T1, R>,
+{
+    const OP_CODE: ExpressionOpCode = F::OP_CODE;
+    fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
+        let a1: T1 = T1::from_value(state.pop()).unwrap();
+        state.push(F::evaluate(a1)?.into_value());
+        Ok(())
+    }
+}
+
+impl<T1, R, F> SelfCompiling for Unary<T1, R, F>
+where
+    T1: ValueTypeTrait,
+    R: ValueTypeTrait,
+    F: UnaryExpression<T1, R>,
+{
+    fn return_value_category(&self) -> Option<ValueTypeCategory> {
+        Some(R::VALUE_TYPE_CATEGORY)
+    }
+
+    fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
+        let a1: T1 =
+            T1::from_value(builder.pop_mock()?).map_err(|_| ExpressionCompilationError::InternalUnexpectedValueType)?;
+        builder.push_mock(R::MOCK_VALUE);
+        builder.append_instruction(Self::OP_CODE);
+        Ok(())
+    }
+}
+
+macro_rules! unary_instr {
+    ( $( $name:ident = $impl_name:ident($a1:ident: $t1:ty) -> $r:ty $impl_code:block )* ) => { $(
+        pub type $name = Unary<$t1, $r, $impl_name>;
+        pub struct $impl_name {}
+        impl UnaryExpression<$t1, $r> for $impl_name {
+            const OP_CODE: ExpressionOpCode = ExpressionOpCode::$name;
+            fn evaluate($a1: $t1) -> Result<$r, ExpressionEvaluationError> {
+                $impl_code
+            }
+        })*
+    };
+}

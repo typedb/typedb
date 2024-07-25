@@ -9,7 +9,8 @@ use std::{
     ops::{Add, Mul, Sub},
 };
 
-const FRACTIONAL_PART_DENOMINATOR: u64 = 10_000_000_000_000_000_000;
+pub const FRACTIONAL_PART_DENOMINATOR_LOG10: u32 = 19;
+const FRACTIONAL_PART_DENOMINATOR: u64 = 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10);
 
 #[allow(clippy::assertions_on_constants)]
 const _ASSERT: () = {

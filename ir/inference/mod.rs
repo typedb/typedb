@@ -42,7 +42,10 @@ use std::{
     fmt::{Display, Formatter},
 };
 
+use answer::variable::Variable;
 use concept::error::ConceptReadError;
+
+use crate::expressions::ExpressionCompilationError;
 
 pub mod pattern_type_inference;
 pub mod type_inference;
@@ -53,6 +56,13 @@ pub mod value_type_inference;
 pub enum TypeInferenceError {
     ConceptRead { source: ConceptReadError },
     LabelNotResolved(String),
+
+    MultipleAssignmentsForSingleVariable { variable: Variable },
+    CircularDependencyInExpressions { variable: Variable }, // TODO: Improve error
+    CouldNotDetermineValueTypeForVariable { variable: Variable },
+    ExpressionVariableDidNotHaveSingleValueType { variable: Variable },
+    ExpressionVariableHasNoValueType { variable: Variable },
+    ExpressionCompilation { source: ExpressionCompilationError },
 }
 
 impl Display for TypeInferenceError {
@@ -61,7 +71,21 @@ impl Display for TypeInferenceError {
     }
 }
 
-impl Error for TypeInferenceError {}
+impl Error for TypeInferenceError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            TypeInferenceError::ConceptRead { source } => Some(source),
+            TypeInferenceError::ExpressionCompilation { source } => Some(source),
+
+            TypeInferenceError::LabelNotResolved(_) => None,
+            TypeInferenceError::MultipleAssignmentsForSingleVariable { .. } => None,
+            TypeInferenceError::CircularDependencyInExpressions { .. } => None,
+            TypeInferenceError::CouldNotDetermineValueTypeForVariable { .. } => None,
+            TypeInferenceError::ExpressionVariableDidNotHaveSingleValueType { .. } => None,
+            TypeInferenceError::ExpressionVariableHasNoValueType { .. } => None,
+        }
+    }
+}
 
 #[cfg(test)]
 pub mod tests {

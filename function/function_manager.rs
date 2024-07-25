@@ -3,6 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
 use std::{iter::zip, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
@@ -21,7 +22,10 @@ use encoding::{
 use ir::{
     inference::type_inference::infer_types_for_functions,
     program::{
-        function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
+        function::BuiltInFunctions,
+        function_signature::{
+            FunctionID, FunctionIDTrait, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex,
+        },
         program::{CompiledSchemaFunctions, Program},
         FunctionReadError,
     },
@@ -343,8 +347,6 @@ pub mod tests {
     }
 
     pub(crate) mod test_schema {
-        use std::borrow::Borrow;
-
         use answer::Type as TypeAnnotation;
         use concept::type_::{
             annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation,

@@ -15,7 +15,6 @@ use crate::{
 };
 
 pub fn translate_match(
-    // TODO: Accept modifiers
     function_index: &impl FunctionSignatureIndex,
     match_: &typeql::query::stage::Match,
 ) -> Result<FunctionalBlockBuilder, PatternDefinitionError> {
