@@ -4,12 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::ops::RangeBounds;
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::thing::{vertex_attribute::AttributeID, vertex_object::ObjectVertex},
     value::value_type::ValueTypeCategory,
     AsBytes,
 };
+use encoding::graph::thing::ThingVertex;
+use encoding::layout::prefix::Prefix;
+use lending_iterator::higher_order::Hkt;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -18,6 +22,9 @@ use crate::{
     thing::thing_manager::ThingManager,
     ConceptStatus,
 };
+use crate::thing::entity::Entity;
+use crate::type_::type_manager::TypeManager;
+use crate::type_::TypeAPI;
 
 pub mod attribute;
 pub mod entity;
@@ -27,8 +34,14 @@ pub mod relation;
 pub mod statistics;
 pub mod thing_manager;
 
-pub trait ThingAPI<'a> {
-    type VertexType<'b>;
+pub trait ThingAPI<'a>: Sized + Clone {
+    type Vertex<'b>: ThingVertex<'b>;
+
+    fn new(vertex: Self::Vertex<'a>) -> Self;
+
+    fn vertex(&self) -> Self::Vertex<'_>;
+
+    fn into_vertex(self) -> Self::Vertex<'a>;
 
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager);
 
@@ -46,6 +59,20 @@ pub trait ThingAPI<'a> {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError>;
+}
+
+pub trait InstanceAPI<'a>: ThingAPI<'a> {
+    type TypeAPI<'b>: TypeAPI<'b>;
+    const PREFIX_RANGE: (Prefix, Prefix);
+
+    fn prefix_for_type(
+        type_: Self::TypeAPI<'_>,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager
+    ) -> Result<Prefix, ConceptReadError>;
+}
+
+pub trait HKInstance: for<'a> Hkt<HktSelf<'a>: InstanceAPI<'a>> {
 }
 
 // TODO: where do these belong? They're encodings of values we store for keys

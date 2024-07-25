@@ -24,7 +24,7 @@ use storage::{
 };
 
 use crate::{
-    concept_iterator, edge_iterator,
+    edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         attribute::Attribute, entity::Entity, has::Has, relation::Relation, thing_manager::ThingManager, ThingAPI,
@@ -43,21 +43,6 @@ pub enum Object<'a> {
 }
 
 impl<'a> Object<'a> {
-    pub(crate) fn new(object_vertex: ObjectVertex<'a>) -> Self {
-        match object_vertex.prefix() {
-            Prefix::VertexEntity => Object::Entity(Entity::new(object_vertex)),
-            Prefix::VertexRelation => Object::Relation(Relation::new(object_vertex)),
-            _ => unreachable!("Object creation requires either Entity or Relation vertex."),
-        }
-    }
-
-    pub(crate) fn as_reference(&self) -> Object<'_> {
-        match self {
-            Object::Entity(entity) => Object::Entity(entity.as_reference()),
-            Object::Relation(relation) => Object::Relation(relation.as_reference()),
-        }
-    }
-
     pub fn unwrap_entity(self) -> Entity<'a> {
         match self {
             Self::Entity(entity) => entity,
@@ -79,10 +64,10 @@ impl<'a> Object<'a> {
         }
     }
 
-    pub fn vertex(&self) -> ObjectVertex<'_> {
+    pub(crate) fn as_reference(&self) -> Object<'_> {
         match self {
-            Object::Entity(entity) => entity.vertex(),
-            Object::Relation(relation) => relation.vertex(),
+            Object::Entity(entity) => Object::Entity(entity.as_reference()),
+            Object::Relation(relation) => Object::Relation(relation.as_reference()),
         }
     }
 
@@ -95,7 +80,30 @@ impl<'a> Object<'a> {
 }
 
 impl<'a> ThingAPI<'a> for Object<'a> {
-    type VertexType<'b> = ObjectVertex<'b>;
+    type Vertex<'b> = ObjectVertex<'b>;
+
+    fn new(object_vertex: Self::Vertex<'a>) -> Self {
+        match object_vertex.prefix() {
+            Prefix::VertexEntity => Object::Entity(Entity::new(object_vertex)),
+            Prefix::VertexRelation => Object::Relation(Relation::new(object_vertex)),
+            _ => unreachable!("Object creation requires either Entity or Relation vertex."),
+        }
+    }
+
+    fn vertex(&self) -> Self::Vertex<'_> {
+        match self {
+            Object::Entity(entity) => entity.vertex(),
+            Object::Relation(relation) => relation.vertex(),
+        }
+    }
+
+    fn into_vertex(self) -> ObjectVertex<'a> {
+        match self {
+            Object::Entity(entity) => entity.into_vertex(),
+            Object::Relation(relation) => relation.into_vertex(),
+        }
+    }
+
 
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
         match self {
@@ -134,10 +142,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     }
 }
 
-pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
-    fn vertex(&self) -> ObjectVertex<'_>;
-    fn into_vertex(self) -> ObjectVertex<'a>;
-
+pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b>=ObjectVertex<'b>> + Clone + Debug {
     fn type_(&self) -> impl ObjectTypeAPI<'static>;
 
     fn into_owned_object(self) -> Object<'static>;
@@ -191,7 +196,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
         &self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-        attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
+        attribute_types_defining_range: impl Iterator<Item=AttributeType<'static>>,
     ) -> Result<HasIterator, ConceptReadError> {
         thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_types_defining_range)
     }
@@ -362,38 +367,24 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
     }
 
     fn get_relations<'m>(
-        &self,
+        &'a self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x>=Result<Relation<'x>, ConceptReadError>> {
         thing_manager.get_relations_player(snapshot, self)
     }
 
     fn get_relations_by_role<'m>(
-        &self,
+        &'a self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x>=Result<Relation<'x>, ConceptReadError>> {
         thing_manager.get_relations_player_role(snapshot, self, role_type)
     }
 }
 
 impl<'a> ObjectAPI<'a> for Object<'a> {
-    fn vertex(&self) -> ObjectVertex<'_> {
-        match self {
-            Object::Entity(entity) => entity.vertex(),
-            Object::Relation(relation) => relation.vertex(),
-        }
-    }
-
-    fn into_vertex(self) -> ObjectVertex<'a> {
-        match self {
-            Object::Entity(entity) => entity.into_vertex(),
-            Object::Relation(relation) => relation.into_vertex(),
-        }
-    }
-
     fn type_(&self) -> impl ObjectTypeAPI<'static> {
         self.type_()
     }
@@ -401,6 +392,10 @@ impl<'a> ObjectAPI<'a> for Object<'a> {
     fn into_owned_object(self) -> Object<'static> {
         self.into_owned()
     }
+}
+
+impl Hkt for Object<'static> {
+    type HktSelf<'a> = Object<'a>;
 }
 
 impl<'a> Ord for Object<'a> {
@@ -415,10 +410,6 @@ impl<'a> PartialOrd for Object<'a> {
     }
 }
 
-impl Hkt for Object<'static> {
-    type HktSelf<'a> = Object<'a>;
-}
-
 impl<'a> Display for Object<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -427,12 +418,6 @@ impl<'a> Display for Object<'a> {
         }
     }
 }
-
-fn storage_key_to_object(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> Object<'_> {
-    Object::new(ObjectVertex::new(storage_key.into_bytes()))
-}
-
-concept_iterator!(ObjectIterator, Object, storage_key_to_object);
 
 fn storage_key_to_has_attribute<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,

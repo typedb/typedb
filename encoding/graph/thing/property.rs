@@ -18,6 +18,7 @@ use crate::{
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::graph::thing::ThingVertex;
 
 trait ObjectVertexPropertyFactory {
     fn infix(&self) -> Infix;

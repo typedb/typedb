@@ -6,6 +6,48 @@
 
 // FIXME: exported macros must provide their own use-declarations or use fully qualified paths
 //        As it stands, this macro requires imports at point of use.
+
+use std::marker::PhantomData;
+use encoding::graph::thing::ThingVertex;
+use lending_iterator::higher_order::Hkt;
+use lending_iterator::LendingIterator;
+use crate::error::ConceptReadError;
+use crate::error::ConceptReadError::SnapshotIterate;
+use crate::thing::{InstanceAPI, ThingAPI};
+
+pub struct InstanceIterator<T: Hkt> {
+    snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator>,
+    _ph: PhantomData<T>,
+}
+
+impl<T: Hkt> InstanceIterator<T> {
+    pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator) -> Self {
+        Self { snapshot_iterator: Some(snapshot_iterator), _ph: PhantomData::default() }
+    }
+
+    pub(crate) fn empty() -> Self {
+        Self { snapshot_iterator: None, _ph: PhantomData::default() }
+    }
+}
+
+impl<T> LendingIterator for InstanceIterator<T>
+where
+    T: Hkt,
+    for<'a> <T as Hkt>::HktSelf<'a>: InstanceAPI<'a>,
+{
+    type Item<'a> = Result<T::HktSelf<'a>, ConceptReadError>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.snapshot_iterator.as_mut()?.next().map(|result| {
+            result
+                .map(|(storage_key, _value_bytes)| T::HktSelf::new(
+                    <T::HktSelf<'_> as ThingAPI<'_>>::Vertex::new(storage_key.into_bytes())
+                ))
+                .map_err(|error| SnapshotIterate { source: error })
+        })
+    }
+}
+
 #[macro_export]
 macro_rules! concept_iterator {
     ($name:ident, $concept_type:ident, $map_fn: expr) => {
@@ -32,11 +74,12 @@ macro_rules! concept_iterator {
             type Item<'a> = Result<$concept_type<'a>, $crate::error::ConceptReadError>;
             fn next(&mut self) -> Option<Self::Item<'_>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
-                self.snapshot_iterator.as_mut()?.next().map(|result| {
+                                self.snapshot_iterator.as_mut()?.next().map(|result| {
                     result
                         .map(|(storage_key, _value_bytes)| $map_fn(storage_key))
                         .map_err(|error| SnapshotIterate { source: error })
                 })
+
             }
         }
     };

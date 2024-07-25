@@ -29,21 +29,16 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
-use crate::{
-    concept_iterator,
-    ConceptAPI,
-    error::{ConceptReadError, ConceptWriteError},
-    type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
-        attribute_type::AttributeType,
-        KindAPI,
-        object_type::ObjectType,
-        ObjectTypeAPI,
-        Ordering,
-        OwnerAPI,
-        owns::Owns, PlayerAPI, plays::Plays, role_type::RoleType, type_manager::TypeManager, TypeAPI,
-    },
-};
+use crate::{concept_iterator, ConceptAPI, error::{ConceptReadError, ConceptWriteError}, type_::{
+    annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
+    attribute_type::AttributeType,
+    KindAPI,
+    object_type::ObjectType,
+    ObjectTypeAPI,
+    Ordering,
+    OwnerAPI,
+    owns::Owns, PlayerAPI, plays::Plays, role_type::RoleType, type_manager::TypeManager, TypeAPI,
+}};
 use crate::thing::entity::Entity;
 use crate::type_::ThingTypeAPI;
 

@@ -23,7 +23,7 @@ use crate::{
     AsBytes,
     EncodingKeyspace,
     graph::{common::value_hasher::HashedID, type_::vertex::TypeID, Typed},
-    Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed, value::{
+    Keyable, layout::prefix::Prefix, Prefixed, value::{
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
         date_time_bytes::DateTimeBytes,
@@ -46,10 +46,6 @@ pub struct AttributeVertex<'a> {
 }
 
 impl<'a> AttributeVertex<'a> {
-    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        debug_assert!(bytes.length() > THING_VERTEX_LENGTH_PREFIX_TYPE);
-        AttributeVertex { bytes }
-    }
 
     pub fn build(value_type_category: ValueTypeCategory, type_id: TypeID, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + attribute_id.length());
@@ -168,6 +164,11 @@ impl<'a> Typed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
 
 impl<'a> ThingVertex<'a> for AttributeVertex<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
+
+    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+        debug_assert!(bytes.length() > THING_VERTEX_LENGTH_PREFIX_TYPE);
+        AttributeVertex { bytes }
+    }
 }
 
 

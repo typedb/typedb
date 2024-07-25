@@ -27,7 +27,7 @@ use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 use crate::{
     thing::{
         object::ObjectAPI,
-        relation::{RelationIterator, RolePlayerIterator},
+        relation::{ RolePlayerIterator},
         thing_manager::ThingManager,
     },
     type_::{
@@ -70,6 +70,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::thing::ThingAPI;
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -1428,12 +1429,12 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         entity_type: EntityType<'_>,
     ) -> Result<(), SchemaValidationError> {
-        let mut entity_iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
+        let mut entity_iterator = thing_manager.get_entities_in(snapshot, entity_type.clone().into_owned());
         match entity_iterator.next() {
             None => Ok(()),
             Some(Ok(_)) => Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(
                 snapshot,
-                entity_type,
+                entity_type
             )?)),
             Some(Err(concept_read_error)) => Err(SchemaValidationError::ConceptRead(concept_read_error)),
         }
@@ -1445,7 +1446,7 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         relation_type: RelationType<'_>,
     ) -> Result<(), SchemaValidationError> {
-        let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
+        let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
         match relation_iterator.next() {
             None => Ok(()),
             Some(Ok(_)) => Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(
@@ -1485,11 +1486,7 @@ impl OperationTimeValidation {
         let relation_type = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone().into_owned())
             .map_err(SchemaValidationError::ConceptRead)?
             .relation();
-        let prefix =
-            ObjectVertex::build_prefix_type(Prefix::VertexRelation, relation_type.vertex().type_id_());
-        let snapshot_iterator =
-            snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
-        let mut relation_iterator = RelationIterator::new(snapshot_iterator);
+        let mut relation_iterator = _thing_manager.get_relations(snapshot);
         while let Some(result) = relation_iterator.next() {
             let relation_instance = result.map_err(SchemaValidationError::ConceptRead)?;
             let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation_instance.into_vertex());

@@ -9,38 +9,39 @@ use std::{
     hash::Hash,
 };
 
+use serde::{Deserialize, Serialize};
+
 use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
+    AsBytes,
     graph::type_::{
+        CapabilityKind,
         edge::TypeEdgeEncoding,
-        property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
-        vertex::{TypeVertex, TypeVertexEncoding},
-        CapabilityKind, Kind,
+        Kind,
+        property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding}, vertex::{TypeVertex, TypeVertexEncoding},
     },
     layout::infix::Infix,
     value::label::Label,
-    AsBytes,
 };
+use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
-use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationCardinality},
         attribute_type::AttributeType,
         object_type::ObjectType,
-        owns::{Owns, OwnsAnnotation},
-        plays::{Plays, PlaysAnnotation},
-        relates::RelatesAnnotation,
+        owns::Owns,
+        plays::Plays,
         role_type::RoleType,
         type_manager::TypeManager,
     },
-    ConceptAPI,
 };
-use crate::thing::ThingAPI;
+use crate::thing::{InstanceAPI, ThingAPI};
 
 pub mod annotation;
 pub mod attribute_type;

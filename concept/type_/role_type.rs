@@ -31,20 +31,15 @@ use storage::{
 };
 
 use super::Ordering;
-use crate::{
-    concept_iterator,
-    error::{ConceptReadError, ConceptWriteError},
-    type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
-        object_type::ObjectType,
-        plays::Plays,
-        relates::Relates,
-        relation_type::RelationType,
-        type_manager::TypeManager,
-        KindAPI, TypeAPI,
-    },
-    ConceptAPI,
-};
+use crate::{error::{ConceptReadError, ConceptWriteError}, type_::{
+    annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
+    object_type::ObjectType,
+    plays::Plays,
+    relates::Relates,
+    relation_type::RelationType,
+    type_manager::TypeManager,
+    KindAPI, TypeAPI,
+}, ConceptAPI, concept_iterator};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {

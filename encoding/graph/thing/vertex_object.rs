@@ -10,7 +10,7 @@ use std::{
     ops::Range,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes, util::HexBytesFormatter};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
@@ -18,12 +18,12 @@ use storage::{
 };
 
 use crate::{
+    AsBytes,
+    EncodingKeyspace,
     graph::{
         type_::vertex::{TypeID, TypeVertex},
         Typed,
-    },
-    layout::prefix::{Prefix, PrefixID},
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+    }, Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed,
 };
 use crate::graph::thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex};
 
@@ -36,11 +36,6 @@ impl<'a> ObjectVertex<'a> {
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
     pub const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
-
-    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
-        debug_assert_eq!(bytes.length(), Self::LENGTH);
-        ObjectVertex { bytes }
-    }
 
     pub fn build_entity(type_id: TypeID, object_id: ObjectID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
@@ -124,6 +119,11 @@ impl<'a> Typed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
 
 impl<'a> ThingVertex<'a> for ObjectVertex<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+
+    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
+        debug_assert_eq!(bytes.length(), Self::LENGTH);
+        ObjectVertex { bytes }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

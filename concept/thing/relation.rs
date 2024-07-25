@@ -8,10 +8,10 @@ use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
 };
-use itertools::Itertools;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
+    AsBytes,
     graph::{
         thing::{
             edge::{ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
@@ -20,10 +20,10 @@ use encoding::{
         type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
     },
-    layout::prefix::Prefix,
-    value::decode_value_u64,
-    AsBytes, Keyable, Prefixed,
+    Keyable,
+    layout::prefix::Prefix, Prefixed, value::decode_value_u64,
 };
+use encoding::graph::thing::ThingVertex;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
@@ -32,20 +32,21 @@ use storage::{
 };
 
 use crate::{
-    concept_iterator, edge_iterator,
-    error::{ConceptReadError, ConceptWriteError},
-    thing::{
-        entity::Entity,
+    ByteReference,
+    ConceptAPI,
+    ConceptStatus,
+    edge_iterator,
+    error::{ConceptReadError, ConceptWriteError}, thing::{
         object::{Object, ObjectAPI},
         thing_manager::ThingManager,
         ThingAPI,
+    }, type_::{
+        annotation::AnnotationDistinct, Capability, ObjectTypeAPI, Ordering,
+        relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType, TypeAPI,
     },
-    type_::{
-        annotation::AnnotationDistinct, relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType,
-        Capability, ObjectTypeAPI, Ordering, TypeAPI,
-    },
-    ByteReference, ConceptAPI, ConceptStatus,
 };
+use crate::thing::{HKInstance, InstanceAPI};
+use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Relation<'a> {
@@ -53,22 +54,7 @@ pub struct Relation<'a> {
 }
 
 impl<'a> Relation<'a> {
-    pub fn new(vertex: ObjectVertex<'a>) -> Self {
-        debug_assert_eq!(
-            vertex.prefix(),
-            Prefix::VertexRelation,
-            "non-relation prefix when constructing from a vertex"
-        );
-        Relation { vertex }
-    }
-
-    pub fn as_reference(&self) -> Relation<'_> {
-        Relation { vertex: self.vertex.as_reference() }
-    }
-
     pub fn type_(&self) -> RelationType<'static> {
-
-
         RelationType::build_from_type_id(self.vertex.type_id_())
     }
 
@@ -135,7 +121,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x>=Result<(RolePlayer<'x>, u64), ConceptReadError>> {
         thing_manager.get_role_players(snapshot, self.as_reference())
     }
 
@@ -153,7 +139,7 @@ impl<'a> Relation<'a> {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Object<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x>=Result<Object<'x>, ConceptReadError>> {
         self.get_players(snapshot, thing_manager).filter_map::<Result<Object<'_>, _>, _>(move |res| match res {
             Ok((roleplayer, _count)) => (roleplayer.role_type() == role_type).then_some(Ok(roleplayer.player)),
             Err(error) => Some(Err(error)),
@@ -315,6 +301,10 @@ impl<'a> Relation<'a> {
         Relation::new(ObjectVertex::new(Bytes::Array(bytes)))
     }
 
+    pub(crate) fn as_reference(&self) -> Relation<'_> {
+        Relation { vertex: self.vertex.as_reference() }
+    }
+
     pub fn into_owned(self) -> Relation<'static> {
         Relation { vertex: self.vertex.into_owned() }
     }
@@ -323,7 +313,24 @@ impl<'a> Relation<'a> {
 impl<'a> ConceptAPI<'a> for Relation<'a> {}
 
 impl<'a> ThingAPI<'a> for Relation<'a> {
-    type VertexType<'b> = ObjectVertex<'b>;
+    type Vertex<'b> = ObjectVertex<'b>;
+
+    fn new(vertex: Self::Vertex<'a>) -> Self {
+        debug_assert_eq!(
+            vertex.prefix(),
+            Prefix::VertexRelation,
+            "non-relation prefix when constructing from a vertex"
+        );
+        Relation { vertex }
+    }
+
+    fn vertex(&self) -> Self::Vertex<'_> {
+        self.vertex.as_reference()
+    }
+
+    fn into_vertex(self) -> Self::Vertex<'a> {
+        self.vertex
+    }
 
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
@@ -422,15 +429,20 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
     }
 }
 
+impl<'a> InstanceAPI<'a> for Relation<'a> {
+    type TypeAPI<'b> = RelationType<'b>;
+    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
+
+    fn prefix_for_type(
+        _type: Self::TypeAPI<'_>,
+        _snapshot: &impl ReadableSnapshot,
+        _type_manager: &TypeManager,
+    ) -> Result<Prefix, ConceptReadError> {
+        Ok(Prefix::VertexRelation)
+    }
+}
+
 impl<'a> ObjectAPI<'a> for Relation<'a> {
-    fn vertex(&self) -> ObjectVertex<'_> {
-        self.vertex.as_reference()
-    }
-
-    fn into_vertex(self) -> ObjectVertex<'a> {
-        self.vertex
-    }
-
     fn type_(&self) -> impl ObjectTypeAPI<'static> {
         self.type_()
     }
@@ -440,15 +452,11 @@ impl<'a> ObjectAPI<'a> for Relation<'a> {
     }
 }
 
+impl HKInstance for Relation<'static> {}
+
 impl Hkt for Relation<'static> {
     type HktSelf<'a> = Relation<'a>;
 }
-
-// TODO: can we inline this into the macro invocation?
-fn storage_key_to_entity(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> Relation<'_> {
-    Relation::new(ObjectVertex::new(storage_key.into_bytes()))
-}
-concept_iterator!(RelationIterator, Relation, storage_key_to_entity);
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct RolePlayer<'a> {

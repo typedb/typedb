@@ -9,7 +9,7 @@ use std::fmt::{Display, Formatter};
 use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
 use lending_iterator::higher_order::Hkt;
 
-use crate::thing::{attribute::Attribute, object::Object};
+use crate::thing::{attribute::Attribute, object::Object, ThingAPI};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Has<'a> {

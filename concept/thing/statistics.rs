@@ -23,6 +23,7 @@ use encoding::graph::{
     Typed,
 };
 use serde::{Deserialize, Serialize};
+use encoding::graph::thing::ThingVertex;
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,
@@ -41,6 +42,7 @@ use crate::{
         role_type::RoleType, TypeAPI,
     },
 };
+use crate::thing::ThingAPI;
 
 type StatisticsEncodingVersion = u64;
 
