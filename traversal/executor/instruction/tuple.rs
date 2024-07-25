@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::ops::Range;
-
 use answer::variable_value::VariableValue;
 use concept::{
     error::ConceptReadError,
@@ -13,9 +11,7 @@ use concept::{
 };
 use lending_iterator::higher_order::Hkt;
 
-use crate::executor::{
-    VariablePosition,
-};
+use crate::executor::VariablePosition;
 
 #[derive(Debug, Clone)]
 pub(crate) enum Tuple<'a> {

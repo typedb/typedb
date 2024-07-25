@@ -6,9 +6,8 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use answer::variable_value::VariableValue;
 use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::OwnerAPI};
-use encoding::{graph::type_::Kind, value::label::Label};
+use encoding::value::label::Label;
 use ir::{
     inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
@@ -18,13 +17,13 @@ use ir::program::program::CompiledSchemaFunctions;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
 use traversal::{
     executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
     planner::{
-        pattern_plan::{Instruction, IterateBounds, PatternPlan, IntersectionStep, Step},
+        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
         program_plan::ProgramPlan,
     },
 };

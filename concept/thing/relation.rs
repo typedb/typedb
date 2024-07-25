@@ -11,19 +11,19 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
-    AsBytes,
     graph::{
         thing::{
             edge::{ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
             vertex_object::ObjectVertex,
+            ThingVertex,
         },
         type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
     },
-    Keyable,
-    layout::prefix::Prefix, Prefixed, value::decode_value_u64,
+    layout::prefix::Prefix,
+    value::decode_value_u64,
+    AsBytes, Keyable, Prefixed,
 };
-use encoding::graph::thing::ThingVertex;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
@@ -32,21 +32,19 @@ use storage::{
 };
 
 use crate::{
-    ByteReference,
-    ConceptAPI,
-    ConceptStatus,
     edge_iterator,
-    error::{ConceptReadError, ConceptWriteError}, thing::{
+    error::{ConceptReadError, ConceptWriteError},
+    thing::{
         object::{Object, ObjectAPI},
         thing_manager::ThingManager,
-        ThingAPI,
-    }, type_::{
-        annotation::AnnotationDistinct, Capability, ObjectTypeAPI, Ordering,
-        relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType, TypeAPI,
+        HKInstance, ThingAPI,
     },
+    type_::{
+        annotation::AnnotationDistinct, relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType,
+        type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering, TypeAPI,
+    },
+    ByteReference, ConceptAPI, ConceptStatus,
 };
-use crate::thing::{HKInstance};
-use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Relation<'a> {
@@ -121,7 +119,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> impl for<'x> LendingIterator<Item<'x>=Result<(RolePlayer<'x>, u64), ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
         thing_manager.get_role_players(snapshot, self.as_reference())
     }
 
@@ -139,7 +137,7 @@ impl<'a> Relation<'a> {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x>=Result<Object<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Object<'x>, ConceptReadError>> {
         self.get_players(snapshot, thing_manager).filter_map::<Result<Object<'_>, _>, _>(move |res| match res {
             Ok((roleplayer, _count)) => (roleplayer.role_type() == role_type).then_some(Ok(roleplayer.player)),
             Err(error) => Some(Err(error)),
@@ -442,7 +440,6 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
     ) -> Result<Prefix, ConceptReadError> {
         Ok(Prefix::VertexRelation)
     }
-
 }
 
 impl<'a> ObjectAPI<'a> for Relation<'a> {

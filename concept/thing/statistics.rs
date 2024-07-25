@@ -18,12 +18,12 @@ use encoding::graph::{
         edge::{ThingEdgeHas, ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
+        ThingVertex,
     },
     type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt},
     Typed,
 };
 use serde::{Deserialize, Serialize};
-use encoding::graph::thing::ThingVertex;
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,
@@ -36,13 +36,12 @@ use storage::{
 };
 
 use crate::{
-    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
+    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
         role_type::RoleType, TypeAPI,
     },
 };
-use crate::thing::ThingAPI;
 
 type StatisticsEncodingVersion = u64;
 

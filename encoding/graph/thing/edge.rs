@@ -18,6 +18,7 @@ use crate::{
         thing::{
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_object::ObjectVertex,
+            ThingVertex, THING_VERTEX_LENGTH_PREFIX_TYPE,
         },
         type_::vertex::{TypeID, TypeVertex},
         Typed,
@@ -26,7 +27,6 @@ use crate::{
     value::value_type::ValueTypeCategory,
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::graph::thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex};
 
 ///
 /// [has][object][Attribute8|Attribute17]

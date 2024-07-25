@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
-use std::collections::{BTreeMap, HashSet};
-use std::sync::Arc;
-use answer::Type;
-use concept::thing::object::Object;
-use crate::executor::instruction::VariableModes;
-use crate::executor::VariablePosition;
+use crate::executor::{instruction::VariableModes, VariablePosition};
 
 pub(crate) struct RolePlayerIteratorExecutor {
     role_player: ir::pattern::constraint::RolePlayer<VariablePosition>,

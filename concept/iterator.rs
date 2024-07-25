@@ -8,12 +8,14 @@
 //        As it stands, this macro requires imports at point of use.
 
 use std::marker::PhantomData;
+
 use encoding::graph::thing::ThingVertex;
-use lending_iterator::higher_order::Hkt;
-use lending_iterator::LendingIterator;
-use crate::error::ConceptReadError;
-use crate::error::ConceptReadError::SnapshotIterate;
-use crate::thing::{ThingAPI};
+use lending_iterator::{higher_order::Hkt, LendingIterator};
+
+use crate::{
+    error::{ConceptReadError, ConceptReadError::SnapshotIterate},
+    thing::ThingAPI,
+};
 
 pub struct InstanceIterator<T: Hkt> {
     snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator>,
@@ -40,9 +42,9 @@ where
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.snapshot_iterator.as_mut()?.next().map(|result| {
             result
-                .map(|(storage_key, _value_bytes)| T::HktSelf::new(
-                    <T::HktSelf<'_> as ThingAPI<'_>>::Vertex::new(storage_key.into_bytes())
-                ))
+                .map(|(storage_key, _value_bytes)| {
+                    T::HktSelf::new(<T::HktSelf<'_> as ThingAPI<'_>>::Vertex::new(storage_key.into_bytes()))
+                })
                 .map_err(|error| SnapshotIterate { source: error })
         })
     }
@@ -74,12 +76,11 @@ macro_rules! concept_iterator {
             type Item<'a> = Result<$concept_type<'a>, $crate::error::ConceptReadError>;
             fn next(&mut self) -> Option<Self::Item<'_>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
-                                self.snapshot_iterator.as_mut()?.next().map(|result| {
+                self.snapshot_iterator.as_mut()?.next().map(|result| {
                     result
                         .map(|(storage_key, _value_bytes)| $map_fn(storage_key))
                         .map_err(|error| SnapshotIterate { source: error })
                 })
-
             }
         }
     };

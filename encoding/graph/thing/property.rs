@@ -11,14 +11,17 @@ use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
 use crate::{
-    graph::{thing::vertex_object::ObjectVertex, type_::vertex::TypeVertex, Typed},
+    graph::{
+        thing::{vertex_object::ObjectVertex, ThingVertex},
+        type_::vertex::TypeVertex,
+        Typed,
+    },
     layout::{
         infix::{Infix, InfixID},
         prefix::{Prefix, PrefixID},
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::graph::thing::ThingVertex;
 
 trait ObjectVertexPropertyFactory {
     fn infix(&self) -> Infix;

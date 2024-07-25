@@ -13,14 +13,14 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            Kind,
             vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            Kind,
         },
         Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexRelationType},
-    Prefixed,
     value::label::Label,
+    Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -29,21 +29,25 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
-use crate::{concept_iterator, ConceptAPI, error::{ConceptReadError, ConceptWriteError}, type_::{
-    annotation::{
-        Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationError, DefaultFrom,
+use crate::{
+    concept_iterator,
+    error::{ConceptReadError, ConceptWriteError},
+    thing::relation::Relation,
+    type_::{
+        annotation::{
+            Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationError, DefaultFrom,
+        },
+        attribute_type::AttributeType,
+        object_type::ObjectType,
+        owns::Owns,
+        plays::Plays,
+        relates::Relates,
+        role_type::RoleType,
+        type_manager::TypeManager,
+        KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
     },
-    attribute_type::AttributeType,
-    KindAPI,
-    object_type::ObjectType,
-    ObjectTypeAPI,
-    Ordering,
-    OwnerAPI,
-    owns::Owns,
-    PlayerAPI, plays::Plays, relates::Relates, role_type::RoleType, type_manager::TypeManager, TypeAPI,
-}};
-use crate::thing::relation::Relation;
-use crate::type_::ThingTypeAPI;
+    ConceptAPI,
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {

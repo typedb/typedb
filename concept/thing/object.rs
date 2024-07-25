@@ -11,12 +11,14 @@ use std::{
 
 use bytes::Bytes;
 use encoding::{
-    graph::thing::{edge::ThingEdgeHas, vertex_object::ObjectVertex},
+    graph::thing::{
+        edge::{ThingEdgeHas, ThingEdgeHasReverse},
+        vertex_object::ObjectVertex,
+    },
     layout::prefix::Prefix,
     value::{decode_value_u64, value::Value},
     Prefixed,
 };
-use encoding::graph::thing::edge::ThingEdgeHasReverse;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
@@ -28,7 +30,8 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        attribute::Attribute, entity::Entity, has::Has, relation::Relation, thing_manager::ThingManager, ThingAPI,
+        attribute::Attribute, entity::Entity, has::Has, relation::Relation, thing_manager::ThingManager, HKInstance,
+        ThingAPI,
     },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, owns::Owns, role_type::RoleType,
@@ -36,7 +39,6 @@ use crate::{
     },
     ConceptStatus,
 };
-use crate::thing::HKInstance;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Object<'a> {
@@ -155,7 +157,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     fn prefix_for_type(
         type_: Self::TypeAPI<'_>,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager
+        type_manager: &TypeManager,
     ) -> Result<Prefix, ConceptReadError> {
         match type_ {
             ObjectType::Entity(entity) => Entity::prefix_for_type(entity, snapshot, type_manager),
@@ -164,7 +166,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     }
 }
 
-pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b>=ObjectVertex<'b>> + Clone + Debug {
+pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + Clone + Debug {
     fn type_(&self) -> impl ObjectTypeAPI<'static>;
 
     fn into_owned_object(self) -> Object<'static>;
@@ -218,7 +220,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b>=ObjectVertex<'b>> + Clo
         &self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-        attribute_types_defining_range: impl Iterator<Item=AttributeType<'static>>,
+        attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
     ) -> Result<HasIterator, ConceptReadError> {
         thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_types_defining_range)
     }
@@ -392,7 +394,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b>=ObjectVertex<'b>> + Clo
         &'a self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-    ) -> impl for<'x> LendingIterator<Item<'x>=Result<Relation<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
         thing_manager.get_relations_player(snapshot, self)
     }
 
@@ -401,7 +403,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b>=ObjectVertex<'b>> + Clo
         snapshot: &impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x>=Result<Relation<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
         thing_manager.get_relations_player_role(snapshot, self, role_type)
     }
 }
@@ -416,7 +418,7 @@ impl<'a> ObjectAPI<'a> for Object<'a> {
     }
 }
 
-impl HKInstance for Object<'static> { }
+impl HKInstance for Object<'static> {}
 
 impl Hkt for Object<'static> {
     type HktSelf<'a> = Object<'a>;
@@ -464,10 +466,9 @@ fn storage_key_has_reverse_edge_to_has<'a>(
 ) -> (Has<'a>, u64) {
     (
         Has::new_from_edge_reverse(ThingEdgeHasReverse::new(storage_key.into_bytes())),
-        decode_value_u64(value.as_reference())
+        decode_value_u64(value.as_reference()),
     )
 }
-
 
 edge_iterator!(
     HasAttributeIterator;

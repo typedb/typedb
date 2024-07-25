@@ -27,6 +27,7 @@ use crate::{
         thing::{
             vertex_attribute::{AttributeID, AttributeVertex, LongAttributeID, StringAttributeID},
             vertex_object::{ObjectID, ObjectVertex},
+            ThingVertex,
         },
         type_::vertex::{build_type_vertex_prefix_key, TypeID, TypeIDUInt, TypeVertex},
         Typed,
@@ -40,7 +41,6 @@ use crate::{
     },
     AsBytes, Keyable, Prefixed,
 };
-use crate::graph::thing::ThingVertex;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,

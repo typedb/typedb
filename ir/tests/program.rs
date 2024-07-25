@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use encoding::{
     graph::definition::definition_key::{DefinitionID, DefinitionKey},
     layout::prefix::Prefix,

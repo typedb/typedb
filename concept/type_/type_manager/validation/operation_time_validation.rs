@@ -12,7 +12,7 @@ use std::{
 use encoding::{
     graph::{
         definition::definition_key::DefinitionKey,
-        thing::{edge::ThingEdgeRolePlayer, vertex_object::ObjectVertex},
+        thing::{edge::ThingEdgeRolePlayer, vertex_object::ObjectVertex, ThingVertex},
         type_::CapabilityKind,
         Typed,
     },
@@ -20,16 +20,11 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use itertools::Itertools;
-use encoding::graph::thing::ThingVertex;
 use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    thing::{
-        object::ObjectAPI,
-        relation::{ RolePlayerIterator},
-        thing_manager::ThingManager,
-    },
+    thing::{object::ObjectAPI, relation::RolePlayerIterator, thing_manager::ThingManager, ThingAPI},
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues,
@@ -70,7 +65,6 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::thing::ThingAPI;
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -1434,7 +1428,7 @@ impl OperationTimeValidation {
             None => Ok(()),
             Some(Ok(_)) => Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(
                 snapshot,
-                entity_type
+                entity_type,
             )?)),
             Some(Err(concept_read_error)) => Err(SchemaValidationError::ConceptRead(concept_read_error)),
         }

@@ -12,10 +12,9 @@ use concept::{
     thing::{thing_manager::ThingManager, ThingAPI},
     type_::TypeAPI,
 };
-use ir::inference::type_inference::TypeAnnotations;
+use ir::{inference::type_inference::TypeAnnotations, pattern::constraint::Constraint};
 use storage::snapshot::ReadableSnapshot;
 pub use tracing::{error, info, trace, warn};
-use ir::pattern::constraint::{Constraint, ConstraintIDSide};
 
 use crate::{
     executor::{
@@ -24,8 +23,8 @@ use crate::{
             comparison_executor::ComparisonIteratorExecutor,
             comparison_reverse_executor::ComparisonReverseIteratorExecutor,
             function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-            has_reverse_executor::HasReverseIteratorExecutor, isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator,
-            role_player_executor::RolePlayerIteratorExecutor,
+            has_reverse_executor::HasReverseIteratorExecutor, isa_reverse_executor::IsaReverseExecutor,
+            iterator::TupleIterator, role_player_executor::RolePlayerIteratorExecutor,
             role_player_reverse_executor::RolePlayerReverseIteratorExecutor,
         },
         VariablePosition,
@@ -220,12 +219,11 @@ impl VariableModes {
     }
 }
 
-
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum BinaryIterateMode {
-    Unbound, // [x, y] in standard order
+    Unbound,         // [x, y] in standard order
     UnboundInverted, // [x, y] in [y, x] sort order
-    BoundFrom, // [X, y], where X is bound
+    BoundFrom,       // [X, y], where X is bound
 }
 
 impl BinaryIterateMode {
@@ -239,11 +237,8 @@ impl BinaryIterateMode {
         debug_assert!(constraint.ids_count() == 2);
         debug_assert!(!var_modes.fully_bound());
 
-        let default_sort_variable_for_direction = if in_reverse_direction {
-            constraint.right_id()
-        } else {
-            constraint.left_id()
-        };
+        let default_sort_variable_for_direction =
+            if in_reverse_direction { constraint.right_id() } else { constraint.left_id() };
 
         if var_modes.fully_unbound() {
             match sort_by {

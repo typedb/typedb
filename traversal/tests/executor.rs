@@ -14,12 +14,11 @@ use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use ir::{
     inference::type_inference::infer_types,
     program::{
-        function_signature::{HashMapFunctionIndex},
-        program::Program,
+        function_signature::HashMapFunctionIndex,
+        program::{CompiledSchemaFunctions, Program},
     },
+    translator::match_::translate_match,
 };
-use ir::program::program::CompiledSchemaFunctions;
-use ir::translator::match_::translate_match;
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,
@@ -112,15 +111,12 @@ fn test_planning_traversal() {
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
     let program = Program::new(block, Vec::new());
-    let annotated_program = infer_types(
-        program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())
-    ).unwrap();
-    let pattern_plan = PatternPlan::from_block(
-        annotated_program.get_entry(), annotated_program.get_entry_annotations(), &statistics
-    );
-    let program_plan = ProgramPlan::new(
-        pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new()
-    );
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap();
+    let pattern_plan =
+        PatternPlan::from_block(annotated_program.get_entry(), annotated_program.get_entry_annotations(), &statistics);
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
     let executor = ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap();
 
     {

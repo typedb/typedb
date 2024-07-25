@@ -6,19 +6,13 @@
 
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
-    error::Error,
-    fmt,
     fmt::Display,
     sync::Arc,
 };
 
 use answer::{variable::Variable, Type};
-use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 
-use crate::{
-    program::{block::FunctionalBlock, function_signature::FunctionID},
-    PatternDefinitionError,
-};
+use crate::program::block::FunctionalBlock;
 
 pub type PlaceholderTypeQLReturnOperation = String;
 

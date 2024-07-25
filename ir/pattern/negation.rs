@@ -9,7 +9,6 @@ use std::fmt;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        optional::Optional,
         Scope, ScopeId,
     },
     program::block::BlockContext,

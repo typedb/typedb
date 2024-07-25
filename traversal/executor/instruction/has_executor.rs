@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{Thing, Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing, Type};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -21,24 +21,24 @@ use concept::{
 };
 use lending_iterator::{
     adaptors::{Filter, Map},
-    AsHkt,
     higher_order::FnHktHelper,
-    kmerge::KMergeBy, LendingIterator, Peekable,
+    kmerge::KMergeBy,
+    AsHkt, LendingIterator, Peekable,
 };
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::executor::{
     batch::ImmutableRow,
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions, TupleResult},
-        VariableModes,
+        iterator::{inverted_instances_cache, SortedTupleIterator, TupleIterator},
+        tuple::{
+            has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
+            TupleResult,
+        },
+        BinaryIterateMode, VariableModes,
     },
     VariablePosition,
 };
-use crate::executor::instruction::BinaryIterateMode;
-use crate::executor::instruction::iterator::inverted_instances_cache;
-use crate::executor::instruction::tuple::HasToTupleFn;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<VariablePosition>,
@@ -53,11 +53,8 @@ pub(crate) struct HasExecutor {
 
 pub(crate) type HasUnboundedSortedOwner =
     Map<Filter<HasIterator, Arc<HasFilterFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
-pub(crate) type HasUnboundedSortedAttributeMerged = Map<
-    Filter<KMergeBy<HasIterator, HasOrderingFn>, Arc<HasFilterFn>>,
-    HasToTupleFn,
-    AsHkt![TupleResult<'_>],
->;
+pub(crate) type HasUnboundedSortedAttributeMerged =
+    Map<Filter<KMergeBy<HasIterator, HasOrderingFn>, Arc<HasFilterFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
 pub(crate) type HasUnboundedSortedAttributeSingle =
     Map<Filter<HasIterator, Arc<HasFilterFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
 pub(crate) type HasBoundedSortedAttribute =
@@ -69,7 +66,6 @@ pub(crate) type HasFilterFn =
 pub(crate) type HasOrderingFn = for<'a, 'b> fn(
     (&'a Result<(Has<'a>, u64), ConceptReadError>, &'b Result<(Has<'b>, u64), ConceptReadError>),
 ) -> Ordering;
-
 
 impl HasExecutor {
     pub(crate) fn new<Snapshot: ReadableSnapshot>(
@@ -100,7 +96,9 @@ impl HasExecutor {
 
         let owner_cache = if matches!(iterate_mode, BinaryIterateMode::UnboundInverted) {
             Some(inverted_instances_cache(
-                owner_attribute_types.keys().map(|t| t.as_object_type()), snapshot, thing_manager
+                owner_attribute_types.keys().map(|t| t.as_object_type()),
+                snapshot,
+                thing_manager,
             )?)
         } else {
             None
@@ -219,7 +217,7 @@ impl HasExecutor {
 
     fn create_has_filter_owners_attributes(
         owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
-        attribute_types: Arc<HashSet<Type>>
+        attribute_types: Arc<HashSet<Type>>,
     ) -> Arc<HasFilterFn> {
         Arc::new({
             move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
@@ -232,9 +230,7 @@ impl HasExecutor {
         }) as Arc<HasFilterFn>
     }
 
-    fn create_has_filter_attributes(
-        attribute_types: Arc<HashSet<Type>>
-    ) -> Arc<HasFilterFn> {
+    fn create_has_filter_attributes(attribute_types: Arc<HashSet<Type>>) -> Arc<HasFilterFn> {
         Arc::new({
             move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
                 Ok((has, _)) => attribute_types.contains(&Type::Attribute(has.attribute().type_())),

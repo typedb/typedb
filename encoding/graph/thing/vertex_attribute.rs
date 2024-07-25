@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes, util::HexBytesFormatter};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -20,10 +20,14 @@ use storage::{
 };
 
 use crate::{
-    AsBytes,
-    EncodingKeyspace,
-    graph::{common::value_hasher::HashedID, type_::vertex::TypeID, Typed},
-    Keyable, layout::prefix::Prefix, Prefixed, value::{
+    graph::{
+        common::value_hasher::HashedID,
+        thing::{ThingVertex, THING_VERTEX_LENGTH_PREFIX_TYPE},
+        type_::vertex::TypeID,
+        Typed,
+    },
+    layout::prefix::Prefix,
+    value::{
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
         date_time_bytes::DateTimeBytes,
@@ -37,8 +41,8 @@ use crate::{
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::graph::thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex};
 
 #[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct AttributeVertex<'a> {
@@ -46,7 +50,6 @@ pub struct AttributeVertex<'a> {
 }
 
 impl<'a> AttributeVertex<'a> {
-
     pub fn build(value_type_category: ValueTypeCategory, type_id: TypeID, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + attribute_id.length());
         bytes.bytes_mut()[Self::RANGE_PREFIX]
@@ -170,7 +173,6 @@ impl<'a> ThingVertex<'a> for AttributeVertex<'a> {
         AttributeVertex { bytes }
     }
 }
-
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
     fn keyspace(&self) -> EncodingKeyspace {

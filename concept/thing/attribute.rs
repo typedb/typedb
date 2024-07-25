@@ -14,41 +14,37 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
-    AsBytes,
     graph::{
-        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
+        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex, ThingVertex},
         type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
     },
-    Keyable, value::{
-        decode_value_u64,
-        value::Value
-        ,
-    },
+    layout::prefix::Prefix,
+    value::{decode_value_u64, value::Value},
+    AsBytes, Keyable,
 };
-use encoding::graph::thing::ThingVertex;
-use encoding::layout::prefix::Prefix;
 use iterator::State;
-use lending_iterator::{LendingIterator, Peekable};
-use lending_iterator::higher_order::Hkt;
+use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
+    key_range::KeyRange,
     key_value::StorageKey,
     snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
 };
-use storage::key_range::KeyRange;
 
 use crate::{
-    ByteReference,
-    ConceptAPI,
-    ConceptStatus,
     edge_iterator,
-    error::{ConceptReadError, ConceptWriteError}, thing::{object::Object, thing_manager::ThingManager, ThingAPI}, type_::{attribute_type::AttributeType, ObjectTypeAPI, TypeAPI},
+    error::{ConceptReadError, ConceptWriteError},
+    thing::{
+        object::{HasReverseIterator, Object},
+        thing_manager::ThingManager,
+        HKInstance, ThingAPI,
+    },
+    type_::{
+        attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI,
+    },
+    ByteReference, ConceptAPI, ConceptStatus,
 };
-use crate::thing::{HKInstance};
-use crate::thing::object::HasReverseIterator;
-use crate::type_::object_type::ObjectType;
-use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone)]
 pub struct Attribute<'a> {
@@ -56,8 +52,7 @@ pub struct Attribute<'a> {
     value: Option<Arc<Value<'a>>>, // TODO: if we end up doing traversals over Vertex instead of Concept, we could embed the Value cache into the AttributeVertex
 }
 
-impl<'a> Attribute<'a> {
-}
+impl<'a> Attribute<'a> {}
 
 impl<'a> Attribute<'a> {
     pub fn type_(&self) -> AttributeType<'static> {
@@ -112,7 +107,7 @@ impl<'a> Attribute<'a> {
         &self,
         snapshot: &'m impl ReadableSnapshot,
         type_manager: &'m ThingManager,
-        owner_type_range: KeyRange<ObjectType<'static>>
+        owner_type_range: KeyRange<ObjectType<'static>>,
     ) -> HasReverseIterator {
         todo!()
     }
@@ -124,10 +119,7 @@ impl<'a> Attribute<'a> {
     }
 
     pub fn as_reference(&self) -> Attribute<'_> {
-        Attribute {
-            vertex: self.vertex.as_reference(),
-            value: self.value.clone(),
-        }
+        Attribute { vertex: self.vertex.as_reference(), value: self.value.clone() }
     }
 
     pub fn into_owned(self) -> Attribute<'static> {
@@ -202,7 +194,6 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         let value_type = type_.get_value_type(snapshot, type_manager)?.unwrap();
         Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category()))
     }
-
 }
 
 impl HKInstance for Attribute<'static> {}
@@ -232,8 +223,8 @@ impl<'a> Ord for Attribute<'a> {
 }
 
 pub struct AttributeIterator<AllAttributesIterator>
-    where
-        AllAttributesIterator: for<'a> LendingIterator<Item<'a>=Result<Attribute<'a>, ConceptReadError>>,
+where
+    AllAttributesIterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, ConceptReadError>>,
 {
     independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
     attributes_iterator: Option<Peekable<AllAttributesIterator>>,
@@ -242,8 +233,8 @@ pub struct AttributeIterator<AllAttributesIterator>
 }
 
 impl<AllAttributesIterator> AttributeIterator<AllAttributesIterator>
-    where
-        AllAttributesIterator: for<'a> LendingIterator<Item<'a>=Result<Attribute<'a>, ConceptReadError>>,
+where
+    AllAttributesIterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, ConceptReadError>>,
 {
     pub(crate) fn new(
         attributes_iterator: AllAttributesIterator,
@@ -271,20 +262,14 @@ impl<AllAttributesIterator> AttributeIterator<AllAttributesIterator>
         todo!()
     }
 
-    fn iter_next(
-        &mut self,
-    ) -> Option<Result<Attribute<'_>, ConceptReadError>> {
+    fn iter_next(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
         match &self.state {
             State::Init | State::ItemUsed => {
                 self.find_next_state();
                 self.iter_next()
             }
             State::ItemReady => {
-                let next = self
-                    .attributes_iterator
-                    .as_mut()
-                    .unwrap()
-                    .next();
+                let next = self.attributes_iterator.as_mut().unwrap().next();
                 let _ = self.has_reverse_iterator.as_mut().unwrap().next();
                 self.state = State::ItemUsed;
                 next
@@ -351,8 +336,8 @@ impl<AllAttributesIterator> AttributeIterator<AllAttributesIterator>
 }
 
 impl<Iterator> LendingIterator for AttributeIterator<Iterator>
-    where
-        Iterator: for<'a> LendingIterator<Item<'a>=Result<Attribute<'a>, ConceptReadError>>,
+where
+    Iterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, ConceptReadError>>,
 {
     type Item<'a> = Result<Attribute<'a>, ConceptReadError>;
 

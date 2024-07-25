@@ -11,29 +11,29 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
-    AsBytes,
-    graph::{thing::vertex_object::ObjectVertex, type_::vertex::PrefixedTypeVertexEncoding, Typed},
-    Keyable, layout::prefix::Prefix, Prefixed,
+    graph::{
+        thing::{vertex_object::ObjectVertex, ThingVertex},
+        type_::vertex::PrefixedTypeVertexEncoding,
+        Typed,
+    },
+    layout::prefix::Prefix,
+    AsBytes, Keyable, Prefixed,
 };
-use encoding::graph::thing::ThingVertex;
 use iterator::Collector;
-use lending_iterator::higher_order::Hkt;
-use lending_iterator::LendingIterator;
+use lending_iterator::{higher_order::Hkt, LendingIterator};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    ByteReference,
-    ConceptAPI,
-    ConceptStatus,
-    error::{ConceptReadError, ConceptWriteError}, thing::{
+    error::{ConceptReadError, ConceptWriteError},
+    thing::{
         object::{Object, ObjectAPI},
         relation::{IndexedPlayersIterator, RelationRoleIterator},
         thing_manager::ThingManager,
-        ThingAPI,
-    }, type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI},
+        HKInstance, ThingAPI,
+    },
+    type_::{entity_type::EntityType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI},
+    ByteReference, ConceptAPI, ConceptStatus,
 };
-use crate::thing::{HKInstance};
-use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Entity<'a> {
@@ -87,7 +87,6 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
     type TypeAPI<'b> = EntityType<'b>;
     type Owned = Entity<'static>;
     const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
-
 
     fn new(vertex: ObjectVertex<'a>) -> Self {
         debug_assert_eq!(vertex.prefix(), Prefix::VertexEntity);
@@ -174,7 +173,6 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
     ) -> Result<Prefix, ConceptReadError> {
         Ok(Prefix::VertexEntity)
     }
-
 }
 
 impl<'a> ObjectAPI<'a> for Entity<'a> {

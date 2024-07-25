@@ -21,7 +21,7 @@ impl ProgramPlan {
     pub fn new(
         entry: PatternPlan,
         entry_annotations: TypeAnnotations,
-        functions: HashMap<DefinitionKey<'static>, FunctionPlan>
+        functions: HashMap<DefinitionKey<'static>, FunctionPlan>,
     ) -> Self {
         Self { entry, entry_annotations, functions }
     }
