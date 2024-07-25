@@ -217,11 +217,12 @@ fn add_typeql_relation(
             typeql::statement::thing::RolePlayer::Typed(type_, var) => {
                 let player = register_typeql_var(constraints, var)?;
                 let type_ = register_typeql_type_var_any(constraints, type_)?;
-                constraints.add_role_player(relation, player, Some(type_))?;
+                constraints.add_role_player(relation, player, type_)?;
             }
             typeql::statement::thing::RolePlayer::Untyped(var) => {
                 let player = register_typeql_var(constraints, var)?;
-                constraints.add_role_player(relation, player, None)?;
+                let role_type = constraints.create_anonymous_variable()?;
+                constraints.add_role_player(relation, player, role_type)?;
             }
         }
     }

@@ -9,7 +9,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
-    type_::{annotation::AnnotationCardinality, Ordering, OwnerAPI, owns::OwnsAnnotation},
+    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
 };
 use encoding::{
     graph::type_::Kind,
@@ -26,8 +26,8 @@ use ir::{
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use traversal::{
     executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
@@ -161,7 +161,8 @@ fn traverse_has_unbounded_sorted_from() {
     ))];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
@@ -229,7 +230,8 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &vec![var_person, var_attribute],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {

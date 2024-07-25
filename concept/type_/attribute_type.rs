@@ -28,12 +28,13 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use super::annotation::{AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
+    thing::attribute::Attribute,
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
         object_type::ObjectType,
         owns::Owns,
         type_manager::TypeManager,
-        KindAPI, TypeAPI,
+        KindAPI, ThingTypeAPI, TypeAPI,
     },
     ConceptAPI,
 };
@@ -128,6 +129,10 @@ impl<'a> KindAPI<'a> for AttributeType<'a> {
     ) -> Result<MaybeOwns<'m, HashMap<AttributeTypeAnnotation, AttributeType<'static>>>, ConceptReadError> {
         type_manager.get_attribute_type_annotations(snapshot, self.clone().into_owned())
     }
+}
+
+impl<'a> ThingTypeAPI<'a> for AttributeType<'a> {
+    type InstanceType<'b> = Attribute<'b>;
 }
 
 impl<'a> AttributeType<'a> {

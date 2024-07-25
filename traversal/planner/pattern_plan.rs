@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    fmt,
-};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;

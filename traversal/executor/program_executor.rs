@@ -9,7 +9,6 @@ use std::{collections::HashMap, sync::Arc};
 use answer::variable::Variable;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::inference::type_inference::TypeAnnotations;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 

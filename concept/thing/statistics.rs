@@ -18,6 +18,7 @@ use encoding::graph::{
         edge::{ThingEdgeHas, ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
+        ThingVertex,
     },
     type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt},
     Typed,
@@ -35,7 +36,7 @@ use storage::{
 };
 
 use crate::{
-    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
+    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
         role_type::RoleType, TypeAPI,

@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::ops::Range;
-
 use answer::variable_value::VariableValue;
 use concept::{
     error::ConceptReadError,
@@ -13,9 +11,7 @@ use concept::{
 };
 use lending_iterator::higher_order::Hkt;
 
-use crate::executor::{
-    VariablePosition,
-};
+use crate::executor::VariablePosition;
 
 #[derive(Debug, Clone)]
 pub(crate) enum Tuple<'a> {
@@ -64,6 +60,7 @@ impl Hkt for Tuple<'static> {
     type HktSelf<'a> = Tuple<'a>;
 }
 
+#[derive(Debug, Clone)]
 pub(crate) enum TuplePositions {
     Single([VariablePosition; 1]),
     Pair([VariablePosition; 2]),
@@ -152,6 +149,7 @@ pub(crate) fn isa_attribute_to_tuple_thing_type<'a>(
         Err(err) => Err(err),
     }
 }
+pub(crate) type HasToTupleFn = for<'a> fn(Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a>;
 
 pub(crate) fn has_to_tuple_owner_attribute<'a>(result: Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a> {
     match result {

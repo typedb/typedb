@@ -143,20 +143,17 @@ impl<'cx> ConstraintsBuilder<'cx> {
         &mut self,
         relation: Variable,
         player: Variable,
-        role_type: Option<Variable>,
+        role_type: Variable,
     ) -> Result<&RolePlayer<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, relation)
                 && self.context.is_variable_available(self.constraints.scope, player)
-                && !role_type
-                    .is_some_and(|role_type| !self.context.is_variable_available(self.constraints.scope, role_type))
+                && self.context.is_variable_available(self.constraints.scope, role_type)
         );
         let role_player = Constraint::from(RolePlayer::new(relation, player, role_type));
         self.context.set_variable_category(relation, VariableCategory::Object, role_player.clone())?;
         self.context.set_variable_category(player, VariableCategory::Object, role_player.clone())?;
-        if let Some(role_type) = role_type {
-            self.context.set_variable_category(role_type, VariableCategory::Type, role_player.clone())?;
-        }
+        self.context.set_variable_category(role_type, VariableCategory::Type, role_player.clone())?;
         let constraint = self.constraints.add_constraint(role_player);
         Ok(constraint.as_role_player().unwrap())
     }
@@ -300,6 +297,32 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
+    pub fn ids_count(&self) -> usize {
+        let mut count = 0;
+        self.ids_foreach(|_, _| count += 1);
+        count
+    }
+
+    pub fn left_id(&self) -> ID {
+        let mut id = None;
+        self.ids_foreach(|constraint_id, side| {
+            if side == ConstraintIDSide::Left {
+                id = Some(constraint_id);
+            }
+        });
+        id.unwrap()
+    }
+
+    pub fn right_id(&self) -> ID {
+        let mut id = None;
+        self.ids_foreach(|constraint_id, side| {
+            if side == ConstraintIDSide::Right {
+                id = Some(constraint_id);
+            }
+        });
+        id.unwrap()
+    }
+
     pub(crate) fn as_label(&self) -> Option<&Label<ID>> {
         match self {
             Constraint::Label(label) => Some(label),
@@ -372,6 +395,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum ConstraintIDSide {
     Left,
     Right,
@@ -518,11 +542,11 @@ pub enum IsaKind {
 pub struct RolePlayer<ID: IrID> {
     pub(crate) relation: ID,
     pub(crate) player: ID,
-    pub(crate) role_type: Option<ID>,
+    pub(crate) role_type: ID,
 }
 
 impl<ID: IrID> RolePlayer<ID> {
-    pub fn new(relation: ID, player: ID, role_type: Option<ID>) -> Self {
+    pub fn new(relation: ID, player: ID, role_type: ID) -> Self {
         Self { relation, player, role_type }
     }
 
@@ -534,12 +558,12 @@ impl<ID: IrID> RolePlayer<ID> {
         self.player
     }
 
-    pub fn role_type(&self) -> Option<ID> {
+    pub fn role_type(&self) -> ID {
         self.role_type
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> {
-        [self.relation, self.player].into_iter().chain(self.role_type)
+        [self.relation, self.player, self.role_type].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
@@ -548,16 +572,14 @@ impl<ID: IrID> RolePlayer<ID> {
     {
         function(self.relation, ConstraintIDSide::Left);
         function(self.player, ConstraintIDSide::Right);
-        if let Some(role) = self.role_type {
-            function(role, ConstraintIDSide::Filter);
-        }
+        function(self.role_type, ConstraintIDSide::Filter);
     }
 
     pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> RolePlayer<T> {
         RolePlayer::new(
             *mapping.get(&self.relation).unwrap(),
             *mapping.get(&self.player).unwrap(),
-            self.role_type.map(|rt| *mapping.get(&rt).unwrap()),
+            *mapping.get(&self.role_type).unwrap(),
         )
     }
 }
@@ -570,14 +592,7 @@ impl<ID: IrID> From<RolePlayer<ID>> for Constraint<ID> {
 
 impl<ID: IrID> fmt::Display for RolePlayer<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.role_type {
-            None => {
-                write!(f, "{} rp {} (role: )", self.relation, self.player)
-            }
-            Some(role) => {
-                write!(f, "{} rp {} (role: {})", self.relation, self.player, role)
-            }
-        }
+        write!(f, "{} rp {} (role: {})", self.relation, self.player, self.role_type)
     }
 }
 

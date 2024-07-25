@@ -9,7 +9,7 @@ use std::fmt::{Display, Formatter};
 use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
 use lending_iterator::higher_order::Hkt;
 
-use crate::thing::{attribute::Attribute, object::Object};
+use crate::thing::{attribute::Attribute, object::Object, ThingAPI};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Has<'a> {
@@ -22,7 +22,7 @@ impl<'a> Has<'a> {
         Self::Edge(edge)
     }
 
-    fn new_from_edge_reverse(edge: ThingEdgeHasReverse<'a>) -> Self {
+    pub(crate) fn new_from_edge_reverse(edge: ThingEdgeHasReverse<'a>) -> Self {
         Self::EdgeReverse(edge)
     }
 

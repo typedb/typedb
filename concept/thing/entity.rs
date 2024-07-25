@@ -11,28 +11,27 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
-    graph::{thing::vertex_object::ObjectVertex, type_::vertex::PrefixedTypeVertexEncoding, Typed},
+    graph::{
+        thing::{vertex_object::ObjectVertex, ThingVertex},
+        type_::vertex::PrefixedTypeVertexEncoding,
+        Typed,
+    },
     layout::prefix::Prefix,
     AsBytes, Keyable, Prefixed,
 };
 use iterator::Collector;
-use lending_iterator::LendingIterator;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{
-    key_value::StorageKey,
-    snapshot::{ReadableSnapshot, WritableSnapshot},
-};
+use lending_iterator::{higher_order::Hkt, LendingIterator};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         object::{Object, ObjectAPI},
         relation::{IndexedPlayersIterator, RelationRoleIterator},
         thing_manager::ThingManager,
-        ThingAPI,
+        HKInstance, ThingAPI,
     },
-    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI},
+    type_::{entity_type::EntityType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -42,17 +41,8 @@ pub struct Entity<'a> {
 }
 
 impl<'a> Entity<'a> {
-    pub fn new(vertex: ObjectVertex<'a>) -> Self {
-        debug_assert_eq!(vertex.prefix(), Prefix::VertexEntity);
-        Entity { vertex }
-    }
-
     pub fn type_(&self) -> EntityType<'static> {
         EntityType::build_from_type_id(self.vertex.type_id_())
-    }
-
-    pub fn as_reference(&self) -> Entity<'_> {
-        Entity { vertex: self.vertex.as_reference() }
     }
 
     pub fn iid(&self) -> ByteReference<'_> {
@@ -81,6 +71,10 @@ impl<'a> Entity<'a> {
         Entity::new(ObjectVertex::new(Bytes::Array(bytes)))
     }
 
+    pub fn as_reference(&self) -> Entity<'_> {
+        Entity { vertex: self.vertex.as_reference() }
+    }
+
     pub fn into_owned(self) -> Entity<'static> {
         Entity { vertex: self.vertex.into_owned() }
     }
@@ -89,6 +83,28 @@ impl<'a> Entity<'a> {
 impl<'a> ConceptAPI<'a> for Entity<'a> {}
 
 impl<'a> ThingAPI<'a> for Entity<'a> {
+    type Vertex<'b> = ObjectVertex<'b>;
+    type TypeAPI<'b> = EntityType<'b>;
+    type Owned = Entity<'static>;
+    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
+
+    fn new(vertex: ObjectVertex<'a>) -> Self {
+        debug_assert_eq!(vertex.prefix(), Prefix::VertexEntity);
+        Entity { vertex }
+    }
+
+    fn vertex(&self) -> Self::Vertex<'_> {
+        self.vertex.as_reference()
+    }
+
+    fn into_vertex(self) -> Self::Vertex<'a> {
+        self.vertex
+    }
+
+    fn into_owned(self) -> Self::Owned {
+        Entity::new(self.vertex.into_owned())
+    }
+
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing(snapshot, self.as_reference());
@@ -149,17 +165,17 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         thing_manager.delete_entity(snapshot, self);
         Ok(())
     }
+
+    fn prefix_for_type(
+        _type: Self::TypeAPI<'_>,
+        _snapshot: &impl ReadableSnapshot,
+        _type_manager: &TypeManager,
+    ) -> Result<Prefix, ConceptReadError> {
+        Ok(Prefix::VertexEntity)
+    }
 }
 
 impl<'a> ObjectAPI<'a> for Entity<'a> {
-    fn vertex(&self) -> ObjectVertex<'_> {
-        self.vertex.as_reference()
-    }
-
-    fn into_vertex(self) -> ObjectVertex<'a> {
-        self.vertex
-    }
-
     fn type_(&self) -> impl ObjectTypeAPI<'static> {
         self.type_()
     }
@@ -169,11 +185,11 @@ impl<'a> ObjectAPI<'a> for Entity<'a> {
     }
 }
 
-fn storage_key_to_entity(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> Entity<'_> {
-    Entity::new(ObjectVertex::new(storage_key.into_bytes()))
-}
+impl HKInstance for Entity<'static> {}
 
-concept_iterator!(EntityIterator, Entity, storage_key_to_entity);
+impl Hkt for Entity<'static> {
+    type HktSelf<'a> = Entity<'a>;
+}
 
 impl<'a> Display for Entity<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

@@ -12,7 +12,7 @@ use concept::{
     thing::{thing_manager::ThingManager, ThingAPI},
     type_::TypeAPI,
 };
-use ir::inference::type_inference::TypeAnnotations;
+use ir::{inference::type_inference::TypeAnnotations, pattern::constraint::Constraint};
 use storage::snapshot::ReadableSnapshot;
 pub use tracing::{error, info, trace, warn};
 
@@ -23,8 +23,8 @@ use crate::{
             comparison_executor::ComparisonIteratorExecutor,
             comparison_reverse_executor::ComparisonReverseIteratorExecutor,
             function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-            has_reverse_executor::HasReverseIteratorExecutor, isa_executor::IsaExecutor, iterator::TupleIterator,
-            role_player_executor::RolePlayerIteratorExecutor,
+            has_reverse_executor::HasReverseIteratorExecutor, isa_reverse_executor::IsaReverseExecutor,
+            iterator::TupleIterator, role_player_executor::RolePlayerIteratorExecutor,
             role_player_reverse_executor::RolePlayerReverseIteratorExecutor,
         },
         VariablePosition,
@@ -37,14 +37,14 @@ mod comparison_reverse_executor;
 mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
-mod isa_executor;
+mod isa_reverse_executor;
 pub(crate) mod iterator;
 mod role_player_executor;
 mod role_player_reverse_executor;
 pub(crate) mod tuple;
 
 pub(crate) enum InstructionExecutor {
-    Isa(IsaExecutor),
+    Isa(IsaReverseExecutor),
 
     Has(HasExecutor),
     HasReverse(HasReverseIteratorExecutor),
@@ -75,7 +75,7 @@ impl InstructionExecutor {
         match instruction {
             Instruction::Isa(isa, _) => {
                 let thing = isa.thing();
-                let provider = IsaExecutor::new(
+                let provider = IsaReverseExecutor::new(
                     isa.clone().into_ids(positions),
                     variable_modes,
                     sort_by_position,
@@ -216,6 +216,51 @@ impl VariableModes {
 
     pub(crate) fn fully_unbound(&self) -> bool {
         self.modes.values().all(|mode| mode.is_unbound())
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub(crate) enum BinaryIterateMode {
+    Unbound,         // [x, y] in standard order
+    UnboundInverted, // [x, y] in [y, x] sort order
+    BoundFrom,       // [X, y], where X is bound
+}
+
+impl BinaryIterateMode {
+    pub(crate) fn new(
+        constraint: impl Into<Constraint<VariablePosition>>,
+        in_reverse_direction: bool,
+        var_modes: &VariableModes,
+        sort_by: Option<VariablePosition>,
+    ) -> BinaryIterateMode {
+        let constraint = constraint.into();
+        debug_assert!(constraint.ids_count() == 2);
+        debug_assert!(!var_modes.fully_bound());
+
+        let default_sort_variable_for_direction =
+            if in_reverse_direction { constraint.right_id() } else { constraint.left_id() };
+
+        if var_modes.fully_unbound() {
+            match sort_by {
+                None => {
+                    // arbitrarily pick from sorted
+                    BinaryIterateMode::Unbound
+                }
+                Some(variable) => {
+                    if default_sort_variable_for_direction == variable {
+                        BinaryIterateMode::Unbound
+                    } else {
+                        BinaryIterateMode::UnboundInverted
+                    }
+                }
+            }
+        } else {
+            BinaryIterateMode::BoundFrom
+        }
+    }
+
+    pub(crate) fn is_inverted(&self) -> bool {
+        matches!(self, Self::UnboundInverted)
     }
 }
 

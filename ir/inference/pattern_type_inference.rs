@@ -310,7 +310,6 @@ impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
 
 #[cfg(test)]
 pub mod tests {
-
     use std::collections::{BTreeMap, BTreeSet};
 
     use answer::{variable::Variable, Type as TypeAnnotation};

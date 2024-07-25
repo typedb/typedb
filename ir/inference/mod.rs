@@ -161,6 +161,7 @@ pub mod tests {
             durability_client::WALClient,
             snapshot::{CommittableSnapshot, WritableSnapshot},
         };
+
         pub(crate) const LABEL_ANIMAL: &str = "animal";
         pub(crate) const LABEL_CAT: &str = "cat";
         pub(crate) const LABEL_DOG: &str = "dog";

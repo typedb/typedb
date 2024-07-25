@@ -84,12 +84,12 @@ impl<T: Prefix> KeyRange<T> {
         match &self.end {
             RangeEnd::SameAsStart => value.starts_with(self.start()),
             RangeEnd::Inclusive(e) => value.cmp(e) == Ordering::Less || value.starts_with(e),
-            RangeEnd::Exclusive(e) => value.cmp(e) == Ordering::Less,
+            RangeEnd::Exclusive(e) => value.cmp(e) == Ordering::Less || *value == self.start,
             RangeEnd::Unbounded => true,
         }
     }
 
-    fn end_value(&self) -> Option<&T> {
+    pub(crate) fn end_value(&self) -> Option<&T> {
         match &self.end {
             RangeEnd::SameAsStart => Some(self.start()),
             RangeEnd::Inclusive(value) => Some(value),

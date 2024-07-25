@@ -18,6 +18,7 @@ use crate::{
         thing::{
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_object::ObjectVertex,
+            ThingVertex, THING_VERTEX_LENGTH_PREFIX_TYPE,
         },
         type_::vertex::{TypeID, TypeVertex},
         Typed,
@@ -42,10 +43,10 @@ impl<'a> ThingEdgeHas<'a> {
     const PREFIX: Prefix = Prefix::EdgeHas;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
-    pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + ObjectVertex::LENGTH_PREFIX_TYPE;
+    pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
     pub const LENGTH_PREFIX_FROM_OBJECT: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
     pub const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize =
-        PrefixID::LENGTH + ObjectVertex::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
+        PrefixID::LENGTH + ObjectVertex::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.bytes()[Self::RANGE_PREFIX], Self::PREFIX.prefix_id().bytes());
@@ -81,16 +82,13 @@ impl<'a> ThingEdgeHas<'a> {
 
     pub fn prefix_from_object_to_type(
         from: ObjectVertex,
-        to_value_type_category: ValueTypeCategory,
-        to_type: TypeVertex,
+        to_vertex_prefix: Prefix,
+        to_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        let to_prefix = AttributeVertex::build_prefix_type(
-            AttributeVertex::value_type_category_to_prefix_type(to_value_type_category),
-            to_type.type_id_(),
-        );
+        let to_prefix = AttributeVertex::build_prefix_type(to_vertex_prefix, to_type_id);
         let to_type_range = Self::range_from().end..Self::range_from().end + to_prefix.length();
         bytes.bytes_mut()[to_type_range].copy_from_slice(to_prefix.bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
@@ -127,7 +125,7 @@ impl<'a> ThingEdgeHas<'a> {
     }
 
     const fn range_from_type() -> Range<usize> {
-        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + ObjectVertex::LENGTH_PREFIX_TYPE
+        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + THING_VERTEX_LENGTH_PREFIX_TYPE
     }
 
     const fn range_from() -> Range<usize> {
@@ -166,9 +164,9 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {
 }
 
 ///
-/// [has_reverse][8 byte ID][object]
+/// [has_reverse][attribute, 8 byte ID][object]
 /// OR
-/// [has_reverse][17 byte ID][object]
+/// [has_reverse][attribute, 16 byte ID][object]
 ///
 /// Note that these are represented here together, but should go to different keyspaces due to different prefix lengths
 ///
@@ -182,14 +180,14 @@ impl<'a> ThingEdgeHasReverse<'a> {
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
     const INDEX_FROM_PREFIX: usize = PrefixID::LENGTH;
-    pub const LENGTH_PREFIX_FROM_PREFIX: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_PREFIX;
-    pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
+    pub const LENGTH_PREFIX_FROM_PREFIX: usize = PrefixID::LENGTH + PrefixID::LENGTH;
+    pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
     pub const LENGTH_BOUND_PREFIX_FROM: usize =
-        PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE + AttributeID::max_length();
+        PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length();
     pub const LENGTH_BOUND_PREFIX_FROM_TO_TYPE: usize = PrefixID::LENGTH
-        + AttributeVertex::LENGTH_PREFIX_TYPE
+        + THING_VERTEX_LENGTH_PREFIX_TYPE
         + AttributeID::max_length()
-        + ObjectVertex::LENGTH_PREFIX_TYPE;
+        + THING_VERTEX_LENGTH_PREFIX_TYPE;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ThingEdgeHasReverse<'a> {
         debug_assert_eq!(bytes.bytes()[Self::RANGE_PREFIX], Self::PREFIX.prefix_id().bytes());
@@ -211,18 +209,18 @@ impl<'a> ThingEdgeHasReverse<'a> {
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_PREFIX);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + AttributeVertex::LENGTH_PREFIX_PREFIX]
+        bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + PrefixID::LENGTH]
             .copy_from_slice(&from_prefix.prefix_id().bytes);
         StorageKey::new_owned(Self::keyspace_for_from_prefix(from_prefix), bytes)
     }
 
-    pub fn prefix_from_type(
+    pub fn prefix_from_type_with_category(
         from_prefix: Prefix,
         from_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        let from_prefix_end = Self::RANGE_PREFIX.end + AttributeVertex::LENGTH_PREFIX_PREFIX;
+        let from_prefix_end = Self::RANGE_PREFIX.end + PrefixID::LENGTH;
         bytes.bytes_mut()[Self::RANGE_PREFIX.end..from_prefix_end].copy_from_slice(&from_prefix.prefix_id().bytes);
         let from_type_id_end = from_prefix_end + TypeID::LENGTH;
         bytes.bytes_mut()[from_prefix_end..from_type_id_end].copy_from_slice(&from_type_id.bytes());
@@ -294,7 +292,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
         let prefix = PrefixID::new([byte]);
         let id_encoding_length =
             AttributeVertex::prefix_type_to_value_id_encoding_length(Prefix::from_prefix_id(prefix));
-        AttributeVertex::LENGTH_PREFIX_TYPE + id_encoding_length
+        THING_VERTEX_LENGTH_PREFIX_TYPE + id_encoding_length
     }
 
     fn keyspace_for_from(attribute: AttributeVertex<'_>) -> EncodingKeyspace {

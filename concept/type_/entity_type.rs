@@ -32,6 +32,7 @@ use storage::{
 use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
+    thing::entity::Entity,
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
         attribute_type::AttributeType,
@@ -40,7 +41,7 @@ use crate::{
         plays::Plays,
         role_type::RoleType,
         type_manager::TypeManager,
-        KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
     },
     ConceptAPI,
 };
@@ -130,6 +131,10 @@ impl<'a> KindAPI<'a> for EntityType<'a> {
     ) -> Result<MaybeOwns<'m, HashMap<EntityTypeAnnotation, EntityType<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_annotations(snapshot, self.clone().into_owned())
     }
+}
+
+impl<'a> ThingTypeAPI<'a> for EntityType<'a> {
+    type InstanceType<'b> = Entity<'b>;
 }
 
 impl<'a> EntityType<'a> {

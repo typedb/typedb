@@ -21,6 +21,7 @@ use encoding::{
     value::label::Label,
     AsBytes,
 };
+use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use serde::{Deserialize, Serialize};
@@ -28,13 +29,13 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
+    thing::ThingAPI,
     type_::{
         annotation::{Annotation, AnnotationCardinality},
         attribute_type::AttributeType,
         object_type::ObjectType,
-        owns::{Owns, OwnsAnnotation},
-        plays::{Plays, PlaysAnnotation},
-        relates::RelatesAnnotation,
+        owns::Owns,
+        plays::Plays,
         role_type::RoleType,
         type_manager::TypeManager,
     },
@@ -97,6 +98,10 @@ pub trait KindAPI<'a>: TypeAPI<'a> {
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> {
     fn into_owned_object_type(self) -> ObjectType<'static>;
+}
+
+pub trait ThingTypeAPI<'a>: TypeAPI<'a> {
+    type InstanceType<'b>: ThingAPI<'b>;
 }
 
 pub trait OwnerAPI<'a>: TypeAPI<'a> {

@@ -319,14 +319,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             Constraint::Isa(isa) => self.try_propagating_vertex_annotation_impl(isa, vertices)?,
             Constraint::Sub(sub) => self.try_propagating_vertex_annotation_impl(sub, vertices)?,
             Constraint::RolePlayer(role_player) => {
-                if role_player.role_type.is_some() {
-                    let relation_role = RelationRoleEdge { role_player };
-                    let player_role = PlayerRoleEdge { role_player };
-                    self.try_propagating_vertex_annotation_impl(&relation_role, vertices)?
-                        || self.try_propagating_vertex_annotation_impl(&player_role, vertices)?
-                } else {
-                    todo!("Can we always have a role-player variable?")
-                }
+                let relation_role = RelationRoleEdge { role_player };
+                let player_role = PlayerRoleEdge { role_player };
+                self.try_propagating_vertex_annotation_impl(&relation_role, vertices)?
+                    || self.try_propagating_vertex_annotation_impl(&player_role, vertices)?
             }
             Constraint::Has(has) => self.try_propagating_vertex_annotation_impl(has, vertices)?,
             Constraint::Comparison(cmp) => self.try_propagating_vertex_annotation_impl(cmp, vertices)?,
@@ -446,14 +442,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
                 Constraint::Isa(isa) => edges.push(self.seed_edge(constraint, isa, vertices)?),
                 Constraint::Sub(sub) => edges.push(self.seed_edge(constraint, sub, vertices)?),
                 Constraint::RolePlayer(role_player) => {
-                    if role_player.role_type.is_some() {
-                        let relation_role = RelationRoleEdge { role_player };
-                        let player_role = PlayerRoleEdge { role_player };
-                        edges.push(self.seed_edge(constraint, &relation_role, vertices)?);
-                        edges.push(self.seed_edge(constraint, &player_role, vertices)?);
-                    } else {
-                        todo!("Can we always have a role-player variable?")
-                    }
+                    let relation_role = RelationRoleEdge { role_player };
+                    let player_role = PlayerRoleEdge { role_player };
+                    edges.push(self.seed_edge(constraint, &relation_role, vertices)?);
+                    edges.push(self.seed_edge(constraint, &player_role, vertices)?);
                 }
                 Constraint::Has(has) => edges.push(self.seed_edge(constraint, has, vertices)?),
                 Constraint::Comparison(cmp) => edges.push(self.seed_edge(constraint, cmp, vertices)?),
@@ -954,7 +946,7 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
     }
 
     fn right(&self) -> Variable {
-        self.role_player.role_type.unwrap()
+        self.role_player.role_type
     }
 
     fn annotate_left_to_right_for_type(
@@ -1012,7 +1004,7 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
     }
 
     fn right(&self) -> Variable {
-        self.role_player.role_type.unwrap()
+        self.role_player.role_type
     }
 
     fn annotate_left_to_right_for_type(

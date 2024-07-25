@@ -4,18 +4,23 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::ops::RangeBounds;
+
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
-    graph::thing::{vertex_attribute::AttributeID, vertex_object::ObjectVertex},
+    graph::thing::{vertex_attribute::AttributeID, vertex_object::ObjectVertex, ThingVertex},
+    layout::prefix::Prefix,
     value::value_type::ValueTypeCategory,
     AsBytes,
 };
+use lending_iterator::higher_order::Hkt;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::thing_manager::ThingManager,
+    thing::{entity::Entity, thing_manager::ThingManager},
+    type_::{type_manager::TypeManager, TypeAPI},
     ConceptStatus,
 };
 
@@ -27,7 +32,21 @@ pub mod relation;
 pub mod statistics;
 pub mod thing_manager;
 
-pub trait ThingAPI<'a> {
+pub trait ThingAPI<'a>: Sized + Clone {
+    type TypeAPI<'b>: TypeAPI<'b>;
+    type Vertex<'b>: ThingVertex<'b>;
+    type Owned: ThingAPI<'static>;
+
+    const PREFIX_RANGE: (Prefix, Prefix);
+
+    fn new(vertex: Self::Vertex<'a>) -> Self;
+
+    fn vertex(&self) -> Self::Vertex<'_>;
+
+    fn into_vertex(self) -> Self::Vertex<'a>;
+
+    fn into_owned(self) -> Self::Owned;
+
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager);
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
@@ -44,7 +63,15 @@ pub trait ThingAPI<'a> {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError>;
+
+    fn prefix_for_type(
+        type_: Self::TypeAPI<'_>,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Prefix, ConceptReadError>;
 }
+
+pub trait HKInstance: for<'a> Hkt<HktSelf<'a>: ThingAPI<'a>> {}
 
 // TODO: where do these belong? They're encodings of values we store for keys
 pub(crate) fn decode_attribute_ids(

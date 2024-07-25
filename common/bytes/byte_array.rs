@@ -44,7 +44,7 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
     }
 
     pub fn copy(bytes: &[u8]) -> ByteArray<INLINE_BYTES> {
-        if bytes.len() < INLINE_BYTES {
+        if bytes.len() <= INLINE_BYTES {
             ByteArray::Inline(ByteArrayInline::from(bytes))
         } else {
             ByteArray::Boxed(ByteArrayBoxed::from(bytes))
@@ -53,7 +53,7 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
 
     pub fn copy_concat<const N: usize>(slices: [&[u8]; N]) -> ByteArray<INLINE_BYTES> {
         let length: usize = slices.iter().map(|slice| slice.len()).sum();
-        if length < INLINE_BYTES {
+        if length <= INLINE_BYTES {
             ByteArray::Inline(ByteArrayInline::concat(slices))
         } else {
             ByteArray::Boxed(ByteArrayBoxed::concat(slices))

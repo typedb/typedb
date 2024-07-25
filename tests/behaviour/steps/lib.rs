@@ -17,9 +17,15 @@ use std::{
 use ::concept::thing::{attribute::Attribute, object::Object};
 use cucumber::{gherkin::Feature, StatsWriter, World};
 use database::Database;
+use futures::{
+    future::Either,
+    stream::{self, StreamExt},
+};
 use itertools::Itertools;
 use server::typedb;
 use storage::durability_client::WALClient;
+use thing_util::ObjectWithKey;
+use transaction_context::ActiveTransaction;
 
 mod assert;
 mod concept;
@@ -27,13 +33,6 @@ mod connection;
 mod params;
 mod transaction_context;
 mod util;
-
-use futures::{
-    future::Either,
-    stream::{self, StreamExt},
-};
-use thing_util::ObjectWithKey;
-use transaction_context::ActiveTransaction;
 
 mod thing_util {
     use concept::thing::{attribute::Attribute, object::Object};

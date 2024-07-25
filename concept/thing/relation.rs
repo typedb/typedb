@@ -15,6 +15,7 @@ use encoding::{
         thing::{
             edge::{ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
             vertex_object::ObjectVertex,
+            ThingVertex,
         },
         type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
@@ -31,17 +32,16 @@ use storage::{
 };
 
 use crate::{
-    concept_iterator, edge_iterator,
+    edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        entity::Entity,
         object::{Object, ObjectAPI},
         thing_manager::ThingManager,
-        ThingAPI,
+        HKInstance, ThingAPI,
     },
     type_::{
         annotation::AnnotationDistinct, relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType,
-        Capability, ObjectTypeAPI, Ordering, TypeAPI,
+        type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering, TypeAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
@@ -52,19 +52,6 @@ pub struct Relation<'a> {
 }
 
 impl<'a> Relation<'a> {
-    pub fn new(vertex: ObjectVertex<'a>) -> Self {
-        debug_assert_eq!(
-            vertex.prefix(),
-            Prefix::VertexRelation,
-            "non-relation prefix when constructing from a vertex"
-        );
-        Relation { vertex }
-    }
-
-    pub fn as_reference(&self) -> Relation<'_> {
-        Relation { vertex: self.vertex.as_reference() }
-    }
-
     pub fn type_(&self) -> RelationType<'static> {
         RelationType::build_from_type_id(self.vertex.type_id_())
     }
@@ -312,6 +299,10 @@ impl<'a> Relation<'a> {
         Relation::new(ObjectVertex::new(Bytes::Array(bytes)))
     }
 
+    pub(crate) fn as_reference(&self) -> Relation<'_> {
+        Relation { vertex: self.vertex.as_reference() }
+    }
+
     pub fn into_owned(self) -> Relation<'static> {
         Relation { vertex: self.vertex.into_owned() }
     }
@@ -320,6 +311,32 @@ impl<'a> Relation<'a> {
 impl<'a> ConceptAPI<'a> for Relation<'a> {}
 
 impl<'a> ThingAPI<'a> for Relation<'a> {
+    type Vertex<'b> = ObjectVertex<'b>;
+    type TypeAPI<'b> = RelationType<'b>;
+    type Owned = Relation<'static>;
+    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
+
+    fn new(vertex: Self::Vertex<'a>) -> Self {
+        debug_assert_eq!(
+            vertex.prefix(),
+            Prefix::VertexRelation,
+            "non-relation prefix when constructing from a vertex"
+        );
+        Relation { vertex }
+    }
+
+    fn vertex(&self) -> Self::Vertex<'_> {
+        self.vertex.as_reference()
+    }
+
+    fn into_vertex(self) -> Self::Vertex<'a> {
+        self.vertex
+    }
+
+    fn into_owned(self) -> Self::Owned {
+        Relation::new(self.vertex.into_owned())
+    }
+
     fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing(snapshot, self.as_reference());
@@ -415,17 +432,17 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         }
         Ok(())
     }
+
+    fn prefix_for_type(
+        _type: Self::TypeAPI<'_>,
+        _snapshot: &impl ReadableSnapshot,
+        _type_manager: &TypeManager,
+    ) -> Result<Prefix, ConceptReadError> {
+        Ok(Prefix::VertexRelation)
+    }
 }
 
 impl<'a> ObjectAPI<'a> for Relation<'a> {
-    fn vertex(&self) -> ObjectVertex<'_> {
-        self.vertex.as_reference()
-    }
-
-    fn into_vertex(self) -> ObjectVertex<'a> {
-        self.vertex
-    }
-
     fn type_(&self) -> impl ObjectTypeAPI<'static> {
         self.type_()
     }
@@ -435,15 +452,11 @@ impl<'a> ObjectAPI<'a> for Relation<'a> {
     }
 }
 
+impl HKInstance for Relation<'static> {}
+
 impl Hkt for Relation<'static> {
     type HktSelf<'a> = Relation<'a>;
 }
-
-// TODO: can we inline this into the macro invocation?
-fn storage_key_to_entity(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> Relation<'_> {
-    Relation::new(ObjectVertex::new(storage_key.into_bytes()))
-}
-concept_iterator!(RelationIterator, Relation, storage_key_to_entity);
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct RolePlayer<'a> {

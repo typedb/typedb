@@ -182,6 +182,7 @@ impl Prefix {
            DefinitionStruct => [20], true;
            DefinitionFunction => [21], true;
 
+           // All objects are stored consecutively for iteration
            VertexEntity => [30], true;
            VertexRelation => [31], true;
 

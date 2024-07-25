@@ -27,6 +27,7 @@ use crate::{
         thing::{
             vertex_attribute::{AttributeID, AttributeVertex, LongAttributeID, StringAttributeID},
             vertex_object::{ObjectID, ObjectVertex},
+            ThingVertex,
         },
         type_::vertex::{build_type_vertex_prefix_key, TypeID, TypeIDUInt, TypeVertex},
         Typed,
