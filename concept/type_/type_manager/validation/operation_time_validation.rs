@@ -19,6 +19,7 @@ use encoding::{
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
+use paste::paste;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
@@ -34,7 +35,7 @@ use crate::{
             AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
-        constraint::Constraint,
+        constraint::{Constraint, ConstraintValidationMode},
         entity_type::EntityType,
         object_type::{with_object_type, ObjectType},
         owns::{Owns, OwnsAnnotation},
@@ -90,13 +91,15 @@ macro_rules! while_some_object_instance_in_type {
                 let mut object_iterator = $thing_manager.get_entities_in($snapshot, $type_.clone());
 
                 while let Some($object) = object_iterator.next() {
+                    let $object = $object?;
                     $expr
                 }
-            },
+            }
             ObjectType::Relation($type_) => {
                 let mut object_iterator = $thing_manager.get_relations_in($snapshot, $type_.clone());
 
                 while let Some($object) = object_iterator.next() {
+                    let $object = $object?;
                     $expr
                 }
             }
@@ -260,88 +263,251 @@ macro_rules! cannot_change_supertype_as_capability_with_existing_instances_is_lo
 }
 
 macro_rules! capability_or_its_overriding_capability_with_violated_new_annotation_constraints {
-    ($func_name:ident, $capability_type:ident, $object_type:ident, $interface_type:ident, $existing_instances_validation_func:path) => {
-        fn $func_name<'a>(
-            snapshot: &impl ReadableSnapshot,
-            type_manager: &'a TypeManager,
-            thing_manager: &ThingManager,
-            capability: $capability_type<'static>,
-            annotations: HashSet<Annotation>,
-        ) -> Result<Option<($object_type<'a>, $interface_type<'a>, AnnotationCategory)>, ConceptReadError> {
-            if annotations.is_empty() {
-                return Ok(None);
+    ($func_name:ident, $capability_type:ident, $object_type:ident, $interface_type:ident, $existing_instances_validation_func_type:path, $existing_instances_validation_func_type_and_siblings:path) => {
+        paste! {
+            fn $func_name<'a>(
+                snapshot: &impl ReadableSnapshot,
+                type_manager: &'a TypeManager,
+                thing_manager: &ThingManager,
+                capability: $capability_type<'static>,
+                sorted_annotations: HashMap<ConstraintValidationMode, HashSet<Annotation>>,
+            ) -> Result<Option<(Vec<($object_type<'a>, $interface_type<'a>)>, AnnotationCategory)>, ConceptReadError> {
+                for (validation_mode, annotations) in sorted_annotations {
+                    match validation_mode {
+                        ConstraintValidationMode::Type => {
+                            let result = Self::[< $func_name _type >](
+                                snapshot,
+                                type_manager,
+                                thing_manager,
+                                capability.clone(),
+                                annotations
+                            )?;
+                            if result.is_some() {
+                                return Ok(result);
+                            }
+                        }
+                        ConstraintValidationMode::TypeAndSiblings => {
+                            let result = Self::[< $func_name _type_and_siblings >](
+                                snapshot,
+                                type_manager,
+                                thing_manager,
+                                capability.clone(),
+                                annotations
+                            )?;
+                            if result.is_some() {
+                                return Ok(result);
+                            }
+                        }
+                    }
+                }
+                Ok(None)
             }
 
-            let mut type_and_interface_with_violations = None;
-
-            // If the constraint is already in the schema, we don't need to revalidate it as the data should've been validated when this constraint was set
-            let mut annotations_to_revalidate = annotations;
-            let declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())?;
-            annotations_to_revalidate.retain(|annotation| !declared_annotations.contains(annotation));
-
-            let mut capabilities_and_annotations_to_check = VecDeque::new();
-            capabilities_and_annotations_to_check.push_front((
-                capability.object(),
-                capability.interface(),
-                annotations_to_revalidate,
-            ));
-
-            while let Some((current_object_type, current_interface_type, annotations_to_revalidate)) =
-                capabilities_and_annotations_to_check.pop_back()
-            {
-                if let Some(violated_constraint) = $existing_instances_validation_func(
-                    snapshot,
-                    type_manager,
-                    thing_manager,
-                    current_object_type.clone(),
-                    current_interface_type.clone(),
-                    &annotations_to_revalidate,
-                )? {
-                    type_and_interface_with_violations =
-                        Some((current_object_type, current_interface_type, violated_constraint));
-                    break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
+            fn [< $func_name _type >]<'a>(
+                snapshot: &impl ReadableSnapshot,
+                type_manager: &'a TypeManager,
+                thing_manager: &ThingManager,
+                capability: $capability_type<'static>,
+                annotations: HashSet<Annotation>,
+            ) -> Result<Option<(Vec<($object_type<'a>, $interface_type<'a>)>, AnnotationCategory)>, ConceptReadError> {
+                println!("Checking for type: {:?}", annotations);
+                if annotations.is_empty() {
+                    return Ok(None);
                 }
 
-                let subtypes = current_object_type.get_subtypes(snapshot, type_manager)?;
-                for subtype in subtypes.into_iter() {
-                    // If subtype has another capability of the same interface (subtype -> interface), but it doesn't override (type -> interface), we ignore its existence
-                    // and still validate the capability against these constraints
-                    if let Some(overriding) =
-                        TypeReader::get_object_capabilities_overrides::<$capability_type<'static>>(
-                            snapshot,
-                            subtype.clone().into_owned(),
-                        )?
-                        .iter()
-                        .find_map(|(overriding, overridden)| {
-                            if &capability == overridden {
-                                Some(overriding.clone())
-                            } else {
-                                None
-                            }
-                        })
-                    {
-                        let mut overriding_annotations_to_revalidate = annotations_to_revalidate.clone();
-                        let declared_annotations =
-                            TypeReader::get_type_edge_annotations_declared(snapshot, overriding.clone())?;
-                        overriding_annotations_to_revalidate
-                            .retain(|annotation| !declared_annotations.contains(annotation));
+                let mut type_and_interface_with_violations = None;
+                let mut capabilities_and_annotations_to_check = VecDeque::new();
+                capabilities_and_annotations_to_check.push_front((
+                    capability.object(),
+                    capability,
+                    annotations,
+                ));
 
-                        capabilities_and_annotations_to_check.push_front((
+                while let Some((current_object_type, current_capability, annotations_to_revalidate)) =
+                    capabilities_and_annotations_to_check.pop_back()
+                {
+                    if let Some(violated_constraint) = $existing_instances_validation_func_type(
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        current_object_type.clone(),
+                        current_capability.interface(),
+                        &annotations_to_revalidate,
+                    )? {
+                        type_and_interface_with_violations =
+                            Some((vec![(current_object_type, current_capability.interface())], violated_constraint));
+                        break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
+                    }
+
+                    let subtypes = current_object_type.get_subtypes(snapshot, type_manager)?;
+                    for subtype in subtypes.into_iter() {
+                        // If subtype has another capability of the same interface (subtype -> interface), but it doesn't override (type -> interface), we ignore its existence
+                        // and still validate the capability against these constraints
+                        let overrides = TypeReader::get_object_capabilities_overrides::<$capability_type<'static>>(
+                                snapshot,
+                                subtype.clone().into_owned(),
+                            )?;
+                        let mut overridings = overrides
+                            .iter()
+                            .filter_map(|(overriding, overridden)| {
+                                if &current_capability == overridden {
+                                    Some(overriding.clone())
+                                } else {
+                                    None
+                                }
+                            });
+
+                        if overridings.clone().peekable().peek().is_some() {
+                            while let Some(overriding) = overridings.next()
+                            {
+                                let mut overriding_annotations_to_revalidate = annotations_to_revalidate.clone();
+                                let declared_annotations =
+                                    TypeReader::get_type_edge_annotations_declared(snapshot, overriding.clone())?;
+                                overriding_annotations_to_revalidate
+                                    .retain(|annotation| !declared_annotations.contains(annotation));
+
+                                capabilities_and_annotations_to_check.push_front((
+                                    subtype.clone(),
+                                    overriding,
+                                    overriding_annotations_to_revalidate,
+                                ));
+                            }
+                        } else {
+                            capabilities_and_annotations_to_check.push_front((
+                                subtype.clone(),
+                                current_capability.clone(),
+                                annotations_to_revalidate.clone(),
+                            ));
+                        }
+                    }
+                }
+
+                Ok(type_and_interface_with_violations)
+            }
+
+            fn [< $func_name _type_and_siblings >]<'a>(
+                snapshot: &impl ReadableSnapshot,
+                type_manager: &'a TypeManager,
+                thing_manager: &ThingManager,
+                capability: $capability_type<'static>,
+                annotations: HashSet<Annotation>,
+            ) -> Result<Option<(Vec<($object_type<'a>, $interface_type<'a>)>, AnnotationCategory)>, ConceptReadError> {
+                println!("Checking for type and siblings: {:?}", annotations);
+                if annotations.is_empty() {
+                    return Ok(None);
+                }
+
+                let mut type_and_interface_with_violations = None;
+
+                let mut capabilities_to_check = VecDeque::new();
+                capabilities_to_check.push_front((
+                    capability.object(),
+                    vec![capability],
+                ));
+
+                while let Some((current_object_type, current_capabilities)) =
+                    capabilities_to_check.pop_back()
+                {
+                    let current_interface_types = current_capabilities.iter().map(|capability| capability.interface()).collect_vec();
+                    if let Some(violated_constraint) = $existing_instances_validation_func_type_and_siblings(
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        current_object_type.clone(),
+                        &current_interface_types,
+                        &annotations,
+                    )? {
+                        type_and_interface_with_violations =
+                            Some((current_interface_types.iter().map(|interface_type| (current_object_type.clone(), interface_type.clone())).collect_vec(), violated_constraint));
+                        break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
+                    }
+
+                    let subtypes = current_object_type.get_subtypes(snapshot, type_manager)?;
+                    for subtype in subtypes.into_iter() {
+                    let mut new_capabilities = Vec::with_capacity(current_capabilities.len());
+                        for current_capability in &current_capabilities {
+                            let overrides = TypeReader::get_object_capabilities_overrides::<$capability_type<'static>>(
+                                snapshot,
+                                subtype.clone().into_owned(),
+                            )?;
+                            let mut overridings = overrides
+                            .iter()
+                            .filter_map(|(overriding, overridden)| {
+                                if current_capability == overridden {
+                                    Some(overriding.clone())
+                                } else {
+                                    None
+                                }
+                            });
+                            if overridings.clone().peekable().peek().is_some() {
+                                while let Some(overriding) = overridings.next() {
+                                    new_capabilities.push(overriding);
+                                }
+                            } else {
+                                new_capabilities.push(current_capability.clone())
+                            }
+                        }
+
+                        capabilities_to_check.push_front((
                             subtype.clone(),
-                            overriding.interface(),
-                            overriding_annotations_to_revalidate,
-                        ));
-                    } else {
-                        capabilities_and_annotations_to_check.push_front((
-                            subtype.clone(),
-                            current_interface_type.clone(),
-                            annotations_to_revalidate.clone(),
+                            new_capabilities
                         ));
                     }
                 }
-            }
 
-            Ok(type_and_interface_with_violations)
+                Ok(type_and_interface_with_violations)
+            }
+        }
+    };
+}
+
+macro_rules! new_annotation_compatible_with_capability_and_overriding_capabilities_instances_validation {
+    ($func_name:ident, $capability_kind:path, $capability_type:ident, $validation_func:path) => {
+        pub(crate) fn $func_name(
+            snapshot: &impl ReadableSnapshot,
+            type_manager: &TypeManager,
+            thing_manager: &ThingManager,
+            capability: $capability_type<'static>,
+            annotation: Annotation,
+        ) -> Result<(), SchemaValidationError> {
+            let filtered_annotations = OperationTimeValidation::filter_annotation_constraints_to_revalidate(
+                snapshot,
+                capability.clone(),
+                HashSet::from([annotation]),
+            )
+            .map_err(SchemaValidationError::ConceptRead)?;
+
+            let violation = $validation_func(
+                snapshot,
+                type_manager,
+                thing_manager,
+                capability.clone(),
+                filtered_annotations,
+            )
+            .map_err(SchemaValidationError::ConceptRead)?;
+
+            if let Some((violating_objects_with_interfaces, violated_constraint)) = violation {
+                Err(SchemaValidationError::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
+                    $capability_kind,
+                    violated_constraint,
+                    get_label_or_schema_err(snapshot, capability.object())?,
+                    get_label_or_schema_err(snapshot, capability.interface())?,
+                    violating_objects_with_interfaces
+                        .iter()
+                        .map(|(violating_object, violating_interface)| {
+                            match (
+                                get_label_or_schema_err(snapshot, violating_object.clone()),
+                                get_label_or_schema_err(snapshot, violating_interface.clone()),
+                            ) {
+                                (Ok(object_label), Ok(interface_label)) => Ok((object_label, interface_label)),
+                                (Err(err), _) | (_, Err(err)) => Err(err),
+                            }
+                        })
+                        .collect::<Result<Vec<(Label<'static>, Label<'static>)>, SchemaValidationError>>()?,
+                ))
+            } else {
+                Ok(())
+            }
         }
     };
 }
@@ -1519,38 +1685,20 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_new_unique_annotation_compatible_with_capability_and_subcapabilities_instances(
+    pub(crate) fn filter_annotation_constraints_to_revalidate(
         snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
         capability: Owns<'static>,
-    ) -> Result<(), SchemaValidationError> {
-        let annotation = Annotation::Unique(AnnotationUnique);
+        annotations: HashSet<Annotation>,
+    ) -> Result<HashMap<ConstraintValidationMode, HashSet<Annotation>>, ConceptReadError> {
+        let mut annotations_to_revalidate = annotations;
+        let declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())?;
+        annotations_to_revalidate.retain(|annotation| !declared_annotations.contains(annotation));
 
-        let violation = Self::get_owns_or_its_overriding_owns_with_violated_new_annotation_constraints(
-            snapshot,
-            type_manager,
-            thing_manager,
-            capability.clone(),
-            HashSet::from([annotation]),
-        )
-        .map_err(SchemaValidationError::ConceptRead)?;
-
-        if let Some((violating_object, violating_interface, violated_constraint)) = violation {
-            Err(SchemaValidationError::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
-                CapabilityKind::Owns,
-                violated_constraint,
-                get_label_or_schema_err(snapshot, capability.object())?,
-                get_label_or_schema_err(snapshot, capability.interface())?,
-                get_label_or_schema_err(snapshot, violating_object)?,
-                get_label_or_schema_err(snapshot, violating_interface)?,
-            ))
-        } else {
-            Ok(())
-        }
+        Ok(Constraint::sort_annotations_by_constraint_validation_modes(annotations_to_revalidate)
+            .map_err(|source| ConceptReadError::Annotation { source })?)
     }
 
-    fn get_annotation_constraint_violated_by_instances_of_owns<'a>(
+    fn get_annotation_constraint_violated_by_instances_of_owns_type<'a>(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
@@ -1565,19 +1713,16 @@ impl OperationTimeValidation {
         let distinct = Constraint::compute_distinct(annotations);
         let is_key = Constraint::compute_key(annotations).is_some();
         let unique = Constraint::compute_unique(annotations);
-        let cardinality = Constraint::compute_cardinality(annotations, None);
         let regex = Constraint::compute_regex(annotations);
         let range = Constraint::compute_range(annotations);
         let values = Constraint::compute_values(annotations);
 
         while_some_object_instance_in_type!(snapshot, thing_manager, object_type, |type_, object| {
-            let mut real_cardinality = 0;
             let mut has_attribute_iterator =
-                object?.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?;
+                object.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?;
 
             while let Some(attribute) = has_attribute_iterator.next() {
                 let (mut attribute, attribute_count) = attribute?;
-                real_cardinality += attribute_count;
 
                 if distinct.is_some() {
                     if attribute_count > 1 {
@@ -1585,7 +1730,7 @@ impl OperationTimeValidation {
                     }
                 }
 
-                // TODO: Might be more efficient to just iterate over all attributes and get owners of object_type to check?
+                // TODO: Right now this check is not fully correct as it only considers one type of object and one type of attribute. Will fix it after we understand the desired behavior.
                 if unique.is_some() {
                     let owners_count =
                         attribute.get_owners_by_type(snapshot, thing_manager, object_type.clone()).count();
@@ -1621,6 +1766,42 @@ impl OperationTimeValidation {
                     if !values.value_valid(value) {
                         return Ok(Some(AnnotationCategory::Values));
                     }
+                }
+            }
+        });
+
+        Ok(None)
+    }
+
+    // TODO: It can be merged into _type again if we don't implement something really special for "unique"
+    fn get_annotation_constraint_violated_by_instances_of_owns_type_and_siblings<'a>(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        object_type: ObjectType<'a>,
+        attribute_types: &Vec<AttributeType<'a>>,
+        annotations: &HashSet<Annotation>,
+    ) -> Result<Option<AnnotationCategory>, ConceptReadError> {
+        if annotations.is_empty() {
+            return Ok(None);
+        }
+
+        let cardinality = Constraint::compute_cardinality(annotations, None);
+        let is_key = Constraint::compute_key(annotations).is_some();
+
+        while_some_object_instance_in_type!(snapshot, thing_manager, object_type, |type_, object| {
+            let mut real_cardinality = 0;
+
+            for attribute_type in attribute_types {
+                let mut has_attribute_iterator = object.clone().get_has_type_unordered(
+                    snapshot,
+                    thing_manager,
+                    attribute_type.clone().into_owned(),
+                )?;
+
+                while let Some(attribute) = has_attribute_iterator.next() {
+                    let (_, attribute_count) = attribute?;
+                    real_cardinality += attribute_count;
                 }
             }
 
@@ -1874,159 +2055,102 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_modified_owns_cardinality_does_not_violate_existing_instances_while_changing_supertype(
+    // TODO: Refactor it to all annotations!
+    pub(crate) fn validate_existing_instances_of_owns_do_not_violate_updated_annotations_while_changing_supertype(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         owner_subtype: ObjectType<'static>,
         owner_supertype: ObjectType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        let modified_owns_cardinalities = Self::get_capabilities_with_modified_cardinality_if_supertype_is_changed::<
-            Owns<'static>,
-        >(
-            snapshot, type_manager, owner_subtype.clone(), owner_supertype.clone()
-        )?;
-
-        for (owns, cardinality) in modified_owns_cardinalities {
-            let attribute_type = owns.attribute();
-            // TODO: Should probably get all the lost and new annotations, make decisions based on these values!
-            let type_having_violating_instances = Self::type_or_subtype_which_instances_violate_cardinality_of_owns(
-                snapshot,
-                type_manager,
-                thing_manager,
-                owner_subtype.clone(),
-                attribute_type.clone(),
-                cardinality.clone(),
-            )
-            .map_err(SchemaValidationError::ConceptRead)?;
-
-            if let Some(type_having_violating_instances) = type_having_violating_instances {
-                return Err(
-                    SchemaValidationError::CannotChangeSupertypeAsUpdatedCardinalityIsViolatedByExistingInstances(
-                        CapabilityKind::Owns,
-                        get_label_or_schema_err(snapshot, owner_subtype)?,
-                        get_label_or_schema_err(snapshot, owner_supertype)?,
-                        get_label_or_schema_err(snapshot, type_having_violating_instances)?,
-                        get_label_or_schema_err(snapshot, attribute_type)?,
-                        cardinality,
-                    ),
-                );
-            }
-        }
+        // let modified_owns_cardinalities = Self::get_capabilities_with_modified_cardinality_if_supertype_is_changed::<
+        //     Owns<'static>,
+        // >(
+        //     snapshot, type_manager, owner_subtype.clone(), owner_supertype.clone()
+        // )?;
+        //
+        // for (owns, cardinality) in modified_owns_cardinalities {
+        //     let attribute_type = owns.attribute();
+        //     // TODO: Should probably get all the lost and new annotations, make decisions based on these values!
+        //     let type_having_violating_instances = Self::type_or_subtype_which_instances_violate_cardinality_of_owns(
+        //         snapshot,
+        //         type_manager,
+        //         thing_manager,
+        //         owner_subtype.clone(),
+        //         attribute_type.clone(),
+        //         cardinality.clone(),
+        //     )
+        //     .map_err(SchemaValidationError::ConceptRead)?;
+        //
+        //     if let Some(type_having_violating_instances) = type_having_violating_instances {
+        //         return Err(
+        //             SchemaValidationError::CannotChangeSupertypeAsUpdatedCardinalityIsViolatedByExistingInstances(
+        //                 CapabilityKind::Owns,
+        //                 get_label_or_schema_err(snapshot, owner_subtype)?,
+        //                 get_label_or_schema_err(snapshot, owner_supertype)?,
+        //                 get_label_or_schema_err(snapshot, type_having_violating_instances)?,
+        //                 get_label_or_schema_err(snapshot, attribute_type)?,
+        //                 cardinality,
+        //             ),
+        //         );
+        //     }
+        // }
 
         Ok(())
     }
 
-    pub(crate) fn validate_modified_plays_cardinality_does_not_violate_existing_instances_while_changing_supertype(
+    // TODO: Refactor it to all annotations!
+    pub(crate) fn validate_existing_instances_of_plays_do_not_violate_updated_annotations_while_changing_supertype(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         player_subtype: ObjectType<'static>,
         player_supertype: ObjectType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        let modified_plays_cardinalities = Self::get_capabilities_with_modified_cardinality_if_supertype_is_changed::<
-            Plays<'static>,
-        >(
-            snapshot, type_manager, player_subtype.clone(), player_supertype.clone()
-        )?;
-
-        for (plays, cardinality) in modified_plays_cardinalities {
-            let role_type = plays.role();
-            let type_having_violating_instances = Self::type_or_subtype_which_instances_violate_cardinality_of_plays(
-                snapshot,
-                type_manager,
-                thing_manager,
-                player_subtype.clone(),
-                role_type.clone(),
-                cardinality.clone(),
-            )
-            .map_err(SchemaValidationError::ConceptRead)?;
-
-            if let Some(type_having_violating_instances) = type_having_violating_instances {
-                return Err(
-                    SchemaValidationError::CannotChangeSupertypeAsUpdatedCardinalityIsViolatedByExistingInstances(
-                        CapabilityKind::Plays,
-                        get_label_or_schema_err(snapshot, player_subtype)?,
-                        get_label_or_schema_err(snapshot, player_supertype)?,
-                        get_label_or_schema_err(snapshot, type_having_violating_instances)?,
-                        get_label_or_schema_err(snapshot, role_type)?,
-                        cardinality,
-                    ),
-                );
-            }
-        }
+        // let modified_plays_cardinalities = Self::get_capabilities_with_modified_cardinality_if_supertype_is_changed::<
+        //     Plays<'static>,
+        // >(
+        //     snapshot, type_manager, player_subtype.clone(), player_supertype.clone()
+        // )?;
+        //
+        // for (plays, cardinality) in modified_plays_cardinalities {
+        //     let role_type = plays.role();
+        //     let type_having_violating_instances = Self::type_or_subtype_which_instances_violate_cardinality_of_plays(
+        //         snapshot,
+        //         type_manager,
+        //         thing_manager,
+        //         player_subtype.clone(),
+        //         role_type.clone(),
+        //         cardinality.clone(),
+        //     )
+        //     .map_err(SchemaValidationError::ConceptRead)?;
+        //
+        //     if let Some(type_having_violating_instances) = type_having_violating_instances {
+        //         return Err(
+        //             SchemaValidationError::CannotChangeSupertypeAsUpdatedCardinalityIsViolatedByExistingInstances(
+        //                 CapabilityKind::Plays,
+        //                 get_label_or_schema_err(snapshot, player_subtype)?,
+        //                 get_label_or_schema_err(snapshot, player_supertype)?,
+        //                 get_label_or_schema_err(snapshot, type_having_violating_instances)?,
+        //                 get_label_or_schema_err(snapshot, role_type)?,
+        //                 cardinality,
+        //             ),
+        //         );
+        //     }
+        // }
 
         Ok(())
     }
 
-    // TODO: Do we want to check subtypes in operation time?
-    fn type_or_subtype_which_instances_violate_cardinality_of_owns<'a>(
+    // TODO: Refactor it to all annotations!
+    pub(crate) fn validate_existing_instances_of_relates_do_not_violate_updated_annotations_while_changing_supertype(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        owner: ObjectType<'a>,
-        attribute_type: AttributeType<'a>,
-        cardinality: AnnotationCardinality,
-    ) -> Result<Option<ObjectType<'static>>, ConceptReadError> {
-        let mut type_with_instances_violating_cardinality = None;
-
-        let mut owners = VecDeque::new();
-        owners.push_front(owner.into_owned_object_type());
-
-        while let Some(current_owner) = owners.pop_back() {
-            if Self::do_instances_of_owns_violate_cardinality(
-                snapshot,
-                thing_manager,
-                current_owner.clone(),
-                attribute_type.clone(),
-                cardinality,
-            )? {
-                type_with_instances_violating_cardinality = Some(current_owner.clone());
-                break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
-            }
-
-            current_owner
-                .get_subtypes(snapshot, type_manager)?
-                .iter()
-                .for_each(|subowner| owners.push_front(subowner.clone().into_owned_object_type()));
-        }
-
-        Ok(type_with_instances_violating_cardinality)
-    }
-
-    // TODO: Do we want to check subtypes in operation time?
-    fn type_or_subtype_which_instances_violate_cardinality_of_plays<'a>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        player: ObjectType<'a>,
-        role_type: RoleType<'a>,
-        cardinality: AnnotationCardinality,
-    ) -> Result<Option<ObjectType<'static>>, ConceptReadError> {
-        let mut type_with_instances_violating_cardinality = None;
-
-        let mut players = VecDeque::new();
-        players.push_front(player.into_owned_object_type());
-
-        while let Some(current_player) = players.pop_back() {
-            if Self::do_instances_of_plays_violate_cardinality(
-                snapshot,
-                thing_manager,
-                current_player.clone(),
-                role_type.clone(),
-                cardinality,
-            )? {
-                type_with_instances_violating_cardinality = Some(current_player.clone());
-                break; // TODO: Maybe we want to return all the corrupted plays here, just moving forward for now
-            }
-
-            current_player
-                .get_subtypes(snapshot, type_manager)?
-                .iter()
-                .for_each(|subplayer| players.push_front(subplayer.clone().into_owned_object_type()));
-        }
-
-        Ok(type_with_instances_violating_cardinality)
+        relation_subtype: RelationType<'static>,
+        relation_supertype: RelationType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        Ok(())
     }
 
     fn has_instances_of_owns<'a>(
@@ -2131,86 +2255,6 @@ impl OperationTimeValidation {
         }
 
         Ok(has_instances)
-    }
-
-    fn do_instances_of_owns_violate_cardinality<'a>(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        owner: ObjectType<'a>,
-        attribute_type: AttributeType<'a>,
-        cardinality: AnnotationCardinality,
-    ) -> Result<bool, ConceptReadError> {
-        let mut cardinality_violated = false;
-        match owner.clone() {
-            ObjectType::Entity(entity_type) => {
-                let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
-                while let Some(instance) = iterator.next() {
-                    let mut iterator = instance?.get_has_type_unordered(
-                        snapshot,
-                        thing_manager,
-                        attribute_type.clone().into_owned(),
-                    )?;
-
-                    if !cardinality.value_valid(iterator.count() as u64) {
-                        cardinality_violated = true;
-                        break;
-                    }
-                }
-            }
-            ObjectType::Relation(relation_type) => {
-                let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
-                while let Some(instance) = iterator.next() {
-                    let mut iterator = instance?.get_has_type_unordered(
-                        snapshot,
-                        thing_manager,
-                        attribute_type.clone().into_owned(),
-                    )?;
-
-                    if !cardinality.value_valid(iterator.count() as u64) {
-                        cardinality_violated = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        Ok(cardinality_violated)
-    }
-
-    fn do_instances_of_plays_violate_cardinality<'a>(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        player: ObjectType<'a>,
-        role_type: RoleType<'a>,
-        cardinality: AnnotationCardinality,
-    ) -> Result<bool, ConceptReadError> {
-        let mut cardinality_violated = false;
-        match player.clone() {
-            ObjectType::Entity(entity_type) => {
-                let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
-                while let Some(instance) = iterator.next() {
-                    // let mut iterator = instance?.get_has_type_unordered(snapshot, thing_manager, role_type.clone().into_owned())?; // TODO: get_roleplayer...?
-                    //
-                    // if !cardinality.value_valid(iterator.count() as u64) {
-                    //     cardinality_violated = true;
-                    //     break;
-                    // }
-                }
-            }
-            ObjectType::Relation(relation_type) => {
-                let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
-                while let Some(instance) = iterator.next() {
-                    // let mut iterator = instance?.get_has_type_unordered(snapshot, thing_manager, role_type.clone().into_owned())?; // TODO: get_roleplayer...?
-                    //
-                    // if !cardinality.value_valid(iterator.count() as u64) {
-                    //     cardinality_violated = true;
-                    //     break;
-                    // }
-                }
-            }
-        }
-
-        Ok(cardinality_violated)
     }
 
     fn get_lost_capabilities_if_supertype_is_changed<CAP: Capability<'static>>(
@@ -2396,7 +2440,8 @@ impl OperationTimeValidation {
         Owns,
         ObjectType,
         AttributeType,
-        Self::get_annotation_constraint_violated_by_instances_of_owns
+        Self::get_annotation_constraint_violated_by_instances_of_owns_type,
+        Self::get_annotation_constraint_violated_by_instances_of_owns_type_and_siblings
     );
     // capability_or_its_overriding_capability_with_violated_new_annotation_constraints!(
     //     get_plays_or_its_overriding_plays_with_violated_new_annotation_constraints,
@@ -2412,4 +2457,24 @@ impl OperationTimeValidation {
     //     RoleType,
     //     Self::get_annotation_constraint_violated_by_instances_of_relates
     // );
+
+    new_annotation_compatible_with_capability_and_overriding_capabilities_instances_validation!(
+        validate_new_annotation_compatible_with_owns_and_overriding_owns_instances,
+        CapabilityKind::Owns,
+        Owns,
+        Self::get_owns_or_its_overriding_owns_with_violated_new_annotation_constraints
+    );
+    // new_annotation_compatible_with_capability_and_overriding_capabilities_instances_validation!(
+    //     validate_new_annotation_compatible_with_plays_and_overriding_plays_instances,
+    //     CapabilityKind::Plays,
+    //     Plays,
+    //     Self::get_plays_or_its_overriding_plays_with_violated_new_annotation_constraints
+    // );
+    // new_annotation_compatible_with_capability_and_overriding_capabilities_instances_validation!(
+    //     validate_new_annotation_compatible_with_relates_and_overriding_relates_instances,
+    //     CapabilityKind::Relates,
+    //     Relates,
+    //     Self::get_relates_or_its_overriding_relates_with_violated_new_annotation_constraints
+    // );
+
 }

@@ -80,6 +80,7 @@ impl AnnotationCardinality {
         Self { start_inclusive, end_inclusive }
     }
 
+    // TODO: Can move to impl Default for AnnotationCardinality and other Annotations
     pub const fn default() -> Self {
         Self::new(0, None)
     }

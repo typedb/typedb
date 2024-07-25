@@ -115,23 +115,23 @@ impl<'a> Owns<'a> {
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             OwnsAnnotation::Distinct(_) => {
-                type_manager.set_owns_annotation_distinct(snapshot, self.clone().into_owned())?
+                type_manager.set_owns_annotation_distinct(snapshot, thing_manager, self.clone().into_owned())?
             }
-            OwnsAnnotation::Key(_) => type_manager.set_owns_annotation_key(snapshot, self.clone().into_owned())?,
+            OwnsAnnotation::Key(_) => type_manager.set_owns_annotation_key(snapshot, thing_manager, self.clone().into_owned())?,
             OwnsAnnotation::Cardinality(cardinality) => {
-                type_manager.set_edge_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)?
+                type_manager.set_owns_annotation_cardinality(snapshot, thing_manager, self.clone().into_owned(), cardinality)?
             }
             OwnsAnnotation::Unique(_) => {
                 type_manager.set_owns_annotation_unique(snapshot, thing_manager, self.clone().into_owned())?
             }
             OwnsAnnotation::Regex(regex) => {
-                type_manager.set_owns_annotation_regex(snapshot, self.clone().into_owned(), regex)?
+                type_manager.set_owns_annotation_regex(snapshot, thing_manager, self.clone().into_owned(), regex)?
             }
             OwnsAnnotation::Range(range) => {
-                type_manager.set_owns_annotation_range(snapshot, self.clone().into_owned(), range)?
+                type_manager.set_owns_annotation_range(snapshot, thing_manager, self.clone().into_owned(), range)?
             }
             OwnsAnnotation::Values(values) => {
-                type_manager.set_owns_annotation_values(snapshot, self.clone().into_owned(), values)?
+                type_manager.set_owns_annotation_values(snapshot, thing_manager, self.clone().into_owned(), values)?
             }
         }
         Ok(())

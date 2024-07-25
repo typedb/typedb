@@ -4,14 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::{HashMap, HashSet};
+
+use storage::snapshot::ReadableSnapshot;
+
 use crate::{
     error::ConceptReadError,
+    thing::thing_manager::ThingManager,
     type_::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
-            AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex,
-            AnnotationUnique, AnnotationValues, DefaultFrom,
+            AnnotationDistinct, AnnotationError, AnnotationIndependent, AnnotationKey, AnnotationRange,
+            AnnotationRegex, AnnotationUnique, AnnotationValues, DefaultFrom,
         },
+        owns::Owns,
+        type_manager::TypeManager,
         Capability,
     },
 };
@@ -32,6 +39,13 @@ macro_rules! compute_constraint_one_to_one_annotation {
                 .next()
         }
     };
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum ConstraintValidationMode {
+    Type,
+    TypeAndSiblings,
+    // TODO: something special for unique?
 }
 
 impl Constraint {
@@ -73,4 +87,38 @@ impl Constraint {
     compute_constraint_one_to_one_annotation!(compute_cascade, Annotation::Cascade, AnnotationCascade);
     compute_constraint_one_to_one_annotation!(compute_range, Annotation::Range, AnnotationRange);
     compute_constraint_one_to_one_annotation!(compute_values, Annotation::Values, AnnotationValues);
+
+    pub fn constraint_validation_mode(annotation_category: AnnotationCategory) -> HashSet<ConstraintValidationMode> {
+        match annotation_category {
+            AnnotationCategory::Abstract => HashSet::from([ConstraintValidationMode::Type]),
+            AnnotationCategory::Distinct => HashSet::from([ConstraintValidationMode::Type]),
+            AnnotationCategory::Independent => HashSet::from([]),
+            AnnotationCategory::Unique => HashSet::from([ConstraintValidationMode::Type]), // might be different later
+            AnnotationCategory::Key => {
+                HashSet::from([ConstraintValidationMode::Type, ConstraintValidationMode::TypeAndSiblings])
+            } // ::Type is based on Unique
+            AnnotationCategory::Cardinality => HashSet::from([ConstraintValidationMode::TypeAndSiblings]),
+            AnnotationCategory::Regex => HashSet::from([ConstraintValidationMode::Type]),
+            AnnotationCategory::Cascade => HashSet::from([]),
+            AnnotationCategory::Range => HashSet::from([ConstraintValidationMode::Type]),
+            AnnotationCategory::Values => HashSet::from([ConstraintValidationMode::Type]),
+        }
+    }
+
+    pub(crate) fn sort_annotations_by_constraint_validation_modes<'a, A: Into<Annotation> + Clone + 'a>(
+        annotations: impl IntoIterator<Item = A>,
+    ) -> Result<HashMap<ConstraintValidationMode, HashSet<Annotation>>, AnnotationError> {
+        let mut map: HashMap<ConstraintValidationMode, HashSet<Annotation>> = HashMap::new();
+
+        for annotation in annotations.into_iter() {
+            let annotation = annotation.clone().into();
+            let modes = Self::constraint_validation_mode(annotation.category());
+
+            for mode in modes {
+                map.entry(mode).or_insert_with(HashSet::default).insert(annotation.clone());
+            }
+        }
+
+        Ok(map)
+    }
 }

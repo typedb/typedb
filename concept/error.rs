@@ -176,6 +176,7 @@ impl From<ConceptReadError> for ConceptWriteError {
                 Self::ConceptRead { source: error }
             }
             ConceptReadError::CannotGetOwnsDoesntExist(_, _) => Self::ConceptRead { source: error },
+            ConceptReadError::Annotation { .. } => Self::ConceptRead { source: error },
         }
     }
 }
@@ -191,6 +192,7 @@ pub enum ConceptReadError {
     CorruptMissingMandatoryRelatesForRole,
     CorruptAttributeValueDoesntMatchAttributeTypeValueType(Label<'static>),
     CannotGetOwnsDoesntExist(Label<'static>, Label<'static>),
+    Annotation { source: AnnotationError },
 }
 
 impl fmt::Display for ConceptReadError {
@@ -211,6 +213,7 @@ impl Error for ConceptReadError {
             Self::CorruptAttributeValueDoesntMatchAttributeTypeValueType(_) => None,
             Self::CorruptMissingMandatoryRelatesForRole => None,
             Self::CannotGetOwnsDoesntExist(_, _) => None,
+            Self::Annotation { .. } => None,
         }
     }
 }

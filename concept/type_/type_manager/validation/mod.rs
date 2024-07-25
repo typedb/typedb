@@ -179,8 +179,7 @@ pub enum SchemaValidationError {
         AnnotationCategory,
         Label<'static>,
         Label<'static>,
-        Label<'static>,
-        Label<'static>,
+        Vec<(Label<'static>, Label<'static>)>,
     ),
 }
 
@@ -269,7 +268,7 @@ impl Error for SchemaValidationError {
             Self::CannotOverrideCapabilityWithExistingInstances(_, _, _, _) => None,
             Self::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(_, _, _, _, _) => None,
             Self::CannotChangeSupertypeAsUpdatedCardinalityIsViolatedByExistingInstances(_, _, _, _, _, _) => None,
-            Self::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(_, _, _, _, _, _) => None,
+            Self::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(_, _, _, _, _) => None,
         }
     }
 }
