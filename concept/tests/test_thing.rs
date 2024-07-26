@@ -115,12 +115,22 @@ fn attribute_create() {
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
         age_type
-            .set_annotation(&mut snapshot, &type_manager, &thing_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
         name_type
-            .set_annotation(&mut snapshot, &type_manager, &thing_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
 
         let mut age_1 =
@@ -177,12 +187,22 @@ fn has() {
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
         age_type
-            .set_annotation(&mut snapshot, &type_manager, &thing_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
         name_type
-            .set_annotation(&mut snapshot, &type_manager, &thing_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
@@ -247,7 +267,9 @@ fn attribute_cleanup_on_concurrent_detach() {
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         let owns_age = person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Ordered).unwrap();
-        owns_age.set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Distinct(AnnotationDistinct)).unwrap();
+        owns_age
+            .set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Distinct(AnnotationDistinct))
+            .unwrap();
 
         person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
 
@@ -383,7 +405,12 @@ fn role_player_distinct() {
         let employee_relates =
             employment_type.get_relates_of_role(&snapshot, &type_manager, employee_role).unwrap().unwrap();
         employee_relates
-            .set_annotation(&mut snapshot, &type_manager, &thing_manager, RelatesAnnotation::Distinct(AnnotationDistinct))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Distinct(AnnotationDistinct),
+            )
             .unwrap();
         employee_relates
             .set_annotation(
@@ -399,7 +426,12 @@ fn role_player_distinct() {
         let employer_relates =
             employment_type.get_relates_of_role(&snapshot, &type_manager, employer_role).unwrap().unwrap();
         employer_relates
-            .set_annotation(&mut snapshot, &type_manager, &thing_manager, RelatesAnnotation::Distinct(AnnotationDistinct))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Distinct(AnnotationDistinct),
+            )
             .unwrap();
         employer_relates
             .set_annotation(
@@ -674,7 +706,12 @@ fn attribute_string_write_read() {
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
         attr_type
-            .set_annotation(&mut snapshot, &type_manager, &thing_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
 
         snapshot.commit().unwrap();
@@ -748,7 +785,12 @@ fn attribute_struct_write_read() {
         let struct_key = define_struct(&mut snapshot, &type_manager, struct_name, fields);
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
         attr_type
-            .set_annotation(&mut snapshot, &type_manager, &thing_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
         snapshot.commit().unwrap();
@@ -831,7 +873,12 @@ fn read_attribute_struct_by_field() {
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
         attr_type
-            .set_annotation(&mut snapshot, &type_manager, &thing_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
         let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
         snapshot.commit().unwrap();

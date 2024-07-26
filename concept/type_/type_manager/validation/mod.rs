@@ -32,6 +32,7 @@ mod validation;
 
 #[derive(Debug, Clone)]
 pub enum SchemaValidationError {
+    // TODO: Should probably send types themselves instead of labels here... Not sure how we are going to parse errors!
     ConceptRead(ConceptReadError),
     LabelShouldBeUnique {
         label: Label<'static>,
@@ -166,17 +167,18 @@ pub enum SchemaValidationError {
         Label<'static>,
         Label<'static>,
     ),
-    CannotChangeSupertypeAsUpdatedCardinalityIsViolatedByExistingInstances(
-        CapabilityKind,
-        Label<'static>,
-        Label<'static>,
-        Label<'static>,
-        Label<'static>,
-        AnnotationCardinality,
-    ),
     CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
         CapabilityKind,
         AnnotationCategory,
+        Label<'static>,
+        Label<'static>,
+        Vec<(Label<'static>, Label<'static>)>,
+    ),
+    CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
+        CapabilityKind,
+        AnnotationCategory,
+        Label<'static>,
+        Label<'static>,
         Label<'static>,
         Label<'static>,
         Vec<(Label<'static>, Label<'static>)>,
@@ -267,8 +269,16 @@ impl Error for SchemaValidationError {
             Self::CannotUnsetCapabilityWithExistingInstances(_, _, _, _) => None,
             Self::CannotOverrideCapabilityWithExistingInstances(_, _, _, _) => None,
             Self::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(_, _, _, _, _) => None,
-            Self::CannotChangeSupertypeAsUpdatedCardinalityIsViolatedByExistingInstances(_, _, _, _, _, _) => None,
             Self::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(_, _, _, _, _) => None,
+            Self::CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
+                _,
+                _,
+                _,
+                _,
+                _,
+                _,
+                _,
+            ) => None,
         }
     }
 }

@@ -43,8 +43,8 @@ macro_rules! compute_constraint_one_to_one_annotation {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum ConstraintValidationMode {
-    Type, // or Capability
-    TypeAndSiblings, // or CapabilityAndSiblings (siblings = override the same capability)
+    Type,                       // or Capability
+    TypeAndSiblings,            // or CapabilityAndSiblings (siblings = override the same capability)
     TypeAndSiblingsAndSubtypes, // or CapabilityAndSiblingsAndOverridingCapabilities
 }
 
@@ -96,8 +96,11 @@ impl Constraint {
             AnnotationCategory::Distinct => HashSet::from([ConstraintValidationMode::Type]),
             AnnotationCategory::Independent => HashSet::from([]),
             AnnotationCategory::Unique => HashSet::from([ConstraintValidationMode::TypeAndSiblingsAndSubtypes]),
-            AnnotationCategory::Cardinality => // ::Type for min, ::TypeAndSiblings for max
-                HashSet::from([ConstraintValidationMode::Type, ConstraintValidationMode::TypeAndSiblings]),
+            AnnotationCategory::Cardinality =>
+            // ::Type for min, ::TypeAndSiblings for max
+            {
+                HashSet::from([ConstraintValidationMode::Type, ConstraintValidationMode::TypeAndSiblings])
+            }
             AnnotationCategory::Key => Self::inherited_constraint_validation_mode(AnnotationCategory::Unique)
                 .union(&Self::inherited_constraint_validation_mode(AnnotationCategory::Cardinality))
                 .cloned()

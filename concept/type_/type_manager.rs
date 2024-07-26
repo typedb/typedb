@@ -1475,14 +1475,14 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_existing_instances_of_owns_do_not_violate_updated_annotations_while_changing_supertype(
+        OperationTimeValidation::validate_changed_annotations_compatible_with_owns_and_overriding_owns_instances_on_supertype_change(
             snapshot,
             self,
             thing_manager,
             object_subtype.clone(),
             object_supertype.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_plays_compatible_with_new_supertype(
             snapshot,
@@ -1508,7 +1508,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_existing_instances_of_plays_do_not_violate_updated_annotations_while_changing_supertype(
+        OperationTimeValidation::validate_changed_annotations_compatible_with_plays_and_overriding_plays_instances_on_supertype_change(
             snapshot,
             self,
             thing_manager,
@@ -1568,7 +1568,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_existing_instances_of_relates_do_not_violate_updated_annotations_while_changing_supertype(
+        OperationTimeValidation::validate_changed_annotations_compatible_with_relates_and_overriding_relates_instances_on_supertype_change(
             snapshot,
             self,
             thing_manager,
@@ -1707,6 +1707,15 @@ impl TypeManager {
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
+        OperationTimeValidation::validate_updated_annotations_compatible_with_owns_and_overriding_owns_instances_on_override(
+            snapshot,
+            self,
+            thing_manager,
+            owns.clone(),
+            overridden.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         TypeWriter::storage_set_type_edge_overridden(snapshot, owns, overridden);
         Ok(())
     }
@@ -1817,6 +1826,15 @@ impl TypeManager {
             )
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
+
+        OperationTimeValidation::validate_updated_annotations_compatible_with_plays_and_overriding_plays_instances_on_override(
+            snapshot,
+            self,
+            thing_manager,
+            plays.clone(),
+            overridden.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_set_type_edge_overridden(snapshot, plays, overridden);
         Ok(())
@@ -2049,6 +2067,15 @@ impl TypeManager {
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
+        OperationTimeValidation::validate_updated_annotations_compatible_with_relates_and_overriding_relates_instances_on_override(
+            snapshot,
+            self,
+            thing_manager,
+            relates.clone(),
+            overridden.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         self.set_supertype(snapshot, relates.role(), overridden.role())?;
         TypeWriter::storage_set_type_edge_overridden(snapshot, relates, overridden);
         Ok(())
@@ -2240,7 +2267,7 @@ impl TypeManager {
             plays.clone(),
             Annotation::Cardinality(cardinality.clone()),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_edge_annotation_cardinality(snapshot, plays, cardinality)
     }

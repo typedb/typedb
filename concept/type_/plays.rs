@@ -76,9 +76,12 @@ impl<'a> Plays<'a> {
         annotation: PlaysAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
-            PlaysAnnotation::Cardinality(cardinality) => {
-                type_manager.set_plays_annotation_cardinality(snapshot, thing_manager, self.clone().into_owned(), cardinality)?
-            }
+            PlaysAnnotation::Cardinality(cardinality) => type_manager.set_plays_annotation_cardinality(
+                snapshot,
+                thing_manager,
+                self.clone().into_owned(),
+                cardinality,
+            )?,
         }
         Ok(())
     }
