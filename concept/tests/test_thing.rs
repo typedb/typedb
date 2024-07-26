@@ -68,17 +68,13 @@ fn thing_create_iterate() {
     let storage = Arc::new(
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
 
         let person_label = Label::build("person");
-        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
         let _person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
         let _person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
@@ -106,10 +102,6 @@ fn attribute_create() {
     let storage = Arc::new(
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
 
     let age_label = Label::build("age");
     let name_label = Label::build("name");
@@ -120,12 +112,12 @@ fn attribute_create() {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
-        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
+        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
         age_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
             .unwrap();
-        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
+        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
         name_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
@@ -170,10 +162,6 @@ fn has() {
     let storage = Arc::new(
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
 
     let age_label = Label::build("age");
     let name_label = Label::build("name");
@@ -186,18 +174,18 @@ fn has() {
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
 
-        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
+        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
         age_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
             .unwrap();
-        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
+        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
         name_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
             .unwrap();
 
-        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
 
@@ -240,10 +228,6 @@ fn attribute_cleanup_on_concurrent_detach() {
     let storage = Arc::new(
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
 
     let age_label = Label::build("age");
     let name_label = Label::build("name");
@@ -256,12 +240,12 @@ fn attribute_cleanup_on_concurrent_detach() {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
-        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
+        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
-        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
+        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
 
-        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         let owns_age = person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Ordered).unwrap();
         owns_age.set_annotation(&mut snapshot, &type_manager, OwnsAnnotation::Distinct(AnnotationDistinct)).unwrap();
 
@@ -384,11 +368,6 @@ fn role_player_distinct() {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-
     let employment_label = Label::build("employment");
     let employee_role = "employee";
     let employer_role = "employer";
@@ -399,7 +378,7 @@ fn role_player_distinct() {
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
 
-        let employment_type = type_manager.create_relation_type(&mut snapshot, &employment_label, false).unwrap();
+        let employment_type = type_manager.create_relation_type(&mut snapshot, &employment_label).unwrap();
         employment_type.create_relates(&mut snapshot, &type_manager, employee_role, Ordering::Ordered).unwrap();
         let employee_relates =
             employment_type.get_relates_of_role(&snapshot, &type_manager, employee_role).unwrap().unwrap();
@@ -430,8 +409,8 @@ fn role_player_distinct() {
             .unwrap();
         let employer_type = employer_relates.role();
 
-        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
-        let company_type = type_manager.create_entity_type(&mut snapshot, &company_label, false).unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+        let company_type = type_manager.create_entity_type(&mut snapshot, &company_label).unwrap();
         person_type.set_plays(&mut snapshot, &type_manager, employee_type.clone()).unwrap();
         company_type.set_plays(&mut snapshot, &type_manager, employee_type.clone()).unwrap();
 
@@ -510,11 +489,6 @@ fn role_player_duplicates() {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-
     let list_label = Label::build("list");
     let entry_role_label = "entry";
     let owner_role_label = "owner";
@@ -524,7 +498,7 @@ fn role_player_duplicates() {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
-        let list_type = type_manager.create_relation_type(&mut snapshot, &list_label, false).unwrap();
+        let list_type = type_manager.create_relation_type(&mut snapshot, &list_label).unwrap();
         list_type.create_relates(&mut snapshot, &type_manager, entry_role_label, Ordering::Unordered).unwrap();
         let entry_relates = list_type.get_relates_of_role(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
         entry_relates
@@ -539,8 +513,8 @@ fn role_player_duplicates() {
         let owner_type =
             list_type.get_relates_of_role(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
 
-        let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label, false).unwrap();
-        let group_type = type_manager.create_entity_type(&mut snapshot, &group_label, false).unwrap();
+        let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
+        let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
         resource_type.set_plays(&mut snapshot, &type_manager, entry_type.clone()).unwrap();
         group_type.set_plays(&mut snapshot, &type_manager, owner_type.clone()).unwrap();
 
@@ -688,18 +662,13 @@ fn attribute_string_write_read() {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-
     let (type_manager, thing_manager) = load_managers(storage.clone());
     let attr_label = Label::build("test_string_attr");
     let short_string = "short".to_owned();
     let long_string = "this string is 33 characters long".to_owned();
     let attr_type = {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label, false).unwrap();
+        let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
         attr_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
@@ -760,11 +729,6 @@ fn attribute_struct_write_read() {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let attr_label = Label::build("struct_test_attr");
@@ -779,7 +743,7 @@ fn attribute_struct_write_read() {
     let struct_key = {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let struct_key = define_struct(&mut snapshot, &type_manager, struct_name, fields);
-        let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label, false).unwrap();
+        let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
         attr_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
             .unwrap();
@@ -815,13 +779,11 @@ fn attribute_struct_write_read() {
             .unwrap()
             .map_static(|result| result.unwrap().into_owned())
             .collect();
-        let mut attr = attr_vec.get(0).unwrap().clone();
+        let mut attr = attr_vec.first().unwrap().clone();
         let value_0 = attr.get_value(&snapshot, &thing_manager).unwrap();
         match value_0 {
-            Value::Struct(v) => {
-                assert_eq!(struct_value, *v);
-            }
-            _ => assert!(false, "Wrong data type"),
+            Value::Struct(v) => assert_eq!(struct_value, *v),
+            _ => panic!("Wrong data type"),
         }
 
         let attr_by_id = thing_manager
@@ -843,11 +805,6 @@ fn read_attribute_struct_by_field() {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let attr_label = Label::build("index_test_attr");
@@ -868,7 +825,7 @@ fn read_attribute_struct_by_field() {
     let (attr_type, struct_key, struct_def) = {
         let mut snapshot = storage.clone().open_snapshot_write();
         let struct_key = define_struct(&mut snapshot, &type_manager, struct_spec.0, struct_spec.1);
-        let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label, false).unwrap();
+        let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
         attr_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
@@ -913,7 +870,7 @@ fn read_attribute_struct_by_field() {
                 attr_by_field.push(res.as_ref().unwrap().clone().into_owned());
             }
             assert_eq!(1, attr_by_field.len());
-            assert_eq!(attr, attr_by_field.get(0).unwrap());
+            assert_eq!(attr, attr_by_field.first().unwrap());
         }
         snapshot.close_resources();
     };
@@ -927,11 +884,6 @@ fn attribute_struct_errors() {
     let storage = Arc::new(
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
-
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
 
     let (type_manager, _) = load_managers(storage.clone());
 
@@ -985,12 +937,12 @@ fn attribute_struct_errors() {
             )
             .unwrap_err();
             assert!(
-                err.len() == 1 && matches!(err.get(0).unwrap(), EncodingError::StructFieldValueTypeMismatch { .. })
+                err.len() == 1 && matches!(err.first().unwrap(), EncodingError::StructFieldValueTypeMismatch { .. })
             );
         }
         {
             let err = StructValue::build(struct_key.clone(), struct_def.clone(), HashMap::from([])).unwrap_err();
-            assert!(err.len() == 1 && matches!(err.get(0).unwrap(), EncodingError::StructMissingRequiredField { .. }));
+            assert!(err.len() == 1 && matches!(err.first().unwrap(), EncodingError::StructMissingRequiredField { .. }));
         }
         snapshot.close_resources();
     }

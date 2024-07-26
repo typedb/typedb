@@ -11,8 +11,8 @@ use std::{collections::BTreeMap, sync::Arc};
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager, ThingAPI},
     type_::{
-        annotation::AnnotationCardinality, relates::RelatesAnnotation, role_type::RoleTypeAnnotation,
-        type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI,
+        annotation::AnnotationCardinality, relates::RelatesAnnotation, type_manager::TypeManager, ObjectTypeAPI,
+        Ordering, OwnerAPI,
     },
 };
 use durability::wal::WAL;
@@ -207,12 +207,10 @@ fn setup() -> (Arc<MVCCStorage<WALClient>>, Arc<TypeManager>, ThingManager, Temp
 
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
+    let type_manager = Arc::new(TypeManager::new(definition_key_generator, type_vertex_generator, None));
 
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-    let type_manager = Arc::new(TypeManager::new(definition_key_generator, type_vertex_generator, None));
-    let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
+    let thing_manager = ThingManager::new(thing_vertex_generator, type_manager.clone());
     (storage, type_manager, thing_manager, _guard)
 }
 
@@ -223,7 +221,7 @@ fn create_entity() {
     let person_label = Label::build("person");
 
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
     thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     let commit_sequence_number = snapshot.commit().unwrap().unwrap();
@@ -246,7 +244,7 @@ fn delete_twice() {
     let person_label = Label::build("person");
 
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
     let person = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     let create_commit_seq = snapshot.commit().unwrap().unwrap();
@@ -275,8 +273,8 @@ fn put_has_twice() {
     let name_label = Label::build("name");
 
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
-    let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
+    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
     person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
     let person = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
@@ -309,8 +307,8 @@ fn put_plays() {
     let friend_role_name = "friend";
 
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
-    let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label, false).unwrap();
+    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+    let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
     let friend_relates =
         friendship_type.create_relates(&mut snapshot, &type_manager, friend_role_name, Ordering::Unordered).unwrap();
     let friend_role = friend_relates.role();

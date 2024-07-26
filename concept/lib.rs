@@ -8,7 +8,6 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use bytes::byte_reference::ByteReference;
-use storage::key_value::StorageKeyReference;
 
 pub mod error;
 pub mod iterator;

@@ -11,10 +11,7 @@ use concept::{
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
 };
-use encoding::{
-    graph::type_::Kind,
-    value::{label::Label, value::Value, value_type::ValueType},
-};
+use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use ir::{
     inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
@@ -49,10 +46,10 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
-    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL, false).unwrap();
-    let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL, false).unwrap();
+    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
+    let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
     age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
-    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL, false).unwrap();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
     let person_owns_age =
         person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
@@ -124,12 +121,12 @@ fn traverse_has_unbounded_sorted_from() {
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
-    let var_age_type = conjunction.get_or_declare_variable(&"age_type").unwrap();
-    let var_name_type = conjunction.get_or_declare_variable(&"name_type").unwrap();
-    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-    let var_age = conjunction.get_or_declare_variable(&"age").unwrap();
-    let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
+    let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_age = conjunction.get_or_declare_variable("age").unwrap();
+    let var_name = conjunction.get_or_declare_variable("name").unwrap();
 
     let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();
     let has_name = conjunction.constraints_mut().add_has(var_person, var_name).unwrap().clone();
@@ -141,6 +138,8 @@ fn traverse_has_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
+    block.add_limit(3);
+    let filter = block.add_filter(vec!["person", "age"]).unwrap().clone();
 
     let program = Program::new(block.finish(), Vec::new());
 
@@ -198,23 +197,19 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     // query:
     //   match
-    //    $person has attribute $attribute;
+    //    $person has $attribute;
 
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
-    let var_attribute_type = conjunction.get_or_declare_variable(&"attr_type").unwrap();
-    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-    let var_attribute = conjunction.get_or_declare_variable(&"attr").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_attribute_type = conjunction.get_or_declare_variable("attr_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_attribute = conjunction.get_or_declare_variable("attr").unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_attribute_type, Kind::Attribute.root_label().scoped_name().as_str())
-        .unwrap();
     let program = Program::new(block.finish(), Vec::new());
 
     let annotated_program = {

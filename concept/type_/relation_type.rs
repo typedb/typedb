@@ -142,25 +142,13 @@ impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {
 }
 
 impl<'a> RelationType<'a> {
-    pub fn is_root(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
-        type_manager.get_relation_type_is_root(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_label(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         label: &Label<'_>,
     ) -> Result<(), ConceptWriteError> {
-        if self.is_root(snapshot, type_manager)? {
-            Err(ConceptWriteError::RootModification)
-        } else {
-            type_manager.set_relation_type_label(snapshot, self.clone().into_owned(), label)
-        }
+        type_manager.set_relation_type_label(snapshot, self.clone().into_owned(), label)
     }
 
     pub fn get_supertype(

@@ -65,12 +65,9 @@ impl Error for TypeInferenceError {}
 
 #[cfg(test)]
 pub mod tests {
-    use std::{borrow::Borrow, sync::Arc};
+    use std::sync::Arc;
 
-    use concept::{
-        thing::thing_manager::ThingManager,
-        type_::{type_manager::TypeManager, OwnerAPI, PlayerAPI},
-    };
+    use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use durability::wal::WAL;
     use encoding::{
         graph::{
@@ -79,12 +76,7 @@ pub mod tests {
         },
         EncodingKeyspace,
     };
-    use itertools::Itertools;
-    use storage::{
-        durability_client::WALClient,
-        snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
-        MVCCStorage,
-    };
+    use storage::{durability_client::WALClient, MVCCStorage};
     use test_utils::{create_tmp_dir, init_logging};
 
     use crate::inference::pattern_type_inference::{
@@ -125,16 +117,10 @@ pub mod tests {
         init_logging();
         let storage_path = create_tmp_dir();
         let wal = WAL::create(&storage_path).unwrap();
-        let storage = Arc::new(
+        Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
-        );
-
-        let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-        let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-        TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-            .unwrap();
-        storage
+        )
     }
 
     pub(crate) fn managers() -> (Arc<TypeManager>, ThingManager) {
@@ -149,8 +135,6 @@ pub mod tests {
     }
 
     pub(crate) mod schema_consts {
-        use std::borrow::Borrow;
-
         use answer::Type as TypeAnnotation;
         use concept::type_::{
             annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation,
@@ -187,11 +171,9 @@ pub mod tests {
             let mut snapshot = snapshot_;
 
             // Attributes
-            let name = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_NAME), false).unwrap();
-            let catname =
-                type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_CATNAME), false).unwrap();
-            let dogname =
-                type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_DOGNAME), false).unwrap();
+            let name = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_NAME)).unwrap();
+            let catname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_CATNAME)).unwrap();
+            let dogname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_DOGNAME)).unwrap();
             name.set_annotation(&mut snapshot, type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract))
                 .unwrap();
             catname.set_supertype(&mut snapshot, type_manager, name.clone()).unwrap();
@@ -202,13 +184,13 @@ pub mod tests {
             dogname.set_value_type(&mut snapshot, type_manager, ValueType::String).unwrap();
 
             // Entities
-            let animal = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_ANIMAL), false).unwrap();
-            let cat = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_CAT), false).unwrap();
-            let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG), false).unwrap();
+            let animal = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_ANIMAL)).unwrap();
+            let cat = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_CAT)).unwrap();
+            let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG)).unwrap();
             cat.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
             dog.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
             animal
-                .set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract))
+                .set_annotation(&mut snapshot, type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract))
                 .unwrap();
 
             // Ownerships
@@ -219,15 +201,13 @@ pub mod tests {
             dog_owns.set_override(&mut snapshot, type_manager, animal_owns.clone()).unwrap();
 
             // Relations
-            let fears = type_manager.create_relation_type(&mut snapshot, &Label::build(LABEL_FEARS), false).unwrap();
+            let fears = type_manager.create_relation_type(&mut snapshot, &Label::build(LABEL_FEARS)).unwrap();
             let has_fear =
-                fears.create_relates(&mut snapshot, &type_manager, LABEL_HAS_FEAR, Ordering::Unordered).unwrap().role();
-            let is_feared = fears
-                .create_relates(&mut snapshot, &type_manager, LABEL_IS_FEARED, Ordering::Unordered)
-                .unwrap()
-                .role();
-            cat.set_plays(&mut snapshot, &type_manager, has_fear.clone()).unwrap();
-            dog.set_plays(&mut snapshot, &type_manager, is_feared.clone()).unwrap();
+                fears.create_relates(&mut snapshot, type_manager, LABEL_HAS_FEAR, Ordering::Unordered).unwrap().role();
+            let is_feared =
+                fears.create_relates(&mut snapshot, type_manager, LABEL_IS_FEARED, Ordering::Unordered).unwrap().role();
+            cat.set_plays(&mut snapshot, type_manager, has_fear.clone()).unwrap();
+            dog.set_plays(&mut snapshot, type_manager, is_feared.clone()).unwrap();
 
             snapshot.commit().unwrap();
 

@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-};
+use std::collections::{HashMap, HashSet};
 
 use encoding::{
     graph::{
@@ -91,12 +88,7 @@ impl OperationTimeValidation {
         type_: T,
     ) -> Result<(), SchemaValidationError> {
         let label = TypeReader::get_label(snapshot, type_).map_err(SchemaValidationError::ConceptRead)?.unwrap();
-        let is_root = TypeReader::check_type_is_root(&label, T::ROOT_KIND);
-        if is_root {
-            Err(SchemaValidationError::RootTypesAreImmutable)
-        } else {
-            Ok(())
-        }
+        Ok(())
     }
 
     pub(crate) fn validate_no_subtypes_for_type_deletion<T>(
@@ -158,13 +150,13 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         new_label: &Label<'static>,
     ) -> Result<(), SchemaValidationError> {
-        let attribute_clash = TypeReader::get_labelled_type::<AttributeType<'static>>(snapshot, &new_label)
+        let attribute_clash = TypeReader::get_labelled_type::<AttributeType<'static>>(snapshot, new_label)
             .map_err(SchemaValidationError::ConceptRead)?
             .is_some();
-        let relation_clash = TypeReader::get_labelled_type::<RelationType<'static>>(snapshot, &new_label)
+        let relation_clash = TypeReader::get_labelled_type::<RelationType<'static>>(snapshot, new_label)
             .map_err(SchemaValidationError::ConceptRead)?
             .is_some();
-        let entity_clash = TypeReader::get_labelled_type::<EntityType<'static>>(snapshot, &new_label)
+        let entity_clash = TypeReader::get_labelled_type::<EntityType<'static>>(snapshot, new_label)
             .map_err(SchemaValidationError::ConceptRead)?
             .is_some();
         // TODO: Check struct clash?
@@ -375,15 +367,15 @@ impl OperationTimeValidation {
 
     pub(crate) fn validate_struct_name_uniqueness(
         snapshot: &impl ReadableSnapshot,
-        name: &String,
+        name: &str,
     ) -> Result<(), SchemaValidationError> {
-        let struct_clash = TypeReader::get_struct_definition_key(snapshot, name.as_str())
+        let struct_clash = TypeReader::get_struct_definition_key(snapshot, name)
             .map_err(SchemaValidationError::ConceptRead)?
             .is_some();
         // TODO: Check other types clash?
 
         if struct_clash {
-            Err(SchemaValidationError::StructNameShouldBeUnique(name.clone()))
+            Err(SchemaValidationError::StructNameShouldBeUnique(name.to_owned()))
         } else {
             Ok(())
         }
@@ -550,10 +542,7 @@ impl OperationTimeValidation {
         for (_, implementation) in implementations {
             let implementation_annotations = TypeReader::get_type_edge_annotations(snapshot, implementation)
                 .map_err(SchemaValidationError::ConceptRead)?;
-            if implementation_annotations
-                .iter()
-                .map(|(annotation, _)| annotation.category())
-                .contains(&annotation_category)
+            if implementation_annotations.keys().map(|annotation| annotation.category()).contains(&annotation_category)
             {
                 return Err(
                     SchemaValidationError::CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsImplementation(
@@ -579,8 +568,8 @@ impl OperationTimeValidation {
         let interface_annotations = TypeReader::get_type_annotations(snapshot, interface.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
         if interface_annotations
-            .iter()
-            .map(|(annotation, _)| annotation.clone().into().category())
+            .keys()
+            .map(|annotation| annotation.clone().into().category())
             .contains(&annotation_category)
         {
             return Err(SchemaValidationError::CannotSetAnnotationToCapabilityBecauseItAlreadyExistsForItsInterface(
@@ -1170,8 +1159,7 @@ impl OperationTimeValidation {
         type_: T,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError> {
-        let annotation_owner =
-            type_get_owner_of_annotation_category(snapshot, type_.clone(), annotation_category.clone())?;
+        let annotation_owner = type_get_owner_of_annotation_category(snapshot, type_.clone(), annotation_category)?;
         match annotation_owner {
             Some(owner) => {
                 if type_ == owner {
@@ -1192,8 +1180,7 @@ impl OperationTimeValidation {
         edge: CAP,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError> {
-        let annotation_owner =
-            edge_get_owner_of_annotation_category(snapshot, edge.clone(), annotation_category.clone())?;
+        let annotation_owner = edge_get_owner_of_annotation_category(snapshot, edge.clone(), annotation_category)?;
         match annotation_owner {
             Some(owner) => {
                 if edge == owner {

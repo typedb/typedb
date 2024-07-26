@@ -90,11 +90,11 @@ fn create_schema(
     {
         let type_manager =
             Rc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
-        let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap(), false).unwrap();
+        let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap()).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
-        let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap(), false).unwrap();
+        let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap()).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
-        let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap(), false).unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, age_type, Ordering::Unordered).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, name_type, Ordering::Unordered).unwrap();
     }
@@ -121,8 +121,6 @@ fn criterion_benchmark(c: &mut Criterion) {
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-            .unwrap();
         create_schema(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone());
         let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
         b.iter(|| {

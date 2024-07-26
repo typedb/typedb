@@ -18,7 +18,7 @@ use encoding::{
 use storage::{sequence_number::SequenceNumber, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{
-    annotation::{Annotation, AnnotationIndependent},
+    annotation::AnnotationIndependent,
     attribute_type::{AttributeType, AttributeTypeAnnotation},
     entity_type::EntityType,
     object_type::ObjectType,
@@ -186,6 +186,40 @@ impl TypeCache {
         self.attribute_types_index_label.get(label).cloned()
     }
 
+    pub(crate) fn get_object_types(&self) -> Vec<ObjectType<'static>> {
+        let entities = self.get_entity_types().into_iter().map(ObjectType::Entity);
+        let relatiions = self.get_relation_types().into_iter().map(ObjectType::Relation);
+        entities.chain(relatiions).collect()
+    }
+
+    pub(crate) fn get_entity_types(&self) -> Vec<EntityType<'static>> {
+        self.entity_types
+            .iter()
+            .filter_map(Option::as_ref)
+            .map(|cache| cache.common_type_cache().type_.clone())
+            .collect()
+    }
+
+    pub(crate) fn get_relation_types(&self) -> Vec<RelationType<'static>> {
+        self.relation_types
+            .iter()
+            .filter_map(Option::as_ref)
+            .map(|cache| cache.common_type_cache().type_.clone())
+            .collect()
+    }
+
+    pub(crate) fn get_attribute_types(&self) -> Vec<AttributeType<'static>> {
+        self.attribute_types
+            .iter()
+            .filter_map(Option::as_ref)
+            .map(|cache| cache.common_type_cache().type_.clone())
+            .collect()
+    }
+
+    pub(crate) fn get_role_types(&self) -> Vec<RoleType<'static>> {
+        self.role_types.iter().filter_map(Option::as_ref).map(|cache| cache.common_type_cache().type_.clone()).collect()
+    }
+
     pub(crate) fn get_supertype<'a, 'this, T, CACHE>(&'this self, type_: T) -> Option<T::SelfStatic>
     where
         T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
@@ -224,14 +258,6 @@ impl TypeCache {
         CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().label
-    }
-
-    pub(crate) fn is_root<'a, 'this, T, CACHE>(&'this self, type_: T) -> bool
-    where
-        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
-    {
-        T::get_cache(self, type_).common_type_cache().is_root
     }
 
     pub(crate) fn get_annotations_declared<'a, 'this, T, CACHE>(

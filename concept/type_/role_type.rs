@@ -182,25 +182,13 @@ impl<'a> KindAPI<'a> for RoleType<'a> {
 }
 
 impl<'a> RoleType<'a> {
-    pub fn is_root(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
-        type_manager.get_role_type_is_root(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_name(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         name: &str,
     ) -> Result<(), ConceptWriteError> {
-        if self.is_root(snapshot, type_manager)? {
-            Err(ConceptWriteError::RootModification) // TODO: Move into TypeManager?
-        } else {
-            type_manager.set_role_type_name(snapshot, self.clone().into_owned(), name)
-        }
+        type_manager.set_role_type_name(snapshot, self.clone().into_owned(), name)
     }
 
     pub fn get_supertype(

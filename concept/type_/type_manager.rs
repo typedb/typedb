@@ -6,7 +6,6 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    hash::Hash,
     sync::Arc,
 };
 
@@ -19,7 +18,6 @@ use encoding::{
             r#struct::{StructDefinition, StructDefinitionField},
         },
         type_::{
-            edge::TypeEdgeEncoding,
             property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
             vertex::TypeVertexEncoding,
             vertex_generator::TypeVertexGenerator,
@@ -30,11 +28,7 @@ use encoding::{
 };
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::encoding::StructFieldIDUInt;
-use storage::{
-    durability_client::DurabilityClient,
-    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
-    MVCCStorage,
-};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use type_cache::TypeCache;
 use type_writer::TypeWriter;
 use validation::{commit_time_validation::CommitTimeValidation, operation_time_validation::OperationTimeValidation};
@@ -55,8 +49,8 @@ use crate::{
         relates::{Relates, RelatesAnnotation},
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
-        type_manager::{type_reader::TypeReader, validation::SchemaValidationError},
-        Capability, KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
+        type_manager::type_reader::TypeReader,
+        Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
 
@@ -74,41 +68,6 @@ pub struct TypeManager {
     type_cache: Option<Arc<TypeCache>>,
 }
 
-impl TypeManager {
-    pub fn initialise_types<D: DurabilityClient>(
-        storage: Arc<MVCCStorage<D>>,
-        definition_key_generator: Arc<DefinitionKeyGenerator>,
-        vertex_generator: Arc<TypeVertexGenerator>,
-    ) -> Result<(), ConceptWriteError> {
-        let mut snapshot = storage.clone().open_snapshot_write();
-        {
-            let type_manager = TypeManager::new(definition_key_generator, vertex_generator.clone(), None);
-            let root_entity = type_manager.create_entity_type(&mut snapshot, &Kind::Entity.root_label(), true)?;
-            type_manager.set_annotation_unconditional::<AnnotationAbstract>(&mut snapshot, root_entity, None)?;
-            let root_relation = type_manager.create_relation_type(&mut snapshot, &Kind::Relation.root_label(), true)?;
-            type_manager.set_annotation_unconditional::<AnnotationAbstract>(
-                &mut snapshot,
-                root_relation.clone(),
-                None,
-            )?;
-            let root_role = type_manager.create_role_type_unconditional(
-                &mut snapshot,
-                &Kind::Role.root_label(),
-                root_relation,
-                true,
-                Ordering::Unordered,
-            )?;
-            type_manager.set_annotation_unconditional::<AnnotationAbstract>(&mut snapshot, root_role, None)?;
-            let root_attribute =
-                type_manager.create_attribute_type(&mut snapshot, &Kind::Attribute.root_label(), true)?;
-            type_manager.set_annotation_unconditional::<AnnotationAbstract>(&mut snapshot, root_attribute, None)?;
-        }
-        // TODO: pass error up
-        snapshot.commit().unwrap();
-        Ok(())
-    }
-}
-
 macro_rules! get_type_methods {
     ($(
         fn $method_name:ident() -> $output_type:ident = $cache_method:ident;
@@ -121,6 +80,22 @@ macro_rules! get_type_methods {
                     Ok(cache.$cache_method(label))
                 } else {
                     TypeReader::get_labelled_type::<$output_type<'static>>(snapshot, label)
+                }
+            }
+        )*
+    }
+}
+
+macro_rules! get_types_methods {
+    ($(
+        fn $method_name:ident() -> $type_:ident = $reader_method:ident | $cache_method:ident;
+    )*) => {
+        $(
+            pub fn $method_name(&self, snapshot: &impl ReadableSnapshot) -> Result<Vec<$type_<'static>>, ConceptReadError> {
+                if let Some(cache) = &self.type_cache {
+                    Ok(cache.$cache_method())
+                } else {
+                    TypeReader::$reader_method(snapshot)
                 }
             }
         )*
@@ -385,6 +360,14 @@ impl TypeManager {
         fn get_attribute_type() -> AttributeType = get_attribute_type;
     }
 
+    get_types_methods! {
+        fn get_object_types() -> ObjectType = get_object_types | get_object_types;
+        fn get_entity_types() -> EntityType = get_entity_types | get_entity_types;
+        fn get_relation_types() -> RelationType = get_relation_types | get_relation_types;
+        fn get_role_types() -> RoleType = get_role_types | get_role_types;
+        fn get_attribute_types() -> AttributeType = get_attribute_types | get_attribute_types;
+    }
+
     get_supertype_methods! {
         fn get_entity_type_supertype() -> EntityType = get_supertype;
         fn get_relation_type_supertype() -> RelationType = get_supertype;
@@ -411,13 +394,6 @@ impl TypeManager {
         fn get_relation_type_subtypes_transitive() -> RelationType = get_subtypes_transitive;
         fn get_role_type_subtypes_transitive() -> RoleType = get_subtypes_transitive;
         fn get_attribute_type_subtypes_transitive() -> AttributeType = get_subtypes_transitive;
-    }
-
-    get_type_is_root_methods! {
-        fn get_entity_type_is_root() -> EntityType = is_root;
-        fn get_relation_type_is_root() -> RelationType = is_root;
-        fn get_role_type_is_root() -> RoleType = is_root;
-        fn get_attribute_type_is_root() -> AttributeType = is_root;
     }
 
     get_type_label_methods! {
@@ -946,9 +922,8 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_independent_attribute_types())
         } else {
-            let root_type = self.get_attribute_type(snapshot, &AttributeType::ROOT_KIND.root_label())?.unwrap();
             let mut independent = HashSet::new();
-            for type_ in self.get_attribute_type_subtypes_transitive(snapshot, root_type)?.into_iter() {
+            for type_ in self.get_attribute_types(snapshot)?.into_iter() {
                 if type_.is_independent(snapshot, self)? {
                     independent.insert(type_.clone());
                 }
@@ -1041,7 +1016,6 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
-        is_root: bool,
     ) -> Result<EntityType<'static>, ConceptWriteError> {
         OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -1053,13 +1027,6 @@ impl TypeManager {
         let entity = EntityType::new(type_vertex);
 
         TypeWriter::storage_put_label(snapshot, entity.clone(), label);
-        if !is_root {
-            TypeWriter::storage_put_supertype(
-                snapshot,
-                entity.clone(),
-                self.get_entity_type(snapshot, &Kind::Entity.root_label()).unwrap().unwrap(),
-            );
-        }
         Ok(entity)
     }
 
@@ -1067,7 +1034,6 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
-        is_root: bool,
     ) -> Result<RelationType<'static>, ConceptWriteError> {
         OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -1079,13 +1045,6 @@ impl TypeManager {
         let relation = RelationType::new(type_vertex);
 
         TypeWriter::storage_put_label(snapshot, relation.clone(), label);
-        if !is_root {
-            TypeWriter::storage_put_supertype(
-                snapshot,
-                relation.clone(),
-                self.get_relation_type(snapshot, &Kind::Relation.root_label()).unwrap().unwrap(),
-            );
-        }
         Ok(relation)
     }
 
@@ -1106,7 +1065,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.create_role_type_unconditional(snapshot, label, relation_type, false, ordering)
+        self.create_role_type_unconditional(snapshot, label, relation_type, ordering)
     }
 
     fn create_role_type_unconditional(
@@ -1114,7 +1073,6 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
         relation_type: RelationType<'static>,
-        is_root: bool,
         ordering: Ordering,
     ) -> Result<RoleType<'static>, ConceptWriteError> {
         let type_vertex = self
@@ -1126,25 +1084,13 @@ impl TypeManager {
         TypeWriter::storage_put_label(snapshot, role.clone(), label);
         TypeWriter::storage_put_relates(snapshot, relation_type, role.clone());
         TypeWriter::storage_put_type_vertex_property(snapshot, role.clone(), Some(ordering));
-        if !is_root {
-            self.set_role_type_root_supertype(snapshot, role.clone());
-        }
         Ok(role)
-    }
-
-    fn set_role_type_root_supertype(&self, snapshot: &mut impl WritableSnapshot, role: RoleType<'static>) {
-        TypeWriter::storage_put_supertype(
-            snapshot,
-            role,
-            self.get_role_type(snapshot, &Kind::Role.root_label()).unwrap().unwrap(),
-        );
     }
 
     pub fn create_attribute_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
-        is_root: bool,
     ) -> Result<AttributeType<'static>, ConceptWriteError> {
         OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -1156,13 +1102,6 @@ impl TypeManager {
         let attribute_type = AttributeType::new(type_vertex);
 
         TypeWriter::storage_put_label(snapshot, attribute_type.clone(), label);
-        if !is_root {
-            TypeWriter::storage_put_supertype(
-                snapshot,
-                attribute_type.clone(),
-                self.get_attribute_type(snapshot, &Kind::Attribute.root_label()).unwrap().unwrap(),
-            );
-        }
         Ok(attribute_type)
     }
 
@@ -1460,6 +1399,17 @@ impl TypeManager {
         Ok(())
     }
 
+    fn unset_supertype<K>(&self, snapshot: &mut impl WritableSnapshot, subtype: K) -> Result<(), ConceptWriteError>
+    where
+        K: KindAPI<'static>,
+    {
+        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, subtype.clone()).is_ok());
+        OperationTimeValidation::validate_can_modify_type(snapshot, subtype.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        TypeWriter::storage_delete_supertype(snapshot, subtype.clone());
+        Ok(())
+    }
+
     pub(crate) fn set_attribute_type_supertype(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -1663,7 +1613,7 @@ impl TypeManager {
 
         OperationTimeValidation::validate_edge_override_annotations_compatibility(
             snapshot,
-            &self,
+            self,
             owns.clone(),
             overridden.clone(),
         )
@@ -1770,7 +1720,7 @@ impl TypeManager {
 
         OperationTimeValidation::validate_edge_override_annotations_compatibility(
             snapshot,
-            &self,
+            self,
             plays.clone(),
             overridden.clone(),
         )
@@ -1804,17 +1754,14 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let owns_override_opt = TypeReader::get_capability_override(snapshot, owns.clone())?;
-        match owns_override_opt {
-            Some(owns_override) => {
-                OperationTimeValidation::validate_owns_override_ordering_match(
-                    snapshot,
-                    owns.clone(),
-                    owns_override.clone(),
-                    Some(ordering),
-                )
-                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-            }
-            None => {}
+        if let Some(owns_override) = owns_override_opt {
+            OperationTimeValidation::validate_owns_override_ordering_match(
+                snapshot,
+                owns.clone(),
+                owns_override.clone(),
+                Some(ordering),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
         TypeWriter::storage_set_owns_ordering(snapshot, owns, ordering);
@@ -1840,17 +1787,14 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let relates_override_opt = TypeReader::get_capability_override(snapshot, relates.clone())?;
-        match relates_override_opt {
-            Some(relates_override) => {
-                OperationTimeValidation::validate_role_supertype_ordering_match(
-                    snapshot,
-                    relates.role(),
-                    relates_override.role(),
-                    Some(ordering),
-                )
-                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-            }
-            None => {}
+        if let Some(relates_override) = relates_override_opt {
+            OperationTimeValidation::validate_role_supertype_ordering_match(
+                snapshot,
+                relates.role(),
+                relates_override.role(),
+                Some(ordering),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
         TypeWriter::storage_put_type_vertex_property(snapshot, role_type, Some(ordering));
@@ -1993,7 +1937,7 @@ impl TypeManager {
 
         OperationTimeValidation::validate_edge_override_annotations_compatibility(
             snapshot,
-            &self,
+            self,
             relates.clone(),
             overridden.clone(),
         )
@@ -2010,7 +1954,7 @@ impl TypeManager {
         relates: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
         TypeWriter::storage_delete_supertype(snapshot, relates.role());
-        self.set_role_type_root_supertype(snapshot, relates.role());
+        self.unset_supertype(snapshot, relates.role())?;
         TypeWriter::storage_delete_type_edge_overridden(snapshot, relates);
         Ok(())
     }
@@ -2091,7 +2035,7 @@ impl TypeManager {
         if let Some(override_owns) = TypeReader::get_capability_override(snapshot, owns.clone())? {
             OperationTimeValidation::validate_key_narrows_inherited_cardinality(
                 snapshot,
-                &self,
+                self,
                 owns.clone(),
                 override_owns,
             )
@@ -2127,7 +2071,7 @@ impl TypeManager {
         if let Some(override_edge) = TypeReader::get_capability_override(snapshot, edge.clone())? {
             OperationTimeValidation::validate_cardinality_narrows_inherited_cardinality(
                 snapshot,
-                &self,
+                self,
                 edge.clone(),
                 override_edge,
                 cardinality,

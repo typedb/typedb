@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-};
+use std::collections::{HashMap, HashSet};
 
 use bytes::Bytes;
 use encoding::{
@@ -18,8 +15,7 @@ use encoding::{
             edge::{TypeEdge, TypeEdgeEncoding},
             index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
             property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
-            vertex::TypeVertexEncoding,
-            Kind,
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
         },
     },
     layout::infix::Infix,
@@ -38,6 +34,7 @@ use crate::{
             AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::AttributeType,
+        entity_type::EntityType,
         object_type::ObjectType,
         owns::Owns,
         relates::Relates,
@@ -52,10 +49,6 @@ use crate::{
 pub struct TypeReader {}
 
 impl TypeReader {
-    pub(crate) fn check_type_is_root(type_label: &Label<'_>, kind: Kind) -> bool {
-        type_label == &kind.root_label()
-    }
-
     pub(crate) fn get_labelled_type<T>(
         snapshot: &impl ReadableSnapshot,
         label: &Label<'_>,
@@ -101,7 +94,7 @@ impl TypeReader {
     pub(crate) fn get_struct_definitions_all(
         snapshot: &impl ReadableSnapshot,
     ) -> Result<HashMap<DefinitionKey<'static>, StructDefinition>, ConceptReadError> {
-        Ok(snapshot
+        snapshot
             .iterate_range(KeyRange::new_within(
                 DefinitionKey::build_prefix(StructDefinition::PREFIX),
                 StructDefinition::PREFIX.fixed_width_keys(),
@@ -109,7 +102,7 @@ impl TypeReader {
             .collect_cloned_hashmap(|key, value| {
                 (DefinitionKey::new(Bytes::Array(key.byte_ref().into())), StructDefinition::from_bytes(value))
             })
-            .map_err(|source| ConceptReadError::SnapshotIterate { source })?)
+            .map_err(|source| ConceptReadError::SnapshotIterate { source })
     }
 
     pub(crate) fn get_struct_definition_usages_in_attribute_types(
@@ -117,9 +110,7 @@ impl TypeReader {
     ) -> Result<HashMap<DefinitionKey<'static>, HashSet<AttributeType<'static>>>, ConceptReadError> {
         let mut usages: HashMap<DefinitionKey<'static>, HashSet<AttributeType<'static>>> = HashMap::new();
 
-        let root = TypeReader::get_labelled_type::<AttributeType<'static>>(snapshot, &Kind::Attribute.root_label())?
-            .ok_or(ConceptReadError::CorruptMissingLabelOfType)?;
-        let attribute_types = TypeReader::get_subtypes_transitive(snapshot, root)?;
+        let attribute_types = TypeReader::get_attribute_types(snapshot)?;
         for attribute_type in attribute_types {
             if let Some(ValueType::Struct(definition_key)) =
                 TypeReader::get_value_type_declared(snapshot, attribute_type.clone())?
@@ -152,6 +143,53 @@ impl TypeReader {
         }
 
         Ok(usages)
+    }
+
+    pub(crate) fn get_object_types(
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<Vec<ObjectType<'static>>, ConceptReadError> {
+        let entity_types = Self::get_entity_types(snapshot)?;
+        let relation_types = Self::get_relation_types(snapshot)?;
+        Ok((entity_types.into_iter().map(ObjectType::Entity))
+            .chain(relation_types.into_iter().map(ObjectType::Relation))
+            .collect())
+    }
+
+    pub(crate) fn get_entity_types(
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<Vec<EntityType<'static>>, ConceptReadError> {
+        snapshot
+            .iterate_range(KeyRange::new_within(EntityType::prefix_for_kind(), EntityType::PREFIX.fixed_width_keys()))
+            .collect_cloned_vec(|key, _| EntityType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
+    }
+
+    pub(crate) fn get_relation_types(
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<Vec<RelationType<'static>>, ConceptReadError> {
+        snapshot
+            .iterate_range(KeyRange::new_within(
+                RelationType::prefix_for_kind(),
+                RelationType::PREFIX.fixed_width_keys(),
+            ))
+            .collect_cloned_vec(|key, _| RelationType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
+    }
+
+    pub(crate) fn get_attribute_types(
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<Vec<AttributeType<'static>>, ConceptReadError> {
+        snapshot
+            .iterate_range(KeyRange::new_within(AttributeType::prefix_for_kind(), false))
+            .collect_cloned_vec(|key, _| AttributeType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
+    }
+
+    pub(crate) fn get_role_types(snapshot: &impl ReadableSnapshot) -> Result<Vec<RoleType<'static>>, ConceptReadError> {
+        snapshot
+            .iterate_range(KeyRange::new_within(RoleType::prefix_for_kind(), RoleType::PREFIX.fixed_width_keys()))
+            .collect_cloned_vec(|key, _| RoleType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
     // TODO: Should get_{super/sub}type[s_transitive] return T or T::SelfStatic.
@@ -188,7 +226,7 @@ impl TypeReader {
     where
         T: KindAPI<'static>,
     {
-        Ok(snapshot
+        snapshot
             .iterate_range(KeyRange::new_within(
                 Sub::prefix_for_reverse_edges_from(supertype),
                 TypeEdge::FIXED_WIDTH_ENCODING,
@@ -196,7 +234,7 @@ impl TypeReader {
             .collect_cloned_vec(|key, _| {
                 Sub::<T>::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned()).subtype()
             })
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?)
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
     pub fn get_subtypes_transitive<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T>, ConceptReadError>
@@ -255,16 +293,6 @@ impl TypeReader {
                 }
                 if let Some(overridden) = Self::get_capability_override(snapshot, capability.clone())? {
                     overridden_interfaces.add(overridden.interface());
-                }
-                // The root relates relation->role is not overridden, but the root role is a supertype
-                // for all roles. We don't want to return relation:role if there is a user-defined role.
-                if let Some(supertype) = Self::get_supertype(snapshot, capability.interface())? {
-                    if Kind::is_root_label(
-                        &Self::get_label(snapshot, supertype.clone())?
-                            .ok_or(ConceptReadError::CorruptMissingLabelOfType)?,
-                    ) {
-                        overridden_interfaces.add(supertype);
-                    }
                 }
             }
             current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
@@ -372,10 +400,7 @@ impl TypeReader {
     ) -> Result<Relates<'static>, ConceptReadError> {
         let relates = Self::get_capabilities_for_interface_declared::<Relates<'static>>(snapshot, role)?;
         debug_assert!(relates.len() == 1);
-        relates
-            .iter()
-            .next()
-            .map(|relates| relates.to_owned())
+        (relates.iter().next().map(|relates| relates.to_owned()))
             .ok_or(ConceptReadError::CorruptMissingMandatoryRelatesForRole)
     }
 
@@ -432,13 +457,13 @@ impl TypeReader {
     {
         let property = snapshot
             .get_mapped(PROPERTY::build_key(type_).into_storage_key().as_reference(), |value| {
-                PROPERTY::from_value_bytes(value.clone())
+                PROPERTY::from_value_bytes(value)
             })
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(property)
     }
 
-    pub(crate) fn get_type_property<'a, PROPERTY, SOURCE>(
+    pub(crate) fn get_type_property<PROPERTY, SOURCE>(
         snapshot: &impl ReadableSnapshot,
         type_: SOURCE,
     ) -> Result<Option<(PROPERTY, SOURCE)>, ConceptReadError>

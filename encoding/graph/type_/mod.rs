@@ -6,8 +6,6 @@
 
 use std::fmt::{Display, Formatter, Result};
 
-use crate::value::label::Label;
-
 pub mod edge;
 pub mod index;
 pub mod property;
@@ -23,27 +21,19 @@ pub enum Kind {
 }
 
 impl Kind {
-    const fn all_kinds() -> [Kind; 4] {
-        [Kind::Entity, Kind::Attribute, Kind::Relation, Kind::Role]
-    }
-
-    pub const fn root_label(&self) -> Label {
+    pub const fn name(&self) -> &'static str {
         match self {
-            Kind::Entity => Label::new_static("entity"),
-            Kind::Attribute => Label::new_static("attribute"),
-            Kind::Relation => Label::new_static("relation"),
-            Kind::Role => Label::new_static_scoped("role", "relation", "relation:role"),
+            Kind::Entity => "entity",
+            Kind::Attribute => "attribute",
+            Kind::Relation => "relation",
+            Kind::Role => "relation:role",
         }
-    }
-
-    pub fn is_root_label(label: &Label) -> bool {
-        Kind::all_kinds().iter().any(|kind| kind.root_label() == *label)
     }
 }
 
 impl std::fmt::Debug for Kind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Kind[{}]", self.root_label().name)
+        write!(f, "Kind[{}]", self.name())
     }
 }
 
@@ -55,24 +45,23 @@ pub enum CapabilityKind {
 }
 
 impl CapabilityKind {
-    const fn all_kinds() -> [CapabilityKind; 3] {
-        [CapabilityKind::Relates, CapabilityKind::Plays, CapabilityKind::Owns]
+    fn name(&self) -> &'static str {
+        match self {
+            CapabilityKind::Relates => "relates",
+            CapabilityKind::Plays => "plays",
+            CapabilityKind::Owns => "owns",
+        }
     }
 }
 
 impl Display for CapabilityKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let str = match self {
-            CapabilityKind::Relates => "relates",
-            CapabilityKind::Plays => "plays",
-            CapabilityKind::Owns => "owns",
-        };
-        write!(f, "{}", str)
+        write!(f, "{}", self.name())
     }
 }
 
 impl std::fmt::Debug for CapabilityKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "CapabilityKind[{}]", self.to_string())
+        write!(f, "CapabilityKind[{}]", self)
     }
 }

@@ -92,7 +92,6 @@ pub(crate) struct RelatesCache {
 pub(crate) struct CommonTypeCache<T: KindAPI<'static>> {
     pub(super) type_: T,
     pub(super) label: Label<'static>,
-    pub(super) is_root: bool,
     pub(super) annotations_declared: HashSet<T::AnnotationType>,
     pub(super) annotations: HashMap<T::AnnotationType, T>,
     // TODO: Should these all be sets instead of vec?
@@ -312,7 +311,6 @@ impl<T: KindAPI<'static, SelfStatic = T>> CommonTypeCache<T> {
         Snapshot: ReadableSnapshot,
     {
         let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
-        let is_root = TypeReader::check_type_is_root(&label, T::ROOT_KIND);
         let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_.clone()).unwrap();
         let annotations = TypeReader::get_type_annotations(snapshot, type_.clone()).unwrap();
         let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
@@ -322,7 +320,6 @@ impl<T: KindAPI<'static, SelfStatic = T>> CommonTypeCache<T> {
         CommonTypeCache {
             type_,
             label,
-            is_root,
             annotations_declared,
             annotations,
             supertype,

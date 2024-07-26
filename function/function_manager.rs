@@ -21,9 +21,7 @@ use encoding::{
 use ir::{
     inference::type_inference::infer_types_for_functions,
     program::{
-        function_signature::{
-            FunctionID, FunctionIDTrait, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex,
-        },
+        function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
         program::{CompiledSchemaFunctions, Program},
         FunctionReadError,
     },
@@ -69,7 +67,7 @@ impl FunctionManager {
             HashMapFunctionIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let ir = Program::compile_functions(&function_index, functions.iter().map(|f| &f.parsed)).unwrap();
         // Run type-inference
-        infer_types_for_functions(ir, snapshot, &type_manager, &CompiledSchemaFunctions::empty())
+        infer_types_for_functions(ir, snapshot, type_manager, &CompiledSchemaFunctions::empty())
             .map_err(|source| FunctionManagerError::TypeInference { source })?;
         Ok(())
     }
@@ -85,14 +83,14 @@ impl FunctionManager {
                 .definition_key_generator
                 .create_function(snapshot)
                 .map_err(|source| FunctionManagerError::Encoding { source })?;
-            let function = Function::build(definition_key, FunctionDefinition::build_ref(&definition))?;
+            let function = Function::build(definition_key, FunctionDefinition::build_ref(definition))?;
             let index_key =
                 NameToStructDefinitionIndex::build::<BUFFER_KEY_INLINE>(StringBytes::build_ref(&function.name()))
                     .into_storage_key();
             let existing = snapshot
                 .get::<BUFFER_VALUE_INLINE>(index_key.as_reference())
                 .map_err(|source| FunctionManagerError::SnapshotGet { source })?;
-            if let Some(_) = existing {
+            if existing.is_some() {
                 Err(FunctionManagerError::FunctionAlreadyExists { name: function.name() })?;
             } else {
                 functions.push(function);
@@ -113,7 +111,7 @@ impl FunctionManager {
             snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes().bytes()));
             snapshot.put_val(
                 definition_key.clone().into_storage_key().into_owned_array(),
-                FunctionDefinition::build_ref(&definition).into_bytes().into_array(),
+                FunctionDefinition::build_ref(definition).into_bytes().into_array(),
             );
         }
         Ok(functions)
@@ -246,11 +244,7 @@ pub mod tests {
         pattern::variable_category::{VariableCategory, VariableOptionality},
         program::function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
     };
-    use storage::{
-        durability_client::WALClient,
-        snapshot::{CommittableSnapshot, ReadableSnapshot},
-        MVCCStorage,
-    };
+    use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
     use test_utils::{create_tmp_dir, init_logging};
 
     use crate::{
@@ -262,16 +256,10 @@ pub mod tests {
         init_logging();
         let storage_path = create_tmp_dir();
         let wal = WAL::create(&storage_path).unwrap();
-        let storage = Arc::new(
+        Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
-        );
-
-        let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-        let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-        TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-            .unwrap();
-        storage
+        )
     }
 
     #[test]
@@ -385,11 +373,9 @@ pub mod tests {
             let mut snapshot = snapshot_;
 
             // Attributes
-            let name = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_NAME), false).unwrap();
-            let catname =
-                type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_CATNAME), false).unwrap();
-            let dogname =
-                type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_DOGNAME), false).unwrap();
+            let name = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_NAME)).unwrap();
+            let catname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_CATNAME)).unwrap();
+            let dogname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_DOGNAME)).unwrap();
             name.set_annotation(&mut snapshot, type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract))
                 .unwrap();
             catname.set_supertype(&mut snapshot, type_manager, name.clone()).unwrap();
@@ -400,9 +386,9 @@ pub mod tests {
             dogname.set_value_type(&mut snapshot, type_manager, ValueType::String).unwrap();
 
             // Entities
-            let animal = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_ANIMAL), false).unwrap();
-            let cat = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_CAT), false).unwrap();
-            let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG), false).unwrap();
+            let animal = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_ANIMAL)).unwrap();
+            let cat = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_CAT)).unwrap();
+            let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG)).unwrap();
             cat.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
             dog.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
             animal

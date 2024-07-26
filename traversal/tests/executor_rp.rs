@@ -11,10 +11,7 @@ use concept::{
     thing::object::ObjectAPI,
     type_::{Ordering, OwnerAPI, PlayerAPI},
 };
-use encoding::{
-    graph::type_::Kind,
-    value::{label::Label, value::Value, value_type::ValueType},
-};
+use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use ir::{
     inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
@@ -53,10 +50,10 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
-    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL, false).unwrap();
-    let group_type = type_manager.create_entity_type(&mut snapshot, &GROUP_LABEL, false).unwrap();
+    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
+    let group_type = type_manager.create_entity_type(&mut snapshot, &GROUP_LABEL).unwrap();
 
-    let membership_type = type_manager.create_relation_type(&mut snapshot, &MEMBERSHIP_LABEL, false).unwrap();
+    let membership_type = type_manager.create_relation_type(&mut snapshot, &MEMBERSHIP_LABEL).unwrap();
     let relates_member = membership_type
         .create_relates(&mut snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name().as_str(), Ordering::Unordered)
         .unwrap();
@@ -66,9 +63,9 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
         .unwrap();
     let membership_group_type = relates_group.role();
 
-    let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL, false).unwrap();
+    let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
     age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
-    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL, false).unwrap();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
 
     person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
@@ -146,24 +143,24 @@ fn traverse_rp_unbounded_sorted_from() {
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
-    let var_group_type = conjunction.get_or_declare_variable(&"group_type").unwrap();
-    let var_membership_type = conjunction.get_or_declare_variable(&"membership_type").unwrap();
-    let var_membership_member_type = conjunction.get_or_declare_variable(&"membership_member_type").unwrap();
-    let var_membership_group_type = conjunction.get_or_declare_variable(&"membership_group_type").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
+    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
+    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
 
-    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-    let var_group = conjunction.get_or_declare_variable(&"group").unwrap();
-    let var_membership = conjunction.get_or_declare_variable(&"membership").unwrap();
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_group = conjunction.get_or_declare_variable("group").unwrap();
+    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
     let rp_membership_person = conjunction
         .constraints_mut()
-        .add_role_player(var_membership, var_person, Some(var_membership_member_type))
+        .add_role_player(var_membership, var_person, var_membership_member_type)
         .unwrap()
         .clone();
     let rp_membership_group = conjunction
         .constraints_mut()
-        .add_role_player(var_membership, var_group, Some(var_membership_group_type))
+        .add_role_player(var_membership, var_group, var_membership_group_type)
         .unwrap()
         .clone();
 
@@ -240,23 +237,19 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     // query:
     //   match
-    //    $person has attribute $attribute;
+    //    $person has $attribute;
 
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
-    let var_attribute_type = conjunction.get_or_declare_variable(&"attr_type").unwrap();
-    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-    let var_attribute = conjunction.get_or_declare_variable(&"attr").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_attribute_type = conjunction.get_or_declare_variable("attr_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_attribute = conjunction.get_or_declare_variable("attr").unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_attribute_type, Kind::Attribute.root_label().scoped_name().as_str())
-        .unwrap();
     let program = Program::new(block.finish(), Vec::new());
 
     let annotated_program = {
