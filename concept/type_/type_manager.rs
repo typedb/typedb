@@ -2086,7 +2086,7 @@ impl TypeManager {
             owns.clone(),
             annotation.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_edge_annotation::<AnnotationDistinct>(snapshot, owns, annotation)
     }
@@ -2104,7 +2104,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-// TODO: relates
+        // TODO: relates
         // OperationTimeValidation::validate_new_annotation_compatible_with_owns_and_overriding_owns_instances(
         //     snapshot,
         //     self,
@@ -2196,7 +2196,7 @@ impl TypeManager {
             owns.clone(),
             annotation.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_edge_annotation::<AnnotationKey>(snapshot, owns, annotation)
     }
@@ -2211,7 +2211,7 @@ impl TypeManager {
     {
         self.unset_edge_annotation::<AnnotationKey>(snapshot, edge, AnnotationCategory::Key)
     }
-    
+
     pub(crate) fn set_owns_annotation_cardinality(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -2231,7 +2231,7 @@ impl TypeManager {
 
         self.set_edge_annotation_cardinality(snapshot, owns, cardinality)
     }
-    
+
     pub(crate) fn set_edge_annotation_cardinality<CAP: Capability<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -2349,7 +2349,7 @@ impl TypeManager {
             owns.clone(),
             annotation.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_edge_annotation::<AnnotationRegex>(snapshot, owns, annotation)
     }
@@ -2472,7 +2472,7 @@ impl TypeManager {
             owns.clone(),
             annotation.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_edge_annotation::<AnnotationRange>(snapshot, owns, annotation)
     }
@@ -2576,7 +2576,7 @@ impl TypeManager {
             owns.clone(),
             annotation.clone(),
         )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_edge_annotation::<AnnotationValues>(snapshot, owns, annotation)
     }
@@ -2682,7 +2682,9 @@ impl TypeManager {
             | Annotation::Unique(_)
             | Annotation::Key(_)
             | Annotation::Cascade(_) => TypeWriter::storage_put_type_edge_property(snapshot, edge, None::<A>),
-            Annotation::Cardinality(cardinality) => TypeWriter::storage_insert_type_edge_property(snapshot, edge, Some(cardinality)),
+            Annotation::Cardinality(cardinality) => {
+                TypeWriter::storage_insert_type_edge_property(snapshot, edge, Some(cardinality))
+            }
             Annotation::Regex(regex) => TypeWriter::storage_insert_type_edge_property(snapshot, edge, Some(regex)),
             Annotation::Range(range) => TypeWriter::storage_insert_type_edge_property(snapshot, edge, Some(range)),
             Annotation::Values(values) => TypeWriter::storage_insert_type_edge_property(snapshot, edge, Some(values)),

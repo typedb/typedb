@@ -30,13 +30,12 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        HKInstance,
         attribute::Attribute,
         entity::Entity,
         has::Has,
         relation::Relation,
         thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
-        ThingAPI,
+        HKInstance, ThingAPI,
     },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, owns::Owns, role_type::RoleType,

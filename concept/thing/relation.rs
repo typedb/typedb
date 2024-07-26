@@ -36,9 +36,8 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         object::{Object, ObjectAPI},
-        HKInstance,
         thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
-        ThingAPI,
+        HKInstance, ThingAPI,
     },
     type_::{
         annotation::AnnotationDistinct, relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType,

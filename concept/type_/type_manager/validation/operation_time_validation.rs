@@ -24,11 +24,7 @@ use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
     error::ConceptReadError,
-    thing::{
-        object::ObjectAPI,
-        relation::{RolePlayerIterator},
-        thing_manager::ThingManager,
-    },
+    thing::{object::ObjectAPI, relation::RolePlayerIterator, thing_manager::ThingManager, ThingAPI},
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationRange,
@@ -71,7 +67,6 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
     },
 };
-use crate::thing::ThingAPI;
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -477,14 +472,9 @@ macro_rules! new_annotation_compatible_with_capability_and_overriding_capabiliti
             )
             .map_err(SchemaValidationError::ConceptRead)?;
 
-            let violation = $validation_func(
-                snapshot,
-                type_manager,
-                thing_manager,
-                capability.clone(),
-                filtered_annotations,
-            )
-            .map_err(SchemaValidationError::ConceptRead)?;
+            let violation =
+                $validation_func(snapshot, type_manager, thing_manager, capability.clone(), filtered_annotations)
+                    .map_err(SchemaValidationError::ConceptRead)?;
 
             if let Some((violating_objects_with_interfaces, violated_constraint)) = violation {
                 Err(SchemaValidationError::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
@@ -2476,5 +2466,4 @@ impl OperationTimeValidation {
     //     Relates,
     //     Self::get_relates_or_its_overriding_relates_with_violated_new_annotation_constraints
     // );
-
 }

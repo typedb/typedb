@@ -30,7 +30,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::{ThingAPI, thing_manager::ThingManager},
+    thing::{thing_manager::ThingManager, ThingAPI},
     type_::{
         annotation::{Annotation, AnnotationCardinality, AnnotationError},
         attribute_type::AttributeType,

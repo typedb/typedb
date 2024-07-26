@@ -117,10 +117,15 @@ impl<'a> Owns<'a> {
             OwnsAnnotation::Distinct(_) => {
                 type_manager.set_owns_annotation_distinct(snapshot, thing_manager, self.clone().into_owned())?
             }
-            OwnsAnnotation::Key(_) => type_manager.set_owns_annotation_key(snapshot, thing_manager, self.clone().into_owned())?,
-            OwnsAnnotation::Cardinality(cardinality) => {
-                type_manager.set_owns_annotation_cardinality(snapshot, thing_manager, self.clone().into_owned(), cardinality)?
+            OwnsAnnotation::Key(_) => {
+                type_manager.set_owns_annotation_key(snapshot, thing_manager, self.clone().into_owned())?
             }
+            OwnsAnnotation::Cardinality(cardinality) => type_manager.set_owns_annotation_cardinality(
+                snapshot,
+                thing_manager,
+                self.clone().into_owned(),
+                cardinality,
+            )?,
             OwnsAnnotation::Unique(_) => {
                 type_manager.set_owns_annotation_unique(snapshot, thing_manager, self.clone().into_owned())?
             }
