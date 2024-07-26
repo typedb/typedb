@@ -483,7 +483,7 @@ pub async fn relation_role_set_annotation(
                 );
             }
             annotation::Annotation::Distinct(_) | annotation::Annotation::Cardinality(_) => {
-                res = relates.set_annotation(&mut tx.snapshot, &tx.type_manager, parsed_annotation.try_into().unwrap());
+                res = relates.set_annotation(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, parsed_annotation.try_into().unwrap());
             }
             _ => {
                 unimplemented!("Annotation {:?} is not supported by roles and relates", parsed_annotation);

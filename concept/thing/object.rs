@@ -33,7 +33,7 @@ use crate::{
         attribute::Attribute,
         entity::Entity,
         has::Has,
-        relation::Relation,
+        relation::{Relation, RelationRoleIterator},
         thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
         HKInstance, ThingAPI,
     },
@@ -427,8 +427,16 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(Relation<'x>, u64), ConceptReadError>> {
         thing_manager.get_relations_player_role(snapshot, self, role_type)
+    }
+
+    fn get_relations_roles<'m>(
+        &'a self,
+        snapshot: &'m impl ReadableSnapshot,
+        thing_manager: &'m ThingManager,
+    ) -> RelationRoleIterator {
+        thing_manager.get_relations_roles(snapshot, self)
     }
 }
 

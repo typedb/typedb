@@ -42,7 +42,6 @@ use encoding::{
 };
 use itertools::Itertools;
 use lending_iterator::{AsHkt, LendingIterator};
-use regex::Regex;
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLINE};
 use storage::{
     key_range::KeyRange,
@@ -58,14 +57,8 @@ use crate::{
         decode_attribute_ids, decode_role_players, encode_attribute_ids, encode_role_players,
         entity::Entity,
         object::{HasAttributeIterator, HasIterator, HasReverseIterator, Object, ObjectAPI},
-<<<<<<< HEAD
         relation::{IndexedPlayersIterator, LinksIterator, Relation, RelationRoleIterator, RolePlayerIterator},
         HKInstance, ThingAPI,
-=======
-        relation::{IndexedPlayersIterator, Relation, RelationRoleIterator, RolePlayerIterator},
-        thing_manager::validation::operation_time_validation::OperationTimeValidation,
-        ThingAPI,
->>>>>>> 038bf93d6 (Add checks for instances for types deletion and set abstract operations)
     },
     type_::{
         attribute_type::{AttributeType, AttributeTypeAnnotation},
@@ -78,6 +71,8 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::thing::relation::RolePlayer;
+use crate::thing::thing_manager::validation::operation_time_validation::OperationTimeValidation;
 
 pub mod validation;
 
@@ -151,15 +146,23 @@ impl ThingManager {
         self.get_instances_in(snapshot, object_type)
     }
 
+    pub(crate) fn get_relations_roles<'o>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        player: &'o impl ObjectAPI<'o>,
+    ) -> RelationRoleIterator {
+        let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
+        RelationRoleIterator::new(
+            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE)),
+        )
+    }
+
     pub(crate) fn get_relations_player<'o>(
         &self,
         snapshot: &impl ReadableSnapshot,
         player: &'o impl ObjectAPI<'o>,
     ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
-        let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
-        let snapshot_iterator =
-            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE));
-        RelationRoleIterator::new(snapshot_iterator).map::<Result<Relation<'_>, _>, _>(|res| {
+        self.get_relations_roles(snapshot, player).map::<Result<Relation<'_>, _>, _>(|res| {
             let (rel, _, _) = res?;
             Ok(rel)
         })
@@ -171,12 +174,11 @@ impl ThingManager {
         player: &'o impl ObjectAPI<'o>,
         role_type: RoleType<'static>,
     ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
-        let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
-        let snapshot_iterator =
-            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE));
-        RelationRoleIterator::new(snapshot_iterator).filter_map::<Result<Relation<'_>, _>, _>(move |item| match item {
-            Ok((rel, role, _)) => (role == role_type).then_some(Ok(rel)),
-            Err(error) => Some(Err(error)),
+        self.get_relations_roles(snapshot, player).filter_map::<Result<(Relation<'_>, u64), _>, _>(move |item| {
+            match item {
+                Ok((rel, role, count)) => (role == role_type).then_some(Ok((rel, count))),
+                Err(error) => Some(Err(error)),
+            }
         })
     }
 
@@ -516,6 +518,7 @@ impl ThingManager {
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         )
     }
+
     pub(crate) fn get_has_from_thing_to_type_unordered<'this, 'a>(
         &'this self,
         snapshot: &'this impl ReadableSnapshot,
@@ -664,17 +667,6 @@ impl ThingManager {
         snapshot.any_in_range(KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
-    pub(crate) fn get_relations_roles<'a>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        player: impl ObjectAPI<'a>,
-    ) -> RelationRoleIterator {
-        let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.into_vertex());
-        RelationRoleIterator::new(
-            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE)),
-        )
-    }
-
     pub(crate) fn has_links(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -770,6 +762,20 @@ impl ThingManager {
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
             .unwrap_or_else(Vec::new);
         Ok(players)
+    }
+
+    pub(crate) fn get_role_players_role(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation: Relation<'_>,
+        role_type: RoleType<'static>,
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
+        self.get_role_players(snapshot, relation).filter_map::<Result<(RolePlayer<'_>, u64), _>, _>(move |item| {
+            match item {
+                Ok((role_player, count)) => (role_player.role_type() == role_type).then_some(Ok((role_player, count))),
+                Err(error) => Some(Err(error)),
+            }
+        })
     }
 
     pub(crate) fn get_indexed_players<'a>(
@@ -1336,12 +1342,7 @@ impl ThingManager {
         snapshot.delete(order_property.into_storage_key().into_owned_array())
     }
 
-<<<<<<< HEAD
     pub(crate) fn put_links_unordered<'a>(
-=======
-    pub(crate) fn put_role_player_unordered<'a>(
-        // TODO: put or set???
->>>>>>> 038bf93d6 (Add checks for instances for types deletion and set abstract operations)
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,

@@ -338,6 +338,7 @@ fn put_plays() {
         .set_annotation(
             &mut snapshot,
             &type_manager,
+            &thing_manager,
             RelatesAnnotation::Cardinality(AnnotationCardinality::new(1, Some(4))),
         )
         .unwrap();

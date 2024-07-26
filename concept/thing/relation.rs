@@ -90,14 +90,6 @@ impl<'a> Relation<'a> {
     //     Ok(())
     // }
 
-    pub fn get_relations<'m>(
-        &self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
-    ) -> RelationRoleIterator {
-        thing_manager.get_relations_roles(snapshot, self.as_reference())
-    }
-
     pub fn get_indexed_players<'m>(
         &self,
         snapshot: &'m impl ReadableSnapshot,
@@ -121,6 +113,15 @@ impl<'a> Relation<'a> {
         thing_manager: &ThingManager,
     ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
         thing_manager.get_role_players(snapshot, self.as_reference())
+    }
+
+    pub fn get_players_by_role(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        role_type: RoleType<'static>,
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
+        thing_manager.get_role_players_role(snapshot, self.as_reference(), role_type)
     }
 
     pub fn get_players_ordered(
@@ -398,7 +399,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         */
 
         for (relation, role) in self
-            .get_relations(snapshot, thing_manager)
+            .get_relations_roles(snapshot, thing_manager)
             .map_static(|res| res.map(|(relation, role, _count)| (relation.into_owned(), role.into_owned())))
             .try_collect::<Vec<_>, _>()
             .map_err(|error| ConceptWriteError::ConceptRead { source: error })?

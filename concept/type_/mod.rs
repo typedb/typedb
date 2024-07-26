@@ -103,7 +103,7 @@ pub trait KindAPI<'a>: TypeAPI<'a> {
     ) -> Result<MaybeOwns<'this, HashMap<Self::AnnotationType, Self>>, ConceptReadError>;
 }
 
-pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> {
+pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> + ThingTypeAPI<'a> {
     fn into_owned_object_type(self) -> ObjectType<'static>;
 }
 

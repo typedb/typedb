@@ -242,7 +242,7 @@ impl TypeReader {
 
     pub(crate) fn get_subtypes<T>(snapshot: &impl ReadableSnapshot, supertype: T) -> Result<Vec<T>, ConceptReadError>
     where
-        T: KindAPI<'static>,
+        T: TypeAPI<'static>,
     {
         snapshot
             .iterate_range(KeyRange::new_within(
@@ -362,14 +362,11 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn get_capabilities_for_interface<CAP>(
+    pub(crate) fn get_capabilities_for_interface<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         interface_type: CAP::InterfaceType,
-    ) -> Result<HashMap<ObjectType<'static>, CAP>, ConceptReadError>
-    where
-        CAP: Capability<'static, ObjectType = ObjectType<'static>>,
-    {
-        let mut impl_transitive: HashMap<ObjectType<'static>, CAP> = HashMap::new();
+    ) -> Result<HashMap<CAP::ObjectType, CAP>, ConceptReadError> {
+        let mut impl_transitive: HashMap<CAP::ObjectType, CAP> = HashMap::new();
         let declared_impl_set: HashSet<CAP> =
             Self::get_capabilities_for_interface_declared(snapshot, interface_type.clone())?;
 
@@ -387,14 +384,9 @@ impl TypeReader {
                 if !declared_impl_was_overridden {
                     debug_assert!(!impl_transitive.contains_key(&sub_object));
                     impl_transitive.insert(sub_object.clone(), declared_impl.clone());
-                    match sub_object {
-                        ObjectType::Entity(owner) => Self::get_subtypes(snapshot, owner)?
-                            .into_iter()
-                            .for_each(|t| stack.push(ObjectType::new(t.into_vertex()))),
-                        ObjectType::Relation(owner) => Self::get_subtypes(snapshot, owner)?
-                            .into_iter()
-                            .for_each(|t| stack.push(ObjectType::new(t.into_vertex()))),
-                    };
+                    Self::get_subtypes(snapshot, sub_object)?
+                        .into_iter()
+                        .for_each(|object_type| stack.push(object_type));
                 }
             }
         }
@@ -564,9 +556,9 @@ impl TypeReader {
     }
 
     // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs
-    pub(crate) fn get_type_edge_annotations_declared<'b, EDGE: Capability<'b>>(
+    pub(crate) fn get_type_edge_annotations_declared<'b, CAP: Capability<'b>>(
         snapshot: &impl ReadableSnapshot,
-        edge: EDGE,
+        edge: CAP,
     ) -> Result<HashSet<Annotation>, ConceptReadError> {
         let type_edge = edge.to_canonical_type_edge();
         snapshot
@@ -609,14 +601,11 @@ impl TypeReader {
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
 
-    pub(crate) fn get_type_edge_annotations<EDGE>(
+    pub(crate) fn get_type_edge_annotations<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        edge: EDGE,
-    ) -> Result<HashMap<Annotation, EDGE>, ConceptReadError>
-    where
-        EDGE: Capability<'static>,
-    {
-        let mut annotations: HashMap<Annotation, EDGE> = HashMap::new();
+        edge: CAP,
+    ) -> Result<HashMap<Annotation, CAP>, ConceptReadError> {
+        let mut annotations: HashMap<Annotation, CAP> = HashMap::new();
         let mut edge_opt = Some(edge);
         let mut declared = true;
         while let Some(edge) = edge_opt {

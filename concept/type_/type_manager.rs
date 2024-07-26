@@ -1375,15 +1375,12 @@ impl TypeManager {
         Ok(())
     }
 
-    fn set_supertype<K>(
+    fn set_supertype<K: KindAPI<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         subtype: K,
         supertype: K,
-    ) -> Result<(), ConceptWriteError>
-    where
-        K: KindAPI<'static>,
-    {
+    ) -> Result<(), ConceptWriteError> {
         debug_assert! {
             OperationTimeValidation::validate_type_exists(snapshot, subtype.clone()).is_ok() &&
                 OperationTimeValidation::validate_type_exists(snapshot, supertype.clone()).is_ok()
@@ -2094,8 +2091,11 @@ impl TypeManager {
     pub(crate) fn set_relates_annotation_distinct(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         relates: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
+        let annotation = Annotation::Distinct(AnnotationDistinct);
+
         OperationTimeValidation::validate_relates_distinct_annotation_ordering(
             snapshot,
             relates.clone(),
@@ -2104,27 +2104,23 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        // TODO: relates
-        // OperationTimeValidation::validate_new_annotation_compatible_with_owns_and_overriding_owns_instances(
-        //     snapshot,
-        //     self,
-        //     thing_manager,
-        //     owns.clone(),
-        //     annotation.clone(),
-        // )
-        //     .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_new_annotation_compatible_with_relates_and_overriding_relates_instances(
+            snapshot,
+            self,
+            thing_manager,
+            relates.clone(),
+            annotation.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_edge_annotation::<AnnotationDistinct>(snapshot, relates, Annotation::Distinct(AnnotationDistinct))
+        self.set_edge_annotation::<AnnotationDistinct>(snapshot, relates, annotation)
     }
 
-    pub(crate) fn unset_edge_annotation_distinct<CAP>(
+    pub(crate) fn unset_edge_annotation_distinct<CAP: Capability<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: CAP,
-    ) -> Result<(), ConceptWriteError>
-    where
-        CAP: Capability<'static>,
-    {
+    ) -> Result<(), ConceptWriteError> {
         self.unset_edge_annotation::<AnnotationDistinct>(snapshot, edge, AnnotationCategory::Distinct)
     }
 
@@ -2201,14 +2197,11 @@ impl TypeManager {
         self.set_edge_annotation::<AnnotationKey>(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_edge_annotation_key<CAP>(
+    pub(crate) fn unset_edge_annotation_key<CAP: Capability<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: CAP,
-    ) -> Result<(), ConceptWriteError>
-    where
-        CAP: Capability<'static>,
-    {
+    ) -> Result<(), ConceptWriteError> {
         self.unset_edge_annotation::<AnnotationKey>(snapshot, edge, AnnotationCategory::Key)
     }
 
@@ -2232,7 +2225,47 @@ impl TypeManager {
         self.set_edge_annotation_cardinality(snapshot, owns, cardinality)
     }
 
-    pub(crate) fn set_edge_annotation_cardinality<CAP: Capability<'static>>(
+    pub(crate) fn set_plays_annotation_cardinality(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        plays: Plays<'static>,
+        cardinality: AnnotationCardinality,
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Should be checked after every type check!
+        OperationTimeValidation::validate_new_annotation_compatible_with_plays_and_overriding_plays_instances(
+            snapshot,
+            self,
+            thing_manager,
+            plays.clone(),
+            Annotation::Cardinality(cardinality.clone()),
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        self.set_edge_annotation_cardinality(snapshot, plays, cardinality)
+    }
+
+    pub(crate) fn set_relates_annotation_cardinality(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        relates: Relates<'static>,
+        cardinality: AnnotationCardinality,
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Should be checked after every type check!
+        OperationTimeValidation::validate_new_annotation_compatible_with_relates_and_overriding_relates_instances(
+            snapshot,
+            self,
+            thing_manager,
+            relates.clone(),
+            Annotation::Cardinality(cardinality.clone()),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        self.set_edge_annotation_cardinality(snapshot, relates, cardinality)
+    }
+
+    fn set_edge_annotation_cardinality<CAP: Capability<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: CAP,
@@ -2255,14 +2288,11 @@ impl TypeManager {
         self.set_edge_annotation::<AnnotationCardinality>(snapshot, edge, Annotation::Cardinality(cardinality))
     }
 
-    pub(crate) fn unset_edge_annotation_cardinality<CAP>(
+    pub(crate) fn unset_edge_annotation_cardinality<CAP: Capability<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: CAP,
-    ) -> Result<(), ConceptWriteError>
-    where
-        CAP: Capability<'static>,
-    {
+    ) -> Result<(), ConceptWriteError> {
         self.unset_edge_annotation::<AnnotationCardinality>(snapshot, edge, AnnotationCategory::Cardinality)
     }
 
@@ -2354,14 +2384,11 @@ impl TypeManager {
         self.set_edge_annotation::<AnnotationRegex>(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_edge_annotation_regex<CAP>(
+    pub(crate) fn unset_edge_annotation_regex<CAP: Capability<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: CAP,
-    ) -> Result<(), ConceptWriteError>
-    where
-        CAP: Capability<'static>,
-    {
+    ) -> Result<(), ConceptWriteError> {
         self.unset_edge_annotation::<AnnotationRegex>(snapshot, edge, AnnotationCategory::Regex)
     }
 

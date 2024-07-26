@@ -24,7 +24,12 @@ use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
     error::ConceptReadError,
-    thing::{object::ObjectAPI, relation::RolePlayerIterator, thing_manager::ThingManager, ThingAPI},
+    thing::{
+        object::{Object, ObjectAPI},
+        relation::RolePlayerIterator,
+        thing_manager::ThingManager,
+        ThingAPI,
+    },
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationRange,
@@ -35,8 +40,8 @@ use crate::{
         entity_type::EntityType,
         object_type::{with_object_type, ObjectType},
         owns::{Owns, OwnsAnnotation},
-        plays::Plays,
-        relates::Relates,
+        plays::{Plays, PlaysAnnotation},
+        relates::{Relates, RelatesAnnotation},
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::{
@@ -64,7 +69,7 @@ use crate::{
             },
             TypeManager,
         },
-        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
+        Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
 
@@ -78,29 +83,6 @@ macro_rules! object_type_match {
 }
 
 pub struct OperationTimeValidation {}
-
-macro_rules! while_some_object_instance_in_type {
-    ($snapshot:ident, $thing_manager:ident, $object_type:ident, |$type_:ident, $object:ident| $expr:expr) => {
-        match $object_type.clone() {
-            ObjectType::Entity($type_) => {
-                let mut object_iterator = $thing_manager.get_entities_in($snapshot, $type_.clone().into_owned());
-
-                while let Some($object) = object_iterator.next() {
-                    let $object = $object?;
-                    $expr
-                }
-            }
-            ObjectType::Relation($type_) => {
-                let mut object_iterator = $thing_manager.get_relations_in($snapshot, $type_.clone().into_owned());
-
-                while let Some($object) = object_iterator.next() {
-                    let $object = $object?;
-                    $expr
-                }
-            }
-        }
-    };
-}
 
 macro_rules! type_or_subtype_without_declared_capability_instances_existence_validation {
     ($func_name:ident, $capability_type:ident, $object_type:ident, $interface_type:ident, $single_type_validation_func:path) => {
@@ -258,7 +240,7 @@ macro_rules! cannot_change_supertype_as_capability_with_existing_instances_is_lo
 }
 
 macro_rules! capability_or_its_overriding_capability_with_violated_new_annotation_constraints {
-    ($func_name:ident, $capability_type:ident, $object_type:ident, $interface_type:ident, $existing_instances_validation_func_type:path, $existing_instances_validation_func_type_and_siblings:path) => {
+    ($func_name:ident, $capability_type:ident, $object_type:ident, $interface_type:ident, $existing_instances_validation_func:path) => {
         paste! {
             fn $func_name<'a>(
                 snapshot: &impl ReadableSnapshot,
@@ -283,6 +265,18 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                         }
                         ConstraintValidationMode::TypeAndSiblings => {
                             let result = Self::[< $func_name _type_and_siblings >](
+                                snapshot,
+                                type_manager,
+                                thing_manager,
+                                capability.clone(),
+                                annotations
+                            )?;
+                            if result.is_some() {
+                                return Ok(result);
+                            }
+                        }
+                        ConstraintValidationMode::TypeAndSiblingsAndSubtypes => {
+                            let result = Self::[< $func_name _type_and_siblings_and_subtypes >](
                                 snapshot,
                                 type_manager,
                                 thing_manager,
@@ -320,17 +314,16 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                 while let Some((current_object_type, current_capability, annotations_to_revalidate)) =
                     capabilities_and_annotations_to_check.pop_back()
                 {
-                    if let Some(violated_constraint) = $existing_instances_validation_func_type(
+                    if let Some(violated_constraint) = $existing_instances_validation_func(
                         snapshot,
-                        type_manager,
                         thing_manager,
-                        current_object_type.clone(),
-                        current_capability.interface(),
+                        &HashSet::from([current_object_type.clone()]),
+                        &HashSet::from([current_capability.interface()]),
                         &annotations_to_revalidate,
                     )? {
                         type_and_interface_with_violations =
                             Some((vec![(current_object_type, current_capability.interface())], violated_constraint));
-                        break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
+                        break;
                     }
 
                     let subtypes = current_object_type.get_subtypes(snapshot, type_manager)?;
@@ -395,57 +388,121 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                 let mut capabilities_to_check = VecDeque::new();
                 capabilities_to_check.push_front((
                     capability.object(),
-                    vec![capability],
+                    HashSet::from([capability]),
                 ));
 
-                while let Some((current_object_type, current_capabilities)) =
-                    capabilities_to_check.pop_back()
-                {
-                    let current_interface_types = current_capabilities.iter().map(|capability| capability.interface()).collect_vec();
-                    if let Some(violated_constraint) = $existing_instances_validation_func_type_and_siblings(
+                while let Some((current_object_type, current_capabilities)) = capabilities_to_check.pop_back() {
+                    let current_interface_types = current_capabilities.iter().map(|capability| capability.interface()).collect();
+                    if let Some(violated_constraint) = $existing_instances_validation_func(
                         snapshot,
-                        type_manager,
                         thing_manager,
-                        current_object_type.clone(),
+                        &HashSet::from([current_object_type.clone()]),
                         &current_interface_types,
                         &annotations,
                     )? {
-                        type_and_interface_with_violations =
-                            Some((current_interface_types.iter().map(|interface_type| (current_object_type.clone(), interface_type.clone())).collect_vec(), violated_constraint));
-                        break; // TODO: Maybe we want to return all the corrupted owns here, just moving forward for now
+                        type_and_interface_with_violations = Some((
+                            current_interface_types
+                                .iter()
+                                .map(|interface_type| (current_object_type.clone(), interface_type.clone()))
+                                .collect_vec(),
+                            violated_constraint
+                        ));
+                        break;
                     }
 
                     let subtypes = current_object_type.get_subtypes(snapshot, type_manager)?;
                     for subtype in subtypes.into_iter() {
-                    let mut new_capabilities = Vec::with_capacity(current_capabilities.len());
+                    let mut subtype_capabilities = HashSet::with_capacity(current_capabilities.len());
                         for current_capability in &current_capabilities {
                             let overrides = TypeReader::get_object_capabilities_overrides::<$capability_type<'static>>(
                                 snapshot,
                                 subtype.clone().into_owned(),
                             )?;
                             let mut overridings = overrides
-                            .iter()
-                            .filter_map(|(overriding, overridden)| {
-                                if current_capability == overridden {
-                                    Some(overriding.clone())
-                                } else {
-                                    None
-                                }
-                            });
+                                .iter()
+                                .filter(|(_, overridden)| &current_capability == overridden)
+                                .map(|(overriding, overridden)| overriding.clone());
+
                             if overridings.clone().peekable().peek().is_some() {
                                 while let Some(overriding) = overridings.next() {
-                                    new_capabilities.push(overriding);
+                                    subtype_capabilities.insert(overriding);
                                 }
                             } else {
-                                new_capabilities.push(current_capability.clone())
+                                subtype_capabilities.insert(current_capability.clone());
                             }
                         }
 
                         capabilities_to_check.push_front((
                             subtype.clone(),
-                            new_capabilities
+                            subtype_capabilities
                         ));
                     }
+                }
+
+                Ok(type_and_interface_with_violations)
+            }
+
+            fn [< $func_name _type_and_siblings_and_subtypes >]<'a>(
+                snapshot: &impl ReadableSnapshot,
+                type_manager: &'a TypeManager,
+                thing_manager: &ThingManager,
+                capability: $capability_type<'static>,
+                annotations: HashSet<Annotation>,
+            ) -> Result<Option<(Vec<($object_type<'a>, $interface_type<'a>)>, AnnotationCategory)>, ConceptReadError> {
+                if annotations.is_empty() {
+                    return Ok(None);
+                }
+
+                let mut type_and_interface_with_violations = None;
+
+                let mut object_types = HashSet::from([capability.object()]);
+                let mut interface_types = HashSet::from([capability.interface()]);
+
+                let mut stack = Vec::from([(capability.object(), HashSet::from([capability.clone()]))]);
+                while let Some((current_object_type, current_capabilities)) = stack.pop() {
+                    let subtypes = current_object_type.get_subtypes(snapshot, type_manager)?;
+                    for subtype in subtypes.into_iter() {
+                        let mut subtype_capabilities = HashSet::with_capacity(current_capabilities.len());
+
+                        for current_capability in &current_capabilities {
+                            let overrides = TypeReader::get_object_capabilities_overrides::<$capability_type<'static>>(
+                                snapshot,
+                                subtype.clone().into_owned(),
+                            )?;
+                            let mut overridings = overrides
+                                .iter()
+                                .filter(|(_, overridden)| &current_capability == overridden)
+                                .map(|(overriding, overridden)| overriding.clone());
+
+                            if overridings.clone().peekable().peek().is_some() {
+                                while let Some(overriding) = overridings.next() {
+                                    interface_types.insert(overriding.interface());
+                                    subtype_capabilities.insert(overriding.clone());
+                                }
+                            } else {
+                                subtype_capabilities.insert(current_capability.clone());
+                            }
+                        }
+
+                        object_types.insert(subtype.clone());
+                        stack.push((subtype.clone(), subtype_capabilities));
+                    }
+                }
+
+                if let Some(violated_constraint) = $existing_instances_validation_func(
+                    snapshot,
+                    thing_manager,
+                    &object_types,
+                    &interface_types,
+                    &annotations,
+                )? {
+                    type_and_interface_with_violations = Some((
+                        interface_types
+                            .iter()
+                            .map(|interface_type| (capability.object(), interface_type.clone()))
+                            .collect_vec(),
+                        violated_constraint
+                    ));
                 }
 
                 Ok(type_and_interface_with_violations)
@@ -463,12 +520,13 @@ macro_rules! new_annotation_compatible_with_capability_and_overriding_capabiliti
             capability: $capability_type<'static>,
             annotation: Annotation,
         ) -> Result<(), SchemaValidationError> {
-            let filtered_annotations = OperationTimeValidation::filter_annotation_constraints_to_revalidate(
-                snapshot,
-                capability.clone(),
-                HashSet::from([annotation]),
-            )
-            .map_err(SchemaValidationError::ConceptRead)?;
+            let filtered_annotations =
+                OperationTimeValidation::filter_annotation_constraints_to_revalidate_its_inheritance(
+                    snapshot,
+                    capability.clone(),
+                    HashSet::from([annotation]),
+                )
+                .map_err(SchemaValidationError::ConceptRead)?;
 
             let violation =
                 $validation_func(snapshot, type_manager, thing_manager, capability.clone(), filtered_annotations)
@@ -954,14 +1012,11 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_annotation_set_only_for_interface<CAP>(
+    pub(crate) fn validate_annotation_set_only_for_interface<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         interface: CAP::InterfaceType,
         annotation_category: AnnotationCategory,
-    ) -> Result<(), SchemaValidationError>
-    where
-        CAP: Capability<'static, ObjectType = ObjectType<'static>>,
-    {
+    ) -> Result<(), SchemaValidationError> {
         let implementations = TypeReader::get_capabilities_for_interface::<CAP>(snapshot, interface.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
 
@@ -1673,25 +1728,24 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn filter_annotation_constraints_to_revalidate(
+    pub(crate) fn filter_annotation_constraints_to_revalidate_its_inheritance<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        capability: Owns<'static>,
+        capability: CAP,
         annotations: HashSet<Annotation>,
     ) -> Result<HashMap<ConstraintValidationMode, HashSet<Annotation>>, ConceptReadError> {
         let mut annotations_to_revalidate = annotations;
         let declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())?;
         annotations_to_revalidate.retain(|annotation| !declared_annotations.contains(annotation));
 
-        Ok(Constraint::sort_annotations_by_constraint_validation_modes(annotations_to_revalidate)
+        Ok(Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations_to_revalidate)
             .map_err(|source| ConceptReadError::Annotation { source })?)
     }
 
-    fn get_annotation_constraint_violated_by_instances_of_owns_type<'a>(
+    fn get_annotation_constraint_violated_by_instances_of_owns<'a>(
         snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        object_type: ObjectType<'a>,
-        attribute_type: AttributeType<'a>,
+        object_types: &HashSet<ObjectType<'a>>,
+        attribute_types: &HashSet<AttributeType<'a>>,
         annotations: &HashSet<Annotation>,
     ) -> Result<Option<AnnotationCategory>, ConceptReadError> {
         if annotations.is_empty() {
@@ -1701,73 +1755,99 @@ impl OperationTimeValidation {
         let distinct = Constraint::compute_distinct(annotations);
         let is_key = Constraint::compute_key(annotations).is_some();
         let unique = Constraint::compute_unique(annotations);
+        let cardinality = Constraint::compute_cardinality(annotations, None);
         let regex = Constraint::compute_regex(annotations);
         let range = Constraint::compute_range(annotations);
         let values = Constraint::compute_values(annotations);
+        debug_assert!(
+            cardinality.is_some()
+                || distinct.is_some()
+                || unique.is_some()
+                || regex.is_some()
+                || range.is_some()
+                || values.is_some(),
+            "At least one constraint should exist otherwise we don't need to iterate"
+        );
 
-        while_some_object_instance_in_type!(snapshot, thing_manager, object_type, |type_, object| {
-            let mut has_attribute_iterator =
-                object.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?;
+        // TODO: It is EXCEPTIONALLY memory-greedy and should be optimized before a non-alpha release!
+        let mut unique_values = HashSet::new();
 
-            while let Some(attribute) = has_attribute_iterator.next() {
-                let (mut attribute, attribute_count) = attribute?;
+        for object_type in object_types {
+            let mut object_iterator = thing_manager.get_instances_in::<Object<'_>>(snapshot, object_type.clone());
+            while let Some(object) = object_iterator.next() {
+                let mut real_cardinality = 0;
 
-                if distinct.is_some() {
-                    if attribute_count > 1 {
-                        return Ok(Some(AnnotationCategory::Distinct));
+                // We assume that it's cheaper to open an iterator once and skip all the
+                // non-interesting interfaces rather creating multiple iterators
+                let mut has_attribute_iterator = object?.get_has_unordered(snapshot, thing_manager);
+                while let Some(attribute) = has_attribute_iterator.next() {
+                    let (mut attribute, count) = attribute?;
+                    let attribute_type = attribute.type_();
+                    if !attribute_types.contains(&attribute_type) {
+                        continue;
                     }
-                }
 
-                // TODO: Right now this check is not fully correct as it only considers one type of object and one type of attribute. Will fix it after we understand the desired behavior.
-                if unique.is_some() {
-                    let owners_count =
-                        attribute.get_owners_by_type(snapshot, thing_manager, object_type.clone()).count();
-                    if owners_count > 1 {
-                        return Ok(Some(if is_key { AnnotationCategory::Key } else { AnnotationCategory::Unique }));
+                    real_cardinality += count;
+
+                    if distinct.is_some() {
+                        if count > 1 {
+                            return Ok(Some(AnnotationCategory::Distinct));
+                        }
                     }
-                }
 
-                let value = attribute.get_value(snapshot, thing_manager)?;
+                    let value = attribute.get_value(snapshot, thing_manager)?;
 
-                if let Some(regex) = &regex {
-                    match &value {
-                        Value::String(string_value) => {
-                            if !regex.value_valid(&string_value) {
-                                return Ok(Some(AnnotationCategory::Regex));
+                    if unique.is_some() {
+                        let new = unique_values.insert(value.clone().into_owned());
+                        if !new {
+                            return Ok(Some(if is_key { AnnotationCategory::Key } else { AnnotationCategory::Unique }));
+                        }
+                    }
+
+                    if let Some(regex) = &regex {
+                        match &value {
+                            Value::String(string_value) => {
+                                if !regex.value_valid(&string_value) {
+                                    return Ok(Some(AnnotationCategory::Regex));
+                                }
+                            }
+                            _ => {
+                                return Err(ConceptReadError::CorruptAttributeValueDoesntMatchAttributeTypeValueType(
+                                    get_label_or_concept_read_err(snapshot, attribute_type)?,
+                                ))
                             }
                         }
-                        _ => {
-                            return Err(ConceptReadError::CorruptAttributeValueDoesntMatchAttributeTypeValueType(
-                                get_label_or_concept_read_err(snapshot, attribute_type)?,
-                            ))
+                    }
+
+                    if let Some(range) = &range {
+                        if !range.value_valid(value.clone()) {
+                            return Ok(Some(AnnotationCategory::Range));
+                        }
+                    }
+
+                    if let Some(values) = &values {
+                        if !values.value_valid(value) {
+                            return Ok(Some(AnnotationCategory::Values));
                         }
                     }
                 }
 
-                if let Some(range) = &range {
-                    if !range.value_valid(value.clone()) {
-                        return Ok(Some(AnnotationCategory::Range));
-                    }
-                }
-
-                if let Some(values) = &values {
-                    if !values.value_valid(value) {
-                        return Ok(Some(AnnotationCategory::Values));
+                if let Some(cardinality) = &cardinality {
+                    if !cardinality.value_valid(real_cardinality) {
+                        return Ok(Some(if is_key { AnnotationCategory::Key } else { AnnotationCategory::Cardinality }));
                     }
                 }
             }
-        });
+        }
 
         Ok(None)
     }
 
-    // TODO: It can be merged into _type again if we don't implement something really special for "unique"
-    fn get_annotation_constraint_violated_by_instances_of_owns_type_and_siblings<'a>(
+    fn get_annotation_constraint_violated_by_instances_of_plays<'a>(
         snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        object_type: ObjectType<'a>,
-        attribute_types: &Vec<AttributeType<'a>>,
+        object_types: &HashSet<ObjectType<'a>>,
+        role_types: &HashSet<RoleType<'a>>,
         annotations: &HashSet<Annotation>,
     ) -> Result<Option<AnnotationCategory>, ConceptReadError> {
         if annotations.is_empty() {
@@ -1775,30 +1855,86 @@ impl OperationTimeValidation {
         }
 
         let cardinality = Constraint::compute_cardinality(annotations, None);
-        let is_key = Constraint::compute_key(annotations).is_some();
+        debug_assert!(cardinality.is_some(), "At least one constraint should exist otherwise we don't need to iterate");
 
-        while_some_object_instance_in_type!(snapshot, thing_manager, object_type, |type_, object| {
-            let mut real_cardinality = 0;
+        for object_type in object_types {
+            let mut object_iterator = thing_manager.get_instances_in::<Object<'_>>(snapshot, object_type.clone());
+            while let Some(object) = object_iterator.next() {
+                let mut real_cardinality = 0;
 
-            for attribute_type in attribute_types {
-                let mut has_attribute_iterator = object.clone().get_has_type_unordered(
-                    snapshot,
-                    thing_manager,
-                    attribute_type.clone().into_owned(),
-                )?;
+                // We assume that it's cheaper to open an iterator once and skip all the
+                // non-interesting interfaces rather creating multiple iterators
+                let mut relations_iterator = object?.get_relations_roles(snapshot, thing_manager);
+                while let Some(relation) = relations_iterator.next() {
+                    let (_, role_type, count) = relation?;
+                    if !role_types.contains(&role_type) {
+                        continue;
+                    }
 
-                while let Some(attribute) = has_attribute_iterator.next() {
-                    let (_, attribute_count) = attribute?;
-                    real_cardinality += attribute_count;
+                    real_cardinality += count;
+                }
+
+                if let Some(cardinality) = &cardinality {
+                    if !cardinality.value_valid(real_cardinality) {
+                        return Ok(Some(AnnotationCategory::Cardinality));
+                    }
                 }
             }
+        }
 
-            if let Some(cardinality) = &cardinality {
-                if !cardinality.value_valid(real_cardinality) {
-                    return Ok(Some(if is_key { AnnotationCategory::Key } else { AnnotationCategory::Cardinality }));
+        Ok(None)
+    }
+
+    fn get_annotation_constraint_violated_by_instances_of_relates<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation_types: &HashSet<RelationType<'a>>,
+        role_types: &HashSet<RoleType<'a>>,
+        annotations: &HashSet<Annotation>,
+    ) -> Result<Option<AnnotationCategory>, ConceptReadError> {
+        if annotations.is_empty() {
+            return Ok(None);
+        }
+
+        let distinct = Constraint::compute_distinct(annotations);
+        let cardinality = Constraint::compute_cardinality(annotations, None);
+        debug_assert!(
+            cardinality.is_some() || distinct.is_some(),
+            "At least one constraint should exist otherwise we don't need to iterate"
+        );
+
+        for relation_type in relation_types {
+            let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
+            while let Some(relation) = relation_iterator.next() {
+                let mut real_cardinality = 0;
+
+                // We assume that it's cheaper to open an iterator once and skip all the
+                // non-interesting interfaces rather creating multiple iterators
+                let mut role_players_iterator = relation?.get_players(snapshot, thing_manager);
+
+                while let Some(role_players) = role_players_iterator.next() {
+                    let (role_player, count) = role_players?;
+                    let role_type = role_player.role_type();
+                    if !role_types.contains(&role_type) {
+                        continue;
+                    }
+
+                    real_cardinality += count;
+
+                    if distinct.is_some() {
+                        if count > 1 {
+                            return Ok(Some(AnnotationCategory::Distinct));
+                        }
+                    }
+                }
+
+                if let Some(cardinality) = &cardinality {
+                    if !cardinality.value_valid(real_cardinality) {
+                        return Ok(Some(AnnotationCategory::Cardinality));
+                    }
                 }
             }
-        });
+        }
 
         Ok(None)
     }
@@ -2144,40 +2280,19 @@ impl OperationTimeValidation {
     fn has_instances_of_owns<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        owner: ObjectType<'a>,
+        owner_type: ObjectType<'a>,
         attribute_type: AttributeType<'a>,
     ) -> Result<bool, ConceptReadError> {
         let mut has_instances = false;
-        match owner.clone() {
-            ObjectType::Entity(entity_type) => {
-                let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone().into_owned());
-                while let Some(instance) = iterator.next() {
-                    let mut iterator = instance?.get_has_type_unordered(
-                        snapshot,
-                        thing_manager,
-                        attribute_type.clone().into_owned(),
-                    )?;
 
-                    if iterator.next().is_some() {
-                        has_instances = true;
-                        break;
-                    }
-                }
-            }
-            ObjectType::Relation(relation_type) => {
-                let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
-                while let Some(instance) = iterator.next() {
-                    let mut iterator = instance?.get_has_type_unordered(
-                        snapshot,
-                        thing_manager,
-                        attribute_type.clone().into_owned(),
-                    )?;
+        let mut owner_iterator = thing_manager.get_instances_in::<Object<'_>>(snapshot, owner_type.clone());
+        while let Some(instance) = owner_iterator.next() {
+            let mut iterator =
+                instance?.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?;
 
-                    if iterator.next().is_some() {
-                        has_instances = true;
-                        break;
-                    }
-                }
+            if iterator.next().is_some() {
+                has_instances = true;
+                break;
             }
         }
 
@@ -2187,36 +2302,19 @@ impl OperationTimeValidation {
     fn has_instances_of_plays<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        player: ObjectType<'a>,
+        player_type: ObjectType<'a>,
         role_type: RoleType<'a>,
     ) -> Result<bool, ConceptReadError> {
         let mut has_instances = false;
-        match player.clone() {
-            ObjectType::Entity(entity_type) => {
-                let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone().into_owned());
-                while let Some(instance) = iterator.next() {
-                    let mut iterator =
-                        instance?.get_relations_by_role(snapshot, thing_manager, role_type.clone().into_owned());
 
-                    if let Some(first) = iterator.next() {
-                        first?;
-                        has_instances = true;
-                        break;
-                    }
-                }
-            }
-            ObjectType::Relation(relation_type) => {
-                let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
-                while let Some(instance) = iterator.next() {
-                    let mut iterator =
-                        instance?.get_relations_by_role(snapshot, thing_manager, role_type.clone().into_owned());
+        let mut player_iterator = thing_manager.get_instances_in::<Object<'_>>(snapshot, player_type.clone());
+        while let Some(instance) = player_iterator.next() {
+            let mut iterator = instance?.get_relations_by_role(snapshot, thing_manager, role_type.clone().into_owned());
 
-                    if let Some(first) = iterator.next() {
-                        first?;
-                        has_instances = true;
-                        break;
-                    }
-                }
+            if let Some(first) = iterator.next() {
+                first?;
+                has_instances = true;
+                break;
             }
         }
 
@@ -2231,8 +2329,8 @@ impl OperationTimeValidation {
     ) -> Result<bool, ConceptReadError> {
         let mut has_instances = false;
 
-        let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
-        while let Some(instance) = iterator.next() {
+        let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
+        while let Some(instance) = relation_iterator.next() {
             let mut iterator = instance?.get_players_role_type(snapshot, thing_manager, role_type.clone().into_owned());
 
             if let Some(first) = iterator.next() {
@@ -2428,23 +2526,22 @@ impl OperationTimeValidation {
         Owns,
         ObjectType,
         AttributeType,
-        Self::get_annotation_constraint_violated_by_instances_of_owns_type,
-        Self::get_annotation_constraint_violated_by_instances_of_owns_type_and_siblings
+        Self::get_annotation_constraint_violated_by_instances_of_owns
     );
-    // capability_or_its_overriding_capability_with_violated_new_annotation_constraints!(
-    //     get_plays_or_its_overriding_plays_with_violated_new_annotation_constraints,
-    //     Plays,
-    //     ObjectType,
-    //     RoleType,
-    //     Self::get_annotation_constraint_violated_by_instances_of_plays
-    // );
-    // capability_or_its_overriding_capability_with_violated_new_annotation_constraints!(
-    //     get_relates_or_its_overriding_relates_with_violated_new_annotation_constraints,
-    //     Relates,
-    //     RelationType,
-    //     RoleType,
-    //     Self::get_annotation_constraint_violated_by_instances_of_relates
-    // );
+    capability_or_its_overriding_capability_with_violated_new_annotation_constraints!(
+        get_plays_or_its_overriding_plays_with_violated_new_annotation_constraints,
+        Plays,
+        ObjectType,
+        RoleType,
+        Self::get_annotation_constraint_violated_by_instances_of_plays
+    );
+    capability_or_its_overriding_capability_with_violated_new_annotation_constraints!(
+        get_relates_or_its_overriding_relates_with_violated_new_annotation_constraints,
+        Relates,
+        RelationType,
+        RoleType,
+        Self::get_annotation_constraint_violated_by_instances_of_relates
+    );
 
     new_annotation_compatible_with_capability_and_overriding_capabilities_instances_validation!(
         validate_new_annotation_compatible_with_owns_and_overriding_owns_instances,
@@ -2452,16 +2549,16 @@ impl OperationTimeValidation {
         Owns,
         Self::get_owns_or_its_overriding_owns_with_violated_new_annotation_constraints
     );
-    // new_annotation_compatible_with_capability_and_overriding_capabilities_instances_validation!(
-    //     validate_new_annotation_compatible_with_plays_and_overriding_plays_instances,
-    //     CapabilityKind::Plays,
-    //     Plays,
-    //     Self::get_plays_or_its_overriding_plays_with_violated_new_annotation_constraints
-    // );
-    // new_annotation_compatible_with_capability_and_overriding_capabilities_instances_validation!(
-    //     validate_new_annotation_compatible_with_relates_and_overriding_relates_instances,
-    //     CapabilityKind::Relates,
-    //     Relates,
-    //     Self::get_relates_or_its_overriding_relates_with_violated_new_annotation_constraints
-    // );
+    new_annotation_compatible_with_capability_and_overriding_capabilities_instances_validation!(
+        validate_new_annotation_compatible_with_plays_and_overriding_plays_instances,
+        CapabilityKind::Plays,
+        Plays,
+        Self::get_plays_or_its_overriding_plays_with_violated_new_annotation_constraints
+    );
+    new_annotation_compatible_with_capability_and_overriding_capabilities_instances_validation!(
+        validate_new_annotation_compatible_with_relates_and_overriding_relates_instances,
+        CapabilityKind::Relates,
+        Relates,
+        Self::get_relates_or_its_overriding_relates_with_violated_new_annotation_constraints
+    );
 }

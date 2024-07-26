@@ -67,14 +67,15 @@ impl<'a> Relates<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         annotation: RelatesAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             RelatesAnnotation::Distinct(_) => {
-                type_manager.set_relates_annotation_distinct(snapshot, self.clone().into_owned())?
+                type_manager.set_relates_annotation_distinct(snapshot, thing_manager, self.clone().into_owned())?
             }
             RelatesAnnotation::Cardinality(cardinality) => {
-                type_manager.set_edge_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)?
+                type_manager.set_relates_annotation_cardinality(snapshot, thing_manager, self.clone().into_owned(), cardinality)?
             }
         };
         Ok(())

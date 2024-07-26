@@ -49,14 +49,6 @@ impl<'a> Entity<'a> {
         self.vertex.bytes()
     }
 
-    pub fn get_relations<'m>(
-        &self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
-    ) -> RelationRoleIterator {
-        thing_manager.get_relations_roles(snapshot, self.as_reference())
-    }
-
     pub fn get_indexed_players<'m>(
         &'m self,
         snapshot: &'m impl ReadableSnapshot,
@@ -154,7 +146,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         }
 
         let relations_roles = self
-            .get_relations(snapshot, thing_manager)
+            .get_relations_roles(snapshot, thing_manager)
             .map_static(|res| res.map(|(relation, role, _count)| (relation.into_owned(), role.into_owned())))
             .try_collect::<Vec<_>, _>()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;

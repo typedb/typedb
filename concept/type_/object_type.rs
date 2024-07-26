@@ -227,6 +227,10 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
     }
 }
 
+impl<'a> ThingTypeAPI<'a> for ObjectType<'a> {
+    type InstanceType<'b> = Object<'b>;
+}
+
 impl<'a> ObjectTypeAPI<'a> for ObjectType<'a> {
     fn into_owned_object_type(self) -> ObjectType<'static> {
         self.into_owned()
@@ -308,4 +312,7 @@ macro_rules! with_object_type {
 }
 pub(crate) use with_object_type;
 
-use crate::thing::thing_manager::ThingManager;
+use crate::{
+    thing::{object::Object, relation::Relation, thing_manager::ThingManager},
+    type_::ThingTypeAPI,
+};

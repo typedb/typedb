@@ -72,11 +72,12 @@ impl<'a> Plays<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         annotation: PlaysAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             PlaysAnnotation::Cardinality(cardinality) => {
-                type_manager.set_edge_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)?
+                type_manager.set_plays_annotation_cardinality(snapshot, thing_manager, self.clone().into_owned(), cardinality)?
             }
         }
         Ok(())
