@@ -13,7 +13,7 @@ use encoding::value::value_type::ValueTypeCategory;
 
 use crate::pattern::expression::Operator;
 
-mod builtins;
+pub(crate) mod builtins;
 pub mod evaluator;
 pub mod expression_compiler;
 pub mod op_codes;
@@ -53,6 +53,7 @@ pub enum ExpressionCompilationError {
         left_category: ValueTypeCategory,
         right_category: ValueTypeCategory,
     },
+    UnsupportedArgumentsForOperation,
 }
 
 impl Debug for ExpressionCompilationError {
@@ -73,6 +74,7 @@ impl Error for ExpressionCompilationError {
             Self::InternalStackWasEmpty => None,
             ExpressionCompilationError::InternalUnexpectedValueType => None,
             ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => None,
+            ExpressionCompilationError::UnsupportedArgumentsForOperation => None,
         }
     }
 }

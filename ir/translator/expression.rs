@@ -4,10 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use itertools::Itertools;
 use typeql::{
     common::token::ArithmeticOperator,
     expression::{Expression as TypeQLExpression, FunctionName},
 };
+use typeql::common::token::Function;
+use typeql::expression::BuiltinFunctionName;
 
 use crate::{
     pattern::{
@@ -21,6 +24,9 @@ use crate::{
     },
     PatternDefinitionError,
 };
+
+use crate::pattern::expression::{BuiltInCall};
+use crate::expressions::builtins::BuiltInFunctionID;
 
 pub(crate) fn build_expression(
     function_index: &impl FunctionSignatureIndex,
@@ -54,7 +60,7 @@ fn build_recursive(
             let right_index = build_recursive(function_index, constraints, &operation.right, tree)?;
             Expression::Operation(Operation::new(translate_operator(&operation.op), left_index, right_index))
         }
-        TypeQLExpression::Function(function_call) => build_function(function_index, constraints, function_call)?, // Careful, could be either.
+        TypeQLExpression::Function(function_call) => build_function(function_index, constraints, function_call, tree)?, // Careful, could be either.
         TypeQLExpression::List(list) => {
             let sub_exprs = list
                 .items
@@ -78,11 +84,15 @@ fn build_function(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
     function_call: &typeql::expression::FunctionCall,
+    tree: &mut Vec<Expression>,
 ) -> Result<Expression, PatternDefinitionError> {
     // TODO: Look up built-in
     match &function_call.name {
-        FunctionName::Builtin(_) => {
-            todo!()
+        FunctionName::Builtin(builtin) => {
+            let args = function_call.args.iter().map(|expr| {
+                build_recursive(function_index, constraints, expr, tree)
+            }).collect::<Result<Vec<_>, _>>()?;
+            Ok(Expression::BuiltInCall(BuiltInCall::new(to_builtin_id(builtin, args.clone()), args)))
         }
         FunctionName::Identifier(identifier) => {
             let assign = constraints.create_anonymous_variable()?;
@@ -108,6 +118,19 @@ fn translate_operator(operator: &ArithmeticOperator) -> Operator {
         ArithmeticOperator::Divide => Operator::Divide,
         ArithmeticOperator::Modulo => Operator::Modulo,
         ArithmeticOperator::Power => Operator::Power,
+    }
+}
+
+fn to_builtin_id(typeql_id: &BuiltinFunctionName, args: Vec<usize>) -> BuiltInFunctionID {
+    match args.len() {
+        1 => match typeql_id.token {
+            Function::Abs => BuiltInFunctionID::Abs(args[0]),
+            Function::Ceil => BuiltInFunctionID::Ceil(args[0]),
+            Function::Floor => BuiltInFunctionID::Floor(args[0]),
+            Function::Round => BuiltInFunctionID::Round(args[0]),
+            _ => todo!(),
+        },
+        _ => todo!(),
     }
 }
 

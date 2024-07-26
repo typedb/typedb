@@ -81,4 +81,6 @@ unary_instr! {
     MathRoundDouble = MathRoundDoubleImpl(a1: f64) -> i64 { Ok(f64::round(a1) as i64) }
     MathCeilDouble = MathCeilImpl(a1: f64) -> i64 { Ok(f64::ceil(a1) as i64) }
     MathFloorDouble = MathFloorImpl(a1: f64) -> i64 { Ok(f64::ceil(a1) as i64) }
+    MathAbsLong = MathAbsLongImpl(a1: i64) -> i64 { Ok(i64::abs(a1)) }
+    MathAbsDouble = MathAbsDoubleImpl(a1: f64) -> f64 { Ok(f64::abs(a1)) }
 }

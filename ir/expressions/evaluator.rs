@@ -112,5 +112,7 @@ fn evaluate_instruction(
         ExpressionOpCode::MathRoundDouble => MathRoundDouble::evaluate(state),
         ExpressionOpCode::MathCeilDouble => MathCeilDouble::evaluate(state),
         ExpressionOpCode::MathFloorDouble => MathFloorDouble::evaluate(state),
+        ExpressionOpCode::MathAbsLong => todo!(),
+        ExpressionOpCode::MathAbsDouble => todo!(),
     }
 }

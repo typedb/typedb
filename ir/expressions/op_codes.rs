@@ -33,8 +33,11 @@ pub enum ExpressionOpCode {
     OpDoublePowerDouble,
 
     // BuiltIns, maybe by domain?
+    MathAbsLong,
+    MathAbsDouble,
     MathRemainderLong,
     MathRoundDouble,
     MathCeilDouble,
     MathFloorDouble,
+
 }

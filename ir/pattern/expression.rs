@@ -8,13 +8,10 @@ use std::{
     error::Error,
     fmt::{Display, Formatter},
     hash::{Hash, Hasher},
-    iter::empty,
-    marker::PhantomData,
 };
 
 use answer::variable::Variable;
 use encoding::value::value::Value;
-use typeql::common::token::ArithmeticOperator;
 
 use crate::{
     pattern::{
@@ -24,6 +21,7 @@ use crate::{
     program::block::BlockContext,
     PatternDefinitionError,
 };
+use crate::expressions::builtins::BuiltInFunctionID;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ExpressionTree {
@@ -75,18 +73,28 @@ pub struct Operation {
     pub(crate) right_expression_index: usize,
 }
 
-pub type BuiltInFunctionID = usize; // TODO
-
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BuiltInCall {
     pub(crate) builtin_id: BuiltInFunctionID,
     pub(crate) args_index: Vec<usize>,
 }
 
+impl BuiltInCall {
+    pub(crate) fn new(builtin_id: BuiltInFunctionID, args_index: Vec<usize>) -> Self {
+        BuiltInCall { builtin_id, args_index }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ListIndex {
     pub(crate) list_variable: Variable,
     pub(crate) index: usize,
+}
+
+impl ListIndex {
+    pub(crate) fn new(list_variable: Variable, index: usize) -> ListIndex {
+        Self { list_variable, index }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -117,12 +125,6 @@ impl ListIndexRange {
     }
 }
 
-impl ListIndex {
-    pub(crate) fn new(list_variable: Variable, index: usize) -> ListIndex {
-        Self { list_variable, index }
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Operator {
     Add,
@@ -139,6 +141,8 @@ impl Operation {
     }
 }
 impl ExpressionBinding<Variable> {
+
+    // TODO: Split expressions into Value & List expressions
     pub(crate) fn validate(&self, context: &mut BlockContext) -> Result<(), ExpressionDefinitionError> {
         if self.expression().tree.is_empty() {
             Err(ExpressionDefinitionError::EmptyExpressionTree {})
@@ -164,8 +168,10 @@ impl ExpressionBinding<Variable> {
                     self.validate_recursive(context, operation.left_expression_index, Some(false))?;
                     self.validate_recursive(context, operation.left_expression_index, Some(false))?;
                 }
-                Expression::BuiltInCall(_) => {
-                    todo!("Verify each argument is what the signature expects")
+                Expression::BuiltInCall(built_in) => {
+                    built_in.args_index.iter().map(|idx| {
+                        self.validate_recursive(context, *idx, Some(false))
+                    }).collect::<Result<Vec<_>, _>>()?;
                 }
                 Expression::List(list_constructor) => {
                     todo!("Verify each term is a value")

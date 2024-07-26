@@ -37,6 +37,7 @@ fn parse_literal_impl(literal: &Literal) -> Result<Value<'static>, LiteralParseE
         }
         ValueLiteral::Duration(_) => todo!(),
         ValueLiteral::String(string) => Value::String(Cow::Owned(string.value.clone())),
+        ValueLiteral::Struct(_) => todo!(),
     })
 }
 
@@ -140,8 +141,8 @@ impl FromTypeQLLiteral for TimeZone {
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         match literal {
-            TimeZone::IANA(first, second) => todo!(),
-            TimeZone::ISO(iso) => todo!(),
+            TimeZone::IANA(value) => todo!(),
+            TimeZone::ISO(value) => todo!(),
         }
     }
 }

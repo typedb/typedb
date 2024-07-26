@@ -23,6 +23,10 @@ use crate::{
     inference::TypeInferenceError,
     pattern::expression::{Expression, ExpressionTree, Operation, Operator},
 };
+use crate::expressions::builtins::BuiltInFunctionID;
+use crate::expressions::builtins::unary::{MathAbsDouble, MathAbsLong};
+use crate::expressions::op_codes::ExpressionOpCode::MathFloorDouble;
+use crate::pattern::expression::BuiltInCall;
 
 // Keep implementations 0 sized
 pub trait ExpressionInstruction: Sized {
@@ -131,7 +135,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
             Expression::Constant(constant) => self.compile_constant(constant),
             Expression::Variable(variable) => self.compile_variable(variable),
             Expression::Operation(op) => self.compile_op(op),
-            Expression::BuiltInCall(_) => todo!(),
+            Expression::BuiltInCall(builtin) => self.compile_builtin(builtin),
             Expression::ListIndex(_) => todo!(),
             Expression::List(_) => todo!(),
             Expression::ListIndexRange(_) => todo!(),
@@ -292,6 +296,24 @@ impl<'this> ExpressionTreeCompiler<'this> {
             Operator::Divide => ops::OpDoubleDivideDouble::validate_and_append(self)?,
             Operator::Modulo => ops::OpDoubleModuloDouble::validate_and_append(self)?,
             Operator::Power => ops::OpDoublePowerDouble::validate_and_append(self)?,
+        }
+        Ok(())
+    }
+
+    fn compile_builtin(&mut self, builtin: &BuiltInCall) -> Result<(), ExpressionCompilationError> {
+        match builtin.builtin_id {
+            BuiltInFunctionID::Abs(idx) => {
+                self.compile_recursive(idx)?;
+                match self.peek_mock()? {
+                    Value::Long(_) => MathAbsLong::validate_and_append(self)?,
+                    Value::Double(_) => MathAbsDouble::validate_and_append(self)?,
+                    Value::Decimal(_) => todo!(),
+                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForOperation)?
+                }
+            }
+            BuiltInFunctionID::Ceil(idx) => todo!(),
+            BuiltInFunctionID::Floor(idx) => todo!(),
+            BuiltInFunctionID::Round(idx) => todo!(),
         }
         Ok(())
     }

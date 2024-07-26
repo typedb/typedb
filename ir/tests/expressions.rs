@@ -48,7 +48,6 @@ fn test_basic() {
         assert_eq!(result, Value::Long(8));
     }
 
-
     {
         let (_, expr) = compile_expression_via_match("7.0e0 + 9.0e0", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
@@ -65,7 +64,7 @@ fn test_basic() {
 }
 
 #[test]
-fn test_ops_cast_functions(){
+fn test_ops_long_double(){
     // Long ops
     {
         {
@@ -156,4 +155,34 @@ fn test_ops_cast_functions(){
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
         assert_eq!(result, Value::Double(16.0));
     }
+}
+
+#[test]
+fn test_functions() {
+
+    {
+        let (_, expr) = compile_expression_via_match("floor(2.5)", HashMap::new()).unwrap();
+        let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
+        assert_eq!(result, Value::Long(2));
+    }
+
+    {
+        let (_, expr) = compile_expression_via_match("ceil(2.5)", HashMap::new()).unwrap();
+        let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
+        assert_eq!(result, Value::Long(2));
+    }
+
+
+    {
+        let (_, expr) = compile_expression_via_match("round(2.5)", HashMap::new()).unwrap();
+        let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
+        assert_eq!(result, Value::Long(2));
+    }
+
+    {
+        let (_, expr) = compile_expression_via_match("round(3.5)", HashMap::new()).unwrap();
+        let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
+        assert_eq!(result, Value::Long(4));
+    }
+
 }
