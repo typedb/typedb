@@ -4,23 +4,32 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, convert::Infallible, error::Error, fmt, str::FromStr, sync::Arc};
+use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
 
-use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 use chrono_tz::Tz;
-use concept::type_::{
-    annotation::{
-        Annotation as TypeDBAnnotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade,
-        AnnotationCategory as TypeDBAnnotationCategory, AnnotationIndependent, AnnotationKey, AnnotationRegex,
+use concept::{
+    error::ConceptWriteError,
+    type_::{
+        annotation::{
+            Annotation as TypeDBAnnotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade,
+            AnnotationCategory as TypeDBAnnotationCategory, AnnotationDistinct, AnnotationIndependent, AnnotationKey,
+            AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
+        },
+        object_type::ObjectType,
+        type_manager::{validation::SchemaValidationError, TypeManager},
     },
-    object_type::ObjectType,
 };
 use cucumber::Parameter;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
-    value::{label::Label as TypeDBLabel, value::Value as TypeDBValue, value_type::ValueType as TypeDBValueType},
+    value::{
+        decimal_value::Decimal, label::Label as TypeDBLabel, value::Value as TypeDBValue,
+        value_type::ValueType as TypeDBValueType,
+    },
 };
 use itertools::Itertools;
+use storage::snapshot::ReadableSnapshot;
 
 use crate::assert::assert_matches;
 
@@ -95,16 +104,6 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
-use concept::{
-    error::ConceptWriteError,
-    type_::{
-        annotation::{AnnotationDistinct, AnnotationRange, AnnotationUnique, AnnotationValues},
-        type_manager::{validation::SchemaValidationError, TypeManager},
-    },
-};
-use database::transaction::SchemaCommitError;
-use encoding::value::decimal_value::Decimal;
-use storage::snapshot::ReadableSnapshot;
 
 impl FromStr for Boolean {
     type Err = String;

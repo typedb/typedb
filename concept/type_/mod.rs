@@ -148,13 +148,13 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         Ok(self.get_owns_attribute(snapshot, type_manager, attribute_type)?.is_some())
     }
 
-    fn get_owns_attribute_transitive<'m>(
+    fn get_owns_attribute_transitive(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        Ok(self.get_owns(snapshot, type_manager)?.get(&attribute_type).map(|owns| owns.clone()))
+        Ok(self.get_owns(snapshot, type_manager)?.get(&attribute_type).cloned())
     }
 
     fn has_owns_attribute_transitive(
@@ -274,16 +274,16 @@ pub trait Capability<'a>:
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashMap<Self::AnnotationType, Self>>, ConceptReadError>;
 
-    fn get_cardinality<'this>(
-        &'this self,
+    fn get_cardinality(
+        &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         type_manager.get_cardinality(snapshot, self.clone())
     }
 
-    fn get_default_cardinality<'this>(
-        &'this self,
+    fn get_default_cardinality(
+        &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError>;

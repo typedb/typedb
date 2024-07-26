@@ -134,7 +134,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         Self::from_vertex(vertex).unwrap()
     }
 
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+    fn vertex(&self) -> TypeVertex<'_> {
         self.vertex.as_reference()
     }
 

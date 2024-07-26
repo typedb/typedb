@@ -179,25 +179,6 @@ macro_rules! get_subtypes_transitive_methods {
     }
 }
 
-macro_rules! get_type_is_root_methods {
-    ($(
-        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
-    )*) => {
-        $(
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
-            ) -> Result<bool, ConceptReadError> {
-                if let Some(cache) = &self.type_cache {
-                    Ok(cache.$cache_method(type_))
-                } else {
-                    let type_label = TypeReader::get_label(snapshot, type_)?.unwrap();
-                    Ok(TypeReader::check_type_is_root(&type_label, $type_::ROOT_KIND))
-                }
-            }
-        )*
-    }
-}
-
 macro_rules! get_type_label_methods {
     ($(
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
@@ -306,7 +287,7 @@ impl TypeManager {
     pub fn resolve_struct_field(
         &self,
         snapshot: &impl ReadableSnapshot,
-        fields_path: &Vec<&str>,
+        fields_path: &[&str],
         definition: StructDefinition,
     ) -> Result<Vec<StructFieldIDUInt>, ConceptReadError> {
         let mut resolved: Vec<StructFieldIDUInt> = Vec::with_capacity(fields_path.len());
@@ -328,7 +309,7 @@ impl TypeManager {
                             Err(ConceptReadError::Encoding {
                                 source: EncodingError::IndexingIntoNonStructField {
                                     struct_name: definition.name,
-                                    field_path: fields_path.clone().into_iter().map(|str| str.to_owned()).collect(),
+                                    field_path: fields_path.iter().map(|&str| str.to_owned()).collect(),
                                 },
                             })
                         };
@@ -338,7 +319,7 @@ impl TypeManager {
                 return Err(ConceptReadError::Encoding {
                     source: EncodingError::StructFieldUnresolvable {
                         struct_name: definition.name,
-                        field_path: fields_path.clone().into_iter().map(|str| str.to_owned()).collect(),
+                        field_path: fields_path.iter().map(|&str| str.to_owned()).collect(),
                     },
                 });
             }
@@ -347,7 +328,7 @@ impl TypeManager {
         Err(ConceptReadError::Encoding {
             source: EncodingError::StructPathIncomplete {
                 struct_name: definition.name,
-                field_path: fields_path.clone().into_iter().map(|str| str.to_owned()).collect(),
+                field_path: fields_path.iter().map(|&str| str.to_owned()).collect(),
             },
         })
     }
