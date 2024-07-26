@@ -83,7 +83,7 @@ macro_rules! while_some_object_instance_in_type {
     ($snapshot:ident, $thing_manager:ident, $object_type:ident, |$type_:ident, $object:ident| $expr:expr) => {
         match $object_type.clone() {
             ObjectType::Entity($type_) => {
-                let mut object_iterator = $thing_manager.get_entities_in($snapshot, $type_.clone());
+                let mut object_iterator = $thing_manager.get_entities_in($snapshot, $type_.clone().into_owned());
 
                 while let Some($object) = object_iterator.next() {
                     let $object = $object?;
@@ -91,7 +91,7 @@ macro_rules! while_some_object_instance_in_type {
                 }
             }
             ObjectType::Relation($type_) => {
-                let mut object_iterator = $thing_manager.get_relations_in($snapshot, $type_.clone());
+                let mut object_iterator = $thing_manager.get_relations_in($snapshot, $type_.clone().into_owned());
 
                 while let Some($object) = object_iterator.next() {
                     let $object = $object?;
@@ -305,7 +305,6 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                 capability: $capability_type<'static>,
                 annotations: HashSet<Annotation>,
             ) -> Result<Option<(Vec<($object_type<'a>, $interface_type<'a>)>, AnnotationCategory)>, ConceptReadError> {
-                println!("Checking for type: {:?}", annotations);
                 if annotations.is_empty() {
                     return Ok(None);
                 }
@@ -387,7 +386,6 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                 capability: $capability_type<'static>,
                 annotations: HashSet<Annotation>,
             ) -> Result<Option<(Vec<($object_type<'a>, $interface_type<'a>)>, AnnotationCategory)>, ConceptReadError> {
-                println!("Checking for type and siblings: {:?}", annotations);
                 if annotations.is_empty() {
                     return Ok(None);
                 }
@@ -2152,7 +2150,7 @@ impl OperationTimeValidation {
         let mut has_instances = false;
         match owner.clone() {
             ObjectType::Entity(entity_type) => {
-                let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
+                let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone().into_owned());
                 while let Some(instance) = iterator.next() {
                     let mut iterator = instance?.get_has_type_unordered(
                         snapshot,
@@ -2167,7 +2165,7 @@ impl OperationTimeValidation {
                 }
             }
             ObjectType::Relation(relation_type) => {
-                let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
+                let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
                 while let Some(instance) = iterator.next() {
                     let mut iterator = instance?.get_has_type_unordered(
                         snapshot,
@@ -2195,7 +2193,7 @@ impl OperationTimeValidation {
         let mut has_instances = false;
         match player.clone() {
             ObjectType::Entity(entity_type) => {
-                let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
+                let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone().into_owned());
                 while let Some(instance) = iterator.next() {
                     let mut iterator =
                         instance?.get_relations_by_role(snapshot, thing_manager, role_type.clone().into_owned());
@@ -2208,7 +2206,7 @@ impl OperationTimeValidation {
                 }
             }
             ObjectType::Relation(relation_type) => {
-                let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
+                let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
                 while let Some(instance) = iterator.next() {
                     let mut iterator =
                         instance?.get_relations_by_role(snapshot, thing_manager, role_type.clone().into_owned());
@@ -2233,7 +2231,7 @@ impl OperationTimeValidation {
     ) -> Result<bool, ConceptReadError> {
         let mut has_instances = false;
 
-        let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
+        let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
         while let Some(instance) = iterator.next() {
             let mut iterator = instance?.get_players_role_type(snapshot, thing_manager, role_type.clone().into_owned());
 
