@@ -8,12 +8,12 @@ class Typedb < Formula
   homepage "https://typedb.com"
 
   on_arm do
-    url "https://github.com/vaticle/typedb/releases/download/{version}/typedb-all-mac-arm64-{version}.zip"
+    url "https://github.com/typedb/typedb/releases/download/{version}/typedb-all-mac-arm64-{version}.zip"
     sha256 "{sha256-arm64}"
   end
 
   on_intel do
-    url "https://github.com/vaticle/typedb/releases/download/{version}/typedb-all-mac-x86_64-{version}.zip"
+    url "https://github.com/typedb/typedb/releases/download/{version}/typedb-all-mac-x86_64-{version}.zip"
     sha256 "{sha256-x86_64}"
   end
 

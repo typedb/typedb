@@ -14,7 +14,7 @@ config:
 build:
   quality:
     filter:
-      owner: vaticle
+      owner: typedb
       branch: [master, development]
     dependency-analysis:
       image: vaticle-ubuntu-22.04
@@ -110,7 +110,7 @@ build:
 #    test-benchmark-reasoner:
 #      image: vaticle-ubuntu-22.04
 #      filter:
-#        owner: vaticle
+#        owner: typedb
 #        branch: [master, development]
 #      dependencies: [build]
 #      command: |
@@ -124,7 +124,7 @@ build:
 #    test-assembly-linux-targz:
 #      image: vaticle-ubuntu-20.04
 #      filter:
-#        owner: vaticle
+#        owner: typedb
 #        branch: [master, development]
 #      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-query-read, test-behaviour-query-write, test-behaviour-query-definable, test-behaviour-reasoner]
 #      command: |
@@ -133,7 +133,7 @@ build:
 #    test-assembly-docker:
 #      image: vaticle-ubuntu-22.04
 #      filter:
-#        owner: vaticle
+#        owner: typedb
 #        branch: [master, development]
 #      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-query-read, test-behaviour-query-write, test-behaviour-query-definable, test-behaviour-reasoner]
 #      command: |
@@ -142,7 +142,7 @@ build:
 #    deploy-artifact-snapshot:
 #      image: vaticle-ubuntu-22.04
 #      filter:
-#        owner: vaticle
+#        owner: typedb
 #        branch: [master, development]
 #      dependencies: [test-assembly-linux-targz]
 #      command: |
@@ -162,7 +162,7 @@ build:
 #    deploy-apt-snapshot:
 #      image: vaticle-ubuntu-22.04
 #      filter:
-#        owner: vaticle
+#        owner: typedb
 #        branch: [master, development]
 #      dependencies: [test-assembly-linux-targz]
 #      command: |
@@ -174,7 +174,7 @@ build:
 ##    deploy-brew-snapshot:
 ##      image: vaticle-ubuntu-22.04
 ##      filter:
-##        owner: vaticle
+##        owner: typedb
 ##        branch: master
 ##      command: |
 ##        export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=$REPO_GITHUB_USERNAME DEPLOY_BREW_EMAIL=$REPO_GITHUB_EMAIL
@@ -182,7 +182,7 @@ build:
 #    test-deployment-apt-x86_64:
 #      image: vaticle-ubuntu-22.04 # use LTS for apt tests
 #      filter:
-#        owner: vaticle
+#        owner: typedb
 #        branch: [master, development]
 #      dependencies: [deploy-apt-snapshot]
 #      command: |
@@ -190,7 +190,7 @@ build:
 #        bazel test //test/deployment:apt --action_env=TEST_DEPLOYMENT_APT_COMMIT --test_output=streamed
 #release:
 #  filter:
-#    owner: vaticle
+#    owner: typedb
 #    branch: master
 #  validation:
 #    validate-dependencies:
@@ -205,7 +205,7 @@ build:
 #    deploy-github:
 #      image: vaticle-ubuntu-22.04
 #      filter:
-#        owner: vaticle
+#        owner: typedb
 #        branch: master
 #      command: |
 #        export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
@@ -215,7 +215,7 @@ build:
 #      image: vaticle-ubuntu-22.04
 #      dependencies: [deploy-github]
 #      filter:
-#        owner: vaticle
+#        owner: typedb
 #        branch: master
 #      command: |
 #        export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=$REPO_GITHUB_USERNAME DEPLOY_BREW_EMAIL=$REPO_GITHUB_EMAIL
@@ -223,7 +223,7 @@ build:
 #    deploy-apt-release:
 #      image: vaticle-ubuntu-22.04
 #      filter:
-#        owner: vaticle
+#        owner: typedb
 #        branch: master
 #      dependencies: [deploy-github]
 #      command: |
@@ -235,7 +235,7 @@ build:
 #    deploy-docker:
 #      image: vaticle-ubuntu-22.04
 #      filter:
-#        owner: vaticle
+#        owner: typedb
 #        branch: master
 #      dependencies: [deploy-github]
 #      command: |
@@ -246,7 +246,7 @@ build:
 #    deploy-artifact-release:
 #      image: vaticle-ubuntu-22.04
 #      filter:
-#        owner: vaticle
+#        owner: typedb
 #        branch: master
 #      dependencies: [deploy-github]
 #      command: |
