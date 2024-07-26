@@ -24,7 +24,7 @@ pub enum BuiltInFunctionID {
     Floor(usize),
     Round(usize),
     // TODO: The below
-    // Max(usize),
-    // Min(usize),
-    // Length(usize)
+    // Max,
+    // Min,
+    // Length
 }

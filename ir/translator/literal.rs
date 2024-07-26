@@ -6,8 +6,7 @@
 
 use std::{borrow::Cow, str::FromStr};
 
-use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime};
-use chrono_tz::Tz;
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use encoding::value::{
     decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
     value::Value,
@@ -62,22 +61,22 @@ impl FromTypeQLLiteral for i64 {
     type TypeQLLiteral = typeql::value::SignedIntegerLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
-        let magnitude: i64 = Self::parse_primitive(literal.integral.as_str())?;
-        Ok(match literal.sign {
-            Sign::Plus => 1,
-            Sign::Minus => -1,
-        } * magnitude)
+        let unsigned: i64 = Self::parse_primitive(literal.integral.as_str())?;
+        Ok(match literal.sign.clone().unwrap_or(Sign::Plus) {
+            Sign::Plus => unsigned,
+            Sign::Minus => -unsigned,
+        })
     }
 }
 
 impl FromTypeQLLiteral for f64 {
     type TypeQLLiteral = SignedDecimalLiteral;
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
-        let sign = match &literal.sign {
-            Sign::Plus => "+",
-            Sign::Minus => "-",
-        };
-        Self::parse_primitive::<f64>(format!("{}{}", sign, literal.decimal).as_str())
+        let unsigned = Self::parse_primitive::<f64>(literal.decimal.as_str())?;
+        Ok(match &literal.sign.clone().unwrap_or(Sign::Plus) {
+            Sign::Plus => unsigned,
+            Sign::Minus => -unsigned,
+        })
     }
 }
 
@@ -95,8 +94,8 @@ impl FromTypeQLLiteral for Decimal {
             * 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10 - number_len as u32);
 
         Ok(match literal.sign {
-            Sign::Plus => Decimal::new(integral, fractional),
-            Sign::Minus => Decimal::new(0, 0) - Decimal::new(integral, fractional),
+            None | Some(Sign::Plus) => Decimal::new(integral, fractional),
+            Some(Sign::Minus) => Decimal::new(0, 0) - Decimal::new(integral, fractional),
         })
     }
 }

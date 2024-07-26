@@ -10,8 +10,7 @@
 
 use std::{
     error::Error,
-    fmt,
-    fmt::{Display, Formatter},
+    fmt::{self},
 };
 
 use answer::variable::Variable;
@@ -82,6 +81,11 @@ pub enum PatternDefinitionError {
     ExpressionDefinition {
         source: ExpressionDefinitionError,
     },
+    BuiltinArgumentCountMismatch {
+        builtin: String,
+        expected: usize,
+        actual: usize,
+    },
 }
 
 impl fmt::Display for PatternDefinitionError {
@@ -104,6 +108,7 @@ impl Error for PatternDefinitionError {
             Self::OptionalVariableForRequiredArgument { .. } => None,
             Self::FunctionCallInExpressionDidNotReturnSingleValue { .. } => None,
             Self::LiteralParseError { .. } => None,
+            Self::BuiltinArgumentCountMismatch { .. } => None,
             Self::FunctionRead { source } => Some(source),
             Self::ExpressionDefinition { source } => Some(source),
             Self::ParseError { source } => Some(source),
@@ -119,8 +124,8 @@ pub enum LiteralParseError {
     InvalidTime { hour: u32, minute: u32, second: u32, nano: u32 },
 }
 
-impl Display for LiteralParseError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for LiteralParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

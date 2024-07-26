@@ -14,19 +14,18 @@ use encoding::value::{
 
 use crate::{
     expressions::{
-        builtins::load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
+        builtins::{
+            load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
+            unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
+            BuiltInFunctionID,
+        },
         evaluator::ExpressionEvaluationState,
         op_codes::ExpressionOpCode,
         todo__dissolve__builtins::ValueTypeTrait,
         ExpressionCompilationError, ExpressionEvaluationError,
     },
-    inference::TypeInferenceError,
-    pattern::expression::{Expression, ExpressionTree, Operation, Operator},
+    pattern::expression::{BuiltInCall, Expression, ExpressionTree, Operation, Operator},
 };
-use crate::expressions::builtins::BuiltInFunctionID;
-use crate::expressions::builtins::unary::{MathAbsDouble, MathAbsLong};
-use crate::expressions::op_codes::ExpressionOpCode::MathFloorDouble;
-use crate::pattern::expression::BuiltInCall;
 
 // Keep implementations 0 sized
 pub trait ExpressionInstruction: Sized {
@@ -122,8 +121,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         match builder.compile_recursive(ir_tree.root()) {
             Ok(_) => {
                 let return_type = builder.pop_mock()?.value_type().category();
-                let ExpressionTreeCompiler { mut mock_stack, instructions, variable_stack, constant_stack, .. } =
-                    builder;
+                let ExpressionTreeCompiler { instructions, variable_stack, constant_stack, .. } = builder;
                 Ok(CompiledExpressionTree { instructions, variable_stack, constant_stack, return_type })
             }
             Err(_) => todo!(),
@@ -308,12 +306,33 @@ impl<'this> ExpressionTreeCompiler<'this> {
                     Value::Long(_) => MathAbsLong::validate_and_append(self)?,
                     Value::Double(_) => MathAbsDouble::validate_and_append(self)?,
                     Value::Decimal(_) => todo!(),
-                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForOperation)?
+                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForOperation)?,
                 }
             }
-            BuiltInFunctionID::Ceil(idx) => todo!(),
-            BuiltInFunctionID::Floor(idx) => todo!(),
-            BuiltInFunctionID::Round(idx) => todo!(),
+            BuiltInFunctionID::Ceil(idx) => {
+                self.compile_recursive(idx)?;
+                match self.peek_mock()? {
+                    Value::Double(_) => MathCeilDouble::validate_and_append(self)?,
+                    Value::Decimal(_) => todo!(),
+                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForOperation)?,
+                }
+            }
+            BuiltInFunctionID::Floor(idx) => {
+                self.compile_recursive(idx)?;
+                match self.peek_mock()? {
+                    Value::Double(_) => MathFloorDouble::validate_and_append(self)?,
+                    Value::Decimal(_) => todo!(),
+                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForOperation)?,
+                }
+            }
+            BuiltInFunctionID::Round(idx) => {
+                self.compile_recursive(idx)?;
+                match self.peek_mock()? {
+                    Value::Double(_) => MathRoundDouble::validate_and_append(self)?,
+                    Value::Decimal(_) => todo!(),
+                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForOperation)?,
+                }
+            }
         }
         Ok(())
     }

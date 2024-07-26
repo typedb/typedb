@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+// TODO: Rewrite so we generate the dispatcher macro along with the enum. SEe https://cprohm.de/blog/rust-macros/
 #[derive(Debug)]
 pub enum ExpressionOpCode {
     // Load
@@ -39,5 +40,4 @@ pub enum ExpressionOpCode {
     MathRoundDouble,
     MathCeilDouble,
     MathFloorDouble,
-
 }

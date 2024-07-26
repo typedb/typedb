@@ -12,11 +12,10 @@ use std::{
 
 use answer::variable::Variable;
 use itertools::Itertools;
-use typeql;
 
 use crate::{
     pattern::{
-        expression::{Expression, ExpressionTree},
+        expression::ExpressionTree,
         function_call::FunctionCall,
         variable_category::{VariableCategory, VariableOptionality},
         IrID, ScopeId,

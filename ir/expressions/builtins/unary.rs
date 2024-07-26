@@ -6,7 +6,7 @@
 
 use std::marker::PhantomData;
 
-use encoding::value::{value::Value, value_type::ValueTypeCategory};
+use encoding::value::value_type::ValueTypeCategory;
 
 use crate::expressions::{
     evaluator::ExpressionEvaluationState,
@@ -78,9 +78,9 @@ macro_rules! unary_instr {
 pub(crate) use unary_instr;
 
 unary_instr! {
-    MathRoundDouble = MathRoundDoubleImpl(a1: f64) -> i64 { Ok(f64::round(a1) as i64) }
-    MathCeilDouble = MathCeilImpl(a1: f64) -> i64 { Ok(f64::ceil(a1) as i64) }
-    MathFloorDouble = MathFloorImpl(a1: f64) -> i64 { Ok(f64::ceil(a1) as i64) }
     MathAbsLong = MathAbsLongImpl(a1: i64) -> i64 { Ok(i64::abs(a1)) }
     MathAbsDouble = MathAbsDoubleImpl(a1: f64) -> f64 { Ok(f64::abs(a1)) }
+    MathRoundDouble = MathRoundDoubleImpl(a1: f64) -> i64 { Ok(f64::round_ties_even(a1) as i64) } // TODO: Should this be round_ties_even?
+    MathCeilDouble = MathCeilDoubleImpl(a1: f64) -> i64 { Ok(f64::ceil(a1) as i64) }
+    MathFloorDouble = MathFloorDoubleImpl(a1: f64) -> i64 { Ok(f64::floor(a1) as i64) }
 }

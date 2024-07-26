@@ -14,6 +14,7 @@ use answer::variable::Variable;
 use encoding::value::value::Value;
 
 use crate::{
+    expressions::builtins::BuiltInFunctionID,
     pattern::{
         constraint::{Constraint, ExpressionBinding},
         variable_category::VariableCategory,
@@ -21,7 +22,6 @@ use crate::{
     program::block::BlockContext,
     PatternDefinitionError,
 };
-use crate::expressions::builtins::BuiltInFunctionID;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ExpressionTree {
@@ -41,7 +41,7 @@ impl ExpressionTree {
         &self.tree
     }
 
-    pub(crate) fn ids(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub fn ids(&self) -> impl Iterator<Item = Variable> + '_ {
         self.tree.iter().filter_map(|expr| match expr {
             Expression::Variable(variable) => Some(variable.clone()),
             Expression::ListIndex(list_index) => Some(list_index.list_variable.clone()),
@@ -141,7 +141,6 @@ impl Operation {
     }
 }
 impl ExpressionBinding<Variable> {
-
     // TODO: Split expressions into Value & List expressions
     pub(crate) fn validate(&self, context: &mut BlockContext) -> Result<(), ExpressionDefinitionError> {
         if self.expression().tree.is_empty() {
@@ -169,9 +168,11 @@ impl ExpressionBinding<Variable> {
                     self.validate_recursive(context, operation.left_expression_index, Some(false))?;
                 }
                 Expression::BuiltInCall(built_in) => {
-                    built_in.args_index.iter().map(|idx| {
-                        self.validate_recursive(context, *idx, Some(false))
-                    }).collect::<Result<Vec<_>, _>>()?;
+                    built_in
+                        .args_index
+                        .iter()
+                        .map(|idx| self.validate_recursive(context, *idx, Some(false)))
+                        .collect::<Result<Vec<_>, _>>()?;
                 }
                 Expression::List(list_constructor) => {
                     todo!("Verify each term is a value")

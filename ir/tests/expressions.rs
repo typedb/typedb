@@ -16,11 +16,29 @@ use ir::translator::match_::translate_match;
 use ir::expressions::expression_compiler::{CompiledExpressionTree, ExpressionTreeCompiler};
 use ir::expressions::ExpressionCompilationError;
 use ir::pattern::constraint::Constraint;
+use ir::PatternDefinitionError;
 
-fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ValueTypeCategory>) ->  Result<(HashMap<String, Variable>, CompiledExpressionTree), ExpressionCompilationError> {
+#[derive(Debug)]
+pub enum PatternDefitionOrExpressionCompilationError {
+    PatternDefinition(PatternDefinitionError),
+    ExpressionCompilation(ExpressionCompilationError),
+}
+impl From<PatternDefinitionError> for PatternDefitionOrExpressionCompilationError {
+    fn from(value: PatternDefinitionError) -> Self {
+        Self::PatternDefinition(value)
+    }
+}
+impl From<ExpressionCompilationError> for PatternDefitionOrExpressionCompilationError {
+    fn from(value: ExpressionCompilationError) -> Self {
+        Self::ExpressionCompilation(value)
+    }
+}
+
+
+fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ValueTypeCategory>) ->  Result<(HashMap<String, Variable>, CompiledExpressionTree), PatternDefitionOrExpressionCompilationError> {
     let query = format!("match $x = {}; filter $x;", s);
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap() {
-        let block = translate_match(&HashMapFunctionIndex::empty(), &match_).unwrap().finish();
+        let block = translate_match(&HashMapFunctionIndex::empty(), &match_)?.finish();
         let variable_mapping = variable_types.keys()
             .map(|name| ((*name).to_owned(), block.context().get_variable_named(name, block.scope_id()).unwrap().clone()))
             .collect::<HashMap<_,_>>();
@@ -33,7 +51,8 @@ fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ValueType
             Constraint::ExpressionBinding(binding) => binding,
             _ => unreachable!()
         };
-        Ok((variable_mapping, ExpressionTreeCompiler::compile(expression_binding.expression(), variable_types_mapped)?))
+        let compiled = ExpressionTreeCompiler::compile(expression_binding.expression(), variable_types_mapped)?;
+        Ok((variable_mapping, compiled))
     } else {
         unreachable!();
     }
@@ -159,30 +178,34 @@ fn test_ops_long_double(){
 
 #[test]
 fn test_functions() {
-
     {
-        let (_, expr) = compile_expression_via_match("floor(2.5)", HashMap::new()).unwrap();
+        let (_, expr) = compile_expression_via_match("floor(2.5e0)", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
         assert_eq!(result, Value::Long(2));
     }
 
     {
-        let (_, expr) = compile_expression_via_match("ceil(2.5)", HashMap::new()).unwrap();
+        let (_, expr) = compile_expression_via_match("ceil(2.5e0)", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-        assert_eq!(result, Value::Long(2));
+        assert_eq!(result, Value::Long(3));
     }
 
 
     {
-        let (_, expr) = compile_expression_via_match("round(2.5)", HashMap::new()).unwrap();
+        let (_, expr) = compile_expression_via_match("round(2.5e0)", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
         assert_eq!(result, Value::Long(2));
     }
 
     {
-        let (_, expr) = compile_expression_via_match("round(3.5)", HashMap::new()).unwrap();
+        let (_, expr) = compile_expression_via_match("round(3.5e0)", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
         assert_eq!(result, Value::Long(4));
     }
 
+    assert!(
+        matches!(
+            compile_expression_via_match("round(3.5e0, 4.5e0)", HashMap::new()),
+            Err(PatternDefitionOrExpressionCompilationError::PatternDefinition(PatternDefinitionError::BuiltinArgumentCountMismatch { .. })))
+    );
 }

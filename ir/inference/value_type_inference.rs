@@ -15,7 +15,6 @@ use std::collections::{HashMap, HashSet};
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::ValueTypeCategory;
-use itertools::{cloned, Itertools};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

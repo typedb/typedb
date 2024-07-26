@@ -4,33 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::value::value::Value;
 
-use crate::{
-    expressions::{
-        builtins::{
-            binary::MathRemainderLong,
-            load_cast::{
-                CastLeftLongToDouble, CastRightLongToDouble, CastUnaryLongToDouble, LoadConstant, LoadVariable,
-            },
-            operators as ops,
-            unary::{MathCeilDouble, MathFloorDouble, MathRoundDouble},
-        },
-        expression_compiler::{CompiledExpressionTree, ExpressionInstruction},
-        op_codes::ExpressionOpCode,
-        ExpressionEvaluationError,
+use crate::expressions::{
+    builtins::{
+        binary::MathRemainderLong,
+        load_cast::{CastLeftLongToDouble, CastRightLongToDouble, CastUnaryLongToDouble, LoadConstant, LoadVariable},
+        operators as ops,
+        unary::{MathCeilDouble, MathFloorDouble, MathRoundDouble},
     },
-    program::ProgramDefinitionError,
+    expression_compiler::{CompiledExpressionTree, ExpressionInstruction},
+    op_codes::ExpressionOpCode,
+    ExpressionEvaluationError,
 };
 
-pub(crate) struct ExpressionEvaluationState<'constants> {
+pub struct ExpressionEvaluationState<'constants> {
     constants: &'constants [Value<'static>],
     variable_stack: Vec<Value<'static>>, // TODO: This can be Vec<Position> and we read from the row.
 

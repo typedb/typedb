@@ -6,7 +6,6 @@
 
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
-    fmt::Display,
     sync::Arc,
 };
 

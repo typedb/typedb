@@ -6,7 +6,7 @@
 
 use std::marker::PhantomData;
 
-use encoding::value::{value::Value, value_type::ValueTypeCategory};
+use encoding::value::value_type::ValueTypeCategory;
 
 use crate::expressions::{
     evaluator::ExpressionEvaluationState,

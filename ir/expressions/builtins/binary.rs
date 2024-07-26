@@ -6,10 +6,9 @@
 
 use std::{marker::PhantomData, ops::Rem};
 
-use encoding::value::{value::Value, value_type::ValueTypeCategory};
+use encoding::value::value_type::ValueTypeCategory;
 
 use crate::expressions::{
-    builtins::check_operation,
     evaluator::ExpressionEvaluationState,
     expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
     op_codes::ExpressionOpCode,

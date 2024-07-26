@@ -4,29 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use itertools::Itertools;
 use typeql::{
-    common::token::ArithmeticOperator,
-    expression::{Expression as TypeQLExpression, FunctionName},
+    common::token::{ArithmeticOperator, Function},
+    expression::{BuiltinFunctionName, Expression as TypeQLExpression, FunctionName},
 };
-use typeql::common::token::Function;
-use typeql::expression::BuiltinFunctionName;
 
 use crate::{
+    expressions::builtins::BuiltInFunctionID,
     pattern::{
         constraint::ConstraintsBuilder,
-        expression::{Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation, Operator},
+        expression::{
+            BuiltInCall, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
+        },
     },
-    program::function_signature::{FunctionSignatureIndex, HashMapFunctionIndex},
+    program::function_signature::FunctionSignatureIndex,
     translator::{
         constraints::{add_function_call_user_impl, register_typeql_var, split_out_inline_expressions},
         literal::parse_literal,
     },
     PatternDefinitionError,
 };
-
-use crate::pattern::expression::{BuiltInCall};
-use crate::expressions::builtins::BuiltInFunctionID;
 
 pub(crate) fn build_expression(
     function_index: &impl FunctionSignatureIndex,
@@ -89,10 +86,12 @@ fn build_function(
     // TODO: Look up built-in
     match &function_call.name {
         FunctionName::Builtin(builtin) => {
-            let args = function_call.args.iter().map(|expr| {
-                build_recursive(function_index, constraints, expr, tree)
-            }).collect::<Result<Vec<_>, _>>()?;
-            Ok(Expression::BuiltInCall(BuiltInCall::new(to_builtin_id(builtin, args.clone()), args)))
+            let args = function_call
+                .args
+                .iter()
+                .map(|expr| build_recursive(function_index, constraints, expr, tree))
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(Expression::BuiltInCall(BuiltInCall::new(to_builtin_id(builtin, args.clone())?, args)))
         }
         FunctionName::Identifier(identifier) => {
             let assign = constraints.create_anonymous_variable()?;
@@ -121,17 +120,45 @@ fn translate_operator(operator: &ArithmeticOperator) -> Operator {
     }
 }
 
-fn to_builtin_id(typeql_id: &BuiltinFunctionName, args: Vec<usize>) -> BuiltInFunctionID {
-    match args.len() {
-        1 => match typeql_id.token {
-            Function::Abs => BuiltInFunctionID::Abs(args[0]),
-            Function::Ceil => BuiltInFunctionID::Ceil(args[0]),
-            Function::Floor => BuiltInFunctionID::Floor(args[0]),
-            Function::Round => BuiltInFunctionID::Round(args[0]),
-            _ => todo!(),
-        },
-        _ => todo!(),
+fn check_builtin_arg_count(
+    builtin: &BuiltinFunctionName,
+    actual: usize,
+    expected: usize,
+) -> Result<(), PatternDefinitionError> {
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(PatternDefinitionError::BuiltinArgumentCountMismatch {
+            builtin: builtin.token.as_str().to_owned(),
+            expected,
+            actual,
+        })
     }
+}
+
+fn to_builtin_id(
+    typeql_id: &BuiltinFunctionName,
+    args: Vec<usize>,
+) -> Result<BuiltInFunctionID, PatternDefinitionError> {
+    Ok(match typeql_id.token {
+        Function::Abs => {
+            check_builtin_arg_count(typeql_id, args.len(), 1)?;
+            BuiltInFunctionID::Abs(args[0])
+        }
+        Function::Ceil => {
+            check_builtin_arg_count(typeql_id, args.len(), 1)?;
+            BuiltInFunctionID::Ceil(args[0])
+        }
+        Function::Floor => {
+            check_builtin_arg_count(typeql_id, args.len(), 1)?;
+            BuiltInFunctionID::Floor(args[0])
+        }
+        Function::Round => {
+            check_builtin_arg_count(typeql_id, args.len(), 1)?;
+            BuiltInFunctionID::Round(args[0])
+        }
+        _ => todo!(),
+    })
 }
 
 #[cfg(test)]
@@ -139,10 +166,7 @@ pub mod tests {
     use encoding::value::value::Value;
 
     use crate::{
-        pattern::{
-            constraint::{Constraint, ExpressionBinding},
-            expression::{Expression, Operation, Operator},
-        },
+        pattern::expression::{Expression, Operation, Operator},
         program::{block::FunctionalBlock, function_signature::HashMapFunctionIndex},
         translator::block_builder::TypeQLBuilder,
         PatternDefinitionError,
