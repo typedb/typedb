@@ -238,7 +238,7 @@ public class Conjunction implements Pattern, Cloneable {
         Conjunction that = (Conjunction) obj;
         // TODO: This doesn't work! It doesn't compare constraints
         // TODO: negations should be a set not list
-        // TODO: both are corrected with https://github.com/vaticle/typedb/issues/6115
+        // TODO: both are corrected with https://github.com/typedb/typedb/issues/6115
         return (this.variableSet.equals(that.variables()) &&
                 this.negations.equals(that.negations()));
     }
