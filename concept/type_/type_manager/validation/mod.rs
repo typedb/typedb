@@ -10,7 +10,6 @@ use encoding::{
     graph::type_::{CapabilityKind, Kind},
     value::{label::Label, value_type::ValueType},
 };
-use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
@@ -22,7 +21,7 @@ use crate::{
         object_type::ObjectType,
         relation_type::RelationType,
         role_type::RoleType,
-        Capability, Ordering, TypeAPI,
+        Ordering,
     },
 };
 
@@ -34,8 +33,6 @@ mod validation;
 #[derive(Debug, Clone)]
 pub enum SchemaValidationError {
     ConceptRead(ConceptReadError),
-    RootTypesAreImmutable,
-    RootHasBeenCorrupted(Label<'static>),
     LabelShouldBeUnique(Label<'static>),
     StructNameShouldBeUnique(String),
     StructShouldHaveAtLeastOneField(String),
@@ -168,8 +165,6 @@ impl Error for SchemaValidationError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ConceptRead(source) => Some(source),
-            Self::RootTypesAreImmutable => None,
-            Self::RootHasBeenCorrupted(_) => None,
             Self::LabelShouldBeUnique(_) => None,
             Self::StructNameShouldBeUnique(_) => None,
             Self::StructShouldHaveAtLeastOneField(_) => None,

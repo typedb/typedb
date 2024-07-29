@@ -80,7 +80,7 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         Self::from_vertex(vertex).unwrap()
     }
 
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+    fn vertex(&self) -> TypeVertex<'_> {
         self.vertex.as_reference()
     }
 
@@ -138,25 +138,13 @@ impl<'a> ThingTypeAPI<'a> for EntityType<'a> {
 }
 
 impl<'a> EntityType<'a> {
-    pub fn is_root(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
-        type_manager.get_entity_type_is_root(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_label(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         label: &Label<'_>,
     ) -> Result<(), ConceptWriteError> {
-        if self.is_root(snapshot, type_manager)? {
-            Err(ConceptWriteError::RootModification)
-        } else {
-            type_manager.set_label(snapshot, self.clone().into_owned(), label)
-        }
+        type_manager.set_label(snapshot, self.clone().into_owned(), label)
     }
 
     pub fn get_supertype(

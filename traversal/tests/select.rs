@@ -11,10 +11,7 @@ use concept::{
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
 };
-use encoding::{
-    graph::type_::Kind,
-    value::{label::Label, value::Value, value_type::ValueType},
-};
+use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use ir::{
     inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
@@ -50,10 +47,10 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
-    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL, false).unwrap();
-    let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL, false).unwrap();
+    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
+    let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
     age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
-    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL, false).unwrap();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
     let person_owns_age =
         person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
@@ -73,7 +70,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
             OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10))),
         )
         .unwrap();
-    let email_type = type_manager.create_attribute_type(&mut snapshot, &EMAIL_LABEL, false).unwrap();
+    let email_type = type_manager.create_attribute_type(&mut snapshot, &EMAIL_LABEL).unwrap();
     email_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
     let person_owns_email =
         person_type.set_owns(&mut snapshot, &type_manager, email_type.clone(), Ordering::Unordered).unwrap();
@@ -140,23 +137,19 @@ fn anonymous_vars_not_enumerated_or_counted() {
 
     // query:
     //   match
-    //    $person has attribute $_;
+    //    $person has $_;
 
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_attribute_type = conjunction.declare_variable_anonymous().unwrap();
-    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
     let var_attribute = conjunction.declare_variable_anonymous().unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_attribute_type, Kind::Attribute.root_label().scoped_name().as_str())
-        .unwrap();
     let program = Program::new(block.finish(), Vec::new());
 
     let annotated_program = {
@@ -216,24 +209,20 @@ fn unselected_named_vars_counted() {
 
     // query:
     //   match
-    //    $person has attribute $attr;
+    //    $person has $attr;
     //   select $person;
 
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
-    let var_attribute_type = conjunction.get_or_declare_variable(&"attr_type").unwrap();
-    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-    let var_attribute = conjunction.get_or_declare_variable(&"attr").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_attribute_type = conjunction.get_or_declare_variable("attr_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_attribute = conjunction.get_or_declare_variable("attr").unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_attribute_type, Kind::Attribute.root_label().scoped_name().as_str())
-        .unwrap();
     let program = Program::new(block.finish(), Vec::new());
 
     let annotated_program = {
@@ -299,13 +288,13 @@ fn cartesian_named_counted_checked() {
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_name_type = conjunction.declare_variable_anonymous().unwrap();
     let var_age_type = conjunction.declare_variable_anonymous().unwrap();
     let var_email_type = conjunction.declare_variable_anonymous().unwrap();
-    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-    let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
-    let var_age = conjunction.get_or_declare_variable(&"age").unwrap();
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_name = conjunction.get_or_declare_variable("name").unwrap();
+    let var_age = conjunction.get_or_declare_variable("age").unwrap();
     let var_email = conjunction.declare_variable_anonymous().unwrap();
     let has_name = conjunction.constraints_mut().add_has(var_person, var_name).unwrap().clone();
     let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();

@@ -255,7 +255,7 @@ impl IntersectionStep {
             instructions,
             unbound_variables: unbound,
             bound_variables: bound,
-            selected_variables: selected_variables.clone(),
+            selected_variables: selected_variables.to_owned(),
         }
     }
 
@@ -277,7 +277,7 @@ impl UnsortedJoinStep {
     pub fn new(
         iterate_instruction: Instruction,
         check_instructions: Vec<Instruction>,
-        selected_variables: &Vec<Variable>,
+        selected_variables: &[Variable],
     ) -> Self {
         let mut bound = Vec::with_capacity(check_instructions.len() * 2);
         let mut unbound = Vec::with_capacity(5);
@@ -303,7 +303,7 @@ impl UnsortedJoinStep {
             check_instructions,
             unbound_variables: unbound,
             bound_variables: bound,
-            selected_variables: selected_variables.clone(),
+            selected_variables: selected_variables.to_owned(),
         }
     }
 
@@ -380,7 +380,7 @@ impl Instruction {
         found
     }
 
-    fn bound_vars_foreach(&self, mut apply: impl FnMut(Variable) -> ()) {
+    fn bound_vars_foreach(&self, mut apply: impl FnMut(Variable)) {
         match self {
             Instruction::Isa(_, bounds) => bounds.bounds().iter().cloned().for_each(apply),
             Instruction::Has(_, bounds) | Instruction::HasReverse(_, bounds) => {
@@ -435,7 +435,7 @@ impl InstructionAPI for Instruction {
             Instruction::Has(has, _) | Instruction::HasReverse(has, _) => has.clone().into(),
             Instruction::RolePlayer(rp, _) | Instruction::RolePlayerReverse(rp, _) => rp.clone().into(),
             Instruction::FunctionCallBinding(call) => call.clone().into(),
-            Instruction::ComparisonGenerator(cmp)
+            | Instruction::ComparisonGenerator(cmp)
             | Instruction::ComparisonGeneratorReverse(cmp)
             | Instruction::ComparisonCheck(cmp) => cmp.clone().into(),
             Instruction::ExpressionBinding(binding) => binding.clone().into(),

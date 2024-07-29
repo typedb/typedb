@@ -15,9 +15,7 @@ use macro_rules_attribute::apply;
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
-    params::{
-        Annotation, AnnotationCategory, ContainsOrDoesnt, ExistsOrDoesnt, IsEmptyOrNot, Label, MayError, RootLabel,
-    },
+    params::{Annotation, AnnotationCategory, ContainsOrDoesnt, ExistsOrDoesnt, IsEmptyOrNot, Label, MayError},
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };

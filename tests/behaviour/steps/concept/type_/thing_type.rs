@@ -4,11 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::ascii::escape_default;
-
 use concept::type_::{
     annotation, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation, object_type::ObjectType,
-    relation_type::RelationTypeAnnotation, KindAPI, PlayerAPI, TypeAPI,
+    relation_type::RelationTypeAnnotation, KindAPI, TypeAPI,
 };
 use cucumber::gherkin::Step;
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
@@ -16,7 +14,7 @@ use itertools::Itertools;
 use macro_rules_attribute::apply;
 
 use crate::{
-    generic_step, params,
+    generic_step,
     params::{
         Annotation, AnnotationCategory, ContainsOrDoesnt, ExistsOrDoesnt, IsEmptyOrNot, Label, MayError, RootLabel,
     },
@@ -98,25 +96,19 @@ pub async fn type_create(context: &mut Context, root_label: RootLabel, type_labe
     with_schema_tx!(context, |tx| {
         match root_label.into_typedb() {
             Kind::Entity => {
-                may_error.check_concept_write_without_read_errors(&tx.type_manager.create_entity_type(
-                    &mut tx.snapshot,
-                    &type_label.into_typedb(),
-                    false,
-                ));
+                may_error.check_concept_write_without_read_errors(
+                    &tx.type_manager.create_entity_type(&mut tx.snapshot, &type_label.into_typedb()),
+                );
             }
             Kind::Relation => {
-                may_error.check_concept_write_without_read_errors(&tx.type_manager.create_relation_type(
-                    &mut tx.snapshot,
-                    &type_label.into_typedb(),
-                    false,
-                ));
+                may_error.check_concept_write_without_read_errors(
+                    &tx.type_manager.create_relation_type(&mut tx.snapshot, &type_label.into_typedb()),
+                );
             }
             Kind::Attribute => {
-                may_error.check_concept_write_without_read_errors(&tx.type_manager.create_attribute_type(
-                    &mut tx.snapshot,
-                    &type_label.into_typedb(),
-                    false,
-                ));
+                may_error.check_concept_write_without_read_errors(
+                    &tx.type_manager.create_attribute_type(&mut tx.snapshot, &type_label.into_typedb()),
+                );
             }
             Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),
         }
@@ -228,8 +220,7 @@ pub async fn type_unset_annotation(
 ) {
     with_write_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
-            let res =
-                type_.unset_annotation(&mut tx.snapshot, &tx.type_manager, annotation_category.into_typedb().into());
+            let res = type_.unset_annotation(&mut tx.snapshot, &tx.type_manager, annotation_category.into_typedb());
             may_error.check_concept_write_without_read_errors(&res);
         });
     });

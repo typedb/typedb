@@ -4,15 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-};
+use std::collections::{HashMap, HashSet};
 
-use encoding::graph::{
-    definition::r#struct::StructDefinition,
-    type_::{CapabilityKind, Kind},
-};
+use encoding::graph::{definition::r#struct::StructDefinition, type_::CapabilityKind};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
@@ -31,7 +25,7 @@ use crate::{
             type_reader::TypeReader,
             validation::{
                 validation::{
-                    get_label_or_concept_read_err, get_label_or_schema_err, is_interface_overridden,
+                    get_label_or_concept_read_err, is_interface_overridden,
                     is_overridden_interface_object_declared_supertype_or_self,
                     is_overridden_interface_object_one_of_supertypes_or_self,
                     validate_declared_annotation_is_compatible_with_other_inherited_annotations,
@@ -52,26 +46,26 @@ use crate::{
 pub struct CommitTimeValidation {}
 
 macro_rules! validate_types {
-    ($func_name:ident, $kind:expr, $type_:ident, $func:path) => {
+    ($func_name:ident, $get_all_of_kind:ident, $type_:ident, $func:path) => {
         fn $func_name(
             type_manager: &TypeManager,
             snapshot: &impl ReadableSnapshot,
             validation_errors: &mut Vec<SchemaValidationError>,
         ) -> Result<(), ConceptReadError> {
-            let root_label = $kind.root_label();
-            let root = TypeReader::get_labelled_type::<$type_<'static>>(snapshot, &root_label)?;
-
-            match root {
-                Some(root) => {
-                    $func(type_manager, snapshot, root.clone(), validation_errors)?;
-
-                    for subtype in TypeReader::get_subtypes_transitive(snapshot, root)? {
-                        $func(type_manager, snapshot, subtype, validation_errors)?;
-                    }
+            let roots = TypeReader::$get_all_of_kind(snapshot)?.into_iter().filter_map(|type_| {
+                match type_.get_supertype(snapshot, type_manager) {
+                    Ok(Some(_)) => None,
+                    Ok(None) => Some(Ok(type_)),
+                    Err(err) => Some(Err(err)),
                 }
-                None => validation_errors.push(SchemaValidationError::RootHasBeenCorrupted(root_label)),
-            };
-
+            });
+            for root in roots {
+                let root = root?;
+                $func(type_manager, snapshot, root.clone(), validation_errors)?;
+                for subtype in TypeReader::get_subtypes_transitive(snapshot, root)? {
+                    $func(type_manager, snapshot, subtype, validation_errors)?;
+                }
+            }
             Ok(())
         }
     };
@@ -98,9 +92,9 @@ impl CommitTimeValidation {
         Ok(errors)
     }
 
-    validate_types!(validate_entity_types, Kind::Entity, EntityType, Self::validate_entity_type);
-    validate_types!(validate_relation_types, Kind::Relation, RelationType, Self::validate_relation_type);
-    validate_types!(validate_attribute_types, Kind::Attribute, AttributeType, Self::validate_attribute_type);
+    validate_types!(validate_entity_types, get_entity_types, EntityType, Self::validate_entity_type);
+    validate_types!(validate_relation_types, get_relation_types, RelationType, Self::validate_relation_type);
+    validate_types!(validate_attribute_types, get_attribute_types, AttributeType, Self::validate_attribute_type);
 
     fn validate_entity_type(
         type_manager: &TypeManager,
@@ -705,8 +699,8 @@ impl CommitTimeValidation {
                         get_label_or_concept_read_err(snapshot, capability.object())?,
                         get_label_or_concept_read_err(snapshot, overridden_capability.object())?,
                         get_label_or_concept_read_err(snapshot, capability.interface())?,
-                        capability_card.clone(),
-                        overridden_card.clone(),
+                        *capability_card,
+                        *overridden_card,
                     ));
                 }
 
@@ -715,21 +709,18 @@ impl CommitTimeValidation {
             }
         }
 
-        for (root_capability, inheriting_capabilitys) in cardinality_connections {
+        for (root_capability, inheriting_capabilities) in cardinality_connections {
             let root_cardinality = cardinalities.get(&root_capability).unwrap();
-            let inheriting_cardinality = inheriting_capabilitys
-                .iter()
-                .map(|capability| cardinalities.get(capability).unwrap().clone())
-                .into_iter()
-                .sum();
+            let inheriting_cardinality =
+                inheriting_capabilities.iter().filter_map(|capability| cardinalities.get(capability).copied()).sum();
 
             if !root_cardinality.narrowed_correctly_by(&inheriting_cardinality) {
                 validation_errors.push(SchemaValidationError::SummarizedCardinalityOfEdgesOverridingSingleEdgeOverflowsOverriddenCardinality(
                     CAP::KIND,
                     get_label_or_concept_read_err(snapshot, root_capability.object())?,
                     get_label_or_concept_read_err(snapshot, root_capability.interface())?,
-                    root_cardinality.clone(),
-                    inheriting_cardinality.clone(),
+                    *root_cardinality,
+                    inheriting_cardinality,
                 ));
             }
         }
@@ -794,7 +785,7 @@ impl CommitTimeValidation {
             if let Err(err) = validate_declared_annotation_is_compatible_with_other_inherited_annotations(
                 snapshot,
                 type_.clone(),
-                annotation_category.clone(),
+                annotation_category,
             ) {
                 validation_errors.push(err);
             }
@@ -836,7 +827,7 @@ impl CommitTimeValidation {
             if let Err(err) = validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations(
                 snapshot,
                 edge.clone(),
-                annotation_category.clone(),
+                annotation_category,
             ) {
                 validation_errors.push(err);
             }

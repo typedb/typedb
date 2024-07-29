@@ -7,6 +7,7 @@
 use std::{
     borrow::Cow,
     fmt::{Display, Formatter},
+    vec,
 };
 
 use answer::variable_value::VariableValue;
@@ -178,8 +179,7 @@ impl<'a> ImmutableRow<'a> {
     }
 
     pub fn into_owned(self) -> ImmutableRow<'static> {
-        let cloned: Vec<VariableValue<'static>> =
-            self.row.into_iter().map(|value| value.clone().into_owned()).collect();
+        let cloned: Vec<VariableValue<'static>> = self.row.iter().map(|value| value.clone().into_owned()).collect();
         ImmutableRow { row: Cow::Owned(cloned), multiplicity: self.multiplicity }
     }
 
@@ -188,8 +188,11 @@ impl<'a> ImmutableRow<'a> {
     }
 }
 
-impl ImmutableRow<'static> {
-    pub fn into_iter(self) -> impl Iterator<Item = VariableValue<'static>> {
+impl IntoIterator for ImmutableRow<'static> {
+    type Item = VariableValue<'static>;
+    type IntoIter = vec::IntoIter<VariableValue<'static>>;
+    fn into_iter(self) -> Self::IntoIter {
+        #[allow(clippy::unnecessary_to_owned)]
         self.row.into_owned().into_iter()
     }
 }
@@ -200,6 +203,7 @@ impl<'a> Display for ImmutableRow<'a> {
         for value in self.row.as_ref() {
             write!(f, "{value}  ")?
         }
-        write!(f, "]\n")
+        writeln!(f, "]")?;
+        Ok(())
     }
 }

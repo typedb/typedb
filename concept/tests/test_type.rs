@@ -19,8 +19,6 @@ use concept::type_::{
     entity_type::EntityTypeAnnotation,
     object_type::ObjectType,
     owns::{Owns, OwnsAnnotation},
-    relation_type::RelationTypeAnnotation,
-    role_type::RoleTypeAnnotation,
     type_manager::{type_cache::TypeCache, TypeManager},
     Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
 };
@@ -30,7 +28,7 @@ use encoding::{
         definition::{
             definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
         },
-        type_::{vertex_generator::TypeVertexGenerator, Kind},
+        type_::vertex_generator::TypeVertexGenerator,
     },
     value::{decimal_value::Decimal, label::Label, value::Value, value_type::ValueType},
     EncodingKeyspace,
@@ -47,7 +45,7 @@ This test is used to help develop the API of Types.
 We don't aim for complete coverage of all APIs, and will rely on the BDD scenarios for coverage.
  */
 
-fn type_manager_no_cache(storage: Arc<MVCCStorage<WALClient>>) -> Arc<TypeManager> {
+fn type_manager_no_cache() -> Arc<TypeManager> {
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None))
@@ -72,53 +70,41 @@ fn entity_usage() {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-
     let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
         // Without cache, uncommitted
-        let type_manager = type_manager_no_cache(storage.clone());
-
-        let root_entity = type_manager.get_entity_type(&snapshot, &Kind::Entity.root_label()).unwrap().unwrap();
-        assert_eq!(*root_entity.get_label(&snapshot, &type_manager).unwrap(), Kind::Entity.root_label());
-        assert!(root_entity.is_root(&snapshot, &type_manager).unwrap());
+        let type_manager = type_manager_no_cache();
 
         // --- age sub attribute ---
         let age_label = Label::build("age");
-        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
+        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
 
-        assert!(!age_type.is_root(&snapshot, &type_manager).unwrap());
         assert!(age_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
         assert_eq!(*age_type.get_label(&snapshot, &type_manager).unwrap(), age_label);
         assert_eq!(age_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
 
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
-        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         person_type
             .set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract))
             .unwrap();
 
-        assert!(!person_type.is_root(&snapshot, &type_manager).unwrap());
         assert!(person_type
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&EntityTypeAnnotation::Abstract(AnnotationAbstract)));
         assert_eq!(*person_type.get_label(&snapshot, &type_manager).unwrap(), person_label);
 
-        let supertype = person_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
-        assert_eq!(supertype, root_entity);
+        let supertype = person_type.get_supertype(&snapshot, &type_manager).unwrap();
+        assert_eq!(supertype, None);
 
         // --- child sub person ---
         let child_label = Label::build("child");
-        let child_type = type_manager.create_entity_type(&mut snapshot, &child_label, false).unwrap();
+        let child_type = type_manager.create_entity_type(&mut snapshot, &child_label).unwrap();
         child_type.set_supertype(&mut snapshot, &type_manager, person_type.clone()).unwrap();
 
-        assert!(!child_type.is_root(&snapshot, &type_manager).unwrap());
         assert_eq!(*child_type.get_label(&snapshot, &type_manager).unwrap(), child_label);
 
         let supertype = child_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
@@ -139,16 +125,14 @@ fn entity_usage() {
         assert!(child_type.has_owns_attribute(&snapshot, &type_manager, age_type.clone()).unwrap());
 
         // --- adult sub person ---
-        let adult_type = type_manager.create_entity_type(&mut snapshot, &Label::build("adult"), false).unwrap();
+        let adult_type = type_manager.create_entity_type(&mut snapshot, &Label::build("adult")).unwrap();
         adult_type.set_supertype(&mut snapshot, &type_manager, person_type.clone()).unwrap();
-        assert_eq!(root_entity.get_subtypes(&snapshot, &type_manager).unwrap().len(), 1);
-        assert_eq!(root_entity.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 3);
         assert_eq!(person_type.get_subtypes(&snapshot, &type_manager).unwrap().len(), 2);
         assert_eq!(person_type.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 2);
 
         // --- owns inheritance ---
         let height_label = Label::new_static("height");
-        let height_type = type_manager.create_attribute_type(&mut snapshot, &height_label, false).unwrap();
+        let height_type = type_manager.create_attribute_type(&mut snapshot, &height_label).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, height_type.clone(), Ordering::Unordered).unwrap();
 
         match child_type.get_owns_attribute_transitive(&snapshot, &type_manager, height_type.clone()).unwrap() {
@@ -166,15 +150,10 @@ fn entity_usage() {
         let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
         let type_manager = type_manager_at_snapshot(storage.clone(), &snapshot);
 
-        let root_entity = type_manager.get_entity_type(&snapshot, &Kind::Entity.root_label()).unwrap().unwrap();
-        assert_eq!(*root_entity.get_label(&snapshot, &type_manager).unwrap(), Kind::Entity.root_label());
-        assert!(root_entity.is_root(&snapshot, &type_manager).unwrap());
-
         // --- age sub attribute ---
         let age_label = Label::build("age");
         let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
 
-        assert!(!age_type.is_root(&snapshot, &type_manager).unwrap());
         assert!(age_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
         assert_eq!(*age_type.get_label(&snapshot, &type_manager).unwrap(), age_label);
         assert_eq!(age_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
@@ -182,21 +161,19 @@ fn entity_usage() {
         // --- person sub entity ---
         let person_label = Label::build("person");
         let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
-        assert!(!person_type.is_root(&snapshot, &type_manager).unwrap());
         assert!(person_type
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&EntityTypeAnnotation::Abstract(AnnotationAbstract)));
         assert_eq!(*person_type.get_label(&snapshot, &type_manager).unwrap(), person_label);
 
-        let supertype = person_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
-        assert_eq!(supertype, root_entity);
+        let supertype = person_type.get_supertype(&snapshot, &type_manager).unwrap();
+        assert_eq!(supertype, None);
 
         // --- child sub person ---
         let child_label = Label::build("child");
         let child_type = type_manager.get_entity_type(&snapshot, &child_label).unwrap().unwrap();
 
-        assert!(!child_type.is_root(&snapshot, &type_manager).unwrap());
         assert_eq!(*child_type.get_label(&snapshot, &type_manager).unwrap(), child_label);
 
         let supertype = child_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
@@ -216,8 +193,6 @@ fn entity_usage() {
         assert!(child_type.has_owns_attribute(&snapshot, &type_manager, age_type.clone()).unwrap());
 
         // --- adult sub person ---
-        assert_eq!(root_entity.get_subtypes(&snapshot, &type_manager).unwrap().len(), 1);
-        assert_eq!(root_entity.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 3);
         assert_eq!(person_type.get_subtypes(&snapshot, &type_manager).unwrap().len(), 2);
         assert_eq!(person_type.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 2);
 
@@ -242,11 +217,6 @@ fn role_usage() {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-
     let friendship_label = Label::build("friendship");
     let friend_name = "friend";
     let person_label = Label::build("person");
@@ -254,29 +224,10 @@ fn role_usage() {
     let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
         // Without cache, uncommitted
-        let type_manager = type_manager_no_cache(storage.clone());
-        let root_relation = type_manager.get_relation_type(&snapshot, &Kind::Relation.root_label()).unwrap().unwrap();
-        assert_eq!(*root_relation.get_label(&snapshot, &type_manager).unwrap(), Kind::Relation.root_label());
-        assert!(root_relation.is_root(&snapshot, &type_manager).unwrap());
-        assert!(root_relation.get_supertype(&snapshot, &type_manager).unwrap().is_none());
-        assert_eq!(root_relation.get_supertypes(&snapshot, &type_manager).unwrap().len(), 0);
-        assert!(root_relation
-            .get_annotations(&snapshot, &type_manager)
-            .unwrap()
-            .contains_key(&RelationTypeAnnotation::Abstract(AnnotationAbstract)));
-
-        let root_role = type_manager.get_role_type(&snapshot, &Kind::Role.root_label()).unwrap().unwrap();
-        assert_eq!(*root_role.get_label(&snapshot, &type_manager).unwrap(), Kind::Role.root_label());
-        assert!(root_role.is_root(&snapshot, &type_manager).unwrap());
-        assert!(root_role.get_supertype(&snapshot, &type_manager).unwrap().is_none());
-        assert_eq!(root_role.get_supertypes(&snapshot, &type_manager).unwrap().len(), 0);
-        assert!(root_role
-            .get_annotations(&snapshot, &type_manager)
-            .unwrap()
-            .contains_key(&RoleTypeAnnotation::Abstract(AnnotationAbstract)));
+        let type_manager = type_manager_no_cache();
 
         // --- friendship sub relation, relates friend ---
-        let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label, false).unwrap();
+        let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
         friendship_type.create_relates(&mut snapshot, &type_manager, friend_name, Ordering::Unordered).unwrap();
         let relates = friendship_type.get_relates_of_role(&snapshot, &type_manager, friend_name).unwrap().unwrap();
         let role_type =
@@ -285,7 +236,7 @@ fn role_usage() {
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
-        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         person_type.set_plays(&mut snapshot, &type_manager, role_type.clone().into_owned()).unwrap();
         let plays =
             person_type.get_plays_role(&snapshot, &type_manager, role_type.clone().into_owned()).unwrap().unwrap();
@@ -327,53 +278,48 @@ fn annotations_with_range_arguments() {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-
     let tz = Tz::Africa__Abidjan;
     let now = chrono::offset::Local::now().with_timezone(&tz);
 
     let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
-        let type_manager = type_manager_no_cache(storage.clone());
+        let type_manager = type_manager_no_cache();
 
         let age_label = Label::build("age");
-        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
+        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
 
         let name_label = Label::build("name");
-        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
+        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
 
         let empty_name_label = Label::build("empty_name");
-        let empty_name_type = type_manager.create_attribute_type(&mut snapshot, &empty_name_label, false).unwrap();
+        let empty_name_type = type_manager.create_attribute_type(&mut snapshot, &empty_name_label).unwrap();
         empty_name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
 
         let balance_label = Label::build("balance");
-        let balance_type = type_manager.create_attribute_type(&mut snapshot, &balance_label, false).unwrap();
+        let balance_type = type_manager.create_attribute_type(&mut snapshot, &balance_label).unwrap();
         balance_type.set_value_type(&mut snapshot, &type_manager, ValueType::Decimal).unwrap();
 
         let measurement_label = Label::build("measurement");
-        let measurement_type = type_manager.create_attribute_type(&mut snapshot, &measurement_label, false).unwrap();
+        let measurement_type = type_manager.create_attribute_type(&mut snapshot, &measurement_label).unwrap();
         measurement_type.set_value_type(&mut snapshot, &type_manager, ValueType::Double).unwrap();
 
         let empty_measurement_label = Label::build("empty_measurement");
         let empty_measurement_type =
-            type_manager.create_attribute_type(&mut snapshot, &empty_measurement_label, false).unwrap();
+            type_manager.create_attribute_type(&mut snapshot, &empty_measurement_label).unwrap();
         empty_measurement_type.set_value_type(&mut snapshot, &type_manager, ValueType::Double).unwrap();
 
         let schedule_label = Label::build("schedule");
-        let schedule_type = type_manager.create_attribute_type(&mut snapshot, &schedule_label, false).unwrap();
+        let schedule_type = type_manager.create_attribute_type(&mut snapshot, &schedule_label).unwrap();
         schedule_type.set_value_type(&mut snapshot, &type_manager, ValueType::DateTimeTZ).unwrap();
 
         let valid_label = Label::build("valid");
-        let valid_type = type_manager.create_attribute_type(&mut snapshot, &valid_label, false).unwrap();
+        let valid_type = type_manager.create_attribute_type(&mut snapshot, &valid_label).unwrap();
         valid_type.set_value_type(&mut snapshot, &type_manager, ValueType::Boolean).unwrap();
 
         let empty_label = Label::build("empty");
-        let empty_type = type_manager.create_attribute_type(&mut snapshot, &empty_label, false).unwrap();
+        let empty_type = type_manager.create_attribute_type(&mut snapshot, &empty_label).unwrap();
         empty_type.set_value_type(&mut snapshot, &type_manager, ValueType::Boolean).unwrap();
 
         assert_eq!(age_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
@@ -387,7 +333,7 @@ fn annotations_with_range_arguments() {
         assert_eq!(empty_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Boolean));
 
         let person_label = Label::build("person");
-        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
         person_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, name_type.clone().into_owned(), Ordering::Ordered).unwrap();
@@ -482,7 +428,7 @@ fn annotations_with_range_arguments() {
             .set_annotation(
                 &mut snapshot,
                 &type_manager,
-                AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now.clone())), None)),
+                AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None)),
             )
             .unwrap();
         valid_owns
@@ -636,16 +582,18 @@ fn annotations_with_range_arguments() {
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Double(0.00000000001)),))));
 
-        assert!(schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
-            &AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now.clone())), None))
-        ));
+        assert!(schedule_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None))));
         assert!(!schedule_type
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, None))));
-        assert!(!schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
-            &AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::DateTimeTZ(now.clone()))))
-        ));
+        assert!(!schedule_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::DateTimeTZ(now))))));
         assert!(!schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(
                 Some(Value::DateTimeTZ(chrono::offset::Local::now().with_timezone(&tz))),
@@ -691,53 +639,48 @@ fn annotations_with_value_arguments() {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-
     let tz = Tz::Africa__Abidjan;
     let now = chrono::offset::Local::now().with_timezone(&tz);
 
     let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
-        let type_manager = type_manager_no_cache(storage.clone());
+        let type_manager = type_manager_no_cache();
 
         let age_label = Label::build("age");
-        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
+        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
 
         let name_label = Label::build("name");
-        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
+        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
 
         let empty_name_label = Label::build("empty_name");
-        let empty_name_type = type_manager.create_attribute_type(&mut snapshot, &empty_name_label, false).unwrap();
+        let empty_name_type = type_manager.create_attribute_type(&mut snapshot, &empty_name_label).unwrap();
         empty_name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
 
         let balance_label = Label::build("balance");
-        let balance_type = type_manager.create_attribute_type(&mut snapshot, &balance_label, false).unwrap();
+        let balance_type = type_manager.create_attribute_type(&mut snapshot, &balance_label).unwrap();
         balance_type.set_value_type(&mut snapshot, &type_manager, ValueType::Decimal).unwrap();
 
         let measurement_label = Label::build("measurement");
-        let measurement_type = type_manager.create_attribute_type(&mut snapshot, &measurement_label, false).unwrap();
+        let measurement_type = type_manager.create_attribute_type(&mut snapshot, &measurement_label).unwrap();
         measurement_type.set_value_type(&mut snapshot, &type_manager, ValueType::Double).unwrap();
 
         let empty_measurement_label = Label::build("empty_measurement");
         let empty_measurement_type =
-            type_manager.create_attribute_type(&mut snapshot, &empty_measurement_label, false).unwrap();
+            type_manager.create_attribute_type(&mut snapshot, &empty_measurement_label).unwrap();
         empty_measurement_type.set_value_type(&mut snapshot, &type_manager, ValueType::Double).unwrap();
 
         let schedule_label = Label::build("schedule");
-        let schedule_type = type_manager.create_attribute_type(&mut snapshot, &schedule_label, false).unwrap();
+        let schedule_type = type_manager.create_attribute_type(&mut snapshot, &schedule_label).unwrap();
         schedule_type.set_value_type(&mut snapshot, &type_manager, ValueType::DateTimeTZ).unwrap();
 
         let valid_label = Label::build("valid");
-        let valid_type = type_manager.create_attribute_type(&mut snapshot, &valid_label, false).unwrap();
+        let valid_type = type_manager.create_attribute_type(&mut snapshot, &valid_label).unwrap();
         valid_type.set_value_type(&mut snapshot, &type_manager, ValueType::Boolean).unwrap();
 
         let empty_label = Label::build("empty");
-        let empty_type = type_manager.create_attribute_type(&mut snapshot, &empty_label, false).unwrap();
+        let empty_type = type_manager.create_attribute_type(&mut snapshot, &empty_label).unwrap();
         empty_type.set_value_type(&mut snapshot, &type_manager, ValueType::Boolean).unwrap();
 
         assert_eq!(age_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
@@ -751,7 +694,7 @@ fn annotations_with_value_arguments() {
         assert_eq!(empty_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Boolean));
 
         let person_label = Label::build("person");
-        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
         person_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, name_type.clone().into_owned(), Ordering::Ordered).unwrap();
@@ -843,7 +786,7 @@ fn annotations_with_value_arguments() {
             .set_annotation(
                 &mut snapshot,
                 &type_manager,
-                AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now.clone())])),
+                AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)])),
             )
             .unwrap();
         valid_owns
@@ -994,13 +937,14 @@ fn annotations_with_value_arguments() {
             .unwrap()
             .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.0000000001)]))));
 
-        assert!(schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
-            &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now.clone()),]))
-        ));
+        assert!(schedule_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now),]))));
         assert!(!schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
-                Value::DateTimeTZ(now.clone()),
-                Value::DateTimeTZ(now.clone()),
+                Value::DateTimeTZ(now),
+                Value::DateTimeTZ(now),
             ]))
         ));
         assert!(!schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
@@ -1057,14 +1001,9 @@ fn test_struct_definition() {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-
     // Without cache, uncommitted
     let mut snapshot = storage.clone().open_snapshot_write();
-    let type_manager = type_manager_no_cache(storage.clone());
+    let type_manager = type_manager_no_cache();
 
     let nested_struct_name = "nested_struct".to_owned();
     let nested_struct_fields =
@@ -1101,7 +1040,7 @@ fn test_struct_definition() {
     // Persisted, without cache
     {
         let snapshot = storage.clone().open_snapshot_read();
-        let type_manager = type_manager_no_cache(storage.clone());
+        let type_manager = type_manager_no_cache();
 
         assert_eq!(0, nested_struct_key.definition_id().as_uint());
         // Read back:
@@ -1148,7 +1087,7 @@ fn remap_struct_fields(struct_definition: &StructDefinition) -> HashMap<String, 
         .field_names
         .iter()
         .map(|(name, idx)| {
-            let field_def = struct_definition.fields.get(&idx).unwrap();
+            let field_def = struct_definition.fields.get(idx).unwrap();
             (name.to_owned(), (field_def.value_type.clone(), field_def.optional))
         })
         .collect()
@@ -1176,11 +1115,7 @@ fn test_struct_definition_updates() {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
-    let type_manager = type_manager_no_cache(storage.clone());
+    let type_manager = type_manager_no_cache();
 
     // types to add
     let f_long = ("f_long".to_owned(), (ValueType::Long, false));
@@ -1222,7 +1157,7 @@ fn test_struct_definition_updates() {
     };
 
     {
-        let mut snapshot = storage.clone().open_snapshot_write();
+        let snapshot = storage.clone().open_snapshot_write();
         assert_eq!(
             HashMap::from([f_string.clone()]),
             remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())

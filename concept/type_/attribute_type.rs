@@ -84,7 +84,7 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         Self::from_vertex(vertex).unwrap()
     }
 
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+    fn vertex(&self) -> TypeVertex<'_> {
         self.vertex.as_reference()
     }
 
@@ -136,14 +136,6 @@ impl<'a> ThingTypeAPI<'a> for AttributeType<'a> {
 }
 
 impl<'a> AttributeType<'a> {
-    pub fn is_root(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
-        type_manager.get_attribute_type_is_root(snapshot, self.clone().into_owned())
-    }
-
     pub fn get_value_type(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -177,11 +169,7 @@ impl<'a> AttributeType<'a> {
         type_manager: &TypeManager,
         label: &Label<'_>,
     ) -> Result<(), ConceptWriteError> {
-        if self.is_root(snapshot, type_manager)? {
-            Err(ConceptWriteError::RootModification) // TODO: Move into TypeManager?
-        } else {
-            type_manager.set_label(snapshot, self.clone().into_owned(), label)
-        }
+        type_manager.set_label(snapshot, self.clone().into_owned(), label)
     }
 
     pub fn get_supertype(

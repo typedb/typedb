@@ -25,11 +25,6 @@ pub fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
     let storage = Arc::new(
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
-
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-        .unwrap();
     (storage_path, storage)
 }
 

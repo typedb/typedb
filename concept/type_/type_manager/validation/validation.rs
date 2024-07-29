@@ -4,35 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::hash::Hash;
-
-use encoding::{
-    graph::type_::{edge::TypeEdgeEncoding, Kind},
-    value::label::Label,
-};
-use itertools::Itertools;
-use lending_iterator::LendingIterator;
+use encoding::value::label::Label;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    error::{ConceptReadError, ConceptWriteError},
-    thing::object::ObjectAPI,
+    error::ConceptReadError,
     type_::{
         annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange,
-            AnnotationRegex, AnnotationValues,
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange, AnnotationRegex,
+            AnnotationValues,
         },
-        attribute_type::AttributeType,
         owns::Owns,
-        plays::Plays,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::{
-            type_reader::TypeReader,
-            validation::{operation_time_validation::OperationTimeValidation, SchemaValidationError},
-            TypeManager,
-        },
-        Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
+        type_manager::{type_reader::TypeReader, validation::SchemaValidationError, TypeManager},
+        Capability, KindAPI, Ordering, TypeAPI,
     },
 };
 
@@ -50,7 +36,7 @@ pub(crate) fn get_label_or_schema_err<'a>(
     get_label_or_concept_read_err(snapshot, type_).map_err(SchemaValidationError::ConceptRead)
 }
 
-pub(crate) fn validate_role_name_uniqueness_non_transitive<'a>(
+pub(crate) fn validate_role_name_uniqueness_non_transitive(
     snapshot: &impl ReadableSnapshot,
     relation_type: RelationType<'static>,
     new_label: &Label<'static>,
@@ -190,8 +176,8 @@ pub(crate) fn validate_cardinality_narrows_inherited_cardinality<CAP: Capability
             get_label_or_schema_err(snapshot, edge.object())?,
             get_label_or_schema_err(snapshot, overridden_edge.object())?,
             get_label_or_schema_err(snapshot, edge.interface())?,
-            cardinality.clone(),
-            overridden_cardinality.clone(),
+            cardinality,
+            overridden_cardinality,
         ))
     }
 }
@@ -502,10 +488,6 @@ pub(crate) fn validate_type_supertype_ordering_match(
     supertype: RoleType<'static>,
     set_subtype_role_ordering: Option<Ordering>,
 ) -> Result<(), SchemaValidationError> {
-    if TypeReader::check_type_is_root(&get_label_or_schema_err(snapshot, supertype.clone())?, Kind::Role) {
-        return Ok(());
-    }
-
     let supertype_ordering =
         TypeReader::get_type_ordering(snapshot, supertype.clone()).map_err(SchemaValidationError::ConceptRead)?;
     let type_ordering = set_subtype_role_ordering
@@ -621,8 +603,8 @@ where
 {
     let has = TypeReader::get_type_annotations(snapshot, type_.clone())
         .map_err(SchemaValidationError::ConceptRead)?
-        .iter()
-        .map(|(annotation, _)| annotation.clone().into().category())
+        .keys()
+        .map(|annotation| annotation.clone().into().category())
         .any(|found_category| found_category == annotation_category);
     Ok(has)
 }
@@ -634,8 +616,7 @@ pub(crate) fn type_get_annotation_by_category(
 ) -> Result<Option<Annotation>, SchemaValidationError> {
     let annotation = TypeReader::get_type_annotations(snapshot, type_.clone())
         .map_err(SchemaValidationError::ConceptRead)?
-        .into_iter()
-        .map(|(found_annotation, _)| found_annotation)
+        .into_keys()
         .find(|found_annotation| found_annotation.clone().into().category() == annotation_category);
     Ok(annotation.map(|val| val.clone().into()))
 }
@@ -650,10 +631,9 @@ where
 {
     let annotation = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
         .map_err(SchemaValidationError::ConceptRead)?
-        .into_iter()
-        .map(|(found_annotation, _)| found_annotation)
+        .into_keys()
         .find(|found_annotation| found_annotation.category() == annotation_category);
-    Ok(annotation.map(|val| val.clone()))
+    Ok(annotation)
 }
 
 pub(crate) fn type_get_owner_of_annotation_category<T: KindAPI<'static>>(
@@ -666,12 +646,9 @@ pub(crate) fn type_get_owner_of_annotation_category<T: KindAPI<'static>>(
     let found_annotation = annotations
         .iter()
         .map(|(existing_annotation, source)| (existing_annotation.clone().into().category(), source))
-        .find(|(existing_category, source)| existing_category.clone() == annotation_category);
+        .find(|(existing_category, _)| existing_category == &annotation_category);
 
-    Ok(match found_annotation {
-        Some((_, owner)) => Some(owner.clone()),
-        None => None,
-    })
+    Ok(found_annotation.map(|(_, owner)| owner.clone()))
 }
 
 pub(crate) fn edge_get_owner_of_annotation_category<CAP: Capability<'static>>(
@@ -684,12 +661,9 @@ pub(crate) fn edge_get_owner_of_annotation_category<CAP: Capability<'static>>(
     let found_annotation = annotations
         .iter()
         .map(|(existing_annotation, source)| (existing_annotation.clone().category(), source))
-        .find(|(existing_category, source)| existing_category.clone() == annotation_category);
+        .find(|(existing_category, _)| existing_category == &annotation_category);
 
-    Ok(match found_annotation {
-        Some((_, owner)) => Some(owner.clone()),
-        None => None,
-    })
+    Ok(found_annotation.map(|(_, owner)| owner.clone()))
 }
 
 pub(crate) fn is_ordering_compatible_with_distinct_annotation(ordering: Ordering, distinct_set: bool) -> bool {

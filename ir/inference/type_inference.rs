@@ -435,7 +435,7 @@ pub mod tests {
 
             let mut builder = FunctionalBlock::builder();
             let mut conjunction = builder.conjunction_mut();
-            let mut context = BlockContext::new();
+            let context = BlockContext::new();
             let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
 
             let callee_signature = FunctionSignature::new(

@@ -31,7 +31,7 @@ pub struct FunctionalBlock {
 }
 
 impl FunctionalBlock {
-    pub fn builder<'func>() -> FunctionalBlockBuilder {
+    pub fn builder() -> FunctionalBlockBuilder {
         FunctionalBlockBuilder::new()
     }
 
