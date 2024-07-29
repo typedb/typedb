@@ -13,7 +13,7 @@ use primitive::either::Either;
 use crate::expressions::{
     builtins::{
         binary::MathRemainderLong,
-        list_operations::{ListConstructor, ListIndexRange},
+        list_operations::{ListConstructor, ListIndex, ListIndexRange},
         load_cast::{CastLeftLongToDouble, CastRightLongToDouble, CastUnaryLongToDouble, LoadConstant, LoadVariable},
         operators as ops,
         unary::{MathCeilDouble, MathFloorDouble, MathRoundDouble},
@@ -23,42 +23,48 @@ use crate::expressions::{
     ExpressionEvaluationError,
 };
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ExpressionValue {
+    Single(Value<'static>),
+    List(Vec<Value<'static>>),
+}
+
 pub struct ExpressionEvaluationState<'constants> {
     constants: &'constants [Value<'static>],
-    variable_stack: Vec<Value<'static>>, // TODO: This can be Vec<Position> and we read from the row.
+    variable_stack: Vec<ExpressionValue>, // TODO: This can be Vec<Position> and we read from the row.
 
-    stack: Vec<Either<Value<'static>, Vec<Value<'static>>>>,
+    stack: Vec<ExpressionValue>,
     next_constant_index: usize,
 }
 
 impl<'constants> ExpressionEvaluationState<'constants> {
-    fn new(variable_stack: Vec<Value<'static>>, constants: &'constants [Value<'static>]) -> Self {
+    fn new(variable_stack: Vec<ExpressionValue>, constants: &'constants [Value<'static>]) -> Self {
         Self { constants, variable_stack, stack: Vec::new(), next_constant_index: 0 }
     }
 
     pub fn push_value(&mut self, value: Value<'static>) {
-        self.stack.push(Either::First(value))
+        self.stack.push(ExpressionValue::Single(value))
     }
 
     pub fn push_list(&mut self, value_list: Vec<Value<'static>>) {
-        self.stack.push(Either::Second(value_list))
+        self.stack.push(ExpressionValue::List(value_list))
     }
 
     pub fn pop_value(&mut self) -> Value<'static> {
         match self.stack.pop().unwrap() {
-            Either::First(value) => value,
+            ExpressionValue::Single(value) => value,
             _ => unreachable!(),
         }
     }
 
     pub fn pop_list(&mut self) -> Vec<Value<'static>> {
         match self.stack.pop().unwrap() {
-            Either::Second(value_list) => value_list,
+            ExpressionValue::List(value_list) => value_list,
             _ => unreachable!(),
         }
     }
 
-    pub fn next_variable(&mut self) -> Value<'static> {
+    pub fn next_variable(&mut self) -> ExpressionValue {
         self.variable_stack.pop().unwrap()
     }
 
@@ -74,8 +80,8 @@ pub struct ExpressionEvaluator {}
 impl ExpressionEvaluator {
     pub fn evaluate(
         compiled: CompiledExpressionTree,
-        input: HashMap<Variable, Value<'static>>,
-    ) -> Result<Either<Value<'static>, Vec<Value<'static>>>, ExpressionEvaluationError> {
+        input: HashMap<Variable, ExpressionValue>,
+    ) -> Result<ExpressionValue, ExpressionEvaluationError> {
         let mut variable_stack = Vec::new();
         for v in compiled.variables() {
             variable_stack.push(input.get(v).unwrap().clone());
@@ -98,7 +104,7 @@ fn evaluate_instruction(
         ExpressionOpCode::LoadConstant => LoadConstant::evaluate(state),
         ExpressionOpCode::LoadVariable => LoadVariable::evaluate(state),
         ExpressionOpCode::ListConstructor => ListConstructor::evaluate(state),
-        ExpressionOpCode::ListIndex => ListIndexRange::evaluate(state),
+        ExpressionOpCode::ListIndex => ListIndex::evaluate(state),
         ExpressionOpCode::ListIndexRange => ListIndexRange::evaluate(state),
 
         ExpressionOpCode::CastUnaryLongToDouble => CastUnaryLongToDouble::evaluate(state),

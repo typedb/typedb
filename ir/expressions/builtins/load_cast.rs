@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 use encoding::value::value_type::ValueTypeCategory;
 
 use crate::expressions::{
-    evaluator::ExpressionEvaluationState,
+    evaluator::{ExpressionEvaluationState, ExpressionValue},
     expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
     op_codes::ExpressionOpCode,
     todo__dissolve__builtins::ValueTypeTrait,
@@ -31,8 +31,10 @@ impl ExpressionInstruction for LoadVariable {
     const OP_CODE: ExpressionOpCode = ExpressionOpCode::LoadVariable;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let var = state.next_variable();
-        state.push_value(var);
+        match state.next_variable() {
+            ExpressionValue::Single(single) => state.push_value(single),
+            ExpressionValue::List(list) => state.push_list(list),
+        }
         Ok(())
     }
 }

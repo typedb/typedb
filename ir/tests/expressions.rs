@@ -11,7 +11,7 @@ use typeql::query::stage::Stage;
 use answer::variable::Variable;
 use encoding::value::value::Value;
 use encoding::value::value_type::ValueTypeCategory;
-use ir::expressions::evaluator::ExpressionEvaluator;
+use ir::expressions::evaluator::{ExpressionEvaluator, ExpressionValue};
 use ir::program::function_signature::HashMapFunctionIndex;
 use ir::translator::match_::translate_match;
 use ir::expressions::expression_compiler::{CompiledExpressionTree, ExpressionTreeCompiler};
@@ -63,7 +63,16 @@ fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ValueType
 macro_rules! as_value {
     ($actual:expr) => {
         match $actual {
-            Either::First(value) => value,
+            ExpressionValue::Single(value) => value,
+            _ => panic!("Called as_value on an expression that was a list")
+        }
+    }
+}
+
+macro_rules! as_list {
+    ($actual:expr) => {
+        match $actual {
+            ExpressionValue::List(list) => list,
             _ => panic!("Called as_value on an expression that was a list")
         }
     }
@@ -87,7 +96,11 @@ fn test_basic() {
         let (vars, expr) = compile_expression_via_match("$a + $b", HashMap::from([("a", ValueTypeCategory::Long), ("b", ValueTypeCategory::Long)])).unwrap();
         let (a, b) = ["a", "b"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
 
-        let result = ExpressionEvaluator::evaluate(expr, HashMap::from([(a, Value::Long(2)), (b, Value::Long(5))])).unwrap();
+        let inputs = HashMap::from([
+            (a, ExpressionValue::Single(Value::Long(2))),
+            (b, ExpressionValue::Single(Value::Long(5)))
+        ]);
+        let result = ExpressionEvaluator::evaluate(expr, inputs).unwrap();
         assert_eq!(as_value!(result), Value::Long(7));
     }
 }
@@ -222,5 +235,27 @@ fn test_functions() {
 
 #[test]
 fn list_ops() {
+    {
+        let (_, expr) = compile_expression_via_match("[12,34]", HashMap::new()).unwrap();
+        let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
+        assert_eq!(as_list!(result), vec![Value::Long(12),Value::Long(34)]);
+    }
 
+    {
+        let (vars, expr) = compile_expression_via_match("$y[1]", HashMap::from([("y", ValueTypeCategory::Long)])).unwrap();
+        let (y,) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
+
+        let inputs = HashMap::from([(y, ExpressionValue::List(vec![Value::Long(56), Value::Long(78), Value::Long(90)]))]);
+        let result = ExpressionEvaluator::evaluate(expr, inputs).unwrap();
+        assert_eq!(as_value!(result), Value::Long(78));
+    }
+
+    {
+        let (vars, expr) = compile_expression_via_match("$y[1..3]", HashMap::from([("y", ValueTypeCategory::Long)])).unwrap();
+        let (y,) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
+
+        let inputs = HashMap::from([(y, ExpressionValue::List(vec![Value::Long(09), Value::Long(87), Value::Long(65), Value::Long(43)]))]);
+        let result = ExpressionEvaluator::evaluate(expr, inputs).unwrap();
+        assert_eq!(as_list!(result), vec![Value::Long(87), Value::Long(65)]);
+    }
 }

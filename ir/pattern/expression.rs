@@ -89,12 +89,12 @@ impl BuiltInCall {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ListIndex {
     pub(crate) list_variable: Variable,
-    pub(crate) index: usize,
+    pub(crate) index_expression_index: usize,
 }
 
 impl ListIndex {
     pub(crate) fn new(list_variable: Variable, index: usize) -> ListIndex {
-        Self { list_variable, index }
+        Self { list_variable, index_expression_index: index }
     }
 }
 

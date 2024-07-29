@@ -131,7 +131,9 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 let ExpressionTreeCompiler { instructions, variable_stack, constant_stack, .. } = builder;
                 Ok(CompiledExpressionTree { instructions, variable_stack, constant_stack, return_type })
             }
-            Err(_) => todo!(),
+            Err(err) => {
+                todo!("Handle error during expression compilation")
+            }
         }
     }
 
@@ -142,8 +144,8 @@ impl<'this> ExpressionTreeCompiler<'this> {
             Expression::Operation(op) => self.compile_op(op),
             Expression::BuiltInCall(builtin) => self.compile_builtin(builtin),
             Expression::ListIndex(list_index) => self.compile_list_index(list_index),
-            Expression::List(_) => todo!(),
-            Expression::ListIndexRange(_) => todo!(),
+            Expression::List(list_constructor) => self.compile_list_constructor(list_constructor),
+            Expression::ListIndexRange(list_index_range) => self.compile_list_index_range(list_index_range),
         }
     }
 
@@ -170,17 +172,17 @@ impl<'this> ExpressionTreeCompiler<'this> {
         &mut self,
         list_constructor: &ListConstructor,
     ) -> Result<(), ExpressionCompilationError> {
-        for index in &list_constructor.item_expression_indices {
+        for index in list_constructor.item_expression_indices.iter().rev() {
             self.compile_recursive(*index)?;
         }
         self.compile_constant(&Value::Long(list_constructor.item_expression_indices.len() as i64))?;
         self.append_instruction(list_operations::ListConstructor::OP_CODE);
 
         let n_elements = match self.pop_mock()? {
-            Value::Long(value) => value,
+            Value::Long(value) => {}
             _ => unreachable!(),
         };
-
+        let n_elements = list_constructor.item_expression_indices.len();
         if n_elements > 0 {
             let mock_element = self.pop_mock()?;
             for _ in 1..list_constructor.item_expression_indices.len() {
@@ -190,7 +192,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
             }
             self.push_mock(mock_element)
         } else {
-            todo!("I dont' have a way to know the value type of empty lists");
+            todo!("I can't know the value type of empty lists"); // But do I need to?
         }
 
         Ok(())
@@ -199,8 +201,8 @@ impl<'this> ExpressionTreeCompiler<'this> {
     fn compile_list_index(&mut self, list_index: &ListIndex) -> Result<(), ExpressionCompilationError> {
         debug_assert!(self.variable_value_categories.contains_key(&list_index.list_variable));
 
+        self.compile_recursive(list_index.index_expression_index)?;
         self.compile_variable(&list_index.list_variable)?;
-        self.compile_constant(&Value::Long(list_index.index as i64))?;
         self.append_instruction(list_operations::ListIndex::OP_CODE);
 
         let mock_index = self.pop_mock()?;
@@ -218,15 +220,8 @@ impl<'this> ExpressionTreeCompiler<'this> {
     ) -> Result<(), ExpressionCompilationError> {
         debug_assert!(self.variable_value_categories.contains_key(&list_index_range.list_variable));
         self.compile_recursive(list_index_range.from_expression_index)?;
-        if self.peek_mock()?.value_type() != ValueType::Long {
-            Err(ExpressionCompilationError::ListIndexMustBeLong)?
-        }
         self.compile_recursive(list_index_range.to_expression_index)?;
-        if self.peek_mock()?.value_type() != ValueType::Long {
-            Err(ExpressionCompilationError::ListIndexMustBeLong)?
-        }
-
-        self.variable_stack.push(list_index_range.list_variable.clone());
+        self.compile_variable(&list_index_range.list_variable)?;
         self.append_instruction(list_operations::ListIndexRange::OP_CODE);
 
         let mock_list_variable = self.pop_mock()?;
@@ -235,6 +230,9 @@ impl<'this> ExpressionTreeCompiler<'this> {
             Err(ExpressionCompilationError::ListIndexMustBeLong)?
         }
         let mock_to_index = self.pop_mock()?;
+        if !matches!(mock_to_index, Value::Long(_)) {
+            Err(ExpressionCompilationError::ListIndexMustBeLong)?
+        }
 
         Ok(self.push_mock(mock_list_variable))
     }
