@@ -13,7 +13,6 @@ use ir::{
 };
 use storage::{snapshot::SnapshotGetError, ReadSnapshotOpenError};
 
-pub mod built_ins;
 pub mod function;
 mod function_cache;
 pub mod function_manager;

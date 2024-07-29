@@ -384,7 +384,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
                     Value::Long(_) => MathAbsLong::validate_and_append(self)?,
                     Value::Double(_) => MathAbsDouble::validate_and_append(self)?,
                     Value::Decimal(_) => todo!(),
-                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForOperation)?,
+                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
             BuiltInFunctionID::Ceil(idx) => {
@@ -392,7 +392,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 match self.peek_mock()? {
                     Value::Double(_) => MathCeilDouble::validate_and_append(self)?,
                     Value::Decimal(_) => todo!(),
-                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForOperation)?,
+                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
             BuiltInFunctionID::Floor(idx) => {
@@ -400,7 +400,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 match self.peek_mock()? {
                     Value::Double(_) => MathFloorDouble::validate_and_append(self)?,
                     Value::Decimal(_) => todo!(),
-                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForOperation)?,
+                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
             BuiltInFunctionID::Round(idx) => {
@@ -408,7 +408,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 match self.peek_mock()? {
                     Value::Double(_) => MathRoundDouble::validate_and_append(self)?,
                     Value::Decimal(_) => todo!(),
-                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForOperation)?,
+                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
         }

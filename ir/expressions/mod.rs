@@ -55,7 +55,7 @@ pub enum ExpressionCompilationError {
         left_category: ValueTypeCategory,
         right_category: ValueTypeCategory,
     },
-    UnsupportedArgumentsForOperation,
+    UnsupportedArgumentsForBuiltin,
     ListIndexMustBeLong,
     HeterogenousValuesInList,
 }
@@ -78,7 +78,7 @@ impl Error for ExpressionCompilationError {
             Self::InternalStackWasEmpty => None,
             Self::InternalUnexpectedValueType => None,
             Self::UnsupportedOperandsForOperation { .. } => None,
-            Self::UnsupportedArgumentsForOperation => None,
+            Self::UnsupportedArgumentsForBuiltin => None,
             Self::ListIndexMustBeLong => None,
             Self::HeterogenousValuesInList => None,
         }

@@ -7,6 +7,7 @@
 use std::marker::PhantomData;
 
 use encoding::value::value_type::ValueTypeCategory;
+use encoding::value::ValueEncodable;
 
 use crate::expressions::{
     evaluator::{ExpressionEvaluationState, ExpressionValue},
@@ -72,9 +73,9 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for Cas
     const OP_CODE: ExpressionOpCode = To::CAST_UNARY_OPCODE;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let right_before = From::from_value(state.pop_value()).map_err(|_| ExpressionEvaluationError::CastFailed)?;
-        let right_after = To::cast(right_before)?.into_value();
-        state.push_value(right_after);
+        let value_before = From::from_value(state.pop_value()).unwrap();
+        let value_after = To::cast(value_before)?.into_value();
+        state.push_value(value_after);
         Ok(())
     }
 }
@@ -85,7 +86,10 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastUnary<F
     }
 
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
-        let _right_before = builder.pop_mock()?;
+        let value_before = builder.pop_mock()?;
+        if value_before.value_type().category() != From::VALUE_TYPE_CATEGORY {
+            Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
+        }
         builder.push_mock(To::mock_value());
 
         builder.append_instruction(Self::OP_CODE);
@@ -98,7 +102,7 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for Cas
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
         let right = state.pop_value();
-        let left_before = From::from_value(state.pop_value()).map_err(|_| ExpressionEvaluationError::CastFailed)?;
+        let left_before = From::from_value(state.pop_value()).unwrap();
         let left_after = To::cast(left_before)?.into_value();
         state.push_value(left_after);
         state.push_value(right);
@@ -113,7 +117,10 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastBinaryL
 
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
         let right = builder.pop_mock()?;
-        let _left_before = builder.pop_mock()?;
+        let left_before = builder.pop_mock()?;
+        if left_before.value_type().category() != From::VALUE_TYPE_CATEGORY {
+            Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
+        }
         builder.push_mock(To::mock_value());
         builder.push_mock(right);
 
@@ -126,7 +133,7 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for Cas
     const OP_CODE: ExpressionOpCode = To::CAST_RIGHT_OPCODE;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let right_before = From::from_value(state.pop_value()).map_err(|_| ExpressionEvaluationError::CastFailed)?;
+        let right_before = From::from_value(state.pop_value()).unwrap();
         let right_after = To::cast(right_before)?.into_value();
         state.push_value(right_after);
         Ok(())
@@ -139,7 +146,10 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastBinaryR
     }
 
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
-        let _right_before = builder.pop_mock()?;
+        let right_before = builder.pop_mock()?;
+        if right_before.value_type().category() != From::VALUE_TYPE_CATEGORY {
+            Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
+        }
         builder.push_mock(To::mock_value());
 
         builder.append_instruction(Self::OP_CODE);
