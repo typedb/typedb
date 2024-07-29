@@ -36,7 +36,7 @@ use crate::executor::{
     VariablePosition,
 };
 
-pub(crate) struct HasReverseIteratorExecutor {
+pub(crate) struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<VariablePosition>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
@@ -56,7 +56,7 @@ pub(crate) type HasReverseUnboundedSortedOwnerSingle =
 pub(crate) type HasReverseBoundedSortedOwner =
     Map<Filter<HasReverseIterator, Arc<HasFilterFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
 
-impl HasReverseIteratorExecutor {
+impl HasReverseExecutor {
     pub(crate) fn new<Snapshot: ReadableSnapshot>(
         has: ir::pattern::constraint::Has<VariablePosition>,
         variable_modes: VariableModes,

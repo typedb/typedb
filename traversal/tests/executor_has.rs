@@ -270,3 +270,75 @@ fn traverse_has_unbounded_sorted_to_merged() {
         }
     }
 }
+
+#[test]
+fn traverse_has_reverse_unbounded_sorted_from() {
+    let (_tmp_dir, storage) = setup_storage();
+
+    setup_database(storage.clone());
+
+    // query:
+    //   match
+    //    $person has age $age;
+
+    // IR
+    let mut block = FunctionalBlock::builder();
+    let mut conjunction = block.conjunction_mut();
+    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_age_type = conjunction.get_or_declare_variable(&"age_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_age = conjunction.get_or_declare_variable(&"age").unwrap();
+
+    let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();
+
+    // add all constraints to make type inference return correct types, though we only plan Has's
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
+
+    let program = Program::new(block.finish(), Vec::new());
+
+    let annotated_program = {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, _) = load_managers(storage.clone());
+        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
+    };
+
+    // Plan
+    let steps = vec![Step::Intersection(IntersectionStep::new(
+        var_age,
+        vec![
+            Instruction::HasReverse(has_age.clone(), IterateBounds::None([])),
+        ],
+        &vec![var_person, var_age],
+    ))];
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+
+    // Executor
+    let executor = {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (_, thing_manager) = load_managers(storage.clone());
+        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
+    };
+
+    {
+        let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
+        let (_, thing_manager) = load_managers(storage.clone());
+        let thing_manager = Arc::new(thing_manager);
+
+        let iterator = executor.into_iterator(snapshot, thing_manager);
+
+        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+            iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
+        assert_eq!(rows.len(), 7);
+
+        for row in rows {
+            let r = row.unwrap();
+            assert_eq!(r.get_multiplicity(), 1);
+            print!("{}", r);
+        }
+    }
+}

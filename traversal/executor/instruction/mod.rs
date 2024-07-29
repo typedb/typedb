@@ -23,7 +23,7 @@ use crate::{
             comparison_executor::ComparisonIteratorExecutor,
             comparison_reverse_executor::ComparisonReverseIteratorExecutor,
             function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-            has_reverse_executor::HasReverseIteratorExecutor, isa_reverse_executor::IsaReverseExecutor,
+            has_reverse_executor::HasReverseExecutor, isa_reverse_executor::IsaReverseExecutor,
             iterator::TupleIterator, role_player_executor::RolePlayerIteratorExecutor,
             role_player_reverse_executor::RolePlayerReverseIteratorExecutor,
         },
@@ -31,6 +31,7 @@ use crate::{
     },
     planner::pattern_plan::{Instruction, InstructionAPI},
 };
+use crate::executor::instruction::InstructionExecutor::HasReverse;
 
 mod comparison_executor;
 mod comparison_reverse_executor;
@@ -47,7 +48,7 @@ pub(crate) enum InstructionExecutor {
     Isa(IsaReverseExecutor),
 
     Has(HasExecutor),
-    HasReverse(HasReverseIteratorExecutor),
+    HasReverse(HasReverseExecutor),
 
     RolePlayer(RolePlayerIteratorExecutor),
     RolePlayerReverse(RolePlayerReverseIteratorExecutor),
@@ -98,8 +99,17 @@ impl InstructionExecutor {
                 Ok(Self::Has(executor))
             }
             Instruction::HasReverse(has, _) => {
-                todo!()
-                // Ok(Self::HasReverse(HasReverseExecutor::new(has.into_ids(variable_to_position), mode)))
+                let has_owner = has.owner();
+                let executor = HasReverseExecutor::new(
+                    has.clone().into_ids(positions),
+                    variable_modes,
+                    sort_by_position,
+                    type_annotations.constraint_annotations(has.into()).unwrap().get_left_right().right_to_left(),
+                    type_annotations.variable_annotations(has_owner).unwrap().clone(),
+                    snapshot,
+                    thing_manager,
+                )?;
+                Ok(Self::HasReverse(executor))
             }
             Instruction::RolePlayer(rp, _) => {
                 todo!()
@@ -136,7 +146,7 @@ impl InstructionExecutor {
         match self {
             InstructionExecutor::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::HasReverse(executor) => todo!(),
+            InstructionExecutor::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::RolePlayer(executor) => todo!(),
             InstructionExecutor::RolePlayerReverse(executor) => todo!(),
             InstructionExecutor::FunctionCallBinding(executor) => todo!(),

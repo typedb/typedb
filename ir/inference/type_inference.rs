@@ -173,6 +173,10 @@ impl LeftRightAnnotations {
     pub fn left_to_right(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
         self.left_to_right.clone()
     }
+
+    pub fn right_to_left(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
+        self.right_to_left.clone()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
