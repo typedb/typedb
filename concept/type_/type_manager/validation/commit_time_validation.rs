@@ -754,7 +754,7 @@ impl CommitTimeValidation {
     ) -> Result<(), ConceptReadError> {
         let role_label =
             TypeReader::get_label(snapshot, role_type)?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?;
-        let relation_supertypes = TypeReader::get_supertypes(snapshot, relation_type.clone())?;
+        let relation_supertypes = TypeReader::get_supertypes_transitive(snapshot, relation_type.clone())?;
         let relation_subtypes = TypeReader::get_subtypes_transitive(snapshot, relation_type.clone())?;
 
         for supertype in relation_supertypes {

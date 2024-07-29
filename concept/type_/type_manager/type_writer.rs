@@ -27,9 +27,10 @@ use crate::{
     error::ConceptWriteError,
     type_::{
         attribute_type::AttributeType, owns::Owns, relates::Relates, relation_type::RelationType, role_type::RoleType,
-        sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride, KindAPI, Ordering,
+        sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride, Ordering,
     },
 };
+use crate::type_::TypeAPI;
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
     snapshot: PhantomData<Snapshot>,
@@ -61,7 +62,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     // Basic vertex type operations
-    pub(crate) fn storage_put_label<T: KindAPI<'static>>(snapshot: &mut Snapshot, type_: T, label: &Label<'_>) {
+    pub(crate) fn storage_put_label<T: TypeAPI<'static>>(snapshot: &mut Snapshot, type_: T, label: &Label<'_>) {
         debug_assert!(TypeReader::get_label(snapshot, type_.clone()).unwrap().is_none());
         Self::storage_put_type_vertex_property(snapshot, type_.clone(), Some(label.clone().into_owned()));
 
@@ -71,7 +72,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     // TODO: why is this "may delete label"?
-    pub(crate) fn storage_delete_label(snapshot: &mut Snapshot, type_: impl KindAPI<'static>) {
+    pub(crate) fn storage_delete_label(snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let existing_label = TypeReader::get_label(snapshot, type_.clone()).unwrap();
         if let Some(label) = existing_label {
             Self::storage_delete_type_vertex_property::<Label<'_>>(snapshot, type_);
@@ -80,9 +81,9 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         }
     }
 
-    pub(crate) fn storage_put_supertype<K>(snapshot: &mut Snapshot, subtype: K, supertype: K)
+    pub(crate) fn storage_put_supertype<T>(snapshot: &mut Snapshot, subtype: T, supertype: T)
     where
-        K: KindAPI<'static>,
+        T: TypeAPI<'static>,
     {
         let sub_edge = Sub::from_vertices(subtype.clone(), supertype.clone());
         snapshot.put(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
@@ -91,7 +92,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
 
     pub(crate) fn storage_may_delete_supertype<T>(snapshot: &mut Snapshot, subtype: T) -> Result<(), ConceptWriteError>
     where
-        T: KindAPI<'static>,
+        T: TypeAPI<'static>,
     {
         let supertype = TypeReader::get_supertype(snapshot, subtype.clone())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;

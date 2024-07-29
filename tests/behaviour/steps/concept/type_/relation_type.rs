@@ -313,7 +313,7 @@ pub async fn relation_role_supertypes_contain(
             .unwrap()
             .role();
         let supertype_labels = role
-            .get_supertypes(&tx.snapshot, &tx.type_manager)
+            .get_supertypes_transitive(&tx.snapshot, &tx.type_manager)
             .unwrap()
             .iter()
             .map(|supertype| {

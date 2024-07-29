@@ -748,6 +748,7 @@ impl BinaryConstraint for Isa<Variable> {
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
+<<<<<<< HEAD
         if self.isa_kind() == IsaKind::Subtype {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
@@ -786,6 +787,44 @@ impl BinaryConstraint for Isa<Variable> {
                             collector.insert(subtype);
                         });
                 }
+=======
+        match left_type {
+            TypeAnnotation::Attribute(attribute) => {
+                attribute
+                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
+                    .iter()
+                    .map(|subtype| TypeAnnotation::Attribute(subtype.clone().into_owned()))
+                    .for_each(|subtype| {
+                        collector.insert(subtype);
+                    });
+            }
+            TypeAnnotation::Entity(entity) => {
+                entity
+                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
+                    .iter()
+                    .map(|subtype| TypeAnnotation::Entity(subtype.clone().into_owned()))
+                    .for_each(|subtype| {
+                        collector.insert(subtype);
+                    });
+            }
+            TypeAnnotation::Relation(relation) => {
+                relation
+                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
+                    .iter()
+                    .map(|subtype| TypeAnnotation::Relation(subtype.clone().into_owned()))
+                    .for_each(|subtype| {
+                        collector.insert(subtype);
+                    });
+            }
+            TypeAnnotation::RoleType(role_type) => {
+                role_type
+                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
+                    .iter()
+                    .map(|subtype| TypeAnnotation::RoleType(subtype.clone().into_owned()))
+                    .for_each(|subtype| {
+                        collector.insert(subtype);
+                    });
+>>>>>>> 998ace020 (Refactor and fix unset operations. Start implementing annotation checks for instances of types)
             }
         }
         collector.insert(left_type.clone());
@@ -861,7 +900,7 @@ impl BinaryConstraint for Sub<Variable> {
         match left_type {
             TypeAnnotation::Attribute(attribute) => {
                 attribute
-                    .get_supertypes(seeder.snapshot, seeder.type_manager)?
+                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                     .iter()
                     .map(|subtype| subtype.clone().into_owned().into())
                     .for_each(|subtype| {
@@ -870,7 +909,7 @@ impl BinaryConstraint for Sub<Variable> {
             }
             TypeAnnotation::Entity(entity) => {
                 entity
-                    .get_supertypes(seeder.snapshot, seeder.type_manager)?
+                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                     .iter()
                     .map(|subtype| TypeAnnotation::Entity(subtype.clone().into_owned()))
                     .for_each(|subtype| {
@@ -879,7 +918,7 @@ impl BinaryConstraint for Sub<Variable> {
             }
             TypeAnnotation::Relation(relation) => {
                 relation
-                    .get_supertypes(seeder.snapshot, seeder.type_manager)?
+                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                     .iter()
                     .map(|subtype| TypeAnnotation::Relation(subtype.clone().into_owned()))
                     .for_each(|subtype| {
@@ -888,7 +927,7 @@ impl BinaryConstraint for Sub<Variable> {
             }
             TypeAnnotation::RoleType(role_type) => {
                 role_type
-                    .get_supertypes(seeder.snapshot, seeder.type_manager)?
+                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                     .iter()
                     .map(|subtype| TypeAnnotation::RoleType(subtype.clone().into_owned()))
                     .for_each(|subtype| {

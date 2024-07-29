@@ -372,7 +372,7 @@ pub async fn type_set_supertype(
                     tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
                 let supertype =
                     tx.type_manager.get_attribute_type(&tx.snapshot, &supertype_label.into_typedb()).unwrap().unwrap();
-                let res = thistype.set_supertype(&mut tx.snapshot, &tx.type_manager, supertype);
+                let res = thistype.set_supertype(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, supertype);
                 may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Entity => {
@@ -389,6 +389,39 @@ pub async fn type_set_supertype(
                 let supertype =
                     tx.type_manager.get_relation_type(&tx.snapshot, &supertype_label.into_typedb()).unwrap().unwrap();
                 let res = thistype.set_supertype(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, supertype);
+                may_error.check_concept_write_without_read_errors(&res);
+            }
+            Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),
+        };
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) unset supertype{may_error}")]
+pub async fn type_unset_supertype(
+    context: &mut Context,
+    root_label: RootLabel,
+    type_label: Label,
+    may_error: MayError,
+) {
+    with_schema_tx!(context, |tx| {
+        match root_label.into_typedb() {
+            Kind::Attribute => {
+                let thistype =
+                    tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+                let res = thistype.unset_supertype(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
+                may_error.check_concept_write_without_read_errors(&res);
+            }
+            Kind::Entity => {
+                let thistype =
+                    tx.type_manager.get_entity_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+                let res = thistype.unset_supertype(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
+                may_error.check_concept_write_without_read_errors(&res);
+            }
+            Kind::Relation => {
+                let thistype =
+                    tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+                let res = thistype.unset_supertype(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
                 may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),
@@ -417,7 +450,7 @@ pub async fn type_get_supertype(
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) get supertypes {contains_or_doesnt}:")]
-pub async fn get_supertypes_contain(
+pub async fn get_supertypes_transitive_contain(
     context: &mut Context,
     root_label: RootLabel,
     type_label: Label,
@@ -428,7 +461,7 @@ pub async fn get_supertypes_contain(
     with_read_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
             let supertype_labels = type_
-                .get_supertypes(&tx.snapshot, &tx.type_manager)
+                .get_supertypes_transitive(&tx.snapshot, &tx.type_manager)
                 .unwrap()
                 .iter()
                 .map(|supertype| {
@@ -442,7 +475,7 @@ pub async fn get_supertypes_contain(
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) get supertypes {is_empty_or_not}")]
-pub async fn get_supertypes_is_empty(
+pub async fn get_supertypes_transitive_is_empty(
     context: &mut Context,
     root_label: RootLabel,
     type_label: Label,
@@ -450,7 +483,7 @@ pub async fn get_supertypes_is_empty(
 ) {
     with_read_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
-            is_empty_or_not.check(type_.get_supertypes(&tx.snapshot, &tx.type_manager).unwrap().is_empty());
+            is_empty_or_not.check(type_.get_supertypes_transitive(&tx.snapshot, &tx.type_manager).unwrap().is_empty());
         });
     });
 }

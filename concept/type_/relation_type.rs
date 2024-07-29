@@ -118,6 +118,38 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_relation_type_label(snapshot, self.clone().into_owned())
     }
+
+    fn get_supertype(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<RelationType<'static>>, ConceptReadError> {
+        type_manager.get_relation_type_supertype(snapshot, self.clone().into_owned())
+    }
+
+    fn get_supertypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<RelationType<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_supertypes(snapshot, self.clone().into_owned())
+    }
+
+    fn get_subtypes<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<RelationType<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_subtypes(snapshot, self.clone().into_owned())
+    }
+
+    fn get_subtypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<RelationType<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_subtypes_transitive(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> KindAPI<'a> for RelationType<'a> {
@@ -161,14 +193,6 @@ impl<'a> RelationType<'a> {
         type_manager.set_relation_type_label(snapshot, self.clone().into_owned(), label)
     }
 
-    pub fn get_supertype(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Option<RelationType<'static>>, ConceptReadError> {
-        type_manager.get_relation_type_supertype(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_supertype(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -179,28 +203,13 @@ impl<'a> RelationType<'a> {
         type_manager.set_relation_type_supertype(snapshot, thing_manager, self.clone().into_owned(), supertype)
     }
 
-    pub fn get_supertypes<'m>(
+    pub fn unset_supertype(
         &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RelationType<'static>>>, ConceptReadError> {
-        type_manager.get_relation_type_supertypes(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_subtypes<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RelationType<'static>>>, ConceptReadError> {
-        type_manager.get_relation_type_subtypes(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_subtypes_transitive<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RelationType<'static>>>, ConceptReadError> {
-        type_manager.get_relation_type_subtypes_transitive(snapshot, self.clone().into_owned())
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptWriteError> {
+        type_manager.unset_relation_type_supertype(snapshot, thing_manager, self.clone().into_owned())
     }
 
     pub fn set_annotation(

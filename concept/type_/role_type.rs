@@ -164,6 +164,38 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_role_type_label(snapshot, self.clone().into_owned())
     }
+
+    fn get_supertype(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<RoleType<'static>>, ConceptReadError> {
+        type_manager.get_role_type_supertype(snapshot, self.clone().into_owned())
+    }
+
+    fn get_supertypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
+        type_manager.get_role_type_supertypes(snapshot, self.clone().into_owned())
+    }
+
+    fn get_subtypes<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
+        type_manager.get_role_type_subtypes(snapshot, self.clone().into_owned())
+    }
+
+    fn get_subtypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
+        type_manager.get_role_type_subtypes_transitive(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> KindAPI<'a> for RoleType<'a> {
@@ -195,38 +227,6 @@ impl<'a> RoleType<'a> {
         name: &str,
     ) -> Result<(), ConceptWriteError> {
         type_manager.set_role_type_name(snapshot, self.clone().into_owned(), name)
-    }
-
-    pub fn get_supertype(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Option<RoleType<'_>>, ConceptReadError> {
-        type_manager.get_role_type_supertype(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_supertypes<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
-        type_manager.get_role_type_supertypes(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_subtypes<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
-        type_manager.get_role_type_subtypes(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_subtypes_transitive<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
-        type_manager.get_role_type_subtypes_transitive(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(

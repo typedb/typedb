@@ -227,7 +227,7 @@ impl TypeCache {
         Some(T::get_cache(self, type_).common_type_cache().supertype.as_ref()?.clone())
     }
 
-    pub(crate) fn get_supertypes<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
+    pub(crate) fn get_supertypes_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
     where
         T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
         CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
@@ -426,6 +426,13 @@ impl TypeCache {
         plays: Plays<'c>,
     ) -> &'c HashMap<PlaysAnnotation, Plays<'static>> {
         &self.plays.get(&plays).unwrap().annotations
+    }
+
+    pub(crate) fn get_attribute_type_value_type_declared(
+        &self,
+        attribute_type: AttributeType<'_>,
+    ) -> &Option<ValueType> {
+        &AttributeType::get_cache(&self, attribute_type).value_type_declared
     }
 
     pub(crate) fn get_attribute_type_value_type(

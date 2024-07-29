@@ -109,7 +109,7 @@ fn entity_usage() {
 
         let supertype = child_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
         assert_eq!(supertype, person_type);
-        let supertypes = child_type.get_supertypes(&snapshot, &type_manager).unwrap();
+        let supertypes = child_type.get_supertypes_transitive(&snapshot, &type_manager).unwrap();
         assert_eq!(supertypes.len(), 1);
 
         // --- child owns age ---
@@ -178,7 +178,7 @@ fn entity_usage() {
 
         let supertype = child_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
         assert_eq!(supertype, person_type);
-        let supertypes = child_type.get_supertypes(&snapshot, &type_manager).unwrap();
+        let supertypes = child_type.get_supertypes_transitive(&snapshot, &type_manager).unwrap();
         assert_eq!(supertypes.len(), 1);
 
         // --- child owns age ---

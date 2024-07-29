@@ -61,6 +61,7 @@ pub(crate) struct RoleTypeCache {
 #[derive(Debug)]
 pub(crate) struct AttributeTypeCache {
     pub(super) common_type_cache: CommonTypeCache<AttributeType<'static>>,
+    pub(super) value_type_declared: Option<ValueType>,
     pub(super) value_type: Option<(ValueType, AttributeType<'static>)>,
     pub(super) owns_declared: HashSet<Owns<'static>>,
     pub(super) owns: HashMap<ObjectType<'static>, Owns<'static>>,
@@ -167,6 +168,7 @@ impl AttributeTypeCache {
         for attribute in attributes {
             let cache = AttributeTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, attribute.clone()),
+                value_type_declared: TypeReader::get_value_type_declared(snapshot, attribute.clone()).unwrap(),
                 value_type: TypeReader::get_value_type(snapshot, attribute.clone()).unwrap(),
                 owns_declared: TypeReader::get_capabilities_for_interface_declared::<Owns<'static>>(
                     snapshot,
@@ -314,7 +316,7 @@ impl<T: KindAPI<'static, SelfStatic = T>> CommonTypeCache<T> {
         let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_.clone()).unwrap();
         let annotations = TypeReader::get_type_annotations(snapshot, type_.clone()).unwrap();
         let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
-        let supertypes = TypeReader::get_supertypes(snapshot, type_.clone()).unwrap();
+        let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_.clone()).unwrap();
         let subtypes = TypeReader::get_subtypes(snapshot, type_.clone()).unwrap();
         let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_.clone()).unwrap();
         CommonTypeCache {

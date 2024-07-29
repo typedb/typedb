@@ -63,9 +63,9 @@ pub enum SchemaValidationError {
     ),
     OrderingDoesNotMatchWithSupertype(Label<'static>, Label<'static>, Ordering, Ordering),
     OrderingDoesNotMatchWithOverride(Label<'static>, Label<'static>, Label<'static>, Ordering, Ordering),
-    CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(Label<'static>, Label<'static>, Label<'static>),
-    CannotChangeSupertypeAsOwnsOverrideIsImplicitlyLost(Label<'static>, Label<'static>, Label<'static>),
-    CannotChangeSupertypeAsPlaysOverrideIsImplicitlyLost(Label<'static>, Label<'static>, Label<'static>),
+    CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(Label<'static>, Option<Label<'static>>, Label<'static>),
+    CannotChangeSupertypeAsOwnsOverrideIsImplicitlyLost(Label<'static>, Option<Label<'static>>, Label<'static>),
+    CannotChangeSupertypeAsPlaysOverrideIsImplicitlyLost(Label<'static>, Option<Label<'static>>, Label<'static>),
     CannotChangeSupertypeAsOwnsIsOverriddenInTheNewSupertype(Label<'static>, Label<'static>, Label<'static>),
     CannotChangeSupertypeAsPlaysIsOverriddenInTheNewSupertype(Label<'static>, Label<'static>, Label<'static>),
     RelatesOverrideIsNotInherited(Label<'static>, Label<'static>),
@@ -154,27 +154,28 @@ pub enum SchemaValidationError {
     ),
     ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(
         Label<'static>,
-        Label<'static>,
+        Option<Label<'static>>,
     ),
     CannotDeleteTypeWithExistingInstances(Label<'static>),
+    CannotUnsetValueTypeWithExistingInstances(Label<'static>),
     CannotSetAbstractToTypeWithExistingInstances(Label<'static>),
     CannotUnsetCapabilityWithExistingInstances(CapabilityKind, Label<'static>, Label<'static>, Label<'static>),
     CannotOverrideCapabilityWithExistingInstances(CapabilityKind, Label<'static>, Label<'static>, Label<'static>),
     CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(
         CapabilityKind,
         Label<'static>,
-        Label<'static>,
+        Option<Label<'static>>,
         Label<'static>,
         Label<'static>,
     ),
-    CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
+    CannotSetAnnotationForCapabilityAsExistingInstancesViolateItsConstraint(
         CapabilityKind,
         AnnotationCategory,
         Label<'static>,
         Label<'static>,
         Vec<(Label<'static>, Label<'static>)>,
     ),
-    CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
+    CannotChangeSupertypeAsUpdatedAnnotationsConstraintOnCapabilityIsViolatedByExistingInstances(
         CapabilityKind,
         AnnotationCategory,
         Label<'static>,
@@ -191,6 +192,19 @@ pub enum SchemaValidationError {
         Label<'static>,
         Label<'static>,
         Vec<(Label<'static>, Label<'static>)>,
+    ),
+    CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
+        Kind,
+        AnnotationCategory,
+        Label<'static>,
+        Vec<(Label<'static>)>,
+    ),
+    CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
+        Kind,
+        AnnotationCategory,
+        Label<'static>,
+        Option<Label<'static>>,
+        Vec<(Label<'static>)>,
     ),
 }
 
@@ -274,12 +288,13 @@ impl Error for SchemaValidationError {
             }
             Self::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(_, _) => None,
             Self::CannotDeleteTypeWithExistingInstances(_) => None,
+            Self::CannotUnsetValueTypeWithExistingInstances(_) => None,
             Self::CannotSetAbstractToTypeWithExistingInstances(_) => None,
             Self::CannotUnsetCapabilityWithExistingInstances(_, _, _, _) => None,
             Self::CannotOverrideCapabilityWithExistingInstances(_, _, _, _) => None,
             Self::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(_, _, _, _, _) => None,
-            Self::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(_, _, _, _, _) => None,
-            Self::CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
+            Self::CannotSetAnnotationForCapabilityAsExistingInstancesViolateItsConstraint(_, _, _, _, _) => None,
+            Self::CannotChangeSupertypeAsUpdatedAnnotationsConstraintOnCapabilityIsViolatedByExistingInstances(
                 _,
                 _,
                 _,
@@ -297,6 +312,8 @@ impl Error for SchemaValidationError {
                 _,
                 _,
             ) => None,
+            Self::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(_, _, _, _) => None,
+            Self::CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(_, _, _, _, _) => None,
         }
     }
 }

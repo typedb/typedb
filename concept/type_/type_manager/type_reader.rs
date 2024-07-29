@@ -226,7 +226,10 @@ impl TypeReader {
             .map(|(key, _)| Sub::<T>::decode_canonical_edge(Bytes::Array(key.into_byte_array())).supertype()))
     }
 
-    pub fn get_supertypes<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T>, ConceptReadError>
+    pub(crate) fn get_supertypes_transitive<T>(
+        snapshot: &impl ReadableSnapshot,
+        subtype: T,
+    ) -> Result<Vec<T>, ConceptReadError>
     where
         T: KindAPI<'static>,
     {

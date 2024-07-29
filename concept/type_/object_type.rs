@@ -29,6 +29,20 @@ use crate::{
     ConceptAPI,
 };
 
+
+macro_rules! with_object_type {
+    ($object_type:ident, |$type_:ident| $expr:expr) => {
+        match $object_type.clone() {
+            ObjectType::Entity($type_) => $expr,
+            ObjectType::Relation($type_) => $expr,
+        }
+    };
+}
+pub(crate) use with_object_type;
+use crate::thing::object::Object;
+use crate::thing::thing_manager::ThingManager;
+use crate::type_::ThingTypeAPI;
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ObjectType<'a> {
     Entity(EntityType<'a>),
@@ -36,36 +50,6 @@ pub enum ObjectType<'a> {
 }
 
 impl<'a> ObjectType<'a> {
-    pub fn get_supertype(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Option<ObjectType<'_>>, ConceptReadError> {
-        Ok(match self {
-            ObjectType::Entity(entity) => entity.get_supertype(snapshot, type_manager)?.map(ObjectType::Entity),
-            ObjectType::Relation(relation) => relation.get_supertype(snapshot, type_manager)?.map(ObjectType::Relation),
-        })
-    }
-
-    pub fn get_subtypes<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<Vec<ObjectType<'m>>, ConceptReadError> {
-        Ok(match self {
-            ObjectType::Entity(entity) => entity
-                .get_subtypes(snapshot, type_manager)?
-                .into_iter()
-                .map(|arg0: &EntityType<'_>| ObjectType::Entity(arg0.clone()))
-                .collect_vec(),
-            ObjectType::Relation(relation) => relation
-                .get_subtypes(snapshot, type_manager)?
-                .into_iter()
-                .map(|arg0: &RelationType<'_>| ObjectType::Relation(arg0.clone()))
-                .collect_vec(),
-        })
-    }
-
     pub(crate) fn into_owned(self) -> ObjectType<'static> {
         match self {
             Self::Entity(entity_type) => ObjectType::Entity(entity_type.into_owned()),
@@ -84,10 +68,9 @@ impl<'a> TypeVertexEncoding<'a> for ObjectType<'a> {
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
-        match self {
-            ObjectType::Entity(entity) => entity.into_vertex(),
-            ObjectType::Relation(relation) => relation.into_vertex(),
-        }
+        with_object_type!(self, |object| {
+            object.into_vertex()
+        })
     }
 }
 
@@ -109,10 +92,9 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
-        match self {
-            ObjectType::Entity(entity) => entity.set_owns(snapshot, type_manager, attribute_type, ordering),
-            ObjectType::Relation(relation) => relation.set_owns(snapshot, type_manager, attribute_type, ordering),
-        }
+        with_object_type!(self, |object| {
+            object.set_owns(snapshot, type_manager, attribute_type, ordering)
+        })
     }
 
     fn unset_owns(
@@ -122,12 +104,9 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        match self {
-            ObjectType::Entity(entity) => entity.unset_owns(snapshot, type_manager, thing_manager, attribute_type),
-            ObjectType::Relation(relation) => {
-                relation.unset_owns(snapshot, type_manager, thing_manager, attribute_type)
-            }
-        }
+        with_object_type!(self, |object| {
+            object.unset_owns(snapshot, type_manager, thing_manager, attribute_type)
+        })
     }
 
     fn get_owns_declared<'m>(
@@ -135,10 +114,9 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
-        match self {
-            ObjectType::Entity(entity) => entity.get_owns_declared(snapshot, type_manager),
-            ObjectType::Relation(relation) => relation.get_owns_declared(snapshot, type_manager),
-        }
+        with_object_type!(self, |object| {
+            object.get_owns_declared(snapshot, type_manager)
+        })
     }
 
     fn get_owns_attribute(
@@ -147,10 +125,9 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        match self {
-            ObjectType::Entity(entity) => entity.get_owns_attribute(snapshot, type_manager, attribute_type),
-            ObjectType::Relation(relation) => relation.get_owns_attribute(snapshot, type_manager, attribute_type),
-        }
+        with_object_type!(self, |object| {
+            object.get_owns_attribute(snapshot, type_manager, attribute_type)
+        })
     }
 
     fn get_owns<'m>(
@@ -158,10 +135,9 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
-        match self {
-            ObjectType::Entity(entity) => entity.get_owns(snapshot, type_manager),
-            ObjectType::Relation(relation) => relation.get_owns(snapshot, type_manager),
-        }
+        with_object_type!(self, |object| {
+            object.get_owns(snapshot, type_manager)
+        })
     }
 
     fn get_owns_overrides<'m>(
@@ -169,10 +145,9 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError> {
-        match self {
-            ObjectType::Entity(entity) => entity.get_owns_overrides(snapshot, type_manager),
-            ObjectType::Relation(relation) => relation.get_owns_overrides(snapshot, type_manager),
-        }
+        with_object_type!(self, |object| {
+            object.get_owns_overrides(snapshot, type_manager)
+        })
     }
 }
 
@@ -197,10 +172,9 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        match self {
-            ObjectType::Entity(entity) => entity.is_abstract(snapshot, type_manager),
-            ObjectType::Relation(relation) => relation.is_abstract(snapshot, type_manager),
-        }
+        with_object_type!(self, |object| {
+            object.is_abstract(snapshot, type_manager)
+        })
     }
 
     fn delete(
@@ -209,10 +183,9 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError> {
-        match self {
-            ObjectType::Entity(entity) => entity.delete(snapshot, type_manager, thing_manager),
-            ObjectType::Relation(relation) => relation.delete(snapshot, type_manager, thing_manager),
-        }
+        with_object_type!(self, |object| {
+            object.delete(snapshot, type_manager, thing_manager)
+        })
     }
 
     fn get_label<'m>(
@@ -220,10 +193,55 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
-        match self {
-            Self::Entity(entity_type) => entity_type.get_label(snapshot, type_manager),
-            Self::Relation(relation_type) => relation_type.get_label(snapshot, type_manager),
-        }
+        with_object_type!(self, |object| {
+            object.get_label(snapshot, type_manager)
+        })
+    }
+
+    fn get_supertype(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<ObjectType<'static>>, ConceptReadError> {
+        Ok(with_object_type!(self, |object| {
+            object.get_supertype(snapshot, type_manager)?.map(|type_| type_.into_owned_object_type())
+        }))
+    }
+
+    fn get_supertypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, ConceptReadError> {
+        Ok(MaybeOwns::Owned(
+            with_object_type!(self, |object| {
+                object.get_supertypes_transitive(snapshot, type_manager)?.iter().map(|type_| type_.clone().into_owned_object_type()).collect_vec()
+            })
+        ))
+    }
+
+    fn get_subtypes<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, ConceptReadError> {
+        Ok(MaybeOwns::Owned(
+            with_object_type!(self, |object| {
+                object.get_subtypes(snapshot, type_manager)?.iter().map(|type_| type_.clone().into_owned_object_type()).collect_vec()
+            })
+        ))
+    }
+
+    fn get_subtypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, ConceptReadError> {
+        Ok(MaybeOwns::Owned(
+            with_object_type!(self, |object| {
+                object.get_subtypes_transitive(snapshot, type_manager)?.iter().map(|type_| type_.clone().into_owned_object_type()).collect_vec()
+            })
+        ))
     }
 }
 
@@ -244,10 +262,9 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
-        match self {
-            ObjectType::Entity(entity) => entity.set_plays(snapshot, type_manager, role_type),
-            ObjectType::Relation(relation) => relation.set_plays(snapshot, type_manager, role_type),
-        }
+        with_object_type!(self, |object| {
+            object.set_plays(snapshot, type_manager, role_type)
+        })
     }
 
     fn unset_plays(
@@ -257,10 +274,9 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        match self {
-            ObjectType::Entity(entity) => entity.unset_plays(snapshot, type_manager, thing_manager, role_type),
-            ObjectType::Relation(relation) => relation.unset_plays(snapshot, type_manager, thing_manager, role_type),
-        }
+        with_object_type!(self, |object| {
+            object.unset_plays(snapshot, type_manager, thing_manager, role_type)
+        })
     }
 
     fn get_plays_declared<'m>(
@@ -268,10 +284,9 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
-        match self {
-            ObjectType::Entity(entity) => entity.get_plays_declared(snapshot, type_manager),
-            ObjectType::Relation(relation) => relation.get_plays_declared(snapshot, type_manager),
-        }
+        with_object_type!(self, |object| {
+            object.get_plays_declared(snapshot, type_manager)
+        })
     }
 
     fn get_plays_role(
@@ -280,10 +295,9 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-        match self {
-            ObjectType::Entity(entity) => entity.get_plays_role(snapshot, type_manager, role_type),
-            ObjectType::Relation(relation) => relation.get_plays_role(snapshot, type_manager, role_type),
-        }
+        with_object_type!(self, |object| {
+            object.get_plays_role(snapshot, type_manager, role_type)
+        })
     }
 
     fn get_plays<'m>(
@@ -291,12 +305,12 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
-        match self {
-            ObjectType::Entity(entity) => entity.get_plays(snapshot, type_manager),
-            ObjectType::Relation(relation) => relation.get_plays(snapshot, type_manager),
-        }
+        with_object_type!(self, |object| {
+            object.get_plays(snapshot, type_manager)
+        })
     }
 }
+<<<<<<< HEAD
 
 impl Hkt for ObjectType<'static> {
     type HktSelf<'a> = ObjectType<'a>;
@@ -316,3 +330,5 @@ use crate::{
     thing::{object::Object, relation::Relation, thing_manager::ThingManager},
     type_::ThingTypeAPI,
 };
+=======
+>>>>>>> 998ace020 (Refactor and fix unset operations. Start implementing annotation checks for instances of types)

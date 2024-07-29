@@ -118,6 +118,38 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_attribute_type_label(snapshot, self.clone().into_owned())
     }
+
+    fn get_supertype(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<AttributeType<'static>>, ConceptReadError> {
+        type_manager.get_attribute_type_supertype(snapshot, self.clone().into_owned())
+    }
+
+    fn get_supertypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_supertypes(snapshot, self.clone().into_owned())
+    }
+
+    fn get_subtypes<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_subtypes(snapshot, self.clone().into_owned())
+    }
+
+    fn get_subtypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_subtypes_transitive(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> KindAPI<'a> for AttributeType<'a> {
@@ -146,6 +178,15 @@ impl<'a> ThingTypeAPI<'a> for AttributeType<'a> {
 }
 
 impl<'a> AttributeType<'a> {
+    pub fn get_value_type_declared(
+        // TODO: add concept api tests
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<ValueType>, ConceptReadError> {
+        type_manager.get_attribute_type_value_type_declared(snapshot, self.clone().into_owned())
+    }
+
     pub fn get_value_type(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -169,8 +210,9 @@ impl<'a> AttributeType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.unset_value_type(snapshot, self.clone().into_owned())
+        type_manager.unset_value_type(snapshot, thing_manager, self.clone().into_owned())
     }
 
     pub fn set_label(
@@ -182,45 +224,23 @@ impl<'a> AttributeType<'a> {
         type_manager.set_label(snapshot, self.clone().into_owned(), label)
     }
 
-    pub fn get_supertype(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Option<AttributeType<'static>>, ConceptReadError> {
-        type_manager.get_attribute_type_supertype(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_supertype(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         supertype: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_attribute_type_supertype(snapshot, self.clone().into_owned(), supertype)
+        type_manager.set_attribute_type_supertype(snapshot, thing_manager, self.clone().into_owned(), supertype)
     }
 
-    pub fn get_supertypes<'m>(
+    pub fn unset_supertype(
         &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
-        type_manager.get_attribute_type_supertypes(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_subtypes<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
-        type_manager.get_attribute_type_subtypes(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_subtypes_transitive<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
-        type_manager.get_attribute_type_subtypes_transitive(snapshot, self.clone().into_owned())
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptWriteError> {
+        type_manager.unset_attribute_type_supertype(snapshot, thing_manager, self.clone().into_owned())
     }
 
     pub(crate) fn is_independent(

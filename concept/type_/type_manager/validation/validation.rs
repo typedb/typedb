@@ -5,6 +5,7 @@
  */
 
 use encoding::value::label::Label;
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -29,11 +30,31 @@ pub(crate) fn get_label_or_concept_read_err<'a>(
     TypeReader::get_label(snapshot, type_)?.ok_or(ConceptReadError::CorruptMissingLabelOfType)
 }
 
+pub(crate) fn get_opt_label_or_concept_read_err<'a>(
+    snapshot: &impl ReadableSnapshot,
+    type_: Option<impl TypeAPI<'a>>,
+) -> Result<Option<Label<'static>>, ConceptReadError> {
+    Ok(match type_ {
+        None => None,
+        Some(type_) => Some(get_label_or_concept_read_err(snapshot, type_)?),
+    })
+}
+
 pub(crate) fn get_label_or_schema_err<'a>(
     snapshot: &impl ReadableSnapshot,
     type_: impl TypeAPI<'a>,
 ) -> Result<Label<'static>, SchemaValidationError> {
     get_label_or_concept_read_err(snapshot, type_).map_err(SchemaValidationError::ConceptRead)
+}
+
+pub(crate) fn get_opt_label_or_schema_err<'a>(
+    snapshot: &impl ReadableSnapshot,
+    type_: Option<impl TypeAPI<'a>>,
+) -> Result<Option<Label<'static>>, SchemaValidationError> {
+    Ok(match type_ {
+        None => None,
+        Some(type_) => Some(get_label_or_schema_err(snapshot, type_)?),
+    })
 }
 
 pub(crate) fn validate_role_name_uniqueness_non_transitive(
@@ -65,7 +86,7 @@ pub(crate) fn is_overridden_interface_object_one_of_supertypes_or_self<T: KindAP
         return Ok(true);
     }
 
-    Ok(TypeReader::get_supertypes(snapshot, type_.clone())?.contains(&overridden.clone()))
+    Ok(TypeReader::get_supertypes_transitive(snapshot, type_.clone())?.contains(&overridden.clone()))
 }
 
 pub(crate) fn is_overridden_interface_object_declared_supertype_or_self<T: KindAPI<'static>>(
