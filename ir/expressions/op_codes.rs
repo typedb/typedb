@@ -7,9 +7,12 @@
 // TODO: Rewrite so we generate the dispatcher macro along with the enum. SEe https://cprohm.de/blog/rust-macros/
 #[derive(Debug)]
 pub enum ExpressionOpCode {
-    // Load
+    // Basics
     LoadConstant,
     LoadVariable,
+    ListConstructor,
+    ListIndex,
+    ListIndexRange,
 
     // Casts
     // TODO: We can't cast arguments for functions of arity > 2. It may require rewriting compilation.

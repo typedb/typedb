@@ -6,6 +6,7 @@
 use crate::expressions::{todo__dissolve__builtins::ValueTypeTrait, ExpressionEvaluationError};
 
 pub(crate) mod binary;
+pub(crate) mod list_operations;
 pub(crate) mod load_cast;
 pub(crate) mod operators;
 pub(crate) mod unary;

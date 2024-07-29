@@ -12,6 +12,7 @@ use std::{
 
 use answer::variable::Variable;
 use encoding::value::value::Value;
+use itertools::Itertools;
 
 use crate::{
     expressions::builtins::BuiltInFunctionID,
@@ -54,7 +55,7 @@ impl ExpressionTree {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Expression {
     Constant(Value<'static>),
     Variable(Variable),
@@ -141,7 +142,6 @@ impl Operation {
     }
 }
 impl ExpressionBinding<Variable> {
-    // TODO: Split expressions into Value & List expressions
     pub(crate) fn validate(&self, context: &mut BlockContext) -> Result<(), ExpressionDefinitionError> {
         if self.expression().tree.is_empty() {
             Err(ExpressionDefinitionError::EmptyExpressionTree {})
@@ -162,20 +162,27 @@ impl ExpressionBinding<Variable> {
                 Some(true) => self.validate_is_list(context, expr)?,
                 Some(false) => self.validate_is_value(context, expr)?,
             }
+            // recurse
             match expr {
                 Expression::Operation(operation) => {
+                    // TODO: We might support expressions on lists. In case. this should expect either
                     self.validate_recursive(context, operation.left_expression_index, Some(false))?;
                     self.validate_recursive(context, operation.left_expression_index, Some(false))?;
                 }
                 Expression::BuiltInCall(built_in) => {
+                    // TODO: We can get the categories from the builtin expected arguments?
                     built_in
                         .args_index
                         .iter()
-                        .map(|idx| self.validate_recursive(context, *idx, Some(false)))
+                        .map(|idx| self.validate_recursive(context, *idx, None))
                         .collect::<Result<Vec<_>, _>>()?;
                 }
                 Expression::List(list_constructor) => {
-                    todo!("Verify each term is a value")
+                    list_constructor
+                        .item_expression_indices
+                        .iter()
+                        .map(|index| self.validate_recursive(context, *index, Some(false)))
+                        .collect::<Result<Vec<_>, _>>()?;
                 }
                 Expression::ListIndexRange(_)
                 | Expression::ListIndex(_)
@@ -235,12 +242,6 @@ impl ExpressionBinding<Variable> {
 }
 
 // Display traits
-impl Hash for Expression {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        todo!()
-    }
-}
-
 impl Display for ExpressionTree {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()

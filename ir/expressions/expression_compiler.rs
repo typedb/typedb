@@ -9,12 +9,17 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use chrono::{NaiveDate, NaiveDateTime};
 use encoding::value::{
-    decimal_value::Decimal, duration_value::Duration, value::Value, value_type::ValueTypeCategory, ValueEncodable,
+    decimal_value::Decimal,
+    duration_value::Duration,
+    value::Value,
+    value_type::{ValueType, ValueTypeCategory},
+    ValueEncodable,
 };
 
 use crate::{
     expressions::{
         builtins::{
+            list_operations,
             load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
             unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
             BuiltInFunctionID,
@@ -24,7 +29,9 @@ use crate::{
         todo__dissolve__builtins::ValueTypeTrait,
         ExpressionCompilationError, ExpressionEvaluationError,
     },
-    pattern::expression::{BuiltInCall, Expression, ExpressionTree, Operation, Operator},
+    pattern::expression::{
+        BuiltInCall, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
+    },
 };
 
 // Keep implementations 0 sized
@@ -134,7 +141,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
             Expression::Variable(variable) => self.compile_variable(variable),
             Expression::Operation(op) => self.compile_op(op),
             Expression::BuiltInCall(builtin) => self.compile_builtin(builtin),
-            Expression::ListIndex(_) => todo!(),
+            Expression::ListIndex(list_index) => self.compile_list_index(list_index),
             Expression::List(_) => todo!(),
             Expression::ListIndexRange(_) => todo!(),
         }
@@ -157,6 +164,79 @@ impl<'this> ExpressionTreeCompiler<'this> {
         self.push_mock(Self::get_mock_value_for(self.variable_value_categories.get(&variable).unwrap().clone()));
 
         Ok(())
+    }
+
+    fn compile_list_constructor(
+        &mut self,
+        list_constructor: &ListConstructor,
+    ) -> Result<(), ExpressionCompilationError> {
+        for index in &list_constructor.item_expression_indices {
+            self.compile_recursive(*index)?;
+        }
+        self.compile_constant(&Value::Long(list_constructor.item_expression_indices.len() as i64))?;
+        self.append_instruction(list_operations::ListConstructor::OP_CODE);
+
+        let n_elements = match self.pop_mock()? {
+            Value::Long(value) => value,
+            _ => unreachable!(),
+        };
+
+        if n_elements > 0 {
+            let mock_element = self.pop_mock()?;
+            for _ in 1..list_constructor.item_expression_indices.len() {
+                if self.pop_mock()? != mock_element {
+                    Err(ExpressionCompilationError::HeterogenousValuesInList)?;
+                }
+            }
+            self.push_mock(mock_element)
+        } else {
+            todo!("I dont' have a way to know the value type of empty lists");
+        }
+
+        Ok(())
+    }
+
+    fn compile_list_index(&mut self, list_index: &ListIndex) -> Result<(), ExpressionCompilationError> {
+        debug_assert!(self.variable_value_categories.contains_key(&list_index.list_variable));
+
+        self.compile_variable(&list_index.list_variable)?;
+        self.compile_constant(&Value::Long(list_index.index as i64))?;
+        self.append_instruction(list_operations::ListIndex::OP_CODE);
+
+        let mock_index = self.pop_mock()?;
+        if !matches!(mock_index, Value::Long(_)) {
+            Err(ExpressionCompilationError::ListIndexMustBeLong)?
+        }
+        let list_variable_mock = self.pop_mock()?;
+        self.push_mock(list_variable_mock); // reuse
+        Ok(())
+    }
+
+    fn compile_list_index_range(
+        &mut self,
+        list_index_range: &ListIndexRange,
+    ) -> Result<(), ExpressionCompilationError> {
+        debug_assert!(self.variable_value_categories.contains_key(&list_index_range.list_variable));
+        self.compile_recursive(list_index_range.from_expression_index)?;
+        if self.peek_mock()?.value_type() != ValueType::Long {
+            Err(ExpressionCompilationError::ListIndexMustBeLong)?
+        }
+        self.compile_recursive(list_index_range.to_expression_index)?;
+        if self.peek_mock()?.value_type() != ValueType::Long {
+            Err(ExpressionCompilationError::ListIndexMustBeLong)?
+        }
+
+        self.variable_stack.push(list_index_range.list_variable.clone());
+        self.append_instruction(list_operations::ListIndexRange::OP_CODE);
+
+        let mock_list_variable = self.pop_mock()?;
+        let mock_from_index = self.pop_mock()?;
+        if !matches!(mock_from_index, Value::Long(_)) {
+            Err(ExpressionCompilationError::ListIndexMustBeLong)?
+        }
+        let mock_to_index = self.pop_mock()?;
+
+        Ok(self.push_mock(mock_list_variable))
     }
 
     fn compile_op(&mut self, operation: &Operation) -> Result<(), ExpressionCompilationError> {

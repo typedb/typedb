@@ -22,6 +22,7 @@ mod todo__dissolve__builtins;
 pub enum ExpressionEvaluationError {
     CheckedOperationFailed,
     CastFailed,
+    ListIndexOutOfRange,
 }
 
 impl Debug for ExpressionEvaluationError {
@@ -41,6 +42,7 @@ impl Error for ExpressionEvaluationError {
         match self {
             Self::CheckedOperationFailed => None,
             Self::CastFailed => None,
+            Self::ListIndexOutOfRange => None,
         }
     }
 }
@@ -54,6 +56,8 @@ pub enum ExpressionCompilationError {
         right_category: ValueTypeCategory,
     },
     UnsupportedArgumentsForOperation,
+    ListIndexMustBeLong,
+    HeterogenousValuesInList,
 }
 
 impl Debug for ExpressionCompilationError {
@@ -72,9 +76,11 @@ impl Error for ExpressionCompilationError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::InternalStackWasEmpty => None,
-            ExpressionCompilationError::InternalUnexpectedValueType => None,
-            ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => None,
-            ExpressionCompilationError::UnsupportedArgumentsForOperation => None,
+            Self::InternalUnexpectedValueType => None,
+            Self::UnsupportedOperandsForOperation { .. } => None,
+            Self::UnsupportedArgumentsForOperation => None,
+            Self::ListIndexMustBeLong => None,
+            Self::HeterogenousValuesInList => None,
         }
     }
 }

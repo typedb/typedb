@@ -6,6 +6,7 @@
 
 use std::collections::HashMap;
 use itertools::Itertools;
+use typeql::match_;
 use typeql::query::stage::Stage;
 use answer::variable::Variable;
 use encoding::value::value::Value;
@@ -17,6 +18,7 @@ use ir::expressions::expression_compiler::{CompiledExpressionTree, ExpressionTre
 use ir::expressions::ExpressionCompilationError;
 use ir::pattern::constraint::Constraint;
 use ir::PatternDefinitionError;
+use primitive::either::Either;
 
 #[derive(Debug)]
 pub enum PatternDefitionOrExpressionCompilationError {
@@ -58,19 +60,27 @@ fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ValueType
     }
 }
 
+macro_rules! as_value {
+    ($actual:expr) => {
+        match $actual {
+            Either::First(value) => value,
+            _ => panic!("Called as_value on an expression that was a list")
+        }
+    }
+}
 
 #[test]
 fn test_basic() {
     {
         let (_, expr) = compile_expression_via_match("3 + 5", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-        assert_eq!(result, Value::Long(8));
+        assert_eq!(as_value!(result), Value::Long(8));
     }
 
     {
         let (_, expr) = compile_expression_via_match("7.0e0 + 9.0e0", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-        assert_eq!(result, Value::Double(16.0));
+        assert_eq!(as_value!(result), Value::Double(16.0));
     }
 
     {
@@ -78,7 +88,7 @@ fn test_basic() {
         let (a, b) = ["a", "b"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
 
         let result = ExpressionEvaluator::evaluate(expr, HashMap::from([(a, Value::Long(2)), (b, Value::Long(5))])).unwrap();
-        assert_eq!(result, Value::Long(7));
+        assert_eq!(as_value!(result), Value::Long(7));
     }
 }
 
@@ -89,37 +99,37 @@ fn test_ops_long_double(){
         {
             let (_, expr) = compile_expression_via_match("12 + 4", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Long(16));
+            assert_eq!(as_value!(result), Value::Long(16));
         }
         {
             let (_, expr) = compile_expression_via_match("12 - 4", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Long(8));
+            assert_eq!(as_value!(result), Value::Long(8));
         }
 
         {
             let (_, expr) = compile_expression_via_match("12 * 4", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Long(48));
+            assert_eq!(as_value!(result), Value::Long(48));
         }
 
         {
             let (_, expr) = compile_expression_via_match("12 / 4", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Double(3.0));
+            assert_eq!(as_value!(result), Value::Double(3.0));
         }
 
         {
             let (_, expr) = compile_expression_via_match("12 % 5", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Long(2));
+            assert_eq!(as_value!(result), Value::Long(2));
         }
 
 
         {
             let (_, expr) = compile_expression_via_match("12 ^ 4", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Double(f64::powf(12.0, 4.0)));
+            assert_eq!(as_value!(result), Value::Double(f64::powf(12.0, 4.0)));
         }
     }
 
@@ -128,37 +138,37 @@ fn test_ops_long_double(){
         {
             let (_, expr) = compile_expression_via_match("12.0e0 + 4.0e0", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Double(16.0));
+            assert_eq!(as_value!(result), Value::Double(16.0));
         }
         {
             let (_, expr) = compile_expression_via_match("12.0e0 - 4.0e0", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Double(8.0));
+            assert_eq!(as_value!(result), Value::Double(8.0));
         }
 
         {
             let (_, expr) = compile_expression_via_match("12.0e0 * 4.0e0", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Double(48.0));
+            assert_eq!(as_value!(result), Value::Double(48.0));
         }
 
         {
             let (_, expr) = compile_expression_via_match("12.0e0 / 4.0e0", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Double(3.0));
+            assert_eq!(as_value!(result), Value::Double(3.0));
         }
 
         {
             let (_, expr) = compile_expression_via_match("12.0e0 % 5.0e0", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Double(2.0));
+            assert_eq!(as_value!(result), Value::Double(2.0));
         }
 
 
         {
             let (_, expr) = compile_expression_via_match("12.0e0 ^ 4.0e0", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(result, Value::Double( f64::powf(12.0, 4.0)));
+            assert_eq!(as_value!(result), Value::Double( f64::powf(12.0, 4.0)));
         }
     }
 
@@ -166,13 +176,13 @@ fn test_ops_long_double(){
     {
         let (_, expr) = compile_expression_via_match("12.0e0 + 4", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-        assert_eq!(result, Value::Double(16.0));
+        assert_eq!(as_value!(result), Value::Double(16.0));
     }
 
     {
         let (_, expr) = compile_expression_via_match("12 + 4.0e0", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-        assert_eq!(result, Value::Double(16.0));
+        assert_eq!(as_value!(result), Value::Double(16.0));
     }
 }
 
@@ -181,26 +191,26 @@ fn test_functions() {
     {
         let (_, expr) = compile_expression_via_match("floor(2.5e0)", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-        assert_eq!(result, Value::Long(2));
+        assert_eq!(as_value!(result), Value::Long(2));
     }
 
     {
         let (_, expr) = compile_expression_via_match("ceil(2.5e0)", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-        assert_eq!(result, Value::Long(3));
+        assert_eq!(as_value!(result), Value::Long(3));
     }
 
 
     {
         let (_, expr) = compile_expression_via_match("round(2.5e0)", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-        assert_eq!(result, Value::Long(2));
+        assert_eq!(as_value!(result), Value::Long(2));
     }
 
     {
         let (_, expr) = compile_expression_via_match("round(3.5e0)", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-        assert_eq!(result, Value::Long(4));
+        assert_eq!(as_value!(result), Value::Long(4));
     }
 
     assert!(
@@ -208,4 +218,9 @@ fn test_functions() {
             compile_expression_via_match("round(3.5e0, 4.5e0)", HashMap::new()),
             Err(PatternDefitionOrExpressionCompilationError::PatternDefinition(PatternDefinitionError::BuiltinArgumentCountMismatch { .. })))
     );
+}
+
+#[test]
+fn list_ops() {
+
 }

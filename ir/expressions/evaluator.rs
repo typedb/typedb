@@ -8,10 +8,12 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::value::value::Value;
+use primitive::either::Either;
 
 use crate::expressions::{
     builtins::{
         binary::MathRemainderLong,
+        list_operations::{ListConstructor, ListIndexRange},
         load_cast::{CastLeftLongToDouble, CastRightLongToDouble, CastUnaryLongToDouble, LoadConstant, LoadVariable},
         operators as ops,
         unary::{MathCeilDouble, MathFloorDouble, MathRoundDouble},
@@ -25,7 +27,7 @@ pub struct ExpressionEvaluationState<'constants> {
     constants: &'constants [Value<'static>],
     variable_stack: Vec<Value<'static>>, // TODO: This can be Vec<Position> and we read from the row.
 
-    stack: Vec<Value<'static>>,
+    stack: Vec<Either<Value<'static>, Vec<Value<'static>>>>,
     next_constant_index: usize,
 }
 
@@ -34,12 +36,26 @@ impl<'constants> ExpressionEvaluationState<'constants> {
         Self { constants, variable_stack, stack: Vec::new(), next_constant_index: 0 }
     }
 
-    pub fn push(&mut self, value: Value<'static>) {
-        self.stack.push(value)
+    pub fn push_value(&mut self, value: Value<'static>) {
+        self.stack.push(Either::First(value))
     }
 
-    pub fn pop(&mut self) -> Value<'static> {
-        self.stack.pop().unwrap()
+    pub fn push_list(&mut self, value_list: Vec<Value<'static>>) {
+        self.stack.push(Either::Second(value_list))
+    }
+
+    pub fn pop_value(&mut self) -> Value<'static> {
+        match self.stack.pop().unwrap() {
+            Either::First(value) => value,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn pop_list(&mut self) -> Vec<Value<'static>> {
+        match self.stack.pop().unwrap() {
+            Either::Second(value_list) => value_list,
+            _ => unreachable!(),
+        }
     }
 
     pub fn next_variable(&mut self) -> Value<'static> {
@@ -59,7 +75,7 @@ impl ExpressionEvaluator {
     pub fn evaluate(
         compiled: CompiledExpressionTree,
         input: HashMap<Variable, Value<'static>>,
-    ) -> Result<Value<'static>, ExpressionEvaluationError> {
+    ) -> Result<Either<Value<'static>, Vec<Value<'static>>>, ExpressionEvaluationError> {
         let mut variable_stack = Vec::new();
         for v in compiled.variables() {
             variable_stack.push(input.get(v).unwrap().clone());
@@ -81,6 +97,10 @@ fn evaluate_instruction(
     match op_code {
         ExpressionOpCode::LoadConstant => LoadConstant::evaluate(state),
         ExpressionOpCode::LoadVariable => LoadVariable::evaluate(state),
+        ExpressionOpCode::ListConstructor => ListConstructor::evaluate(state),
+        ExpressionOpCode::ListIndex => ListIndexRange::evaluate(state),
+        ExpressionOpCode::ListIndexRange => ListIndexRange::evaluate(state),
+
         ExpressionOpCode::CastUnaryLongToDouble => CastUnaryLongToDouble::evaluate(state),
         ExpressionOpCode::CastLeftLongToDouble => CastLeftLongToDouble::evaluate(state),
         ExpressionOpCode::CastRightLongToDouble => CastRightLongToDouble::evaluate(state),

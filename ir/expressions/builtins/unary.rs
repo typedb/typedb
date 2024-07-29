@@ -38,8 +38,8 @@ where
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let a1: T1 = T1::from_value(state.pop()).unwrap();
-        state.push(F::evaluate(a1)?.into_value());
+        let a1: T1 = T1::from_value(state.pop_value()).unwrap();
+        state.push_value(F::evaluate(a1)?.into_value());
         Ok(())
     }
 }

@@ -32,7 +32,7 @@ impl ExpressionInstruction for LoadVariable {
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
         let var = state.next_variable();
-        state.push(var);
+        state.push_value(var);
         Ok(())
     }
 }
@@ -41,7 +41,7 @@ impl ExpressionInstruction for LoadConstant {
     const OP_CODE: ExpressionOpCode = ExpressionOpCode::LoadConstant;
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
         let constant = state.next_constant();
-        state.push(constant);
+        state.push_value(constant);
         Ok(())
     }
 }
@@ -70,9 +70,9 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for Cas
     const OP_CODE: ExpressionOpCode = To::CAST_UNARY_OPCODE;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let right_before = From::from_value(state.pop()).map_err(|_| ExpressionEvaluationError::CastFailed)?;
+        let right_before = From::from_value(state.pop_value()).map_err(|_| ExpressionEvaluationError::CastFailed)?;
         let right_after = To::cast(right_before)?.into_value();
-        state.push(right_after);
+        state.push_value(right_after);
         Ok(())
     }
 }
@@ -95,11 +95,11 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for Cas
     const OP_CODE: ExpressionOpCode = To::CAST_LEFT_OPCODE;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let right = state.pop();
-        let left_before = From::from_value(state.pop()).map_err(|_| ExpressionEvaluationError::CastFailed)?;
+        let right = state.pop_value();
+        let left_before = From::from_value(state.pop_value()).map_err(|_| ExpressionEvaluationError::CastFailed)?;
         let left_after = To::cast(left_before)?.into_value();
-        state.push(left_after);
-        state.push(right);
+        state.push_value(left_after);
+        state.push_value(right);
         Ok(())
     }
 }
@@ -124,9 +124,9 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for Cas
     const OP_CODE: ExpressionOpCode = To::CAST_RIGHT_OPCODE;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let right_before = From::from_value(state.pop()).map_err(|_| ExpressionEvaluationError::CastFailed)?;
+        let right_before = From::from_value(state.pop_value()).map_err(|_| ExpressionEvaluationError::CastFailed)?;
         let right_after = To::cast(right_before)?.into_value();
-        state.push(right_after);
+        state.push_value(right_after);
         Ok(())
     }
 }
