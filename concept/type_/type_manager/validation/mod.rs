@@ -183,6 +183,15 @@ pub enum SchemaValidationError {
         Label<'static>,
         Vec<(Label<'static>, Label<'static>)>,
     ),
+    CannotChangeCapabilityOverrideAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
+        CapabilityKind,
+        AnnotationCategory,
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        Vec<(Label<'static>, Label<'static>)>,
+    ),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -271,6 +280,15 @@ impl Error for SchemaValidationError {
             Self::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(_, _, _, _, _) => None,
             Self::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(_, _, _, _, _) => None,
             Self::CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
+                _,
+                _,
+                _,
+                _,
+                _,
+                _,
+                _,
+            ) => None,
+            Self::CannotChangeCapabilityOverrideAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
                 _,
                 _,
                 _,

@@ -536,8 +536,8 @@ macro_rules! new_annotation_compatible_with_capability_and_overriding_capabiliti
             .map_err(SchemaValidationError::ConceptRead)?;
 
             let sorted_annotations =
-                Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations_to_revalidate)
-                    .map_err(|source| ConceptReadError::Annotation { source })?;
+                Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations)
+                    .map_err(|source| SchemaValidationError::ConceptRead(ConceptReadError::Annotation { source }))?;
 
             let violation = $validation_func(
                 snapshot,
@@ -592,20 +592,20 @@ macro_rules! changed_annotations_compatible_with_capability_and_overriding_capab
 
             let sorted_annotations =
                 Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations_to_revalidate)
-                    .map_err(|source| ConceptReadError::Annotation { source })?
+                    .map_err(|source| SchemaValidationError::ConceptRead(ConceptReadError::Annotation { source }))?;
 
             let violation =
                 $validation_func(snapshot, type_manager, thing_manager, capability.object(), capability.clone(), sorted_annotations)
                     .map_err(SchemaValidationError::ConceptRead)?;
 
             if let Some((violating_objects_with_interfaces, violated_constraint)) = violation {
-                Err(SchemaValidationError::CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
+                Err(SchemaValidationError::CannotChangeCapabilityOverrideAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
                     $capability_kind,
                     violated_constraint,
-                    get_label_or_schema_err(snapshot, type_.clone())?,
-                    get_label_or_schema_err(snapshot, new_supertype)?,
-                    get_label_or_schema_err(snapshot, type_)?,
+                    get_label_or_schema_err(snapshot, capability.object())?,
                     get_label_or_schema_err(snapshot, capability.interface())?,
+                    get_label_or_schema_err(snapshot, capability_override.object())?,
+                    get_label_or_schema_err(snapshot, capability_override.interface())?,
                     violating_objects_with_interfaces
                         .iter()
                         .map(|(violating_object, violating_interface)| {
@@ -628,14 +628,14 @@ macro_rules! changed_annotations_compatible_with_capability_and_overriding_capab
 
 macro_rules! changed_annotations_compatible_with_capability_and_overriding_capabilities_instances_on_supertype_change_validation {
     ($func_name:ident, $capability_kind:path, $capability_type:ident, $object_type:ident, $validation_func:path) => {
-        pub(crate) fn $func_name<'a>(
+        pub(crate) fn $func_name(
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
-            type_: $object_type<'a>,
-            new_supertype: $object_type<'a>,
+            type_: $object_type<'static>,
+            new_supertype: $object_type<'static>,
         ) -> Result<(), SchemaValidationError> {
-            let updated_capabilities_annotations = OperationTimeValidation::get_capabilities_with_updated_annotations_if_supertype_is_changed::<$capability_type<'a>>(
+            let updated_capabilities_annotations = OperationTimeValidation::get_capabilities_with_updated_annotations_if_supertype_is_changed::<$capability_type<'static>>(
                 snapshot,
                 type_.clone(),
                 new_supertype.clone()
@@ -644,7 +644,7 @@ macro_rules! changed_annotations_compatible_with_capability_and_overriding_capab
             for (capability, annotations_to_revalidate) in updated_capabilities_annotations {
                 let sorted_annotations =
                     Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations_to_revalidate)
-                        .map_err(|source| ConceptReadError::Annotation { source })?
+                        .map_err(|source| SchemaValidationError::ConceptRead(ConceptReadError::Annotation { source }))?;
 
                 let violation =
                     $validation_func(snapshot, type_manager, thing_manager, type_.clone(), capability.clone(), sorted_annotations)
@@ -2397,54 +2397,55 @@ impl OperationTimeValidation {
         let old_capabilities_declared = TypeReader::get_capabilities_declared::<CAP>(snapshot, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
 
-        let updated_annotations_from_overrides = old_capabilities_declared.iter().filter_map(|old_capability| {
-            let old_override = match TypeReader::get_capability_override(snapshot, old_capability.clone()).map_err(SchemaValidationError::ConceptRead) {
-                Ok(result) => result,
-                Err(err) => return err,
-            };
-            if let Some(old_override) = old_override {
-                if let Some(new_override) = new_inherited_capabilities
-                    .iter()
-                    .find(|new_capability| new_capability.interface() == old_override.interface())
-                {
-                    let old_declared_annotations =
-                        TypeReader::get_type_edge_annotations_declared(snapshot, old_capability.clone())
-                            .map_err(SchemaValidationError::ConceptRead)?;
-                    let old_override_annotations =
-                        TypeReader::get_type_edge_annotations(snapshot, old_override.clone())
-                            .map_err(SchemaValidationError::ConceptRead)?;
-                    let new_override_annotations =
-                        TypeReader::get_type_edge_annotations(snapshot, new_override.clone())
-                            .map_err(SchemaValidationError::ConceptRead)?;
+        let mut updated_annotations_from_overrides = Vec::new();
 
-                    // We expect that our declared annotations correctly narrow new inherited annotations
-                    // (should be checked on the schema level), so we don't consider them updated
-                    let updated_annotations = new_override_annotations
-                        .keys()
-                        .filter(|new_override_annotation| {
-                            !old_declared_annotations
-                                .iter()
-                                .map(|annotation| annotation.category())
-                                .contains(&new_override_annotation.category())
-                                && !old_override_annotations.contains_key(&new_override_annotation)
-                        })
-                        .map(|new_override_annotation| new_override_annotation.clone())
-                        .collect::<HashSet<Annotation>>();
-                    Some(Ok((old_capability.clone(), updated_annotations)))
-                } else {
-                    debug_assert!("Lost override should be banned on the schema-level check before this call!");
-                    None
-                }
+        for old_capability in old_capabilities_declared.iter() {
+            let old_override = match TypeReader::get_capability_override(snapshot, old_capability.clone()).map_err(SchemaValidationError::ConceptRead)? {
+                Some(result) => result,
+                None => continue,
+            };
+
+            if let Some((_, new_override)) = new_inherited_capabilities
+                .iter()
+                .find(|(_, new_override_capability)| new_override_capability.interface() == old_override.interface())
+            {
+                let old_declared_annotations =
+                    TypeReader::get_type_edge_annotations_declared(snapshot, old_capability.clone())
+                        .map_err(SchemaValidationError::ConceptRead)?;
+                let old_override_annotations =
+                    TypeReader::get_type_edge_annotations(snapshot, old_override.clone())
+                        .map_err(SchemaValidationError::ConceptRead)?;
+                let new_override_annotations =
+                    TypeReader::get_type_edge_annotations(snapshot, new_override.clone())
+                        .map_err(SchemaValidationError::ConceptRead)?;
+
+                // We expect that our declared annotations correctly narrow new inherited annotations
+                // (should be checked on the schema level), so we don't consider them updated
+                let updated_annotations = new_override_annotations
+                    .keys()
+                    .filter(|new_override_annotation| {
+                        !old_declared_annotations
+                            .iter()
+                            .map(|annotation| annotation.category())
+                            .contains(&new_override_annotation.category())
+                            && !old_override_annotations.contains_key(&new_override_annotation)
+                    })
+                    .map(|new_override_annotation| new_override_annotation.clone())
+                    .collect::<HashSet<Annotation>>();
+
+                updated_annotations_from_overrides.push((old_capability.clone(), updated_annotations));
             } else {
-                None
+                debug_assert!(false, "Lost override should be banned on the schema-level check before this call!");
             }
-        })?;
+        }
 
         let old_capabilities =
             TypeReader::get_capabilities::<CAP>(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
         let old_inherited_capabilities = old_capabilities.values().filter(|capability| capability.object() != type_);
 
-        let updated_annotations_from_inheritance = old_inherited_capabilities.filter_map(|old_capability| {
+        let mut updated_annotations_from_inheritance = Vec::new();
+
+        for old_capability in old_inherited_capabilities {
             if let Some(new_capability) = new_inherited_capabilities.get(&old_capability.interface()) {
                 let old_annotations = TypeReader::get_type_edge_annotations(snapshot, old_capability.clone())
                     .map_err(SchemaValidationError::ConceptRead)?;
@@ -2454,15 +2455,14 @@ impl OperationTimeValidation {
                 let updated_annotations = new_annotations
                     .keys()
                     .filter(|new_annotation| !old_annotations.contains_key(*new_annotation))
-                    .map(|new_annotation| new_annotation.clone())
+                    .cloned()
                     .collect::<HashSet<Annotation>>();
-                Some(Ok((old_capability.clone(), updated_annotations)))
-            } else {
-                None
-            }
-        })?;
 
-        updated_annotations_from_overrides.chain(updated_annotations_from_inheritance).collect()
+                updated_annotations_from_inheritance.push((old_capability.clone(), updated_annotations));
+            }
+        }
+
+        Ok(updated_annotations_from_overrides.into_iter().chain(updated_annotations_from_inheritance.into_iter()).collect())
     }
 
     fn get_updated_annotations_if_capability_sets_override<CAP: Capability<'static>>(
@@ -2475,6 +2475,7 @@ impl OperationTimeValidation {
         let old_annotations = TypeReader::get_type_edge_annotations(snapshot, capability.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
         let old_inherited_annotations = old_annotations
+            .into_iter()
             .filter(|(_, source)| &capability != source)
             .map(|(annotation, _)| annotation.clone())
             .collect::<HashSet<Annotation>>();
@@ -2483,14 +2484,14 @@ impl OperationTimeValidation {
 
         // We expect that our declared annotations correctly narrow new inherited annotations
         // (should be checked on the schema level), so we don't consider them updated
-        new_annotations
+        Ok(new_annotations
             .keys()
             .filter(|new_annotation| {
-                !declared_annotations.map(|annotation| annotation.category()).contains(&new_annotation.category())
+                !declared_annotations.iter().map(|annotation| annotation.category()).contains(&new_annotation.category())
                     && !old_inherited_annotations.contains(&new_annotation)
             })
             .map(|new_annotation| new_annotation.clone())
-            .collect::<HashSet<Annotation>>()
+            .collect::<HashSet<Annotation>>())
     }
 
     pub(crate) fn validate_deleted_struct_is_not_used(
