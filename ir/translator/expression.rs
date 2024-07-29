@@ -190,9 +190,8 @@ pub mod tests {
         .unwrap();
         let var_y = block.context().get_variable_named("y", block.scope_id()).unwrap();
 
-        let (lhs, rhs) = crate::pattern::constraint::tests::expression_binding_parts(
-            block.conjunction().constraints()[0].as_expression_binding().unwrap(),
-        );
+        let lhs = block.conjunction().constraints()[0].as_expression_binding().unwrap().left();
+        let rhs = block.conjunction().constraints()[0].as_expression_binding().unwrap().right();
         assert_eq!(lhs, var_y);
         assert_eq!(
             rhs,

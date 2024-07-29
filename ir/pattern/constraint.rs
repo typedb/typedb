@@ -800,14 +800,3 @@ impl<ID: IrID> fmt::Display for Comparison<ID> {
         todo!()
     }
 }
-
-#[cfg(test)]
-pub mod tests {
-    use answer::variable::Variable;
-
-    use crate::pattern::{constraint::ExpressionBinding, expression::Expression};
-
-    pub fn expression_binding_parts(binding: &ExpressionBinding<Variable>) -> (&Variable, &Vec<Expression>) {
-        (&binding.left, binding.expression.tree())
-    }
-}

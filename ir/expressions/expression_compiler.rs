@@ -34,7 +34,6 @@ use crate::{
     },
 };
 
-// Keep implementations 0 sized
 pub trait ExpressionInstruction: Sized {
     const OP_CODE: ExpressionOpCode;
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError>;

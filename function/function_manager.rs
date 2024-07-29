@@ -22,7 +22,6 @@ use encoding::{
 use ir::{
     inference::type_inference::infer_types_for_functions,
     program::{
-        function::BuiltInFunctions,
         function_signature::{
             FunctionID, FunctionIDTrait, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex,
         },

@@ -24,6 +24,12 @@ use crate::{
     PatternDefinitionError,
 };
 
+enum ExpectedArgumentType {
+    Single,
+    List,
+    Either,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ExpressionTree {
     tree: Vec<Expression>,
@@ -146,7 +152,7 @@ impl ExpressionBinding<Variable> {
         if self.expression().tree.is_empty() {
             Err(ExpressionDefinitionError::EmptyExpressionTree {})
         } else {
-            self.validate_recursive(context, self.expression().root(), None)
+            self.validate_recursive(context, self.expression().root(), ExpectedArgumentType::Either)
         }
     }
 
@@ -154,7 +160,7 @@ impl ExpressionBinding<Variable> {
         &self,
         context: &mut BlockContext,
         index: usize,
-        expects_list_opt: Option<bool>,
+        expects_list_opt: ExpectedArgumentType,
     ) -> Result<(), ExpressionDefinitionError> {
         if let Some(expr) = self.expression().tree.get(index) {
             match expects_list_opt {
@@ -165,23 +171,22 @@ impl ExpressionBinding<Variable> {
             // recurse
             match expr {
                 Expression::Operation(operation) => {
-                    // TODO: We might support expressions on lists. In case. this should expect either
-                    self.validate_recursive(context, operation.left_expression_index, Some(false))?;
-                    self.validate_recursive(context, operation.left_expression_index, Some(false))?;
+                    self.validate_recursive(context, operation.left_expression_index, ExpectedArgumentType::Either)?;
+                    self.validate_recursive(context, operation.left_expression_index, ExpectedArgumentType::Either)?;
                 }
                 Expression::BuiltInCall(built_in) => {
                     // TODO: We can get the categories from the builtin expected arguments?
                     built_in
                         .args_index
                         .iter()
-                        .map(|idx| self.validate_recursive(context, *idx, None))
+                        .map(|idx| self.validate_recursive(context, *idx, ExpectedArgumentType::Either))
                         .collect::<Result<Vec<_>, _>>()?;
                 }
                 Expression::List(list_constructor) => {
                     list_constructor
                         .item_expression_indices
                         .iter()
-                        .map(|index| self.validate_recursive(context, *index, Some(false)))
+                        .map(|index| self.validate_recursive(context, *index, ExpectedArgumentType::Single))
                         .collect::<Result<Vec<_>, _>>()?;
                 }
                 Expression::ListIndexRange(_)

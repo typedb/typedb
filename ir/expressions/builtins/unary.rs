@@ -17,7 +17,7 @@ use crate::expressions::{
 };
 
 pub trait UnaryExpression<T1: ValueTypeTrait, R: ValueTypeTrait> {
-    const OP_CODE: ExpressionOpCode; // Until we have a better solution, this helps the macro ensure the op code exists.
+    const OP_CODE: ExpressionOpCode;
     fn evaluate(a1: T1) -> Result<R, ExpressionEvaluationError>;
 }
 
