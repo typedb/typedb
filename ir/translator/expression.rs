@@ -8,6 +8,7 @@ use typeql::{
     common::token::{ArithmeticOperator, Function},
     expression::{BuiltinFunctionName, Expression as TypeQLExpression, FunctionName},
 };
+use answer::variable::Variable;
 
 use crate::{
     expressions::builtins::BuiltInFunctionID,
@@ -29,7 +30,7 @@ pub(crate) fn build_expression(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
     expression: &TypeQLExpression,
-) -> Result<ExpressionTree, PatternDefinitionError> {
+) -> Result<ExpressionTree<Variable>, PatternDefinitionError> {
     let mut tree = Vec::new();
     build_recursive(function_index, constraints, expression, &mut tree)?;
     Ok(ExpressionTree::new(tree))
@@ -39,7 +40,7 @@ fn build_recursive(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
     expression: &TypeQLExpression,
-    tree: &mut Vec<Expression>,
+    tree: &mut Vec<Expression<Variable>>,
 ) -> Result<usize, PatternDefinitionError> {
     let expression = match expression {
         TypeQLExpression::Paren(inner) => {
@@ -81,9 +82,8 @@ fn build_function(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
     function_call: &typeql::expression::FunctionCall,
-    tree: &mut Vec<Expression>,
-) -> Result<Expression, PatternDefinitionError> {
-    // TODO: Look up built-in
+    tree: &mut Vec<Expression<Variable>>,
+) -> Result<Expression<Variable>, PatternDefinitionError> {
     match &function_call.name {
         FunctionName::Builtin(builtin) => {
             let args = function_call
@@ -91,7 +91,7 @@ fn build_function(
                 .iter()
                 .map(|expr| build_recursive(function_index, constraints, expr, tree))
                 .collect::<Result<Vec<_>, _>>()?;
-            Ok(Expression::BuiltInCall(BuiltInCall::new(to_builtin_id(builtin, args.clone())?, args)))
+            Ok(Expression::BuiltInCall(BuiltInCall::new(to_builtin_id(builtin, &args)?, args)))
         }
         FunctionName::Identifier(identifier) => {
             let assign = constraints.create_anonymous_variable()?;
@@ -138,24 +138,24 @@ fn check_builtin_arg_count(
 
 fn to_builtin_id(
     typeql_id: &BuiltinFunctionName,
-    args: Vec<usize>,
+    args: &Vec<usize>,
 ) -> Result<BuiltInFunctionID, PatternDefinitionError> {
     Ok(match typeql_id.token {
         Function::Abs => {
             check_builtin_arg_count(typeql_id, args.len(), 1)?;
-            BuiltInFunctionID::Abs(args[0])
+            BuiltInFunctionID::Abs
         }
         Function::Ceil => {
             check_builtin_arg_count(typeql_id, args.len(), 1)?;
-            BuiltInFunctionID::Ceil(args[0])
+            BuiltInFunctionID::Ceil
         }
         Function::Floor => {
             check_builtin_arg_count(typeql_id, args.len(), 1)?;
-            BuiltInFunctionID::Floor(args[0])
+            BuiltInFunctionID::Floor
         }
         Function::Round => {
             check_builtin_arg_count(typeql_id, args.len(), 1)?;
-            BuiltInFunctionID::Round(args[0])
+            BuiltInFunctionID::Round
         }
         _ => todo!(),
     })

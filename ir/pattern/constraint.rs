@@ -237,7 +237,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
     pub fn add_expression(
         &mut self,
         variable: Variable,
-        expression: ExpressionTree,
+        expression: ExpressionTree<Variable>,
     ) -> Result<&ExpressionBinding<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
@@ -655,34 +655,36 @@ impl<ID: IrID> fmt::Display for Has<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ExpressionBinding<ID: IrID> {
     left: ID,
-    expression: ExpressionTree,
+    expression: ExpressionTree<ID>,
 }
 
 impl<ID: IrID> ExpressionBinding<ID> {
-    fn new(left: ID, expression: ExpressionTree) -> Self {
-        Self { left, expression }
-    }
-
-    pub fn left(&self) -> &ID {
-        &self.left
-    }
-
-    pub fn expression(&self) -> &ExpressionTree {
-        &self.expression
-    }
-
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
         [self.left].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         self.ids_assigned().for_each(|id| function(id, ConstraintIDSide::Left));
         // TODO
         // todo!("Do we really need positions here?")
         // self.expression().ids().for_each(|id| function(id, ConstraintIDSide::Right));
+    }
+}
+
+impl ExpressionBinding<Variable> {
+    fn new(left: Variable, expression: ExpressionTree<Variable>) -> Self {
+        Self { left, expression }
+    }
+
+    pub fn left(&self) -> &Variable {
+        &self.left
+    }
+
+    pub fn expression(&self) -> &ExpressionTree<Variable> {
+        &self.expression
     }
 }
 

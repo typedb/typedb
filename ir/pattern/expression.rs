@@ -12,7 +12,6 @@ use std::{
 
 use answer::variable::Variable;
 use encoding::value::value::Value;
-use itertools::Itertools;
 
 use crate::{
     expressions::builtins::BuiltInFunctionID,
@@ -23,6 +22,7 @@ use crate::{
     program::block::BlockContext,
     PatternDefinitionError,
 };
+use crate::pattern::IrID;
 
 enum ExpectedArgumentType {
     Single,
@@ -31,12 +31,12 @@ enum ExpectedArgumentType {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct ExpressionTree {
-    tree: Vec<Expression>,
+pub struct ExpressionTree<ID: IrID> {
+    tree: Vec<Expression<ID>>,
 }
 
-impl ExpressionTree {
-    pub(crate) fn new(expressions: Vec<Expression>) -> Self {
+impl ExpressionTree<Variable> {
+    pub(crate) fn new(expressions: Vec<Expression<Variable>>) -> Self {
         Self { tree: expressions }
     }
 
@@ -44,7 +44,7 @@ impl ExpressionTree {
         self.tree.len() - 1
     }
 
-    pub fn tree(&self) -> &Vec<Expression> {
+    pub fn tree(&self) -> &Vec<Expression<Variable>> {
         &self.tree
     }
 
@@ -62,15 +62,15 @@ impl ExpressionTree {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Expression {
+pub enum Expression<ID: IrID> {
     Constant(Value<'static>),
-    Variable(Variable),
+    Variable(ID),
     Operation(Operation),
     BuiltInCall(BuiltInCall), // Other functions must be re-written as an anonymous assignment.
-    ListIndex(ListIndex),
+    ListIndex(ListIndex<ID>),
 
     List(ListConstructor),
-    ListIndexRange(ListIndexRange),
+    ListIndexRange(ListIndexRange<ID>),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -93,13 +93,13 @@ impl BuiltInCall {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct ListIndex {
-    pub(crate) list_variable: Variable,
+pub struct ListIndex<ID: IrID> {
+    pub(crate) list_variable: ID,
     pub(crate) index_expression_index: usize,
 }
 
-impl ListIndex {
-    pub(crate) fn new(list_variable: Variable, index: usize) -> ListIndex {
+impl ListIndex<Variable> {
+    pub(crate) fn new(list_variable: Variable, index: usize) -> ListIndex<Variable> {
         Self { list_variable, index_expression_index: index }
     }
 }
@@ -116,18 +116,18 @@ impl ListConstructor {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct ListIndexRange {
-    pub(crate) list_variable: Variable,
+pub struct ListIndexRange<ID: IrID> {
+    pub(crate) list_variable: ID,
     pub(crate) from_expression_index: usize,
     pub(crate) to_expression_index: usize,
 }
 
-impl ListIndexRange {
+impl<ID: IrID> ListIndexRange<ID> {
     pub(crate) fn new(
-        list_variable: Variable,
+        list_variable: ID,
         from_expression_index: usize,
         to_expression_index: usize,
-    ) -> ListIndexRange {
+    ) -> Self {
         Self { list_variable, from_expression_index, to_expression_index }
     }
 }
@@ -164,9 +164,9 @@ impl ExpressionBinding<Variable> {
     ) -> Result<(), ExpressionDefinitionError> {
         if let Some(expr) = self.expression().tree.get(index) {
             match expects_list_opt {
-                None => {}
-                Some(true) => self.validate_is_list(context, expr)?,
-                Some(false) => self.validate_is_value(context, expr)?,
+                ExpectedArgumentType::Either => {}
+                ExpectedArgumentType::List => self.validate_is_list(context, expr)?,
+                ExpectedArgumentType::Single => self.validate_is_value(context, expr)?,
             }
             // recurse
             match expr {
@@ -200,7 +200,7 @@ impl ExpressionBinding<Variable> {
         }
     }
 
-    fn validate_is_list(&self, context: &mut BlockContext, expr: &Expression) -> Result<(), ExpressionDefinitionError> {
+    fn validate_is_list(&self, context: &mut BlockContext, expr: &Expression<Variable>) -> Result<(), ExpressionDefinitionError> {
         if let Expression::Variable(variable) = expr {
             context
                 .set_variable_category(
@@ -219,7 +219,7 @@ impl ExpressionBinding<Variable> {
     fn validate_is_value(
         &self,
         context: &mut BlockContext,
-        expr: &Expression,
+        expr: &Expression<Variable>,
     ) -> Result<(), ExpressionDefinitionError> {
         if let Expression::Variable(variable) = expr {
             context
@@ -236,7 +236,7 @@ impl ExpressionBinding<Variable> {
         }
     }
 
-    fn expr_is_list(&self, context: &mut BlockContext, expr: &Expression) -> bool {
+    fn expr_is_list(&self, context: &mut BlockContext, expr: &Expression<Variable>) -> bool {
         match expr {
             Expression::Constant(_) | Expression::Operation(_) | Expression::ListIndex(_) => false,
             Expression::List(_) | Expression::ListIndexRange(_) => true,
@@ -247,13 +247,13 @@ impl ExpressionBinding<Variable> {
 }
 
 // Display traits
-impl Display for ExpressionTree {
+impl<ID: IrID> Display for ExpressionTree<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }
 
-impl Display for Expression {
+impl<ID: IrID> Display for Expression<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }

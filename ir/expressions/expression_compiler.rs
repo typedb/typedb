@@ -74,7 +74,7 @@ impl CompiledExpressionTree {
 }
 
 pub struct ExpressionTreeCompiler<'this> {
-    ir_tree: &'this ExpressionTree,
+    ir_tree: &'this ExpressionTree<Variable>,
     variable_value_categories: HashMap<Variable, ValueTypeCategory>,
     mock_stack: Vec<Value<'static>>, // TODO: Remove or use
 
@@ -108,7 +108,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 }
 
 impl<'this> ExpressionTreeCompiler<'this> {
-    fn new(ir_tree: &'this ExpressionTree, variable_value_categories: HashMap<Variable, ValueTypeCategory>) -> Self {
+    fn new(ir_tree: &'this ExpressionTree<Variable>, variable_value_categories: HashMap<Variable, ValueTypeCategory>) -> Self {
         ExpressionTreeCompiler {
             ir_tree,
             variable_value_categories,
@@ -120,7 +120,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
     }
 
     pub fn compile(
-        ir_tree: &ExpressionTree,
+        ir_tree: &ExpressionTree<Variable>,
         variable_value_categories: HashMap<Variable, ValueTypeCategory>,
     ) -> Result<CompiledExpressionTree, ExpressionCompilationError> {
         let mut builder = ExpressionTreeCompiler::new(ir_tree, variable_value_categories);
@@ -197,7 +197,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         Ok(())
     }
 
-    fn compile_list_index(&mut self, list_index: &ListIndex) -> Result<(), ExpressionCompilationError> {
+    fn compile_list_index(&mut self, list_index: &ListIndex<Variable>) -> Result<(), ExpressionCompilationError> {
         debug_assert!(self.variable_value_categories.contains_key(&list_index.list_variable));
 
         self.compile_recursive(list_index.index_expression_index)?;
@@ -215,7 +215,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_list_index_range(
         &mut self,
-        list_index_range: &ListIndexRange,
+        list_index_range: &ListIndexRange<Variable>,
     ) -> Result<(), ExpressionCompilationError> {
         debug_assert!(self.variable_value_categories.contains_key(&list_index_range.list_variable));
         self.compile_recursive(list_index_range.from_expression_index)?;
@@ -377,8 +377,8 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_builtin(&mut self, builtin: &BuiltInCall) -> Result<(), ExpressionCompilationError> {
         match builtin.builtin_id {
-            BuiltInFunctionID::Abs(idx) => {
-                self.compile_recursive(idx)?;
+            BuiltInFunctionID::Abs => {
+                self.compile_recursive(builtin.args_index[0])?;
                 match self.peek_mock()? {
                     Value::Long(_) => MathAbsLong::validate_and_append(self)?,
                     Value::Double(_) => MathAbsDouble::validate_and_append(self)?,
@@ -386,24 +386,24 @@ impl<'this> ExpressionTreeCompiler<'this> {
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
-            BuiltInFunctionID::Ceil(idx) => {
-                self.compile_recursive(idx)?;
+            BuiltInFunctionID::Ceil => {
+                self.compile_recursive(builtin.args_index[0])?;
                 match self.peek_mock()? {
                     Value::Double(_) => MathCeilDouble::validate_and_append(self)?,
                     Value::Decimal(_) => todo!(),
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
-            BuiltInFunctionID::Floor(idx) => {
-                self.compile_recursive(idx)?;
+            BuiltInFunctionID::Floor => {
+                self.compile_recursive(builtin.args_index[0])?;
                 match self.peek_mock()? {
                     Value::Double(_) => MathFloorDouble::validate_and_append(self)?,
                     Value::Decimal(_) => todo!(),
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
-            BuiltInFunctionID::Round(idx) => {
-                self.compile_recursive(idx)?;
+            BuiltInFunctionID::Round => {
+                self.compile_recursive(builtin.args_index[0])?;
                 match self.peek_mock()? {
                     Value::Double(_) => MathRoundDouble::validate_and_append(self)?,
                     Value::Decimal(_) => todo!(),

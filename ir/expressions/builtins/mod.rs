@@ -20,10 +20,10 @@ fn check_operation<T>(checked_operation_result: Option<T>) -> Result<T, Expressi
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum BuiltInFunctionID {
-    Abs(usize),
-    Ceil(usize),
-    Floor(usize),
-    Round(usize),
+    Abs,
+    Ceil,
+    Floor,
+    Round,
     // TODO: The below
     // Max,
     // Min,
