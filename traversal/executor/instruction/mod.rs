@@ -68,9 +68,7 @@ impl InstructionExecutor {
         let variable_modes = VariableModes::new_for(&instruction, positions, selected, named);
         let sort_by_position = sort_by.map(|var| *positions.get(&var).unwrap());
         match instruction {
-            Instruction::Isa(isa, _) => {
-                todo!()
-            }
+            Instruction::Isa(isa, _) => todo!(),
             Instruction::IsaReverse(isa, _) => {
                 let thing = isa.thing();
                 let provider = IsaReverseExecutor::new(
@@ -194,7 +192,7 @@ impl VariableModes {
     pub(crate) fn new_for(
         instruction: &Instruction,
         variable_positions: &HashMap<Variable, VariablePosition>,
-        selected: &Vec<Variable>,
+        selected: &[Variable],
         named: &HashMap<Variable, String>,
     ) -> Self {
         let constraint = instruction.constraint();

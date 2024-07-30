@@ -6,7 +6,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::OwnerAPI};
+use concept::error::ConceptReadError;
 use encoding::value::label::Label;
 use ir::{
     inference::type_inference::infer_types,
@@ -91,7 +91,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_dog,
         vec![Instruction::IsaReverse(isa.clone(), IterateBounds::None([]))],
-        &vec![var_dog, var_dog_type],
+        &[var_dog, var_dog_type],
     ))];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());

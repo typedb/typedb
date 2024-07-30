@@ -516,7 +516,7 @@ impl<ID: IrID> Isa<ID> {
         F: FnMut(ID, ConstraintIDSide),
     {
         function(self.thing, ConstraintIDSide::Left);
-        function(self.type_, ConstraintIDSide::Right)
+        function(self.type_, ConstraintIDSide::Right);
     }
 
     pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> Isa<T> {

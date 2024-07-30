@@ -83,7 +83,7 @@ pub(crate) fn apply_commits(
         return Ok(());
     }
 
-    let isolation_manager = IsolationManager::new(recovered_commits.first_key_value().unwrap().0.clone());
+    let isolation_manager = IsolationManager::new(*recovered_commits.first_key_value().unwrap().0);
 
     let mut pending_writes = Vec::new();
     for (commit_sequence_number, commit) in recovered_commits {

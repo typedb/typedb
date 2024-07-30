@@ -8,7 +8,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics},
-    type_::{Ordering, OwnerAPI},
+    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use ir::{
@@ -19,6 +19,8 @@ use ir::{
     },
     translator::match_::translate_match,
 };
+use itertools::Itertools;
+use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,
@@ -48,8 +50,17 @@ fn test_planning_traversal() {
     age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+    const CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None));
+    person_type
+        .set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered)
+        .unwrap()
+        .set_annotation(&mut snapshot, &type_manager, CARDINALITY_ANY)
+        .unwrap();
+    person_type
+        .set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered)
+        .unwrap()
+        .set_annotation(&mut snapshot, &type_manager, CARDINALITY_ANY)
+        .unwrap();
 
     let person = [
         thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
@@ -123,5 +134,22 @@ fn test_planning_traversal() {
         let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
         let (_, thing_manager) = load_managers(storage.clone());
         let thing_manager = Arc::new(thing_manager);
+
+        let iterator = executor.into_iterator(snapshot, thing_manager);
+
+        let rows = iterator
+            .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+            .into_iter()
+            .try_collect::<_, Vec<_>, _>()
+            .unwrap();
+
+        assert_eq!(rows.len(), 7);
+
+        for row in rows {
+            for value in row {
+                print!("{}, ", value);
+            }
+            println!()
+        }
     }
 }

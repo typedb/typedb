@@ -25,6 +25,7 @@ rust_test(
     deps = executor_deps + [
         "//util/test:test_utils",
         "@vaticle_typeql//rust:typeql",
+        "@crates//:itertools",
     ],
 )
 

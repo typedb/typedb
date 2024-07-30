@@ -103,13 +103,13 @@ impl<'a> Attribute<'a> {
         thing_manager.get_owners_by_type(snapshot, self.as_reference(), owner_type)
     }
 
-    pub fn get_owners_by_type_range<'m>(
+    pub fn get_owners_by_type_range(
         &self,
-        snapshot: &'m impl ReadableSnapshot,
-        type_manager: &'m ThingManager,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
         owner_type_range: KeyRange<ObjectType<'static>>,
     ) -> HasReverseIterator {
-        todo!()
+        thing_manager.get_owners_by_type_range(snapshot, self.as_reference(), owner_type_range)
     }
 
     pub fn next_possible(&self) -> Attribute<'static> {

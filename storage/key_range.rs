@@ -17,11 +17,11 @@ pub struct KeyRange<T: Prefix> {
 }
 
 impl<T: Prefix> KeyRange<T> {
-    fn new(start: T, end: RangeEnd<T>) -> Self {
+    pub fn new_variable_width(start: T, end: RangeEnd<T>) -> Self {
         Self { start, end, fixed_width_keys: false }
     }
 
-    fn new_fixed_width(start: T, end: RangeEnd<T>) -> Self {
+    pub fn new_fixed_width(start: T, end: RangeEnd<T>) -> Self {
         Self { start, end, fixed_width_keys: true }
     }
 
@@ -68,7 +68,7 @@ impl<T: Prefix> KeyRange<T> {
         let fixed_width = fixed_width_mapper(fixed_width);
         match fixed_width {
             true => KeyRange::new_fixed_width(start, end),
-            false => KeyRange::new(start, end),
+            false => KeyRange::new_variable_width(start, end),
         }
     }
 
@@ -142,7 +142,7 @@ where
     pub fn get_value(&self) -> Option<&T> {
         match self {
             RangeEnd::SameAsStart | RangeEnd::Unbounded => None,
-            RangeEnd::Inclusive(value) | RangeEnd::Exclusive(value) => Some(&value),
+            RangeEnd::Inclusive(value) | RangeEnd::Exclusive(value) => Some(value),
         }
     }
 }
