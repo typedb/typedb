@@ -73,8 +73,8 @@ fn test_struct_definition() {
     let definition_key_generator = DefinitionKeyGenerator::new();
 
     let mut struct_0_definition = StructDefinition::new("struct_0".to_owned());
-    struct_0_definition.add_field("f0_bool".to_owned(), ValueType::Boolean, false).unwrap();
-    struct_0_definition.add_field("f1_long".to_owned(), ValueType::Long, false).unwrap();
+    struct_0_definition.add_field(&"f0_bool", ValueType::Boolean, false).unwrap();
+    struct_0_definition.add_field(&"f1_long", ValueType::Long, false).unwrap();
     let struct_0_key = define_struct(&mut snapshot, &definition_key_generator, struct_0_definition.clone());
 
     let mut struct_1_definition = StructDefinition::new("struct_1".to_owned());

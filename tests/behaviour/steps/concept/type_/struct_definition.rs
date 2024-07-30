@@ -82,7 +82,7 @@ pub async fn struct_create_field_with_value_type(
         may_error.check_concept_write_without_read_errors(&tx.type_manager.create_struct_field(
             &mut tx.snapshot,
             definition_key.clone(),
-            field_label.into_typedb().scoped_name().as_str().to_owned(),
+            field_label.into_typedb().scoped_name().as_str(),
             parsed_value_type,
             optional.into_typedb(),
         ));
