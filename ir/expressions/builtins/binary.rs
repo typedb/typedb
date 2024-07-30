@@ -69,7 +69,7 @@ where
     }
 }
 
-macro_rules! binary_instr {
+macro_rules! binary_instruction {
     ( $( $name:ident = $impl_name:ident($a1:ident: $t1:ty, $a2:ident: $t2:ty) -> $r:ty $impl_code:block )* ) => { $(
         pub type $name = Binary<$t1, $t2, $r, $impl_name>;
         pub struct $impl_name {}
@@ -81,9 +81,9 @@ macro_rules! binary_instr {
         })*
     };
 }
-pub(crate) use binary_instr;
+pub(crate) use binary_instruction;
 use encoding::value::value::FromAndToValue;
 
-binary_instr! {
+binary_instruction! {
     MathRemainderLong = MathRemainderLongImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }
 }

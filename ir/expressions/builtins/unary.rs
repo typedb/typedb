@@ -64,7 +64,7 @@ where
     }
 }
 
-macro_rules! unary_instr {
+macro_rules! unary_instruction {
     ( $( $name:ident = $impl_name:ident($a1:ident: $t1:ty) -> $r:ty $impl_code:block )* ) => { $(
         pub type $name = Unary<$t1, $r, $impl_name>;
         pub struct $impl_name {}
@@ -76,9 +76,9 @@ macro_rules! unary_instr {
         })*
     };
 }
-pub(crate) use unary_instr;
+pub(crate) use unary_instruction;
 
-unary_instr! {
+unary_instruction! {
     MathAbsLong = MathAbsLongImpl(a1: i64) -> i64 { Ok(i64::abs(a1)) }
     MathAbsDouble = MathAbsDoubleImpl(a1: f64) -> f64 { Ok(f64::abs(a1)) }
     MathRoundDouble = MathRoundDoubleImpl(a1: f64) -> i64 { Ok(f64::round_ties_even(a1) as i64) } // TODO: Should this be round_ties_even?
