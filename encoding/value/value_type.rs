@@ -159,6 +159,21 @@ impl ValueTypeCategory {
             ValueTypeCategory::Date => &[ValueTypeCategory::Date],
         }
     }
+
+    pub fn try_into_value_type(self) -> Option<ValueType> {
+        match self {
+            ValueTypeCategory::Boolean => Some(ValueType::Boolean),
+            ValueTypeCategory::Long => Some(ValueType::Long),
+            ValueTypeCategory::Double => Some(ValueType::Double),
+            ValueTypeCategory::Decimal => Some(ValueType::Decimal),
+            ValueTypeCategory::Date => Some(ValueType::Date),
+            ValueTypeCategory::DateTime => Some(ValueType::DateTime),
+            ValueTypeCategory::DateTimeTZ => Some(ValueType::DateTimeTZ),
+            ValueTypeCategory::Duration => Some(ValueType::Duration),
+            ValueTypeCategory::String => Some(ValueType::String),
+            ValueTypeCategory::Struct => None,
+        }
+    }
 }
 
 impl Display for ValueTypeCategory {

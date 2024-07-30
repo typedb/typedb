@@ -6,3 +6,4 @@
 mod define;
 mod error;
 mod query_manager;
+mod util;
