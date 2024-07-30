@@ -22,11 +22,13 @@ use encoding::{
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::WritableSnapshot;
-use crate::error::{ConceptReadError, ConceptWriteError};
 
-use crate::type_::{
-    attribute_type::AttributeType, owns::Owns, relates::Relates, relation_type::RelationType, role_type::RoleType,
-    sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride, KindAPI, Ordering,
+use crate::{
+    error::{ConceptReadError, ConceptWriteError},
+    type_::{
+        attribute_type::AttributeType, owns::Owns, relates::Relates, relation_type::RelationType, role_type::RoleType,
+        sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride, KindAPI, Ordering,
+    },
 };
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
@@ -96,7 +98,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         T: KindAPI<'static>,
     {
         let supertype = TypeReader::get_supertype(snapshot, subtype.clone())
-            .map_err(|err| ConceptWriteError::ConceptRead{ source: err })?;
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         if let Some(supertype) = supertype {
             let sub_edge = Sub::from_vertices(subtype.clone(), supertype.clone());
             snapshot.delete(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());

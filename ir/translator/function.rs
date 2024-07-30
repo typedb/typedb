@@ -5,7 +5,10 @@
  */
 
 use answer::variable::Variable;
-use typeql::{schema::definable::function::{Output, ReturnSingle, ReturnStatement, ReturnStream, SingleOutput}, TypeRefAny};
+use typeql::{
+    schema::definable::function::{Output, ReturnSingle, ReturnStatement, ReturnStream, SingleOutput},
+    TypeRefAny,
+};
 
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},

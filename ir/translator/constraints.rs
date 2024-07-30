@@ -5,8 +5,7 @@
  */
 
 use answer::variable::Variable;
-use typeql::expression::FunctionName;
-use typeql::type_::NamedType;
+use typeql::{expression::FunctionName, type_::NamedType};
 
 use crate::{
     pattern::constraint::{ConstraintsBuilder, IsaKind},
@@ -140,7 +139,7 @@ fn register_typeql_var(
         typeql::Variable::Named { ident, optional, .. } => {
             let var = constraints.get_or_declare_variable(ident.as_str())?;
             Ok(var)
-        },
+        }
         typeql::Variable::Anonymous { optional, .. } => {
             let var = constraints.create_anonymous_variable()?;
             Ok(var)

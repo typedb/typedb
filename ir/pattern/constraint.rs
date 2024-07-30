@@ -10,21 +10,20 @@ use std::{
     iter::{empty, zip},
 };
 
+use answer::variable::Variable;
 use itertools::Itertools;
 use typeql;
-
-use answer::variable::Variable;
 
 use crate::{
     pattern::{
         expression::Expression,
         function_call::FunctionCall,
-        IrID,
-        ScopeId, variable_category::{VariableCategory, VariableOptionality},
+        variable_category::{VariableCategory, VariableOptionality},
+        IrID, ScopeId,
     },
+    program::{block::BlockContext, function_signature::FunctionSignature},
     PatternDefinitionError,
     PatternDefinitionError::FunctionCallArgumentCountMismatch,
-    program::{block::BlockContext, function_signature::FunctionSignature},
 };
 
 #[derive(Debug)]

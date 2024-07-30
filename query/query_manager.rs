@@ -4,28 +4,37 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use typeql::Query;
-use typeql::query::SchemaQuery;
+use concept::type_::type_manager::TypeManager;
 use function::function::Function;
-use crate::define;
-use crate::error::QueryError;
+use storage::snapshot::WritableSnapshot;
+use typeql::{query::SchemaQuery, Query};
+
+use crate::{define, error::QueryError};
 
 struct QueryManager {}
 
 impl QueryManager {
-    fn execute(&self, query: &str) -> Result<(), QueryError> {
-
+    fn execute(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        query: &str,
+    ) -> Result<(), QueryError> {
         let parsed = typeql::parse_query(query)
             .map_err(|err| QueryError::ParseError { typeql_query: query.to_string(), source: err })?;
 
         match parsed {
-            Query::Schema(query) => {
-                match query {
-                    SchemaQuery::Define(define) => define::execute(define),
-                    SchemaQuery::Redefine(redefine) => {}
-                    SchemaQuery::Undefine(undefine) => {}
+            Query::Schema(query) => match query {
+                SchemaQuery::Define(define) => {
+                    define::execute(snapshot, type_manager, define).map_err(|err| QueryError::Define { source: err })?
                 }
-            }
+                SchemaQuery::Redefine(redefine) => {
+                    todo!()
+                }
+                SchemaQuery::Undefine(undefine) => {
+                    todo!()
+                }
+            },
             Query::Pipeline(pipeline) => {}
         }
 

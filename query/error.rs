@@ -4,12 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::error::Error;
-use std::fmt;
+use std::{error::Error, fmt};
+
+use crate::define::DefineError;
 
 #[derive(Debug)]
 pub enum QueryError {
     ParseError { typeql_query: String, source: typeql::common::Error },
+    Define { source: DefineError },
 }
 
 impl fmt::Display for QueryError {
@@ -21,7 +23,8 @@ impl fmt::Display for QueryError {
 impl Error for QueryError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            QueryError::ParseError { source, .. } => Some(source)
+            QueryError::ParseError { source, .. } => Some(source),
+            QueryError::Define { source, .. } => Some(source),
         }
     }
 }
