@@ -5,10 +5,7 @@
  */
 
 use answer::variable::Variable;
-use typeql::{
-    schema::definable::function::{Output, ReturnSingle, ReturnStatement, ReturnStream, SingleOutput},
-    TypeAny,
-};
+use typeql::{schema::definable::function::{Output, ReturnSingle, ReturnStatement, ReturnStream, SingleOutput}, TypeRefAny};
 
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
@@ -63,11 +60,11 @@ pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> 
     FunctionSignature::new(function_id.clone().into(), args, returns, return_is_stream)
 }
 
-fn type_any_to_category_and_optionality(type_any: &TypeAny) -> (VariableCategory, VariableOptionality) {
+fn type_any_to_category_and_optionality(type_any: &TypeRefAny) -> (VariableCategory, VariableOptionality) {
     match type_any {
-        TypeAny::Type(_) => (VariableCategory::Thing, VariableOptionality::Required),
-        TypeAny::Optional(_) => (VariableCategory::Thing, VariableOptionality::Optional),
-        TypeAny::List(_) => (VariableCategory::ThingList, VariableOptionality::Required),
+        TypeRefAny::Type(_) => (VariableCategory::Thing, VariableOptionality::Required),
+        TypeRefAny::Optional(_) => (VariableCategory::Thing, VariableOptionality::Optional),
+        TypeRefAny::List(_) => (VariableCategory::ThingList, VariableOptionality::Required),
     }
 }
 

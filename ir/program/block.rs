@@ -253,8 +253,11 @@ impl BlockContext {
         }
     }
 
-    pub(crate) fn set_variable_is_optional(&mut self, variable: Variable) {
-        self.variable_optionality.insert(variable, VariableOptionality::Optional);
+    pub(crate) fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
+        match optional {
+            true => self.variable_optionality.insert(variable, VariableOptionality::Optional),
+            false => self.variable_optionality.remove(&variable),
+        };
     }
 
     pub(crate) fn is_variable_optional(&self, variable: Variable) -> bool {

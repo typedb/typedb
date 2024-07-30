@@ -10,20 +10,21 @@ use std::{
     iter::{empty, zip},
 };
 
-use answer::variable::Variable;
 use itertools::Itertools;
 use typeql;
+
+use answer::variable::Variable;
 
 use crate::{
     pattern::{
         expression::Expression,
         function_call::FunctionCall,
-        variable_category::{VariableCategory, VariableOptionality},
-        IrID, ScopeId,
+        IrID,
+        ScopeId, variable_category::{VariableCategory, VariableOptionality},
     },
-    program::{block::BlockContext, function_signature::FunctionSignature},
     PatternDefinitionError,
     PatternDefinitionError::FunctionCallArgumentCountMismatch,
+    program::{block::BlockContext, function_signature::FunctionSignature},
 };
 
 #[derive(Debug)]
@@ -252,6 +253,10 @@ impl<'cx> ConstraintsBuilder<'cx> {
 
     pub(crate) fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
         self.context.get_or_declare_variable(name, self.constraints.scope)
+    }
+
+    pub(crate) fn set_variable_optionality(&mut self, variable: Variable, optional: bool) {
+        self.context.set_variable_is_optional(variable, optional)
     }
 }
 

@@ -22,6 +22,7 @@ use encoding::{
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::WritableSnapshot;
+use crate::error::{ConceptReadError, ConceptWriteError};
 
 use crate::type_::{
     attribute_type::AttributeType, owns::Owns, relates::Relates, relation_type::RelationType, role_type::RoleType,
@@ -90,14 +91,18 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.put(sub_edge.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_supertype<T>(snapshot: &mut Snapshot, subtype: T)
+    pub(crate) fn storage_may_delete_supertype<T>(snapshot: &mut Snapshot, subtype: T) -> Result<(), ConceptWriteError>
     where
         T: KindAPI<'static>,
     {
-        let supertype = TypeReader::get_supertype(snapshot, subtype.clone()).unwrap().unwrap();
-        let sub_edge = Sub::from_vertices(subtype.clone(), supertype.clone());
-        snapshot.delete(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-        snapshot.delete(sub_edge.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+        let supertype = TypeReader::get_supertype(snapshot, subtype.clone())
+            .map_err(|err| ConceptWriteError::ConceptRead{ source: err })?;
+        if let Some(supertype) = supertype {
+            let sub_edge = Sub::from_vertices(subtype.clone(), supertype.clone());
+            snapshot.delete(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
+            snapshot.delete(sub_edge.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+        }
+        Ok(())
     }
 
     pub(crate) fn storage_set_value_type(

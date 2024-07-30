@@ -6,6 +6,7 @@
 
 use answer::variable::Variable;
 use typeql::expression::FunctionName;
+use typeql::type_::NamedType;
 
 use crate::{
     pattern::constraint::{ConstraintsBuilder, IsaKind},
@@ -60,14 +61,14 @@ fn add_type_statement(
     constraints: &mut ConstraintsBuilder<'_>,
     type_: &typeql::statement::Type,
 ) -> Result<(), PatternDefinitionError> {
-    let var = register_typeql_type_var(constraints, &type_.type_)?;
+    let var = register_typeql_type_var_any(constraints, &type_.type_)?;
     for constraint in &type_.constraints {
         assert!(constraint.annotations.is_empty(), "TODO: handle type statement annotations");
         match &constraint.base {
             typeql::statement::type_::ConstraintBase::Sub(_) => todo!(),
             typeql::statement::type_::ConstraintBase::Label(label) => match label {
                 typeql::statement::type_::LabelConstraint::Name(label) => {
-                    constraints.add_label(var, label.as_str())?;
+                    constraints.add_label(var, label.ident.as_str())?;
                 }
                 typeql::statement::type_::LabelConstraint::Scoped(_) => todo!(),
             },
@@ -79,43 +80,45 @@ fn add_type_statement(
     }
     Ok(())
 }
+
 fn add_in_stream_statement(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
-    in_stream: &typeql::statement::InStream,
+    in_stream: &typeql::statement::InIterable,
 ) -> Result<(), PatternDefinitionError> {
-    let (function_name, function_opt) = match &in_stream.rhs.name {
-        FunctionName::Builtin(_) => todo!("Is this legal?"),
-        FunctionName::Identifier(identifier) => {
-            let function_signature_opt = function_index
-                .get_function_signature(identifier.as_str())
-                .map_err(|source| PatternDefinitionError::FunctionRead { source })?;
-            (identifier.as_str().to_owned(), function_signature_opt)
-        }
-    };
-    if function_opt.is_none() {
-        Err(PatternDefinitionError::UnresolvedFunction { function_name: function_name.clone() })?
-    }
-    let callee_function = function_opt.unwrap();
-    if !callee_function.return_is_stream {
-        Err(PatternDefinitionError::FunctionDoesNotReturnStream { function_name: function_name.clone() })?
-    }
-
-    let mut assigned: Vec<Variable> = Vec::with_capacity(in_stream.lhs.len());
-    for (index, typeql_var) in in_stream.lhs.iter().enumerate() {
-        assigned.push(register_typeql_var(constraints, typeql_var)?);
-    }
-    let arguments: Vec<Variable> = in_stream
-        .rhs
-        .args
-        .iter()
-        .map(|arg| {
-            extend_from_inline_typeql_expression(constraints, &arg) // Inline expressions must be converted to anonymous variables
-        })
-        .collect::<Result<Vec<_>, PatternDefinitionError>>()?;
-
-    let as_ref = constraints.add_function_call(assigned, &callee_function, arguments)?;
-    Ok(())
+    // let (function_name, function_opt) = match &in_stream.rhs.name {
+    //     FunctionName::Builtin(_) => todo!("Is this legal?"),
+    //     FunctionName::Identifier(identifier) => {
+    //         let function_signature_opt = function_index
+    //             .get_function_signature(identifier.as_str())
+    //             .map_err(|source| PatternDefinitionError::FunctionRead { source })?;
+    //         (identifier.as_str().to_owned(), function_signature_opt)
+    //     }
+    // };
+    // if function_opt.is_none() {
+    //     Err(PatternDefinitionError::UnresolvedFunction { function_name: function_name.clone() })?
+    // }
+    // let callee_function = function_opt.unwrap();
+    // if !callee_function.return_is_stream {
+    //     Err(PatternDefinitionError::FunctionDoesNotReturnStream { function_name: function_name.clone() })?
+    // }
+    //
+    // let mut assigned: Vec<Variable> = Vec::with_capacity(in_stream.lhs.len());
+    // for (index, typeql_var) in in_stream.lhs.iter().enumerate() {
+    //     assigned.push(register_typeql_var(constraints, typeql_var)?);
+    // }
+    // let arguments: Vec<Variable> = in_stream
+    //     .rhs
+    //     .args
+    //     .iter()
+    //     .map(|arg| {
+    //         extend_from_inline_typeql_expression(constraints, &arg) // Inline expressions must be converted to anonymous variables
+    //     })
+    //     .collect::<Result<Vec<_>, PatternDefinitionError>>()?;
+    //
+    // let as_ref = constraints.add_function_call(assigned, &callee_function, arguments)?;
+    // Ok(())
+    todo!()
 }
 
 fn extend_from_inline_typeql_expression(
@@ -134,31 +137,37 @@ fn register_typeql_var(
     var: &typeql::Variable,
 ) -> Result<Variable, PatternDefinitionError> {
     match var {
-        typeql::Variable::Named(_, name) => constraints.get_or_declare_variable(name.as_str()),
-        typeql::Variable::Anonymous(_) => constraints.create_anonymous_variable(),
+        typeql::Variable::Named { ident, optional, .. } => {
+            let var = constraints.get_or_declare_variable(ident.as_str())?;
+            Ok(var)
+        },
+        typeql::Variable::Anonymous { optional, .. } => {
+            let var = constraints.create_anonymous_variable()?;
+            Ok(var)
+        }
     }
 }
 
 fn register_typeql_type_var_any(
     constraints: &mut ConstraintsBuilder<'_>,
-    type_: &typeql::TypeAny,
+    type_: &typeql::TypeRefAny,
 ) -> Result<Variable, PatternDefinitionError> {
     match type_ {
-        typeql::TypeAny::Type(type_) => register_typeql_type_var(constraints, type_),
-        typeql::TypeAny::Optional(_) => todo!(),
-        typeql::TypeAny::List(_) => todo!(),
+        typeql::TypeRefAny::Type(type_) => register_typeql_type_var(constraints, type_),
+        typeql::TypeRefAny::Optional(_) => todo!(),
+        typeql::TypeRefAny::List(_) => todo!(),
     }
 }
 
 fn register_typeql_type_var(
     constraints: &mut ConstraintsBuilder<'_>,
-    type_: &typeql::Type,
+    type_: &typeql::TypeRef,
 ) -> Result<Variable, PatternDefinitionError> {
     match type_ {
-        typeql::Type::Label(label) => register_type_label_var(constraints, label),
-        typeql::Type::ScopedLabel(_) => todo!(),
-        typeql::Type::Variable(var) => register_typeql_var(constraints, var),
-        typeql::Type::BuiltinValue(_) => todo!(),
+        typeql::TypeRef::Named(NamedType::Label(label)) => register_type_label_var(constraints, label),
+        typeql::TypeRef::Named(NamedType::Role(scoped_label)) => todo!(),
+        typeql::TypeRef::Named(NamedType::BuiltinValueType(builtin)) => todo!(),
+        typeql::TypeRef::Variable(var) => register_typeql_var(constraints, var),
     }
 }
 
@@ -166,12 +175,9 @@ fn register_type_label_var(
     constraints: &mut ConstraintsBuilder<'_>,
     label: &typeql::Label,
 ) -> Result<Variable, PatternDefinitionError> {
-    let var = constraints.create_anonymous_variable()?;
-    match label {
-        typeql::Label::Identifier(ident) => constraints.add_label(var, ident.as_str())?,
-        typeql::Label::Reserved(reserved) => todo!("Unhandled builtin type: {reserved}"),
-    };
-    Ok(var)
+    let variable = constraints.create_anonymous_variable()?;
+    constraints.add_label(variable, label.ident.as_str())?;
+    Ok(variable)
 }
 
 fn add_typeql_isa(
