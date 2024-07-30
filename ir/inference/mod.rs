@@ -45,8 +45,7 @@ use std::{
 use answer::variable::Variable;
 use concept::error::ConceptReadError;
 
-use crate::expressions::ExpressionCompilationError;
-use crate::pattern::variable_category::VariableCategory;
+use crate::{expressions::ExpressionCompilationError, pattern::variable_category::VariableCategory};
 
 pub mod expression_inference;
 pub mod pattern_type_inference;

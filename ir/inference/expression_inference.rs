@@ -11,23 +11,22 @@ We decided that Expressions and Comparisons are not 'constraining', eg `$x + 4` 
  */
 
 use std::collections::{HashMap, HashSet};
-use typeql::parser::Rule::var;
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::ValueTypeCategory;
 use storage::snapshot::ReadableSnapshot;
+use typeql::parser::Rule::var;
 
 use crate::{
-    expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler},
+    expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType},
     inference::{type_inference::TypeAnnotations, TypeInferenceError},
     pattern::{
         conjunction::Conjunction, constraint::ExpressionBinding, expression::Expression, nested_pattern::NestedPattern,
+        variable_category::VariableCategory,
     },
     program::block::FunctionalBlock,
 };
-use crate::expressions::expression_compiler::ExpressionValueType;
-use crate::pattern::variable_category::VariableCategory;
 
 struct ExpressionInferenceContext<'this, Snapshot: ReadableSnapshot> {
     block: &'this FunctionalBlock,
@@ -152,14 +151,19 @@ fn resolve_type_for_variable<'context, Snapshot: ReadableSnapshot>(
             .collect::<Result<HashSet<_>, TypeInferenceError>>()?;
         if vec.len() != 1 {
             Err(TypeInferenceError::ExpressionVariableDidNotHaveSingleValueType { variable: variable.clone() })
-        } else if let Some(value_type) =  &vec.iter().find(|_| true).unwrap() {
+        } else if let Some(value_type) = &vec.iter().find(|_| true).unwrap() {
             let variable_category = context.block.context().get_variable_category(variable.clone()).unwrap();
             match variable_category {
-                VariableCategory::Attribute
-                | VariableCategory::Value => Ok(ExpressionValueType::Single(value_type.category())),
-                VariableCategory::AttributeList
-                | VariableCategory::ValueList => Ok(ExpressionValueType::List(value_type.category())),
-                _ => Err(TypeInferenceError::VariableInExpressionMustBeValueOrAttribute { variable: variable.clone(), actual_category: variable_category  })?,
+                VariableCategory::Attribute | VariableCategory::Value => {
+                    Ok(ExpressionValueType::Single(value_type.category()))
+                }
+                VariableCategory::AttributeList | VariableCategory::ValueList => {
+                    Ok(ExpressionValueType::List(value_type.category()))
+                }
+                _ => Err(TypeInferenceError::VariableInExpressionMustBeValueOrAttribute {
+                    variable: variable.clone(),
+                    actual_category: variable_category,
+                })?,
             }
         } else {
             Err(TypeInferenceError::ExpressionVariableHasNoValueType { variable: variable.clone() })

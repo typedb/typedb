@@ -89,7 +89,6 @@ pub struct ExpressionTreeCompiler<'this> {
 }
 
 impl<'this> ExpressionTreeCompiler<'this> {
-
     fn pop_type(&mut self) -> Result<ExpressionValueType, ExpressionCompilationError> {
         match self.type_stack.pop() {
             Some(value) => Ok(value),

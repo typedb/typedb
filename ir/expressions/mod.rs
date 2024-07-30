@@ -66,15 +66,33 @@ impl Debug for ExpressionCompilationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         // TODO
         match self {
-            ExpressionCompilationError::InternalStackWasEmpty => f.write_str("ExpressionCompilationError::InternalStackWasEmpty"),
-            ExpressionCompilationError::InternalUnexpectedValueType => f.write_str("ExpressionCompilationError::InternalUnexpectedValueType"),
-            ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => f.write_str("ExpressionCompilationError::UnsupportedOperandsForOperation"),
-            ExpressionCompilationError::UnsupportedArgumentsForBuiltin => f.write_str("ExpressionCompilationError::UnsupportedArgumentsForBuiltin"),
-            ExpressionCompilationError::ListIndexMustBeLong => f.write_str("ExpressionCompilationError::ListIndexMustBeLong"),
-            ExpressionCompilationError::HeterogenousValuesInList => f.write_str("ExpressionCompilationError::HeterogenousValuesInList"),
-            ExpressionCompilationError::ExpectedSingleWasList => f.write_str("ExpressionCompilationError::ExpectedSingleWasList"),
-            ExpressionCompilationError::ExpectedListWasSingle => f.write_str("ExpressionCompilationError::ExpectedListWasSingle"),
-            ExpressionCompilationError::EmptyListConstructorCannotInferValueType => f.write_str("ExpressionCompilationError::EmptyListConstructorCannotInferValueType"),
+            ExpressionCompilationError::InternalStackWasEmpty => {
+                f.write_str("ExpressionCompilationError::InternalStackWasEmpty")
+            }
+            ExpressionCompilationError::InternalUnexpectedValueType => {
+                f.write_str("ExpressionCompilationError::InternalUnexpectedValueType")
+            }
+            ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => {
+                f.write_str("ExpressionCompilationError::UnsupportedOperandsForOperation")
+            }
+            ExpressionCompilationError::UnsupportedArgumentsForBuiltin => {
+                f.write_str("ExpressionCompilationError::UnsupportedArgumentsForBuiltin")
+            }
+            ExpressionCompilationError::ListIndexMustBeLong => {
+                f.write_str("ExpressionCompilationError::ListIndexMustBeLong")
+            }
+            ExpressionCompilationError::HeterogenousValuesInList => {
+                f.write_str("ExpressionCompilationError::HeterogenousValuesInList")
+            }
+            ExpressionCompilationError::ExpectedSingleWasList => {
+                f.write_str("ExpressionCompilationError::ExpectedSingleWasList")
+            }
+            ExpressionCompilationError::ExpectedListWasSingle => {
+                f.write_str("ExpressionCompilationError::ExpectedListWasSingle")
+            }
+            ExpressionCompilationError::EmptyListConstructorCannotInferValueType => {
+                f.write_str("ExpressionCompilationError::EmptyListConstructorCannotInferValueType")
+            }
         }
     }
 }
@@ -83,15 +101,33 @@ impl Display for ExpressionCompilationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         // TODO
         match self {
-            ExpressionCompilationError::InternalStackWasEmpty => f.write_str("ExpressionCompilationError::InternalStackWasEmpty"),
-            ExpressionCompilationError::InternalUnexpectedValueType => f.write_str("ExpressionCompilationError::InternalUnexpectedValueType"),
-            ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => f.write_str("ExpressionCompilationError::UnsupportedOperandsForOperation"),
-            ExpressionCompilationError::UnsupportedArgumentsForBuiltin => f.write_str("ExpressionCompilationError::UnsupportedArgumentsForBuiltin"),
-            ExpressionCompilationError::ListIndexMustBeLong => f.write_str("ExpressionCompilationError::ListIndexMustBeLong"),
-            ExpressionCompilationError::HeterogenousValuesInList => f.write_str("ExpressionCompilationError::HeterogenousValuesInList"),
-            ExpressionCompilationError::ExpectedSingleWasList => f.write_str("ExpressionCompilationError::ExpectedSingleWasList"),
-            ExpressionCompilationError::ExpectedListWasSingle => f.write_str("ExpressionCompilationError::ExpectedListWasSingle"),
-            ExpressionCompilationError::EmptyListConstructorCannotInferValueType => f.write_str("ExpressionCompilationError::EmptyListConstructorCannotInferValueType"),
+            ExpressionCompilationError::InternalStackWasEmpty => {
+                f.write_str("ExpressionCompilationError::InternalStackWasEmpty")
+            }
+            ExpressionCompilationError::InternalUnexpectedValueType => {
+                f.write_str("ExpressionCompilationError::InternalUnexpectedValueType")
+            }
+            ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => {
+                f.write_str("ExpressionCompilationError::UnsupportedOperandsForOperation")
+            }
+            ExpressionCompilationError::UnsupportedArgumentsForBuiltin => {
+                f.write_str("ExpressionCompilationError::UnsupportedArgumentsForBuiltin")
+            }
+            ExpressionCompilationError::ListIndexMustBeLong => {
+                f.write_str("ExpressionCompilationError::ListIndexMustBeLong")
+            }
+            ExpressionCompilationError::HeterogenousValuesInList => {
+                f.write_str("ExpressionCompilationError::HeterogenousValuesInList")
+            }
+            ExpressionCompilationError::ExpectedSingleWasList => {
+                f.write_str("ExpressionCompilationError::ExpectedSingleWasList")
+            }
+            ExpressionCompilationError::ExpectedListWasSingle => {
+                f.write_str("ExpressionCompilationError::ExpectedListWasSingle")
+            }
+            ExpressionCompilationError::EmptyListConstructorCannotInferValueType => {
+                f.write_str("ExpressionCompilationError::EmptyListConstructorCannotInferValueType")
+            }
         }
     }
 }
