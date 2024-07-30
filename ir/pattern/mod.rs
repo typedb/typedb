@@ -19,7 +19,7 @@ pub mod optional;
 pub mod variable_category;
 
 pub mod disjunction;
-mod expression;
+pub mod expression;
 pub mod function_call;
 pub mod nested_pattern;
 

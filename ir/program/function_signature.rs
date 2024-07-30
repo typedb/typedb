@@ -26,7 +26,7 @@ pub enum FunctionID {
 
 pub struct FunctionSignature {
     pub(crate) function_id: FunctionID,
-    pub(crate) arguments: Vec<(VariableCategory, VariableOptionality)>,
+    pub(crate) arguments: Vec<VariableCategory>, // TODO: Arguments cannot be optional
     pub(crate) returns: Vec<(VariableCategory, VariableOptionality)>,
     pub(crate) return_is_stream: bool,
 }
@@ -34,7 +34,7 @@ pub struct FunctionSignature {
 impl FunctionSignature {
     pub fn new(
         function_id: FunctionID,
-        arguments: Vec<(VariableCategory, VariableOptionality)>,
+        arguments: Vec<VariableCategory>,
         returns: Vec<(VariableCategory, VariableOptionality)>,
         return_is_stream: bool,
     ) -> FunctionSignature {

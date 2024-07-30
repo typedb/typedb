@@ -12,11 +12,10 @@ use std::{
 
 use answer::variable::Variable;
 use itertools::Itertools;
-use typeql;
 
 use crate::{
     pattern::{
-        expression::Expression,
+        expression::ExpressionTree,
         function_call::FunctionCall,
         variable_category::{VariableCategory, VariableOptionality},
         IrID, ScopeId,
@@ -58,6 +57,7 @@ impl Constraints {
 
     fn add_constraint(&mut self, constraint: impl Into<Constraint<Variable>>) -> &Constraint<Variable> {
         let constraint = constraint.into();
+        // TODO: ids_foreach is only used here, and ids is unused. Do we need these methods?
         constraint.ids_foreach(|var, side| match side {
             ConstraintIDSide::Left => self.left_constrained_index.entry(var).or_default().push(constraint.clone()),
             ConstraintIDSide::Right => self.right_constrained_index.entry(var).or_default().push(constraint.clone()),
@@ -200,13 +200,6 @@ impl<'cx> ConstraintsBuilder<'cx> {
                 actual: arguments.len(),
             })?
         }
-        let unsatisfied_required_argument =
-            zip(arguments.iter(), callee_signature.arguments.iter()).find(|(caller_var, callee_argument)| {
-                self.context.is_variable_optional(**caller_var) && VariableOptionality::Required == callee_argument.1
-            });
-        if let Some((variable, _)) = unsatisfied_required_argument {
-            Err(FunctionRequiredArgumentReceivedOptionalVariable { variable: *variable })?
-        }
 
         // Construct
         let call_variable_mapping =
@@ -225,7 +218,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
         for (caller_var, callee_arg_index) in binding.function_call.call_id_mapping() {
             self.context.set_variable_category(
                 *caller_var,
-                callee_signature.arguments[*callee_arg_index].0,
+                callee_signature.arguments[*callee_arg_index],
                 binding.clone().into(),
             )?;
         }
@@ -237,10 +230,14 @@ impl<'cx> ConstraintsBuilder<'cx> {
     pub fn add_expression(
         &mut self,
         variable: Variable,
-        expression: Expression<Variable>,
+        expression: ExpressionTree<Variable>,
     ) -> Result<&ExpressionBinding<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
+        binding
+            .validate(&mut self.context)
+            .map_err(|source| PatternDefinitionError::ExpressionDefinition { source })?;
+        // TODO: Does this mean an expression can't return a list? Else, we can get it from validate.
         self.context.set_variable_category(variable, VariableCategory::Value, binding.clone().into())?;
         let as_ref = self.constraints.add_constraint(binding);
         Ok(as_ref.as_expression_binding().unwrap())
@@ -279,7 +276,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Isa(isa) => Box::new(isa.ids()),
             Constraint::RolePlayer(rp) => Box::new(rp.ids()),
             Constraint::Has(has) => Box::new(has.ids()),
-            Constraint::ExpressionBinding(binding) => todo!(),
+            Constraint::ExpressionBinding(binding) => Box::new(binding.ids_assigned()),
             Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_assigned()),
             Constraint::Comparison(comparison) => Box::new(comparison.ids()),
         }
@@ -295,7 +292,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Isa(isa) => isa.ids_foreach(function),
             Constraint::RolePlayer(rp) => rp.ids_foreach(function),
             Constraint::Has(has) => has.ids_foreach(function),
-            Constraint::ExpressionBinding(binding) => todo!(),
+            Constraint::ExpressionBinding(binding) => binding.ids_foreach(function),
             Constraint::FunctionCallBinding(binding) => binding.ids_foreach(function),
             Constraint::Comparison(comparison) => comparison.ids_foreach(function),
         }
@@ -651,18 +648,10 @@ impl<ID: IrID> fmt::Display for Has<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ExpressionBinding<ID: IrID> {
     left: ID,
-    expression: Expression<ID>,
+    expression: ExpressionTree<ID>,
 }
 
 impl<ID: IrID> ExpressionBinding<ID> {
-    fn new(left: ID, expression: Expression<ID>) -> Self {
-        Self { left, expression }
-    }
-
-    pub fn expression(&self) -> &Expression<ID> {
-        &self.expression
-    }
-
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
         [self.left].into_iter()
     }
@@ -672,7 +661,23 @@ impl<ID: IrID> ExpressionBinding<ID> {
         F: FnMut(ID, ConstraintIDSide),
     {
         self.ids_assigned().for_each(|id| function(id, ConstraintIDSide::Left));
-        self.expression().ids().for_each(|id| function(id, ConstraintIDSide::Right));
+        // TODO
+        // todo!("Do we really need positions here?")
+        // self.expression().ids().for_each(|id| function(id, ConstraintIDSide::Right));
+    }
+}
+
+impl ExpressionBinding<Variable> {
+    fn new(left: Variable, expression: ExpressionTree<Variable>) -> Self {
+        Self { left, expression }
+    }
+
+    pub fn left(&self) -> &Variable {
+        &self.left
+    }
+
+    pub fn expression(&self) -> &ExpressionTree<Variable> {
+        &self.expression
     }
 }
 

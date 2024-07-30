@@ -9,6 +9,7 @@ use std::{
     cmp::Ordering,
     fmt::{Display, Formatter},
     hash::{Hash, Hasher},
+    ops::Deref,
 };
 
 use bytes::byte_array::ByteArray;
@@ -18,10 +19,20 @@ use chrono_tz::Tz;
 use super::date_bytes::DateBytes;
 use crate::{
     value::{
-        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
-        decimal_bytes::DecimalBytes, decimal_value::Decimal, double_bytes::DoubleBytes, duration_bytes::DurationBytes,
-        duration_value::Duration, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
-        value_struct::StructValue, value_type::ValueType, ValueEncodable,
+        boolean_bytes::BooleanBytes,
+        date_time_bytes::DateTimeBytes,
+        date_time_tz_bytes::DateTimeTZBytes,
+        decimal_bytes::DecimalBytes,
+        decimal_value::Decimal,
+        double_bytes::DoubleBytes,
+        duration_bytes::DurationBytes,
+        duration_value::Duration,
+        long_bytes::LongBytes,
+        string_bytes::StringBytes,
+        struct_bytes::StructBytes,
+        value_struct::StructValue,
+        value_type::{ValueType, ValueTypeCategory},
+        ValueEncodable,
     },
     AsBytes,
 };
@@ -281,6 +292,155 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::String(_) => ByteArray::copy(&self.encode_string::<INLINE_LENGTH>().bytes().bytes()),
             Value::Struct(_) => ByteArray::copy(&self.encode_struct::<INLINE_LENGTH>().bytes().bytes()),
         }
+    }
+}
+
+impl TryInto<f64> for Value<'static> {
+    type Error = ();
+
+    fn try_into(self) -> Result<f64, Self::Error> {
+        todo!()
+    }
+}
+
+pub trait DBValue: Sized {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory;
+
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()>;
+
+    fn to_db_value(self) -> Value<'static>;
+}
+
+impl DBValue for bool {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Boolean;
+
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+        match value {
+            Value::Boolean(value) => Ok(value),
+            _ => Err(()),
+        }
+    }
+
+    fn to_db_value(self) -> Value<'static> {
+        Value::Boolean(self)
+    }
+}
+
+impl DBValue for f64 {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Double;
+
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+        match value {
+            Value::Double(value) => Ok(value),
+            _ => Err(()),
+        }
+    }
+
+    fn to_db_value(self) -> Value<'static> {
+        Value::Double(self)
+    }
+}
+
+impl DBValue for i64 {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Long;
+
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+        match value {
+            Value::Long(value) => Ok(value),
+            _ => Err(()),
+        }
+    }
+
+    fn to_db_value(self) -> Value<'static> {
+        Value::Long(self)
+    }
+}
+
+impl DBValue for String {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::String;
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+        match value {
+            Value::String(value) => Ok(value.deref().to_owned()),
+            _ => Err(()),
+        }
+    }
+
+    fn to_db_value(self) -> Value<'static> {
+        Value::String(Cow::Owned(self))
+    }
+}
+
+impl DBValue for Decimal {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Decimal;
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+        match value {
+            Value::Decimal(value) => Ok(value),
+            _ => Err(()),
+        }
+    }
+
+    fn to_db_value(self) -> Value<'static> {
+        Value::Decimal(self)
+    }
+}
+
+impl DBValue for NaiveDate {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Date;
+
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+        match value {
+            Value::Date(value) => Ok(value),
+            _ => Err(()),
+        }
+    }
+
+    fn to_db_value(self) -> Value<'static> {
+        Value::Date(self)
+    }
+}
+
+impl DBValue for NaiveDateTime {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::DateTime;
+
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+        match value {
+            Value::DateTime(value) => Ok(value),
+            _ => Err(()),
+        }
+    }
+
+    fn to_db_value(self) -> Value<'static> {
+        Value::DateTime(self)
+    }
+}
+
+impl DBValue for DateTime<Tz> {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::DateTimeTZ;
+
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+        match value {
+            Value::DateTimeTZ(value) => Ok(value),
+            _ => Err(()),
+        }
+    }
+
+    fn to_db_value(self) -> Value<'static> {
+        Value::DateTimeTZ(self)
+    }
+}
+
+impl DBValue for Duration {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Duration;
+
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+        match value {
+            Value::Duration(value) => Ok(value),
+            _ => Err(()),
+        }
+    }
+
+    fn to_db_value(self) -> Value<'static> {
+        Value::Duration(self)
     }
 }
 

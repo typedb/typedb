@@ -6,13 +6,13 @@
 
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
-    fmt::Display,
     sync::Arc,
 };
 
 use answer::{variable::Variable, Type};
+use encoding::value::value::Value;
 
-use crate::program::block::FunctionalBlock;
+use crate::program::{block::FunctionalBlock, function_signature::FunctionSignature};
 
 pub type PlaceholderTypeQLReturnOperation = String;
 

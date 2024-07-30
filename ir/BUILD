@@ -11,6 +11,8 @@ rust_library(
     crate_root = "lib.rs",
     srcs = glob([
         "*.rs",
+        "expressions/*.rs",
+        "expressions/builtins/*.rs",
         "inference/*.rs",
         "optimisation/*.rs",
         "pattern/*.rs",
@@ -29,13 +31,17 @@ rust_library(
 
         "@crates//:itertools",
 
+        # For the parsing of literals
+        "@crates//:chrono",
+        "@crates//:chrono-tz",
+
         "//util/test:test_utils", # dev dependency
     ],
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*.rs"]),
+    include = glob(["*", "*/*.rs", "expressions/builtins/*.rs"]),
     exclude = glob([
         "Cargo.*",
     ]),
