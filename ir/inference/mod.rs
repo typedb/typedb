@@ -46,6 +46,7 @@ use answer::variable::Variable;
 use concept::error::ConceptReadError;
 
 use crate::expressions::ExpressionCompilationError;
+use crate::pattern::variable_category::VariableCategory;
 
 pub mod expression_inference;
 pub mod pattern_type_inference;
@@ -63,6 +64,7 @@ pub enum TypeInferenceError {
     ExpressionVariableDidNotHaveSingleValueType { variable: Variable },
     ExpressionVariableHasNoValueType { variable: Variable },
     ExpressionCompilation { source: ExpressionCompilationError },
+    VariableInExpressionMustBeValueOrAttribute { variable: Variable, actual_category: VariableCategory },
 }
 
 impl Display for TypeInferenceError {
@@ -83,6 +85,7 @@ impl Error for TypeInferenceError {
             TypeInferenceError::CouldNotDetermineValueTypeForVariable { .. } => None,
             TypeInferenceError::ExpressionVariableDidNotHaveSingleValueType { .. } => None,
             TypeInferenceError::ExpressionVariableHasNoValueType { .. } => None,
+            TypeInferenceError::VariableInExpressionMustBeValueOrAttribute { .. } => None,
         }
     }
 }

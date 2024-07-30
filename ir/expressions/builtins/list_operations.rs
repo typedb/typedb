@@ -54,7 +54,7 @@ impl ExpressionInstruction for ListIndexRange {
         if let Some(sub_slice) = list.get(from_index..to_index) {
             let mut vec = Vec::with_capacity((to_index - from_index + 1) as usize);
             vec.extend_from_slice(sub_slice);
-            state.push_list(vec); // TODO: Make this more efficient by storing (Vec, range) ?
+            state.push_list(vec); // TODO: Should we make this more efficient by storing (Vec, range) ?
             Ok(())
         } else {
             Err(ExpressionEvaluationError::ListIndexOutOfRange)

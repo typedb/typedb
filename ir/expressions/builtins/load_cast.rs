@@ -84,11 +84,11 @@ impl<From: FromAndToValue, To: ImplicitCast<From>> SelfCompiling for CastUnary<F
     }
 
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
-        let value_before = builder.pop_type()?;
+        let value_before = builder.pop_type_single()?;
         if value_before != From::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
         }
-        builder.push_type(To::VALUE_TYPE_CATEGORY);
+        builder.push_type_single(To::VALUE_TYPE_CATEGORY);
 
         builder.append_instruction(Self::OP_CODE);
         Ok(())
@@ -114,13 +114,13 @@ impl<From: FromAndToValue, To: ImplicitCast<From>> SelfCompiling for CastBinaryL
     }
 
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
-        let right = builder.pop_type()?;
-        let left_before = builder.pop_type()?;
+        let right = builder.pop_type_single()?;
+        let left_before = builder.pop_type_single()?;
         if left_before != From::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
         }
-        builder.push_type(To::VALUE_TYPE_CATEGORY);
-        builder.push_type(right);
+        builder.push_type_single(To::VALUE_TYPE_CATEGORY);
+        builder.push_type_single(right);
 
         builder.append_instruction(Self::OP_CODE);
         Ok(())
@@ -144,11 +144,11 @@ impl<From: FromAndToValue, To: ImplicitCast<From>> SelfCompiling for CastBinaryR
     }
 
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
-        let right_before = builder.pop_type()?;
+        let right_before = builder.pop_type_single()?;
         if right_before != From::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
         }
-        builder.push_type(To::VALUE_TYPE_CATEGORY);
+        builder.push_type_single(To::VALUE_TYPE_CATEGORY);
 
         builder.append_instruction(Self::OP_CODE);
         Ok(())

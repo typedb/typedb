@@ -57,17 +57,42 @@ pub enum ExpressionCompilationError {
     UnsupportedArgumentsForBuiltin,
     ListIndexMustBeLong,
     HeterogenousValuesInList,
+    ExpectedSingleWasList,
+    ExpectedListWasSingle,
+    EmptyListConstructorCannotInferValueType,
 }
 
 impl Debug for ExpressionCompilationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        // TODO
+        match self {
+            ExpressionCompilationError::InternalStackWasEmpty => f.write_str("ExpressionCompilationError::InternalStackWasEmpty"),
+            ExpressionCompilationError::InternalUnexpectedValueType => f.write_str("ExpressionCompilationError::InternalUnexpectedValueType"),
+            ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => f.write_str("ExpressionCompilationError::UnsupportedOperandsForOperation"),
+            ExpressionCompilationError::UnsupportedArgumentsForBuiltin => f.write_str("ExpressionCompilationError::UnsupportedArgumentsForBuiltin"),
+            ExpressionCompilationError::ListIndexMustBeLong => f.write_str("ExpressionCompilationError::ListIndexMustBeLong"),
+            ExpressionCompilationError::HeterogenousValuesInList => f.write_str("ExpressionCompilationError::HeterogenousValuesInList"),
+            ExpressionCompilationError::ExpectedSingleWasList => f.write_str("ExpressionCompilationError::ExpectedSingleWasList"),
+            ExpressionCompilationError::ExpectedListWasSingle => f.write_str("ExpressionCompilationError::ExpectedListWasSingle"),
+            ExpressionCompilationError::EmptyListConstructorCannotInferValueType => f.write_str("ExpressionCompilationError::EmptyListConstructorCannotInferValueType"),
+        }
     }
 }
 
 impl Display for ExpressionCompilationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        // TODO
+        match self {
+            ExpressionCompilationError::InternalStackWasEmpty => f.write_str("ExpressionCompilationError::InternalStackWasEmpty"),
+            ExpressionCompilationError::InternalUnexpectedValueType => f.write_str("ExpressionCompilationError::InternalUnexpectedValueType"),
+            ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => f.write_str("ExpressionCompilationError::UnsupportedOperandsForOperation"),
+            ExpressionCompilationError::UnsupportedArgumentsForBuiltin => f.write_str("ExpressionCompilationError::UnsupportedArgumentsForBuiltin"),
+            ExpressionCompilationError::ListIndexMustBeLong => f.write_str("ExpressionCompilationError::ListIndexMustBeLong"),
+            ExpressionCompilationError::HeterogenousValuesInList => f.write_str("ExpressionCompilationError::HeterogenousValuesInList"),
+            ExpressionCompilationError::ExpectedSingleWasList => f.write_str("ExpressionCompilationError::ExpectedSingleWasList"),
+            ExpressionCompilationError::ExpectedListWasSingle => f.write_str("ExpressionCompilationError::ExpectedListWasSingle"),
+            ExpressionCompilationError::EmptyListConstructorCannotInferValueType => f.write_str("ExpressionCompilationError::EmptyListConstructorCannotInferValueType"),
+        }
     }
 }
 
@@ -80,6 +105,9 @@ impl Error for ExpressionCompilationError {
             Self::UnsupportedArgumentsForBuiltin => None,
             Self::ListIndexMustBeLong => None,
             Self::HeterogenousValuesInList => None,
+            Self::ExpectedSingleWasList => None,
+            Self::ExpectedListWasSingle => None,
+            Self::EmptyListConstructorCannotInferValueType => None,
         }
     }
 }

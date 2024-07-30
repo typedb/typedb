@@ -11,6 +11,7 @@ We decided that Expressions and Comparisons are not 'constraining', eg `$x + 4` 
  */
 
 use std::collections::{HashMap, HashSet};
+use typeql::parser::Rule::var;
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
@@ -25,8 +26,11 @@ use crate::{
     },
     program::block::FunctionalBlock,
 };
+use crate::expressions::expression_compiler::ExpressionValueType;
+use crate::pattern::variable_category::VariableCategory;
 
 struct ExpressionInferenceContext<'this, Snapshot: ReadableSnapshot> {
+    block: &'this FunctionalBlock,
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
 
@@ -45,6 +49,7 @@ pub fn compile_expressions_in_block<'this, Snapshot: ReadableSnapshot>(
     let expression_bindings: Vec<&ExpressionBinding<Variable>> =
         expression_index.values().map(|by_ref| by_ref.clone()).collect();
     let context = ExpressionInferenceContext {
+        block,
         snapshot,
         type_manager,
         type_annotations,
@@ -98,7 +103,7 @@ fn compile_expressions_recursive<'context, Snapshot: ReadableSnapshot>(
     debug_assert!(!compiled_expressions.contains_key(binding.left()));
     compiled_expressions.insert(binding.left().clone(), None);
     // Compile any dependent expressions first
-    let mut variable_value_types: HashMap<Variable, ValueTypeCategory> = HashMap::new();
+    let mut variable_value_types: HashMap<Variable, ExpressionValueType> = HashMap::new();
     for expr in binding.expression().tree() {
         let variable_opt = match expr {
             Expression::Variable(variable) => Some(variable),
@@ -110,7 +115,7 @@ fn compile_expressions_recursive<'context, Snapshot: ReadableSnapshot>(
         };
         if let Some(variable) = variable_opt {
             variable_value_types
-                .insert(variable.clone(), resolve_expression_type(context, variable, compiled_expressions)?);
+                .insert(variable.clone(), resolve_type_for_variable(context, variable, compiled_expressions)?);
         }
     }
     let compiled = ExpressionTreeCompiler::compile(&binding.expression(), variable_value_types)
@@ -119,11 +124,11 @@ fn compile_expressions_recursive<'context, Snapshot: ReadableSnapshot>(
     Ok(())
 }
 
-fn resolve_expression_type<'context, Snapshot: ReadableSnapshot>(
+fn resolve_type_for_variable<'context, Snapshot: ReadableSnapshot>(
     context: &ExpressionInferenceContext<'context, Snapshot>,
     variable: &Variable,
     compiled_expressions: &mut HashMap<Variable, Option<CompiledExpression>>,
-) -> Result<ValueTypeCategory, TypeInferenceError> {
+) -> Result<ExpressionValueType, TypeInferenceError> {
     if let Some(binding) = context.expressions_by_assignment.get(variable) {
         let compiled_expression = match compiled_expressions.get(variable) {
             Some(None) => Err(TypeInferenceError::CircularDependencyInExpressions { variable: variable.clone() })?,
@@ -133,6 +138,7 @@ fn resolve_expression_type<'context, Snapshot: ReadableSnapshot>(
                 compiled_expressions.get(variable).unwrap().as_ref().unwrap()
             }
         };
+        // TODO: We're throwing off the information about the category here
         Ok(compiled_expression.return_type())
     } else if let Some(types) = context.type_annotations.variable_annotations(variable.clone()) {
         let vec = types
@@ -146,8 +152,15 @@ fn resolve_expression_type<'context, Snapshot: ReadableSnapshot>(
             .collect::<Result<HashSet<_>, TypeInferenceError>>()?;
         if vec.len() != 1 {
             Err(TypeInferenceError::ExpressionVariableDidNotHaveSingleValueType { variable: variable.clone() })
-        } else if let Some(value_type) = &vec.iter().find(|_| true).unwrap() {
-            Ok(value_type.category())
+        } else if let Some(value_type) =  &vec.iter().find(|_| true).unwrap() {
+            let variable_category = context.block.context().get_variable_category(variable.clone()).unwrap();
+            match variable_category {
+                VariableCategory::Attribute
+                | VariableCategory::Value => Ok(ExpressionValueType::Single(value_type.category())),
+                VariableCategory::AttributeList
+                | VariableCategory::ValueList => Ok(ExpressionValueType::List(value_type.category())),
+                _ => Err(TypeInferenceError::VariableInExpressionMustBeValueOrAttribute { variable: variable.clone(), actual_category: variable_category  })?,
+            }
         } else {
             Err(TypeInferenceError::ExpressionVariableHasNoValueType { variable: variable.clone() })
         }

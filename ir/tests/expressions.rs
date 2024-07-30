@@ -14,7 +14,7 @@ use encoding::value::value_type::ValueTypeCategory;
 use ir::expressions::evaluator::{ExpressionEvaluator, ExpressionValue};
 use ir::program::function_signature::HashMapFunctionIndex;
 use ir::translator::match_::translate_match;
-use ir::expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler};
+use ir::expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType};
 use ir::expressions::ExpressionCompilationError;
 use ir::pattern::constraint::Constraint;
 use ir::PatternDefinitionError;
@@ -37,7 +37,7 @@ impl From<ExpressionCompilationError> for PatternDefitionOrExpressionCompilation
 }
 
 
-fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ValueTypeCategory>) ->  Result<(HashMap<String, Variable>, CompiledExpression), PatternDefitionOrExpressionCompilationError> {
+fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ExpressionValueType>) ->  Result<(HashMap<String, Variable>, CompiledExpression), PatternDefitionOrExpressionCompilationError> {
     let query = format!("match $x = {}; filter $x;", s);
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap() {
         let block = translate_match(&HashMapFunctionIndex::empty(), &match_)?.finish();
@@ -93,7 +93,7 @@ fn test_basic() {
     }
 
     {
-        let (vars, expr) = compile_expression_via_match("$a + $b", HashMap::from([("a", ValueTypeCategory::Long), ("b", ValueTypeCategory::Long)])).unwrap();
+        let (vars, expr) = compile_expression_via_match("$a + $b", HashMap::from([("a", ExpressionValueType::Single(ValueTypeCategory::Long)), ("b", ExpressionValueType::Single(ValueTypeCategory::Long))])).unwrap();
         let (a, b) = ["a", "b"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
 
         let inputs = HashMap::from([
@@ -242,7 +242,7 @@ fn list_ops() {
     }
 
     {
-        let (vars, expr) = compile_expression_via_match("$y[1]", HashMap::from([("y", ValueTypeCategory::Long)])).unwrap();
+        let (vars, expr) = compile_expression_via_match("$y[1]", HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))])).unwrap();
         let (y,) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
 
         let inputs = HashMap::from([(y, ExpressionValue::List(vec![Value::Long(56), Value::Long(78), Value::Long(90)]))]);
@@ -251,7 +251,7 @@ fn list_ops() {
     }
 
     {
-        let (vars, expr) = compile_expression_via_match("$y[1..3]", HashMap::from([("y", ValueTypeCategory::Long)])).unwrap();
+        let (vars, expr) = compile_expression_via_match("$y[1..3]", HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))])).unwrap();
         let (y,) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
 
         let inputs = HashMap::from([(y, ExpressionValue::List(vec![Value::Long(09), Value::Long(87), Value::Long(65), Value::Long(43)]))]);

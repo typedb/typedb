@@ -49,7 +49,7 @@ pub struct CompiledExpression {
     variable_stack: Vec<Variable>,
     constant_stack: Vec<Value<'static>>,
 
-    return_type: ValueTypeCategory,
+    return_type: ExpressionValueType,
 }
 
 impl CompiledExpression {
@@ -67,15 +67,21 @@ impl CompiledExpression {
 }
 
 impl CompiledExpression {
-    pub(crate) fn return_type(&self) -> ValueTypeCategory {
-        self.return_type
+    pub(crate) fn return_type(&self) -> ExpressionValueType {
+        self.return_type.clone()
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum ExpressionValueType {
+    Single(ValueTypeCategory),
+    List(ValueTypeCategory),
 }
 
 pub struct ExpressionTreeCompiler<'this> {
     ir_tree: &'this ExpressionTree<Variable>,
-    variable_value_categories: HashMap<Variable, ValueTypeCategory>,
-    type_stack: Vec<ValueTypeCategory>,
+    variable_value_categories: HashMap<Variable, ExpressionValueType>,
+    type_stack: Vec<ExpressionValueType>,
 
     instructions: Vec<ExpressionOpCode>,
     variable_stack: Vec<Variable>,
@@ -83,20 +89,49 @@ pub struct ExpressionTreeCompiler<'this> {
 }
 
 impl<'this> ExpressionTreeCompiler<'this> {
-    pub(crate) fn pop_type(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+
+    fn pop_type(&mut self) -> Result<ExpressionValueType, ExpressionCompilationError> {
         match self.type_stack.pop() {
             Some(value) => Ok(value),
             None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
         }
     }
 
-    pub(crate) fn push_type(&mut self, value: ValueTypeCategory) {
-        self.type_stack.push(value);
+    pub(crate) fn pop_type_single(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+        match self.type_stack.pop() {
+            Some(ExpressionValueType::Single(value)) => Ok(value),
+            Some(ExpressionValueType::List(_)) => Err(ExpressionCompilationError::ExpectedSingleWasList),
+            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+        }
     }
 
-    fn peek_type(&self) -> Result<&ValueTypeCategory, ExpressionCompilationError> {
+    pub(crate) fn pop_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+        match self.type_stack.pop() {
+            Some(ExpressionValueType::List(value)) => Ok(value),
+            Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
+            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+        }
+    }
+
+    pub(crate) fn push_type_single(&mut self, value: ValueTypeCategory) {
+        self.type_stack.push(ExpressionValueType::Single(value));
+    }
+
+    pub(crate) fn push_type_list(&mut self, value: ValueTypeCategory) {
+        self.type_stack.push(ExpressionValueType::List(value));
+    }
+    fn peek_type_single(&self) -> Result<&ValueTypeCategory, ExpressionCompilationError> {
         match self.type_stack.last() {
-            Some(value) => Ok(value),
+            Some(ExpressionValueType::Single(value)) => Ok(value),
+            Some(ExpressionValueType::List(_)) => Err(ExpressionCompilationError::ExpectedSingleWasList),
+            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+        }
+    }
+
+    pub(crate) fn peek_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+        match self.type_stack.last() {
+            Some(ExpressionValueType::List(value)) => Ok(*value),
+            Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
             None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
         }
     }
@@ -109,7 +144,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 impl<'this> ExpressionTreeCompiler<'this> {
     fn new(
         ir_tree: &'this ExpressionTree<Variable>,
-        variable_value_categories: HashMap<Variable, ValueTypeCategory>,
+        variable_value_categories: HashMap<Variable, ExpressionValueType>,
     ) -> Self {
         ExpressionTreeCompiler {
             ir_tree,
@@ -123,19 +158,14 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     pub fn compile(
         ir_tree: &ExpressionTree<Variable>,
-        variable_value_categories: HashMap<Variable, ValueTypeCategory>,
+        variable_value_categories: HashMap<Variable, ExpressionValueType>,
     ) -> Result<CompiledExpression, ExpressionCompilationError> {
         let mut builder = ExpressionTreeCompiler::new(ir_tree, variable_value_categories);
-        match builder.compile_recursive(ir_tree.root()) {
-            Ok(_) => {
-                let return_type = builder.pop_type()?;
-                let ExpressionTreeCompiler { instructions, variable_stack, constant_stack, .. } = builder;
-                Ok(CompiledExpression { instructions, variable_stack, constant_stack, return_type })
-            }
-            Err(err) => {
-                todo!("Handle error during expression compilation")
-            }
-        }
+
+        builder.compile_recursive(ir_tree.root())?;
+        let return_type = builder.pop_type()?;
+        let ExpressionTreeCompiler { instructions, variable_stack, constant_stack, .. } = builder;
+        Ok(CompiledExpression { instructions, variable_stack, constant_stack, return_type })
     }
 
     fn compile_recursive(&mut self, index: usize) -> Result<(), ExpressionCompilationError> {
@@ -153,7 +183,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
     fn compile_constant(&mut self, constant: &Value<'static>) -> Result<(), ExpressionCompilationError> {
         self.constant_stack.push(constant.clone());
 
-        self.push_type(constant.value_type().category());
+        self.push_type_single(constant.value_type().category());
         self.append_instruction(LoadConstant::OP_CODE);
 
         Ok(())
@@ -164,7 +194,11 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
         self.variable_stack.push(variable.clone());
         self.append_instruction(LoadVariable::OP_CODE);
-        self.push_type(self.variable_value_categories.get(&variable).unwrap().clone());
+        // TODO: We need a way to know if a variable is a list or a single
+        match self.variable_value_categories.get(&variable).unwrap() {
+            ExpressionValueType::Single(value_type) => self.push_type_single(value_type.clone()),
+            ExpressionValueType::List(value_type) => self.push_type_list(value_type.clone()),
+        }
 
         Ok(())
     }
@@ -179,20 +213,20 @@ impl<'this> ExpressionTreeCompiler<'this> {
         self.compile_constant(&Value::Long(list_constructor.item_expression_indices.len() as i64))?;
         self.append_instruction(list_operations::ListConstructor::OP_CODE);
 
-        if self.pop_type()? != ValueTypeCategory::Long {
+        if self.pop_type_single()? != ValueTypeCategory::Long {
             Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
         }
         let n_elements = list_constructor.item_expression_indices.len();
         if n_elements > 0 {
-            let element_type = self.pop_type()?;
+            let element_type = self.pop_type_single()?;
             for _ in 1..list_constructor.item_expression_indices.len() {
-                if self.pop_type()? != element_type {
+                if self.pop_type_single()? != element_type {
                     Err(ExpressionCompilationError::HeterogenousValuesInList)?;
                 }
             }
-            self.push_type(element_type)
+            self.push_type_list(element_type)
         } else {
-            todo!("I can't know the value type of empty lists"); // But do I need to?
+            Err(ExpressionCompilationError::EmptyListConstructorCannotInferValueType)?;
         }
 
         Ok(())
@@ -203,14 +237,15 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
         self.compile_recursive(list_index.index_expression_index)?;
         self.compile_variable(&list_index.list_variable)?;
+
         self.append_instruction(list_operations::ListIndex::OP_CODE);
 
-        let index_type = self.pop_type()?;
+        let list_variable_type = self.pop_type_list()?;
+        let index_type = self.pop_type_single()?;
         if index_type != ValueTypeCategory::Long {
             Err(ExpressionCompilationError::ListIndexMustBeLong)?
         }
-        let list_variable_type = self.pop_type()?;
-        self.push_type(list_variable_type); // reuse
+        self.push_type_single(list_variable_type); // reuse
         Ok(())
     }
 
@@ -222,26 +257,26 @@ impl<'this> ExpressionTreeCompiler<'this> {
         self.compile_recursive(list_index_range.from_expression_index)?;
         self.compile_recursive(list_index_range.to_expression_index)?;
         self.compile_variable(&list_index_range.list_variable)?;
+
         self.append_instruction(list_operations::ListIndexRange::OP_CODE);
 
-        //
-        let list_variable_type = self.pop_type()?;
-        let from_index_type = self.pop_type()?;
+        let list_variable_type = self.pop_type_list()?;
+        let from_index_type = self.pop_type_single()?;
         if from_index_type != ValueTypeCategory::Long {
             Err(ExpressionCompilationError::ListIndexMustBeLong)?
         }
-        let to_index_type = self.pop_type()?;
+        let to_index_type = self.pop_type_single()?;
         if to_index_type != ValueTypeCategory::Long {
             Err(ExpressionCompilationError::ListIndexMustBeLong)?
         }
 
-        Ok(self.push_type(list_variable_type))
+        Ok(self.push_type_single(list_variable_type))
     }
 
     fn compile_op(&mut self, operation: &Operation) -> Result<(), ExpressionCompilationError> {
         let Operation { operator, left_expression_index, right_expression_index } = operation.clone();
         self.compile_recursive(operation.left_expression_index)?;
-        let left_category = self.peek_type()?;
+        let left_category = self.peek_type_single()?;
         match left_category {
             ValueTypeCategory::Boolean => self.compile_op_boolean(operator, right_expression_index),
             ValueTypeCategory::Long => self.compile_op_long(operator, right_expression_index),
@@ -258,7 +293,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_boolean(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type()?.clone();
+        let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Decimal,
@@ -268,7 +303,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_long(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type()?.clone();
+        let right_category = self.peek_type_single()?.clone();
         match right_category {
             ValueTypeCategory::Long => {
                 self.compile_op_long_long(op)?;
@@ -289,7 +324,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_double(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type()?.clone();
+        let right_category = self.peek_type_single()?.clone();
         match right_category {
             ValueTypeCategory::Long => {
                 // The right needs to be cast
@@ -310,7 +345,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_decimal(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type()?.clone();
+        let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Decimal,
@@ -320,7 +355,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_string(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type()?.clone();
+        let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::String,
@@ -330,7 +365,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_date(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type()?.clone();
+        let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Date,
@@ -340,7 +375,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_datetime(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type()?.clone();
+        let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::DateTime,
@@ -350,7 +385,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_datetime_tz(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type()?.clone();
+        let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::DateTimeTZ,
@@ -360,7 +395,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_duration(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type()?.clone();
+        let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Duration,
@@ -370,7 +405,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_struct(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type()?.clone();
+        let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Struct,
@@ -409,7 +444,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         match builtin.builtin_id {
             BuiltInFunctionID::Abs => {
                 self.compile_recursive(builtin.args_index[0])?;
-                match self.peek_type()? {
+                match self.peek_type_single()? {
                     ValueTypeCategory::Long => MathAbsLong::validate_and_append(self)?,
                     ValueTypeCategory::Double => MathAbsDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
@@ -418,7 +453,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
             }
             BuiltInFunctionID::Ceil => {
                 self.compile_recursive(builtin.args_index[0])?;
-                match self.peek_type()? {
+                match self.peek_type_single()? {
                     ValueTypeCategory::Double => MathCeilDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
@@ -426,7 +461,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
             }
             BuiltInFunctionID::Floor => {
                 self.compile_recursive(builtin.args_index[0])?;
-                match self.peek_type()? {
+                match self.peek_type_single()? {
                     ValueTypeCategory::Double => MathFloorDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
@@ -434,7 +469,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
             }
             BuiltInFunctionID::Round => {
                 self.compile_recursive(builtin.args_index[0])?;
-                match self.peek_type()? {
+                match self.peek_type_single()? {
                     ValueTypeCategory::Double => MathRoundDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
