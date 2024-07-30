@@ -5,5 +5,5 @@
  */
 mod define;
 mod error;
-mod query_manager;
+pub mod query_manager;
 mod util;
