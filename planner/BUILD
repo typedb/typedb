@@ -7,24 +7,17 @@ load("@rules_rust//rust:defs.bzl", "rust_library")
 package(default_visibility = ["//visibility:public"])
 
 rust_library(
-    name = "traversal",
+    name = "planner",
     crate_root = "lib.rs",
     srcs = glob([
         "*.rs",
-        "*/*.rs",
-        "*/*/*.rs",
-        "*/*/*/*.rs",
     ], exclude=["tests/**"]),
     deps = [
         "//answer",
-        "//common/lending_iterator",
-        "//common/logger",
         "//concept",
         "//encoding",
+        "//executor",
         "//ir",
-        "//resource",
-        "//storage",
-        "@vaticle_typeql//rust:typeql",
 
         "@crates//:itertools",
         "@crates//:tracing",
