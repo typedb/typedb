@@ -90,7 +90,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_dog,
-        vec![Instruction::Isa(isa.clone(), IterateBounds::None([]))],
+        vec![Instruction::IsaReverse(isa.clone(), IterateBounds::None([]))],
         &vec![var_dog, var_dog_type],
     ))];
 

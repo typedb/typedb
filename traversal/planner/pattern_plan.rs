@@ -344,6 +344,8 @@ pub(crate) trait InstructionAPI {
 pub enum Instruction {
     // type -> thing
     Isa(Isa<Variable>, IterateBounds<Variable>),
+    // thing -> type
+    IsaReverse(Isa<Variable>, IterateBounds<Variable>),
     // owner -> attribute
     Has(Has<Variable>, IterateBounds<Variable>),
     // attribute -> owner
@@ -383,6 +385,7 @@ impl Instruction {
     fn bound_vars_foreach(&self, mut apply: impl FnMut(Variable)) {
         match self {
             Instruction::Isa(_, bounds) => bounds.bounds().iter().cloned().for_each(apply),
+            Instruction::IsaReverse(_, bounds) => bounds.bounds().iter().cloned().for_each(apply),
             Instruction::Has(_, bounds) | Instruction::HasReverse(_, bounds) => {
                 bounds.bounds().iter().cloned().for_each(apply)
             }
@@ -399,7 +402,7 @@ impl Instruction {
 
     fn unbound_vars_foreach(&self, mut apply: impl FnMut(Variable)) {
         match self {
-            Instruction::Isa(isa, bounds) => isa.ids_foreach(|var, _| {
+            Instruction::Isa(isa, bounds) | Instruction::IsaReverse(isa, bounds) => isa.ids_foreach(|var, _| {
                 if !bounds.bounds().iter().contains(&var) {
                     apply(var)
                 }
@@ -431,7 +434,7 @@ impl Instruction {
 impl InstructionAPI for Instruction {
     fn constraint(&self) -> Constraint<Variable> {
         match self {
-            Instruction::Isa(isa, _) => isa.clone().into(),
+            Instruction::Isa(isa, _) | Instruction::IsaReverse(isa, _) => isa.clone().into(),
             Instruction::Has(has, _) | Instruction::HasReverse(has, _) => has.clone().into(),
             Instruction::RolePlayer(rp, _) | Instruction::RolePlayerReverse(rp, _) => rp.clone().into(),
             Instruction::FunctionCallBinding(call) => call.clone().into(),
