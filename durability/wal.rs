@@ -213,7 +213,7 @@ impl Files {
         Ok(Self { directory, writer, files })
     }
 
-    fn init_files_writer(directory: &PathBuf) -> io::Result<(Vec<File>, BufWriter<std::fs::File>)> {
+    fn init_files_writer(directory: &Path) -> io::Result<(Vec<File>, BufWriter<std::fs::File>)> {
         let mut files: Vec<File> = directory
             .read_dir()?
             .map_ok(|entry| entry.path())
@@ -225,7 +225,7 @@ impl Files {
         files.sort_unstable_by(|lhs, rhs| lhs.path.cmp(&rhs.path));
 
         if files.is_empty() {
-            files.push(File::open_at(directory.clone(), DurabilitySequenceNumber::MIN.next())?);
+            files.push(File::open_at(directory.to_owned(), DurabilitySequenceNumber::MIN)?);
         }
 
         let writer = files.last().unwrap().writer()?;
@@ -259,7 +259,7 @@ impl Files {
         Ok(())
     }
 
-    fn iter(&self) -> impl Iterator<Item = &File> + DoubleEndedIterator {
+    fn iter(&self) -> impl DoubleEndedIterator<Item = &File> {
         self.files.iter()
     }
 
@@ -461,7 +461,7 @@ impl<'a> FileRecordIterator<'a> {
                 }
             }
         }
-        Ok(Self { reader: Some(reader), file_ref: PhantomData::default() })
+        Ok(Self { reader: Some(reader), file_ref: PhantomData })
     }
 }
 
@@ -689,7 +689,7 @@ mod test {
 
         let found = wal.find_last_type(UnsequencedTestRecord::RECORD_TYPE).unwrap().unwrap();
         assert!(
-            matches!(found, RawRecord { bytes: Cow::Owned(bytes), record_type: UnsequencedTestRecord::RECORD_TYPE, .. } if &bytes == unsequenced_2.bytes())
+            matches!(found, RawRecord { bytes: Cow::Owned(bytes), record_type: UnsequencedTestRecord::RECORD_TYPE, .. } if bytes == unsequenced_2.bytes())
         );
 
         drop(wal);
@@ -698,7 +698,7 @@ mod test {
 
         let found = wal.find_last_type(UnsequencedTestRecord::RECORD_TYPE).unwrap().unwrap();
         assert!(
-            matches!(found, RawRecord { bytes: Cow::Owned(bytes), record_type: UnsequencedTestRecord::RECORD_TYPE, .. } if &bytes == unsequenced_2.bytes())
+            matches!(found, RawRecord { bytes: Cow::Owned(bytes), record_type: UnsequencedTestRecord::RECORD_TYPE, .. } if bytes == unsequenced_2.bytes())
         );
     }
 }
