@@ -25,7 +25,7 @@ pub(super) fn add_statement(
 ) -> Result<(), PatternDefinitionError> {
     match stmt {
         typeql::Statement::Is(_) => todo!(),
-        typeql::Statement::InStream(in_stream) => add_in_stream_statement(function_index, constraints, in_stream)?,
+        typeql::Statement::InStream(in_stream) => add_in_iterable_statement(function_index, constraints, in_stream)?,
         typeql::Statement::Comparison(_) => todo!(),
         typeql::Statement::Assignment(assignment) => {
             add_typeql_assignment(function_index, constraints, &assignment.lhs, &assignment.rhs)?
@@ -201,23 +201,23 @@ fn add_typeql_relation(
     Ok(())
 }
 
-fn add_in_stream_statement(
+fn add_in_iterable_statement(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
-    in_stream: &typeql::statement::InStream,
+    in_stream: &typeql::statement::InIterable,
 ) -> Result<(), PatternDefinitionError> {
-    // TODO: Can't this have a list as rhs?
-    match &in_stream.rhs.name {
-        FunctionName::Builtin(_) => todo!(),
-        FunctionName::Identifier(identifier) => add_function_call_user(
-            function_index,
-            constraints,
-            &AssignmentPattern::Variables(in_stream.lhs.clone()),
-            identifier.as_str(),
-            &in_stream.rhs.args,
-            true,
-        ),
-    }
+    todo!()
+    // match &in_stream.rhs.name {
+    //     FunctionName::Builtin(_) => todo!(),
+    //     FunctionName::Identifier(identifier) => add_function_call_user(
+    //         function_index,
+    //         constraints,
+    //         &AssignmentPattern::Variables(in_stream.lhs.clone()),
+    //         identifier.as_str(),
+    //         &in_stream.rhs.args,
+    //         true,
+    //     ),
+    // }
 }
 
 fn add_function_call_user(

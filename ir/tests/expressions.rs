@@ -36,7 +36,7 @@ impl From<ExpressionCompilationError> for PatternDefitionOrExpressionCompilation
 
 
 fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ExpressionValueType>) ->  Result<(HashMap<String, Variable>, CompiledExpression), PatternDefitionOrExpressionCompilationError> {
-    let query = format!("match $x = {}; filter $x;", s);
+    let query = format!("match $x = {}; select $x;", s);
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap() {
         let block = translate_match(&HashMapFunctionIndex::empty(), &match_)?.finish();
         let variable_mapping = variable_types.keys()
