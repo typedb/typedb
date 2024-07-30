@@ -82,7 +82,7 @@ fn build_program_with_functions() {
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
 
-    let function_argument_categories = vec![(VariableCategory::Object, VariableOptionality::Required)];
+    let function_argument_categories = vec![VariableCategory::Object];
     let function_return_categories = vec![
         (VariableCategory::Value, VariableOptionality::Required),
         (VariableCategory::Value, VariableOptionality::Optional),
