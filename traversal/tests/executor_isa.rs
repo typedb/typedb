@@ -6,7 +6,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::OwnerAPI};
+use concept::error::ConceptReadError;
 use encoding::value::label::Label;
 use ir::{
     inference::type_inference::infer_types,
@@ -81,12 +81,6 @@ fn traverse_isa_unbounded_sorted_thing() {
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
     let program = Program::new(block.finish(), Vec::new());
 
-    let annotated_program = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
-    };
-
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_dog,
@@ -97,6 +91,12 @@ fn traverse_isa_unbounded_sorted_thing() {
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan =
         ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+
+    let annotated_program = {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, _) = load_managers(storage.clone());
+        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
+    };
 
     // Executor
     let executor = {

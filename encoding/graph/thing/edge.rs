@@ -9,6 +9,7 @@ use std::ops::Range;
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
+    key_range::{KeyRange, RangeEnd},
     key_value::{StorageKey, StorageKeyReference},
     keyspace::KeyspaceSet,
 };
@@ -24,7 +25,6 @@ use crate::{
         Typed,
     },
     layout::prefix::{Prefix, PrefixID},
-    value::value_type::ValueTypeCategory,
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
@@ -100,7 +100,7 @@ impl<'a> ThingEdgeHas<'a> {
 
     pub fn is_has(key: StorageKeyReference<'_>) -> bool {
         key.keyspace_id() == Self::KEYSPACE.id()
-            && key.bytes().len() > 0
+            && !key.bytes().is_empty()
             && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
     }
 
@@ -250,6 +250,17 @@ impl<'a> ThingEdgeHasReverse<'a> {
         bytes.bytes_mut()[to_type_range].copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(to_type).bytes());
         bytes.truncate(range_from.end + TypeVertex::LENGTH);
         StorageKey::new_owned(Self::keyspace_for_from(from), bytes)
+    }
+
+    pub fn prefix_from_attribute_to_type_range(
+        from: AttributeVertex<'_>,
+        range_start: TypeVertex<'_>,
+        range_end: RangeEnd<TypeVertex<'_>>,
+    ) -> KeyRange<StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }>> {
+        KeyRange::new_fixed_width(
+            Self::prefix_from_attribute_to_type(from.clone(), range_start),
+            range_end.map(|vertex| Self::prefix_from_attribute_to_type(from, vertex)),
+        )
     }
     // end TODO
 
@@ -494,10 +505,10 @@ impl<'a> ThingEdgeRolePlayerIndex<'a> {
     const RANGE_TO_ROLE_TYPE_ID: Range<usize> =
         Self::RANGE_FROM_ROLE_TYPE_ID.end..Self::RANGE_FROM_ROLE_TYPE_ID.end + TypeID::LENGTH;
     const LENGTH: usize = PrefixID::LENGTH + 3 * ObjectVertex::LENGTH + 2 * TypeID::LENGTH;
-    pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + 1 * ObjectVertex::LENGTH;
+    pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        let index = ThingEdgeRolePlayerIndex { bytes: bytes };
+        let index = ThingEdgeRolePlayerIndex { bytes };
         debug_assert_eq!(index.prefix(), Self::PREFIX);
         index
     }

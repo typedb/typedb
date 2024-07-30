@@ -59,8 +59,8 @@ macro_rules! dispatch_tuple_iterator {
     { $self:ident, [$( $name:ident, )*], iter.$method_name:ident $args:tt }=> {
         match $self {
             $(
-            Self::$name(iter) => iter.$method_name $args
-            ),*
+            Self::$name(iter) => iter.$method_name $args,
+            )*
         }
     }
 }

@@ -70,7 +70,7 @@ impl IsaReverseExecutor {
         debug_assert!(thing_types.len() > 0);
         let iterate_mode = BinaryIterateMode::new(isa.clone(), true, &variable_modes, sort_by);
         let type_cache = if matches!(iterate_mode, BinaryIterateMode::UnboundInverted) {
-            let mut cache = thing_types.clone();
+            let cache = thing_types.clone();
             debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
             Some(cache)
         } else {

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{any::Any, borrow::Cow, cmp::max, collections::HashSet, sync::Arc};
+use std::{borrow::Cow, collections::HashSet, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -52,7 +52,7 @@ use storage::{
 
 use super::{decode_role_players, encode_role_players, HKInstance};
 use crate::{
-    error::{ConceptReadError, ConceptWriteError, ConceptWriteError::ConceptRead},
+    error::{ConceptReadError, ConceptWriteError},
     iterator::InstanceIterator,
     thing::{
         attribute::{Attribute, AttributeIterator, AttributeOwnerIterator},
@@ -435,7 +435,7 @@ impl ThingManager {
         Ok(has_exists)
     }
 
-    pub fn get_has_from_owner_type_range_unordered<'a>(
+    pub fn get_has_from_owner_type_range_unordered(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner_type_range: KeyRange<ObjectType<'static>>,
@@ -445,7 +445,7 @@ impl ThingManager {
         HasIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_has_from_attribute_type_range<'a>(
+    pub fn get_has_from_attribute_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type_range: impl Iterator<Item = AttributeType<'static>>,
@@ -487,7 +487,7 @@ impl ThingManager {
             .iterate_range(KeyRange::new_within(prefix, Prefix::IndexValueToStruct.fixed_width_keys()))
             .map::<Result<Attribute<'_>, _>, _>(|result| {
                 result
-                    .map(|(key, value)| {
+                    .map(|(key, _)| {
                         Attribute::new(
                             StructIndexEntry::new(StructIndexEntryKey::new(key.into_bytes()), None).attribute_vertex(),
                         )
@@ -657,6 +657,20 @@ impl ThingManager {
         )
     }
 
+    pub(crate) fn get_owners_by_type_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        attribute: Attribute<'_>,
+        owner_type_range: KeyRange<ObjectType<'static>>,
+    ) -> HasReverseIterator {
+        let prefix = ThingEdgeHasReverse::prefix_from_attribute_to_type_range(
+            attribute.into_vertex(),
+            owner_type_range.start().vertex(),
+            owner_type_range.end().clone().map(|object_type| object_type.into_vertex()),
+        );
+        HasReverseIterator::new(snapshot.iterate_range(prefix))
+    }
+
     pub(crate) fn has_owners(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -759,7 +773,7 @@ impl ThingManager {
     }
 }
 
-impl<'txn> ThingManager {
+impl ThingManager {
     pub(crate) fn lock_existing<'a>(&self, snapshot: &mut impl WritableSnapshot, object: impl ObjectAPI<'a>) {
         snapshot.unmodifiable_lock_add(object.into_vertex().as_storage_key().into_owned_array())
     }
@@ -923,7 +937,7 @@ impl<'txn> ThingManager {
             let owner = Object::new(ObjectVertex::new(Bytes::reference(key.bytes())));
             let owner_type = owner.type_();
             for owns in &owner_type.get_owns_declared(snapshot, self.type_manager())? {
-                if owns.is_key(snapshot, &*self.type_manager)? {
+                if owns.is_key(snapshot, &self.type_manager)? {
                     self.validate_owner(owner.as_reference(), owns.attribute(), snapshot, errors)?;
                 }
             }
@@ -947,7 +961,7 @@ impl<'txn> ThingManager {
         let cardinality = owns.get_cardinality(snapshot, self.type_manager())?;
         let count = owner.get_has_type_unordered(snapshot, self, attribute_type.clone())?.count();
         if !cardinality.value_valid(count as u64) {
-            if owns.is_key(snapshot, &*self.type_manager)? {
+            if owns.is_key(snapshot, &self.type_manager)? {
                 if count == 0 {
                     errors.push(ConceptWriteError::KeyMissing { owner: owner.into_owned(), key_type: attribute_type })
                 } else {
@@ -1107,14 +1121,14 @@ impl<'txn> ThingManager {
         }
     }
 
-    fn index_struct_fields<'a>(
+    fn index_struct_fields(
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute_vertex: &AttributeVertex<'static>,
-        struct_value: &StructValue<'a>,
+        struct_value: &StructValue<'_>,
     ) -> Result<(), ConceptWriteError> {
         let index_entries = struct_value
-            .create_index_entries(snapshot, &self.vertex_generator, &attribute_vertex)
+            .create_index_entries(snapshot, &self.vertex_generator, attribute_vertex)
             .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
         for entry in index_entries {
             let StructIndexEntry { key, value } = entry;
@@ -1301,7 +1315,7 @@ impl<'txn> ThingManager {
         Ok(())
     }
 
-    pub(crate) fn set_role_players_ordered<'a>(
+    pub(crate) fn set_role_players_ordered(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
