@@ -13,8 +13,13 @@ rust_library(
         "*.rs",
     ]),
     deps = [
-        "//ir",
+        "//concept",
         "//function",
+        "//encoding",
+        "//ir",
+        "//storage",
+
+        "@vaticle_typeql//rust:typeql",
     ],
 )
 
