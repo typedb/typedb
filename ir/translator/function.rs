@@ -49,8 +49,12 @@ pub fn translate_function(
 }
 
 pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> FunctionSignature {
-    let args =
-        function.signature.args.iter().map(|arg| type_any_to_category_and_optionality(&arg.type_)).collect::<Vec<_>>();
+    let args = function
+        .signature
+        .args
+        .iter()
+        .map(|arg| type_any_to_category_and_optionality(&arg.type_).0)
+        .collect::<Vec<_>>();
 
     let return_is_stream = matches!(function.signature.output, Output::Stream(_));
     let returns = match &function.signature.output {

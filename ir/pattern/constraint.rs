@@ -200,13 +200,6 @@ impl<'cx> ConstraintsBuilder<'cx> {
                 actual: arguments.len(),
             })?
         }
-        let unsatisfied_required_argument =
-            zip(arguments.iter(), callee_signature.arguments.iter()).find(|(caller_var, callee_argument)| {
-                self.context.is_variable_optional(**caller_var) && VariableOptionality::Required == callee_argument.1
-            });
-        if let Some((variable, _)) = unsatisfied_required_argument {
-            Err(FunctionRequiredArgumentReceivedOptionalVariable { variable: *variable })?
-        }
 
         // Construct
         let call_variable_mapping =
@@ -225,7 +218,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
         for (caller_var, callee_arg_index) in binding.function_call.call_id_mapping() {
             self.context.set_variable_category(
                 *caller_var,
-                callee_signature.arguments[*callee_arg_index].0,
+                callee_signature.arguments[*callee_arg_index],
                 binding.clone().into(),
             )?;
         }
