@@ -81,22 +81,22 @@ fn traverse_isa_unbounded_sorted_thing() {
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
     let program = Program::new(block.finish(), Vec::new());
 
-    // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
-        var_dog,
-        vec![Instruction::IsaReverse(isa.clone(), IterateBounds::None([]))],
-        &vec![var_dog, var_dog_type],
-    ))];
-
-    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
-
     let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
         infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
     };
+
+    // Plan
+    let steps = vec![Step::Intersection(IntersectionStep::new(
+        var_dog,
+        vec![Instruction::IsaReverse(isa.clone(), IterateBounds::None([]))],
+        &[var_dog, var_dog_type],
+    ))];
+
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
