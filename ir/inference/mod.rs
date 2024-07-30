@@ -50,7 +50,7 @@ use crate::expressions::ExpressionCompilationError;
 pub mod pattern_type_inference;
 pub mod type_inference;
 mod type_seeder;
-pub mod value_type_inference;
+pub mod expression_inference;
 
 #[derive(Debug)]
 pub enum TypeInferenceError {
