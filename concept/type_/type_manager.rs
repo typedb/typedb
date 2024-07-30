@@ -955,7 +955,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         definition_key: DefinitionKey<'static>,
-        field_name: String,
+        field_name: &str,
         value_type: ValueType,
         is_optional: bool,
     ) -> Result<(), ConceptWriteError> {

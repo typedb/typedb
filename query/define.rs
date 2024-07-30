@@ -9,12 +9,8 @@ use std::{error::Error, fmt};
 use concept::{error::ConceptWriteError, type_::type_manager::TypeManager};
 use encoding::value::label::Label;
 use storage::snapshot::WritableSnapshot;
-use typeql::{
-    common::token,
-    query::schema::Define,
-    schema::definable::{Struct, Type},
-    Definable,
-};
+use typeql::{common::token, query::schema::Define, schema::definable::{Struct, Type}, Definable, TypeRefAny};
+use typeql::schema::definable::struct_::Field;
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,
@@ -78,7 +74,22 @@ fn define_structs<'a>(
             })?;
 
             for field in &struct_definable.fields {
-                todo!()
+                let value_type = match field.type_ {
+                    TypeRefAny::Type(_) => {}
+                    TypeRefAny::Optional(_) => {}
+                    TypeRefAny::List(_) => DefineError::StructFieldIllegalList
+                };
+
+                type_manager.create_struct_field(
+                    snapshot,
+                    struct_key.clone(),
+                    field.key.as_str(),
+
+
+
+                ).map_err(|err| DefineError::StructFieldCreateError {
+                    source: err, struct_name: name.to_owned(), struct_field: field.clone()
+                })?;
             }
         }
     }
@@ -107,6 +118,7 @@ pub enum DefineError {
     TypeCreateError { source: ConceptWriteError, type_declaration: Type },
     RoleTypeDirectCreate { type_declaration: Type },
     StructCreateError { source: ConceptWriteError, struct_declaration: Struct },
+    StructFieldCreateError { source: ConceptWriteError, struct_name: String, struct_field: Field },
 }
 
 impl fmt::Display for DefineError {
