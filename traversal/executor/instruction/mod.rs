@@ -7,14 +7,9 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use concept::{
-    error::ConceptReadError,
-    thing::{thing_manager::ThingManager, ThingAPI},
-    type_::TypeAPI,
-};
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::{inference::type_inference::TypeAnnotations, pattern::constraint::Constraint};
 use storage::snapshot::ReadableSnapshot;
-pub use tracing::{error, info, trace, warn};
 
 use crate::{
     executor::{
@@ -31,7 +26,6 @@ use crate::{
     },
     planner::pattern_plan::{Instruction, InstructionAPI},
 };
-use crate::executor::instruction::InstructionExecutor::HasReverse;
 
 mod comparison_executor;
 mod comparison_reverse_executor;

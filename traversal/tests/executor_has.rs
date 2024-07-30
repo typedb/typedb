@@ -308,9 +308,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_age,
-        vec![
-            Instruction::HasReverse(has_age.clone(), IterateBounds::None([])),
-        ],
+        vec![Instruction::HasReverse(has_age.clone(), IterateBounds::None([]))],
         &vec![var_person, var_age],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
