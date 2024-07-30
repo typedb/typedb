@@ -612,17 +612,17 @@ impl ThingManager {
                 None => {}
                 Some((prefix, type_id)) => {
                     if min.is_none()
-                        || min.is_some_and(|(prefix, type_id)| {
-                            (prefix.prefix_id().bytes(), type_id.bytes())
+                        || min.is_some_and(|(min_prefix, min_type_id)| {
+                            (min_prefix.prefix_id().bytes(), min_type_id.bytes())
                                 > (prefix.prefix_id().bytes(), type_id.bytes())
                         })
                     {
                         min = Some((prefix, type_id));
                     }
                     if max.is_none()
-                        || max.is_some_and(|(prefix, type_id)| {
-                            (prefix.prefix_id().bytes(), type_id.bytes())
-                                > (prefix.prefix_id().bytes(), type_id.bytes())
+                        || max.is_some_and(|(max_prefix, max_type_id)| {
+                            (max_prefix.prefix_id().bytes(), max_type_id.bytes())
+                                < (prefix.prefix_id().bytes(), type_id.bytes())
                         })
                     {
                         max = Some((prefix, type_id));
