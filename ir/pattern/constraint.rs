@@ -253,6 +253,10 @@ impl<'cx> ConstraintsBuilder<'cx> {
     pub(crate) fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
         self.context.get_or_declare_variable(name, self.constraints.scope)
     }
+
+    pub(crate) fn set_variable_optionality(&mut self, variable: Variable, optional: bool) {
+        self.context.set_variable_is_optional(variable, optional)
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

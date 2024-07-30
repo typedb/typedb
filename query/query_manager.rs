@@ -4,17 +4,47 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use concept::type_::type_manager::TypeManager;
 use function::function::Function;
+use storage::snapshot::WritableSnapshot;
+use typeql::{query::SchemaQuery, Query};
+
+use crate::{define, error::QueryError};
 
 struct QueryManager {}
 
 impl QueryManager {
-    fn execute(&self, query: &str) {
+    fn execute(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        query: &str,
+    ) -> Result<(), QueryError> {
+        let parsed = typeql::parse_query(query)
+            .map_err(|err| QueryError::ParseError { typeql_query: query.to_string(), source: err })?;
+
+        match parsed {
+            Query::Schema(query) => match query {
+                SchemaQuery::Define(define) => {
+                    define::execute(snapshot, type_manager, define).map_err(|err| QueryError::Define { source: err })?
+                }
+                SchemaQuery::Redefine(redefine) => {
+                    todo!()
+                }
+                SchemaQuery::Undefine(undefine) => {
+                    todo!()
+                }
+            },
+            Query::Pipeline(pipeline) => {}
+        }
+
         // 1. parse query into list of TypeQL clauses
         // 2. expand implicit clauses, eg. fetch clause; -> filter clause; fetch clause;
         // 3. parse query-bound functions
         // 4. generate list of executors
         // 5. Execute each executor
+
+        Ok(())
     }
 
     // TODO: take in parsed TypeQL clause
@@ -28,14 +58,14 @@ impl QueryManager {
     }
 }
 
-enum Executor {
+enum Stage {
     Match,
     Insert,
     Delete,
     Put,
     Fetch,
     Assert,
-    Filter,
+    Select,
     Sort,
     Offset,
     Limit,

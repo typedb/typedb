@@ -1100,9 +1100,8 @@ impl TypeManager {
         // TODO: Re-enable when we get the thing_manager
         // OperationTimeValidation::validate_exact_type_no_instances_entity(snapshot, entity_type.clone())
         //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-
         TypeWriter::storage_delete_label(snapshot, entity_type.clone());
-        TypeWriter::storage_delete_supertype(snapshot, entity_type);
+        TypeWriter::storage_may_delete_supertype(snapshot, entity_type)?;
         Ok(())
     }
 
@@ -1127,7 +1126,7 @@ impl TypeManager {
         }
 
         TypeWriter::storage_delete_label(snapshot, relation_type.clone());
-        TypeWriter::storage_delete_supertype(snapshot, relation_type);
+        TypeWriter::storage_may_delete_supertype(snapshot, relation_type)?;
         Ok(())
     }
 
@@ -1153,7 +1152,7 @@ impl TypeManager {
         }
 
         TypeWriter::storage_delete_label(snapshot, attribute_type.clone());
-        TypeWriter::storage_delete_supertype(snapshot, attribute_type);
+        TypeWriter::storage_may_delete_supertype(snapshot, attribute_type)?;
         Ok(())
     }
 
@@ -1181,7 +1180,7 @@ impl TypeManager {
         let relates = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone())?;
         TypeWriter::storage_delete_relates(snapshot, relates.relation(), role_type.clone());
         TypeWriter::storage_delete_label(snapshot, role_type.clone());
-        TypeWriter::storage_delete_supertype(snapshot, role_type);
+        TypeWriter::storage_may_delete_supertype(snapshot, role_type)?;
         Ok(())
     }
 
@@ -1375,7 +1374,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        TypeWriter::storage_delete_supertype(snapshot, subtype.clone());
+        TypeWriter::storage_may_delete_supertype(snapshot, subtype.clone())?;
         TypeWriter::storage_put_supertype(snapshot, subtype.clone(), supertype.clone());
         Ok(())
     }
@@ -1387,7 +1386,7 @@ impl TypeManager {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, subtype.clone()).is_ok());
         OperationTimeValidation::validate_can_modify_type(snapshot, subtype.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-        TypeWriter::storage_delete_supertype(snapshot, subtype.clone());
+        TypeWriter::storage_may_delete_supertype(snapshot, subtype.clone())?;
         Ok(())
     }
 
@@ -1934,7 +1933,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         relates: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
-        TypeWriter::storage_delete_supertype(snapshot, relates.role());
+        TypeWriter::storage_may_delete_supertype(snapshot, relates.role())?;
         self.unset_supertype(snapshot, relates.role())?;
         TypeWriter::storage_delete_type_edge_overridden(snapshot, relates);
         Ok(())

@@ -24,9 +24,13 @@ pub struct Label<'a> {
 }
 
 impl<'a> Label<'a> {
-    pub fn parse_from<const INLINE_BYTES: usize>(string_bytes: StringBytes<'a, INLINE_BYTES>) -> Label<'static> {
+    pub fn parse_from_bytes<const INLINE_BYTES: usize>(string_bytes: StringBytes<'a, INLINE_BYTES>) -> Label<'static> {
         let as_str = string_bytes.as_str();
-        let mut splits = as_str.split(':');
+        Self::parse_from(as_str)
+    }
+
+    pub fn parse_from(string: &str) -> Label<'static> {
+        let mut splits = string.split(':');
         let first = splits.next().unwrap();
         if let Some(second) = splits.next() {
             Self::build_scoped(second, first)
@@ -93,7 +97,7 @@ impl<'a> TypeVertexPropertyEncoding<'a> for Label<'a> {
 
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         let string_bytes = StringBytes::new(Bytes::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(value));
-        Label::parse_from(string_bytes)
+        Label::parse_from_bytes(string_bytes)
     }
 
     fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {

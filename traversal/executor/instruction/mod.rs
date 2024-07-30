@@ -69,6 +69,9 @@ impl InstructionExecutor {
         let sort_by_position = sort_by.map(|var| *positions.get(&var).unwrap());
         match instruction {
             Instruction::Isa(isa, _) => {
+                todo!()
+            }
+            Instruction::IsaReverse(isa, _) => {
                 let thing = isa.thing();
                 let provider = IsaReverseExecutor::new(
                     isa.clone().into_ids(positions),
