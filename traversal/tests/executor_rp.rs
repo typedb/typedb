@@ -195,7 +195,7 @@ fn traverse_rp_unbounded_sorted_from() {
             Instruction::RolePlayer(rp_membership_person.clone(), IterateBounds::None([])),
             Instruction::RolePlayer(rp_membership_group.clone(), IterateBounds::None([])),
         ],
-        &vec![var_membership, var_group, var_person],
+        &[var_membership, var_group, var_person],
     ))];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());

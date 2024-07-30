@@ -5,7 +5,7 @@
  */
 
 use answer::variable::Variable;
-use typeql::{expression::FunctionName, type_::NamedType};
+use typeql::type_::NamedType;
 
 use crate::{
     pattern::constraint::{ConstraintsBuilder, IsaKind},
@@ -203,7 +203,7 @@ fn add_typeql_has(
         typeql::statement::thing::HasValue::Expression(_) => todo!(),
         typeql::statement::thing::HasValue::Comparison(_) => todo!(),
     };
-    let attribute = constraints.get_or_declare_variable(attr.name().unwrap())?;
+    let attribute = register_typeql_var(constraints, attr)?;
     constraints.add_has(owner, attribute)?;
     if let Some(type_) = &has.type_ {
         let attribute_type = register_typeql_type_var_any(constraints, type_)?;

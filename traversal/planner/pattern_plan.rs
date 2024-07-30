@@ -65,7 +65,7 @@ impl PatternPlan {
                     elements.push(PlannerVertex::Thing(planner));
                 }
                 VariableCategory::Value => todo!(),
-                VariableCategory::ObjectList
+                | VariableCategory::ObjectList
                 | VariableCategory::ThingList
                 | VariableCategory::AttributeList
                 | VariableCategory::ValueList => todo!(),
