@@ -18,7 +18,7 @@ use crate::expressions::{
         operators as ops,
         unary::{MathCeilDouble, MathFloorDouble, MathRoundDouble},
     },
-    expression_compiler::{CompiledExpressionTree, ExpressionInstruction},
+    expression_compiler::{CompiledExpression, ExpressionInstruction},
     op_codes::ExpressionOpCode,
     ExpressionEvaluationError,
 };
@@ -79,7 +79,7 @@ pub struct ExpressionEvaluator {}
 
 impl ExpressionEvaluator {
     pub fn evaluate(
-        compiled: CompiledExpressionTree,
+        compiled: CompiledExpression,
         input: HashMap<Variable, ExpressionValue>,
     ) -> Result<ExpressionValue, ExpressionEvaluationError> {
         let mut variable_stack = Vec::new();

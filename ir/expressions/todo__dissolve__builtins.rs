@@ -19,8 +19,6 @@ pub trait ValueTypeTrait: Sized {
     fn from_value(value: Value<'static>) -> Result<Self, ()>;
 
     fn into_value(self) -> Value<'static>;
-
-    fn mock_value() -> Value<'static>;
 }
 
 impl ValueTypeTrait for bool {
@@ -35,10 +33,6 @@ impl ValueTypeTrait for bool {
 
     fn into_value(self) -> Value<'static> {
         Value::Boolean(self)
-    }
-
-    fn mock_value() -> Value<'static> {
-        Value::Boolean(false)
     }
 }
 
@@ -55,10 +49,6 @@ impl ValueTypeTrait for f64 {
     fn into_value(self) -> Value<'static> {
         Value::Double(self)
     }
-
-    fn mock_value() -> Value<'static> {
-        Value::Double(0f64)
-    }
 }
 
 impl ValueTypeTrait for i64 {
@@ -74,10 +64,6 @@ impl ValueTypeTrait for i64 {
     fn into_value(self) -> Value<'static> {
         Value::Long(self)
     }
-
-    fn mock_value() -> Value<'static> {
-        Value::Long(0)
-    }
 }
 
 impl ValueTypeTrait for String {
@@ -92,10 +78,6 @@ impl ValueTypeTrait for String {
     fn into_value(self) -> Value<'static> {
         Value::String(Cow::Owned(self))
     }
-
-    fn mock_value() -> Value<'static> {
-        Value::String(Cow::Borrowed(""))
-    }
 }
 
 impl ValueTypeTrait for Decimal {
@@ -109,10 +91,6 @@ impl ValueTypeTrait for Decimal {
 
     fn into_value(self) -> Value<'static> {
         Value::Decimal(self)
-    }
-
-    fn mock_value() -> Value<'static> {
-        Value::Decimal(Decimal::new(0, 0))
     }
 }
 
@@ -129,10 +107,6 @@ impl ValueTypeTrait for NaiveDate {
     fn into_value(self) -> Value<'static> {
         Value::Date(self)
     }
-
-    fn mock_value() -> Value<'static> {
-        Value::Date(NaiveDate::default())
-    }
 }
 
 impl ValueTypeTrait for NaiveDateTime {
@@ -147,10 +121,6 @@ impl ValueTypeTrait for NaiveDateTime {
 
     fn into_value(self) -> Value<'static> {
         Value::DateTime(self)
-    }
-
-    fn mock_value() -> Value<'static> {
-        Value::DateTime(NaiveDateTime::default())
     }
 }
 
@@ -167,10 +137,6 @@ impl ValueTypeTrait for DateTime<Tz> {
     fn into_value(self) -> Value<'static> {
         Value::DateTimeTZ(self)
     }
-
-    fn mock_value() -> Value<'static> {
-        Value::DateTimeTZ(chrono_tz::GMT.from_utc_datetime(&NaiveDateTime::default()))
-    }
 }
 
 impl ValueTypeTrait for Duration {
@@ -185,9 +151,5 @@ impl ValueTypeTrait for Duration {
 
     fn into_value(self) -> Value<'static> {
         Value::Duration(self)
-    }
-
-    fn mock_value() -> Value<'static> {
-        Value::Duration(Duration::days(0))
     }
 }

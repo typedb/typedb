@@ -18,11 +18,11 @@ use crate::{
     pattern::{
         constraint::{Constraint, ExpressionBinding},
         variable_category::VariableCategory,
+        IrID,
     },
     program::block::BlockContext,
     PatternDefinitionError,
 };
-use crate::pattern::IrID;
 
 enum ExpectedArgumentType {
     Single,
@@ -123,11 +123,7 @@ pub struct ListIndexRange<ID: IrID> {
 }
 
 impl<ID: IrID> ListIndexRange<ID> {
-    pub(crate) fn new(
-        list_variable: ID,
-        from_expression_index: usize,
-        to_expression_index: usize,
-    ) -> Self {
+    pub(crate) fn new(list_variable: ID, from_expression_index: usize, to_expression_index: usize) -> Self {
         Self { list_variable, from_expression_index, to_expression_index }
     }
 }
@@ -200,7 +196,11 @@ impl ExpressionBinding<Variable> {
         }
     }
 
-    fn validate_is_list(&self, context: &mut BlockContext, expr: &Expression<Variable>) -> Result<(), ExpressionDefinitionError> {
+    fn validate_is_list(
+        &self,
+        context: &mut BlockContext,
+        expr: &Expression<Variable>,
+    ) -> Result<(), ExpressionDefinitionError> {
         if let Expression::Variable(variable) = expr {
             context
                 .set_variable_category(

@@ -45,7 +45,7 @@ pub trait SelfCompiling: ExpressionInstruction {
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError>;
 }
 
-pub struct CompiledExpressionTree {
+pub struct CompiledExpression {
     instructions: Vec<ExpressionOpCode>,
     variable_stack: Vec<Variable>,
     constant_stack: Vec<Value<'static>>,
@@ -53,7 +53,7 @@ pub struct CompiledExpressionTree {
     return_type: ValueTypeCategory,
 }
 
-impl CompiledExpressionTree {
+impl CompiledExpression {
     pub(crate) fn instructions(&self) -> &Vec<ExpressionOpCode> {
         &self.instructions
     }
@@ -67,7 +67,7 @@ impl CompiledExpressionTree {
     }
 }
 
-impl CompiledExpressionTree {
+impl CompiledExpression {
     pub(crate) fn return_type(&self) -> ValueTypeCategory {
         self.return_type
     }
@@ -76,7 +76,7 @@ impl CompiledExpressionTree {
 pub struct ExpressionTreeCompiler<'this> {
     ir_tree: &'this ExpressionTree<Variable>,
     variable_value_categories: HashMap<Variable, ValueTypeCategory>,
-    mock_stack: Vec<Value<'static>>, // TODO: Remove or use
+    type_stack: Vec<ValueTypeCategory>,
 
     instructions: Vec<ExpressionOpCode>,
     variable_stack: Vec<Variable>,
@@ -84,19 +84,19 @@ pub struct ExpressionTreeCompiler<'this> {
 }
 
 impl<'this> ExpressionTreeCompiler<'this> {
-    pub(crate) fn pop_mock(&mut self) -> Result<Value<'static>, ExpressionCompilationError> {
-        match self.mock_stack.pop() {
+    pub(crate) fn pop_type(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+        match self.type_stack.pop() {
             Some(value) => Ok(value),
             None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
         }
     }
 
-    pub(crate) fn push_mock(&mut self, value: Value<'static>) {
-        self.mock_stack.push(value);
+    pub(crate) fn push_type(&mut self, value: ValueTypeCategory) {
+        self.type_stack.push(value);
     }
 
-    fn peek_mock(&self) -> Result<&Value<'static>, ExpressionCompilationError> {
-        match self.mock_stack.last() {
+    fn peek_type(&self) -> Result<&ValueTypeCategory, ExpressionCompilationError> {
+        match self.type_stack.last() {
             Some(value) => Ok(value),
             None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
         }
@@ -108,27 +108,30 @@ impl<'this> ExpressionTreeCompiler<'this> {
 }
 
 impl<'this> ExpressionTreeCompiler<'this> {
-    fn new(ir_tree: &'this ExpressionTree<Variable>, variable_value_categories: HashMap<Variable, ValueTypeCategory>) -> Self {
+    fn new(
+        ir_tree: &'this ExpressionTree<Variable>,
+        variable_value_categories: HashMap<Variable, ValueTypeCategory>,
+    ) -> Self {
         ExpressionTreeCompiler {
             ir_tree,
             variable_value_categories,
             instructions: Vec::new(),
             variable_stack: Vec::new(),
             constant_stack: Vec::new(),
-            mock_stack: Vec::new(),
+            type_stack: Vec::new(),
         }
     }
 
     pub fn compile(
         ir_tree: &ExpressionTree<Variable>,
         variable_value_categories: HashMap<Variable, ValueTypeCategory>,
-    ) -> Result<CompiledExpressionTree, ExpressionCompilationError> {
+    ) -> Result<CompiledExpression, ExpressionCompilationError> {
         let mut builder = ExpressionTreeCompiler::new(ir_tree, variable_value_categories);
         match builder.compile_recursive(ir_tree.root()) {
             Ok(_) => {
-                let return_type = builder.pop_mock()?.value_type().category();
+                let return_type = builder.pop_type()?;
                 let ExpressionTreeCompiler { instructions, variable_stack, constant_stack, .. } = builder;
-                Ok(CompiledExpressionTree { instructions, variable_stack, constant_stack, return_type })
+                Ok(CompiledExpression { instructions, variable_stack, constant_stack, return_type })
             }
             Err(err) => {
                 todo!("Handle error during expression compilation")
@@ -151,7 +154,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
     fn compile_constant(&mut self, constant: &Value<'static>) -> Result<(), ExpressionCompilationError> {
         self.constant_stack.push(constant.clone());
 
-        self.push_mock(Self::get_mock_value_for(constant.value_type().category().clone()));
+        self.push_type(constant.value_type().category());
         self.append_instruction(LoadConstant::OP_CODE);
 
         Ok(())
@@ -162,7 +165,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
         self.variable_stack.push(variable.clone());
         self.append_instruction(LoadVariable::OP_CODE);
-        self.push_mock(Self::get_mock_value_for(self.variable_value_categories.get(&variable).unwrap().clone()));
+        self.push_type(self.variable_value_categories.get(&variable).unwrap().clone());
 
         Ok(())
     }
@@ -177,19 +180,18 @@ impl<'this> ExpressionTreeCompiler<'this> {
         self.compile_constant(&Value::Long(list_constructor.item_expression_indices.len() as i64))?;
         self.append_instruction(list_operations::ListConstructor::OP_CODE);
 
-        let n_elements = match self.pop_mock()? {
-            Value::Long(value) => {}
-            _ => unreachable!(),
-        };
+        if self.pop_type()? != ValueTypeCategory::Long {
+            Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
+        }
         let n_elements = list_constructor.item_expression_indices.len();
         if n_elements > 0 {
-            let mock_element = self.pop_mock()?;
+            let element_type = self.pop_type()?;
             for _ in 1..list_constructor.item_expression_indices.len() {
-                if self.pop_mock()? != mock_element {
+                if self.pop_type()? != element_type {
                     Err(ExpressionCompilationError::HeterogenousValuesInList)?;
                 }
             }
-            self.push_mock(mock_element)
+            self.push_type(element_type)
         } else {
             todo!("I can't know the value type of empty lists"); // But do I need to?
         }
@@ -204,12 +206,12 @@ impl<'this> ExpressionTreeCompiler<'this> {
         self.compile_variable(&list_index.list_variable)?;
         self.append_instruction(list_operations::ListIndex::OP_CODE);
 
-        let mock_index = self.pop_mock()?;
-        if !matches!(mock_index, Value::Long(_)) {
+        let index_type = self.pop_type()?;
+        if index_type != ValueTypeCategory::Long {
             Err(ExpressionCompilationError::ListIndexMustBeLong)?
         }
-        let list_variable_mock = self.pop_mock()?;
-        self.push_mock(list_variable_mock); // reuse
+        let list_variable_type = self.pop_type()?;
+        self.push_type(list_variable_type); // reuse
         Ok(())
     }
 
@@ -223,23 +225,24 @@ impl<'this> ExpressionTreeCompiler<'this> {
         self.compile_variable(&list_index_range.list_variable)?;
         self.append_instruction(list_operations::ListIndexRange::OP_CODE);
 
-        let mock_list_variable = self.pop_mock()?;
-        let mock_from_index = self.pop_mock()?;
-        if !matches!(mock_from_index, Value::Long(_)) {
+        //
+        let list_variable_type = self.pop_type()?;
+        let from_index_type = self.pop_type()?;
+        if from_index_type != ValueTypeCategory::Long {
             Err(ExpressionCompilationError::ListIndexMustBeLong)?
         }
-        let mock_to_index = self.pop_mock()?;
-        if !matches!(mock_to_index, Value::Long(_)) {
+        let to_index_type = self.pop_type()?;
+        if to_index_type != ValueTypeCategory::Long {
             Err(ExpressionCompilationError::ListIndexMustBeLong)?
         }
 
-        Ok(self.push_mock(mock_list_variable))
+        Ok(self.push_type(list_variable_type))
     }
 
     fn compile_op(&mut self, operation: &Operation) -> Result<(), ExpressionCompilationError> {
         let Operation { operator, left_expression_index, right_expression_index } = operation.clone();
         self.compile_recursive(operation.left_expression_index)?;
-        let left_category = self.peek_mock()?.value_type().category();
+        let left_category = self.peek_type()?;
         match left_category {
             ValueTypeCategory::Boolean => self.compile_op_boolean(operator, right_expression_index),
             ValueTypeCategory::Long => self.compile_op_long(operator, right_expression_index),
@@ -260,7 +263,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_long(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_mock()?.value_type().category();
+        let right_category = self.peek_type()?.clone();
         match right_category {
             ValueTypeCategory::Long => {
                 self.compile_op_long_long(op)?;
@@ -281,7 +284,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     fn compile_op_double(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_mock()?.value_type().category();
+        let right_category = self.peek_type()?.clone();
         match right_category {
             ValueTypeCategory::Long => {
                 // The right needs to be cast
@@ -332,21 +335,6 @@ impl<'this> ExpressionTreeCompiler<'this> {
     // Operator::Modulo => compile_op_modulo(left, right, instructions),
     // Operator::Power => compile_op_power(left, right, instructions),
     // }
-    fn get_mock_value_for(category: ValueTypeCategory) -> Value<'static> {
-        debug_assert!(category != ValueTypeCategory::Struct);
-        match category {
-            ValueTypeCategory::Boolean => <bool as ValueTypeTrait>::mock_value().clone(),
-            ValueTypeCategory::Long => <i64 as ValueTypeTrait>::mock_value().clone(),
-            ValueTypeCategory::Double => <f64 as ValueTypeTrait>::mock_value().clone(),
-            ValueTypeCategory::Decimal => <Decimal as ValueTypeTrait>::mock_value().clone(),
-            ValueTypeCategory::Date => <NaiveDate as ValueTypeTrait>::mock_value().clone(),
-            ValueTypeCategory::DateTime => <NaiveDateTime as ValueTypeTrait>::mock_value().clone(),
-            ValueTypeCategory::DateTimeTZ => <chrono::DateTime<chrono_tz::Tz> as ValueTypeTrait>::mock_value().clone(),
-            ValueTypeCategory::Duration => <Duration as ValueTypeTrait>::mock_value().clone(),
-            ValueTypeCategory::String => <String as ValueTypeTrait>::mock_value().clone(),
-            ValueTypeCategory::Struct => unreachable!(),
-        }
-    }
 
     // Ops with Left, Right resolved
     fn compile_op_long_long(&mut self, op: Operator) -> Result<(), ExpressionCompilationError> {
@@ -379,34 +367,34 @@ impl<'this> ExpressionTreeCompiler<'this> {
         match builtin.builtin_id {
             BuiltInFunctionID::Abs => {
                 self.compile_recursive(builtin.args_index[0])?;
-                match self.peek_mock()? {
-                    Value::Long(_) => MathAbsLong::validate_and_append(self)?,
-                    Value::Double(_) => MathAbsDouble::validate_and_append(self)?,
-                    Value::Decimal(_) => todo!(),
+                match self.peek_type()? {
+                    ValueTypeCategory::Long => MathAbsLong::validate_and_append(self)?,
+                    ValueTypeCategory::Double => MathAbsDouble::validate_and_append(self)?,
+                    ValueTypeCategory::Decimal => todo!(),
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
             BuiltInFunctionID::Ceil => {
                 self.compile_recursive(builtin.args_index[0])?;
-                match self.peek_mock()? {
-                    Value::Double(_) => MathCeilDouble::validate_and_append(self)?,
-                    Value::Decimal(_) => todo!(),
+                match self.peek_type()? {
+                    ValueTypeCategory::Double => MathCeilDouble::validate_and_append(self)?,
+                    ValueTypeCategory::Decimal => todo!(),
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
             BuiltInFunctionID::Floor => {
                 self.compile_recursive(builtin.args_index[0])?;
-                match self.peek_mock()? {
-                    Value::Double(_) => MathFloorDouble::validate_and_append(self)?,
-                    Value::Decimal(_) => todo!(),
+                match self.peek_type()? {
+                    ValueTypeCategory::Double => MathFloorDouble::validate_and_append(self)?,
+                    ValueTypeCategory::Decimal => todo!(),
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
             BuiltInFunctionID::Round => {
                 self.compile_recursive(builtin.args_index[0])?;
-                match self.peek_mock()? {
-                    Value::Double(_) => MathRoundDouble::validate_and_append(self)?,
-                    Value::Decimal(_) => todo!(),
+                match self.peek_type()? {
+                    ValueTypeCategory::Double => MathRoundDouble::validate_and_append(self)?,
+                    ValueTypeCategory::Decimal => todo!(),
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }

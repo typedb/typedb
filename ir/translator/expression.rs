@@ -4,11 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use answer::variable::Variable;
 use typeql::{
     common::token::{ArithmeticOperator, Function},
     expression::{BuiltinFunctionName, Expression as TypeQLExpression, FunctionName},
 };
-use answer::variable::Variable;
 
 use crate::{
     expressions::builtins::BuiltInFunctionID,

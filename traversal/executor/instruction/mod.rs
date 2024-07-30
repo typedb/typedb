@@ -20,7 +20,7 @@ use crate::{
             function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
             has_reverse_executor::HasReverseExecutor, isa_reverse_executor::IsaReverseExecutor,
             iterator::TupleIterator, role_player_executor::RolePlayerIteratorExecutor,
-            role_player_reverse_executor::RolePlayerReverseIteratorExecutor,
+            role_player_reverse_executor::RolePlayerReverseIteratorExecutor, InstructionExecutor::HasReverse,
         },
         VariablePosition,
     },

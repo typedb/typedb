@@ -14,7 +14,7 @@ use encoding::value::value_type::ValueTypeCategory;
 use ir::expressions::evaluator::{ExpressionEvaluator, ExpressionValue};
 use ir::program::function_signature::HashMapFunctionIndex;
 use ir::translator::match_::translate_match;
-use ir::expressions::expression_compiler::{CompiledExpressionTree, ExpressionTreeCompiler};
+use ir::expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler};
 use ir::expressions::ExpressionCompilationError;
 use ir::pattern::constraint::Constraint;
 use ir::PatternDefinitionError;
@@ -37,7 +37,7 @@ impl From<ExpressionCompilationError> for PatternDefitionOrExpressionCompilation
 }
 
 
-fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ValueTypeCategory>) ->  Result<(HashMap<String, Variable>, CompiledExpressionTree), PatternDefitionOrExpressionCompilationError> {
+fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ValueTypeCategory>) ->  Result<(HashMap<String, Variable>, CompiledExpression), PatternDefitionOrExpressionCompilationError> {
     let query = format!("match $x = {}; filter $x;", s);
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap() {
         let block = translate_match(&HashMapFunctionIndex::empty(), &match_)?.finish();

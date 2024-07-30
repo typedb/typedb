@@ -18,7 +18,7 @@ use encoding::value::value_type::ValueTypeCategory;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    expressions::expression_compiler::{CompiledExpressionTree, ExpressionTreeCompiler},
+    expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler},
     inference::{type_inference::TypeAnnotations, TypeInferenceError},
     pattern::{
         conjunction::Conjunction, constraint::ExpressionBinding, expression::Expression, nested_pattern::NestedPattern,
@@ -40,14 +40,14 @@ impl<'this, Snapshot: ReadableSnapshot> ValueTypeInference<'this, Snapshot> {
         type_manager: &'this TypeManager,
         block: &'this FunctionalBlock,
         type_annotations: &'this TypeAnnotations,
-    ) -> Result<HashMap<Variable, Option<CompiledExpressionTree>>, TypeInferenceError> {
+    ) -> Result<HashMap<Variable, Option<CompiledExpression>>, TypeInferenceError> {
         let mut expression_index = HashMap::new();
         Self::index_expressions(block.conjunction(), &mut expression_index)?;
         let expression_bindings: Vec<&ExpressionBinding<Variable>> =
             expression_index.values().map(|by_ref| by_ref.clone()).collect();
         let this = Self { snapshot, type_manager, type_annotations, expressions_by_assignment: expression_index };
 
-        let mut compiled_expressions: HashMap<Variable, Option<CompiledExpressionTree>> = HashMap::new();
+        let mut compiled_expressions: HashMap<Variable, Option<CompiledExpression>> = HashMap::new();
         for binding in expression_bindings {
             this.compile_expressions_recursive(binding, &mut compiled_expressions)?
         }
@@ -89,7 +89,7 @@ impl<'this, Snapshot: ReadableSnapshot> ValueTypeInference<'this, Snapshot> {
     fn compile_expressions_recursive<'block>(
         &self,
         binding: &ExpressionBinding<Variable>,
-        compiled_expressions: &mut HashMap<Variable, Option<CompiledExpressionTree>>,
+        compiled_expressions: &mut HashMap<Variable, Option<CompiledExpression>>,
     ) -> Result<(), TypeInferenceError> {
         debug_assert!(!compiled_expressions.contains_key(binding.left()));
         compiled_expressions.insert(binding.left().clone(), None);
@@ -119,7 +119,7 @@ impl<'this, Snapshot: ReadableSnapshot> ValueTypeInference<'this, Snapshot> {
     fn resolve_expression_type(
         &self,
         variable: &Variable,
-        compiled_expressions: &mut HashMap<Variable, Option<CompiledExpressionTree>>,
+        compiled_expressions: &mut HashMap<Variable, Option<CompiledExpression>>,
     ) -> Result<ValueTypeCategory, TypeInferenceError> {
         if let Some(binding) = self.expressions_by_assignment.get(variable) {
             let compiled_expression = match compiled_expressions.get(variable) {

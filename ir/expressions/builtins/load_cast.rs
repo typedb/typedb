@@ -6,8 +6,7 @@
 
 use std::marker::PhantomData;
 
-use encoding::value::value_type::ValueTypeCategory;
-use encoding::value::ValueEncodable;
+use encoding::value::{value_type::ValueTypeCategory, ValueEncodable};
 
 use crate::expressions::{
     evaluator::{ExpressionEvaluationState, ExpressionValue},
@@ -86,11 +85,11 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastUnary<F
     }
 
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
-        let value_before = builder.pop_mock()?;
-        if value_before.value_type().category() != From::VALUE_TYPE_CATEGORY {
+        let value_before = builder.pop_type()?;
+        if value_before != From::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
         }
-        builder.push_mock(To::mock_value());
+        builder.push_type(To::VALUE_TYPE_CATEGORY);
 
         builder.append_instruction(Self::OP_CODE);
         Ok(())
@@ -116,13 +115,13 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastBinaryL
     }
 
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
-        let right = builder.pop_mock()?;
-        let left_before = builder.pop_mock()?;
-        if left_before.value_type().category() != From::VALUE_TYPE_CATEGORY {
+        let right = builder.pop_type()?;
+        let left_before = builder.pop_type()?;
+        if left_before != From::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
         }
-        builder.push_mock(To::mock_value());
-        builder.push_mock(right);
+        builder.push_type(To::VALUE_TYPE_CATEGORY);
+        builder.push_type(right);
 
         builder.append_instruction(Self::OP_CODE);
         Ok(())
@@ -146,11 +145,11 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastBinaryR
     }
 
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
-        let right_before = builder.pop_mock()?;
-        if right_before.value_type().category() != From::VALUE_TYPE_CATEGORY {
+        let right_before = builder.pop_type()?;
+        if right_before != From::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
         }
-        builder.push_mock(To::mock_value());
+        builder.push_type(To::VALUE_TYPE_CATEGORY);
 
         builder.append_instruction(Self::OP_CODE);
         Ok(())

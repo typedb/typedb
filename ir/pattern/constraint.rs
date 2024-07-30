@@ -664,8 +664,8 @@ impl<ID: IrID> ExpressionBinding<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.ids_assigned().for_each(|id| function(id, ConstraintIDSide::Left));
         // TODO

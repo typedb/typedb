@@ -55,9 +55,11 @@ where
     }
 
     fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
-        let a1: T1 =
-            T1::from_value(builder.pop_mock()?).map_err(|_| ExpressionCompilationError::InternalUnexpectedValueType)?;
-        builder.push_mock(R::mock_value());
+        let a1 = builder.pop_type()?;
+        if a1 != T1::VALUE_TYPE_CATEGORY {
+            Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
+        }
+        builder.push_type(R::VALUE_TYPE_CATEGORY);
         builder.append_instruction(Self::OP_CODE);
         Ok(())
     }
