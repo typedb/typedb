@@ -203,7 +203,7 @@ impl Error for WALError {
 #[derive(Debug)]
 struct Files {
     directory: PathBuf,
-    writer: BufWriter<StdFile>,
+    writer: Option<BufWriter<StdFile>>,
     files: Vec<File>,
 }
 
@@ -213,7 +213,7 @@ impl Files {
         Ok(Self { directory, writer, files })
     }
 
-    fn init_files_writer(directory: &Path) -> io::Result<(Vec<File>, BufWriter<std::fs::File>)> {
+    fn init_files_writer(directory: &Path) -> io::Result<(Vec<File>, Option<BufWriter<std::fs::File>>)> {
         let mut files: Vec<File> = directory
             .read_dir()?
             .map_ok(|entry| entry.path())
@@ -224,27 +224,24 @@ impl Files {
             .try_collect()?;
         files.sort_unstable_by(|lhs, rhs| lhs.path.cmp(&rhs.path));
 
-        if files.is_empty() {
-            files.push(File::open_at(directory.to_owned(), DurabilitySequenceNumber::MIN)?);
-        }
-
-        let writer = files.last().unwrap().writer()?;
+        let writer = files.last().map(File::writer).transpose()?;
         Ok((files, writer))
     }
 
     fn open_new_file_at(&mut self, start: DurabilitySequenceNumber) -> io::Result<()> {
         let file = File::open_at(self.directory.clone(), start)?;
-        self.writer = file.writer()?;
+        self.writer = Some(file.writer()?);
         self.files.push(file);
         Ok(())
     }
 
     fn write_record(&mut self, record: RawRecord<'_>) -> Result<(), DurabilityServiceError> {
-        if self.files.last().unwrap().len >= MAX_WAL_FILE_SIZE {
+        if self.files.is_empty() || self.files.last().unwrap().len >= MAX_WAL_FILE_SIZE {
             self.open_new_file_at(record.sequence_number)?;
         }
+        let writer = self.writer.as_mut().unwrap();
         write_header(
-            &mut self.writer,
+            writer,
             RecordHeader {
                 sequence_number: record.sequence_number,
                 len: record.bytes.len() as u64,
@@ -252,10 +249,10 @@ impl Files {
             },
         )?;
 
-        self.writer.write_all(&record.bytes)?;
-        self.writer.flush()?;
+        writer.write_all(&record.bytes)?;
+        writer.flush()?;
 
-        self.files.last_mut().unwrap().len = self.writer.stream_position()?;
+        self.files.last_mut().unwrap().len = writer.stream_position()?;
         Ok(())
     }
 
@@ -382,6 +379,10 @@ struct RecordIterator<'a> {
 
 impl<'a> RecordIterator<'a> {
     fn new(files: RwLockReadGuard<'a, Files>, start: DurabilitySequenceNumber) -> io::Result<Self> {
+        if files.files.is_empty() {
+            return Ok(Self { files, current: 0, reader: None });
+        }
+
         let (current, mut current_start) = files
             .iter()
             .map_while(|file| (file.start < start).then_some(file.start))
@@ -391,7 +392,6 @@ impl<'a> RecordIterator<'a> {
         let mut reader = FileReader::new(files.files[current].clone())?;
 
         while current_start < start {
-            reader.read_one_record()?;
             match reader.peek_sequence_number().transpose() {
                 None => {
                     // sequence number is past the end of this file.
@@ -449,15 +449,16 @@ impl<'a> FileRecordIterator<'a> {
 
         let mut current_start = file.start;
         while current_start < start {
-            reader.read_one_record()?;
             match reader.peek_sequence_number().transpose() {
                 None => {
                     // sequence number is past the end of this file.
                     break;
                 }
                 Some(Err(err)) => return Err(err),
+                Some(Ok(sequence_number)) if sequence_number == start => break,
                 Some(Ok(sequence_number)) => {
                     current_start = sequence_number;
+                    reader.read_one_record()?;
                 }
             }
         }
