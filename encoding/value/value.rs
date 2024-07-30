@@ -295,143 +295,151 @@ impl<'a> ValueEncodable for Value<'a> {
     }
 }
 
-pub trait FromAndToValue: Sized {
-    const VALUE_TYPE_CATEGORY: ValueTypeCategory;
+impl TryInto<f64> for Value<'static> {
+    type Error = ();
 
-    fn from_value(value: Value<'static>) -> Result<Self, ()>;
-
-    fn into_value(self) -> Value<'static>;
+    fn try_into(self) -> Result<f64, Self::Error> {
+        todo!()
+    }
 }
 
-impl FromAndToValue for bool {
+pub trait DBValue: Sized {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory;
+
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()>;
+
+    fn to_db_value(self) -> Value<'static>;
+}
+
+impl DBValue for bool {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Boolean;
 
-    fn from_value(value: Value<'static>) -> Result<Self, ()> {
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Boolean(value) => Ok(value),
             _ => Err(()),
         }
     }
 
-    fn into_value(self) -> Value<'static> {
+    fn to_db_value(self) -> Value<'static> {
         Value::Boolean(self)
     }
 }
 
-impl FromAndToValue for f64 {
+impl DBValue for f64 {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Double;
 
-    fn from_value(value: Value<'static>) -> Result<Self, ()> {
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Double(value) => Ok(value),
             _ => Err(()),
         }
     }
 
-    fn into_value(self) -> Value<'static> {
+    fn to_db_value(self) -> Value<'static> {
         Value::Double(self)
     }
 }
 
-impl FromAndToValue for i64 {
+impl DBValue for i64 {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Long;
 
-    fn from_value(value: Value<'static>) -> Result<Self, ()> {
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Long(value) => Ok(value),
             _ => Err(()),
         }
     }
 
-    fn into_value(self) -> Value<'static> {
+    fn to_db_value(self) -> Value<'static> {
         Value::Long(self)
     }
 }
 
-impl FromAndToValue for String {
+impl DBValue for String {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::String;
-    fn from_value(value: Value<'static>) -> Result<Self, ()> {
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::String(value) => Ok(value.deref().to_owned()),
             _ => Err(()),
         }
     }
 
-    fn into_value(self) -> Value<'static> {
+    fn to_db_value(self) -> Value<'static> {
         Value::String(Cow::Owned(self))
     }
 }
 
-impl FromAndToValue for Decimal {
+impl DBValue for Decimal {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Decimal;
-    fn from_value(value: Value<'static>) -> Result<Self, ()> {
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Decimal(value) => Ok(value),
             _ => Err(()),
         }
     }
 
-    fn into_value(self) -> Value<'static> {
+    fn to_db_value(self) -> Value<'static> {
         Value::Decimal(self)
     }
 }
 
-impl FromAndToValue for NaiveDate {
+impl DBValue for NaiveDate {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Date;
 
-    fn from_value(value: Value<'static>) -> Result<Self, ()> {
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Date(value) => Ok(value),
             _ => Err(()),
         }
     }
 
-    fn into_value(self) -> Value<'static> {
+    fn to_db_value(self) -> Value<'static> {
         Value::Date(self)
     }
 }
 
-impl FromAndToValue for NaiveDateTime {
+impl DBValue for NaiveDateTime {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::DateTime;
 
-    fn from_value(value: Value<'static>) -> Result<Self, ()> {
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::DateTime(value) => Ok(value),
             _ => Err(()),
         }
     }
 
-    fn into_value(self) -> Value<'static> {
+    fn to_db_value(self) -> Value<'static> {
         Value::DateTime(self)
     }
 }
 
-impl FromAndToValue for DateTime<Tz> {
+impl DBValue for DateTime<Tz> {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::DateTimeTZ;
 
-    fn from_value(value: Value<'static>) -> Result<Self, ()> {
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::DateTimeTZ(value) => Ok(value),
             _ => Err(()),
         }
     }
 
-    fn into_value(self) -> Value<'static> {
+    fn to_db_value(self) -> Value<'static> {
         Value::DateTimeTZ(self)
     }
 }
 
-impl FromAndToValue for Duration {
+impl DBValue for Duration {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Duration;
 
-    fn from_value(value: Value<'static>) -> Result<Self, ()> {
+    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Duration(value) => Ok(value),
             _ => Err(()),
         }
     }
 
-    fn into_value(self) -> Value<'static> {
+    fn to_db_value(self) -> Value<'static> {
         Value::Duration(self)
     }
 }

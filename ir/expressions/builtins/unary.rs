@@ -6,7 +6,7 @@
 
 use std::marker::PhantomData;
 
-use encoding::value::{value::FromAndToValue, value_type::ValueTypeCategory};
+use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 
 use crate::expressions::{
     evaluator::ExpressionEvaluationState,
@@ -15,15 +15,15 @@ use crate::expressions::{
     ExpressionCompilationError, ExpressionEvaluationError,
 };
 
-pub trait UnaryExpression<T1: FromAndToValue, R: FromAndToValue> {
+pub trait UnaryExpression<T1: DBValue, R: DBValue> {
     const OP_CODE: ExpressionOpCode;
     fn evaluate(a1: T1) -> Result<R, ExpressionEvaluationError>;
 }
 
 pub struct Unary<T1, R, F>
 where
-    T1: FromAndToValue,
-    R: FromAndToValue,
+    T1: DBValue,
+    R: DBValue,
     F: UnaryExpression<T1, R>,
 {
     phantom: PhantomData<(T1, R, F)>,
@@ -31,22 +31,22 @@ where
 
 impl<T1, R, F> ExpressionInstruction for Unary<T1, R, F>
 where
-    T1: FromAndToValue,
-    R: FromAndToValue,
+    T1: DBValue,
+    R: DBValue,
     F: UnaryExpression<T1, R>,
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let a1: T1 = T1::from_value(state.pop_value()).unwrap();
-        state.push_value(F::evaluate(a1)?.into_value());
+        let a1: T1 = T1::form_db_value(state.pop_value()).unwrap();
+        state.push_value(F::evaluate(a1)?.to_db_value());
         Ok(())
     }
 }
 
 impl<T1, R, F> SelfCompiling for Unary<T1, R, F>
 where
-    T1: FromAndToValue,
-    R: FromAndToValue,
+    T1: DBValue,
+    R: DBValue,
     F: UnaryExpression<T1, R>,
 {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {

@@ -15,16 +15,16 @@ use crate::expressions::{
     ExpressionCompilationError, ExpressionEvaluationError,
 };
 
-pub trait BinaryExpression<T1: FromAndToValue, T2: FromAndToValue, R: FromAndToValue> {
+pub trait BinaryExpression<T1: DBValue, T2: DBValue, R: DBValue> {
     const OP_CODE: ExpressionOpCode;
     fn evaluate(a1: T1, a2: T2) -> Result<R, ExpressionEvaluationError>;
 }
 
 pub struct Binary<T1, T2, R, F>
 where
-    T1: FromAndToValue,
-    T2: FromAndToValue,
-    R: FromAndToValue,
+    T1: DBValue,
+    T2: DBValue,
+    R: DBValue,
     F: BinaryExpression<T1, T2, R>,
 {
     pub phantom: PhantomData<(T1, T2, R, F)>,
@@ -32,25 +32,25 @@ where
 
 impl<T1, T2, R, F> ExpressionInstruction for Binary<T1, T2, R, F>
 where
-    T1: FromAndToValue,
-    T2: FromAndToValue,
-    R: FromAndToValue,
+    T1: DBValue,
+    T2: DBValue,
+    R: DBValue,
     F: BinaryExpression<T1, T2, R>,
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let a2: T2 = T2::from_value(state.pop_value()).unwrap();
-        let a1: T1 = T1::from_value(state.pop_value()).unwrap();
-        state.push_value(F::evaluate(a1, a2)?.into_value());
+        let a2: T2 = T2::form_db_value(state.pop_value()).unwrap();
+        let a1: T1 = T1::form_db_value(state.pop_value()).unwrap();
+        state.push_value(F::evaluate(a1, a2)?.to_db_value());
         Ok(())
     }
 }
 
 impl<T1, T2, R, F> SelfCompiling for Binary<T1, T2, R, F>
 where
-    T1: FromAndToValue,
-    T2: FromAndToValue,
-    R: FromAndToValue,
+    T1: DBValue,
+    T2: DBValue,
+    R: DBValue,
     F: BinaryExpression<T1, T2, R>,
 {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
@@ -82,7 +82,7 @@ macro_rules! binary_instruction {
     };
 }
 pub(crate) use binary_instruction;
-use encoding::value::value::FromAndToValue;
+use encoding::value::value::DBValue;
 
 binary_instruction! {
     MathRemainderLong = MathRemainderLongImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }
