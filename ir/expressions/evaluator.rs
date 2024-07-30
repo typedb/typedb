@@ -16,7 +16,7 @@ use crate::expressions::{
         list_operations::{ListConstructor, ListIndex, ListIndexRange},
         load_cast::{CastLeftLongToDouble, CastRightLongToDouble, CastUnaryLongToDouble, LoadConstant, LoadVariable},
         operators as ops,
-        unary::{MathCeilDouble, MathFloorDouble, MathRoundDouble},
+        unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
     },
     expression_compiler::{CompiledExpression, ExpressionInstruction},
     op_codes::ExpressionOpCode,
@@ -129,7 +129,7 @@ fn evaluate_instruction(
         ExpressionOpCode::MathRoundDouble => MathRoundDouble::evaluate(state),
         ExpressionOpCode::MathCeilDouble => MathCeilDouble::evaluate(state),
         ExpressionOpCode::MathFloorDouble => MathFloorDouble::evaluate(state),
-        ExpressionOpCode::MathAbsLong => todo!(),
-        ExpressionOpCode::MathAbsDouble => todo!(),
+        ExpressionOpCode::MathAbsLong => MathAbsLong::evaluate(state),
+        ExpressionOpCode::MathAbsDouble => MathAbsDouble::evaluate(state),
     }
 }

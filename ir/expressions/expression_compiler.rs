@@ -252,12 +252,18 @@ impl<'this> ExpressionTreeCompiler<'this> {
             ValueTypeCategory::DateTimeTZ => self.compile_op_datetime_tz(operator, right_expression_index),
             ValueTypeCategory::Duration => self.compile_op_duration(operator, right_expression_index),
             ValueTypeCategory::String => self.compile_op_string(operator, right_expression_index),
-            ValueTypeCategory::Struct => todo!(),
+            ValueTypeCategory::Struct => self.compile_op_struct(operator, right_expression_index),
         }
     }
 
     fn compile_op_boolean(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
-        todo!()
+        self.compile_recursive(right)?;
+        let right_category = self.peek_type()?.clone();
+        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+            op,
+            left_category: ValueTypeCategory::Decimal,
+            right_category,
+        })
     }
 
     fn compile_op_long(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
@@ -302,38 +308,75 @@ impl<'this> ExpressionTreeCompiler<'this> {
         Ok(())
     }
 
+    fn compile_op_decimal(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
+        self.compile_recursive(right)?;
+        let right_category = self.peek_type()?.clone();
+        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+            op,
+            left_category: ValueTypeCategory::Decimal,
+            right_category,
+        })
+    }
+
     fn compile_op_string(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
-        todo!()
-    }
-
-    fn compile_op_duration(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
-        todo!()
-    }
-
-    fn compile_op_datetime_tz(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
-        todo!()
-    }
-
-    fn compile_op_datetime(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
-        todo!()
+        self.compile_recursive(right)?;
+        let right_category = self.peek_type()?.clone();
+        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+            op,
+            left_category: ValueTypeCategory::String,
+            right_category,
+        })
     }
 
     fn compile_op_date(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
-        todo!()
+        self.compile_recursive(right)?;
+        let right_category = self.peek_type()?.clone();
+        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+            op,
+            left_category: ValueTypeCategory::Date,
+            right_category,
+        })
     }
 
-    fn compile_op_decimal(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
-        todo!()
+    fn compile_op_datetime(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
+        self.compile_recursive(right)?;
+        let right_category = self.peek_type()?.clone();
+        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+            op,
+            left_category: ValueTypeCategory::DateTime,
+            right_category,
+        })
     }
 
-    // match operator {
-    // Operator::Add => compile_op_add(left, right, instructions),
-    // Operator::Subtract => compile_op_subtract(left, right, instructions),
-    // Operator::Multiply => compile_op_multiply(left, right, instructions),
-    // Operator::Divide => compile_op_divide(left, right, instructions),
-    // Operator::Modulo => compile_op_modulo(left, right, instructions),
-    // Operator::Power => compile_op_power(left, right, instructions),
-    // }
+    fn compile_op_datetime_tz(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
+        self.compile_recursive(right)?;
+        let right_category = self.peek_type()?.clone();
+        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+            op,
+            left_category: ValueTypeCategory::DateTimeTZ,
+            right_category,
+        })
+    }
+
+    fn compile_op_duration(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
+        self.compile_recursive(right)?;
+        let right_category = self.peek_type()?.clone();
+        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+            op,
+            left_category: ValueTypeCategory::Duration,
+            right_category,
+        })
+    }
+
+    fn compile_op_struct(&mut self, op: Operator, right: usize) -> Result<(), ExpressionCompilationError> {
+        self.compile_recursive(right)?;
+        let right_category = self.peek_type()?.clone();
+        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+            op,
+            left_category: ValueTypeCategory::Struct,
+            right_category,
+        })
+    }
 
     // Ops with Left, Right resolved
     fn compile_op_long_long(&mut self, op: Operator) -> Result<(), ExpressionCompilationError> {
@@ -369,7 +412,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 match self.peek_type()? {
                     ValueTypeCategory::Long => MathAbsLong::validate_and_append(self)?,
                     ValueTypeCategory::Double => MathAbsDouble::validate_and_append(self)?,
-                    ValueTypeCategory::Decimal => todo!(),
+                    // TODO: ValueTypeCategory::Decimal ?
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
@@ -377,7 +420,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 self.compile_recursive(builtin.args_index[0])?;
                 match self.peek_type()? {
                     ValueTypeCategory::Double => MathCeilDouble::validate_and_append(self)?,
-                    ValueTypeCategory::Decimal => todo!(),
+                    // TODO: ValueTypeCategory::Decimal ?
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
@@ -385,7 +428,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 self.compile_recursive(builtin.args_index[0])?;
                 match self.peek_type()? {
                     ValueTypeCategory::Double => MathFloorDouble::validate_and_append(self)?,
-                    ValueTypeCategory::Decimal => todo!(),
+                    // TODO: ValueTypeCategory::Decimal ?
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
@@ -393,7 +436,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 self.compile_recursive(builtin.args_index[0])?;
                 match self.peek_type()? {
                     ValueTypeCategory::Double => MathRoundDouble::validate_and_append(self)?,
-                    ValueTypeCategory::Decimal => todo!(),
+                    // TODO: ValueTypeCategory::Decimal ?
                     _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
