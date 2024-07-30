@@ -225,7 +225,7 @@ impl Files {
         files.sort_unstable_by(|lhs, rhs| lhs.path.cmp(&rhs.path));
 
         if files.is_empty() {
-            files.push(File::open_at(directory.clone(), DurabilitySequenceNumber::MIN.next())?);
+            files.push(File::open_at(directory.clone(), DurabilitySequenceNumber::MIN)?);
         }
 
         let writer = files.last().unwrap().writer()?;
