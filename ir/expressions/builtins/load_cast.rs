@@ -6,13 +6,12 @@
 
 use std::marker::PhantomData;
 
-use encoding::value::{value_type::ValueTypeCategory, ValueEncodable};
+use encoding::value::{value::FromAndToValue, value_type::ValueTypeCategory, ValueEncodable};
 
 use crate::expressions::{
     evaluator::{ExpressionEvaluationState, ExpressionValue},
     expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
     op_codes::ExpressionOpCode,
-    todo__dissolve__builtins::ValueTypeTrait,
     ExpressionCompilationError, ExpressionEvaluationError,
 };
 
@@ -49,26 +48,26 @@ impl ExpressionInstruction for LoadConstant {
 }
 
 // Casts
-pub trait ImplicitCast<From: ValueTypeTrait>: ValueTypeTrait {
+pub trait ImplicitCast<From: FromAndToValue>: FromAndToValue {
     const CAST_UNARY_OPCODE: ExpressionOpCode;
     const CAST_LEFT_OPCODE: ExpressionOpCode;
     const CAST_RIGHT_OPCODE: ExpressionOpCode;
     fn cast(from: From) -> Result<Self, ExpressionEvaluationError>;
 }
 
-pub struct CastUnary<From: ValueTypeTrait, To: ImplicitCast<From>> {
+pub struct CastUnary<From: FromAndToValue, To: ImplicitCast<From>> {
     phantom: PhantomData<(From, To)>,
 }
 
-pub struct CastBinaryLeft<From: ValueTypeTrait, To: ImplicitCast<From>> {
+pub struct CastBinaryLeft<From: FromAndToValue, To: ImplicitCast<From>> {
     phantom: PhantomData<(From, To)>,
 }
 
-pub struct CastBinaryRight<From: ValueTypeTrait, To: ImplicitCast<From>> {
+pub struct CastBinaryRight<From: FromAndToValue, To: ImplicitCast<From>> {
     phantom: PhantomData<(From, To)>,
 }
 
-impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for CastUnary<From, To> {
+impl<From: FromAndToValue, To: ImplicitCast<From>> ExpressionInstruction for CastUnary<From, To> {
     const OP_CODE: ExpressionOpCode = To::CAST_UNARY_OPCODE;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
@@ -79,7 +78,7 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for Cas
     }
 }
 
-impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastUnary<From, To> {
+impl<From: FromAndToValue, To: ImplicitCast<From>> SelfCompiling for CastUnary<From, To> {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }
@@ -96,7 +95,7 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastUnary<F
     }
 }
 
-impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for CastBinaryLeft<From, To> {
+impl<From: FromAndToValue, To: ImplicitCast<From>> ExpressionInstruction for CastBinaryLeft<From, To> {
     const OP_CODE: ExpressionOpCode = To::CAST_LEFT_OPCODE;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
@@ -109,7 +108,7 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for Cas
     }
 }
 
-impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastBinaryLeft<From, To> {
+impl<From: FromAndToValue, To: ImplicitCast<From>> SelfCompiling for CastBinaryLeft<From, To> {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }
@@ -128,7 +127,7 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastBinaryL
     }
 }
 
-impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for CastBinaryRight<From, To> {
+impl<From: FromAndToValue, To: ImplicitCast<From>> ExpressionInstruction for CastBinaryRight<From, To> {
     const OP_CODE: ExpressionOpCode = To::CAST_RIGHT_OPCODE;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
@@ -139,7 +138,7 @@ impl<From: ValueTypeTrait, To: ImplicitCast<From>> ExpressionInstruction for Cas
     }
 }
 
-impl<From: ValueTypeTrait, To: ImplicitCast<From>> SelfCompiling for CastBinaryRight<From, To> {
+impl<From: FromAndToValue, To: ImplicitCast<From>> SelfCompiling for CastBinaryRight<From, To> {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }

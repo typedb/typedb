@@ -6,25 +6,24 @@
 
 use std::marker::PhantomData;
 
-use encoding::value::value_type::ValueTypeCategory;
+use encoding::value::{value::FromAndToValue, value_type::ValueTypeCategory};
 
 use crate::expressions::{
     evaluator::ExpressionEvaluationState,
     expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
     op_codes::ExpressionOpCode,
-    todo__dissolve__builtins::ValueTypeTrait,
     ExpressionCompilationError, ExpressionEvaluationError,
 };
 
-pub trait UnaryExpression<T1: ValueTypeTrait, R: ValueTypeTrait> {
+pub trait UnaryExpression<T1: FromAndToValue, R: FromAndToValue> {
     const OP_CODE: ExpressionOpCode;
     fn evaluate(a1: T1) -> Result<R, ExpressionEvaluationError>;
 }
 
 pub struct Unary<T1, R, F>
 where
-    T1: ValueTypeTrait,
-    R: ValueTypeTrait,
+    T1: FromAndToValue,
+    R: FromAndToValue,
     F: UnaryExpression<T1, R>,
 {
     phantom: PhantomData<(T1, R, F)>,
@@ -32,8 +31,8 @@ where
 
 impl<T1, R, F> ExpressionInstruction for Unary<T1, R, F>
 where
-    T1: ValueTypeTrait,
-    R: ValueTypeTrait,
+    T1: FromAndToValue,
+    R: FromAndToValue,
     F: UnaryExpression<T1, R>,
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
@@ -46,8 +45,8 @@ where
 
 impl<T1, R, F> SelfCompiling for Unary<T1, R, F>
 where
-    T1: ValueTypeTrait,
-    R: ValueTypeTrait,
+    T1: FromAndToValue,
+    R: FromAndToValue,
     F: UnaryExpression<T1, R>,
 {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {

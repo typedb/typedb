@@ -47,10 +47,10 @@ use concept::error::ConceptReadError;
 
 use crate::expressions::ExpressionCompilationError;
 
+pub mod expression_inference;
 pub mod pattern_type_inference;
 pub mod type_inference;
 mod type_seeder;
-pub mod expression_inference;
 
 #[derive(Debug)]
 pub enum TypeInferenceError {

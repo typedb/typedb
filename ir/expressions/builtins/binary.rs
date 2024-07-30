@@ -12,20 +12,19 @@ use crate::expressions::{
     evaluator::ExpressionEvaluationState,
     expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
     op_codes::ExpressionOpCode,
-    todo__dissolve__builtins::ValueTypeTrait,
     ExpressionCompilationError, ExpressionEvaluationError,
 };
 
-pub trait BinaryExpression<T1: ValueTypeTrait, T2: ValueTypeTrait, R: ValueTypeTrait> {
+pub trait BinaryExpression<T1: FromAndToValue, T2: FromAndToValue, R: FromAndToValue> {
     const OP_CODE: ExpressionOpCode;
     fn evaluate(a1: T1, a2: T2) -> Result<R, ExpressionEvaluationError>;
 }
 
 pub struct Binary<T1, T2, R, F>
 where
-    T1: ValueTypeTrait,
-    T2: ValueTypeTrait,
-    R: ValueTypeTrait,
+    T1: FromAndToValue,
+    T2: FromAndToValue,
+    R: FromAndToValue,
     F: BinaryExpression<T1, T2, R>,
 {
     pub phantom: PhantomData<(T1, T2, R, F)>,
@@ -33,9 +32,9 @@ where
 
 impl<T1, T2, R, F> ExpressionInstruction for Binary<T1, T2, R, F>
 where
-    T1: ValueTypeTrait,
-    T2: ValueTypeTrait,
-    R: ValueTypeTrait,
+    T1: FromAndToValue,
+    T2: FromAndToValue,
+    R: FromAndToValue,
     F: BinaryExpression<T1, T2, R>,
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
@@ -49,9 +48,9 @@ where
 
 impl<T1, T2, R, F> SelfCompiling for Binary<T1, T2, R, F>
 where
-    T1: ValueTypeTrait,
-    T2: ValueTypeTrait,
-    R: ValueTypeTrait,
+    T1: FromAndToValue,
+    T2: FromAndToValue,
+    R: FromAndToValue,
     F: BinaryExpression<T1, T2, R>,
 {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
@@ -83,6 +82,7 @@ macro_rules! binary_instr {
     };
 }
 pub(crate) use binary_instr;
+use encoding::value::value::FromAndToValue;
 
 binary_instr! {
     MathRemainderLong = MathRemainderLongImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }
