@@ -46,8 +46,8 @@ pub trait SelfCompiling: ExpressionInstruction {
 
 pub struct CompiledExpression {
     instructions: Vec<ExpressionOpCode>,
-    variable_stack: Vec<Variable>,
-    constant_stack: Vec<Value<'static>>,
+    variables: Vec<Variable>,
+    constants: Vec<Value<'static>>,
 
     return_type: ExpressionValueType,
 }
@@ -58,11 +58,11 @@ impl CompiledExpression {
     }
 
     pub fn variables(&self) -> &[Variable] {
-        self.variable_stack.as_slice()
+        self.variables.as_slice()
     }
 
     pub fn constants(&self) -> &[Value<'static>] {
-        self.constant_stack.as_slice()
+        self.constants.as_slice()
     }
 }
 
@@ -164,7 +164,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         builder.compile_recursive(ir_tree.root())?;
         let return_type = builder.pop_type()?;
         let ExpressionTreeCompiler { instructions, variable_stack, constant_stack, .. } = builder;
-        Ok(CompiledExpression { instructions, variable_stack, constant_stack, return_type })
+        Ok(CompiledExpression { instructions, variables: variable_stack, constants: constant_stack, return_type })
     }
 
     fn compile_recursive(&mut self, index: usize) -> Result<(), ExpressionCompilationError> {

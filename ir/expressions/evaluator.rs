@@ -8,7 +8,6 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::value::value::Value;
-use primitive::either::Either;
 
 use crate::expressions::{
     builtins::{
@@ -29,17 +28,17 @@ pub enum ExpressionValue {
     List(Vec<Value<'static>>),
 }
 
-pub struct ExpressionEvaluationState<'constants> {
-    constants: &'constants [Value<'static>],
-    variable_stack: Vec<ExpressionValue>, // TODO: This can be Vec<Position> and we read from the row.
-
+pub struct ExpressionEvaluationState<'this> {
     stack: Vec<ExpressionValue>,
+    variables: Box<[ExpressionValue]>,
+    next_variable_index: usize,
+    constants: &'this [Value<'static>],
     next_constant_index: usize,
 }
 
-impl<'constants> ExpressionEvaluationState<'constants> {
-    fn new(variable_stack: Vec<ExpressionValue>, constants: &'constants [Value<'static>]) -> Self {
-        Self { constants, variable_stack, stack: Vec::new(), next_constant_index: 0 }
+impl<'this> ExpressionEvaluationState<'this> {
+    fn new(variables: Box<[ExpressionValue]>, constants: &'this [Value<'static>]) -> Self {
+        Self { stack: Vec::new(), variables, next_variable_index: 0, constants, next_constant_index: 0 }
     }
 
     pub fn push_value(&mut self, value: Value<'static>) {
@@ -65,7 +64,9 @@ impl<'constants> ExpressionEvaluationState<'constants> {
     }
 
     pub fn next_variable(&mut self) -> ExpressionValue {
-        self.variable_stack.pop().unwrap()
+        let value = self.variables[self.next_variable_index].clone();
+        self.next_variable_index += 1;
+        value
     }
 
     pub fn next_constant(&mut self) -> Value<'static> {
@@ -82,12 +83,12 @@ impl ExpressionEvaluator {
         compiled: CompiledExpression,
         input: HashMap<Variable, ExpressionValue>,
     ) -> Result<ExpressionValue, ExpressionEvaluationError> {
-        let mut variable_stack = Vec::new();
+        let mut variables = Vec::new();
         for v in compiled.variables() {
-            variable_stack.push(input.get(v).unwrap().clone());
+            variables.push(input.get(v).unwrap().clone());
         }
 
-        let mut state = ExpressionEvaluationState::new(variable_stack, compiled.constants());
+        let mut state = ExpressionEvaluationState::new(variables.into_boxed_slice(), compiled.constants());
         for instr in compiled.instructions() {
             evaluate_instruction(instr, &mut state)?;
         }
@@ -95,7 +96,6 @@ impl ExpressionEvaluator {
     }
 }
 
-// Really huge switch
 fn evaluate_instruction(
     op_code: &ExpressionOpCode,
     state: &mut ExpressionEvaluationState<'_>,

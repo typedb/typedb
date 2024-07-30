@@ -4,19 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-/*
-We want to determine the output value type of each Expression ( -> Comparisons )
-
-We decided that Expressions and Comparisons are not 'constraining', eg `$x + 4` does not enforce value type constraints on $x to be convertible to long.
- */
-
 use std::collections::{HashMap, HashSet};
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
-use encoding::value::value_type::ValueTypeCategory;
 use storage::snapshot::ReadableSnapshot;
-use typeql::parser::Rule::var;
 
 use crate::{
     expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType},

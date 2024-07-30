@@ -6,7 +6,6 @@
 
 use std::collections::HashMap;
 use itertools::Itertools;
-use typeql::match_;
 use typeql::query::stage::Stage;
 use answer::variable::Variable;
 use encoding::value::value::Value;
@@ -18,7 +17,6 @@ use ir::expressions::expression_compiler::{CompiledExpression, ExpressionTreeCom
 use ir::expressions::ExpressionCompilationError;
 use ir::pattern::constraint::Constraint;
 use ir::PatternDefinitionError;
-use primitive::either::Either;
 
 #[derive(Debug)]
 pub enum PatternDefitionOrExpressionCompilationError {
@@ -81,9 +79,9 @@ macro_rules! as_list {
 #[test]
 fn test_basic() {
     {
-        let (_, expr) = compile_expression_via_match("3 + 5", HashMap::new()).unwrap();
+        let (_, expr) = compile_expression_via_match("3 - 5", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-        assert_eq!(as_value!(result), Value::Long(8));
+        assert_eq!(as_value!(result), Value::Long(-2));
     }
 
     {
