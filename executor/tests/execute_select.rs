@@ -9,10 +9,11 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 use compiler::{
     inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
     planner::{
-        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
+        pattern_plan::{ IntersectionStep,  PatternPlan, Step},
         program_plan::ProgramPlan,
     },
 };
+use compiler::instruction::constraint::instructions::{ConstraintInstruction, Inputs};
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
@@ -158,7 +159,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
+        vec![ConstraintInstruction::Has(has_attribute.clone(), Inputs::None([]))],
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
@@ -231,7 +232,7 @@ fn unselected_named_vars_counted() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
+        vec![ConstraintInstruction::Has(has_attribute.clone(), Inputs::None([]))],
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
@@ -316,9 +317,9 @@ fn cartesian_named_counted_checked() {
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![
-            Instruction::Has(has_name.clone(), IterateBounds::None([])),
-            Instruction::Has(has_age.clone(), IterateBounds::None([])),
-            Instruction::Has(has_email.clone(), IterateBounds::None([])),
+            ConstraintInstruction::Has(has_name.clone(), Inputs::None([])),
+            ConstraintInstruction::Has(has_age.clone(), Inputs::None([])),
+            ConstraintInstruction::Has(has_email.clone(), Inputs::None([])),
         ],
         &vec![var_person, var_age],
     ))];

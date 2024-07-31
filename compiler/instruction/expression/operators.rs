@@ -4,14 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::instruction::expression::{
-    builtins::{
-        binary::{binary_instruction, Binary, BinaryExpression},
-        check_operation,
-    },
-    op_codes::ExpressionOpCode,
-    ExpressionEvaluationError,
-};
+use crate::instruction::expression::{check_operation, ExpressionEvaluationError, op_codes::ExpressionOpCode};
+use crate::instruction::expression::binary::{Binary, binary_instruction, BinaryExpression};
 
 binary_instruction! {
     OpLongAddLong = OpLongAddLongImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_add(a1, a2)) }

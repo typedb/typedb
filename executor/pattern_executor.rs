@@ -6,23 +6,25 @@
 
 use std::{cmp::Ordering, collections::HashMap, fmt::Display, sync::Arc};
 
+use itertools::Itertools;
+
 use answer::{variable::Variable, variable_value::VariableValue};
 use compiler::{
     inference::type_annotations::TypeAnnotations,
     planner::pattern_plan::{
-        AssignmentStep, DisjunctionStep, Instruction, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
+        AssignmentStep, DisjunctionStep, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
         UnsortedJoinStep,
     },
 };
+use compiler::instruction::constraint::instructions::ConstraintInstruction;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::program::block::BlockContext;
-use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{Batch, BatchRowIterator, ImmutableRow, Row},
-    instruction::{iterator::TupleIterator, InstructionExecutor},
+    instruction::{InstructionExecutor, iterator::TupleIterator},
     SelectedPositions, VariablePosition,
 };
 
@@ -293,7 +295,7 @@ struct IntersectionExecutor {
 impl IntersectionExecutor {
     fn new(
         sort_variable: Variable,
-        instructions: Vec<Instruction>,
+        instructions: Vec<ConstraintInstruction>,
         output_width: u32,
         select_variables: Vec<Variable>,
         named_variables: &HashMap<Variable, String>,
@@ -719,8 +721,8 @@ impl CartesianIterator {
 }
 
 struct UnsortedJoinExecutor {
-    iterate: Instruction,
-    checks: Vec<Instruction>,
+    iterate: ConstraintInstruction,
+    checks: Vec<ConstraintInstruction>,
 
     output_width: u32,
     output: Option<Batch>,
@@ -728,8 +730,8 @@ struct UnsortedJoinExecutor {
 
 impl UnsortedJoinExecutor {
     fn new(
-        iterate: Instruction,
-        checks: Vec<Instruction>,
+        iterate: ConstraintInstruction,
+        checks: Vec<ConstraintInstruction>,
         total_vars: u32,
         variable_positions: &HashMap<Variable, VariablePosition>,
     ) -> Self {

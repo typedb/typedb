@@ -5,19 +5,17 @@
  */
 
 use std::collections::HashMap;
-use itertools::Itertools;
 
 use answer::variable::Variable;
-use compiler::expression::compiled_expression::{CompiledExpression, ExpressionValueType};
-use compiler::instruction::expression::builtins::list_operations::{ListConstructor, ListIndex, ListIndexRange};
-use compiler::instruction::expression::builtins::load_cast::{CastBinaryLeft, CastBinaryRight, CastLeftLongToDouble, CastRightLongToDouble, CastUnary, CastUnaryLongToDouble, ImplicitCast, LoadConstant, LoadVariable};
-use compiler::instruction::expression::{ExpressionEvaluationError, ExpressionInstruction};
-use compiler::instruction::expression::builtins::binary::{Binary, BinaryExpression, MathRemainderLong};
-use compiler::instruction::expression::builtins::operators;
-use compiler::instruction::expression::builtins::unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble, Unary, UnaryExpression};
+use compiler::expression::compiled_expression::CompiledExpression;
+use compiler::instruction::expression::binary::{Binary, BinaryExpression, MathRemainderLong};
+use compiler::instruction::expression::ExpressionEvaluationError;
+use compiler::instruction::expression::list_operations::{ListConstructor, ListIndex, ListIndexRange};
+use compiler::instruction::expression::load_cast::{CastBinaryLeft, CastBinaryRight, CastLeftLongToDouble, CastRightLongToDouble, CastUnary, CastUnaryLongToDouble, ImplicitCast, LoadConstant, LoadVariable};
 use compiler::instruction::expression::op_codes::ExpressionOpCode;
+use compiler::instruction::expression::operators;
+use compiler::instruction::expression::unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble, Unary, UnaryExpression};
 use encoding::value::value::{DBValue, Value};
-use encoding::value::value_type::ValueTypeCategory;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ExpressionValue {

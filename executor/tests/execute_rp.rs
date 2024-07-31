@@ -9,10 +9,11 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 use compiler::{
     inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
     planner::{
-        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
+        pattern_plan::{ IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
     },
 };
+use compiler::instruction::constraint::instructions::{ConstraintInstruction, Inputs};
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
@@ -189,8 +190,8 @@ fn traverse_rp_unbounded_sorted_from() {
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_membership,
         vec![
-            Instruction::RolePlayer(rp_membership_person.clone(), IterateBounds::None([])),
-            Instruction::RolePlayer(rp_membership_group.clone(), IterateBounds::None([])),
+            ConstraintInstruction::RolePlayer(rp_membership_person.clone(), Inputs::None([])),
+            ConstraintInstruction::RolePlayer(rp_membership_group.clone(), Inputs::None([])),
         ],
         &[var_membership, var_group, var_person],
     ))];
@@ -258,7 +259,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_attribute,
-        vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
+        vec![ConstraintInstruction::Has(has_attribute.clone(), Inputs::None([]))],
         &vec![var_person, var_attribute],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());

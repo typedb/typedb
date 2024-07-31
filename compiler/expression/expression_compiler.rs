@@ -17,16 +17,13 @@ use crate::{
     expression::compiled_expression::{CompiledExpression, ExpressionValueType},
     inference::ExpressionCompilationError,
     instruction::expression::{
-        builtins::{
-            list_operations,
-            load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
-            operators,
-            unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
-        },
-        op_codes::ExpressionOpCode,
-        CompilableExpression, ExpressionInstruction,
+        CompilableExpression,
+        ExpressionInstruction, op_codes::ExpressionOpCode,
     },
 };
+use crate::instruction::expression::{list_operations, operators};
+use crate::instruction::expression::load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable};
+use crate::instruction::expression::unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble};
 
 pub struct ExpressionCompilationContext<'this> {
     expression_tree: &'this ExpressionTree<Variable>,

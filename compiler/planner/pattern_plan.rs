@@ -6,22 +6,24 @@
 
 use std::collections::{HashMap, HashSet};
 
+use itertools::Itertools;
+
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
     pattern::{
-        constraint::{Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, RolePlayer},
-        variable_category::VariableCategory,
-        IrID,
+        constraint::{Constraint, ExpressionBinding},
+        variable_category::VariableCategory
+        ,
     },
     program::block::{BlockContext, FunctionalBlock},
 };
-use itertools::Itertools;
 
 use crate::{
     inference::type_annotations::TypeAnnotations,
     planner::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost},
 };
+use crate::instruction::constraint::instructions::{Inputs, ConstraintInstruction};
 
 pub struct PatternPlan {
     pub(crate) steps: Vec<Step>,
@@ -37,8 +39,6 @@ If we know this we can:
   1. group edges intersecting into the same variable as one Step.
   2. if the ordering implies it, we may need to perform Storage/Comparison checks, if the variables are visited disconnected and then joined
   3. some checks are fully bound, while others are not... when do we decide? What is a Check versus an Iterate instruction? Do we need to differentiate?
-
-
  */
 
 impl PatternPlan {
@@ -113,7 +113,7 @@ impl PatternPlan {
                     let isa = &variable_isa[&var];
                     steps.push(Step::Intersection(IntersectionStep::new(
                         var,
-                        vec![Instruction::IsaReverse(isa.clone(), IterateBounds::None([]))],
+                        vec![ConstraintInstruction::IsaReverse(isa.clone(), Inputs::None([]))],
                         &[var],
                     )));
                 }
@@ -130,7 +130,7 @@ impl PatternPlan {
                         let intersection_step = if bound_variables.is_empty() {
                             IntersectionStep::new(
                                 has.owner(),
-                                vec![Instruction::Has(has.clone(), IterateBounds::None([]))],
+                                vec![ConstraintInstruction::Has(has.clone(), Inputs::None([]))],
                                 &[has.owner(), has.attribute()],
                             )
                         } else if bound_variables.len() == 2 {
@@ -138,13 +138,13 @@ impl PatternPlan {
                         } else if bound_variables.contains(&has.owner()) {
                             IntersectionStep::new(
                                 has.attribute(),
-                                vec![Instruction::Has(has.clone(), IterateBounds::Single([has.owner()]))],
+                                vec![ConstraintInstruction::Has(has.clone(), Inputs::Single([has.owner()]))],
                                 &[has.attribute()],
                             )
                         } else {
                             IntersectionStep::new(
                                 has.owner(),
-                                vec![Instruction::HasReverse(has.clone(), IterateBounds::Single([has.attribute()]))],
+                                vec![ConstraintInstruction::HasReverse(has.clone(), Inputs::Single([has.attribute()]))],
                                 &[has.owner()],
                             )
                         };
@@ -164,7 +164,7 @@ impl PatternPlan {
         &self.steps
     }
 
-    pub(crate) fn into_steps(self) -> impl Iterator<Item = Step> {
+    pub(crate) fn into_steps(self) -> impl Iterator<Item=Step> {
         self.steps.into_iter()
     }
 
@@ -215,7 +215,7 @@ pub enum Step {
 impl Step {
     pub fn unbound_variables(&self) -> &[Variable] {
         match self {
-            Step::Intersection(step) => step.unbound_variables(),
+            Step::Intersection(step) => step.new_variables(),
             Step::UnsortedJoin(step) => step.unbound_variables(),
             Step::Assignment(step) => step.unbound_variables(),
             Step::Disjunction(_) => todo!(),
@@ -227,92 +227,92 @@ impl Step {
 
 pub struct IntersectionStep {
     pub sort_variable: Variable,
-    pub instructions: Vec<Instruction>,
-    unbound_variables: Vec<Variable>,
-    bound_variables: Vec<Variable>,
+    pub instructions: Vec<ConstraintInstruction>,
+    new_variables: Vec<Variable>,
+    input_variables: Vec<Variable>,
     pub selected_variables: Vec<Variable>,
 }
 
 impl IntersectionStep {
-    pub fn new(sort_variable: Variable, instructions: Vec<Instruction>, selected_variables: &[Variable]) -> Self {
-        let mut bound = Vec::with_capacity(instructions.len() * 2);
-        let mut unbound = Vec::with_capacity(instructions.len() * 2);
+    pub fn new(sort_variable: Variable, instructions: Vec<ConstraintInstruction>, selected_variables: &[Variable]) -> Self {
+        let mut input_variables = Vec::with_capacity(instructions.len() * 2);
+        let mut new_variables = Vec::with_capacity(instructions.len() * 2);
         instructions.iter().for_each(|instruction| {
-            instruction.unbound_vars_foreach(|var| {
-                if !unbound.contains(&var) {
-                    unbound.push(var)
+            instruction.new_variables_foreach(|var| {
+                if !new_variables.contains(&var) {
+                    new_variables.push(var)
                 }
             });
-            instruction.bound_vars_foreach(|var| {
-                if !bound.contains(&var) {
-                    bound.push(var)
+            instruction.input_variables_foreach(|var| {
+                if !input_variables.contains(&var) {
+                    input_variables.push(var)
                 }
             });
         });
         Self {
             sort_variable,
             instructions,
-            unbound_variables: unbound,
-            bound_variables: bound,
+            new_variables,
+            input_variables,
             selected_variables: selected_variables.to_owned(),
         }
     }
 
-    fn unbound_variables(&self) -> &[Variable] {
-        &self.unbound_variables
+    fn new_variables(&self) -> &[Variable] {
+        &self.new_variables
     }
 }
 
 pub struct UnsortedJoinStep {
-    pub iterate_instruction: Instruction,
-    pub check_instructions: Vec<Instruction>,
-    unbound_variables: Vec<Variable>,
-    bound_variables: Vec<Variable>,
+    pub iterate_instruction: ConstraintInstruction,
+    pub check_instructions: Vec<ConstraintInstruction>,
+    new_variables: Vec<Variable>,
+    input_variables: Vec<Variable>,
     selected_variables: Vec<Variable>,
 }
 
 impl UnsortedJoinStep {
     pub fn new(
-        iterate_instruction: Instruction,
-        check_instructions: Vec<Instruction>,
+        iterate_instruction: ConstraintInstruction,
+        check_instructions: Vec<ConstraintInstruction>,
         selected_variables: &[Variable],
     ) -> Self {
-        let mut bound = Vec::with_capacity(check_instructions.len() * 2);
-        let mut unbound = Vec::with_capacity(5);
-        iterate_instruction.unbound_vars_foreach(|var| {
-            if !unbound.contains(&var) {
-                unbound.push(var)
+        let mut input_variables = Vec::with_capacity(check_instructions.len() * 2);
+        let mut new_variables = Vec::with_capacity(5);
+        iterate_instruction.new_variables_foreach(|var| {
+            if !new_variables.contains(&var) {
+                new_variables.push(var)
             }
         });
-        iterate_instruction.bound_vars_foreach(|var| {
-            if !bound.contains(&var) {
-                bound.push(var)
+        iterate_instruction.input_variables_foreach(|var| {
+            if !input_variables.contains(&var) {
+                input_variables.push(var)
             }
         });
         check_instructions.iter().for_each(|instruction| {
-            instruction.bound_vars_foreach(|var| {
-                if !bound.contains(&var) {
-                    bound.push(var)
+            instruction.input_variables_foreach(|var| {
+                if !input_variables.contains(&var) {
+                    input_variables.push(var)
                 }
             })
         });
         Self {
             iterate_instruction,
             check_instructions,
-            unbound_variables: unbound,
-            bound_variables: bound,
+            new_variables,
+            input_variables,
             selected_variables: selected_variables.to_owned(),
         }
     }
 
     fn unbound_variables(&self) -> &[Variable] {
-        &self.unbound_variables
+        &self.new_variables
     }
 }
 
 pub struct AssignmentStep {
     assign_instruction: ExpressionBinding<Variable>,
-    check_instructions: Vec<Instruction>,
+    check_instructions: Vec<ConstraintInstruction>,
     unbound: [Variable; 1],
 }
 
@@ -336,142 +336,4 @@ pub struct OptionalStep {
 
 pub trait InstructionAPI {
     fn constraint(&self) -> Constraint<Variable>;
-}
-
-#[derive(Debug, Clone)]
-pub enum Instruction {
-    // type -> thing
-    Isa(Isa<Variable>, IterateBounds<Variable>),
-    // thing -> type
-    IsaReverse(Isa<Variable>, IterateBounds<Variable>),
-
-    // owner -> attribute
-    Has(Has<Variable>, IterateBounds<Variable>),
-    // attribute -> owner
-    HasReverse(Has<Variable>, IterateBounds<Variable>),
-
-    // relation -> player
-    RolePlayer(RolePlayer<Variable>, IterateBounds<Variable>),
-    // player -> relation
-    RolePlayerReverse(RolePlayer<Variable>, IterateBounds<Variable>),
-
-    // $x --> $y
-    // RolePlayerIndex(IR, IterateBounds)
-    FunctionCallBinding(FunctionCallBinding<Variable>),
-
-    // lhs derived from rhs. We need to decide if lhs will always be sorted
-    ComparisonGenerator(Comparison<Variable>),
-    // rhs derived from lhs
-    ComparisonGeneratorReverse(Comparison<Variable>),
-    // lhs and rhs are known
-    ComparisonCheck(Comparison<Variable>),
-
-    // vars = <expr>
-    ExpressionBinding(ExpressionBinding<Variable>),
-}
-
-impl Instruction {
-    pub fn contains_bound_var(&self, var: Variable) -> bool {
-        let mut found = false;
-        self.bound_vars_foreach(|v| {
-            if v == var {
-                found = true;
-            }
-        });
-        found
-    }
-
-    fn bound_vars_foreach(&self, mut apply: impl FnMut(Variable)) {
-        match self {
-            Instruction::Isa(_, bounds) => bounds.bounds().iter().cloned().for_each(apply),
-            Instruction::IsaReverse(_, bounds) => bounds.bounds().iter().cloned().for_each(apply),
-            Instruction::Has(_, bounds) | Instruction::HasReverse(_, bounds) => {
-                bounds.bounds().iter().cloned().for_each(apply)
-            }
-            Instruction::RolePlayer(_, bounds) | Instruction::RolePlayerReverse(_, bounds) => {
-                bounds.bounds().iter().cloned().for_each(apply)
-            }
-            Instruction::ComparisonCheck(_) => {}
-            Instruction::FunctionCallBinding(call) => call.function_call().argument_ids().for_each(apply),
-            Instruction::ComparisonGenerator(comparison) => apply(comparison.rhs()),
-            Instruction::ComparisonGeneratorReverse(comparison) => apply(comparison.lhs()),
-            Instruction::ExpressionBinding(binding) => binding.expression().ids().for_each(apply),
-        }
-    }
-
-    fn unbound_vars_foreach(&self, mut apply: impl FnMut(Variable)) {
-        match self {
-            Instruction::Isa(isa, bounds) | Instruction::IsaReverse(isa, bounds) => isa.ids_foreach(|var, _| {
-                if !bounds.bounds().iter().contains(&var) {
-                    apply(var)
-                }
-            }),
-            Instruction::Has(has, bounds) | Instruction::HasReverse(has, bounds) => has.ids_foreach(|var, _| {
-                if !bounds.bounds().iter().contains(&var) {
-                    apply(var)
-                }
-            }),
-            Instruction::RolePlayer(rp, bounds) | Instruction::RolePlayerReverse(rp, bounds) => {
-                rp.ids_foreach(|var, _| {
-                    if !bounds.bounds().iter().contains(&var) {
-                        apply(var)
-                    }
-                })
-            }
-            Instruction::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
-            Instruction::ComparisonGenerator(comparison) => apply(comparison.lhs()),
-            Instruction::ComparisonGeneratorReverse(comparison) => apply(comparison.rhs()),
-            Instruction::ComparisonCheck(comparison) => {
-                apply(comparison.lhs());
-                apply(comparison.rhs())
-            }
-            Instruction::ExpressionBinding(binding) => binding.ids_assigned().for_each(apply),
-        }
-    }
-}
-
-impl InstructionAPI for Instruction {
-    fn constraint(&self) -> Constraint<Variable> {
-        match self {
-            Instruction::Isa(isa, _) | Instruction::IsaReverse(isa, _) => isa.clone().into(),
-            Instruction::Has(has, _) | Instruction::HasReverse(has, _) => has.clone().into(),
-            Instruction::RolePlayer(rp, _) | Instruction::RolePlayerReverse(rp, _) => rp.clone().into(),
-            Instruction::FunctionCallBinding(call) => call.clone().into(),
-            | Instruction::ComparisonGenerator(cmp)
-            | Instruction::ComparisonGeneratorReverse(cmp)
-            | Instruction::ComparisonCheck(cmp) => cmp.clone().into(),
-            Instruction::ExpressionBinding(binding) => binding.clone().into(),
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum IterateBounds<ID: IrID> {
-    None([ID; 0]),
-    Single([ID; 1]),
-    Dual([ID; 2]),
-}
-
-impl<ID: IrID> IterateBounds<ID> {
-    pub(crate) fn contains(&self, id: ID) -> bool {
-        self.bounds().contains(&id)
-    }
-
-    fn bounds(&self) -> &[ID] {
-        match self {
-            IterateBounds::None(ids) => ids,
-            IterateBounds::Single(ids) => ids,
-            IterateBounds::Dual(ids) => ids,
-        }
-    }
-
-    pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> IterateBounds<T> {
-        match self {
-            IterateBounds::None(_) => IterateBounds::None([]),
-            IterateBounds::Single([var]) => IterateBounds::Single([*mapping.get(&var).unwrap()]),
-            IterateBounds::Dual([var_1, var_2]) => {
-                IterateBounds::Dual([*mapping.get(&var_1).unwrap(), *mapping.get(&var_2).unwrap()])
-            }
-        }
-    }
 }

@@ -9,20 +9,24 @@ use std::{
     fmt::{Debug, Display, Formatter},
 };
 
+use binary::BinaryExpression;
 use encoding::value::value::DBValue;
 use encoding::value::value_type::ValueTypeCategory;
+use load_cast::ImplicitCast;
+use unary::UnaryExpression;
 
 use crate::{
     expression::expression_compiler::ExpressionCompilationContext,
     inference::ExpressionCompilationError,
     instruction::expression::op_codes::ExpressionOpCode,
 };
-use crate::instruction::expression::builtins::binary::BinaryExpression;
-use crate::instruction::expression::builtins::load_cast::ImplicitCast;
-use crate::instruction::expression::builtins::unary::UnaryExpression;
 
-pub mod builtins;
 pub mod op_codes;
+pub mod binary;
+pub mod list_operations;
+pub mod load_cast;
+pub mod operators;
+pub mod unary;
 
 pub trait ExpressionInstruction: Sized {
     const OP_CODE: ExpressionOpCode;
@@ -32,6 +36,13 @@ pub trait CompilableExpression: ExpressionInstruction {
     fn return_value_category(&self) -> Option<ValueTypeCategory>;
 
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompilationError>;
+}
+
+pub(crate) fn check_operation<T>(checked_operation_result: Option<T>) -> Result<T, ExpressionEvaluationError> {
+    match checked_operation_result {
+        None => Err(ExpressionEvaluationError::CheckedOperationFailed),
+        Some(result) => Ok(result),
+    }
 }
 
 pub enum ExpressionEvaluationError {

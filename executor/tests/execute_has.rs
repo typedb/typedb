@@ -9,10 +9,11 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 use compiler::{
     inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
     planner::{
-        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
+        pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
     },
 };
+use compiler::instruction::constraint::instructions::{ConstraintInstruction, Inputs};
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
@@ -150,8 +151,8 @@ fn traverse_has_unbounded_sorted_from() {
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![
-            Instruction::Has(has_age.clone(), IterateBounds::None([])),
-            Instruction::Has(has_name.clone(), IterateBounds::None([])),
+            ConstraintInstruction::Has(has_age.clone(), Inputs::None([])),
+            ConstraintInstruction::Has(has_name.clone(), Inputs::None([])),
         ],
         &vec![var_person, var_name, var_age],
     ))];
@@ -218,7 +219,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_attribute,
-        vec![Instruction::Has(has_attribute.clone(), IterateBounds::None([]))],
+        vec![ConstraintInstruction::Has(has_attribute.clone(), Inputs::None([]))],
         &vec![var_person, var_attribute],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
@@ -305,7 +306,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_age,
-        vec![Instruction::HasReverse(has_age.clone(), IterateBounds::None([]))],
+        vec![ConstraintInstruction::HasReverse(has_age.clone(), Inputs::None([]))],
         &vec![var_person, var_age],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());

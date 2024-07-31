@@ -5,18 +5,18 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
+use compiler::inference::annotated_functions::AnnotatedCommittedFunctions;
 use compiler::inference::type_inference::infer_types;
-use compiler::planner::pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step};
-use compiler::planner::program_plan::ProgramPlan;
+use compiler::instruction::constraint::instructions::{ConstraintInstruction, Inputs};
+
 
 use concept::error::ConceptReadError;
 use encoding::value::label::Label;
 use ir::{
-    inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
     program::{
         block::FunctionalBlock,
-        program::{CompiledSchemaFunctions, Program},
+        program::{Program},
     },
 };
 use lending_iterator::LendingIterator;
@@ -25,15 +25,11 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
 };
-use traversal::{
-    executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
-    planner::{
-        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
-        program_plan::ProgramPlan,
-    },
+use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
+use compiler::planner::{
+    pattern_plan::{IntersectionStep, PatternPlan, Step},
+    program_plan::ProgramPlan,
 };
-use traversal::batch::ImmutableRow;
-use traversal::program_executor::ProgramExecutor;
 
 use crate::common::{load_managers, setup_storage};
 
@@ -89,13 +85,13 @@ fn traverse_isa_unbounded_sorted_thing() {
     let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
     };
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_dog,
-        vec![Instruction::IsaReverse(isa.clone(), IterateBounds::None([]))],
+        vec![ConstraintInstruction::IsaReverse(isa.clone(), Inputs::None([]))],
         &[var_dog, var_dog_type],
     ))];
 
@@ -107,7 +103,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {
