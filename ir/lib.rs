@@ -20,7 +20,6 @@ use crate::{
     program::FunctionReadError,
 };
 
-mod optimisation;
 pub mod pattern;
 pub mod program;
 pub mod translator;

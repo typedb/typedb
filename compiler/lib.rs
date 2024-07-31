@@ -7,3 +7,4 @@
 pub mod inference;
 pub mod instruction;
 pub mod planner;
+mod optimisation;

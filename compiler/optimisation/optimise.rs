@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::program::program::Program;
+use ir::program::program::Program;
 
-pub(crate) fn apply_optimisations(program: &mut Program) {
+pub fn apply_optimisations(program: &mut Program) {
 
     // apply optimisation passes through the program
 
