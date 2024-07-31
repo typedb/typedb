@@ -14,7 +14,11 @@ use concept::{
         role_type::RoleType, ObjectTypeAPI, TypeAPI,
     },
 };
-use encoding::{graph::type_::vertex::TypeVertex, value::value::Value, AsBytes};
+use encoding::{
+    graph::type_::{vertex::TypeVertex, Kind},
+    value::value::Value,
+    AsBytes,
+};
 
 pub mod answer_map;
 pub mod variable;
@@ -36,6 +40,15 @@ pub enum Type {
 }
 
 impl Type {
+    pub fn kind(&self) -> Kind {
+        match self {
+            Type::Entity(_) => Kind::Entity,
+            Type::Relation(_) => Kind::Relation,
+            Type::Attribute(_) => Kind::Attribute,
+            Type::RoleType(_) => Kind::Role,
+        }
+    }
+
     pub fn as_object_type(&self) -> ObjectType<'static> {
         match self {
             Type::Entity(entity) => entity.clone().into_owned_object_type(),

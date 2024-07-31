@@ -13,6 +13,7 @@ rust_library(
         "*.rs",
     ]),
     deps = [
+        "//answer",
         "//concept",
         "//function",
         "//encoding",
