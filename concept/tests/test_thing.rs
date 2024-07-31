@@ -20,15 +20,14 @@ use concept::{
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
         attribute_type::AttributeTypeAnnotation,
-        Ordering,
-        OwnerAPI,
         owns::OwnsAnnotation,
-        PlayerAPI, relates::RelatesAnnotation, type_manager::TypeManager,
+        relates::RelatesAnnotation,
+        type_manager::TypeManager,
+        Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use durability::wal::WAL;
 use encoding::{
-    EncodingKeyspace,
     error::EncodingError,
     graph::{
         definition::{definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator},
@@ -41,12 +40,13 @@ use encoding::{
         value_struct::StructValue,
         value_type::{ValueType, ValueTypeCategory},
     },
+    EncodingKeyspace,
 };
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
 

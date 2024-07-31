@@ -12,9 +12,7 @@ use std::{
 
 use bytes::Bytes;
 use itertools::Itertools;
-use rocksdb::{
-    checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB,
-};
+use rocksdb::{checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 use serde::{Deserialize, Serialize};
 
 use super::iterator;

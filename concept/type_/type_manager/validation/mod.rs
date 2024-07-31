@@ -19,9 +19,9 @@ use crate::{
         },
         attribute_type::AttributeType,
         object_type::ObjectType,
-        Ordering,
         relation_type::RelationType,
         role_type::RoleType,
+        Ordering,
     },
 };
 

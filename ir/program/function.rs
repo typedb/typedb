@@ -9,7 +9,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{Type, variable::Variable};
+use answer::{variable::Variable, Type};
 
 use crate::program::block::FunctionalBlock;
 

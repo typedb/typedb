@@ -8,14 +8,15 @@ use std::marker::PhantomData;
 
 use encoding::value::{value::DBValue, value_type::ValueTypeCategory, ValueEncodable};
 
-use crate::ExpressionCompilationError;
-use crate::expressions::{
-    evaluator::ExpressionValue,
-    expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
-    ExpressionEvaluationError,
-    op_codes::ExpressionOpCode,
+use crate::{
+    expressions::{
+        evaluator::{ExpressionEvaluationState, ExpressionValue},
+        expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
+        op_codes::ExpressionOpCode,
+        ExpressionEvaluationError,
+    },
+    ExpressionCompilationError,
 };
-use crate::expressions::evaluator::ExpressionEvaluationState;
 
 // Declarations
 pub struct LoadVariable {}

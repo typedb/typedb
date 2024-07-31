@@ -24,14 +24,14 @@ use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 use crate::type_::{
     attribute_type::AttributeType,
     entity_type::EntityType,
-    KindAPI,
     object_type::ObjectType,
-    ObjectTypeAPI,
-    Ordering,
     owns::{Owns, OwnsAnnotation},
-    PlayerAPI,
     plays::{Plays, PlaysAnnotation},
-    relates::{Relates, RelatesAnnotation}, relation_type::RelationType, role_type::RoleType, type_manager::type_reader::TypeReader, TypeAPI,
+    relates::{Relates, RelatesAnnotation},
+    relation_type::RelationType,
+    role_type::RoleType,
+    type_manager::type_reader::TypeReader,
+    KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
 };
 
 #[derive(Debug)]

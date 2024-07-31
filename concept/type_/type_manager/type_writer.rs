@@ -8,9 +8,8 @@ use std::marker::PhantomData;
 
 use bytes::byte_array::ByteArray;
 use encoding::{
-    AsBytes,
     graph::{
-        definition::{definition_key::DefinitionKey, DefinitionValueEncoding, r#struct::StructDefinition},
+        definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
         type_::{
             edge::TypeEdgeEncoding,
             index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
@@ -18,7 +17,8 @@ use encoding::{
             vertex::TypeVertexEncoding,
         },
     },
-    Keyable, value::{label::Label, string_bytes::StringBytes, value_type::ValueType},
+    value::{label::Label, string_bytes::StringBytes, value_type::ValueType},
+    AsBytes, Keyable,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::WritableSnapshot;
@@ -26,8 +26,8 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     error::ConceptWriteError,
     type_::{
-        attribute_type::AttributeType, EdgeOverride, KindAPI, Ordering, owns::Owns,
-        relates::Relates, relation_type::RelationType, role_type::RoleType, sub::Sub, type_manager::type_reader::TypeReader,
+        attribute_type::AttributeType, owns::Owns, relates::Relates, relation_type::RelationType, role_type::RoleType,
+        sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride, KindAPI, Ordering,
     },
 };
 

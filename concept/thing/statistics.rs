@@ -11,29 +11,28 @@ use std::{
     ops::Bound,
 };
 
-use serde::{Deserialize, Serialize};
-
 use bytes::Bytes;
 use durability::DurabilityRecordType;
 use encoding::graph::{
     thing::{
         edge::{ThingEdgeHas, ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
-        ThingVertex,
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
+        ThingVertex,
     },
     type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt},
     Typed,
 };
+use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,
     iterator::MVCCReadError,
     key_value::StorageKeyReference,
-    MVCCStorage,
-    recovery::commit_replay::{CommitRecoveryError, load_commit_data_from, RecoveryCommitStatus},
+    recovery::commit_replay::{load_commit_data_from, CommitRecoveryError, RecoveryCommitStatus},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
+    MVCCStorage,
 };
 
 use crate::{
@@ -552,8 +551,8 @@ mod serialise {
     use serde::{
         de,
         de::{MapAccess, SeqAccess, Visitor},
-        Deserialize,
-        Deserializer, ser::SerializeStruct, Serialize, Serializer,
+        ser::SerializeStruct,
+        Deserialize, Deserializer, Serialize, Serializer,
     };
 
     use crate::{

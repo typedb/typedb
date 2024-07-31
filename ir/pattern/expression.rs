@@ -14,12 +14,9 @@ use answer::variable::Variable;
 use encoding::value::value::Value;
 
 use crate::{
-    pattern::{
-        constraint::ExpressionBinding,
-        IrID,
-    },
-    PatternDefinitionError,
+    pattern::{constraint::ExpressionBinding, IrID},
     program::block::BlockContext,
+    PatternDefinitionError,
 };
 
 enum ExpectedArgumentType {
@@ -123,7 +120,6 @@ pub enum BuiltInFunctionID {
     // Min,
     // Length
 }
-
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ListIndex<ID: IrID> {

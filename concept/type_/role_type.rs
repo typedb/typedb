@@ -13,14 +13,14 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            Kind,
             vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            Kind,
         },
         Typed,
     },
     layout::prefix::Prefix,
-    Prefixed,
     value::label::Label,
+    Prefixed,
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
@@ -30,22 +30,21 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
+use super::Ordering;
 use crate::{
     concept_iterator,
-    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
-        KindAPI,
         object_type::ObjectType,
         plays::Plays,
         relates::Relates,
         relation_type::RelationType,
-        type_manager::TypeManager, TypeAPI,
+        type_manager::TypeManager,
+        KindAPI, TypeAPI,
     },
+    ConceptAPI,
 };
-
-use super::Ordering;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {

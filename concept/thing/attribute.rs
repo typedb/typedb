@@ -14,14 +14,14 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
-    AsBytes,
     graph::{
-        thing::{edge::ThingEdgeHasReverse, ThingVertex, vertex_attribute::AttributeVertex},
+        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex, ThingVertex},
         type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
     },
-    Keyable,
-    layout::prefix::Prefix, value::{decode_value_u64, value::Value},
+    layout::prefix::Prefix,
+    value::{decode_value_u64, value::Value},
+    AsBytes, Keyable,
 };
 use iterator::State;
 use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
@@ -33,17 +33,17 @@ use storage::{
 };
 
 use crate::{
-    ByteReference,
-    ConceptAPI,
-    ConceptStatus,
     edge_iterator,
-    error::{ConceptReadError, ConceptWriteError}, thing::{
-        HKInstance,
+    error::{ConceptReadError, ConceptWriteError},
+    thing::{
         object::{HasReverseIterator, Object},
-        thing_manager::ThingManager, ThingAPI,
-    }, type_::{
-        attribute_type::AttributeType, object_type::ObjectType, ObjectTypeAPI, type_manager::TypeManager, TypeAPI,
+        thing_manager::ThingManager,
+        HKInstance, ThingAPI,
     },
+    type_::{
+        attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI,
+    },
+    ByteReference, ConceptAPI, ConceptStatus,
 };
 
 #[derive(Debug, Clone)]

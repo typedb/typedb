@@ -7,20 +7,26 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use encoding::value::{
-    value::Value,
-    value_type::ValueTypeCategory,
-    ValueEncodable,
+use encoding::value::{value::Value, value_type::ValueTypeCategory, ValueEncodable};
+use ir::pattern::expression::{
+    BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation,
+    Operator,
 };
-use ir::pattern::expression::{BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation, Operator};
 
-use crate::ExpressionCompilationError;
-use crate::expressions::builtins::{list_operations, operators};
-use crate::expressions::builtins::load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable};
-use crate::expressions::builtins::unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble};
-use crate::expressions::evaluator::ExpressionEvaluationState;
-use crate::expressions::ExpressionEvaluationError;
-use crate::expressions::op_codes::ExpressionOpCode;
+use crate::{
+    expressions::{
+        builtins::{
+            list_operations,
+            load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
+            operators,
+            unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
+        },
+        evaluator::ExpressionEvaluationState,
+        op_codes::ExpressionOpCode,
+        ExpressionEvaluationError,
+    },
+    ExpressionCompilationError,
+};
 
 pub trait ExpressionInstruction: Sized {
     const OP_CODE: ExpressionOpCode;

@@ -8,8 +8,6 @@ use std::sync::Arc;
 
 use durability::wal::WAL;
 use encoding::{
-    AsBytes,
-    EncodingKeyspace,
     error::EncodingError,
     graph::{
         type_::{
@@ -17,14 +15,16 @@ use encoding::{
             vertex_generator::TypeVertexGenerator,
         },
         Typed,
-    }, Keyable, layout::prefix::Prefix,
+    },
+    layout::prefix::Prefix,
+    AsBytes, EncodingKeyspace, Keyable,
 };
 use storage::{
     durability_client::WALClient,
     key_value::StorageKeyReference,
-    MVCCStorage,
     recovery::checkpoint::Checkpoint,
     snapshot::{CommittableSnapshot, WritableSnapshot},
+    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
 

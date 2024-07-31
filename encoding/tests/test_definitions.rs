@@ -11,21 +11,21 @@ use std::{rc::Rc, sync::Arc};
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use encoding::{
-    AsBytes,
-    EncodingKeyspace,
     graph::{
         definition::{
             definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator,
-            DefinitionValueEncoding, r#struct::StructDefinition,
+            r#struct::StructDefinition, DefinitionValueEncoding,
         },
         type_::index::NameToStructDefinitionIndex,
-    }, Keyable, value::{string_bytes::StringBytes, value_type::ValueType},
+    },
+    value::{string_bytes::StringBytes, value_type::ValueType},
+    AsBytes, EncodingKeyspace, Keyable,
 };
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
+    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
 

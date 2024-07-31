@@ -9,19 +9,18 @@ use std::{
     fmt::{Display, Formatter},
 };
 
-use itertools::Itertools;
-
 use answer::variable::Variable;
+use itertools::Itertools;
 
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
-        Scope,
-        ScopeId, variable_category::{VariableCategory, VariableOptionality},
+        variable_category::{VariableCategory, VariableOptionality},
+        Scope, ScopeId,
     },
-    PatternDefinitionError,
     program::modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
+    PatternDefinitionError,
 };
 
 // A functional block is exactly 1 Conjunction + any number of modifiers

@@ -11,28 +11,28 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
-    AsBytes,
     graph::{
-        thing::{ThingVertex, vertex_object::ObjectVertex},
+        thing::{vertex_object::ObjectVertex, ThingVertex},
         type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
     },
-    Keyable, layout::prefix::Prefix, Prefixed,
+    layout::prefix::Prefix,
+    AsBytes, Keyable, Prefixed,
 };
 use iterator::Collector;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    ByteReference,
-    ConceptAPI,
-    ConceptStatus,
-    error::{ConceptReadError, ConceptWriteError}, thing::{
-        HKInstance,
+    error::{ConceptReadError, ConceptWriteError},
+    thing::{
         object::{Object, ObjectAPI},
         relation::{IndexedPlayersIterator, RelationRoleIterator},
-        thing_manager::ThingManager, ThingAPI,
-    }, type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI, type_manager::TypeManager, TypeAPI},
+        thing_manager::ThingManager,
+        HKInstance, ThingAPI,
+    },
+    type_::{entity_type::EntityType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI},
+    ByteReference, ConceptAPI, ConceptStatus,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]

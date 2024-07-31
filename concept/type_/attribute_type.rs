@@ -13,32 +13,31 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            Kind,
             vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            Kind,
         },
         Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexAttributeType},
-    Prefixed,
     value::{label::Label, value_type::ValueType},
+    Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
+use super::annotation::{AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues};
 use crate::{
-    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     thing::attribute::Attribute,
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
-        KindAPI,
         object_type::ObjectType,
         owns::Owns,
-        ThingTypeAPI, type_manager::TypeManager, TypeAPI,
+        type_manager::TypeManager,
+        KindAPI, ThingTypeAPI, TypeAPI,
     },
+    ConceptAPI,
 };
-
-use super::annotation::{AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {

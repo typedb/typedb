@@ -11,8 +11,6 @@ use std::{rc::Rc, sync::Arc};
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use encoding::{
-    AsBytes,
-    EncodingKeyspace,
     graph::{
         thing::{
             vertex_attribute::{StringAttributeID, StructAttributeID},
@@ -20,10 +18,12 @@ use encoding::{
         },
         type_::{vertex::TypeID, vertex_generator::TypeVertexGenerator},
         Typed,
-    }, value::{string_bytes::StringBytes, struct_bytes::StructBytes},
+    },
+    value::{string_bytes::StringBytes, struct_bytes::StructBytes},
+    AsBytes, EncodingKeyspace,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging};
 
 #[test]

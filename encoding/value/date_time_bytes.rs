@@ -6,9 +6,8 @@
 
 use chrono::{DateTime, NaiveDateTime};
 
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
-
 use super::primitive_encoding::{decode_i64, decode_u32, encode_i64, encode_u32};
+use crate::graph::thing::vertex_attribute::AttributeIDLength;
 
 #[derive(Debug, Copy, Clone)]
 pub struct DateTimeBytes {

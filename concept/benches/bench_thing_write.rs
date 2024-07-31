@@ -15,30 +15,29 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler, SamplingMode};
-use pprof::ProfilerGuard;
-use rand::distributions::{Alphanumeric, DistString};
-
 use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{
-        Ordering,
-        OwnerAPI, type_manager::{type_cache::TypeCache, TypeManager},
+        type_manager::{type_cache::TypeCache, TypeManager},
+        Ordering, OwnerAPI,
     },
 };
+use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use durability::wal::WAL;
 use encoding::{
-    EncodingKeyspace,
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
     value::{label::Label, value::Value, value_type::ValueType},
+    EncodingKeyspace,
 };
+use pprof::ProfilerGuard;
+use rand::distributions::{Alphanumeric, DistString};
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
 

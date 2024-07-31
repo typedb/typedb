@@ -5,11 +5,11 @@
  */
 
 use crate::type_::{
-    KindAPI,
     type_manager::type_cache::{
         kind_cache::{CommonTypeCache, OwnerPlayerCache},
         TypeCache,
     },
+    KindAPI,
 };
 
 pub(crate) trait HasCommonTypeCache<T: KindAPI<'static>> {
@@ -61,4 +61,3 @@ macro_rules! impl_has_owner_player_cache {
     };
 }
 pub(super) use impl_has_owner_player_cache;
-

@@ -4,10 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::program::function::FunctionIR;
-use ir::program::function_signature::FunctionIDTrait;
+use ir::program::{function::FunctionIR, function_signature::FunctionIDTrait};
 
 use crate::type_inference::FunctionAnnotations;
 

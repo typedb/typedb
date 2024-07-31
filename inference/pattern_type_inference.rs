@@ -9,21 +9,21 @@ use std::{
     sync::Arc,
 };
 
-use itertools::chain;
-
-use answer::{Type as TypeAnnotation, Type, variable::Variable};
+use answer::{variable::Variable, Type as TypeAnnotation, Type};
 use concept::type_::type_manager::TypeManager;
-use ir::pattern::conjunction::Conjunction;
-use ir::pattern::constraint::Constraint;
-use ir::program::block::FunctionalBlock;
+use ir::{
+    pattern::{conjunction::Conjunction, constraint::Constraint},
+    program::block::FunctionalBlock,
+};
+use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    annotated_functions::{CompiledLocalFunctions, CompiledSchemaFunctions},
     type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
     type_seeder::TypeSeeder,
     TypeInferenceError,
 };
-use crate::annotated_functions::{CompiledLocalFunctions, CompiledSchemaFunctions};
 
 /*
 The type inference algorithm involves 2 phases:
@@ -310,28 +310,26 @@ impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
 pub mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
+    use answer::{variable::Variable, Type as TypeAnnotation};
+    use ir::{
+        pattern::constraint::{Constraint, IsaKind},
+        program::{block::FunctionalBlock, function_signature::HashMapFunctionIndex},
+    };
     use itertools::Itertools;
 
-    use answer::{Type as TypeAnnotation, variable::Variable};
-    use ir::pattern::constraint::{Constraint, IsaKind};
-    use ir::program::block::FunctionalBlock;
-    use ir::program::function_signature::HashMapFunctionIndex;
-
     use crate::{
+        annotated_functions::CompiledSchemaFunctions,
         pattern_type_inference::{
             infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
         },
         tests::{
             managers,
             schema_consts::{
-                LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_NAME,
-                setup_types,
+                setup_types, LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_NAME,
             },
             setup_storage,
         },
     };
-    use crate::annotated_functions::CompiledSchemaFunctions;
-    use crate::pattern_type_inference::TypeInferenceEdge;
 
     pub(crate) fn expected_edge(
         constraint: &Constraint<Variable>,

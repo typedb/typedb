@@ -8,8 +8,6 @@ use std::fmt;
 
 use answer::variable::Variable;
 
-use crate::{PatternDefinitionError, program::block::BlockContext};
-
 use super::{
     constraint::{Constraint, Constraints, ConstraintsBuilder},
     disjunction::{Disjunction, DisjunctionBuilder},
@@ -18,6 +16,7 @@ use super::{
     optional::Optional,
     Scope, ScopeId,
 };
+use crate::{program::block::BlockContext, PatternDefinitionError};
 
 #[derive(Debug)]
 pub struct Conjunction {

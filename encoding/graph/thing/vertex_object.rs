@@ -10,7 +10,7 @@ use std::{
     ops::Range,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes, util::HexBytesFormatter};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
@@ -18,13 +18,13 @@ use storage::{
 };
 
 use crate::{
-    AsBytes,
-    EncodingKeyspace,
     graph::{
-        thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex},
+        thing::{ThingVertex, THING_VERTEX_LENGTH_PREFIX_TYPE},
         type_::vertex::{TypeID, TypeVertex},
         Typed,
-    }, Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed,
+    },
+    layout::prefix::{Prefix, PrefixID},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]

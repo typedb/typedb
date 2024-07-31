@@ -11,9 +11,9 @@ use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
 use crate::{
-    AsBytes,
-    EncodingKeyspace,
-    graph::type_::vertex::{TypeVertex, TypeVertexEncoding}, Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed,
+    graph::type_::vertex::{TypeVertex, TypeVertexEncoding},
+    layout::prefix::{Prefix, PrefixID},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

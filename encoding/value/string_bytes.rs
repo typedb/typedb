@@ -9,7 +9,7 @@ use std::fmt;
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use logger::result::ResultExt;
 
-use crate::{AsBytes, error::EncodingError};
+use crate::{error::EncodingError, AsBytes};
 
 /*
 Both Rust and RocksDB use lexicographical ordering for comparing byte slices.

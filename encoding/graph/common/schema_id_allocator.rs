@@ -19,13 +19,13 @@ use crate::{
     graph::{
         definition::definition_key::{DefinitionID, DefinitionKey},
         type_::{
-            Kind,
             vertex::{TypeID, TypeIDUInt, TypeVertex},
+            Kind,
         },
         Typed,
     },
-    Keyable,
     layout::prefix::Prefix,
+    Keyable,
 };
 
 pub type TypeVertexAllocator = SchemaIDAllocator<TypeVertex<'static>>;

@@ -39,23 +39,21 @@ In the order that are connected to the variable.
 
 use std::{
     error::Error,
-    fmt::{Display, Formatter},
+    fmt::{Debug, Display, Formatter},
 };
-use std::fmt::Debug;
 
 use answer::variable::Variable;
 use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
-use ir::pattern::expression::Operator;
-use ir::pattern::variable_category::VariableCategory;
+use ir::pattern::{expression::Operator, variable_category::VariableCategory};
 
+mod annotated_functions;
+mod annotated_program;
 pub mod expression_inference;
+pub mod expressions;
 pub mod pattern_type_inference;
 pub mod type_inference;
 mod type_seeder;
-mod annotated_program;
-mod annotated_functions;
-pub mod expressions;
 
 #[derive(Debug)]
 pub enum TypeInferenceError {
@@ -93,8 +91,6 @@ impl Error for TypeInferenceError {
         }
     }
 }
-
-
 
 pub enum ExpressionCompilationError {
     InternalStackWasEmpty,
@@ -198,18 +194,17 @@ impl Error for ExpressionCompilationError {
     }
 }
 
-
 #[cfg(test)]
 pub mod tests {
     use std::sync::Arc;
 
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use encoding::{
-        EncodingKeyspace,
         graph::{
             definition::definition_key_generator::DefinitionKeyGenerator,
             thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
         },
+        EncodingKeyspace,
     };
     use storage::{durability_client::WALClient, MVCCStorage};
 
@@ -270,7 +265,7 @@ pub mod tests {
         use answer::Type as TypeAnnotation;
         use concept::type_::{
             annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation,
-            Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager,
+            type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
         };
         use encoding::value::{label::Label, value_type::ValueType};
         use storage::{

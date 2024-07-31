@@ -8,12 +8,10 @@ use std::{collections::HashMap, iter::zip, sync::Arc};
 
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::{
-    program::{
-        function::FunctionIR,
-        function_signature::{FunctionIDTrait, FunctionSignature, HashMapFunctionIndex},
-        program::{CompiledFunctions, CompiledSchemaFunctions, Program},
-    },
+use ir::program::{
+    function::FunctionIR,
+    function_signature::{FunctionIDTrait, FunctionSignature, HashMapFunctionIndex},
+    program::{CompiledFunctions, CompiledSchemaFunctions, Program},
 };
 use storage::{sequence_number::SequenceNumber, MVCCStorage};
 

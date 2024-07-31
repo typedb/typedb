@@ -9,7 +9,7 @@ use std::{
     hash::Hash,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes, util::HexBytesFormatter};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
@@ -17,10 +17,10 @@ use storage::{
 };
 
 use crate::{
-    AsBytes,
-    EncodingKeyspace,
     error::EncodingError,
-    graph::Typed, Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed,
+    graph::Typed,
+    layout::prefix::{Prefix, PrefixID},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 // TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes (BUFFER_KEY_INLINE), then make Types all Copy

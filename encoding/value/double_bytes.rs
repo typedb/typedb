@@ -4,9 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::{graph::thing::vertex_attribute::AttributeIDLength, value::primitive_encoding::encode_u64};
-
 use super::primitive_encoding::decode_u64;
+use crate::{graph::thing::vertex_attribute::AttributeIDLength, value::primitive_encoding::encode_u64};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct DoubleBytes {
@@ -48,7 +47,7 @@ impl DoubleBytes {
 
 #[cfg(test)]
 mod tests {
-    use rand::{Rng, rngs::SmallRng, SeedableRng, thread_rng};
+    use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
 
     use super::DoubleBytes;
 

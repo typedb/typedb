@@ -14,11 +14,11 @@ use crate::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange, AnnotationRegex,
             AnnotationValues,
         },
-        Capability,
-        KindAPI,
-        Ordering,
         owns::Owns,
-        relation_type::RelationType, role_type::RoleType, type_manager::{type_reader::TypeReader, TypeManager, validation::SchemaValidationError}, TypeAPI,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::{type_reader::TypeReader, validation::SchemaValidationError, TypeManager},
+        Capability, KindAPI, Ordering, TypeAPI,
     },
 };
 

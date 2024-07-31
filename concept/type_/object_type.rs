@@ -10,19 +10,19 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::type_::vertex::{TypeVertex, TypeVertexEncoding},
     layout::prefix::Prefix,
-    Prefixed,
     value::label::Label,
+    Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI,
-        owns::Owns, PlayerAPI, plays::Plays, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, TypeAPI,
+        attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relation_type::RelationType,
+        role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
+    ConceptAPI,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]

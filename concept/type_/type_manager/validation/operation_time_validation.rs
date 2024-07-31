@@ -6,18 +6,11 @@
 
 use std::collections::{HashMap, HashSet};
 
-use itertools::Itertools;
-
 use encoding::{
-    graph::{
-        definition::definition_key::DefinitionKey,
-        thing::{edge::ThingEdgeRolePlayer} ,
-        type_::CapabilityKind
-        ,
-    }
-    ,
+    graph::{definition::definition_key::DefinitionKey, thing::edge::ThingEdgeRolePlayer, type_::CapabilityKind},
     value::{label::Label, value_type::ValueType},
 };
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
@@ -28,19 +21,16 @@ use crate::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
-        Capability,
         entity_type::EntityType,
-        KindAPI,
         object_type::ObjectType,
-        ObjectTypeAPI,
-        Ordering,
         owns::Owns,
         plays::Plays,
-        relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::{
+        relates::Relates,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::{
             type_reader::TypeReader,
-            TypeManager,
             validation::{
-                SchemaValidationError,
                 validation::{
                     edge_get_annotation_by_category, edge_get_owner_of_annotation_category,
                     get_label_or_concept_read_err, get_label_or_schema_err, is_interface_overridden,
@@ -59,8 +49,11 @@ use crate::{
                     validate_type_supertype_abstractness, validate_type_supertype_ordering_match,
                     validate_type_values_narrows_inherited_values,
                 },
+                SchemaValidationError,
             },
-        }, TypeAPI,
+            TypeManager,
+        },
+        Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
 

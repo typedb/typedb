@@ -89,12 +89,12 @@ pub mod tests {
             type_inference::infer_types,
         },
         pattern::constraint::Constraint,
-        PatternDefinitionError,
         program::{
             function_signature::{FunctionID, HashMapFunctionIndex},
             program::{CompiledFunctions, CompiledSchemaFunctions, Program},
             ProgramDefinitionError,
         },
+        PatternDefinitionError,
     };
 
     #[test]

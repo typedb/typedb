@@ -12,13 +12,12 @@ use std::{
     ops::Deref,
 };
 
+use bytes::byte_array::ByteArray;
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
 
-use bytes::byte_array::ByteArray;
-
+use super::date_bytes::DateBytes;
 use crate::{
-    AsBytes,
     value::{
         boolean_bytes::BooleanBytes,
         date_time_bytes::DateTimeBytes,
@@ -35,9 +34,8 @@ use crate::{
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
+    AsBytes,
 };
-
-use super::date_bytes::DateBytes;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value<'a> {

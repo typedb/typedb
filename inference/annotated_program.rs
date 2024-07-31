@@ -4,15 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::sync::Arc;
 
-use ir::program::block::FunctionalBlock;
-use ir::program::function::FunctionIR;
-use ir::program::function_signature::FunctionID;
+use ir::program::{block::FunctionalBlock, function::FunctionIR, function_signature::FunctionID};
 
-use crate::annotated_functions::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions};
-use crate::type_inference::{FunctionAnnotations, TypeAnnotations};
+use crate::{
+    annotated_functions::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions},
+    type_inference::{FunctionAnnotations, TypeAnnotations},
+};
 
 pub struct AnnotatedProgram {
     pub(crate) entry: FunctionalBlock,
@@ -54,20 +53,21 @@ impl AnnotatedProgram {
     }
 }
 
-
 #[cfg(test)]
 pub mod tests {
     use std::{collections::HashSet, sync::Arc};
 
+    use ir::program::{
+        function_signature::{FunctionID, HashMapFunctionIndex},
+        program::Program,
+    };
     use typeql::query::Pipeline;
 
-    use ir::program::function_signature::{FunctionID, HashMapFunctionIndex};
-    use ir::program::program::Program;
-
-    use crate::annotated_functions::CompiledSchemaFunctions;
-    use crate::tests::{managers, setup_storage};
-    use crate::tests::schema_consts::setup_types;
-    use crate::type_inference::infer_types;
+    use crate::{
+        annotated_functions::CompiledSchemaFunctions,
+        tests::{managers, schema_consts::setup_types, setup_storage},
+        type_inference::infer_types,
+    };
 
     #[test]
     fn from_typeql() {

@@ -18,8 +18,8 @@ use crate::expressions::{
         unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
     },
     expression_compiler::{CompiledExpression, ExpressionInstruction},
-    ExpressionEvaluationError,
     op_codes::ExpressionOpCode,
+    ExpressionEvaluationError,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq)]

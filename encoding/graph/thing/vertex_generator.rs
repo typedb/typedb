@@ -5,42 +5,41 @@
  */
 
 use std::sync::{
-    Arc,
     atomic::{AtomicU64, Ordering},
+    Arc,
 };
 
 use bytes::{byte_array::ByteArray, Bytes};
 use storage::{
     key_range::KeyRange,
     key_value::StorageKey,
-    MVCCKey,
-    MVCCStorage, snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
-};
-
-use crate::{
-    AsBytes,
-    error::EncodingError,
-    graph::{
-        thing::{
-            ThingVertex,
-            vertex_attribute::{AttributeID, AttributeVertex, LongAttributeID, StringAttributeID},
-            vertex_object::{ObjectID, ObjectVertex},
-        },
-        type_::vertex::{build_type_vertex_prefix_key, TypeID, TypeIDUInt, TypeVertex},
-        Typed,
-    },
-    Keyable,
-    layout::prefix::Prefix, Prefixed, value::{
-        boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
-        date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
-        value_type::ValueTypeCategory,
-    },
+    snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
+    MVCCKey, MVCCStorage,
 };
 
 use super::vertex_attribute::{
     BooleanAttributeID, DateAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DecimalAttributeID,
     DoubleAttributeID, DurationAttributeID, StructAttributeID,
+};
+use crate::{
+    error::EncodingError,
+    graph::{
+        thing::{
+            vertex_attribute::{AttributeID, AttributeVertex, LongAttributeID, StringAttributeID},
+            vertex_object::{ObjectID, ObjectVertex},
+            ThingVertex,
+        },
+        type_::vertex::{build_type_vertex_prefix_key, TypeID, TypeIDUInt, TypeVertex},
+        Typed,
+    },
+    layout::prefix::Prefix,
+    value::{
+        boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
+        date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
+        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
+        value_type::ValueTypeCategory,
+    },
+    AsBytes, Keyable, Prefixed,
 };
 
 pub struct ThingVertexGenerator {

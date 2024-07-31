@@ -6,19 +6,22 @@
 
 use std::collections::{HashMap, HashSet};
 
-use answer::{Type, variable::Variable};
+use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
-use ir::pattern::conjunction::Conjunction;
-use ir::pattern::constraint::ExpressionBinding;
-use ir::pattern::expression::Expression;
-use ir::pattern::nested_pattern::NestedPattern;
-use ir::pattern::variable_category::VariableCategory;
-use ir::program::block::FunctionalBlock;
+use ir::{
+    pattern::{
+        conjunction::Conjunction, constraint::ExpressionBinding, expression::Expression, nested_pattern::NestedPattern,
+        variable_category::VariableCategory,
+    },
+    program::block::FunctionalBlock,
+};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType};
-use crate::type_inference::TypeAnnotations;
-use crate::TypeInferenceError;
+use crate::{
+    expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType},
+    type_inference::TypeAnnotations,
+    TypeInferenceError,
+};
 
 struct ExpressionInferenceContext<'this, Snapshot: ReadableSnapshot> {
     block: &'this FunctionalBlock,

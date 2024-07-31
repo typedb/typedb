@@ -6,24 +6,20 @@
 
 use std::{borrow::Cow, collections::HashSet, sync::Arc};
 
-use itertools::Itertools;
-use regex::Regex;
-
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
         thing::{
             edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
             property::{HAS_ORDER_PROPERTY_FACTORY, ROLE_PLAYER_ORDER_PROPERTY_FACTORY},
-            ThingVertex,
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_generator::ThingVertexGenerator,
             vertex_object::ObjectVertex,
+            ThingVertex,
         },
         type_::vertex::{TypeID, TypeVertexEncoding},
         Typed,
     },
-    Keyable,
     layout::prefix::Prefix,
     value::{
         boolean_bytes::BooleanBytes,
@@ -42,17 +38,20 @@ use encoding::{
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
+    Keyable,
 };
+use itertools::Itertools;
 use lending_iterator::{AsHkt, LendingIterator};
+use regex::Regex;
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLINE};
 use storage::{
     key_range::KeyRange,
     key_value::StorageKey,
-    snapshot::{ReadableSnapshot, WritableSnapshot, write::Write},
+    snapshot::{write::Write, ReadableSnapshot, WritableSnapshot},
 };
 
+use super::{decode_role_players, encode_role_players, HKInstance};
 use crate::{
-    ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     iterator::InstanceIterator,
     thing::{
@@ -65,16 +64,15 @@ use crate::{
     },
     type_::{
         attribute_type::{AttributeType, AttributeTypeAnnotation},
-        Capability,
         entity_type::EntityType,
         object_type::ObjectType,
-        ObjectTypeAPI,
-        OwnerAPI,
-        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, TypeAPI,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::TypeManager,
+        Capability, ObjectTypeAPI, OwnerAPI, TypeAPI,
     },
+    ConceptStatus,
 };
-
-use super::{decode_role_players, encode_role_players, HKInstance};
 
 pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,

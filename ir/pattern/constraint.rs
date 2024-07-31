@@ -4,26 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt,
-    iter::empty,
-};
-
-use itertools::Itertools;
+use std::{collections::HashMap, fmt, iter::empty};
 
 use answer::variable::Variable;
+use itertools::Itertools;
 
 use crate::{
     pattern::{
-        expression::ExpressionTree,
-        function_call::FunctionCall,
-        IrID,
-        ScopeId, variable_category::VariableCategory,
+        expression::ExpressionTree, function_call::FunctionCall, variable_category::VariableCategory, IrID, ScopeId,
     },
+    program::{block::BlockContext, function_signature::FunctionSignature},
     PatternDefinitionError,
     PatternDefinitionError::FunctionCallArgumentCountMismatch,
-    program::{block::BlockContext, function_signature::FunctionSignature},
 };
 
 #[derive(Debug)]

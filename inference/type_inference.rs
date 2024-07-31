@@ -9,18 +9,20 @@ use std::{
     sync::Arc,
 };
 
-use answer::{Type, variable::Variable};
+use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
-use ir::pattern::constraint::Constraint;
-use ir::program::function::FunctionIR;
-use ir::program::program::Program;
+use ir::{
+    pattern::constraint::Constraint,
+    program::{function::FunctionIR, program::Program},
+};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::annotated_functions::{CompiledLocalFunctions, CompiledSchemaFunctions};
-use crate::annotated_program::AnnotatedProgram;
-use crate::TypeInferenceError;
-
 use super::pattern_type_inference::{infer_types_for_block, TypeInferenceGraph};
+use crate::{
+    annotated_functions::{CompiledLocalFunctions, CompiledSchemaFunctions},
+    annotated_program::AnnotatedProgram,
+    TypeInferenceError,
+};
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
@@ -226,9 +228,7 @@ pub mod tests {
         sync::Arc,
     };
 
-    use itertools::Itertools;
-
-    use answer::{Type, variable::Variable};
+    use answer::{variable::Variable, Type};
     use concept::type_::{entity_type::EntityType, relation_type::RelationType, role_type::RoleType};
     use encoding::{
         graph::{
@@ -237,19 +237,35 @@ pub mod tests {
         },
         layout::prefix::Prefix,
     };
-    use ir::pattern::constraint::{Constraint, IsaKind, RolePlayer};
-    use ir::pattern::variable_category::{VariableCategory, VariableOptionality};
-    use ir::program::block::{BlockContext, FunctionalBlock};
-    use ir::program::function::{FunctionIR, ReturnOperationIR};
-    use ir::program::function_signature::{FunctionID, FunctionSignature};
-    use ir::program::program::Program;
+    use ir::{
+        pattern::{
+            constraint::{Constraint, IsaKind, RolePlayer},
+            variable_category::{VariableCategory, VariableOptionality},
+        },
+        program::{
+            block::{BlockContext, FunctionalBlock},
+            function::{FunctionIR, ReturnOperationIR},
+            function_signature::{FunctionID, FunctionSignature},
+            program::Program,
+        },
+    };
+    use itertools::Itertools;
 
-    use crate::annotated_functions::CompiledSchemaFunctions;
-    use crate::pattern_type_inference::{infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceGraph};
-    use crate::pattern_type_inference::tests::expected_edge;
-    use crate::tests::{managers, setup_storage};
-    use crate::tests::schema_consts::{LABEL_CAT, setup_types};
-    use crate::type_inference::{ConstraintTypeAnnotations, infer_types, infer_types_for_function, LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations};
+    use crate::{
+        annotated_functions::CompiledSchemaFunctions,
+        pattern_type_inference::{
+            infer_types_for_block, tests::expected_edge, NestedTypeInferenceGraphDisjunction, TypeInferenceGraph,
+        },
+        tests::{
+            managers,
+            schema_consts::{setup_types, LABEL_CAT},
+            setup_storage,
+        },
+        type_inference::{
+            infer_types, infer_types_for_function, ConstraintTypeAnnotations, LeftRightAnnotations,
+            LeftRightFilteredAnnotations, TypeAnnotations,
+        },
+    };
 
     pub(crate) fn expected_left_right_annotation(
         constraint: &Constraint<Variable>,

@@ -11,15 +11,15 @@ use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::key_value::StorageKey;
 
 use crate::{
-    AsBytes,
-    EncodingKeyspace,
     graph::type_::{
         edge::{TypeEdge, TypeEdgeEncoding},
         vertex::{TypeVertex, TypeVertexEncoding},
-    }, Keyable, layout::{
+    },
+    layout::{
         infix::{Infix, InfixID},
         prefix::{Prefix, PrefixID},
-    }, Prefixed,
+    },
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]

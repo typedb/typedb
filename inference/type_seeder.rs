@@ -10,29 +10,34 @@ use std::{
     iter::zip,
 };
 
-use itertools::Itertools;
-
-use answer::{Type as TypeAnnotation, variable::Variable};
+use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, OwnerAPI, PlayerAPI, type_manager::TypeManager},
+    type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI},
 };
 use encoding::value::value_type::ValueTypeCategory;
-use ir::pattern::{Scope, ScopeId};
-use ir::pattern::conjunction::Conjunction;
-use ir::pattern::constraint::{Comparison, Constraint, FunctionCallBinding, Has, Isa, Label, RolePlayer, Sub};
-use ir::pattern::disjunction::Disjunction;
-use ir::pattern::nested_pattern::NestedPattern;
-use ir::pattern::variable_category::VariableCategory;
-use ir::program::block::BlockContext;
-use ir::program::function::FunctionIR;
-use ir::program::function_signature::FunctionID;
+use ir::{
+    pattern::{
+        conjunction::Conjunction,
+        constraint::{Comparison, Constraint, FunctionCallBinding, Has, Isa, Label, RolePlayer, Sub},
+        disjunction::Disjunction,
+        nested_pattern::NestedPattern,
+        variable_category::VariableCategory,
+        Scope, ScopeId,
+    },
+    program::{block::BlockContext, function::FunctionIR, function_signature::FunctionID},
+};
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::annotated_functions::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions};
-use crate::pattern_type_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations};
-use crate::type_inference::FunctionAnnotations;
-use crate::TypeInferenceError;
+use crate::{
+    annotated_functions::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions},
+    pattern_type_inference::{
+        NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
+    },
+    type_inference::FunctionAnnotations,
+    TypeInferenceError,
+};
 
 pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
@@ -470,10 +475,15 @@ impl UnaryConstraint for Label<Variable> {
         seeder: &TypeSeeder<'_, Snapshot>,
         tig_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        let annotation_opt = get_type_annotation_from_label(seeder, &encoding::value::label::Label::build(self.type_label()))
-            .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+        let annotation_opt =
+            get_type_annotation_from_label(seeder, &encoding::value::label::Label::build(self.type_label()))
+                .map_err(|source| TypeInferenceError::ConceptRead { source })?;
         if let Some(annotation) = annotation_opt {
-            TypeSeeder::<Snapshot>::add_or_intersect(tig_vertices, self.left(), Cow::Owned(BTreeSet::from([annotation])));
+            TypeSeeder::<Snapshot>::add_or_intersect(
+                tig_vertices,
+                self.left(),
+                Cow::Owned(BTreeSet::from([annotation])),
+            );
             Ok(())
         } else {
             Err(TypeInferenceError::LabelNotResolved(self.type_label().to_string()))
@@ -1013,16 +1023,19 @@ pub mod tests {
 
     use answer::Type as TypeAnnotation;
     use encoding::value::{label::Label, value_type::ValueType};
-    use ir::pattern::constraint::IsaKind;
-    use ir::program::block::FunctionalBlock;
+    use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock};
     use storage::snapshot::CommittableSnapshot;
 
-    use crate::annotated_functions::CompiledSchemaFunctions;
-    use crate::pattern_type_inference::tests::expected_edge;
-    use crate::pattern_type_inference::TypeInferenceGraph;
-    use crate::tests::{managers, setup_storage};
-    use crate::tests::schema_consts::{LABEL_CAT, LABEL_NAME, setup_types};
-    use crate::type_seeder::TypeSeeder;
+    use crate::{
+        annotated_functions::CompiledSchemaFunctions,
+        pattern_type_inference::{tests::expected_edge, TypeInferenceGraph},
+        tests::{
+            managers,
+            schema_consts::{setup_types, LABEL_CAT, LABEL_NAME},
+            setup_storage,
+        },
+        type_seeder::TypeSeeder,
+    };
 
     #[test]
     fn test_has() {
