@@ -4,12 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    sync::Arc,
+};
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use std::sync::Arc;
-use answer::Type;
-use answer::variable::Variable;
+use answer::{variable::Variable, Type};
 use ir::pattern::constraint::Constraint;
+
 use crate::inference::pattern_type_inference::TypeInferenceGraph;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -54,7 +56,7 @@ impl TypeAnnotations {
 pub enum ConstraintTypeAnnotations {
     LeftRight(LeftRightAnnotations),
     LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here, since they do not actually co-constrain Schema types possible.
-    //       in other words, they are always right to left or deal only in value types.
+                                                     //       in other words, they are always right to left or deal only in value types.
 }
 
 impl ConstraintTypeAnnotations {

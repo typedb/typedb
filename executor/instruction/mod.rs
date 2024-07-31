@@ -7,9 +7,11 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
+use compiler::{
+    inference::type_annotations::TypeAnnotations,
+    planner::pattern_plan::{Instruction, InstructionAPI},
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use compiler::{inference::type_annotations::TypeAnnotations};
-use compiler::planner::pattern_plan::{Instruction, InstructionAPI};
 use ir::pattern::constraint::Constraint;
 use storage::snapshot::ReadableSnapshot;
 
@@ -19,8 +21,8 @@ use crate::{
         comparison_executor::ComparisonIteratorExecutor,
         comparison_reverse_executor::ComparisonReverseIteratorExecutor,
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-        has_reverse_executor::HasReverseExecutor, isa_reverse_executor::IsaReverseExecutor,
-        iterator::TupleIterator, role_player_executor::RolePlayerIteratorExecutor,
+        has_reverse_executor::HasReverseExecutor, isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator,
+        role_player_executor::RolePlayerIteratorExecutor,
         role_player_reverse_executor::RolePlayerReverseIteratorExecutor, InstructionExecutor::HasReverse,
     },
     VariablePosition,
@@ -229,7 +231,7 @@ pub(crate) enum BinaryIterateMode {
     // [x, y] in standard order
     UnboundInverted,
     // [x, y] in [y, x] sort order
-    BoundFrom,       // [X, y], where X is bound
+    BoundFrom, // [X, y], where X is bound
 }
 
 impl BinaryIterateMode {

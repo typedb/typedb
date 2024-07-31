@@ -6,35 +6,30 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
+use compiler::{
+    inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
+    planner::{
+        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
+        program_plan::ProgramPlan,
+    },
+};
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
+use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
 use ir::{
     pattern::constraint::IsaKind,
-    program::{
-        block::FunctionalBlock,
-        program::{Program},
-    },
+    program::{block::FunctionalBlock, program::Program},
 };
+use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
 };
-use compiler::{
-    planner::{
-        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
-        program_plan::ProgramPlan,
-    },
-};
-use compiler::inference::annotated_functions::CompiledSchemaFunctions;
-use compiler::inference::type_inference::infer_types;
-use executor::batch::ImmutableRow;
-use executor::program_executor::ProgramExecutor;
-use lending_iterator::LendingIterator;
 
 use crate::common::{load_managers, setup_storage};
 
@@ -157,7 +152,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -230,7 +225,7 @@ fn unselected_named_vars_counted() {
     let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -314,7 +309,7 @@ fn cartesian_named_counted_checked() {
     let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
     };
 
     // Plan

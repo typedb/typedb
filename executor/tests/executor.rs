@@ -6,33 +6,28 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
+use compiler::{
+    inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
+    planner::{pattern_plan::PatternPlan, program_plan::ProgramPlan},
+};
 use concept::{
-    thing::{statistics::Statistics},
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering},
+    thing::{object::ObjectAPI, statistics::Statistics},
+    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
+use executor::program_executor::ProgramExecutor;
 use ir::{
-    program::{
-        function_signature::HashMapFunctionIndex,
-        program::{Program},
-    },
+    program::{function_signature::HashMapFunctionIndex, program::Program},
     translator::match_::translate_match,
 };
 use itertools::Itertools;
-use compiler::inference::annotated_functions::CompiledSchemaFunctions;
-use compiler::inference::type_inference::infer_types;
-use compiler::planner::pattern_plan::PatternPlan;
-use compiler::planner::program_plan::ProgramPlan;
-use concept::thing::object::ObjectAPI;
-use concept::type_::OwnerAPI;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,
-    snapshot::{ReadSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
-use executor::program_executor::ProgramExecutor;
-use storage::snapshot::CommittableSnapshot;
+
 use crate::common::{load_managers, setup_storage};
 
 mod common;
@@ -125,7 +120,7 @@ fn test_planning_traversal() {
     let (type_manager, thing_manager) = load_managers(storage.clone());
     let program = Program::new(block, Vec::new());
     let annotated_program =
-        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap();
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
     let pattern_plan =
         PatternPlan::from_block(annotated_program.get_entry(), annotated_program.get_entry_annotations(), &statistics);
     let program_plan =

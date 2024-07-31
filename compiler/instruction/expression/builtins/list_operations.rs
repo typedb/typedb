@@ -6,9 +6,9 @@
 
 use encoding::value::value::Value;
 
-use crate::instruction::expressions::{
-    evaluator::ExpressionEvaluationState, expression_compiler::ExpressionInstruction, op_codes::ExpressionOpCode,
-    ExpressionEvaluationError,
+use crate::instruction::{
+    expression::{evaluator::ExpressionEvaluationState, op_codes::ExpressionOpCode, ExpressionEvaluationError},
+    ExpressionInstruction,
 };
 
 pub struct ListConstructor {}

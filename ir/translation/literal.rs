@@ -176,7 +176,7 @@ pub mod tests {
 
     use crate::{
         pattern::expression::Expression, program::function_signature::HashMapFunctionIndex,
-        translator::block_builder::TypeQLBuilder, PatternDefinitionError,
+        translation::block_builder::TypeQLBuilder, PatternDefinitionError,
     };
 
     fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, PatternDefinitionError> {

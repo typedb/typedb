@@ -25,33 +25,33 @@ use ir::{
         variable_category::VariableCategory,
         Scope, ScopeId,
     },
-    program::{block::BlockContext, function::FunctionIR, function_signature::FunctionID},
+    program::{block::BlockContext, function::Function, function_signature::FunctionID},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::inference::{
-    annotated_functions::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions},
+    annotated_functions::{AnnotatedCommittedFunctions, AnnotatedFunctions, AnnotatedUncommittedFunctions},
     pattern_type_inference::{
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
     },
+    type_annotations::FunctionAnnotations,
     TypeInferenceError,
 };
-use crate::inference::type_annotations::FunctionAnnotations;
 
 pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
-    schema_functions: &'this CompiledSchemaFunctions,
-    local_functions: Option<&'this CompiledLocalFunctions>,
+    schema_functions: &'this AnnotatedCommittedFunctions,
+    local_functions: Option<&'this AnnotatedUncommittedFunctions>,
 }
 
 impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     pub(crate) fn new(
         snapshot: &'this Snapshot,
         type_manager: &'this TypeManager,
-        schema_functions: &'this CompiledSchemaFunctions,
-        local_functions: Option<&'this CompiledLocalFunctions>,
+        schema_functions: &'this AnnotatedCommittedFunctions,
+        local_functions: Option<&'this AnnotatedUncommittedFunctions>,
     ) -> Self {
         TypeSeeder { snapshot, type_manager, schema_functions, local_functions }
     }
@@ -59,20 +59,20 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     fn get_function_annotations(&self, function_id: FunctionID) -> Option<&FunctionAnnotations> {
         match function_id {
             FunctionID::Schema(definition_key) => {
-                debug_assert!(self.schema_functions.get_function_annotations(definition_key.clone()).is_some());
-                self.schema_functions.get_function_annotations(definition_key.clone())
+                debug_assert!(self.schema_functions.get_annotations(definition_key.clone()).is_some());
+                self.schema_functions.get_annotations(definition_key.clone())
             }
-            FunctionID::Preamble(index) => self.local_functions?.get_function_annotations(index),
+            FunctionID::Preamble(index) => self.local_functions?.get_annotations(index),
         }
     }
 
-    fn get_function_ir(&self, function_id: FunctionID) -> Option<&FunctionIR> {
+    fn get_function_ir(&self, function_id: FunctionID) -> Option<&Function> {
         match function_id {
             FunctionID::Schema(definition_key) => {
-                debug_assert!(self.schema_functions.get_function_ir(definition_key.clone()).is_some());
-                self.schema_functions.get_function_ir(definition_key.clone())
+                debug_assert!(self.schema_functions.get_function(definition_key.clone()).is_some());
+                self.schema_functions.get_function(definition_key.clone())
             }
-            FunctionID::Preamble(index) => self.local_functions?.get_function_ir(index),
+            FunctionID::Preamble(index) => self.local_functions?.get_function(index),
         }
     }
 
@@ -1027,7 +1027,7 @@ pub mod tests {
     use storage::snapshot::CommittableSnapshot;
 
     use crate::inference::{
-        annotated_functions::CompiledSchemaFunctions,
+        annotated_functions::AnnotatedCommittedFunctions,
         pattern_type_inference::{tests::expected_edge, TypeInferenceGraph},
         tests::{
             managers,
@@ -1116,7 +1116,7 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let empty_function_cache = CompiledSchemaFunctions::empty();
+            let empty_function_cache = AnnotatedCommittedFunctions::empty();
             let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), conjunction).unwrap();
             assert_eq!(expected_tig, tig);
@@ -1172,7 +1172,7 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let empty_function_cache = CompiledSchemaFunctions::empty();
+            let empty_function_cache = AnnotatedCommittedFunctions::empty();
             let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), conjunction).unwrap();
             if expected_tig != tig {
@@ -1245,7 +1245,7 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let empty_function_cache = CompiledSchemaFunctions::empty();
+            let empty_function_cache = AnnotatedCommittedFunctions::empty();
             let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), conjunction).unwrap();
             assert_eq!(expected_tig.vertices, tig.vertices);

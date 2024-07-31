@@ -11,7 +11,6 @@ use std::{
 
 pub mod builtins;
 pub mod evaluator;
-pub mod expression_compiler;
 pub mod op_codes;
 
 pub enum ExpressionEvaluationError {

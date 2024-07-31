@@ -14,17 +14,17 @@ use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
     program::{
         block::FunctionalBlock,
-        function::{FunctionIR, Reducer, ReturnOperationIR},
+        function::{Function, Reducer, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
         FunctionDefinitionError,
     },
-    translator::match_::translate_match,
+    translation::match_::translate_match,
 };
 
 pub fn translate_function(
     function_index: &impl FunctionSignatureIndex,
     function: &typeql::Function,
-) -> Result<FunctionIR, FunctionDefinitionError> {
+) -> Result<Function, FunctionDefinitionError> {
     let block = translate_match(function_index, &function.body)
         .map_err(|source| FunctionDefinitionError::PatternDefinition { source })?
         .finish();
@@ -45,7 +45,7 @@ pub fn translate_function(
         })
         .collect::<Result<Vec<_>, FunctionDefinitionError>>()?;
 
-    Ok(FunctionIR::new(block, arguments, return_operation))
+    Ok(Function::new(block, arguments, return_operation))
 }
 
 pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> FunctionSignature {
@@ -78,7 +78,7 @@ fn type_any_to_category_and_optionality(type_any: &TypeRefAny) -> (VariableCateg
 fn build_return_stream(
     block: &FunctionalBlock,
     stream: &ReturnStream,
-) -> Result<ReturnOperationIR, FunctionDefinitionError> {
+) -> Result<ReturnOperation, FunctionDefinitionError> {
     let variables = stream
         .vars
         .iter()
@@ -88,19 +88,19 @@ fn build_return_stream(
             })
         })
         .collect::<Result<Vec<Variable>, FunctionDefinitionError>>()?;
-    Ok(ReturnOperationIR::Stream(variables))
+    Ok(ReturnOperation::Stream(variables))
 }
 
 fn build_return_single(
     block: &FunctionalBlock,
     single: &ReturnSingle,
-) -> Result<ReturnOperationIR, FunctionDefinitionError> {
+) -> Result<ReturnOperation, FunctionDefinitionError> {
     let reducers = single
         .outputs
         .iter()
         .map(|output| build_return_single_output(block, output))
         .collect::<Result<Vec<Reducer>, FunctionDefinitionError>>()?;
-    Ok(ReturnOperationIR::Single(reducers))
+    Ok(ReturnOperation::Single(reducers))
 }
 
 fn build_return_single_output(

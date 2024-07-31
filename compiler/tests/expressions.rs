@@ -7,20 +7,21 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use encoding::value::{value::Value, value_type::ValueTypeCategory};
-use compiler::instruction::{
-    expressions::{
-        evaluator::{ExpressionEvaluator, ExpressionValue},
-        expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType},
+use compiler::{
+    expression::{
+        compiled_expression::{CompiledExpression, ExpressionValueType},
+        expression_compiler::ExpressionTreeCompiler,
     },
+    inference::ExpressionCompilationError,
+    instruction::expression::evaluator::{ExpressionEvaluator, ExpressionValue},
 };
+use encoding::value::{value::Value, value_type::ValueTypeCategory};
 use ir::{
     pattern::constraint::Constraint, program::function_signature::HashMapFunctionIndex,
-    translator::match_::translate_match, PatternDefinitionError,
+    translation::match_::translate_match, PatternDefinitionError,
 };
 use itertools::Itertools;
 use typeql::query::stage::Stage;
-use compiler::inference::ExpressionCompilationError;
 
 #[derive(Debug)]
 pub enum PatternDefitionOrExpressionCompilationError {

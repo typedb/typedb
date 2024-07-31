@@ -7,17 +7,24 @@
 use std::{cmp::Ordering, collections::HashMap, fmt::Display, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
+use compiler::{
+    inference::type_annotations::TypeAnnotations,
+    planner::pattern_plan::{
+        AssignmentStep, DisjunctionStep, Instruction, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
+        UnsortedJoinStep,
+    },
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use itertools::Itertools;
-use compiler::inference::type_annotations::TypeAnnotations;
-use compiler::planner::pattern_plan::{AssignmentStep, DisjunctionStep, Instruction, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step, UnsortedJoinStep};
 use ir::program::block::BlockContext;
+use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
-use crate::batch::{Batch, BatchRowIterator, ImmutableRow, Row};
-use crate::instruction::InstructionExecutor;
-use crate::instruction::iterator::TupleIterator;
-use crate::{SelectedPositions, VariablePosition};
+
+use crate::{
+    batch::{Batch, BatchRowIterator, ImmutableRow, Row},
+    instruction::{iterator::TupleIterator, InstructionExecutor},
+    SelectedPositions, VariablePosition,
+};
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, VariablePosition>,
@@ -207,13 +214,12 @@ impl StepExecutor {
                 Ok(Self::SortedJoin(executor))
             }
             Step::UnsortedJoin(UnsortedJoinStep { iterate_instruction, check_instructions, .. }) => {
-                let executor =
-                    UnsortedJoinExecutor::new(
-                        iterate_instruction.clone(),
-                        check_instructions.clone(),
-                        row_width,
-                        variable_positions
-                    );
+                let executor = UnsortedJoinExecutor::new(
+                    iterate_instruction.clone(),
+                    check_instructions.clone(),
+                    row_width,
+                    variable_positions,
+                );
                 Ok(Self::UnsortedJoin(executor))
             }
             Step::Assignment(AssignmentStep { .. }) => {

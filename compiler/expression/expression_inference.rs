@@ -17,24 +17,28 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 
-use crate::inference::type_annotations::TypeAnnotations;
-use crate::inference::TypeInferenceError;
-use crate::instruction::expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType};
+use crate::{
+    expression::{
+        compiled_expression::{CompiledExpression, ExpressionValueType},
+        expression_compiler::ExpressionTreeCompiler,
+    },
+    inference::{type_annotations::TypeAnnotations, TypeInferenceError},
+};
 
-struct ExpressionInferenceContext<'this, Snapshot: ReadableSnapshot> {
-    block: &'this FunctionalBlock,
-    snapshot: &'this Snapshot,
-    type_manager: &'this TypeManager,
+struct ExpressionInferenceContext<'block, Snapshot: ReadableSnapshot> {
+    block: &'block FunctionalBlock,
+    snapshot: &'block Snapshot,
+    type_manager: &'block TypeManager,
 
-    type_annotations: &'this TypeAnnotations,
-    expressions_by_assignment: HashMap<Variable, &'this ExpressionBinding<Variable>>,
+    type_annotations: &'block TypeAnnotations,
+    expressions_by_assignment: HashMap<Variable, &'block ExpressionBinding<Variable>>,
 }
 
-pub fn compile_expressions_in_block<'this, Snapshot: ReadableSnapshot>(
-    snapshot: &'this Snapshot,
-    type_manager: &'this TypeManager,
-    block: &'this FunctionalBlock,
-    type_annotations: &'this TypeAnnotations,
+pub fn compile_expressions_in_block<'block, Snapshot: ReadableSnapshot>(
+    snapshot: &'block Snapshot,
+    type_manager: &'block TypeManager,
+    block: &'block FunctionalBlock,
+    type_annotations: &'block TypeAnnotations,
 ) -> Result<HashMap<Variable, Option<CompiledExpression>>, TypeInferenceError> {
     let mut expression_index = HashMap::new();
     index_expressions(block.conjunction(), &mut expression_index)?;
@@ -62,11 +66,9 @@ fn index_expressions<'block>(
     for constraint in conjunction.constraints() {
         if let Some(expression_binding) = constraint.as_expression_binding() {
             if index.contains_key(&expression_binding.left()) {
-                Err(TypeInferenceError::MultipleAssignmentsForSingleVariable {
-                    variable: expression_binding.left().clone(),
-                })?;
+                Err(TypeInferenceError::MultipleAssignmentsForSingleVariable { variable: expression_binding.left() })?;
             }
-            index.insert(expression_binding.left().clone(), expression_binding);
+            index.insert(expression_binding.left(), expression_binding);
         }
     }
     for nested in conjunction.nested_patterns() {
@@ -87,12 +89,12 @@ fn index_expressions<'block>(
     Ok(())
 }
 
-fn compile_expressions_recursive<'context, Snapshot: ReadableSnapshot>(
-    context: &ExpressionInferenceContext<'context, Snapshot>,
+fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
+    context: &ExpressionInferenceContext<'a, Snapshot>,
     binding: &ExpressionBinding<Variable>,
     compiled_expressions: &mut HashMap<Variable, Option<CompiledExpression>>,
 ) -> Result<(), TypeInferenceError> {
-    debug_assert!(!compiled_expressions.contains_key(binding.left()));
+    debug_assert!(!compiled_expressions.contains_key(&binding.left()));
     compiled_expressions.insert(binding.left().clone(), None);
     // Compile any dependent expressions first
     let mut variable_value_types: HashMap<Variable, ExpressionValueType> = HashMap::new();
@@ -116,8 +118,8 @@ fn compile_expressions_recursive<'context, Snapshot: ReadableSnapshot>(
     Ok(())
 }
 
-fn resolve_type_for_variable<'context, Snapshot: ReadableSnapshot>(
-    context: &ExpressionInferenceContext<'context, Snapshot>,
+fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
+    context: &ExpressionInferenceContext<'a, Snapshot>,
     variable: Variable,
     compiled_expressions: &mut HashMap<Variable, Option<CompiledExpression>>,
 ) -> Result<ExpressionValueType, TypeInferenceError> {

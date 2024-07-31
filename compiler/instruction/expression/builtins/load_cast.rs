@@ -6,15 +6,18 @@
 
 use std::marker::PhantomData;
 
-use encoding::value::{value::DBValue, value_type::ValueTypeCategory };
-use crate::inference::ExpressionCompilationError;
+use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 
-use crate::instruction::{
-    expressions::{
-        evaluator::{ExpressionEvaluationState, ExpressionValue},
-        expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
-        op_codes::ExpressionOpCode,
-        ExpressionEvaluationError,
+use crate::{
+    expression::expression_compiler::ExpressionTreeCompiler,
+    inference::ExpressionCompilationError,
+    instruction::{
+        expression::{
+            evaluator::{ExpressionEvaluationState, ExpressionValue},
+            op_codes::ExpressionOpCode,
+            ExpressionEvaluationError,
+        },
+        CompilableExpression, ExpressionInstruction,
     },
 };
 
@@ -74,14 +77,14 @@ impl<From: DBValue, To: ImplicitCast<From>> ExpressionInstruction for CastUnary<
     const OP_CODE: ExpressionOpCode = To::CAST_UNARY_OPCODE;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let value_before = From::form_db_value(state.pop_value()).unwrap();
+        let value_before = From::from_db_value(state.pop_value()).unwrap();
         let value_after = To::cast(value_before)?.to_db_value();
         state.push_value(value_after);
         Ok(())
     }
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> SelfCompiling for CastUnary<From, To> {
+impl<From: DBValue, To: ImplicitCast<From>> CompilableExpression for CastUnary<From, To> {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }
@@ -103,7 +106,7 @@ impl<From: DBValue, To: ImplicitCast<From>> ExpressionInstruction for CastBinary
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
         let right = state.pop_value();
-        let left_before = From::form_db_value(state.pop_value()).unwrap();
+        let left_before = From::from_db_value(state.pop_value()).unwrap();
         let left_after = To::cast(left_before)?.to_db_value();
         state.push_value(left_after);
         state.push_value(right);
@@ -111,7 +114,7 @@ impl<From: DBValue, To: ImplicitCast<From>> ExpressionInstruction for CastBinary
     }
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> SelfCompiling for CastBinaryLeft<From, To> {
+impl<From: DBValue, To: ImplicitCast<From>> CompilableExpression for CastBinaryLeft<From, To> {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }
@@ -134,14 +137,14 @@ impl<From: DBValue, To: ImplicitCast<From>> ExpressionInstruction for CastBinary
     const OP_CODE: ExpressionOpCode = To::CAST_RIGHT_OPCODE;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let right_before = From::form_db_value(state.pop_value()).unwrap();
+        let right_before = From::from_db_value(state.pop_value()).unwrap();
         let right_after = To::cast(right_before)?.to_db_value();
         state.push_value(right_after);
         Ok(())
     }
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> SelfCompiling for CastBinaryRight<From, To> {
+impl<From: DBValue, To: ImplicitCast<From>> CompilableExpression for CastBinaryRight<From, To> {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }

@@ -15,15 +15,15 @@ use crate::program::block::FunctionalBlock;
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
-pub struct FunctionIR {
+pub struct Function {
     // Variable categories for args & return can be read from the block's context.
     arguments: Vec<Variable>,
     block: FunctionalBlock,
-    return_operation: ReturnOperationIR,
+    return_operation: ReturnOperation,
 }
 
-impl FunctionIR {
-    pub fn new<'a>(block: FunctionalBlock, arguments: Vec<Variable>, return_operation: ReturnOperationIR) -> Self {
+impl Function {
+    pub fn new<'a>(block: FunctionalBlock, arguments: Vec<Variable>, return_operation: ReturnOperation) -> Self {
         Self { block, arguments, return_operation }
     }
 
@@ -33,36 +33,36 @@ impl FunctionIR {
     pub fn block(&self) -> &FunctionalBlock {
         &self.block
     }
-    pub fn return_operation(&self) -> &ReturnOperationIR {
+    pub fn return_operation(&self) -> &ReturnOperation {
         &self.return_operation
     }
 }
 
-pub enum ReturnOperationIR {
+pub enum ReturnOperation {
     Stream(Vec<Variable>),
     Single(Vec<Reducer>),
 }
 
-impl ReturnOperationIR {
+impl ReturnOperation {
     pub fn output_annotations(
         &self,
         function_variable_annotations: &HashMap<Variable, Arc<HashSet<Type>>>,
     ) -> Vec<BTreeSet<Type>> {
         match self {
-            ReturnOperationIR::Stream(vars) => {
+            ReturnOperation::Stream(vars) => {
                 let inputs = vars.iter().map(|v| function_variable_annotations.get(v).unwrap());
                 inputs
                     .map(|types_as_arced_hashset| BTreeSet::from_iter(types_as_arced_hashset.iter().map(|t| t.clone())))
                     .collect()
             }
-            ReturnOperationIR::Single(_) => {
+            ReturnOperation::Single(_) => {
                 todo!()
             }
         }
     }
 }
 
-impl ReturnOperationIR {
+impl ReturnOperation {
     pub(crate) fn is_stream(&self) -> bool {
         match self {
             Self::Stream(_) => true,

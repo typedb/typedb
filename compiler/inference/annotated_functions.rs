@@ -5,16 +5,17 @@
  */
 
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::program::{function::FunctionIR, function_signature::FunctionIDTrait};
+use ir::program::{function::Function, function_signature::FunctionIDTrait};
+
 use crate::inference::type_annotations::FunctionAnnotations;
 
-pub struct CompiledSchemaFunctions {
-    ir: Box<[Option<FunctionIR>]>,
+pub struct AnnotatedCommittedFunctions {
+    ir: Box<[Option<Function>]>,
     annotations: Box<[Option<FunctionAnnotations>]>,
 }
 
-impl CompiledSchemaFunctions {
-    pub fn new(ir: Box<[Option<FunctionIR>]>, annotations: Box<[Option<FunctionAnnotations>]>) -> Self {
+impl AnnotatedCommittedFunctions {
+    pub fn new(ir: Box<[Option<Function>]>, annotations: Box<[Option<FunctionAnnotations>]>) -> Self {
         Self { ir, annotations }
     }
 
@@ -23,56 +24,56 @@ impl CompiledSchemaFunctions {
     }
 }
 
-pub trait CompiledFunctions {
-    type KeyType;
+pub trait AnnotatedFunctions {
+    type ID;
 
-    fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR>;
+    fn get_function(&self, id: Self::ID) -> Option<&Function>;
 
-    fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations>;
+    fn get_annotations(&self, id: Self::ID) -> Option<&FunctionAnnotations>;
 }
 
-impl CompiledFunctions for CompiledSchemaFunctions {
-    type KeyType = DefinitionKey<'static>;
+impl AnnotatedFunctions for AnnotatedCommittedFunctions {
+    type ID = DefinitionKey<'static>;
 
-    fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR> {
+    fn get_function(&self, id: Self::ID) -> Option<&Function> {
         self.ir.get(id.as_usize())?.as_ref()
     }
 
-    fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations> {
+    fn get_annotations(&self, id: Self::ID) -> Option<&FunctionAnnotations> {
         self.annotations.get(id.as_usize())?.as_ref()
     }
 }
 
 // May hold IR & Annotations for either Schema functions or Preamble functions
 // For schema functions, The index does not correspond to function_id.as_usize().
-pub struct CompiledLocalFunctions {
-    ir: Box<[FunctionIR]>,
+pub struct AnnotatedUncommittedFunctions {
+    ir: Box<[Function]>,
     annotations: Box<[FunctionAnnotations]>,
 }
 
-impl CompiledLocalFunctions {
-    pub fn new(ir: Box<[FunctionIR]>, annotations: Box<[FunctionAnnotations]>) -> Self {
+impl AnnotatedUncommittedFunctions {
+    pub fn new(ir: Box<[Function]>, annotations: Box<[FunctionAnnotations]>) -> Self {
         Self { ir, annotations }
     }
 
-    pub fn iter_ir(&self) -> impl Iterator<Item = &FunctionIR> {
+    pub fn iter_functions(&self) -> impl Iterator<Item = &Function> {
         self.ir.iter()
     }
 
-    pub fn into_parts(self) -> (Box<[FunctionIR]>, Box<[FunctionAnnotations]>) {
+    pub fn into_parts(self) -> (Box<[Function]>, Box<[FunctionAnnotations]>) {
         let Self { ir, annotations } = self;
         (ir, annotations)
     }
 }
 
-impl CompiledFunctions for CompiledLocalFunctions {
-    type KeyType = usize;
+impl AnnotatedFunctions for AnnotatedUncommittedFunctions {
+    type ID = usize;
 
-    fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR> {
+    fn get_function(&self, id: Self::ID) -> Option<&Function> {
         self.ir.get(id)
     }
 
-    fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations> {
+    fn get_annotations(&self, id: Self::ID) -> Option<&FunctionAnnotations> {
         self.annotations.get(id)
     }
 }

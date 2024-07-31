@@ -5,30 +5,31 @@
  */
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
-use compiler::inference::annotated_functions::CompiledSchemaFunctions;
-use compiler::inference::type_inference::infer_types;
-use compiler::planner::pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step};
-use compiler::planner::program_plan::ProgramPlan;
 
+use compiler::{
+    inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
+    planner::{
+        pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
+        program_plan::ProgramPlan,
+    },
+};
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
     type_::{Ordering, OwnerAPI, PlayerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use ir::pattern::constraint::IsaKind;
-use ir::program::block::FunctionalBlock;
-use ir::program::program::Program;
-
+use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
+use ir::{
+    pattern::constraint::IsaKind,
+    program::{block::FunctionalBlock, program::Program},
+};
+use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
 };
-use executor::batch::ImmutableRow;
-use executor::program_executor::ProgramExecutor;
-use lending_iterator::LendingIterator;
-
 
 use crate::common::{load_managers, setup_storage};
 
@@ -181,7 +182,7 @@ fn traverse_rp_unbounded_sorted_from() {
     let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -251,7 +252,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(CompiledSchemaFunctions::empty())).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
     };
 
     // Plan

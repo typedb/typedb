@@ -8,13 +8,8 @@ use std::marker::PhantomData;
 
 use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 
-use crate::instruction::{
-    expressions::{
-        evaluator::ExpressionEvaluationState,
-        expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
-        op_codes::ExpressionOpCode,
-        ExpressionEvaluationError,
-    },
+use crate::instruction::expression::{
+    evaluator::ExpressionEvaluationState, op_codes::ExpressionOpCode, ExpressionEvaluationError,
 };
 
 pub trait UnaryExpression<T1: DBValue, R: DBValue> {
@@ -39,13 +34,13 @@ where
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let a1: T1 = T1::form_db_value(state.pop_value()).unwrap();
+        let a1: T1 = T1::from_db_value(state.pop_value()).unwrap();
         state.push_value(F::evaluate(a1)?.to_db_value());
         Ok(())
     }
 }
 
-impl<T1, R, F> SelfCompiling for Unary<T1, R, F>
+impl<T1, R, F> CompilableExpression for Unary<T1, R, F>
 where
     T1: DBValue,
     R: DBValue,
@@ -80,7 +75,12 @@ macro_rules! unary_instruction {
 }
 
 pub(crate) use unary_instruction;
-use crate::inference::ExpressionCompilationError;
+
+use crate::{
+    expression::expression_compiler::ExpressionTreeCompiler,
+    inference::ExpressionCompilationError,
+    instruction::{CompilableExpression, ExpressionInstruction},
+};
 unary_instruction! {
     MathAbsLong = MathAbsLongImpl(a1: i64) -> i64 { Ok(i64::abs(a1)) }
     MathAbsDouble = MathAbsDoubleImpl(a1: f64) -> f64 { Ok(f64::abs(a1)) }

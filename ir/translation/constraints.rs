@@ -14,7 +14,7 @@ use typeql::{
 use crate::{
     pattern::constraint::{ConstraintsBuilder, IsaKind},
     program::function_signature::FunctionSignatureIndex,
-    translator::expression::build_expression,
+    translation::expression::build_expression,
     PatternDefinitionError,
 };
 

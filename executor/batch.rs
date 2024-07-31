@@ -13,8 +13,8 @@ use std::{
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
 use lending_iterator::LendingIterator;
-use crate::VariablePosition;
 
+use crate::VariablePosition;
 
 const BATCH_ROWS_MAX: u32 = 64;
 

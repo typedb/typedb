@@ -19,7 +19,7 @@ use crate::{
         },
     },
     program::function_signature::FunctionSignatureIndex,
-    translator::{
+    translation::{
         constraints::{add_function_call_user_impl, register_typeql_var, split_out_inline_expressions},
         literal::parse_literal,
     },
@@ -168,7 +168,7 @@ pub mod tests {
     use crate::{
         pattern::expression::{Expression, Operation, Operator},
         program::{block::FunctionalBlock, function_signature::HashMapFunctionIndex},
-        translator::block_builder::TypeQLBuilder,
+        translation::block_builder::TypeQLBuilder,
         PatternDefinitionError,
     };
 

@@ -671,8 +671,8 @@ impl ExpressionBinding<Variable> {
         Self { left, expression }
     }
 
-    pub fn left(&self) -> &Variable {
-        &self.left
+    pub fn left(&self) -> Variable {
+        self.left
     }
 
     pub fn expression(&self) -> &ExpressionTree<Variable> {

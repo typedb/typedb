@@ -306,7 +306,7 @@ impl TryInto<f64> for Value<'static> {
 pub trait DBValue: Sized {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory;
 
-    fn form_db_value(value: Value<'static>) -> Result<Self, ()>;
+    fn from_db_value(value: Value<'static>) -> Result<Self, ()>;
 
     fn to_db_value(self) -> Value<'static>;
 }
@@ -314,7 +314,7 @@ pub trait DBValue: Sized {
 impl DBValue for bool {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Boolean;
 
-    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Boolean(value) => Ok(value),
             _ => Err(()),
@@ -329,7 +329,7 @@ impl DBValue for bool {
 impl DBValue for f64 {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Double;
 
-    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Double(value) => Ok(value),
             _ => Err(()),
@@ -344,7 +344,7 @@ impl DBValue for f64 {
 impl DBValue for i64 {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Long;
 
-    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Long(value) => Ok(value),
             _ => Err(()),
@@ -358,7 +358,7 @@ impl DBValue for i64 {
 
 impl DBValue for String {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::String;
-    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::String(value) => Ok(value.deref().to_owned()),
             _ => Err(()),
@@ -372,7 +372,7 @@ impl DBValue for String {
 
 impl DBValue for Decimal {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Decimal;
-    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Decimal(value) => Ok(value),
             _ => Err(()),
@@ -387,7 +387,7 @@ impl DBValue for Decimal {
 impl DBValue for NaiveDate {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Date;
 
-    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Date(value) => Ok(value),
             _ => Err(()),
@@ -402,7 +402,7 @@ impl DBValue for NaiveDate {
 impl DBValue for NaiveDateTime {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::DateTime;
 
-    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::DateTime(value) => Ok(value),
             _ => Err(()),
@@ -417,7 +417,7 @@ impl DBValue for NaiveDateTime {
 impl DBValue for DateTime<Tz> {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::DateTimeTZ;
 
-    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::DateTimeTZ(value) => Ok(value),
             _ => Err(()),
@@ -432,7 +432,7 @@ impl DBValue for DateTime<Tz> {
 impl DBValue for Duration {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Duration;
 
-    fn form_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
             Value::Duration(value) => Ok(value),
             _ => Err(()),

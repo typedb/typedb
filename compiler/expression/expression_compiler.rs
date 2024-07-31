@@ -12,66 +12,25 @@ use ir::pattern::expression::{
     BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation,
     Operator,
 };
-use crate::inference::ExpressionCompilationError;
 
-use crate::instruction::{
-    expressions::{
-        builtins::{
-            list_operations,
-            load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
-            operators,
-            unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
+use crate::{
+    expression::compiled_expression::{CompiledExpression, ExpressionValueType},
+    inference::ExpressionCompilationError,
+    instruction::{
+        expression::{
+            builtins::{
+                list_operations,
+                load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
+                operators,
+                unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
+            },
+            evaluator::ExpressionEvaluationState,
+            op_codes::ExpressionOpCode,
+            ExpressionEvaluationError,
         },
-        evaluator::ExpressionEvaluationState,
-        op_codes::ExpressionOpCode,
-        ExpressionEvaluationError,
+        CompilableExpression, ExpressionInstruction,
     },
 };
-
-pub trait ExpressionInstruction: Sized {
-    const OP_CODE: ExpressionOpCode;
-    fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError>;
-}
-
-pub trait SelfCompiling: ExpressionInstruction {
-    fn return_value_category(&self) -> Option<ValueTypeCategory>;
-
-    fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError>;
-}
-
-pub struct CompiledExpression {
-    instructions: Vec<ExpressionOpCode>,
-    variables: Vec<Variable>,
-    constants: Vec<Value<'static>>,
-
-    return_type: ExpressionValueType,
-}
-
-impl CompiledExpression {
-    pub fn instructions(&self) -> &Vec<ExpressionOpCode> {
-        &self.instructions
-    }
-
-    pub fn variables(&self) -> &[Variable] {
-        self.variables.as_slice()
-    }
-
-    pub fn constants(&self) -> &[Value<'static>] {
-        self.constants.as_slice()
-    }
-}
-
-impl CompiledExpression {
-    pub fn return_type(&self) -> ExpressionValueType {
-        self.return_type.clone()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum ExpressionValueType {
-    Single(ValueTypeCategory),
-    List(ValueTypeCategory),
-}
 
 pub struct ExpressionTreeCompiler<'this> {
     ir_tree: &'this ExpressionTree<Variable>,
@@ -81,58 +40,6 @@ pub struct ExpressionTreeCompiler<'this> {
     instructions: Vec<ExpressionOpCode>,
     variable_stack: Vec<Variable>,
     constant_stack: Vec<Value<'static>>,
-}
-
-impl<'this> ExpressionTreeCompiler<'this> {
-    fn pop_type(&mut self) -> Result<ExpressionValueType, ExpressionCompilationError> {
-        match self.type_stack.pop() {
-            Some(value) => Ok(value),
-            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
-        }
-    }
-
-    pub(crate) fn pop_type_single(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
-        match self.type_stack.pop() {
-            Some(ExpressionValueType::Single(value)) => Ok(value),
-            Some(ExpressionValueType::List(_)) => Err(ExpressionCompilationError::ExpectedSingleWasList),
-            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
-        }
-    }
-
-    pub(crate) fn pop_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
-        match self.type_stack.pop() {
-            Some(ExpressionValueType::List(value)) => Ok(value),
-            Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
-            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
-        }
-    }
-
-    pub(crate) fn push_type_single(&mut self, value: ValueTypeCategory) {
-        self.type_stack.push(ExpressionValueType::Single(value));
-    }
-
-    pub(crate) fn push_type_list(&mut self, value: ValueTypeCategory) {
-        self.type_stack.push(ExpressionValueType::List(value));
-    }
-    fn peek_type_single(&self) -> Result<&ValueTypeCategory, ExpressionCompilationError> {
-        match self.type_stack.last() {
-            Some(ExpressionValueType::Single(value)) => Ok(value),
-            Some(ExpressionValueType::List(_)) => Err(ExpressionCompilationError::ExpectedSingleWasList),
-            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
-        }
-    }
-
-    pub(crate) fn peek_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
-        match self.type_stack.last() {
-            Some(ExpressionValueType::List(value)) => Ok(*value),
-            Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
-            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
-        }
-    }
-
-    pub(crate) fn append_instruction(&mut self, op_code: ExpressionOpCode) {
-        self.instructions.push(op_code)
-    }
 }
 
 impl<'this> ExpressionTreeCompiler<'this> {
@@ -470,5 +377,56 @@ impl<'this> ExpressionTreeCompiler<'this> {
             }
         }
         Ok(())
+    }
+
+    fn pop_type(&mut self) -> Result<ExpressionValueType, ExpressionCompilationError> {
+        match self.type_stack.pop() {
+            Some(value) => Ok(value),
+            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+        }
+    }
+
+    pub(crate) fn pop_type_single(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+        match self.type_stack.pop() {
+            Some(ExpressionValueType::Single(value)) => Ok(value),
+            Some(ExpressionValueType::List(_)) => Err(ExpressionCompilationError::ExpectedSingleWasList),
+            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+        }
+    }
+
+    pub(crate) fn pop_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+        match self.type_stack.pop() {
+            Some(ExpressionValueType::List(value)) => Ok(value),
+            Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
+            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+        }
+    }
+
+    pub(crate) fn push_type_single(&mut self, value: ValueTypeCategory) {
+        self.type_stack.push(ExpressionValueType::Single(value));
+    }
+
+    pub(crate) fn push_type_list(&mut self, value: ValueTypeCategory) {
+        self.type_stack.push(ExpressionValueType::List(value));
+    }
+
+    fn peek_type_single(&self) -> Result<&ValueTypeCategory, ExpressionCompilationError> {
+        match self.type_stack.last() {
+            Some(ExpressionValueType::Single(value)) => Ok(value),
+            Some(ExpressionValueType::List(_)) => Err(ExpressionCompilationError::ExpectedSingleWasList),
+            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+        }
+    }
+
+    pub(crate) fn peek_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+        match self.type_stack.last() {
+            Some(ExpressionValueType::List(value)) => Ok(*value),
+            Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
+            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+        }
+    }
+
+    pub(crate) fn append_instruction(&mut self, op_code: ExpressionOpCode) {
+        self.instructions.push(op_code)
     }
 }

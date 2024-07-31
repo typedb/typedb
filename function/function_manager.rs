@@ -7,8 +7,9 @@
 use std::{iter::zip, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
-use compiler::inference::annotated_functions::CompiledSchemaFunctions;
-use compiler::inference::type_inference::infer_types_for_functions;
+use compiler::inference::{
+    annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types_for_functions,
+};
 use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::{
@@ -23,9 +24,8 @@ use encoding::{
 };
 use ir::{
     program::{
-        function_signature::{
-            FunctionID,  FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
-        program::{Program},
+        function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
+        program::Program,
         FunctionReadError,
     },
     translator::function::build_signature,
@@ -70,7 +70,7 @@ impl FunctionManager {
             HashMapFunctionIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let ir = Program::compile_functions(&function_index, functions.iter().map(|f| &f.parsed)).unwrap();
         // Run type-inference
-        infer_types_for_functions(ir, snapshot, type_manager, &CompiledSchemaFunctions::empty())
+        infer_types_for_functions(ir, snapshot, type_manager, &AnnotatedCommittedFunctions::empty())
             .map_err(|source| FunctionManagerError::TypeInference { source })?;
         Ok(())
     }

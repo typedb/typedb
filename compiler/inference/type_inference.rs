@@ -11,18 +11,16 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
-use ir::{
-    program::{function::FunctionIR, program::Program},
-};
+use ir::program::{function::Function, program::Program};
 use storage::snapshot::ReadableSnapshot;
 
-use super::pattern_type_inference::{infer_types_for_block};
+use super::pattern_type_inference::infer_types_for_block;
 use crate::inference::{
-    annotated_functions::{CompiledLocalFunctions, CompiledSchemaFunctions},
+    annotated_functions::{AnnotatedCommittedFunctions, AnnotatedUncommittedFunctions},
     annotated_program::AnnotatedProgram,
+    type_annotations::{FunctionAnnotations, TypeAnnotations},
     TypeInferenceError,
 };
-use crate::inference::type_annotations::{FunctionAnnotations, TypeAnnotations};
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
@@ -30,7 +28,7 @@ pub fn infer_types(
     program: Program,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    schema_functions: Arc<CompiledSchemaFunctions>,
+    schema_functions: Arc<AnnotatedCommittedFunctions>,
 ) -> Result<AnnotatedProgram, TypeInferenceError> {
     let (entry, functions) = program.into_parts();
     let preamble_functions = infer_types_for_functions(functions, snapshot, type_manager, &schema_functions)?;
@@ -40,22 +38,24 @@ pub fn infer_types(
 }
 
 pub fn infer_types_for_functions(
-    functions: Vec<FunctionIR>,
+    functions: Vec<Function>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    schema_functions: &CompiledSchemaFunctions,
-) -> Result<CompiledLocalFunctions, TypeInferenceError> {
+    schema_functions: &AnnotatedCommittedFunctions,
+) -> Result<AnnotatedUncommittedFunctions, TypeInferenceError> {
     // In the preliminary annotations, functions are annotated based only on the variable categories of the called function.
     let preliminary_annotations_res: Result<Vec<FunctionAnnotations>, TypeInferenceError> = functions
         .iter()
         .map(|function| infer_types_for_function(function, snapshot, type_manager, schema_functions, None))
         .collect();
-    let preliminary_annotations =
-        CompiledLocalFunctions::new(functions.into_boxed_slice(), preliminary_annotations_res?.into_boxed_slice());
+    let preliminary_annotations = AnnotatedUncommittedFunctions::new(
+        functions.into_boxed_slice(),
+        preliminary_annotations_res?.into_boxed_slice(),
+    );
 
     // In the second round, finer annotations are available at the function calls so the annotations in function bodies can be refined.
     let annotations_res: Result<Vec<FunctionAnnotations>, TypeInferenceError> = preliminary_annotations
-        .iter_ir()
+        .iter_functions()
         .map(|function| {
             infer_types_for_function(function, snapshot, type_manager, schema_functions, Some(&preliminary_annotations))
         })
@@ -66,17 +66,17 @@ pub fn infer_types_for_functions(
     // Further, In a chain of three functions where the first two bodies have no function calls
     // but rely on the third function to infer annotations, the annotations will not reach the first function.
     let (ir, annotation) = preliminary_annotations.into_parts();
-    let compiled = CompiledLocalFunctions::new(ir, annotations_res?.into_boxed_slice());
+    let annotated = AnnotatedUncommittedFunctions::new(ir, annotations_res?.into_boxed_slice());
 
-    Ok(compiled)
+    Ok(annotated)
 }
 
 pub fn infer_types_for_function(
-    function: &FunctionIR,
+    function: &Function,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    schema_functions: &CompiledSchemaFunctions,
-    local_functions: Option<&CompiledLocalFunctions>,
+    schema_functions: &AnnotatedCommittedFunctions,
+    local_functions: Option<&AnnotatedUncommittedFunctions>,
 ) -> Result<FunctionAnnotations, TypeInferenceError> {
     let root_tig = infer_types_for_block(snapshot, function.block(), type_manager, schema_functions, local_functions)?;
     let body_annotations = TypeAnnotations::build(root_tig);
@@ -107,7 +107,7 @@ pub mod tests {
         },
         program::{
             block::{BlockContext, FunctionalBlock},
-            function::{FunctionIR, ReturnOperationIR},
+            function::{Function, ReturnOperation},
             function_signature::{FunctionID, FunctionSignature},
             program::Program,
         },
@@ -115,7 +115,7 @@ pub mod tests {
     use itertools::Itertools;
 
     use crate::inference::{
-        annotated_functions::CompiledSchemaFunctions,
+        annotated_functions::AnnotatedCommittedFunctions,
         pattern_type_inference::{
             infer_types_for_block, tests::expected_edge, NestedTypeInferenceGraphDisjunction, TypeInferenceGraph,
         },
@@ -124,12 +124,9 @@ pub mod tests {
             schema_consts::{setup_types, LABEL_CAT},
             setup_storage,
         },
-        type_inference::{
-            infer_types, infer_types_for_function,
-            TypeAnnotations,
-        },
+        type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
+        type_inference::{infer_types, infer_types_for_function, TypeAnnotations},
     };
-    use crate::inference::type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations};
 
     pub(crate) fn expected_left_right_annotation(
         constraint: &Constraint<Variable>,
@@ -275,41 +272,41 @@ pub mod tests {
             FunctionID::Preamble(0),
             FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0))),
         ]
-            .iter()
-            .map(|function_id| {
-                let mut builder = FunctionalBlock::builder();
-                let mut f_conjunction = builder.conjunction_mut();
-                let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
-                let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
-                let f_var_name = f_conjunction.get_or_declare_variable("called_name").unwrap();
-                f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT).unwrap();
-                f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type).unwrap();
-                f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
-                let f_ir = FunctionIR::new(builder.finish(), vec![], ReturnOperationIR::Stream(vec![f_var_animal]));
+        .iter()
+        .map(|function_id| {
+            let mut builder = FunctionalBlock::builder();
+            let mut f_conjunction = builder.conjunction_mut();
+            let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
+            let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
+            let f_var_name = f_conjunction.get_or_declare_variable("called_name").unwrap();
+            f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT).unwrap();
+            f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type).unwrap();
+            f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
+            let f_ir = Function::new(builder.finish(), vec![], ReturnOperation::Stream(vec![f_var_animal]));
 
-                let mut builder = FunctionalBlock::builder();
-                let mut conjunction = builder.conjunction_mut();
-                let context = BlockContext::new();
-                let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
+            let mut builder = FunctionalBlock::builder();
+            let mut conjunction = builder.conjunction_mut();
+            let context = BlockContext::new();
+            let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
 
-                let callee_signature = FunctionSignature::new(
-                    function_id.clone(),
-                    vec![],
-                    vec![(VariableCategory::Object, VariableOptionality::Required)],
-                    true,
-                );
-                conjunction.constraints_mut().add_function_call(vec![var_animal], &callee_signature, vec![]).unwrap();
-                let entry = builder.finish();
-                (entry, f_ir)
-            })
-            .collect_tuple()
-            .unwrap();
+            let callee_signature = FunctionSignature::new(
+                function_id.clone(),
+                vec![],
+                vec![(VariableCategory::Object, VariableOptionality::Required)],
+                true,
+            );
+            conjunction.constraints_mut().add_function_call(vec![var_animal], &callee_signature, vec![]).unwrap();
+            let entry = builder.finish();
+            (entry, f_ir)
+        })
+        .collect_tuple()
+        .unwrap();
 
         let snapshot = storage.open_snapshot_read();
         let f_annotations = {
             let (_, f_ir) = &with_no_cache;
             let f_annotations =
-                infer_types_for_function(f_ir, &snapshot, &type_manager, &CompiledSchemaFunctions::empty(), None)
+                infer_types_for_function(f_ir, &snapshot, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
                     .unwrap();
             let isa = f_ir.block().conjunction().constraints()[0].clone();
             let f_var_animal = f_ir.block().context().get_variable("called_animal").unwrap();
@@ -331,12 +328,12 @@ pub mod tests {
             let (entry, _) = with_no_cache;
             let var_animal = entry.context().get_variable("animal").unwrap();
             let annotations_without_schema_cache = TypeAnnotations::build(
-                infer_types_for_block(&snapshot, &entry, &type_manager, &CompiledSchemaFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &entry, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
                     .unwrap(),
             );
             assert_eq!(
                 *annotations_without_schema_cache.variable_annotations(),
-                HashMap::from([(var_animal, Arc::new(HashSet::from(object_types.clone()))), ])
+                HashMap::from([(var_animal, Arc::new(HashSet::from(object_types.clone()))),])
             );
         }
         {
@@ -347,9 +344,9 @@ pub mod tests {
                 Program::new(entry, vec![f_ir]),
                 &snapshot,
                 &type_manager,
-                Arc::new(CompiledSchemaFunctions::empty()),
+                Arc::new(AnnotatedCommittedFunctions::empty()),
             )
-                .unwrap();
+            .unwrap();
             assert_eq!(
                 *annotations_with_local_cache.entry_annotations.variable_annotations(),
                 HashMap::from([(var_animal, Arc::new(HashSet::from([type_cat.clone()])))]),
@@ -361,7 +358,8 @@ pub mod tests {
             let (entry, f_ir) = with_schema_cache;
             let var_animal = entry.context().get_variable("animal").unwrap();
             let f_id = FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0)));
-            let schema_cache = CompiledSchemaFunctions::new(Box::new([Some(f_ir)]), Box::new([Some(f_annotations)]));
+            let schema_cache =
+                AnnotatedCommittedFunctions::new(Box::new([Some(f_ir)]), Box::new([Some(f_annotations)]));
             let annotations_with_schema_cache =
                 infer_types(Program::new(entry, vec![]), &snapshot, &type_manager, Arc::new(schema_cache)).unwrap();
             assert_eq!(

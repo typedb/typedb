@@ -11,10 +11,12 @@ rust_library(
     crate_root = "lib.rs",
     srcs = glob([
         "*.rs",
-        "inference/*.rs",
-        "instruction/*.rs",
+        "expression/**/*.rs",
+        "inference/**/*.rs",
+        "instruction/**/*.rs",
         "instruction/expressions/**/*.rs",
-        "planner/**/*.rs"
+        "planner/**/*.rs",
+        "optimisation/**/*.rs",
     ]),
     deps = [
         "//answer",

@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod expression;
-pub mod inference;
-pub mod instruction;
-mod optimisation;
-pub mod planner;
+pub mod compiled_expression;
+pub mod expression_compiler;
+pub mod expression_inference;

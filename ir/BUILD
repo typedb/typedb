@@ -16,7 +16,7 @@ rust_library(
         "optimisation/*.rs",
         "pattern/*.rs",
         "program/*.rs",
-        "translator/*.rs",
+        "translation/*.rs",
     ]),
     deps = [
         "//answer",

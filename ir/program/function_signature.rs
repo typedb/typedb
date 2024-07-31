@@ -15,7 +15,7 @@ use primitive::maybe_owns::MaybeOwns;
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
     program::FunctionReadError,
-    translator::function::build_signature,
+    translation::function::build_signature,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]

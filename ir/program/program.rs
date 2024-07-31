@@ -7,20 +7,20 @@
 use crate::{
     program::{
         block::FunctionalBlock,
-        function::FunctionIR,
+        function::Function,
         function_signature::{FunctionIDTrait, FunctionSignatureIndex},
         FunctionDefinitionError, ProgramDefinitionError,
     },
-    translator::{function::translate_function, match_::translate_match},
+    translation::{function::translate_function, match_::translate_match},
 };
 
 pub struct Program {
     entry: FunctionalBlock,
-    functions: Vec<FunctionIR>,
+    functions: Vec<Function>,
 }
 
 impl Program {
-    pub fn new(entry: FunctionalBlock, functions: Vec<FunctionIR>) -> Self {
+    pub fn new(entry: FunctionalBlock, functions: Vec<Function>) -> Self {
         // TODO: verify exactly the required functions are provided
         // TODO: ^ Why? I've since interpreted it as the query-local functions
         debug_assert!(Self::all_variables_categorised(&entry));
@@ -35,11 +35,11 @@ impl Program {
         &mut self.entry
     }
 
-    pub fn functions(&self) -> &Vec<FunctionIR> {
+    pub fn functions(&self) -> &Vec<Function> {
         &self.functions
     }
 
-    pub fn into_parts(self) -> (FunctionalBlock, Vec<FunctionIR>) {
+    pub fn into_parts(self) -> (FunctionalBlock, Vec<Function>) {
         let Self { entry, functions } = self;
         (entry, functions)
     }
@@ -49,13 +49,13 @@ impl Program {
         match_: &typeql::query::stage::Match,
         preamble_functions: Vec<&typeql::Function>,
     ) -> Result<Self, ProgramDefinitionError> {
-        let functions: Vec<FunctionIR> = preamble_functions
+        let functions: Vec<Function> = preamble_functions
             .iter()
             .map(|function| {
                 translate_function(function_index, &function)
                     .map_err(|source| ProgramDefinitionError::FunctionDefinition { source })
             })
-            .collect::<Result<Vec<FunctionIR>, ProgramDefinitionError>>()?;
+            .collect::<Result<Vec<Function>, ProgramDefinitionError>>()?;
         let entry = translate_match(function_index, match_)
             .map_err(|source| ProgramDefinitionError::PatternDefinition { source })?
             .finish();
@@ -66,8 +66,8 @@ impl Program {
     pub fn compile_functions<'index, 'functions>(
         function_index: &impl FunctionSignatureIndex,
         functions_to_compile: impl Iterator<Item = &'functions typeql::Function>,
-    ) -> Result<Vec<FunctionIR>, FunctionDefinitionError> {
-        let ir: Result<Vec<FunctionIR>, FunctionDefinitionError> =
+    ) -> Result<Vec<Function>, FunctionDefinitionError> {
+        let ir: Result<Vec<Function>, FunctionDefinitionError> =
             functions_to_compile.map(|function| translate_function(function_index, &function)).collect();
         Ok(ir?)
     }
@@ -84,14 +84,10 @@ pub mod tests {
     use typeql::query::Pipeline;
 
     use crate::{
-        inference::{
-            tests::{managers, schema_consts::setup_types, setup_storage},
-            type_inference::infer_types,
-        },
         pattern::constraint::Constraint,
         program::{
             function_signature::{FunctionID, HashMapFunctionIndex},
-            program::{CompiledFunctions, CompiledSchemaFunctions, Program},
+            program::Program,
             ProgramDefinitionError,
         },
         PatternDefinitionError,

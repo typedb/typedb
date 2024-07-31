@@ -12,12 +12,10 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use encoding::graph::definition::definition_key::DefinitionKey;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
-use crate::batch::ImmutableRow;
-use crate::function_executor::FunctionExecutor;
 
-
-use crate::pattern_executor::PatternExecutor;
-use crate::VariablePosition;
+use crate::{
+    batch::ImmutableRow, function_executor::FunctionExecutor, pattern_executor::PatternExecutor, VariablePosition,
+};
 
 pub struct ProgramExecutor {
     entry: PatternExecutor,

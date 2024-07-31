@@ -17,10 +17,11 @@ use ir::{
     program::block::{BlockContext, FunctionalBlock},
 };
 use itertools::Itertools;
-use crate::inference::type_annotations::TypeAnnotations;
 
-use crate::planner::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost};
-
+use crate::{
+    inference::type_annotations::TypeAnnotations,
+    planner::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost},
+};
 
 pub struct PatternPlan {
     pub(crate) steps: Vec<Step>,

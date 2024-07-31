@@ -49,11 +49,10 @@ use ir::pattern::{expression::Operator, variable_category::VariableCategory};
 
 pub mod annotated_functions;
 pub mod annotated_program;
-pub mod expression_inference;
 pub mod pattern_type_inference;
+pub mod type_annotations;
 pub mod type_inference;
 mod type_seeder;
-pub mod type_annotations;
 
 #[derive(Debug)]
 pub enum TypeInferenceError {
@@ -201,11 +200,11 @@ pub mod tests {
 
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use encoding::{
-        EncodingKeyspace,
         graph::{
             definition::definition_key_generator::DefinitionKeyGenerator,
             thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
         },
+        EncodingKeyspace,
     };
     use storage::{durability_client::WALClient, MVCCStorage};
 
@@ -266,7 +265,7 @@ pub mod tests {
         use answer::Type as TypeAnnotation;
         use concept::type_::{
             annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation,
-            Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager,
+            type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
         };
         use encoding::value::{label::Label, value_type::ValueType};
         use storage::{

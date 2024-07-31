@@ -19,38 +19,11 @@ use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::inference::{
-    annotated_functions::{CompiledLocalFunctions, CompiledSchemaFunctions},
+    annotated_functions::{AnnotatedCommittedFunctions, AnnotatedUncommittedFunctions},
     type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
     type_seeder::TypeSeeder,
     TypeInferenceError,
 };
-
-/*
-The type inference algorithm involves 2 phases:
-1. The seed phase annotates each vertex with a super-set of possible types.
-2. The refinement phase then iteratively intersects the type annotations on vertices and edges, and vice-versa.
-
-Seed phase:
-    0. We first infer types for vertices from labels and function return/argument types.
-    1. We recursively propagate annotations over constraints for any unannotated variable is attached to an annotated one.
-    2. If any vertex remains unannotated, we pick one of them, assign it all possible types from its category, and goto 1.
-    3. For each edge, we create a mapping from a type on the left (resp. right) to a set of possible types on the right (resp. left).
-    4. We make the two maps "consistent"  i.e. left_to_right.keys = right_to_left.values and vice-versa.
-    5. Any keys with an empty-set as value is removed.
-
-Refinement phase:
-    Repeat till the vertex annotations remain unchanged:
-    0. Refine the annotations for each vertex by intersecting them with the annotations on each edge they're involved in.
-    1. Refine the annotations on each edge by intersecting them with the annotations of the vertex.
-
-The current implementation is naive in that it re-evaluates every vertex and every edge in every iteration.
-It should be easy to optimise by keeping track of which vertices have changed and only using the attached constraints to refine/seed.
-It should also be possible to interleave the two phases, as in the original design:
-    Add all variables to frontier.
-    Repeat till the frontier is empty:
-        Pick a variable from the frontier.
-        For each constraint attached, addOrIntersect types possible for the neighbor variable, add neighbor-var to frontier if it's annotations have changed
-*/
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
@@ -58,8 +31,8 @@ pub(crate) fn infer_types_for_block<'graph>(
     snapshot: &impl ReadableSnapshot,
     block: &'graph FunctionalBlock,
     type_manager: &TypeManager,
-    schema_functions: &CompiledSchemaFunctions,
-    local_function_cache: Option<&CompiledLocalFunctions>,
+    schema_functions: &AnnotatedCommittedFunctions,
+    local_function_cache: Option<&AnnotatedUncommittedFunctions>,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
     let mut tig = TypeSeeder::new(snapshot, type_manager, schema_functions, local_function_cache)
         .seed_types(block.context(), block.conjunction())?;
@@ -317,10 +290,19 @@ pub mod tests {
     };
     use itertools::Itertools;
 
-    use crate::inference::annotated_functions::CompiledSchemaFunctions;
-    use crate::inference::pattern_type_inference::{infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph};
-    use crate::inference::tests::schema_consts::{LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_NAME, setup_types};
-    use crate::inference::tests::{managers, setup_storage};
+    use crate::inference::{
+        annotated_functions::AnnotatedCommittedFunctions,
+        pattern_type_inference::{
+            infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
+        },
+        tests::{
+            managers,
+            schema_consts::{
+                setup_types, LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_NAME,
+            },
+            setup_storage,
+        },
+    };
 
     pub(crate) fn expected_edge(
         constraint: &Constraint<Variable>,
@@ -375,8 +357,9 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
-                .unwrap();
+            let tig =
+                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                    .unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: block.conjunction(),
@@ -434,8 +417,9 @@ pub mod tests {
             let block = builder.finish();
 
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
-                .unwrap();
+            let tig =
+                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                    .unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: block.conjunction(),
@@ -491,8 +475,9 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
-                .unwrap();
+            let tig =
+                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                    .unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: block.conjunction(),
@@ -535,8 +520,9 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
-                .unwrap();
+            let tig =
+                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                    .unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: block.conjunction(),
@@ -631,8 +617,9 @@ pub mod tests {
             let block = builder.finish();
 
             let snapshot = storage.clone().open_snapshot_write();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
-                .unwrap();
+            let tig =
+                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                    .unwrap();
 
             let conjunction = block.conjunction();
             let disj = conjunction.nested_patterns().first().unwrap().as_disjunction().unwrap();
@@ -735,8 +722,9 @@ pub mod tests {
             let block = builder.finish();
             let conjunction = block.conjunction();
             let constraints = conjunction.constraints();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
-                .unwrap();
+            let tig =
+                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                    .unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: &conjunction,
@@ -815,8 +803,9 @@ pub mod tests {
 
             let conjunction = block.conjunction();
             let constraints = conjunction.constraints();
-            let tig = infer_types_for_block(&snapshot, &block, &type_manager, &CompiledSchemaFunctions::empty(), None)
-                .unwrap();
+            let tig =
+                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                    .unwrap();
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: &conjunction,

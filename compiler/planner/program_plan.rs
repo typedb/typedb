@@ -7,9 +7,11 @@
 use std::collections::HashMap;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
-use crate::inference::type_annotations::TypeAnnotations;
-use crate::planner::function_plan::FunctionPlan;
-use crate::planner::pattern_plan::PatternPlan;
+
+use crate::{
+    inference::type_annotations::TypeAnnotations,
+    planner::{function_plan::FunctionPlan, pattern_plan::PatternPlan},
+};
 
 pub struct ProgramPlan {
     pub entry: PatternPlan,

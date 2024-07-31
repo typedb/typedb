@@ -6,26 +6,28 @@
 
 use std::sync::Arc;
 
-use ir::program::{block::FunctionalBlock, function::FunctionIR, function_signature::FunctionID};
+use ir::program::{block::FunctionalBlock, function::Function, function_signature::FunctionID};
 
-use crate::inference::annotated_functions::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions};
-use crate::inference::type_annotations::{FunctionAnnotations, TypeAnnotations};
+use crate::inference::{
+    annotated_functions::{AnnotatedCommittedFunctions, AnnotatedFunctions, AnnotatedUncommittedFunctions},
+    type_annotations::{FunctionAnnotations, TypeAnnotations},
+};
 
 pub struct AnnotatedProgram {
     pub(crate) entry: FunctionalBlock,
     pub(crate) entry_annotations: TypeAnnotations,
-    pub(crate) local_functions: CompiledLocalFunctions,
-    pub(crate) schema_functions: Arc<CompiledSchemaFunctions>,
+    pub(crate) uncommitted_functions: AnnotatedUncommittedFunctions,
+    pub(crate) committed_functions: Arc<AnnotatedCommittedFunctions>,
 }
 
 impl AnnotatedProgram {
     pub(crate) fn new(
         entry: FunctionalBlock,
         entry_annotations: TypeAnnotations,
-        local_functions: CompiledLocalFunctions,
-        schema_functions: Arc<CompiledSchemaFunctions>,
+        local_functions: AnnotatedUncommittedFunctions,
+        schema_functions: Arc<AnnotatedCommittedFunctions>,
     ) -> Self {
-        Self { entry, entry_annotations, local_functions, schema_functions }
+        Self { entry, entry_annotations, uncommitted_functions: local_functions, committed_functions: schema_functions }
     }
 
     pub fn get_entry(&self) -> &FunctionalBlock {
@@ -36,17 +38,17 @@ impl AnnotatedProgram {
         &self.entry_annotations
     }
 
-    fn get_function_ir(&self, function_id: FunctionID) -> Option<&FunctionIR> {
+    fn get_function(&self, function_id: FunctionID) -> Option<&Function> {
         match function_id {
-            FunctionID::Schema(definition_key) => self.schema_functions.get_function_ir(definition_key),
-            FunctionID::Preamble(index) => self.local_functions.get_function_ir(index),
+            FunctionID::Schema(definition_key) => self.committed_functions.get_function(definition_key),
+            FunctionID::Preamble(index) => self.uncommitted_functions.get_function(index),
         }
     }
 
     fn get_function_annotations(&self, function_id: FunctionID) -> Option<&FunctionAnnotations> {
         match function_id {
-            FunctionID::Schema(definition_key) => self.schema_functions.get_function_annotations(definition_key),
-            FunctionID::Preamble(index) => self.local_functions.get_function_annotations(index),
+            FunctionID::Schema(definition_key) => self.committed_functions.get_annotations(definition_key),
+            FunctionID::Preamble(index) => self.uncommitted_functions.get_annotations(index),
         }
     }
 }
@@ -61,10 +63,11 @@ pub mod tests {
     };
     use typeql::query::Pipeline;
 
-    use crate::inference::annotated_functions::CompiledSchemaFunctions;
-    use crate::inference::tests::{managers, setup_storage};
-    use crate::inference::tests::schema_consts::setup_types;
-    use crate::inference::type_inference::infer_types;
+    use crate::inference::{
+        annotated_functions::AnnotatedCommittedFunctions,
+        tests::{managers, schema_consts::setup_types, setup_storage},
+        type_inference::infer_types,
+    };
 
     #[test]
     fn from_typeql() {
@@ -92,7 +95,7 @@ pub mod tests {
         let (type_manager, _) = managers();
         let ((type_animal, type_cat, type_dog), _, _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
-        let empty_cache = Arc::new(CompiledSchemaFunctions::empty());
+        let empty_cache = Arc::new(AnnotatedCommittedFunctions::empty());
 
         let snapshot = storage.clone().open_snapshot_read();
         let var_f_c = program.functions()[0]

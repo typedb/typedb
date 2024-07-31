@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::instruction::expressions::ExpressionEvaluationError;
+use crate::instruction::expression::ExpressionEvaluationError;
 
 pub mod binary;
 pub mod list_operations;

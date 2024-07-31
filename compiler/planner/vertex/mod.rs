@@ -9,6 +9,7 @@ use std::{collections::HashMap, ops::Deref};
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pattern::constraint::Has;
+
 use crate::inference::type_annotations::TypeAnnotations;
 
 const OPEN_ITERATOR_RELATIVE_COST: f64 = 5.0;

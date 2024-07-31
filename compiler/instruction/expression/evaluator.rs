@@ -9,17 +9,24 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use encoding::value::value::Value;
 
-use crate::instruction::expressions::{
-    builtins::{
-        binary::MathRemainderLong,
-        list_operations::{ListConstructor, ListIndex, ListIndexRange},
-        load_cast::{CastLeftLongToDouble, CastRightLongToDouble, CastUnaryLongToDouble, LoadConstant, LoadVariable},
-        operators as ops,
-        unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
+use crate::{
+    expression::compiled_expression::CompiledExpression,
+    instruction::{
+        expression::{
+            builtins::{
+                binary::MathRemainderLong,
+                list_operations::{ListConstructor, ListIndex, ListIndexRange},
+                load_cast::{
+                    CastLeftLongToDouble, CastRightLongToDouble, CastUnaryLongToDouble, LoadConstant, LoadVariable,
+                },
+                operators as ops,
+                unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
+            },
+            op_codes::ExpressionOpCode,
+            ExpressionEvaluationError,
+        },
+        ExpressionInstruction,
     },
-    expression_compiler::{CompiledExpression, ExpressionInstruction},
-    op_codes::ExpressionOpCode,
-    ExpressionEvaluationError,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq)]
