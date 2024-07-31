@@ -13,17 +13,19 @@ use std::{
 };
 
 use chrono_tz::Tz;
+
 use concept::type_::{
     annotation::{AnnotationAbstract, AnnotationRange, AnnotationValues},
     attribute_type::AttributeTypeAnnotation,
+    Capability,
     entity_type::EntityTypeAnnotation,
+    KindAPI,
     object_type::ObjectType,
-    owns::{Owns, OwnsAnnotation},
-    type_manager::{type_cache::TypeCache, TypeManager},
-    Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+    Ordering, OwnerAPI, owns::{Owns, OwnsAnnotation}, PlayerAPI, type_manager::{type_cache::TypeCache, TypeManager}, TypeAPI,
 };
 use durability::wal::WAL;
 use encoding::{
+    EncodingKeyspace,
     graph::{
         definition::{
             definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
@@ -31,12 +33,11 @@ use encoding::{
         type_::vertex_generator::TypeVertexGenerator,
     },
     value::{decimal_value::Decimal, label::Label, value::Value, value_type::ValueType},
-    EncodingKeyspace,
 };
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot},
 };
 use test_utils::{create_tmp_dir, init_logging};
 

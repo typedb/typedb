@@ -7,7 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
+    graph::type_::{CapabilityKind, edge::TypeEdgeEncoding},
     layout::prefix::Prefix,
 };
 use primitive::maybe_owns::MaybeOwns;
@@ -17,10 +17,10 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationError, DefaultFrom},
+        Capability,
         object_type::ObjectType,
         role_type::RoleType,
-        type_manager::TypeManager,
-        Capability, Ordering, TypeAPI,
+        type_manager::TypeManager, TypeAPI,
     },
 };
 
@@ -208,13 +208,9 @@ impl PartialEq<Annotation> for PlaysAnnotation {
     fn eq(&self, annotation: &Annotation) -> bool {
         match annotation {
             Annotation::Cardinality(other_cardinality) => {
-                if let Self::Cardinality(cardinality) = self {
-                    cardinality == other_cardinality
-                } else {
-                    false
-                }
+                let Self::Cardinality(cardinality) = self;
+                cardinality == other_cardinality
             }
-
             Annotation::Abstract(_) => false,
             Annotation::Independent(_) => false,
             Annotation::Distinct(_) => false,

@@ -6,14 +6,16 @@
 
 use std::{marker::PhantomData, ops::Rem};
 
+use encoding::value::value::DBValue;
 use encoding::value::value_type::ValueTypeCategory;
 
+use crate::ExpressionCompilationError;
 use crate::expressions::{
-    evaluator::ExpressionEvaluationState,
     expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
+    ExpressionEvaluationError,
     op_codes::ExpressionOpCode,
-    ExpressionCompilationError, ExpressionEvaluationError,
 };
+use crate::expressions::evaluator::ExpressionEvaluationState;
 
 pub trait BinaryExpression<T1: DBValue, T2: DBValue, R: DBValue> {
     const OP_CODE: ExpressionOpCode;
@@ -81,9 +83,8 @@ macro_rules! binary_instruction {
         })*
     };
 }
-pub(crate) use binary_instruction;
-use encoding::value::value::DBValue;
 
+pub(crate) use binary_instruction;
 binary_instruction! {
     MathRemainderLong = MathRemainderLongImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }
 }

@@ -9,8 +9,8 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     error::EncodingError,
     graph::{common::schema_id_allocator::TypeVertexAllocator, type_::vertex::TypeVertex},
-    layout::prefix::Prefix,
     Keyable,
+    layout::prefix::Prefix,
 };
 
 pub struct TypeVertexGenerator {

@@ -8,12 +8,13 @@ use std::marker::PhantomData;
 
 use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 
+use crate::ExpressionCompilationError;
 use crate::expressions::{
-    evaluator::ExpressionEvaluationState,
     expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
+    ExpressionEvaluationError,
     op_codes::ExpressionOpCode,
-    ExpressionCompilationError, ExpressionEvaluationError,
 };
+use crate::expressions::evaluator::ExpressionEvaluationState;
 
 pub trait UnaryExpression<T1: DBValue, R: DBValue> {
     const OP_CODE: ExpressionOpCode;
@@ -76,8 +77,8 @@ macro_rules! unary_instruction {
         })*
     };
 }
-pub(crate) use unary_instruction;
 
+pub(crate) use unary_instruction;
 unary_instruction! {
     MathAbsLong = MathAbsLongImpl(a1: i64) -> i64 { Ok(i64::abs(a1)) }
     MathAbsDouble = MathAbsDoubleImpl(a1: f64) -> f64 { Ok(f64::abs(a1)) }

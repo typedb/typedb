@@ -13,7 +13,6 @@ rust_library(
         "*.rs",
         "expressions/*.rs",
         "expressions/builtins/*.rs",
-        "inference/*.rs",
         "optimisation/*.rs",
         "pattern/*.rs",
         "program/*.rs",

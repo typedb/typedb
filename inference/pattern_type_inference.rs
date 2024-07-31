@@ -9,23 +9,21 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation, Type};
-use concept::type_::type_manager::TypeManager;
 use itertools::chain;
+
+use answer::{Type as TypeAnnotation, Type, variable::Variable};
+use concept::type_::type_manager::TypeManager;
+use ir::pattern::conjunction::Conjunction;
+use ir::pattern::constraint::Constraint;
+use ir::program::block::FunctionalBlock;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    inference::{
-        type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
-        type_seeder::TypeSeeder,
-        TypeInferenceError,
-    },
-    pattern::{conjunction::Conjunction, constraint::Constraint},
-    program::{
-        block::FunctionalBlock,
-        program::{CompiledLocalFunctions, CompiledSchemaFunctions},
-    },
+    type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
+    type_seeder::TypeSeeder,
+    TypeInferenceError,
 };
+use crate::annotated_functions::{CompiledLocalFunctions, CompiledSchemaFunctions};
 
 /*
 The type inference algorithm involves 2 phases:
@@ -125,7 +123,7 @@ impl<'this> TypeInferenceGraph<'this> {
             if let Constraint::RolePlayer(rp) = edge.constraint {
                 if let Some((other_left_right, other_right_left)) = combine_role_player_edges.remove(&edge.right) {
                     let lrf_annotation = {
-                        if edge.left == rp.relation {
+                        if edge.left == rp.relation() {
                             LeftRightFilteredAnnotations::build(
                                 left_to_right,
                                 right_to_left,
@@ -312,26 +310,28 @@ impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
 pub mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use answer::{variable::Variable, Type as TypeAnnotation};
     use itertools::Itertools;
 
+    use answer::{Type as TypeAnnotation, variable::Variable};
+    use ir::pattern::constraint::{Constraint, IsaKind};
+    use ir::program::block::FunctionalBlock;
+    use ir::program::function_signature::HashMapFunctionIndex;
+
     use crate::{
-        inference::{
-            pattern_type_inference::{
-                infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
-            },
-            tests::{
-                managers,
-                schema_consts::{
-                    setup_types, LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS,
-                    LABEL_NAME,
-                },
-                setup_storage,
-            },
+        pattern_type_inference::{
+            infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
         },
-        pattern::constraint::{Constraint, IsaKind},
-        program::{block::FunctionalBlock, function_signature::HashMapFunctionIndex, program::CompiledSchemaFunctions},
+        tests::{
+            managers,
+            schema_consts::{
+                LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_NAME,
+                setup_types,
+            },
+            setup_storage,
+        },
     };
+    use crate::annotated_functions::CompiledSchemaFunctions;
+    use crate::pattern_type_inference::TypeInferenceEdge;
 
     pub(crate) fn expected_edge(
         constraint: &Constraint<Variable>,
@@ -814,8 +814,8 @@ pub mod tests {
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_fears, var_fears_type).unwrap();
             conjunction.constraints_mut().add_label(var_fears_type, LABEL_FEARS).unwrap();
-            conjunction.constraints_mut().add_role_player(var_fears, var_has_fear, Some(var_role_has_fear)).unwrap();
-            conjunction.constraints_mut().add_role_player(var_fears, var_is_feared, Some(var_role_is_feared)).unwrap();
+            conjunction.constraints_mut().add_role_player(var_fears, var_has_fear, var_role_has_fear).unwrap();
+            conjunction.constraints_mut().add_role_player(var_fears, var_is_feared, var_role_is_feared).unwrap();
 
             conjunction.constraints_mut().add_sub(var_role_has_fear, var_role_has_fear_type).unwrap();
             conjunction.constraints_mut().add_label(var_role_has_fear_type, "fears:has-fear").unwrap();

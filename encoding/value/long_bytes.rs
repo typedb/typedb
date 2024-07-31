@@ -33,7 +33,7 @@ impl LongBytes {
 
 #[cfg(test)]
 mod tests {
-    use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
+    use rand::{Rng, rngs::SmallRng, SeedableRng, thread_rng};
 
     use super::LongBytes;
 

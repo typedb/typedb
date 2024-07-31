@@ -15,6 +15,8 @@ use std::{
     ops::Add,
 };
 
+use serde::{Deserialize, Serialize};
+
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
@@ -26,14 +28,12 @@ use encoding::{
         },
     },
     value::{
-        decimal_value::Decimal,
         value::Value,
-        value_type::{ValueType, ValueTypeCategory},
+        value_type::ValueType,
         ValueEncodable,
     },
 };
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
@@ -770,7 +770,7 @@ mod hash_value {
             Value::DateTimeTZ(value) => value.hash(state),
             Value::String(value) => value.hash(state),
             Value::Duration(value) => value.hash(state),
-            Value::Struct(value) => unreachable!("Cannot hash a struct"),
+            Value::Struct(_value) => unreachable!("Cannot hash a struct"),
         }
     }
 
@@ -791,18 +791,19 @@ mod hash_value {
 mod serialize_annotation {
     use std::{borrow::Cow, fmt};
 
+    use serde::{
+        de,
+        de::{MapAccess, SeqAccess, Visitor},
+        Deserialize,
+        Deserializer, ser::SerializeStruct, Serialize, Serializer,
+    };
+
     use bytes::Bytes;
     use encoding::value::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
         duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value::Value,
         value_type::ValueTypeCategory, ValueEncodable,
-    };
-    use serde::{
-        de,
-        de::{MapAccess, SeqAccess, Visitor},
-        ser::SerializeStruct,
-        Deserialize, Deserializer, Serialize, Serializer,
     };
 
     use crate::type_::annotation::{AnnotationRange, AnnotationValues};

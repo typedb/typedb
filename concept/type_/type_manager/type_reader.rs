@@ -10,7 +10,7 @@ use bytes::Bytes;
 use encoding::{
     error::EncodingError,
     graph::{
-        definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
+        definition::{definition_key::DefinitionKey, DefinitionValueEncoding, r#struct::StructDefinition},
         type_::{
             edge::{TypeEdge, TypeEdgeEncoding},
             index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
@@ -18,9 +18,9 @@ use encoding::{
             vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
         },
     },
+    Keyable,
     layout::infix::Infix,
     value::{label::Label, string_bytes::StringBytes, value_type::ValueType},
-    Keyable,
 };
 use iterator::Collector;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -34,15 +34,15 @@ use crate::{
             AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::AttributeType,
+        Capability,
+        EdgeOverride,
         entity_type::EntityType,
+        KindAPI,
         object_type::ObjectType,
+        Ordering,
         owns::Owns,
         relates::Relates,
-        relation_type::RelationType,
-        role_type::RoleType,
-        sub::Sub,
-        type_manager::validation::annotation_compatibility::is_annotation_inheritable,
-        Capability, EdgeOverride, KindAPI, Ordering, TypeAPI,
+        relation_type::RelationType, role_type::RoleType, sub::Sub, type_manager::validation::annotation_compatibility::is_annotation_inheritable, TypeAPI,
     },
 };
 

@@ -11,6 +11,7 @@ package(default_visibility = [
     "//durability/benches:__subpackages__",
     "//function:__subpackages__",
     "//encoding:__subpackages__",
+    "//executor:__subpackages__",
     "//ir:__subpackages__",
     "//storage:__subpackages__",
     "//tests:__subpackages__",

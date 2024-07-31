@@ -8,12 +8,12 @@ use std::fmt;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::{
-    encoding::{LABEL_NAME_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE},
+    encoding::{LABEL_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE},
     snapshot::BUFFER_VALUE_INLINE,
 };
 
 use crate::{
-    graph::type_::property::TypeVertexPropertyEncoding, layout::infix::Infix, value::string_bytes::StringBytes, AsBytes,
+    AsBytes, graph::type_::property::TypeVertexPropertyEncoding, layout::infix::Infix, value::string_bytes::StringBytes,
 };
 
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]

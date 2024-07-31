@@ -13,8 +13,7 @@ use std::{
 use bytes::Bytes;
 use itertools::Itertools;
 use rocksdb::{
-    checkpoint::Checkpoint, ColumnFamily, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB,
-    DEFAULT_COLUMN_FAMILY_NAME,
+    checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB,
 };
 use serde::{Deserialize, Serialize};
 
@@ -289,7 +288,7 @@ impl Keyspace {
     }
 
     pub(crate) fn reset(&mut self) -> Result<(), KeyspaceError> {
-        let mut iterator = self.kv_storage.iterator(IteratorMode::Start);
+        let iterator = self.kv_storage.iterator(IteratorMode::Start);
         for entry in iterator {
             let (key, _) = entry.map_err(|err| KeyspaceError::Iterate { name: self.name, source: err })?;
             self.kv_storage.delete(key).map_err(|err| KeyspaceError::Iterate { name: self.name, source: err })?;

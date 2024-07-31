@@ -16,7 +16,7 @@ pub enum NestedPattern {
 }
 
 impl NestedPattern {
-    pub(crate) fn as_disjunction(&self) -> Option<&Disjunction> {
+    pub fn as_disjunction(&self) -> Option<&Disjunction> {
         match self {
             NestedPattern::Disjunction(disjunction) => Some(disjunction),
             _ => None,

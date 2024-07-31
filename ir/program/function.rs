@@ -9,10 +9,9 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
-use encoding::value::value::Value;
+use answer::{Type, variable::Variable};
 
-use crate::program::{block::FunctionalBlock, function_signature::FunctionSignature};
+use crate::program::block::FunctionalBlock;
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
@@ -45,7 +44,7 @@ pub enum ReturnOperationIR {
 }
 
 impl ReturnOperationIR {
-    pub(crate) fn output_annotations(
+    pub fn output_annotations(
         &self,
         function_variable_annotations: &HashMap<Variable, Arc<HashSet<Type>>>,
     ) -> Vec<BTreeSet<Type>> {

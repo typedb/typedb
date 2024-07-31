@@ -4,10 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use ir::{
-    program::function_signature::HashMapFunctionIndex, translator::match_::translate_match, PatternDefinitionError,
-};
 use typeql::query::stage::Stage;
+
+use ir::{
+    PatternDefinitionError, program::function_signature::HashMapFunctionIndex, translator::match_::translate_match,
+};
 
 #[test]
 fn build_conjunction_constraints() {

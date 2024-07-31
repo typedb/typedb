@@ -9,18 +9,19 @@ use std::{
     fmt::{Display, Formatter},
 };
 
-use answer::variable::Variable;
 use itertools::Itertools;
+
+use answer::variable::Variable;
 
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
-        variable_category::{VariableCategory, VariableOptionality},
-        Scope, ScopeId,
+        Scope,
+        ScopeId, variable_category::{VariableCategory, VariableOptionality},
     },
-    program::modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
     PatternDefinitionError,
+    program::modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
 };
 
 // A functional block is exactly 1 Conjunction + any number of modifiers
@@ -174,7 +175,7 @@ impl BlockContext {
         Ok(variable)
     }
 
-    pub(crate) fn get_variable(&self, name: &str) -> Option<Variable> {
+    pub fn get_variable(&self, name: &str) -> Option<Variable> {
         self.variable_names_index.get(name).cloned()
     }
 
@@ -186,7 +187,7 @@ impl BlockContext {
         self.variable_categories.iter().map(|(&variable, &(category, _))| (variable, category))
     }
 
-    pub(crate) fn get_variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
+    pub fn get_variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
         self.variable_declaration.iter()
     }
 
@@ -196,7 +197,7 @@ impl BlockContext {
         variable
     }
 
-    pub(crate) fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
+    pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
         let variable_scope = self.variable_declaration.get(&variable);
         match variable_scope {
             None => false,
@@ -212,7 +213,7 @@ impl BlockContext {
         scope
     }
 
-    pub(crate) fn get_variable_category(&self, variable: Variable) -> Option<VariableCategory> {
+    pub fn get_variable_category(&self, variable: Variable) -> Option<VariableCategory> {
         self.variable_categories.get(&variable).map(|(category, _optionality)| *category)
     }
 

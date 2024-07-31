@@ -13,9 +13,11 @@ executor_deps = [
     "//common/lending_iterator",
     "//durability",
     "//encoding",
-    "//ir:ir",
-    "//traversal",
+    "//executor",
+    "//ir",
     "//storage",
+    "@vaticle_typeql//rust:typeql",
+    "//util/test:test_utils",
 ]
 
 rust_test(
@@ -23,8 +25,6 @@ rust_test(
     crate_root = "executor.rs",
     srcs = ["executor.rs", "common.rs"],
     deps = executor_deps + [
-        "//util/test:test_utils",
-        "@vaticle_typeql//rust:typeql",
         "@crates//:itertools",
     ],
 )
@@ -33,30 +33,21 @@ rust_test(
     name = "executor_has",
     crate_root = "executor_has.rs",
     srcs = ["executor_has.rs", "common.rs"],
-    deps = executor_deps + [
-        "//util/test:test_utils",
-        "@vaticle_typeql//rust:typeql",
-    ],
+    deps = executor_deps,
 )
 
 rust_test(
     name = "executor_rp",
     crate_root = "executor_rp.rs",
     srcs = ["executor_rp.rs", "common.rs"],
-    deps = executor_deps + [
-        "//util/test:test_utils",
-        "@vaticle_typeql//rust:typeql",
-    ],
+    deps = executor_deps,
 )
 
 rust_test(
     name = "select",
     crate_root = "select.rs",
     srcs = ["select.rs", "common.rs"],
-    deps = executor_deps + [
-        "//util/test:test_utils",
-        "@vaticle_typeql//rust:typeql",
-    ],
+    deps = executor_deps,
 )
 
 checkstyle_test(

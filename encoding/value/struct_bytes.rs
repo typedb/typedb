@@ -14,6 +14,7 @@ use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::encoding::StructFieldIDUInt;
 
 use crate::{
+    AsBytes,
     error::EncodingError,
     graph::definition::{
         definition_key::{DefinitionID, DefinitionKey},
@@ -25,7 +26,6 @@ use crate::{
         duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value::Value,
         value_struct::StructValue, value_type::ValueTypeCategory, ValueEncodable,
     },
-    AsBytes,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

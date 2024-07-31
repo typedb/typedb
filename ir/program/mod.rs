@@ -8,7 +8,7 @@ use std::{error::Error, fmt, fmt::Display, sync::Arc};
 
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 
-use crate::{program::function_signature::FunctionID, PatternDefinitionError};
+use crate::{PatternDefinitionError, program::function_signature::FunctionID};
 
 pub mod block;
 pub mod function;

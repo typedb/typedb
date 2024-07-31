@@ -6,8 +6,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::graph::{definition::r#struct::StructDefinition, type_::CapabilityKind};
 use itertools::Itertools;
+
+use encoding::graph::{definition::r#struct::StructDefinition, type_::CapabilityKind};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -15,15 +16,18 @@ use crate::{
     type_::{
         annotation::{Annotation, AnnotationCardinality},
         attribute_type::AttributeType,
+        Capability,
         entity_type::EntityType,
+        KindAPI,
+        ObjectTypeAPI,
         owns::Owns,
         plays::Plays,
         relates::Relates,
-        relation_type::RelationType,
-        role_type::RoleType,
-        type_manager::{
+        relation_type::RelationType, role_type::RoleType, type_manager::{
             type_reader::TypeReader,
+            TypeManager,
             validation::{
+                SchemaValidationError,
                 validation::{
                     get_label_or_concept_read_err, is_interface_overridden,
                     is_overridden_interface_object_declared_supertype_or_self,
@@ -35,11 +39,8 @@ use crate::{
                     validate_type_annotations_narrowing_of_inherited_annotations,
                     validate_type_supertype_ordering_match,
                 },
-                SchemaValidationError,
             },
-            TypeManager,
-        },
-        Capability, KindAPI, ObjectTypeAPI, TypeAPI,
+        }, TypeAPI,
     },
 };
 

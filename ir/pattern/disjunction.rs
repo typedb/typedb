@@ -8,11 +8,12 @@ use std::fmt;
 
 use answer::variable::Variable;
 
-use super::conjunction::ConjunctionBuilder;
 use crate::{
     pattern::{conjunction::Conjunction, Scope, ScopeId},
     program::block::BlockContext,
 };
+
+use super::conjunction::ConjunctionBuilder;
 
 #[derive(Debug)]
 pub struct Disjunction {
@@ -27,7 +28,7 @@ impl Disjunction {
         todo!()
     }
 
-    pub(crate) fn conjunctions(&self) -> &Vec<Conjunction> {
+    pub fn conjunctions(&self) -> &Vec<Conjunction> {
         &self.conjunctions
     }
 }

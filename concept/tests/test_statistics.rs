@@ -11,25 +11,25 @@ use std::{collections::BTreeMap, sync::Arc};
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager, ThingAPI},
     type_::{
-        annotation::AnnotationCardinality, relates::RelatesAnnotation, type_manager::TypeManager, ObjectTypeAPI,
-        Ordering, OwnerAPI,
+        annotation::AnnotationCardinality, ObjectTypeAPI, Ordering, OwnerAPI,
+        relates::RelatesAnnotation, type_manager::TypeManager,
     },
 };
 use durability::wal::WAL;
 use encoding::{
+    EncodingKeyspace,
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
     value::{label::Label, value::Value, value_type::ValueType},
-    EncodingKeyspace,
 };
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::{DurabilityClient, WALClient},
+    MVCCStorage,
     sequence_number::SequenceNumber,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
-    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging, TempDir};
 

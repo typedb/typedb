@@ -4,16 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-
-use encoding::graph::definition::definition_key::DefinitionKey;
-
 use crate::{
-    inference::type_inference::{FunctionAnnotations, TypeAnnotations},
     program::{
         block::FunctionalBlock,
         function::FunctionIR,
-        function_signature::{FunctionID, FunctionIDTrait, FunctionSignatureIndex},
+        function_signature::{FunctionIDTrait, FunctionSignatureIndex},
         FunctionDefinitionError, ProgramDefinitionError,
     },
     translator::{function::translate_function, match_::translate_match},
@@ -40,11 +35,11 @@ impl Program {
         &mut self.entry
     }
 
-    pub(crate) fn functions(&self) -> &Vec<FunctionIR> {
+    pub fn functions(&self) -> &Vec<FunctionIR> {
         &self.functions
     }
 
-    pub(crate) fn into_parts(self) -> (FunctionalBlock, Vec<FunctionIR>) {
+    pub fn into_parts(self) -> (FunctionalBlock, Vec<FunctionIR>) {
         let Self { entry, functions } = self;
         (entry, functions)
     }
@@ -84,119 +79,8 @@ impl Program {
     }
 }
 
-pub struct AnnotatedProgram {
-    pub(crate) entry: FunctionalBlock,
-    pub(crate) entry_annotations: TypeAnnotations,
-    pub(crate) local_functions: CompiledLocalFunctions,
-    pub(crate) schema_functions: Arc<CompiledSchemaFunctions>,
-}
-
-impl AnnotatedProgram {
-    pub(crate) fn new(
-        entry: FunctionalBlock,
-        entry_annotations: TypeAnnotations,
-        local_functions: CompiledLocalFunctions,
-        schema_functions: Arc<CompiledSchemaFunctions>,
-    ) -> Self {
-        Self { entry, entry_annotations, local_functions, schema_functions }
-    }
-
-    pub fn get_entry(&self) -> &FunctionalBlock {
-        &self.entry
-    }
-
-    pub fn get_entry_annotations(&self) -> &TypeAnnotations {
-        &self.entry_annotations
-    }
-
-    fn get_function_ir(&self, function_id: FunctionID) -> Option<&FunctionIR> {
-        match function_id {
-            FunctionID::Schema(definition_key) => self.schema_functions.get_function_ir(definition_key),
-            FunctionID::Preamble(index) => self.local_functions.get_function_ir(index),
-        }
-    }
-
-    fn get_function_annotations(&self, function_id: FunctionID) -> Option<&FunctionAnnotations> {
-        match function_id {
-            FunctionID::Schema(definition_key) => self.schema_functions.get_function_annotations(definition_key),
-            FunctionID::Preamble(index) => self.local_functions.get_function_annotations(index),
-        }
-    }
-}
-
-pub struct CompiledSchemaFunctions {
-    ir: Box<[Option<FunctionIR>]>,
-    annotations: Box<[Option<FunctionAnnotations>]>,
-}
-
-impl CompiledSchemaFunctions {
-    pub fn new(ir: Box<[Option<FunctionIR>]>, annotations: Box<[Option<FunctionAnnotations>]>) -> Self {
-        Self { ir, annotations }
-    }
-
-    pub fn empty() -> Self {
-        Self { ir: Box::new([]), annotations: Box::new([]) }
-    }
-}
-
-pub trait CompiledFunctions {
-    type KeyType;
-
-    fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR>;
-
-    fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations>;
-}
-
-impl CompiledFunctions for CompiledSchemaFunctions {
-    type KeyType = DefinitionKey<'static>;
-
-    fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR> {
-        self.ir.get(id.as_usize())?.as_ref()
-    }
-
-    fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations> {
-        self.annotations.get(id.as_usize())?.as_ref()
-    }
-}
-
-// May hold IR & Annotations for either Schema functions or Preamble functions
-// For schema functions, The index does not correspond to function_id.as_usize().
-pub struct CompiledLocalFunctions {
-    ir: Box<[FunctionIR]>,
-    annotations: Box<[FunctionAnnotations]>,
-}
-
-impl CompiledLocalFunctions {
-    pub fn new(ir: Box<[FunctionIR]>, annotations: Box<[FunctionAnnotations]>) -> Self {
-        Self { ir, annotations }
-    }
-
-    pub fn iter_ir(&self) -> impl Iterator<Item = &FunctionIR> {
-        self.ir.iter()
-    }
-
-    pub fn into_parts(self) -> (Box<[FunctionIR]>, Box<[FunctionAnnotations]>) {
-        let Self { ir, annotations } = self;
-        (ir, annotations)
-    }
-}
-
-impl CompiledFunctions for CompiledLocalFunctions {
-    type KeyType = usize;
-
-    fn get_function_ir(&self, id: Self::KeyType) -> Option<&FunctionIR> {
-        self.ir.get(id)
-    }
-
-    fn get_function_annotations(&self, id: Self::KeyType) -> Option<&FunctionAnnotations> {
-        self.annotations.get(id)
-    }
-}
-
 #[cfg(test)]
 pub mod tests {
-    use std::{collections::HashSet, sync::Arc};
-
     use typeql::query::Pipeline;
 
     use crate::{
@@ -204,13 +88,13 @@ pub mod tests {
             tests::{managers, schema_consts::setup_types, setup_storage},
             type_inference::infer_types,
         },
-        pattern::{constraint::Constraint, Scope},
+        pattern::constraint::Constraint,
+        PatternDefinitionError,
         program::{
             function_signature::{FunctionID, HashMapFunctionIndex},
             program::{CompiledFunctions, CompiledSchemaFunctions, Program},
             ProgramDefinitionError,
         },
-        PatternDefinitionError,
     };
 
     #[test]
@@ -250,34 +134,5 @@ pub mod tests {
             }
             _ => assert!(false),
         }
-
-        let storage = setup_storage();
-        let (type_manager, _) = managers();
-        let ((type_animal, type_cat, type_dog), _, _) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager);
-        let empty_cache = Arc::new(CompiledSchemaFunctions::empty());
-
-        let snapshot = storage.clone().open_snapshot_read();
-        let var_f_c = program.functions[0]
-            .block()
-            .context()
-            .get_variable_named("c", program.functions[0].block().scope_id())
-            .unwrap()
-            .clone();
-        let var_x = program.entry.context().get_variable_named("x", program.entry.scope_id()).unwrap().clone();
-        let annotated_program = infer_types(program, &snapshot, &type_manager, empty_cache).unwrap();
-        assert_eq!(
-            &Arc::new(HashSet::from([type_cat.clone()])),
-            annotated_program
-                .get_function_annotations(function_id)
-                .unwrap()
-                .block_annotations
-                .variable_annotations(var_f_c)
-                .unwrap()
-        );
-        assert_eq!(
-            &Arc::new(HashSet::from([type_cat.clone()])),
-            annotated_program.entry_annotations.variable_annotations(var_x).unwrap(),
-        );
     }
 }

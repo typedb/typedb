@@ -4,18 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable::Variable;
 use typeql::{
     expression::{Expression as TypeQLExpression, FunctionName},
     statement::AssignmentPattern,
     type_::NamedType,
 };
 
+use answer::variable::Variable;
+
 use crate::{
     pattern::constraint::{ConstraintsBuilder, IsaKind},
+    PatternDefinitionError,
     program::function_signature::FunctionSignatureIndex,
     translator::expression::build_expression,
-    PatternDefinitionError,
 };
 
 pub(super) fn add_statement(

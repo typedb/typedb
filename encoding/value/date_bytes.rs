@@ -6,8 +6,9 @@
 
 use chrono::{Datelike, NaiveDate};
 
-use super::primitive_encoding::{decode_i32, encode_i32};
 use crate::graph::thing::vertex_attribute::AttributeIDLength;
+
+use super::primitive_encoding::{decode_i32, encode_i32};
 
 #[derive(Debug, Copy, Clone)]
 pub struct DateBytes {

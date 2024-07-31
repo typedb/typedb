@@ -7,25 +7,17 @@ load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
 rust_test(
-    name = "pattern",
-    crate_root = "pattern.rs",
-    srcs =  ["pattern.rs"],
-    deps = [
-        "//ir:ir",
-        "@vaticle_typeql//rust:typeql",
-    ],
-)
-
-rust_test(
-    name = "program",
-    crate_root = "program.rs",
-    srcs =  ["program.rs"],
+    name = "expressions",
+    crate_root = "expressions.rs",
+    srcs =  ["expressions.rs"],
     deps = [
         "//answer",
         "//common/bytes",
         "//encoding",
-        "//ir:ir",
+        "//ir",
+        "//inference",
         "@vaticle_typeql//rust:typeql",
+        "@crates//:itertools",
     ],
 )
 

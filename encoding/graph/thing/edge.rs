@@ -15,17 +15,17 @@ use storage::{
 };
 
 use crate::{
+    AsBytes,
+    EncodingKeyspace,
     graph::{
         thing::{
-            vertex_attribute::{AttributeID, AttributeVertex},
-            vertex_object::ObjectVertex,
-            ThingVertex, THING_VERTEX_LENGTH_PREFIX_TYPE,
+            THING_VERTEX_LENGTH_PREFIX_TYPE,
+            ThingVertex,
+            vertex_attribute::{AttributeID, AttributeVertex}, vertex_object::ObjectVertex,
         },
         type_::vertex::{TypeID, TypeVertex},
         Typed,
-    },
-    layout::prefix::{Prefix, PrefixID},
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+    }, Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed,
 };
 
 ///

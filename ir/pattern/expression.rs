@@ -7,21 +7,19 @@
 use std::{
     error::Error,
     fmt::{Display, Formatter},
-    hash::{Hash, Hasher},
+    hash::Hash,
 };
 
 use answer::variable::Variable;
 use encoding::value::value::Value;
 
 use crate::{
-    expressions::builtins::BuiltInFunctionID,
     pattern::{
-        constraint::{Constraint, ExpressionBinding},
-        variable_category::VariableCategory,
+        constraint::ExpressionBinding,
         IrID,
     },
-    program::block::BlockContext,
     PatternDefinitionError,
+    program::block::BlockContext,
 };
 
 enum ExpectedArgumentType {
@@ -40,7 +38,7 @@ impl ExpressionTree<Variable> {
         Self { tree: expressions }
     }
 
-    pub(crate) fn root(&self) -> usize {
+    pub fn root(&self) -> usize {
         self.tree.len() - 1
     }
 
@@ -51,8 +49,8 @@ impl ExpressionTree<Variable> {
     pub fn ids(&self) -> impl Iterator<Item = Variable> + '_ {
         self.tree.iter().filter_map(|expr| match expr {
             Expression::Variable(variable) => Some(variable.clone()),
-            Expression::ListIndex(list_index) => Some(list_index.list_variable.clone()),
-            Expression::ListIndexRange(list_index_range) => Some(list_index_range.list_variable.clone()),
+            Expression::ListIndex(list_index) => Some(list_index.list_variable()),
+            Expression::ListIndexRange(list_index_range) => Some(list_index_range.list_variable()),
 
             Expression::Constant(_) | Expression::Operation(_) | Expression::BuiltInCall(_) | Expression::List(_) => {
                 None
@@ -75,60 +73,119 @@ pub enum Expression<ID: IrID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Operation {
-    pub(crate) operator: Operator,
-    pub(crate) left_expression_index: usize,
-    pub(crate) right_expression_index: usize,
+    operator: Operator,
+    left_expression_index: usize,
+    right_expression_index: usize,
+}
+
+impl Operation {
+    pub fn operator(&self) -> Operator {
+        self.operator
+    }
+
+    pub fn left_expression_index(&self) -> usize {
+        self.left_expression_index
+    }
+
+    pub fn right_expression_index(&self) -> usize {
+        self.right_expression_index
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BuiltInCall {
-    pub(crate) builtin_id: BuiltInFunctionID,
-    pub(crate) args_index: Vec<usize>,
+    builtin_id: BuiltInFunctionID,
+    args_index: Vec<usize>,
 }
 
 impl BuiltInCall {
     pub(crate) fn new(builtin_id: BuiltInFunctionID, args_index: Vec<usize>) -> Self {
         BuiltInCall { builtin_id, args_index }
     }
+
+    pub fn builtin_id(&self) -> BuiltInFunctionID {
+        self.builtin_id
+    }
+
+    pub fn args_index(&self) -> &Vec<usize> {
+        &self.args_index
+    }
 }
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum BuiltInFunctionID {
+    Abs,
+    Ceil,
+    Floor,
+    Round,
+    // TODO: The below
+    // Max,
+    // Min,
+    // Length
+}
+
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ListIndex<ID: IrID> {
-    pub(crate) list_variable: ID,
-    pub(crate) index_expression_index: usize,
+    list_variable: ID,
+    index_expression_index: usize,
 }
 
 impl ListIndex<Variable> {
     pub(crate) fn new(list_variable: Variable, index: usize) -> ListIndex<Variable> {
         Self { list_variable, index_expression_index: index }
     }
+
+    pub fn list_variable(&self) -> Variable {
+        self.list_variable
+    }
+
+    pub fn index_expression_index(&self) -> usize {
+        self.index_expression_index
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ListConstructor {
-    pub(crate) item_expression_indices: Vec<usize>,
+    item_expression_indices: Vec<usize>,
 }
 
 impl ListConstructor {
     pub(crate) fn new(item_expression_indices: Vec<usize>) -> Self {
         Self { item_expression_indices }
     }
+
+    pub fn item_expression_indices(&self) -> &Vec<usize> {
+        &self.item_expression_indices
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ListIndexRange<ID: IrID> {
-    pub(crate) list_variable: ID,
-    pub(crate) from_expression_index: usize,
-    pub(crate) to_expression_index: usize,
+    list_variable: ID,
+    from_expression_index: usize,
+    to_expression_index: usize,
 }
 
 impl<ID: IrID> ListIndexRange<ID> {
     pub(crate) fn new(list_variable: ID, from_expression_index: usize, to_expression_index: usize) -> Self {
         Self { list_variable, from_expression_index, to_expression_index }
     }
+
+    pub fn list_variable(&self) -> ID {
+        self.list_variable
+    }
+
+    pub fn from_expression_index(&self) -> usize {
+        self.from_expression_index
+    }
+
+    pub fn to_expression_index(&self) -> usize {
+        self.to_expression_index
+    }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Operator {
     Add,
     Subtract,

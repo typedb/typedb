@@ -27,11 +27,11 @@ impl<ID: IrID> FunctionCall<ID> {
         Self { function_id, call_variable_mapping, return_is_stream }
     }
 
-    pub(crate) fn function_id(&self) -> FunctionID {
+    pub fn function_id(&self) -> FunctionID {
         self.function_id.clone()
     }
 
-    pub(crate) fn call_id_mapping(&self) -> &BTreeMap<ID, usize> {
+    pub fn call_id_mapping(&self) -> &BTreeMap<ID, usize> {
         &self.call_variable_mapping
     }
 

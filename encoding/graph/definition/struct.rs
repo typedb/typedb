@@ -6,9 +6,10 @@
 
 use std::collections::{hash_map::Entry, HashMap};
 
+use serde::{Deserialize, Serialize};
+
 use bytes::{byte_reference::ByteReference, Bytes};
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_VALUE_INLINE};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     error::EncodingError, graph::definition::DefinitionValueEncoding, layout::prefix::Prefix,

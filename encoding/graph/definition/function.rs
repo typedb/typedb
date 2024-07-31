@@ -7,7 +7,7 @@
 use bytes::Bytes;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
-use crate::{layout::prefix::Prefix, value::string_bytes::StringBytes, AsBytes};
+use crate::{AsBytes, layout::prefix::Prefix, value::string_bytes::StringBytes};
 
 pub struct FunctionDefinition<'a> {
     bytes: Bytes<'a, BUFFER_VALUE_INLINE>,

@@ -7,7 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
+    graph::type_::{CapabilityKind, edge::TypeEdgeEncoding},
     layout::prefix::Prefix,
 };
 use primitive::maybe_owns::MaybeOwns;
@@ -21,9 +21,9 @@ use crate::{
             AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues, DefaultFrom,
         },
         attribute_type::AttributeType,
+        Capability,
         object_type::ObjectType,
-        type_manager::TypeManager,
-        Capability, Ordering, TypeAPI,
+        Ordering, type_manager::TypeManager, TypeAPI,
     },
 };
 

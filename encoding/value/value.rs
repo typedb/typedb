@@ -12,12 +12,13 @@ use std::{
     ops::Deref,
 };
 
-use bytes::byte_array::ByteArray;
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
 
-use super::date_bytes::DateBytes;
+use bytes::byte_array::ByteArray;
+
 use crate::{
+    AsBytes,
     value::{
         boolean_bytes::BooleanBytes,
         date_time_bytes::DateTimeBytes,
@@ -34,8 +35,9 @@ use crate::{
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
-    AsBytes,
 };
+
+use super::date_bytes::DateBytes;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value<'a> {
@@ -79,7 +81,7 @@ impl<'a> Hash for Value<'a> {
         match self {
             Value::Boolean(value) => Hash::hash(value, state),
             Value::Long(value) => Hash::hash(value, state),
-            Value::Double(value) => Hash::hash(&self.encode_double(), state), // same bitwise representation as storage of values
+            Value::Double(_value) => Hash::hash(&self.encode_double(), state), // same bitwise representation as storage of values
             Value::Decimal(value) => Hash::hash(value, state),
             Value::Date(value) => Hash::hash(value, state),
             Value::DateTime(value) => Hash::hash(value, state),

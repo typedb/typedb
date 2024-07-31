@@ -9,34 +9,18 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
+use ir::pattern::constraint::Constraint;
+use ir::program::function::FunctionIR;
+use ir::program::program::Program;
 use storage::snapshot::ReadableSnapshot;
 
-use super::pattern_type_inference::infer_types_for_block;
-use crate::{
-    inference::{pattern_type_inference::TypeInferenceGraph, TypeInferenceError},
-    pattern::constraint::Constraint,
-    program::{
-        function::FunctionIR,
-        program::{AnnotatedProgram, CompiledLocalFunctions, CompiledSchemaFunctions, Program},
-    },
-};
+use crate::annotated_functions::{CompiledLocalFunctions, CompiledSchemaFunctions};
+use crate::annotated_program::AnnotatedProgram;
+use crate::TypeInferenceError;
 
-/*
-Design:
-1. Assign a static, deterministic ordering over the functions in the Program.
-2. Assign a static, deterministic ordering over the connected variables in each functional block's Pattern.
-3. Set the possible types for each variable to all types of its category initially (note: function input and output variables can be restricted to subtypes of labelled types initially!)
-4. For each variable in the ordering, go over each constraint and intersect types
-
-Output data structure:
-TypeAnnotations per FunctionalBlock
-
-Note: On function call boundaries, can assume the current set of schema types per input and output variable.
-      However, we should then recurse into the sub-function IRs and tighten their input/output types based on their type inference.
-
- */
+use super::pattern_type_inference::{infer_types_for_block, TypeInferenceGraph};
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
@@ -242,7 +226,9 @@ pub mod tests {
         sync::Arc,
     };
 
-    use answer::{variable::Variable, Type};
+    use itertools::Itertools;
+
+    use answer::{Type, variable::Variable};
     use concept::type_::{entity_type::EntityType, relation_type::RelationType, role_type::RoleType};
     use encoding::{
         graph::{
@@ -251,32 +237,19 @@ pub mod tests {
         },
         layout::prefix::Prefix,
     };
-    use itertools::Itertools;
+    use ir::pattern::constraint::{Constraint, IsaKind, RolePlayer};
+    use ir::pattern::variable_category::{VariableCategory, VariableOptionality};
+    use ir::program::block::{BlockContext, FunctionalBlock};
+    use ir::program::function::{FunctionIR, ReturnOperationIR};
+    use ir::program::function_signature::{FunctionID, FunctionSignature};
+    use ir::program::program::Program;
 
-    use crate::{
-        inference::{
-            pattern_type_inference::{tests::expected_edge, NestedTypeInferenceGraphDisjunction, TypeInferenceGraph},
-            tests::{
-                managers,
-                schema_consts::{setup_types, LABEL_CAT},
-                setup_storage,
-            },
-            type_inference::{
-                infer_types, infer_types_for_block, infer_types_for_function, ConstraintTypeAnnotations,
-                LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations,
-            },
-        },
-        pattern::{
-            constraint::{Constraint, IsaKind, RolePlayer},
-            variable_category::{VariableCategory, VariableOptionality},
-        },
-        program::{
-            block::{BlockContext, FunctionalBlock},
-            function::{FunctionIR, ReturnOperationIR},
-            function_signature::{FunctionID, FunctionSignature},
-            program::{CompiledSchemaFunctions, Program},
-        },
-    };
+    use crate::annotated_functions::CompiledSchemaFunctions;
+    use crate::pattern_type_inference::{infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceGraph};
+    use crate::pattern_type_inference::tests::expected_edge;
+    use crate::tests::{managers, setup_storage};
+    use crate::tests::schema_consts::{LABEL_CAT, setup_types};
+    use crate::type_inference::{ConstraintTypeAnnotations, infer_types, infer_types_for_function, LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations};
 
     pub(crate) fn expected_left_right_annotation(
         constraint: &Constraint<Variable>,
@@ -311,8 +284,8 @@ pub mod tests {
         let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(2)));
 
         let dummy = FunctionalBlock::builder().finish();
-        let constraint1 = Constraint::RolePlayer(RolePlayer::new(var_relation, var_player, Some(var_role_type)));
-        let constraint2 = Constraint::RolePlayer(RolePlayer::new(var_relation, var_player, Some(var_role_type)));
+        let constraint1 = Constraint::RolePlayer(RolePlayer::new(var_relation, var_player, var_role_type));
+        let constraint2 = Constraint::RolePlayer(RolePlayer::new(var_relation, var_player, var_role_type));
         let nested1 = TypeInferenceGraph {
             conjunction: dummy.conjunction(),
             vertices: BTreeMap::from([

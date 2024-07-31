@@ -6,10 +6,10 @@
 
 use encoding::value::value::Value;
 
-use crate::expressions::{
-    evaluator::ExpressionEvaluationState, expression_compiler::ExpressionInstruction, op_codes::ExpressionOpCode,
-    ExpressionEvaluationError,
-};
+use crate::expressions::evaluator::ExpressionEvaluationState;
+use crate::expressions::expression_compiler::ExpressionInstruction;
+use crate::expressions::ExpressionEvaluationError;
+use crate::expressions::op_codes::ExpressionOpCode;
 
 pub struct ListConstructor {}
 pub struct ListIndex {}

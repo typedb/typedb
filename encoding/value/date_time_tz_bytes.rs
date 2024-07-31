@@ -7,11 +7,12 @@
 use chrono::DateTime;
 use chrono_tz::Tz;
 
+use crate::graph::thing::vertex_attribute::AttributeIDLength;
+
 use super::{
     date_time_bytes::DateTimeBytes,
     primitive_encoding::{decode_u16, encode_u16},
 };
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
 
 #[derive(Debug, Copy, Clone)]
 pub struct DateTimeTZBytes {

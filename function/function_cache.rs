@@ -9,7 +9,6 @@ use std::{collections::HashMap, iter::zip, sync::Arc};
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::{
-    inference::type_inference::{infer_types_for_functions, FunctionAnnotations},
     program::{
         function::FunctionIR,
         function_signature::{FunctionIDTrait, FunctionSignature, HashMapFunctionIndex},

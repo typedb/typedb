@@ -10,36 +10,29 @@ use std::{
     iter::zip,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation};
+use itertools::Itertools;
+
+use answer::{Type as TypeAnnotation, variable::Variable};
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI},
+    type_::{object_type::ObjectType, OwnerAPI, PlayerAPI, type_manager::TypeManager},
 };
 use encoding::value::value_type::ValueTypeCategory;
-use itertools::Itertools;
+use ir::pattern::{Scope, ScopeId};
+use ir::pattern::conjunction::Conjunction;
+use ir::pattern::constraint::{Comparison, Constraint, FunctionCallBinding, Has, Isa, Label, RolePlayer, Sub};
+use ir::pattern::disjunction::Disjunction;
+use ir::pattern::nested_pattern::NestedPattern;
+use ir::pattern::variable_category::VariableCategory;
+use ir::program::block::BlockContext;
+use ir::program::function::FunctionIR;
+use ir::program::function_signature::FunctionID;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{
-    inference::{
-        pattern_type_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph},
-        type_inference::{FunctionAnnotations, VertexAnnotations},
-        TypeInferenceError,
-    },
-    pattern::{
-        conjunction::Conjunction,
-        constraint::{Comparison, Constraint, FunctionCallBinding, Has, Isa, Label, RolePlayer, Sub},
-        disjunction::Disjunction,
-        nested_pattern::NestedPattern,
-        variable_category::VariableCategory,
-        Scope, ScopeId,
-    },
-    program::{
-        block::BlockContext,
-        function::FunctionIR,
-        function_signature::FunctionID,
-        program::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions},
-    },
-};
+use crate::annotated_functions::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions};
+use crate::pattern_type_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations};
+use crate::type_inference::FunctionAnnotations;
+use crate::TypeInferenceError;
 
 pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
@@ -452,25 +445,22 @@ trait UnaryConstraint {
     ) -> Result<(), TypeInferenceError>;
 }
 
-impl Label<Variable> {
-    fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
-        &self,
-        seeder: &TypeSeeder<'_, Snapshot>,
-        label: &encoding::value::label::Label<'static>,
-    ) -> Result<Option<TypeAnnotation>, ConceptReadError> {
-        let type_manager = &seeder.type_manager;
-        let snapshot = seeder.snapshot;
-        if let Some(t) = type_manager.get_attribute_type(snapshot, label)?.map(TypeAnnotation::Attribute) {
-            Ok(Some(t))
-        } else if let Some(t) = type_manager.get_entity_type(snapshot, label)?.map(TypeAnnotation::Entity) {
-            Ok(Some(t))
-        } else if let Some(t) = type_manager.get_relation_type(snapshot, label)?.map(TypeAnnotation::Relation) {
-            Ok(Some(t))
-        } else if let Some(t) = type_manager.get_role_type(snapshot, label)?.map(TypeAnnotation::RoleType) {
-            Ok(Some(t))
-        } else {
-            Ok(None)
-        }
+fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
+    seeder: &TypeSeeder<'_, Snapshot>,
+    label_value: &encoding::value::label::Label<'static>,
+) -> Result<Option<TypeAnnotation>, ConceptReadError> {
+    let type_manager = &seeder.type_manager;
+    let snapshot = seeder.snapshot;
+    if let Some(t) = type_manager.get_attribute_type(snapshot, label_value)?.map(TypeAnnotation::Attribute) {
+        Ok(Some(t))
+    } else if let Some(t) = type_manager.get_entity_type(snapshot, label_value)?.map(TypeAnnotation::Entity) {
+        Ok(Some(t))
+    } else if let Some(t) = type_manager.get_relation_type(snapshot, label_value)?.map(TypeAnnotation::Relation) {
+        Ok(Some(t))
+    } else if let Some(t) = type_manager.get_role_type(snapshot, label_value)?.map(TypeAnnotation::RoleType) {
+        Ok(Some(t))
+    } else {
+        Ok(None)
     }
 }
 
@@ -480,14 +470,13 @@ impl UnaryConstraint for Label<Variable> {
         seeder: &TypeSeeder<'_, Snapshot>,
         tig_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        let annotation_opt = self
-            .get_type_annotation_from_label(seeder, &encoding::value::label::Label::build(&self.type_))
+        let annotation_opt = get_type_annotation_from_label(seeder, &encoding::value::label::Label::build(self.type_label()))
             .map_err(|source| TypeInferenceError::ConceptRead { source })?;
         if let Some(annotation) = annotation_opt {
-            TypeSeeder::<Snapshot>::add_or_intersect(tig_vertices, self.left, Cow::Owned(BTreeSet::from([annotation])));
+            TypeSeeder::<Snapshot>::add_or_intersect(tig_vertices, self.left(), Cow::Owned(BTreeSet::from([annotation])));
             Ok(())
         } else {
-            Err(TypeInferenceError::LabelNotResolved(self.type_.clone()))
+            Err(TypeInferenceError::LabelNotResolved(self.type_label().to_string()))
         }
     }
 }
@@ -908,11 +897,11 @@ struct RelationRoleEdge<'graph> {
 
 impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
     fn left(&self) -> Variable {
-        self.role_player.player
+        self.role_player.player()
     }
 
     fn right(&self) -> Variable {
-        self.role_player.role_type
+        self.role_player.role_type()
     }
 
     fn annotate_left_to_right_for_type(
@@ -966,11 +955,11 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
 
 impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
     fn left(&self) -> Variable {
-        self.role_player.relation
+        self.role_player.relation()
     }
 
     fn right(&self) -> Variable {
-        self.role_player.role_type
+        self.role_player.role_type()
     }
 
     fn annotate_left_to_right_for_type(
@@ -1024,21 +1013,16 @@ pub mod tests {
 
     use answer::Type as TypeAnnotation;
     use encoding::value::{label::Label, value_type::ValueType};
+    use ir::pattern::constraint::IsaKind;
+    use ir::program::block::FunctionalBlock;
     use storage::snapshot::CommittableSnapshot;
 
-    use crate::{
-        inference::{
-            pattern_type_inference::{tests::expected_edge, TypeInferenceGraph},
-            tests::{
-                managers,
-                schema_consts::{setup_types, LABEL_CAT, LABEL_NAME},
-                setup_storage,
-            },
-            type_seeder::TypeSeeder,
-        },
-        pattern::constraint::IsaKind,
-        program::{block::FunctionalBlock, program::CompiledSchemaFunctions},
-    };
+    use crate::annotated_functions::CompiledSchemaFunctions;
+    use crate::pattern_type_inference::tests::expected_edge;
+    use crate::pattern_type_inference::TypeInferenceGraph;
+    use crate::tests::{managers, setup_storage};
+    use crate::tests::schema_consts::{LABEL_CAT, LABEL_NAME, setup_types};
+    use crate::type_seeder::TypeSeeder;
 
     #[test]
     fn test_has() {

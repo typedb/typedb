@@ -41,16 +41,21 @@ use std::{
     error::Error,
     fmt::{Display, Formatter},
 };
+use std::fmt::Debug;
 
 use answer::variable::Variable;
 use concept::error::ConceptReadError;
-
-use crate::{expressions::ExpressionCompilationError, pattern::variable_category::VariableCategory};
+use encoding::value::value_type::ValueTypeCategory;
+use ir::pattern::expression::Operator;
+use ir::pattern::variable_category::VariableCategory;
 
 pub mod expression_inference;
 pub mod pattern_type_inference;
 pub mod type_inference;
 mod type_seeder;
+mod annotated_program;
+mod annotated_functions;
+pub mod expressions;
 
 #[derive(Debug)]
 pub enum TypeInferenceError {
@@ -89,25 +94,126 @@ impl Error for TypeInferenceError {
     }
 }
 
+
+
+pub enum ExpressionCompilationError {
+    InternalStackWasEmpty,
+    InternalUnexpectedValueType,
+    UnsupportedOperandsForOperation {
+        op: Operator,
+        left_category: ValueTypeCategory,
+        right_category: ValueTypeCategory,
+    },
+    UnsupportedArgumentsForBuiltin,
+    ListIndexMustBeLong,
+    HeterogenousValuesInList,
+    ExpectedSingleWasList,
+    ExpectedListWasSingle,
+    EmptyListConstructorCannotInferValueType,
+}
+
+impl Debug for ExpressionCompilationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // TODO
+        match self {
+            ExpressionCompilationError::InternalStackWasEmpty => {
+                f.write_str("ExpressionCompilationError::InternalStackWasEmpty")
+            }
+            ExpressionCompilationError::InternalUnexpectedValueType => {
+                f.write_str("ExpressionCompilationError::InternalUnexpectedValueType")
+            }
+            ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => {
+                f.write_str("ExpressionCompilationError::UnsupportedOperandsForOperation")
+            }
+            ExpressionCompilationError::UnsupportedArgumentsForBuiltin => {
+                f.write_str("ExpressionCompilationError::UnsupportedArgumentsForBuiltin")
+            }
+            ExpressionCompilationError::ListIndexMustBeLong => {
+                f.write_str("ExpressionCompilationError::ListIndexMustBeLong")
+            }
+            ExpressionCompilationError::HeterogenousValuesInList => {
+                f.write_str("ExpressionCompilationError::HeterogenousValuesInList")
+            }
+            ExpressionCompilationError::ExpectedSingleWasList => {
+                f.write_str("ExpressionCompilationError::ExpectedSingleWasList")
+            }
+            ExpressionCompilationError::ExpectedListWasSingle => {
+                f.write_str("ExpressionCompilationError::ExpectedListWasSingle")
+            }
+            ExpressionCompilationError::EmptyListConstructorCannotInferValueType => {
+                f.write_str("ExpressionCompilationError::EmptyListConstructorCannotInferValueType")
+            }
+        }
+    }
+}
+
+impl Display for ExpressionCompilationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // TODO
+        match self {
+            ExpressionCompilationError::InternalStackWasEmpty => {
+                f.write_str("ExpressionCompilationError::InternalStackWasEmpty")
+            }
+            ExpressionCompilationError::InternalUnexpectedValueType => {
+                f.write_str("ExpressionCompilationError::InternalUnexpectedValueType")
+            }
+            ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => {
+                f.write_str("ExpressionCompilationError::UnsupportedOperandsForOperation")
+            }
+            ExpressionCompilationError::UnsupportedArgumentsForBuiltin => {
+                f.write_str("ExpressionCompilationError::UnsupportedArgumentsForBuiltin")
+            }
+            ExpressionCompilationError::ListIndexMustBeLong => {
+                f.write_str("ExpressionCompilationError::ListIndexMustBeLong")
+            }
+            ExpressionCompilationError::HeterogenousValuesInList => {
+                f.write_str("ExpressionCompilationError::HeterogenousValuesInList")
+            }
+            ExpressionCompilationError::ExpectedSingleWasList => {
+                f.write_str("ExpressionCompilationError::ExpectedSingleWasList")
+            }
+            ExpressionCompilationError::ExpectedListWasSingle => {
+                f.write_str("ExpressionCompilationError::ExpectedListWasSingle")
+            }
+            ExpressionCompilationError::EmptyListConstructorCannotInferValueType => {
+                f.write_str("ExpressionCompilationError::EmptyListConstructorCannotInferValueType")
+            }
+        }
+    }
+}
+
+impl Error for ExpressionCompilationError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::InternalStackWasEmpty => None,
+            Self::InternalUnexpectedValueType => None,
+            Self::UnsupportedOperandsForOperation { .. } => None,
+            Self::UnsupportedArgumentsForBuiltin => None,
+            Self::ListIndexMustBeLong => None,
+            Self::HeterogenousValuesInList => None,
+            Self::ExpectedSingleWasList => None,
+            Self::ExpectedListWasSingle => None,
+            Self::EmptyListConstructorCannotInferValueType => None,
+        }
+    }
+}
+
+
 #[cfg(test)]
 pub mod tests {
     use std::sync::Arc;
 
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-    use durability::wal::WAL;
     use encoding::{
+        EncodingKeyspace,
         graph::{
             definition::definition_key_generator::DefinitionKeyGenerator,
             thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
         },
-        EncodingKeyspace,
     };
     use storage::{durability_client::WALClient, MVCCStorage};
-    use test_utils::{create_tmp_dir, init_logging};
 
-    use crate::inference::pattern_type_inference::{
-        NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
-    };
+    use crate::pattern_type_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph};
 
     impl<'this> PartialEq<Self> for TypeInferenceEdge<'this> {
         fn eq(&self, other: &Self) -> bool {
@@ -164,7 +270,7 @@ pub mod tests {
         use answer::Type as TypeAnnotation;
         use concept::type_::{
             annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation,
-            type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
+            Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager,
         };
         use encoding::value::{label::Label, value_type::ValueType};
         use storage::{

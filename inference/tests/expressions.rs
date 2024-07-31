@@ -6,45 +6,47 @@
 
 use std::collections::HashMap;
 use itertools::Itertools;
-use typeql::query::stage::Stage;
+
 use answer::variable::Variable;
 use encoding::value::value::Value;
 use encoding::value::value_type::ValueTypeCategory;
-use ir::expressions::evaluator::{ExpressionEvaluator, ExpressionValue};
-use ir::program::function_signature::HashMapFunctionIndex;
-use ir::translator::match_::translate_match;
-use ir::expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType};
-use ir::expressions::ExpressionCompilationError;
 use ir::pattern::constraint::Constraint;
 use ir::PatternDefinitionError;
+use ir::program::function_signature::HashMapFunctionIndex;
+use ir::translator::match_::translate_match;
+use typeql::query::stage::Stage;
+use inference::ExpressionCompilationError;
+use inference::expressions::evaluator::{ExpressionEvaluator, ExpressionValue};
+use inference::expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType};
 
 #[derive(Debug)]
 pub enum PatternDefitionOrExpressionCompilationError {
-    PatternDefinition(PatternDefinitionError),
-    ExpressionCompilation(ExpressionCompilationError),
+    PatternDefinition { source: PatternDefinitionError },
+    ExpressionCompilation { source: ExpressionCompilationError },
 }
+
 impl From<PatternDefinitionError> for PatternDefitionOrExpressionCompilationError {
     fn from(value: PatternDefinitionError) -> Self {
-        Self::PatternDefinition(value)
+        Self::PatternDefinition { source: value }
     }
 }
+
 impl From<ExpressionCompilationError> for PatternDefitionOrExpressionCompilationError {
     fn from(value: ExpressionCompilationError) -> Self {
-        Self::ExpressionCompilation(value)
+        Self::ExpressionCompilation { source: value }
     }
 }
 
-
-fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ExpressionValueType>) ->  Result<(HashMap<String, Variable>, CompiledExpression), PatternDefitionOrExpressionCompilationError> {
+fn compile_expression_via_match(s: &str, variable_types: HashMap<&str, ExpressionValueType>) -> Result<(HashMap<String, Variable>, CompiledExpression), PatternDefitionOrExpressionCompilationError> {
     let query = format!("match $x = {}; select $x;", s);
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap() {
         let block = translate_match(&HashMapFunctionIndex::empty(), &match_)?.finish();
         let variable_mapping = variable_types.keys()
             .map(|name| ((*name).to_owned(), block.context().get_variable_named(name, block.scope_id()).unwrap().clone()))
-            .collect::<HashMap<_,_>>();
+            .collect::<HashMap<_, _>>();
         let variable_types_mapped = variable_types.into_iter()
-                .map(|(name, type_)| (block.context().get_variable_named(name, block.scope_id()).unwrap().clone(), type_))
-                .collect::<HashMap<_,_>>();
+            .map(|(name, type_)| (block.context().get_variable_named(name, block.scope_id()).unwrap().clone(), type_))
+            .collect::<HashMap<_, _>>();
 
 
         let expression_binding = match &block.conjunction().constraints()[0] {
@@ -104,7 +106,7 @@ fn test_basic() {
 }
 
 #[test]
-fn test_ops_long_double(){
+fn test_ops_long_double() {
     // Long ops
     {
         {
@@ -179,7 +181,7 @@ fn test_ops_long_double(){
         {
             let (_, expr) = compile_expression_via_match("12.0e0 ^ 4.0e0", HashMap::new()).unwrap();
             let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-            assert_eq!(as_value!(result), Value::Double( f64::powf(12.0, 4.0)));
+            assert_eq!(as_value!(result), Value::Double(f64::powf(12.0, 4.0)));
         }
     }
 
@@ -227,7 +229,9 @@ fn test_functions() {
     assert!(
         matches!(
             compile_expression_via_match("round(3.5e0, 4.5e0)", HashMap::new()),
-            Err(PatternDefitionOrExpressionCompilationError::PatternDefinition(PatternDefinitionError::BuiltinArgumentCountMismatch { .. })))
+            Err(PatternDefitionOrExpressionCompilationError::PatternDefinition{
+                source: PatternDefinitionError::BuiltinArgumentCountMismatch { .. }
+            }))
     );
 }
 
@@ -236,12 +240,12 @@ fn list_ops() {
     {
         let (_, expr) = compile_expression_via_match("[12,34]", HashMap::new()).unwrap();
         let result = ExpressionEvaluator::evaluate(expr, HashMap::new()).unwrap();
-        assert_eq!(as_list!(result), vec![Value::Long(12),Value::Long(34)]);
+        assert_eq!(as_list!(result), vec![Value::Long(12), Value::Long(34)]);
     }
 
     {
         let (vars, expr) = compile_expression_via_match("$y[1]", HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))])).unwrap();
-        let (y,) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
+        let (y, ) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
 
         let inputs = HashMap::from([(y, ExpressionValue::List(vec![Value::Long(56), Value::Long(78), Value::Long(90)]))]);
         let result = ExpressionEvaluator::evaluate(expr, inputs).unwrap();
@@ -250,7 +254,7 @@ fn list_ops() {
 
     {
         let (vars, expr) = compile_expression_via_match("$y[1..3]", HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))])).unwrap();
-        let (y,) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
+        let (y, ) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
 
         let inputs = HashMap::from([(y, ExpressionValue::List(vec![Value::Long(09), Value::Long(87), Value::Long(65), Value::Long(43)]))]);
         let result = ExpressionEvaluator::evaluate(expr, inputs).unwrap();

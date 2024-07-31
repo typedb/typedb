@@ -10,16 +10,16 @@ use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
 use crate::{
+    AsBytes,
+    EncodingKeyspace,
     graph::{
         definition::{function::FunctionDefinition, r#struct::StructDefinition},
         type_::vertex::TypeVertex,
     },
-    layout::prefix::{Prefix, PrefixID},
-    value::string_bytes::StringBytes,
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+    Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed, value::string_bytes::StringBytes,
 };
 
-pub(crate) trait Indexable {
+pub trait Indexable {
     const INDEX_PREFIX: Prefix;
 }
 

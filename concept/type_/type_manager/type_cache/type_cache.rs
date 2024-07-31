@@ -15,19 +15,20 @@ use encoding::{
     graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition},
     value::{label::Label, value_type::ValueType},
 };
-use storage::{sequence_number::SequenceNumber, MVCCStorage, ReadSnapshotOpenError};
+use storage::{MVCCStorage, ReadSnapshotOpenError, sequence_number::SequenceNumber};
 
 use crate::type_::{
     annotation::AnnotationIndependent,
     attribute_type::{AttributeType, AttributeTypeAnnotation},
     entity_type::EntityType,
+    KindAPI,
     object_type::ObjectType,
+    Ordering,
+    OwnerAPI,
     owns::{Owns, OwnsAnnotation},
+    PlayerAPI,
     plays::{Plays, PlaysAnnotation},
-    relates::{Relates, RelatesAnnotation},
-    relation_type::RelationType,
-    role_type::RoleType,
-    type_manager::type_cache::{
+    relates::{Relates, RelatesAnnotation}, relation_type::RelationType, role_type::RoleType, type_manager::type_cache::{
         kind_cache::{
             AttributeTypeCache, CommonTypeCache, EntityTypeCache, OwnerPlayerCache, OwnsCache, PlaysCache,
             RelatesCache, RelationTypeCache, RoleTypeCache,
@@ -35,8 +36,7 @@ use crate::type_::{
         selection,
         selection::{CacheGetter, HasCommonTypeCache, HasOwnerPlayerCache},
         struct_definition_cache::StructDefinitionCache,
-    },
-    KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+    }, TypeAPI,
 };
 
 // TODO: could/should we slab allocate the schema cache?

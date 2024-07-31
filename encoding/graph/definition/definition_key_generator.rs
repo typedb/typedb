@@ -8,8 +8,8 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     error::EncodingError,
     graph::{common::schema_id_allocator::DefinitionKeyAllocator, definition::definition_key::DefinitionKey},
-    layout::prefix::Prefix,
     Keyable,
+    layout::prefix::Prefix,
 };
 
 pub struct DefinitionKeyGenerator {

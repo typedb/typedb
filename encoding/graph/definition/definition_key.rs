@@ -9,17 +9,18 @@ use std::{
     ops::Range,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
 use serde::{
     de::{Error, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
+
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
 use storage::key_value::StorageKey;
 
 use crate::{
-    layout::prefix::{Prefix, PrefixID},
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+    AsBytes,
+    EncodingKeyspace, Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]

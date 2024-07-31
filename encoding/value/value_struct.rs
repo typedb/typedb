@@ -29,6 +29,8 @@ use storage::{
 };
 
 use crate::{
+    AsBytes,
+    EncodingKeyspace,
     error::EncodingError,
     graph::{
         common::value_hasher::HashedID,
@@ -43,14 +45,12 @@ use crate::{
         type_::vertex::{TypeID, TypeVertex},
         Typed,
     },
-    layout::prefix::{Prefix, PrefixID},
-    value::{
+    Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed, value::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
         duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value::Value,
         value_type::ValueTypeCategory, ValueEncodable,
     },
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 // TODO: Do we want to encode / decode the full struct all the time? or just wrap bytes and

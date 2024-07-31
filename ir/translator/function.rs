@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable::Variable;
 use typeql::{
     schema::definable::function::{Output, ReturnSingle, ReturnStatement, ReturnStream, SingleOutput},
     TypeRefAny,
 };
+
+use answer::variable::Variable;
 
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},

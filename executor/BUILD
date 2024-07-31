@@ -7,7 +7,7 @@ load("@rules_rust//rust:defs.bzl", "rust_library")
 package(default_visibility = ["//visibility:public"])
 
 rust_library(
-    name = "traversal",
+    name = "executor",
     crate_root = "lib.rs",
     srcs = glob([
         "*.rs",

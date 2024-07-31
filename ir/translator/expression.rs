@@ -4,27 +4,28 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable::Variable;
 use typeql::{
     common::token::{ArithmeticOperator, Function},
     expression::{BuiltinFunctionName, Expression as TypeQLExpression, FunctionName},
 };
 
+use answer::variable::Variable;
+
 use crate::{
-    expressions::builtins::BuiltInFunctionID,
     pattern::{
         constraint::ConstraintsBuilder,
         expression::{
             BuiltInCall, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
         },
     },
+    PatternDefinitionError,
     program::function_signature::FunctionSignatureIndex,
     translator::{
         constraints::{add_function_call_user_impl, register_typeql_var, split_out_inline_expressions},
         literal::parse_literal,
     },
-    PatternDefinitionError,
 };
+use crate::pattern::expression::BuiltInFunctionID;
 
 pub(crate) fn build_expression(
     function_index: &impl FunctionSignatureIndex,
@@ -167,9 +168,9 @@ pub mod tests {
 
     use crate::{
         pattern::expression::{Expression, Operation, Operator},
+        PatternDefinitionError,
         program::{block::FunctionalBlock, function_signature::HashMapFunctionIndex},
         translator::block_builder::TypeQLBuilder,
-        PatternDefinitionError,
     };
 
     fn parse_query_get_match(query_str: &str) -> Result<FunctionalBlock, PatternDefinitionError> {

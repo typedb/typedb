@@ -6,19 +6,19 @@
 
 use std::collections::{HashMap, HashSet};
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
+use ir::pattern::conjunction::Conjunction;
+use ir::pattern::constraint::ExpressionBinding;
+use ir::pattern::expression::Expression;
+use ir::pattern::nested_pattern::NestedPattern;
+use ir::pattern::variable_category::VariableCategory;
+use ir::program::block::FunctionalBlock;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{
-    expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType},
-    inference::{type_inference::TypeAnnotations, TypeInferenceError},
-    pattern::{
-        conjunction::Conjunction, constraint::ExpressionBinding, expression::Expression, nested_pattern::NestedPattern,
-        variable_category::VariableCategory,
-    },
-    program::block::FunctionalBlock,
-};
+use crate::expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType};
+use crate::type_inference::TypeAnnotations;
+use crate::TypeInferenceError;
 
 struct ExpressionInferenceContext<'this, Snapshot: ReadableSnapshot> {
     block: &'this FunctionalBlock,
@@ -97,9 +97,9 @@ fn compile_expressions_recursive<'context, Snapshot: ReadableSnapshot>(
     let mut variable_value_types: HashMap<Variable, ExpressionValueType> = HashMap::new();
     for expr in binding.expression().tree() {
         let variable_opt = match expr {
-            Expression::Variable(variable) => Some(variable),
-            Expression::ListIndex(list_index) => Some(&list_index.list_variable),
-            Expression::ListIndexRange(list_range) => Some(&list_range.list_variable),
+            Expression::Variable(variable) => Some(*variable),
+            Expression::ListIndex(list_index) => Some(list_index.list_variable()),
+            Expression::ListIndexRange(list_range) => Some(list_range.list_variable()),
             Expression::Constant(_) | Expression::Operation(_) | Expression::BuiltInCall(_) | Expression::List(_) => {
                 None
             }
@@ -117,21 +117,21 @@ fn compile_expressions_recursive<'context, Snapshot: ReadableSnapshot>(
 
 fn resolve_type_for_variable<'context, Snapshot: ReadableSnapshot>(
     context: &ExpressionInferenceContext<'context, Snapshot>,
-    variable: &Variable,
+    variable: Variable,
     compiled_expressions: &mut HashMap<Variable, Option<CompiledExpression>>,
 ) -> Result<ExpressionValueType, TypeInferenceError> {
-    if let Some(binding) = context.expressions_by_assignment.get(variable) {
-        let compiled_expression = match compiled_expressions.get(variable) {
-            Some(None) => Err(TypeInferenceError::CircularDependencyInExpressions { variable: variable.clone() })?,
+    if let Some(binding) = context.expressions_by_assignment.get(&variable) {
+        let compiled_expression = match compiled_expressions.get(&variable) {
+            Some(None) => Err(TypeInferenceError::CircularDependencyInExpressions { variable: variable })?,
             Some(Some(compiled_expression)) => compiled_expression,
             None => {
                 compile_expressions_recursive(context, binding, compiled_expressions)?;
-                compiled_expressions.get(variable).unwrap().as_ref().unwrap()
+                compiled_expressions.get(&variable).unwrap().as_ref().unwrap()
             }
         };
         // TODO: We're throwing off the information about the category here
         Ok(compiled_expression.return_type())
-    } else if let Some(types) = context.type_annotations.variable_annotations(variable.clone()) {
+    } else if let Some(types) = context.type_annotations.variable_annotations(variable) {
         let vec = types
             .iter()
             .map(|type_| match type_ {

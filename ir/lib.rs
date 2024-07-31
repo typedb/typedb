@@ -20,8 +20,6 @@ use crate::{
     program::FunctionReadError,
 };
 
-pub mod expressions;
-pub mod inference;
 mod optimisation;
 pub mod pattern;
 pub mod program;

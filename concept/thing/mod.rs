@@ -4,24 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::ops::RangeBounds;
-
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
-    graph::thing::{vertex_attribute::AttributeID, vertex_object::ObjectVertex, ThingVertex},
+    AsBytes,
+    graph::thing::{ThingVertex, vertex_attribute::AttributeID, vertex_object::ObjectVertex},
     layout::prefix::Prefix,
     value::value_type::ValueTypeCategory,
-    AsBytes,
 };
 use lending_iterator::higher_order::Hkt;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    error::{ConceptReadError, ConceptWriteError},
-    thing::{entity::Entity, thing_manager::ThingManager},
-    type_::{type_manager::TypeManager, TypeAPI},
     ConceptStatus,
+    error::{ConceptReadError, ConceptWriteError},
+    thing::thing_manager::ThingManager,
+    type_::{type_manager::TypeManager, TypeAPI},
 };
 
 pub mod attribute;

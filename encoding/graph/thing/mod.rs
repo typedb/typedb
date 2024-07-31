@@ -9,9 +9,9 @@ use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
 use crate::{
+    EncodingKeyspace,
     graph::{type_::vertex::TypeID, Typed},
-    layout::prefix::{Prefix, PrefixID},
-    EncodingKeyspace, Prefixed,
+    layout::prefix::{Prefix, PrefixID}, Prefixed,
 };
 
 pub mod edge;

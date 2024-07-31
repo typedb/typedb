@@ -4,19 +4,7 @@
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
-package(default_visibility = [
-    "//concept:__subpackages__",
-    "//database:__subpackages__",
-    "//encoding:__subpackages__",
-    "//function:__subpackages__",
-    "//ir:__subpackages__",
-    "//server:__subpackages__",
-    "//storage/tests:__subpackages__",
-    "//storage/benches:__subpackages__",
-    "//traversal:__subpackages__",
-    "//query:__subpackages__",
-    "//tests:__subpackages__",
-])
+package(default_visibility = ["//visibility:public"])
 
 rust_library(
     name = "storage",

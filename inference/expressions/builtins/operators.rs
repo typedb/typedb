@@ -6,12 +6,14 @@
 
 use crate::expressions::{
     builtins::{
-        binary::{binary_instruction, Binary, BinaryExpression},
+        binary::{Binary, BinaryExpression},
         check_operation,
     },
-    op_codes::ExpressionOpCode,
     ExpressionEvaluationError,
+    op_codes::ExpressionOpCode,
 };
+use crate::expressions::builtins::binary::binary_instruction;
+
 binary_instruction! {
     OpLongAddLong = OpLongAddLongImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_add(a1, a2)) }
     OpLongSubtractLong = OpLongSubtractLongImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_sub(a1, a2)) }

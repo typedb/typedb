@@ -6,12 +6,12 @@
 
 use crate::{
     pattern::conjunction::ConjunctionBuilder,
+    PatternDefinitionError,
     program::{
         block::{FunctionalBlock, FunctionalBlockBuilder},
         function_signature::FunctionSignatureIndex,
     },
     translator::constraints::add_statement,
-    PatternDefinitionError,
 };
 
 pub fn translate_match(

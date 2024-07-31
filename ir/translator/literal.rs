@@ -7,11 +7,12 @@
 use std::{borrow::Cow, str::FromStr};
 
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use typeql::value::{DateTimeTZLiteral, Literal, Sign, SignedDecimalLiteral, TimeZone, ValueLiteral};
+
 use encoding::value::{
     decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
     value::Value,
 };
-use typeql::value::{DateTimeTZLiteral, Literal, Sign, SignedDecimalLiteral, TimeZone, ValueLiteral};
 
 use crate::{LiteralParseError, PatternDefinitionError};
 
@@ -168,15 +169,16 @@ impl FromTypeQLLiteral for chrono::DateTime<chrono_tz::Tz> {
 
 #[cfg(test)]
 pub mod tests {
+    use typeql::query::stage::Stage;
+
     use encoding::value::{
         decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
         value::Value,
     };
-    use typeql::query::stage::Stage;
 
     use crate::{
-        pattern::expression::Expression, program::function_signature::HashMapFunctionIndex,
-        translator::block_builder::TypeQLBuilder, LiteralParseError, PatternDefinitionError,
+        pattern::expression::Expression, PatternDefinitionError,
+        program::function_signature::HashMapFunctionIndex, translator::block_builder::TypeQLBuilder,
     };
 
     fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, PatternDefinitionError> {

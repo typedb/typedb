@@ -11,16 +11,16 @@ use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
 use crate::{
+    AsBytes,
+    EncodingKeyspace,
     graph::{
-        thing::{vertex_object::ObjectVertex, ThingVertex},
+        thing::{ThingVertex, vertex_object::ObjectVertex},
         type_::vertex::TypeVertex,
         Typed,
-    },
-    layout::{
+    }, Keyable, layout::{
         infix::{Infix, InfixID},
         prefix::{Prefix, PrefixID},
-    },
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+    }, Prefixed,
 };
 
 trait ObjectVertexPropertyFactory {

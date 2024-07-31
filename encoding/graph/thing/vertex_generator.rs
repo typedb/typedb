@@ -5,41 +5,42 @@
  */
 
 use std::sync::{
-    atomic::{AtomicU64, Ordering},
     Arc,
+    atomic::{AtomicU64, Ordering},
 };
 
 use bytes::{byte_array::ByteArray, Bytes};
 use storage::{
     key_range::KeyRange,
     key_value::StorageKey,
-    snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
-    MVCCKey, MVCCStorage,
+    MVCCKey,
+    MVCCStorage, snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
 };
 
-use super::vertex_attribute::{
-    BooleanAttributeID, DateAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DecimalAttributeID,
-    DoubleAttributeID, DurationAttributeID, StructAttributeID,
-};
 use crate::{
+    AsBytes,
     error::EncodingError,
     graph::{
         thing::{
+            ThingVertex,
             vertex_attribute::{AttributeID, AttributeVertex, LongAttributeID, StringAttributeID},
             vertex_object::{ObjectID, ObjectVertex},
-            ThingVertex,
         },
         type_::vertex::{build_type_vertex_prefix_key, TypeID, TypeIDUInt, TypeVertex},
         Typed,
     },
-    layout::prefix::Prefix,
-    value::{
+    Keyable,
+    layout::prefix::Prefix, Prefixed, value::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
         duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
         value_type::ValueTypeCategory,
     },
-    AsBytes, Keyable, Prefixed,
+};
+
+use super::vertex_attribute::{
+    BooleanAttributeID, DateAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DecimalAttributeID,
+    DoubleAttributeID, DurationAttributeID, StructAttributeID,
 };
 
 pub struct ThingVertexGenerator {

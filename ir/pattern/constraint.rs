@@ -7,22 +7,23 @@
 use std::{
     collections::HashMap,
     fmt,
-    iter::{empty, zip},
+    iter::empty,
 };
 
-use answer::variable::Variable;
 use itertools::Itertools;
+
+use answer::variable::Variable;
 
 use crate::{
     pattern::{
         expression::ExpressionTree,
         function_call::FunctionCall,
-        variable_category::{VariableCategory, VariableOptionality},
-        IrID, ScopeId,
+        IrID,
+        ScopeId, variable_category::VariableCategory,
     },
-    program::{block::BlockContext, function_signature::FunctionSignature},
     PatternDefinitionError,
     PatternDefinitionError::FunctionCallArgumentCountMismatch,
+    program::{block::BlockContext, function_signature::FunctionSignature},
 };
 
 #[derive(Debug)]
@@ -181,9 +182,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
     ) -> Result<&FunctionCallBinding<Variable>, PatternDefinitionError> {
-        use PatternDefinitionError::{
-            FunctionCallReturnArgCountMismatch, FunctionRequiredArgumentReceivedOptionalVariable,
-        };
+        use PatternDefinitionError::FunctionCallReturnArgCountMismatch;
         debug_assert!(assigned.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
         debug_assert!(arguments.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
 
@@ -373,7 +372,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_expression_binding(&self) -> Option<&ExpressionBinding<ID>> {
+    pub fn as_expression_binding(&self) -> Option<&ExpressionBinding<ID>> {
         match self {
             Constraint::ExpressionBinding(binding) => Some(binding),
             _ => None,
@@ -405,13 +404,21 @@ pub enum ConstraintIDSide {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Label<ID: IrID> {
-    pub(crate) left: ID,
-    pub(crate) type_: String,
+    left: ID,
+    type_label: String,
 }
 
 impl<ID: IrID> Label<ID> {
     fn new(identifier: ID, type_: String) -> Self {
-        Self { left: identifier, type_ }
+        Self { left: identifier, type_label: type_ }
+    }
+
+    pub fn left(&self) -> ID {
+        self.left
+    }
+
+    pub fn type_label(&self) -> &str {
+        &self.type_label
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
@@ -436,7 +443,7 @@ impl<ID: IrID> fmt::Display for Label<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: implement indentation without rewriting it everywhere
         // write!(f, "{: >width$} {} type {}", "", self.left, self.type_, width=f.width().unwrap_or(0))
-        write!(f, "{} label {}", self.left, self.type_)
+        write!(f, "{} label {}", self.left, self.type_label)
     }
 }
 
@@ -463,11 +470,11 @@ impl<ID: IrID> Sub<ID> {
         function(self.supertype, ConstraintIDSide::Right)
     }
 
-    pub(crate) fn subtype(&self) -> ID {
+    pub fn subtype(&self) -> ID {
         self.subtype
     }
 
-    pub(crate) fn supertype(&self) -> ID {
+    pub fn supertype(&self) -> ID {
         self.supertype
     }
 }
@@ -704,7 +711,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         Self { assigned: left, function_call }
     }
 
-    pub(crate) fn assigned(&self) -> &Vec<ID> {
+    pub fn assigned(&self) -> &Vec<ID> {
         &self.assigned
     }
 

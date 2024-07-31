@@ -21,6 +21,7 @@ rust_library(
         "//durability",
         "//encoding",
         "//ir",
+        "//inference",
         "//storage",
 
         "@vaticle_typeql//rust:typeql",

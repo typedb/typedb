@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes, util::HexBytesFormatter};
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -20,14 +20,15 @@ use storage::{
 };
 
 use crate::{
+    AsBytes,
+    EncodingKeyspace,
     graph::{
         common::value_hasher::HashedID,
-        thing::{ThingVertex, THING_VERTEX_LENGTH_PREFIX_TYPE},
+        thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex},
         type_::vertex::TypeID,
         Typed,
     },
-    layout::prefix::Prefix,
-    value::{
+    Keyable, layout::prefix::Prefix, Prefixed, value::{
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
         date_time_bytes::DateTimeBytes,
@@ -41,7 +42,6 @@ use crate::{
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd, Hash)]

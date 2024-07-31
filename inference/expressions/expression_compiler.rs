@@ -7,31 +7,20 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use chrono::{NaiveDate, NaiveDateTime};
 use encoding::value::{
-    decimal_value::Decimal,
-    duration_value::Duration,
     value::Value,
-    value_type::{ValueType, ValueTypeCategory},
+    value_type::ValueTypeCategory,
     ValueEncodable,
 };
+use ir::pattern::expression::{BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation, Operator};
 
-use crate::{
-    expressions::{
-        builtins::{
-            list_operations,
-            load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
-            unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
-            BuiltInFunctionID,
-        },
-        evaluator::ExpressionEvaluationState,
-        op_codes::ExpressionOpCode,
-        ExpressionCompilationError, ExpressionEvaluationError,
-    },
-    pattern::expression::{
-        BuiltInCall, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
-    },
-};
+use crate::ExpressionCompilationError;
+use crate::expressions::builtins::{list_operations, operators};
+use crate::expressions::builtins::load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable};
+use crate::expressions::builtins::unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble};
+use crate::expressions::evaluator::ExpressionEvaluationState;
+use crate::expressions::ExpressionEvaluationError;
+use crate::expressions::op_codes::ExpressionOpCode;
 
 pub trait ExpressionInstruction: Sized {
     const OP_CODE: ExpressionOpCode;
@@ -53,7 +42,7 @@ pub struct CompiledExpression {
 }
 
 impl CompiledExpression {
-    pub(crate) fn instructions(&self) -> &Vec<ExpressionOpCode> {
+    pub fn instructions(&self) -> &Vec<ExpressionOpCode> {
         &self.instructions
     }
 
@@ -67,7 +56,7 @@ impl CompiledExpression {
 }
 
 impl CompiledExpression {
-    pub(crate) fn return_type(&self) -> ExpressionValueType {
+    pub fn return_type(&self) -> ExpressionValueType {
         self.return_type.clone()
     }
 }
@@ -96,7 +85,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    pub(crate) fn pop_type_single(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+    pub fn pop_type_single(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
         match self.type_stack.pop() {
             Some(ExpressionValueType::Single(value)) => Ok(value),
             Some(ExpressionValueType::List(_)) => Err(ExpressionCompilationError::ExpectedSingleWasList),
@@ -104,7 +93,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    pub(crate) fn pop_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+    pub fn pop_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
         match self.type_stack.pop() {
             Some(ExpressionValueType::List(value)) => Ok(value),
             Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
@@ -112,11 +101,11 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    pub(crate) fn push_type_single(&mut self, value: ValueTypeCategory) {
+    pub fn push_type_single(&mut self, value: ValueTypeCategory) {
         self.type_stack.push(ExpressionValueType::Single(value));
     }
 
-    pub(crate) fn push_type_list(&mut self, value: ValueTypeCategory) {
+    pub fn push_type_list(&mut self, value: ValueTypeCategory) {
         self.type_stack.push(ExpressionValueType::List(value));
     }
     fn peek_type_single(&self) -> Result<&ValueTypeCategory, ExpressionCompilationError> {
@@ -127,7 +116,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    pub(crate) fn peek_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+    pub fn peek_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
         match self.type_stack.last() {
             Some(ExpressionValueType::List(value)) => Ok(*value),
             Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
@@ -135,7 +124,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    pub(crate) fn append_instruction(&mut self, op_code: ExpressionOpCode) {
+    pub fn append_instruction(&mut self, op_code: ExpressionOpCode) {
         self.instructions.push(op_code)
     }
 }
@@ -206,19 +195,19 @@ impl<'this> ExpressionTreeCompiler<'this> {
         &mut self,
         list_constructor: &ListConstructor,
     ) -> Result<(), ExpressionCompilationError> {
-        for index in list_constructor.item_expression_indices.iter().rev() {
+        for index in list_constructor.item_expression_indices().iter().rev() {
             self.compile_recursive(*index)?;
         }
-        self.compile_constant(&Value::Long(list_constructor.item_expression_indices.len() as i64))?;
+        self.compile_constant(&Value::Long(list_constructor.item_expression_indices().len() as i64))?;
         self.append_instruction(list_operations::ListConstructor::OP_CODE);
 
         if self.pop_type_single()? != ValueTypeCategory::Long {
             Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
         }
-        let n_elements = list_constructor.item_expression_indices.len();
+        let n_elements = list_constructor.item_expression_indices().len();
         if n_elements > 0 {
             let element_type = self.pop_type_single()?;
-            for _ in 1..list_constructor.item_expression_indices.len() {
+            for _ in 1..list_constructor.item_expression_indices().len() {
                 if self.pop_type_single()? != element_type {
                     Err(ExpressionCompilationError::HeterogenousValuesInList)?;
                 }
@@ -232,10 +221,10 @@ impl<'this> ExpressionTreeCompiler<'this> {
     }
 
     fn compile_list_index(&mut self, list_index: &ListIndex<Variable>) -> Result<(), ExpressionCompilationError> {
-        debug_assert!(self.variable_value_categories.contains_key(&list_index.list_variable));
+        debug_assert!(self.variable_value_categories.contains_key(&list_index.list_variable()));
 
-        self.compile_recursive(list_index.index_expression_index)?;
-        self.compile_variable(&list_index.list_variable)?;
+        self.compile_recursive(list_index.index_expression_index())?;
+        self.compile_variable(&list_index.list_variable())?;
 
         self.append_instruction(list_operations::ListIndex::OP_CODE);
 
@@ -252,10 +241,10 @@ impl<'this> ExpressionTreeCompiler<'this> {
         &mut self,
         list_index_range: &ListIndexRange<Variable>,
     ) -> Result<(), ExpressionCompilationError> {
-        debug_assert!(self.variable_value_categories.contains_key(&list_index_range.list_variable));
-        self.compile_recursive(list_index_range.from_expression_index)?;
-        self.compile_recursive(list_index_range.to_expression_index)?;
-        self.compile_variable(&list_index_range.list_variable)?;
+        debug_assert!(self.variable_value_categories.contains_key(&list_index_range.list_variable()));
+        self.compile_recursive(list_index_range.from_expression_index())?;
+        self.compile_recursive(list_index_range.to_expression_index())?;
+        self.compile_variable(&list_index_range.list_variable())?;
 
         self.append_instruction(list_operations::ListIndexRange::OP_CODE);
 
@@ -273,8 +262,9 @@ impl<'this> ExpressionTreeCompiler<'this> {
     }
 
     fn compile_op(&mut self, operation: &Operation) -> Result<(), ExpressionCompilationError> {
-        let Operation { operator, left_expression_index, right_expression_index } = operation.clone();
-        self.compile_recursive(operation.left_expression_index)?;
+        let operator = operation.operator();
+        let right_expression_index = operation.right_expression_index();
+        self.compile_recursive(operation.left_expression_index())?;
         let left_category = self.peek_type_single()?;
         match left_category {
             ValueTypeCategory::Boolean => self.compile_op_boolean(operator, right_expression_index),
@@ -414,35 +404,33 @@ impl<'this> ExpressionTreeCompiler<'this> {
 
     // Ops with Left, Right resolved
     fn compile_op_long_long(&mut self, op: Operator) -> Result<(), ExpressionCompilationError> {
-        use crate::expressions::builtins::operators as ops;
         match op {
-            Operator::Add => ops::OpLongAddLong::validate_and_append(self)?,
-            Operator::Subtract => ops::OpLongSubtractLong::validate_and_append(self)?,
-            Operator::Multiply => ops::OpLongMultiplyLong::validate_and_append(self)?,
-            Operator::Divide => ops::OpLongDivideLong::validate_and_append(self)?,
-            Operator::Modulo => ops::OpLongModuloLong::validate_and_append(self)?,
-            Operator::Power => ops::OpLongPowerLong::validate_and_append(self)?,
+            Operator::Add => operators::OpLongAddLong::validate_and_append(self)?,
+            Operator::Subtract => operators::OpLongSubtractLong::validate_and_append(self)?,
+            Operator::Multiply => operators::OpLongMultiplyLong::validate_and_append(self)?,
+            Operator::Divide => operators::OpLongDivideLong::validate_and_append(self)?,
+            Operator::Modulo => operators::OpLongModuloLong::validate_and_append(self)?,
+            Operator::Power => operators::OpLongPowerLong::validate_and_append(self)?,
         }
         Ok(())
     }
 
     fn compile_op_double_double(&mut self, op: Operator) -> Result<(), ExpressionCompilationError> {
-        use crate::expressions::builtins::operators as ops;
         match op {
-            Operator::Add => ops::OpDoubleAddDouble::validate_and_append(self)?,
-            Operator::Subtract => ops::OpDoubleSubtractDouble::validate_and_append(self)?,
-            Operator::Multiply => ops::OpDoubleMultiplyDouble::validate_and_append(self)?,
-            Operator::Divide => ops::OpDoubleDivideDouble::validate_and_append(self)?,
-            Operator::Modulo => ops::OpDoubleModuloDouble::validate_and_append(self)?,
-            Operator::Power => ops::OpDoublePowerDouble::validate_and_append(self)?,
+            Operator::Add => operators::OpDoubleAddDouble::validate_and_append(self)?,
+            Operator::Subtract => operators::OpDoubleSubtractDouble::validate_and_append(self)?,
+            Operator::Multiply => operators::OpDoubleMultiplyDouble::validate_and_append(self)?,
+            Operator::Divide => operators::OpDoubleDivideDouble::validate_and_append(self)?,
+            Operator::Modulo => operators::OpDoubleModuloDouble::validate_and_append(self)?,
+            Operator::Power => operators::OpDoublePowerDouble::validate_and_append(self)?,
         }
         Ok(())
     }
 
     fn compile_builtin(&mut self, builtin: &BuiltInCall) -> Result<(), ExpressionCompilationError> {
-        match builtin.builtin_id {
+        match builtin.builtin_id() {
             BuiltInFunctionID::Abs => {
-                self.compile_recursive(builtin.args_index[0])?;
+                self.compile_recursive(builtin.args_index()[0])?;
                 match self.peek_type_single()? {
                     ValueTypeCategory::Long => MathAbsLong::validate_and_append(self)?,
                     ValueTypeCategory::Double => MathAbsDouble::validate_and_append(self)?,
@@ -451,7 +439,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 }
             }
             BuiltInFunctionID::Ceil => {
-                self.compile_recursive(builtin.args_index[0])?;
+                self.compile_recursive(builtin.args_index()[0])?;
                 match self.peek_type_single()? {
                     ValueTypeCategory::Double => MathCeilDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
@@ -459,7 +447,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 }
             }
             BuiltInFunctionID::Floor => {
-                self.compile_recursive(builtin.args_index[0])?;
+                self.compile_recursive(builtin.args_index()[0])?;
                 match self.peek_type_single()? {
                     ValueTypeCategory::Double => MathFloorDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
@@ -467,7 +455,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
                 }
             }
             BuiltInFunctionID::Round => {
-                self.compile_recursive(builtin.args_index[0])?;
+                self.compile_recursive(builtin.args_index()[0])?;
                 match self.peek_type_single()? {
                     ValueTypeCategory::Double => MathRoundDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?

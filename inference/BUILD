@@ -11,24 +11,19 @@ rust_library(
     crate_root = "lib.rs",
     srcs = glob([
         "*.rs",
+        "expressions/*.rs",
+        "expressions/builtins/*.rs",
     ]),
     deps = [
-#        "//answer",
-#        "//concept",
-#        "//durability",
-#        "//encoding",
-#        "//storage",
-#        "//common/primitive",
-#
-#        "@vaticle_typeql//rust:typeql",
-#
-#        "@crates//:itertools",
-#
-#        # For the parsing of literals
-#        "@crates//:chrono",
-#        "@crates//:chrono-tz",
-#
-#        "//util/test:test_utils", # dev dependency
+        "//answer",
+        "//concept",
+        "//encoding",
+        "//ir",
+        "//storage",
+
+        "@vaticle_typeql//rust:typeql",
+        "@crates//:itertools",
+        "@crates//:chrono",
     ],
 )
 
