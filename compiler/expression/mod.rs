@@ -4,6 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod block_compiler;
 pub mod compiled_expression;
 pub mod expression_compiler;
-pub mod expression_inference;

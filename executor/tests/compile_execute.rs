@@ -18,7 +18,7 @@ use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::program_executor::ProgramExecutor;
 use ir::{
     program::{function_signature::HashMapFunctionIndex, program::Program},
-    translator::match_::translate_match,
+    translation::match_::translate_match,
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;

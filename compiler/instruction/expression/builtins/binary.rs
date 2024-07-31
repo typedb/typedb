@@ -9,7 +9,8 @@ use std::{marker::PhantomData, ops::Rem};
 use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 
 use crate::instruction::expression::{
-    evaluator::ExpressionEvaluationState, op_codes::ExpressionOpCode, ExpressionEvaluationError,
+    CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
+    op_codes::ExpressionOpCode,
 };
 
 pub trait BinaryExpression<T1: DBValue, T2: DBValue, R: DBValue> {
@@ -35,12 +36,7 @@ where
     F: BinaryExpression<T1, T2, R>,
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
-    fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let a2: T2 = T2::from_db_value(state.pop_value()).unwrap();
-        let a1: T1 = T1::from_db_value(state.pop_value()).unwrap();
-        state.push_value(F::evaluate(a1, a2)?.to_db_value());
-        Ok(())
-    }
+
 }
 
 impl<T1, T2, R, F> CompilableExpression for Binary<T1, T2, R, F>
@@ -54,7 +50,7 @@ where
         Some(R::VALUE_TYPE_CATEGORY)
     }
 
-    fn validate_and_append(builder: &mut ExpressionTreeCompiler<'_>) -> Result<(), ExpressionCompilationError> {
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompilationError> {
         let a2 = builder.pop_type_single()?;
         let a1 = builder.pop_type_single()?;
         if (a1, a2) != (T1::VALUE_TYPE_CATEGORY, T2::VALUE_TYPE_CATEGORY) {
@@ -81,11 +77,7 @@ macro_rules! binary_instruction {
 
 pub(crate) use binary_instruction;
 
-use crate::{
-    expression::expression_compiler::ExpressionTreeCompiler,
-    inference::ExpressionCompilationError,
-    instruction::{CompilableExpression, ExpressionInstruction},
-};
+use crate::{expression::expression_compiler::ExpressionCompilationContext, inference::ExpressionCompilationError};
 binary_instruction! {
     MathRemainderLong = MathRemainderLongImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }
 }

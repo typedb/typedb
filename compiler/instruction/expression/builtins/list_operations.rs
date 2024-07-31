@@ -4,11 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::value::value::Value;
-
-use crate::instruction::{
-    expression::{evaluator::ExpressionEvaluationState, op_codes::ExpressionOpCode, ExpressionEvaluationError},
-    ExpressionInstruction,
+use crate::instruction::expression::{
+    ExpressionInstruction, op_codes::ExpressionOpCode,
 };
 
 pub struct ListConstructor {}
@@ -18,46 +15,14 @@ pub struct ListIndexRange {}
 impl ExpressionInstruction for ListConstructor {
     const OP_CODE: ExpressionOpCode = ExpressionOpCode::ListConstructor;
 
-    fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let mut n_elements = state.pop_value().unwrap_long() as usize;
-        let mut elements: Vec<Value<'static>> = Vec::with_capacity(n_elements);
-        for _ in 0..n_elements {
-            elements.push(state.pop_value());
-        }
-        state.push_list(elements);
-        Ok(())
-    }
 }
 
 impl ExpressionInstruction for ListIndex {
     const OP_CODE: ExpressionOpCode = ExpressionOpCode::ListIndex;
 
-    fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let list = state.pop_list();
-        let index = state.pop_value().unwrap_long();
-        if let Some(value) = list.get(index as usize) {
-            state.push_value(value.clone()); // Should we avoid cloning?
-            Ok(())
-        } else {
-            Err(ExpressionEvaluationError::ListIndexOutOfRange)
-        }
-    }
 }
 
 impl ExpressionInstruction for ListIndexRange {
     const OP_CODE: ExpressionOpCode = ExpressionOpCode::ListIndexRange;
 
-    fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let mut list = state.pop_list();
-        let to_index = state.pop_value().unwrap_long() as usize;
-        let from_index = state.pop_value().unwrap_long() as usize;
-        if let Some(sub_slice) = list.get(from_index..to_index) {
-            let mut vec = Vec::with_capacity((to_index - from_index + 1) as usize);
-            vec.extend_from_slice(sub_slice);
-            state.push_list(vec); // TODO: Should we make this more efficient by storing (Vec, range) ?
-            Ok(())
-        } else {
-            Err(ExpressionEvaluationError::ListIndexOutOfRange)
-        }
-    }
 }

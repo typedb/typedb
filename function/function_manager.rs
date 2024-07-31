@@ -28,7 +28,7 @@ use ir::{
         program::Program,
         FunctionReadError,
     },
-    translator::function::build_signature,
+    translation::function::build_signature,
 };
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -340,7 +340,7 @@ pub mod tests {
             let function_annotations = cache.get_function_annotations(expected_function_id.clone()).unwrap();
             let function_ir = cache.get_function_ir(expected_function_id.clone()).unwrap();
             let var_c = *function_ir.block().context().get_variable_named("c", function_ir.block().scope_id()).unwrap();
-            let var_c_annotations = function_annotations.body_annotations().variable_annotations(var_c).unwrap();
+            let var_c_annotations = function_annotations.body_annotations().variable_annotations_of(var_c).unwrap();
             assert_eq!(&Arc::new(HashSet::from([type_cat.clone()])), var_c_annotations);
         }
     }

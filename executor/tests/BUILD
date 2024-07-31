@@ -6,7 +6,7 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
-executor_deps = [
+deps = [
     "//answer",
     "//concept",
     "//common/bytes",
@@ -22,33 +22,42 @@ executor_deps = [
 ]
 
 rust_test(
-    name = "test_executor",
-    crate_root = "executor.rs",
-    srcs = ["executor.rs", "common.rs"],
-    deps = executor_deps + [
+    name = "test_compile_execute",
+    crate_root = "compile_execute.rs",
+    srcs = ["compile_execute.rs", "common.rs"],
+    deps = deps + [
         "@crates//:itertools",
     ],
 )
 
 rust_test(
-    name = "test_executor_has",
-    crate_root = "executor_has.rs",
-    srcs = ["executor_has.rs", "common.rs"],
-    deps = executor_deps,
+    name = "test_execute_has",
+    crate_root = "execute_has.rs",
+    srcs = ["execute_has.rs", "common.rs"],
+    deps = deps,
 )
 
 rust_test(
-    name = "test_executor_rp",
-    crate_root = "executor_rp.rs",
-    srcs = ["executor_rp.rs", "common.rs"],
-    deps = executor_deps,
+    name = "test_execute_rp",
+    crate_root = "execute_rp.rs",
+    srcs = ["execute_rp.rs", "common.rs"],
+    deps = deps,
 )
 
 rust_test(
     name = "test_select",
-    crate_root = "select.rs",
-    srcs = ["select.rs", "common.rs"],
-    deps = executor_deps,
+    crate_root = "execute_select.rs",
+    srcs = ["execute_select.rs", "common.rs"],
+    deps = deps,
+)
+
+rust_test(
+    name = "test_execute_expression",
+    crate_root = "execute_expression.rs",
+    srcs = ["execute_expression.rs"],
+    deps = deps + [
+        "@crates//:itertools"
+    ],
 )
 
 checkstyle_test(

@@ -20,12 +20,12 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     expression::{
         compiled_expression::{CompiledExpression, ExpressionValueType},
-        expression_compiler::ExpressionTreeCompiler,
+        expression_compiler::ExpressionCompilationContext,
     },
     inference::{type_annotations::TypeAnnotations, TypeInferenceError},
 };
 
-struct ExpressionInferenceContext<'block, Snapshot: ReadableSnapshot> {
+struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block FunctionalBlock,
     snapshot: &'block Snapshot,
     type_manager: &'block TypeManager,
@@ -34,7 +34,7 @@ struct ExpressionInferenceContext<'block, Snapshot: ReadableSnapshot> {
     expressions_by_assignment: HashMap<Variable, &'block ExpressionBinding<Variable>>,
 }
 
-pub fn compile_expressions_in_block<'block, Snapshot: ReadableSnapshot>(
+pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     snapshot: &'block Snapshot,
     type_manager: &'block TypeManager,
     block: &'block FunctionalBlock,
@@ -44,7 +44,7 @@ pub fn compile_expressions_in_block<'block, Snapshot: ReadableSnapshot>(
     index_expressions(block.conjunction(), &mut expression_index)?;
     let expression_bindings: Vec<&ExpressionBinding<Variable>> =
         expression_index.values().map(|by_ref| by_ref.clone()).collect();
-    let context = ExpressionInferenceContext {
+    let context = BlockExpressionsCompilationContext {
         block,
         snapshot,
         type_manager,
@@ -90,7 +90,7 @@ fn index_expressions<'block>(
 }
 
 fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
-    context: &ExpressionInferenceContext<'a, Snapshot>,
+    context: &BlockExpressionsCompilationContext<'a, Snapshot>,
     binding: &ExpressionBinding<Variable>,
     compiled_expressions: &mut HashMap<Variable, Option<CompiledExpression>>,
 ) -> Result<(), TypeInferenceError> {
@@ -112,14 +112,14 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
                 .insert(variable.clone(), resolve_type_for_variable(context, variable, compiled_expressions)?);
         }
     }
-    let compiled = ExpressionTreeCompiler::compile(&binding.expression(), variable_value_types)
+    let compiled = ExpressionCompilationContext::compile(&binding.expression(), variable_value_types)
         .map_err(|source| TypeInferenceError::ExpressionCompilation { source })?;
     compiled_expressions.insert(binding.left().clone(), Some(compiled));
     Ok(())
 }
 
 fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
-    context: &ExpressionInferenceContext<'a, Snapshot>,
+    context: &BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
     compiled_expressions: &mut HashMap<Variable, Option<CompiledExpression>>,
 ) -> Result<ExpressionValueType, TypeInferenceError> {

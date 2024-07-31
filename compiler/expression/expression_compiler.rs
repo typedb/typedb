@@ -16,24 +16,20 @@ use ir::pattern::expression::{
 use crate::{
     expression::compiled_expression::{CompiledExpression, ExpressionValueType},
     inference::ExpressionCompilationError,
-    instruction::{
-        expression::{
-            builtins::{
-                list_operations,
-                load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
-                operators,
-                unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
-            },
-            evaluator::ExpressionEvaluationState,
-            op_codes::ExpressionOpCode,
-            ExpressionEvaluationError,
+    instruction::expression::{
+        builtins::{
+            list_operations,
+            load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
+            operators,
+            unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
         },
+        op_codes::ExpressionOpCode,
         CompilableExpression, ExpressionInstruction,
     },
 };
 
-pub struct ExpressionTreeCompiler<'this> {
-    ir_tree: &'this ExpressionTree<Variable>,
+pub struct ExpressionCompilationContext<'this> {
+    expression_tree: &'this ExpressionTree<Variable>,
     variable_value_categories: HashMap<Variable, ExpressionValueType>,
     type_stack: Vec<ExpressionValueType>,
 
@@ -42,13 +38,13 @@ pub struct ExpressionTreeCompiler<'this> {
     constant_stack: Vec<Value<'static>>,
 }
 
-impl<'this> ExpressionTreeCompiler<'this> {
-    fn new(
-        ir_tree: &'this ExpressionTree<Variable>,
+impl<'this> ExpressionCompilationContext<'this> {
+    fn empty(
+        expression_tree: &'this ExpressionTree<Variable>,
         variable_value_categories: HashMap<Variable, ExpressionValueType>,
     ) -> Self {
-        ExpressionTreeCompiler {
-            ir_tree,
+        ExpressionCompilationContext {
+            expression_tree,
             variable_value_categories,
             instructions: Vec::new(),
             variable_stack: Vec::new(),
@@ -58,19 +54,19 @@ impl<'this> ExpressionTreeCompiler<'this> {
     }
 
     pub fn compile(
-        ir_tree: &ExpressionTree<Variable>,
+        expression_tree: &ExpressionTree<Variable>,
         variable_value_categories: HashMap<Variable, ExpressionValueType>,
     ) -> Result<CompiledExpression, ExpressionCompilationError> {
-        let mut builder = ExpressionTreeCompiler::new(ir_tree, variable_value_categories);
-
-        builder.compile_recursive(ir_tree.root())?;
+        debug_assert!(expression_tree.ids().all(|var| variable_value_categories.contains_key(&var)));
+        let mut builder = ExpressionCompilationContext::empty(expression_tree, variable_value_categories);
+        builder.compile_recursive(expression_tree.root())?;
         let return_type = builder.pop_type()?;
-        let ExpressionTreeCompiler { instructions, variable_stack, constant_stack, .. } = builder;
+        let ExpressionCompilationContext { instructions, variable_stack, constant_stack, .. } = builder;
         Ok(CompiledExpression { instructions, variables: variable_stack, constants: constant_stack, return_type })
     }
 
     fn compile_recursive(&mut self, index: usize) -> Result<(), ExpressionCompilationError> {
-        match &self.ir_tree.tree()[index] {
+        match &self.expression_tree.tree()[index] {
             Expression::Constant(constant) => self.compile_constant(constant),
             Expression::Variable(variable) => self.compile_variable(variable),
             Expression::Operation(op) => self.compile_op(op),
