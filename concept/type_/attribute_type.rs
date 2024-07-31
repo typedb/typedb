@@ -265,16 +265,16 @@ impl<'a> AttributeType<'a> {
                 type_manager.set_annotation_abstract(snapshot, thing_manager, self.clone().into_owned())?
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.set_annotation_independent(snapshot, self.clone().into_owned())?
+                type_manager.set_annotation_independent(snapshot, thing_manager, self.clone().into_owned())?
             }
             AttributeTypeAnnotation::Regex(regex) => {
-                type_manager.set_annotation_regex(snapshot, self.clone().into_owned(), regex)?
+                type_manager.set_annotation_regex(snapshot, thing_manager, self.clone().into_owned(), regex)?
             }
             AttributeTypeAnnotation::Range(range) => {
-                type_manager.set_annotation_range(snapshot, self.clone().into_owned(), range)?
+                type_manager.set_annotation_range(snapshot, thing_manager, self.clone().into_owned(), range)?
             }
             AttributeTypeAnnotation::Values(values) => {
-                type_manager.set_annotation_values(snapshot, self.clone().into_owned(), values)?
+                type_manager.set_annotation_values(snapshot, thing_manager, self.clone().into_owned(), values)?
             }
         };
         Ok(())

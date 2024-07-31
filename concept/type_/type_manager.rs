@@ -1437,6 +1437,15 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_changed_annotations_compatible_with_attribute_type_and_subtypes_instances_on_supertype_change(
+            snapshot,
+            self,
+            thing_manager,
+            subtype.clone(),
+            supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         self.set_supertype(snapshot, subtype, supertype)
     }
 
@@ -1598,6 +1607,15 @@ impl TypeManager {
         subtype: EntityType<'static>,
         supertype: EntityType<'static>,
     ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_changed_annotations_compatible_with_entity_type_and_subtypes_instances_on_supertype_change(
+            snapshot,
+            self,
+            thing_manager,
+            subtype.clone(),
+            supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         self.set_object_type_supertype(snapshot, thing_manager, subtype, supertype)
     }
 
@@ -1619,6 +1637,15 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_role_names_compatible_with_new_relation_supertype(
             snapshot,
+            subtype.clone(),
+            supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_changed_annotations_compatible_with_relation_type_and_subtypes_instances_on_supertype_change(
+            snapshot,
+            self,
+            thing_manager,
             subtype.clone(),
             supertype.clone(),
         )
@@ -2040,7 +2067,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_no_instances_to_set_abstract(snapshot, thing_manager, type_.clone())
+        OperationTimeValidation::validate_new_abstract_annotation_compatible_with_type_and_subtypes_instances(snapshot, self, thing_manager, type_.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation::<AnnotationAbstract>(snapshot, type_, annotation)
@@ -2109,13 +2136,18 @@ impl TypeManager {
     pub(crate) fn set_annotation_independent(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
+        thing_manager: &ThingManager,
+        attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Independent(AnnotationIndependent);
 
-        self.validate_set_annotation_general(snapshot, type_.clone(), annotation.clone())?;
+        self.validate_set_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
 
-        self.set_annotation::<AnnotationIndependent>(snapshot, type_, annotation)
+        // It won't validate anything, but placing this call here helps maintain the verification consistency
+        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        self.set_annotation::<AnnotationIndependent>(snapshot, attribute_type, annotation)
     }
 
     pub(crate) fn unset_annotation_independent(
@@ -2162,6 +2194,15 @@ impl TypeManager {
             )
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
+
+        OperationTimeValidation::validate_changed_annotations_compatible_with_role_type_and_subtypes_instances_on_supertype_change(
+            snapshot,
+            self,
+            thing_manager,
+            relates.role(),
+            overridden.role(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_updated_annotations_compatible_with_relates_and_overriding_relates_instances_on_override(
             snapshot,
@@ -2441,39 +2482,43 @@ impl TypeManager {
     pub(crate) fn set_annotation_regex(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: AttributeType<'static>,
+        thing_manager: &ThingManager,
+        attribute_type: AttributeType<'static>,
         regex: AnnotationRegex,
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Regex(regex.clone());
 
-        self.validate_set_annotation_general(snapshot, type_.clone(), annotation.clone())?;
+        self.validate_set_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
 
         OperationTimeValidation::validate_regex_arguments(regex.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_regex_compatible_value_type(
             snapshot,
-            type_.clone(),
-            TypeReader::get_value_type_without_source(snapshot, type_.clone())?,
+            attribute_type.clone(),
+            TypeReader::get_value_type_without_source(snapshot, attribute_type.clone())?,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
             snapshot,
-            type_.clone(),
+            attribute_type.clone(),
             AnnotationCategory::Regex,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_type_regex_narrows_inherited_regex(
             snapshot,
-            type_.clone(),
+            attribute_type.clone(),
             None, // supertype: will be read from storage
             regex.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_annotation::<AnnotationRegex>(snapshot, type_, annotation)
+        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        self.set_annotation::<AnnotationRegex>(snapshot, attribute_type, annotation)
     }
 
     pub(crate) fn unset_annotation_regex(
@@ -2544,13 +2589,18 @@ impl TypeManager {
     pub(crate) fn set_annotation_cascade(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
+        thing_manager: &ThingManager,
+        relation_type: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Cascade(AnnotationCascade);
 
-        self.validate_set_annotation_general(snapshot, type_.clone(), annotation.clone())?;
+        self.validate_set_annotation_general(snapshot, relation_type.clone(), annotation.clone())?;
 
-        self.set_annotation::<AnnotationCascade>(snapshot, type_, annotation)
+        // It won't validate anything, but placing this call here helps maintain the verification consistency
+        OperationTimeValidation::validate_new_annotation_compatible_with_relation_type_and_subtypes_instances(snapshot, self, thing_manager, relation_type.clone(), annotation.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        self.set_annotation::<AnnotationCascade>(snapshot, relation_type, annotation)
     }
 
     pub(crate) fn unset_annotation_cascade(
@@ -2564,18 +2614,19 @@ impl TypeManager {
     pub(crate) fn set_annotation_range(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: AttributeType<'static>,
+        thing_manager: &ThingManager,
+        attribute_type: AttributeType<'static>,
         range: AnnotationRange,
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Range(range.clone());
 
-        self.validate_set_annotation_general(snapshot, type_.clone(), annotation.clone())?;
+        self.validate_set_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
 
-        let type_value_type = TypeReader::get_value_type_without_source(snapshot, type_.clone())?;
+        let type_value_type = TypeReader::get_value_type_without_source(snapshot, attribute_type.clone())?;
 
         OperationTimeValidation::validate_annotation_range_compatible_value_type(
             snapshot,
-            type_.clone(),
+            attribute_type.clone(),
             type_value_type.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -2585,14 +2636,14 @@ impl TypeManager {
 
         OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
             snapshot,
-            type_.clone(),
+            attribute_type.clone(),
             AnnotationCategory::Range,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_type_range_narrows_inherited_range(
             snapshot,
-            type_.clone(),
+            attribute_type.clone(),
             None, // supertype: will be read from storage
             range.clone(),
         )
@@ -2600,7 +2651,10 @@ impl TypeManager {
 
         // TODO: Maybe for the future: check if compatible with existing VALUES annotation
 
-        self.set_annotation::<AnnotationRange>(snapshot, type_, annotation)
+        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        self.set_annotation::<AnnotationRange>(snapshot, attribute_type, annotation)
     }
 
     pub(crate) fn unset_annotation_range(
@@ -2675,18 +2729,19 @@ impl TypeManager {
     pub(crate) fn set_annotation_values(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: AttributeType<'static>,
+        thing_manager: &ThingManager,
+        attribute_type: AttributeType<'static>,
         values: AnnotationValues,
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Values(values.clone());
 
-        self.validate_set_annotation_general(snapshot, type_.clone(), annotation.clone())?;
+        self.validate_set_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
 
-        let type_value_type = TypeReader::get_value_type_without_source(snapshot, type_.clone())?;
+        let type_value_type = TypeReader::get_value_type_without_source(snapshot, attribute_type.clone())?;
 
         OperationTimeValidation::validate_annotation_values_compatible_value_type(
             snapshot,
-            type_.clone(),
+            attribute_type.clone(),
             type_value_type.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -2696,14 +2751,14 @@ impl TypeManager {
 
         OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
             snapshot,
-            type_.clone(),
+            attribute_type.clone(),
             AnnotationCategory::Values,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_type_values_narrows_inherited_values(
             snapshot,
-            type_.clone(),
+            attribute_type.clone(),
             None, // supertype: will be read from storage
             values.clone(),
         )
@@ -2711,7 +2766,10 @@ impl TypeManager {
 
         // TODO: Maybe for the future: check if compatible with existing RANGE annotation
 
-        self.set_annotation::<AnnotationValues>(snapshot, type_, annotation)
+        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        self.set_annotation::<AnnotationValues>(snapshot, attribute_type, annotation)
     }
 
     pub(crate) fn unset_annotation_values(

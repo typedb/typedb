@@ -194,17 +194,15 @@ pub enum SchemaValidationError {
         Vec<(Label<'static>, Label<'static>)>,
     ),
     CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
-        Kind,
         AnnotationCategory,
         Label<'static>,
-        Vec<(Label<'static>)>,
+        Vec<Label<'static>>,
     ),
     CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
-        Kind,
         AnnotationCategory,
         Label<'static>,
-        Option<Label<'static>>,
-        Vec<(Label<'static>)>,
+        Label<'static>,
+        Vec<Label<'static>>,
     ),
 }
 
@@ -312,8 +310,8 @@ impl Error for SchemaValidationError {
                 _,
                 _,
             ) => None,
-            Self::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(_, _, _, _) => None,
-            Self::CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(_, _, _, _, _) => None,
+            Self::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(_, _, _) => None,
+            Self::CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(_, _, _, _) => None,
         }
     }
 }

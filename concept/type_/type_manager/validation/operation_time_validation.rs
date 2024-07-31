@@ -72,6 +72,8 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::error::ConceptWriteError;
+use crate::type_::annotation::AnnotationAbstract;
 use crate::type_::relation_type::RelationTypeAnnotation;
 
 macro_rules! object_type_match {
@@ -679,16 +681,141 @@ macro_rules! changed_annotations_compatible_with_capability_and_overriding_capab
     };
 }
 
-macro_rules! changed_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation {
-    ($func_name:ident, $kind:path, $type_:ident, $validation_func:path) => {
+macro_rules! type_or_its_subtype_with_violated_new_annotation_constraints {
+    ($func_name:ident, $type_:ident, $existing_instances_validation_func:path) => {
+        paste! {
+            pub(crate) fn $func_name<'a>(
+                snapshot: &impl ReadableSnapshot,
+                type_manager: &'a TypeManager,
+                thing_manager: &ThingManager,
+                type_: $type_<'static>,
+                sorted_annotations: HashMap<ConstraintValidationMode, HashSet<Annotation>>,
+            ) -> Result<Option<(Vec<$type_<'a>>, AnnotationCategory)>, ConceptReadError> {
+                for (validation_mode, annotations) in sorted_annotations {
+                    match validation_mode {
+                        ConstraintValidationMode::Type => {
+                            let result = Self::[< $func_name _type >](
+                                snapshot,
+                                type_manager,
+                                thing_manager,
+                                type_.clone(),
+                                annotations
+                            )?;
+                            if result.is_some() {
+                                return Ok(result);
+                            }
+                        }
+                        ConstraintValidationMode::TypeAndSiblings =>
+                            unreachable!("Types do not have TypeAndSiblings constraints"),
+                        ConstraintValidationMode::TypeAndSiblingsAndSubtypes =>
+                            unreachable!("Types do not have TypeAndSiblingsAndSubtypes constraints"),
+                    }
+                }
+                Ok(None)
+            }
+
+            fn [< $func_name _type >]<'a>(
+                snapshot: &impl ReadableSnapshot,
+                type_manager: &'a TypeManager,
+                thing_manager: &ThingManager,
+                type_: $type_<'static>,
+                annotations: HashSet<Annotation>,
+            ) -> Result<Option<(Vec<$type_<'a>>, AnnotationCategory)>, ConceptReadError> {
+                if annotations.is_empty() {
+                    return Ok(None);
+                }
+
+                let mut type_with_violations = None;
+                let mut types_and_annotations_to_check = VecDeque::new();
+                types_and_annotations_to_check.push_front((type_, annotations));
+
+                while let Some((current_type, annotations_to_revalidate)) = types_and_annotations_to_check.pop_back() {
+                    if let Some(violated_constraint) = $existing_instances_validation_func(
+                        snapshot,
+                        thing_manager,
+                        current_type.clone(),
+                        &annotations_to_revalidate,
+                    )? {
+                        type_with_violations = Some((vec![current_type], violated_constraint));
+                        break;
+                    }
+
+                    let subtypes = current_type.get_subtypes(snapshot, type_manager)?;
+                    for subtype in subtypes.into_iter() {
+                        let mut subtype_annotations_to_revalidate = annotations_to_revalidate.clone();
+                        let declared_annotations =
+                            TypeReader::get_type_annotations_declared(snapshot, subtype.clone())?;
+                        subtype_annotations_to_revalidate
+                            .retain(|annotation| !declared_annotations.contains(&annotation.clone().into()));
+
+                        types_and_annotations_to_check.push_front((
+                            subtype.clone(),
+                            subtype_annotations_to_revalidate,
+                        ));
+                    }
+                }
+
+                Ok(type_with_violations)
+            }
+        }
+    };
+}
+
+macro_rules! new_annotation_compatible_with_type_and_subtypes_instances_validation {
+    ($func_name:ident, $type_:ident, $validation_func:path) => {
         pub(crate) fn $func_name(
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
             type_: $type_<'static>,
-            new_supertype: Option<$type_<'static>>,
+            annotation: Annotation,
         ) -> Result<(), SchemaValidationError> {
-            let updated_annotations = OperationTimeValidation::get_updated_annotations_if_type_sets_changes_supertype(
+            let mut annotations = HashSet::from([annotation]);
+            OperationTimeValidation::filter_type_annotation_constraints_by_not_declared(
+                snapshot,
+                type_.clone(),
+                &mut annotations,
+            )
+            .map_err(SchemaValidationError::ConceptRead)?;
+
+            let sorted_annotations = Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations)
+                .map_err(|source| SchemaValidationError::ConceptRead(ConceptReadError::Annotation { source }))?;
+
+            let violation = $validation_func(
+                snapshot,
+                type_manager,
+                thing_manager,
+                type_.clone(),
+                sorted_annotations,
+            )
+            .map_err(SchemaValidationError::ConceptRead)?;
+
+            if let Some((violating_types, violated_constraint)) = violation {
+                Err(SchemaValidationError::CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
+                    violated_constraint,
+                    get_label_or_schema_err(snapshot, type_)?,
+                    violating_types
+                        .iter()
+                        .map(|violating_type| get_label_or_schema_err(snapshot, violating_type.clone()))
+                        .collect::<Result<Vec<Label<'static>>, SchemaValidationError>>()?,
+                ))
+            } else {
+                Ok(())
+            }
+        }
+    };
+}
+
+macro_rules! changed_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation {
+    ($func_name:ident, $type_:ident, $validation_func:path) => {
+        pub(crate) fn $func_name(
+            snapshot: &impl ReadableSnapshot,
+            type_manager: &TypeManager,
+            thing_manager: &ThingManager,
+            type_: $type_<'static>,
+            new_supertype: $type_<'static>,
+        ) -> Result<(), SchemaValidationError> {
+            let updated_annotations = OperationTimeValidation::get_updated_annotations_if_type_changes_supertype(
                 snapshot,
                 type_.clone(),
                 new_supertype.clone()
@@ -702,27 +829,15 @@ macro_rules! changed_annotations_compatible_with_type_and_subtypes_instances_on_
                 $validation_func(snapshot, type_manager, thing_manager, type_.clone(), sorted_annotations)
                     .map_err(SchemaValidationError::ConceptRead)?;
 
-            if let Some((violating_objects_with_interfaces, violated_constraint)) = violation {
+            if let Some((violating_types, violated_constraint)) = violation {
                 return Err(SchemaValidationError::CannotChangeSupertypeAsUpdatedAnnotationsConstraintIsViolatedByExistingInstances(
-                    // TODO: Impl further!
-                    $capability_kind,
                     violated_constraint,
                     get_label_or_schema_err(snapshot, type_.clone())?,
                     get_label_or_schema_err(snapshot, new_supertype)?,
-                    get_label_or_schema_err(snapshot, type_)?,
-                    get_label_or_schema_err(snapshot, capability.interface())?,
-                    violating_objects_with_interfaces
+                    violating_types
                         .iter()
-                        .map(|(violating_object, violating_interface)| {
-                            match (
-                                get_label_or_schema_err(snapshot, violating_object.clone()),
-                                get_label_or_schema_err(snapshot, violating_interface.clone()),
-                            ) {
-                                (Ok(object_label), Ok(interface_label)) => Ok((object_label, interface_label)),
-                                (Err(err), _) | (_, Err(err)) => Err(err),
-                            }
-                        })
-                        .collect::<Result<Vec<(Label<'static>, Label<'static>)>, SchemaValidationError>>()?,
+                        .map(|violating_type| get_label_or_schema_err(snapshot, violating_type.clone()))
+                        .collect::<Result<Vec<Label<'static>>, SchemaValidationError>>()?,
                 ));
             }
 
@@ -1918,6 +2033,16 @@ impl OperationTimeValidation {
         Ok(())
     }
 
+    pub(crate) fn filter_type_annotation_constraints_by_not_declared<T: KindAPI<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        type_: T,
+        annotations: &mut HashSet<Annotation>,
+    ) -> Result<(), ConceptReadError> {
+        let declared_annotations = TypeReader::get_type_annotations_declared(snapshot, type_.clone())?;
+        annotations.retain(|annotation| !declared_annotations.contains(&annotation.clone().into()));
+        Ok(())
+    }
+
     pub(crate) fn filter_capability_annotation_constraints_by_not_declared<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
@@ -1948,7 +2073,7 @@ impl OperationTimeValidation {
         while let Some(entity) = entity_iterator.next() {
             entity?;
 
-            if is_abstract {
+            if is_abstract.is_some() {
                 return Ok(Some(AnnotationCategory::Abstract))
             }
         }
@@ -1976,7 +2101,7 @@ impl OperationTimeValidation {
         while let Some(relation) = relation_iterator.next() {
             relation?;
 
-            if is_abstract {
+            if is_abstract.is_some() {
                 return Ok(Some(AnnotationCategory::Abstract))
             }
         }
@@ -2006,11 +2131,11 @@ impl OperationTimeValidation {
             "At least one constraint should exist otherwise we don't need to iterate"
         );
 
-        let mut attribute_iterator = thing_manager.get_attributes_in(snapshot, attribute_type.clone().into_owned());
+        let mut attribute_iterator = thing_manager.get_attributes_in(snapshot, attribute_type.clone().into_owned())?;
         while let Some(attribute) = attribute_iterator.next() {
-            let attribute = attribute?;
+            let mut attribute = attribute?;
 
-            if is_abstract {
+            if is_abstract.is_some() {
                 return Ok(Some(AnnotationCategory::Abstract))
             }
 
@@ -2071,7 +2196,7 @@ impl OperationTimeValidation {
             while let Some(role_player) = role_player_iterator.next() {
                 role_player?;
 
-                if is_abstract {
+                if is_abstract.is_some() {
                     return Ok(Some(AnnotationCategory::Abstract))
                 }
             }
@@ -2473,20 +2598,30 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_no_instances_to_set_abstract<'a>(
+    pub(crate) fn validate_new_abstract_annotation_compatible_with_type_and_subtypes_instances<'a, T: KindAPI<'a>>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        type_: impl KindAPI<'a>,
+        type_: T,
     ) -> Result<(), SchemaValidationError> {
-        let has_instances = Self::has_instances_of_type(snapshot, thing_manager, type_.clone())
-            .map_err(SchemaValidationError::ConceptRead)?;
-
-        if has_instances {
-            Err(SchemaValidationError::CannotSetAbstractToTypeWithExistingInstances(get_label_or_schema_err(
-                snapshot, type_,
-            )?))
-        } else {
-            Ok(())
+        let annotation = Annotation::Abstract(AnnotationAbstract);
+        match T::ROOT_KIND {
+            Kind::Entity => {
+                let entity_type = EntityType::new(type_.vertex().into_owned());
+                Self::validate_new_annotation_compatible_with_entity_type_and_subtypes_instances(snapshot, type_manager, thing_manager, entity_type, annotation)
+            }
+            Kind::Attribute => {
+                let attribute_type = AttributeType::new(type_.vertex().into_owned());
+                Self::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, type_manager, thing_manager, attribute_type, annotation)
+            }
+            Kind::Relation => {
+                let relation_type = RelationType::new(type_.vertex().into_owned());
+                Self::validate_new_annotation_compatible_with_relation_type_and_subtypes_instances(snapshot, type_manager, thing_manager, relation_type, annotation)
+            }
+            Kind::Role => {
+                let role_type = RoleType::new(type_.vertex().into_owned());
+                Self::validate_new_annotation_compatible_with_role_type_and_subtypes_instances(snapshot, type_manager, thing_manager, role_type, annotation)
+            }
         }
     }
 
@@ -2667,6 +2802,7 @@ impl OperationTimeValidation {
                             .map(|annotation| annotation.category())
                             .contains(&new_override_annotation.category())
                             && !old_override_annotations.contains_key(&new_override_annotation)
+                            && new_override_annotation.category().inheritable()
                     })
                     .map(|new_override_annotation| new_override_annotation.clone())
                     .collect::<HashSet<Annotation>>();
@@ -2711,6 +2847,14 @@ impl OperationTimeValidation {
         capability: CAP,
         capability_override: CAP,
     ) -> Result<HashSet<Annotation>, SchemaValidationError> {
+        let current_override = TypeReader::get_capability_override(snapshot, capability.clone())
+            .map_err(SchemaValidationError::ConceptRead)?;
+        if let Some(current_override) = current_override {
+            if current_override == capability_override {
+                return Ok(HashSet::new());
+            }
+        }
+
         let declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
         let old_annotations = TypeReader::get_type_edge_annotations(snapshot, capability.clone())
@@ -2733,40 +2877,50 @@ impl OperationTimeValidation {
                     .map(|annotation| annotation.category())
                     .contains(&new_annotation.category())
                     && !old_inherited_annotations.contains(&new_annotation)
+                    && new_annotation.category().inheritable()
             })
             .map(|new_annotation| new_annotation.clone())
             .collect::<HashSet<Annotation>>())
     }
 
-    fn get_updated_annotations_if_type_sets_changes_supertype<T: KindAPI<'static>>(
+    fn get_updated_annotations_if_type_changes_supertype<T: KindAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
         type_: T,
-        new_supertype: Option<T>,
+        new_supertype: T,
     ) -> Result<HashSet<Annotation>, SchemaValidationError> {
-        let declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())
+        let current_supertype = TypeReader::get_supertype(snapshot, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
-        let old_annotations = TypeReader::get_type_edge_annotations(snapshot, capability.clone())
+        if let Some(current_supertype) = current_supertype {
+            if current_supertype == new_supertype {
+                return Ok(HashSet::new());
+            }
+        }
+
+        let declared_annotations = TypeReader::get_type_annotations_declared(snapshot, type_.clone())
+            .map_err(SchemaValidationError::ConceptRead)?;
+        let old_annotations = TypeReader::get_type_annotations(snapshot, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
         let old_inherited_annotations = old_annotations
             .into_iter()
-            .filter(|(_, source)| &capability != source)
-            .map(|(annotation, _)| annotation.clone())
+            .filter(|(_, source)| &type_ != source)
+            .map(|(annotation, _)| annotation.clone().into())
             .collect::<HashSet<Annotation>>();
-        let new_annotations = TypeReader::get_type_edge_annotations(snapshot, capability_override.clone())
+        let new_annotations = TypeReader::get_type_annotations(snapshot, new_supertype.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
 
         // We expect that our declared annotations correctly narrow new inherited annotations
         // (should be checked on the schema level), so we don't consider them updated
         Ok(new_annotations
             .keys()
+            .map(|new_annotation| new_annotation.clone().into())
             .filter(|new_annotation| {
                 !declared_annotations
                     .iter()
-                    .map(|annotation| annotation.category())
+                    .map(|annotation| annotation.clone().into().category())
                     .contains(&new_annotation.category())
                     && !old_inherited_annotations.contains(&new_annotation)
+                    && new_annotation.category().inheritable()
             })
-            .map(|new_annotation| new_annotation.clone())
             .collect::<HashSet<Annotation>>())
     }
 
@@ -2971,5 +3125,68 @@ impl OperationTimeValidation {
         Relates,
         RelationType,
         Self::get_relates_or_its_overriding_relates_with_violated_new_annotation_constraints
+    );
+
+    type_or_its_subtype_with_violated_new_annotation_constraints!(
+        get_entity_type_or_its_subtype_with_violated_new_annotation_constraints,
+        EntityType,
+        Self::get_annotation_constraint_violated_by_entity_instances
+    );
+    type_or_its_subtype_with_violated_new_annotation_constraints!(
+        get_relation_type_or_its_subtype_with_violated_new_annotation_constraints,
+        RelationType,
+        Self::get_annotation_constraint_violated_by_relation_instances
+    );
+    type_or_its_subtype_with_violated_new_annotation_constraints!(
+        get_attribute_type_or_its_subtype_with_violated_new_annotation_constraints,
+        AttributeType,
+        Self::get_annotation_constraint_violated_by_attribute_instances
+    );
+    type_or_its_subtype_with_violated_new_annotation_constraints!(
+        get_role_type_or_its_subtype_with_violated_new_annotation_constraints,
+        RoleType,
+        Self::get_annotation_constraint_violated_by_role_instances
+    );
+
+    new_annotation_compatible_with_type_and_subtypes_instances_validation!(
+        validate_new_annotation_compatible_with_entity_type_and_subtypes_instances,
+        EntityType,
+        Self::get_entity_type_or_its_subtype_with_violated_new_annotation_constraints
+    );
+    new_annotation_compatible_with_type_and_subtypes_instances_validation!(
+        validate_new_annotation_compatible_with_relation_type_and_subtypes_instances,
+        RelationType,
+        Self::get_relation_type_or_its_subtype_with_violated_new_annotation_constraints
+    );
+    new_annotation_compatible_with_type_and_subtypes_instances_validation!(
+        validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances,
+        AttributeType,
+        Self::get_attribute_type_or_its_subtype_with_violated_new_annotation_constraints
+    );
+    new_annotation_compatible_with_type_and_subtypes_instances_validation!(
+        validate_new_annotation_compatible_with_role_type_and_subtypes_instances,
+        RoleType,
+        Self::get_role_type_or_its_subtype_with_violated_new_annotation_constraints
+    );
+
+    changed_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
+        validate_changed_annotations_compatible_with_entity_type_and_subtypes_instances_on_supertype_change,
+        EntityType,
+        Self::get_entity_type_or_its_subtype_with_violated_new_annotation_constraints
+    );
+    changed_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
+        validate_changed_annotations_compatible_with_relation_type_and_subtypes_instances_on_supertype_change,
+        RelationType,
+        Self::get_relation_type_or_its_subtype_with_violated_new_annotation_constraints
+    );
+    changed_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
+        validate_changed_annotations_compatible_with_attribute_type_and_subtypes_instances_on_supertype_change,
+        AttributeType,
+        Self::get_attribute_type_or_its_subtype_with_violated_new_annotation_constraints
+    );
+    changed_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
+        validate_changed_annotations_compatible_with_role_type_and_subtypes_instances_on_supertype_change,
+        RoleType,
+        Self::get_role_type_or_its_subtype_with_violated_new_annotation_constraints
     );
 }
