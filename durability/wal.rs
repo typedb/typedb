@@ -398,6 +398,7 @@ impl<'a> RecordIterator<'a> {
                     break;
                 }
                 Some(Err(err)) => return Err(err),
+                Some(Ok(sequence_number)) if sequence_number == start => break,
                 Some(Ok(sequence_number)) => {
                     current_start = sequence_number;
                     reader.read_one_record()?;
