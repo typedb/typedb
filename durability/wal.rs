@@ -400,6 +400,7 @@ impl<'a> RecordIterator<'a> {
                 Some(Err(err)) => return Err(err),
                 Some(Ok(sequence_number)) => {
                     current_start = sequence_number;
+                    reader.read_one_record()?;
                 }
             }
         }
