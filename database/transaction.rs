@@ -14,7 +14,10 @@ use std::{
 use concept::{
     error::ConceptWriteError,
     thing::{statistics::StatisticsError, thing_manager::ThingManager},
-    type_::type_manager::TypeManager,
+    type_::type_manager::{
+        type_cache::{TypeCache, TypeCacheCreateError},
+        TypeManager,
+    },
 };
 use function::{function_manager::FunctionManager, FunctionManagerError};
 use storage::{
@@ -22,13 +25,12 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot},
 };
 
-use crate::{database::Schema, Database};
+use crate::Database;
 
 pub struct TransactionRead<D> {
     pub snapshot: ReadSnapshot<D>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: ThingManager,
-    _schema: Arc<Schema>,
     _database: Arc<Database<D>>,
 }
 
@@ -40,15 +42,17 @@ impl<D: DurabilityClient> TransactionRead<D> {
         //          note: this can also be the approximate frequency at which we persist statistics snapshots to the WAL!
         //       this should be a constant defined in constants.rs
         //       If it's too far in the future, we should find a more appropriate statistics snapshot from the WAL
-        let schema = database.schema.read().unwrap().clone();
+        let schema = database.schema.read().unwrap();
         let snapshot: ReadSnapshot<D> = database.storage.clone().open_snapshot_read();
         let type_manager = Arc::new(TypeManager::new(
             database.definition_key_generator.clone(),
             database.type_vertex_generator.clone(),
-            None,
+            Some(schema.type_cache.clone()),
         )); // TODO pass cache
         let thing_manager = ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
-        Self { snapshot, type_manager, thing_manager, _schema: schema, _database: database }
+        drop(schema);
+
+        Self { snapshot, type_manager, thing_manager, _database: database }
     }
 
     pub fn close(self) {
@@ -62,7 +66,6 @@ pub struct TransactionWrite<D> {
     pub snapshot: WriteSnapshot<D>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: ThingManager,
-    _schema: Arc<Schema>,
 
     // NOTE: The fields of a struct are dropped in declaration order. `_schema_txn_guard`
     // conceptually borrows `_database`, so it _must_ be dropped before `_database`,
@@ -80,24 +83,19 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             // ensures that the lock is released before the database pointer is dropped.
             transmute::<RwLockReadGuard<'_, ()>, RwLockReadGuard<'static, ()>>(database.schema_txn_lock.read().unwrap())
         };
-        let schema = database.schema.read().unwrap().clone();
+        let schema = database.schema.read().unwrap();
 
         let snapshot: WriteSnapshot<D> = database.storage.clone().open_snapshot_write();
         let type_manager = Arc::new(TypeManager::new(
             database.definition_key_generator.clone(),
             database.type_vertex_generator.clone(),
-            None,
+            Some(schema.type_cache.clone()),
         )); // TODO pass cache
         let thing_manager = ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
 
-        Self {
-            snapshot,
-            type_manager,
-            thing_manager,
-            _schema: schema,
-            _schema_txn_guard: schema_txn_guard,
-            _database: database,
-        }
+        drop(schema);
+
+        Self { snapshot, type_manager, thing_manager, _schema_txn_guard: schema_txn_guard, _database: database }
     }
 
     pub fn commit(mut self) -> Result<(), Vec<ConceptWriteError>> {
@@ -152,7 +150,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 
     pub fn commit(mut self) -> Result<(), SchemaCommitError> {
-        use SchemaCommitError::{ConceptWrite, Statistics};
+        use SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
 
         self.thing_manager.finalise(&mut self.snapshot).map_err(|errors| ConceptWrite { errors })?;
         drop(self.thing_manager);
@@ -167,26 +165,32 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         // Schema commits must wait for all other data operations to finish. No new read or write
         // transaction may open until the commit completes.
         let mut schema_commit_guard = self.database.schema.write().unwrap();
-        let mut schema = (**schema_commit_guard).clone();
+        let mut schema = (*schema_commit_guard).clone();
+
+        let mut thing_statistics = (*schema.thing_statistics).clone();
 
         // 1. synchronise statistics
-        schema
-            .thing_statistics
-            .may_synchronise(&self.database.storage)
-            .map_err(|error| Statistics { source: error })?;
+        thing_statistics.may_synchronise(&self.database.storage).map_err(|error| Statistics { source: error })?;
         // 2. flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
-        schema.thing_statistics.durably_write(&self.database.storage).map_err(|error| Statistics { source: error })?;
+        thing_statistics.durably_write(&self.database.storage).map_err(|error| Statistics { source: error })?;
 
-        self.snapshot.commit().expect("Failed to commit snapshot");
+        let sequence_number = self.snapshot.commit().expect("Failed to commit snapshot");
 
-        // replace Schema cache
+        // `None` means empty commit
+        if let Some(sequence_number) = sequence_number {
+            // replace Schema cache
+            schema.type_cache = Arc::new(
+                TypeCache::new(self.database.storage.clone(), sequence_number)
+                    .map_err(|error| TypeCacheUpdate { source: error })?,
+            );
+        }
+
         // replace statistics
-        schema
-            .thing_statistics
-            .may_synchronise(&self.database.storage)
-            .map_err(|error| Statistics { source: error })?;
+        thing_statistics.may_synchronise(&self.database.storage).map_err(|error| Statistics { source: error })?;
 
-        *schema_commit_guard = Arc::new(schema);
+        schema.thing_statistics = Arc::new(thing_statistics);
+
+        *schema_commit_guard = schema;
 
         Ok(())
     }
@@ -201,6 +205,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 #[derive(Debug)]
 pub enum SchemaCommitError {
     ConceptWrite { errors: Vec<ConceptWriteError> },
+    TypeCacheUpdate { source: TypeCacheCreateError },
     Statistics { source: StatisticsError },
     FunctionManager { source: FunctionManagerError },
 }

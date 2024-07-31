@@ -209,23 +209,19 @@ impl HasReverseExecutor {
         attributes_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
         owner_types: Arc<HashSet<Type>>,
     ) -> Arc<HasFilterFn> {
-        Arc::new({
-            move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
-                Ok((has, _)) => {
-                    attributes_owner_types.contains_key(&Type::from(has.attribute().type_()))
-                        && owner_types.contains(&Type::from(has.owner().type_()))
-                }
-                Err(_) => true,
+        Arc::new(move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
+            Ok((has, _)) => {
+                attributes_owner_types.contains_key(&Type::from(has.attribute().type_()))
+                    && owner_types.contains(&Type::from(has.owner().type_()))
             }
+            Err(_) => true,
         }) as Arc<HasFilterFn>
     }
 
     fn create_has_filter_owners(owner_types: Arc<HashSet<Type>>) -> Arc<HasFilterFn> {
-        Arc::new({
-            move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
-                Ok((has, _)) => owner_types.contains(&Type::from(has.owner().type_())),
-                Err(_) => true,
-            }
+        Arc::new(move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
+            Ok((has, _)) => owner_types.contains(&Type::from(has.owner().type_())),
+            Err(_) => true,
         }) as Arc<HasFilterFn>
     }
 

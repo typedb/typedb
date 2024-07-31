@@ -13,9 +13,7 @@ use encoding::{
     error::EncodingError,
     graph::{
         definition::{
-            definition_key::DefinitionKey,
-            definition_key_generator::DefinitionKeyGenerator,
-            r#struct::{StructDefinition, StructDefinitionField},
+            definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
         },
         type_::{
             property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
@@ -290,14 +288,14 @@ impl TypeManager {
         fields_path: &[&str],
         definition: StructDefinition,
     ) -> Result<Vec<StructFieldIDUInt>, ConceptReadError> {
-        let mut resolved: Vec<StructFieldIDUInt> = Vec::with_capacity(fields_path.len());
+        let mut resolved = Vec::with_capacity(fields_path.len());
         let maybe_owns_definition = MaybeOwns::Borrowed(&definition);
         let mut at = maybe_owns_definition;
         for (i, f) in fields_path.iter().enumerate() {
             let field_idx_opt = at.field_names.get(*f);
             if let Some(field_idx) = field_idx_opt {
                 resolved.push(*field_idx);
-                let next_def: &StructDefinitionField = at.fields.get(&field_idx).unwrap();
+                let next_def = &at.fields[field_idx];
                 match &next_def.value_type {
                     ValueType::Struct(definition_key) => {
                         at = self.get_struct_definition(snapshot, definition_key.clone())?;
@@ -782,9 +780,9 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_annotations_declared(owns)))
         } else {
-            let annotations: HashSet<OwnsAnnotation> = TypeReader::get_type_edge_annotations_declared(snapshot, owns)?
+            let annotations = TypeReader::get_type_edge_annotations_declared(snapshot, owns)?
                 .into_iter()
-                .map(|annotation| OwnsAnnotation::from(annotation))
+                .map(OwnsAnnotation::from)
                 .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
@@ -798,11 +796,10 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_annotations(owns)))
         } else {
-            let annotations: HashMap<OwnsAnnotation, Owns<'static>> =
-                TypeReader::get_type_edge_annotations(snapshot, owns)?
-                    .into_iter()
-                    .map(|(annotation, owns)| (OwnsAnnotation::from(annotation), owns))
-                    .collect();
+            let annotations = TypeReader::get_type_edge_annotations(snapshot, owns)?
+                .into_iter()
+                .map(|(annotation, owns)| (OwnsAnnotation::from(annotation), owns))
+                .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
     }
@@ -815,11 +812,10 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_annotations_declared(plays)))
         } else {
-            let annotations: HashSet<PlaysAnnotation> =
-                TypeReader::get_type_edge_annotations_declared(snapshot, plays)?
-                    .into_iter()
-                    .map(|annotation| PlaysAnnotation::from(annotation))
-                    .collect();
+            let annotations = TypeReader::get_type_edge_annotations_declared(snapshot, plays)?
+                .into_iter()
+                .map(PlaysAnnotation::from)
+                .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
     }
@@ -832,11 +828,10 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_annotations(plays)))
         } else {
-            let annotations: HashMap<PlaysAnnotation, Plays<'static>> =
-                TypeReader::get_type_edge_annotations(snapshot, plays)?
-                    .into_iter()
-                    .map(|(annotation, plays)| (PlaysAnnotation::from(annotation), plays))
-                    .collect();
+            let annotations = TypeReader::get_type_edge_annotations(snapshot, plays)?
+                .into_iter()
+                .map(|(annotation, plays)| (PlaysAnnotation::from(annotation), plays))
+                .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
     }
@@ -849,11 +844,10 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relates_annotations_declared(relates)))
         } else {
-            let annotations: HashSet<RelatesAnnotation> =
-                TypeReader::get_type_edge_annotations_declared(snapshot, relates)?
-                    .into_iter()
-                    .map(|annotation| RelatesAnnotation::from(annotation))
-                    .collect();
+            let annotations = TypeReader::get_type_edge_annotations_declared(snapshot, relates)?
+                .into_iter()
+                .map(RelatesAnnotation::from)
+                .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
     }
@@ -866,11 +860,10 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relates_annotations(relates)))
         } else {
-            let annotations: HashMap<RelatesAnnotation, Relates<'static>> =
-                TypeReader::get_type_edge_annotations(snapshot, relates)?
-                    .into_iter()
-                    .map(|(annotation, relates)| (RelatesAnnotation::from(annotation), relates))
-                    .collect();
+            let annotations = TypeReader::get_type_edge_annotations(snapshot, relates)?
+                .into_iter()
+                .map(|(annotation, relates)| (RelatesAnnotation::from(annotation), relates))
+                .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
     }
@@ -1148,7 +1141,7 @@ impl TypeManager {
         for owns in
             TypeReader::get_capabilities_for_interface_declared::<Owns<'static>>(snapshot, attribute_type.clone())?
         {
-            self.unset_owns(snapshot, owns.owner().into(), owns.attribute())?
+            self.unset_owns(snapshot, owns.owner(), owns.attribute())?
         }
 
         TypeWriter::storage_delete_label(snapshot, attribute_type.clone());

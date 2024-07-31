@@ -9,4 +9,4 @@ mod selection;
 mod struct_definition_cache;
 mod type_cache;
 
-pub use type_cache::TypeCache;
+pub use self::type_cache::{TypeCache, TypeCacheCreateError};
