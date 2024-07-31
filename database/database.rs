@@ -10,6 +10,7 @@ use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
+    time::Duration,
 };
 
 use concept::{
@@ -17,6 +18,7 @@ use concept::{
     thing::statistics::{Statistics, StatisticsError},
     type_::type_manager::type_cache::{TypeCache, TypeCacheCreateError},
 };
+use concurrency::IntervalRunner;
 use durability::wal::{WALError, WAL};
 use encoding::{
     error::EncodingError,
@@ -47,8 +49,10 @@ pub struct Database<D> {
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
 
-    pub(super) schema: RwLock<Schema>,
+    pub(super) schema: Arc<RwLock<Schema>>,
     pub(super) schema_txn_lock: RwLock<()>,
+
+    statistics_updater: IntervalRunner,
 }
 
 impl<D> fmt::Debug for Database<D> {
@@ -77,6 +81,8 @@ impl Database<WALClient> {
         }
     }
 
+    const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
+
     fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{DirectoryCreate, Encoding, StorageOpen, TypeCacheInitialise, WALOpen};
 
@@ -103,6 +109,9 @@ impl Database<WALClient> {
                 .map_err(|error| TypeCacheInitialise { source: error })?,
         );
 
+        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache }));
+        let update_statistics = update_statistics_action(storage.clone(), schema.clone());
+
         Ok(Database::<WALClient> {
             name: name.to_owned(),
             path: path.to_owned(),
@@ -110,8 +119,9 @@ impl Database<WALClient> {
             definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
-            schema: RwLock::new(Schema { thing_statistics, type_cache }),
+            schema,
             schema_txn_lock: RwLock::default(),
+            statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         })
     }
 
@@ -150,6 +160,10 @@ impl Database<WALClient> {
                 .map_err(|error| TypeCacheInitialise { source: error })?,
         );
 
+        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache }));
+
+        let update_statistics = update_statistics_action(storage.clone(), schema.clone());
+
         let database = Database::<WALClient> {
             name: name.as_ref().to_owned(),
             path: path.to_owned(),
@@ -157,8 +171,9 @@ impl Database<WALClient> {
             definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
-            schema: RwLock::new(Schema { thing_statistics, type_cache }),
+            schema,
             schema_txn_lock: RwLock::default(),
+            statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         };
 
         let checkpoint_sequence_number =
@@ -218,6 +233,15 @@ impl Database<WALClient> {
         thing_statistics.reset(self.storage.read_watermark());
 
         Ok(())
+    }
+}
+
+fn update_statistics_action(storage: Arc<MVCCStorage<WALClient>>, schema: Arc<RwLock<Schema>>) -> impl Fn() {
+    move || {
+        let mut schema_lock = schema.write().unwrap();
+        let mut thing_statistics = (*schema_lock.thing_statistics).clone();
+        thing_statistics.may_synchronise(&storage).ok();
+        schema_lock.thing_statistics = Arc::new(thing_statistics);
     }
 }
 
