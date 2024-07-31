@@ -4,10 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::program::{function::FunctionIR, function_signature::FunctionIDTrait};
-
-use crate::type_inference::FunctionAnnotations;
+use crate::inference::type_annotations::FunctionAnnotations;
 
 pub struct CompiledSchemaFunctions {
     ir: Box<[Option<FunctionIR>]>,

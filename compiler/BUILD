@@ -7,26 +7,32 @@ load("@rules_rust//rust:defs.bzl", "rust_library")
 package(default_visibility = ["//visibility:public"])
 
 rust_library(
-    name = "planner",
+    name = "compiler",
     crate_root = "lib.rs",
     srcs = glob([
         "*.rs",
-    ], exclude=["tests/**"]),
+        "inference/*.rs",
+        "instruction/*.rs",
+        "instruction/expressions/**/*.rs",
+        "planner/**/*.rs"
+    ]),
     deps = [
         "//answer",
         "//concept",
         "//encoding",
-        "//executor",
         "//ir",
+        "//storage",
+
+        "@vaticle_typeql//rust:typeql",
 
         "@crates//:itertools",
-        "@crates//:tracing",
+        "@crates//:chrono",
     ],
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "**/*.rs"]),
+    include = glob(["*", "inference/*.rs", "instruction/**/*.rs", "planner/**/*.rs"]),
     exclude = glob([
         "Cargo.*",
     ]),

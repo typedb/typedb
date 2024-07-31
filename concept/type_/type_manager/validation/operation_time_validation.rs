@@ -81,7 +81,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_: T,
     ) -> Result<(), SchemaValidationError> {
-        TypeReader::get_label(snapshot, type_).map_err(SchemaValidationError::ConceptRead)?.unwrap();
+        let label = TypeReader::get_label(snapshot, type_).map_err(SchemaValidationError::ConceptRead)?.unwrap();
         Ok(())
     }
 

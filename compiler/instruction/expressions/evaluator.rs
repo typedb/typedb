@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use encoding::value::value::Value;
 
-use crate::expressions::{
+use crate::instruction::expressions::{
     builtins::{
         binary::MathRemainderLong,
         list_operations::{ListConstructor, ListIndex, ListIndexRange},

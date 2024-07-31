@@ -13,26 +13,28 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use ir::{
-    inference::type_inference::infer_types,
     pattern::constraint::IsaKind,
     program::{
         block::FunctionalBlock,
-        program::{CompiledSchemaFunctions, Program},
+        program::{Program},
     },
 };
-use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
 };
-use traversal::{
-    executor::{batch::ImmutableRow, program_executor::ProgramExecutor},
+use compiler::{
     planner::{
         pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step},
         program_plan::ProgramPlan,
     },
 };
+use compiler::inference::annotated_functions::CompiledSchemaFunctions;
+use compiler::inference::type_inference::infer_types;
+use executor::batch::ImmutableRow;
+use executor::program_executor::ProgramExecutor;
+use lending_iterator::LendingIterator;
 
 use crate::common::{load_managers, setup_storage};
 
@@ -172,7 +174,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {
@@ -245,7 +247,7 @@ fn unselected_named_vars_counted() {
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {
@@ -333,7 +335,7 @@ fn cartesian_named_counted_checked() {
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap()
+        ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap()
     };
 
     {

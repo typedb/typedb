@@ -8,23 +8,22 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::{inference::type_inference::TypeAnnotations, pattern::constraint::Constraint};
+use compiler::{inference::type_annotations::TypeAnnotations};
+use compiler::planner::pattern_plan::{Instruction, InstructionAPI};
+use ir::pattern::constraint::Constraint;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    executor::{
-        batch::ImmutableRow,
-        instruction::{
-            comparison_executor::ComparisonIteratorExecutor,
-            comparison_reverse_executor::ComparisonReverseIteratorExecutor,
-            function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-            has_reverse_executor::HasReverseExecutor, isa_reverse_executor::IsaReverseExecutor,
-            iterator::TupleIterator, role_player_executor::RolePlayerIteratorExecutor,
-            role_player_reverse_executor::RolePlayerReverseIteratorExecutor, InstructionExecutor::HasReverse,
-        },
-        VariablePosition,
+    batch::ImmutableRow,
+    instruction::{
+        comparison_executor::ComparisonIteratorExecutor,
+        comparison_reverse_executor::ComparisonReverseIteratorExecutor,
+        function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
+        has_reverse_executor::HasReverseExecutor, isa_reverse_executor::IsaReverseExecutor,
+        iterator::TupleIterator, role_player_executor::RolePlayerIteratorExecutor,
+        role_player_reverse_executor::RolePlayerReverseIteratorExecutor, InstructionExecutor::HasReverse,
     },
-    planner::pattern_plan::{Instruction, InstructionAPI},
+    VariablePosition,
 };
 
 mod comparison_executor;
@@ -75,8 +74,8 @@ impl InstructionExecutor {
                     isa.clone().into_ids(positions),
                     variable_modes,
                     sort_by_position,
-                    type_annotations.constraint_annotations(isa.into()).unwrap().get_left_right().left_to_right(),
-                    type_annotations.variable_annotations(thing).unwrap().clone(),
+                    type_annotations.constraint_annotations_of(isa.into()).unwrap().get_left_right().left_to_right(),
+                    type_annotations.variable_annotations_of(thing).unwrap().clone(),
                 );
                 Ok(Self::Isa(provider))
             }
@@ -86,8 +85,8 @@ impl InstructionExecutor {
                     has.clone().into_ids(positions),
                     variable_modes,
                     sort_by_position,
-                    type_annotations.constraint_annotations(has.into()).unwrap().get_left_right().left_to_right(),
-                    type_annotations.variable_annotations(has_attribute).unwrap().clone(),
+                    type_annotations.constraint_annotations_of(has.into()).unwrap().get_left_right().left_to_right(),
+                    type_annotations.variable_annotations_of(has_attribute).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
@@ -99,8 +98,8 @@ impl InstructionExecutor {
                     has.clone().into_ids(positions),
                     variable_modes,
                     sort_by_position,
-                    type_annotations.constraint_annotations(has.into()).unwrap().get_left_right().right_to_left(),
-                    type_annotations.variable_annotations(has_owner).unwrap().clone(),
+                    type_annotations.constraint_annotations_of(has.into()).unwrap().get_left_right().right_to_left(),
+                    type_annotations.variable_annotations_of(has_owner).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
@@ -226,8 +225,10 @@ impl VariableModes {
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum BinaryIterateMode {
-    Unbound,         // [x, y] in standard order
-    UnboundInverted, // [x, y] in [y, x] sort order
+    Unbound,
+    // [x, y] in standard order
+    UnboundInverted,
+    // [x, y] in [y, x] sort order
     BoundFrom,       // [X, y], where X is bound
 }
 

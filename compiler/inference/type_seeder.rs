@@ -4,6 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet},
@@ -30,14 +36,14 @@ use ir::{
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{
+use crate::inference::{
     annotated_functions::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions},
     pattern_type_inference::{
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
     },
-    type_inference::FunctionAnnotations,
     TypeInferenceError,
 };
+use crate::inference::type_annotations::FunctionAnnotations;
 
 pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
@@ -509,7 +515,7 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
             let ir = seeder.get_function_ir(self.function_call().function_id()).unwrap();
             for (caller_variable, arg_index) in self.function_call().call_id_mapping() {
                 let arg_annotations =
-                    callee_annotations.block_annotations.variable_annotations(ir.arguments()[*arg_index]).unwrap();
+                    callee_annotations.block_annotations.variable_annotations_of(ir.arguments()[*arg_index]).unwrap();
                 TypeSeeder::<Snapshot>::add_or_intersect(
                     tig_vertices,
                     *caller_variable,
@@ -1026,7 +1032,7 @@ pub mod tests {
     use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock};
     use storage::snapshot::CommittableSnapshot;
 
-    use crate::{
+    use crate::inference::{
         annotated_functions::CompiledSchemaFunctions,
         pattern_type_inference::{tests::expected_edge, TypeInferenceGraph},
         tests::{

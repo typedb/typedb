@@ -6,7 +6,7 @@
 
 use ir::pattern::constraint::RolePlayer;
 
-use crate::executor::VariablePosition;
+use crate::VariablePosition;
 
 pub(crate) struct RolePlayerReverseIteratorExecutor {
     role_player: RolePlayer<VariablePosition>,

@@ -6,16 +6,16 @@
 
 use std::marker::PhantomData;
 
-use encoding::value::{value::DBValue, value_type::ValueTypeCategory, ValueEncodable};
+use encoding::value::{value::DBValue, value_type::ValueTypeCategory };
+use crate::inference::ExpressionCompilationError;
 
-use crate::{
+use crate::instruction::{
     expressions::{
         evaluator::{ExpressionEvaluationState, ExpressionValue},
         expression_compiler::{ExpressionInstruction, ExpressionTreeCompiler, SelfCompiling},
         op_codes::ExpressionOpCode,
         ExpressionEvaluationError,
     },
-    ExpressionCompilationError,
 };
 
 // Declarations

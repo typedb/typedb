@@ -7,6 +7,8 @@
 use std::{iter::zip, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
+use compiler::inference::annotated_functions::CompiledSchemaFunctions;
+use compiler::inference::type_inference::infer_types_for_functions;
 use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::{
@@ -20,10 +22,10 @@ use encoding::{
     AsBytes, Keyable,
 };
 use ir::{
-    inference::type_inference::infer_types_for_functions,
     program::{
-        function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
-        program::{CompiledSchemaFunctions, Program},
+        function_signature::{
+            FunctionID,  FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
+        program::{Program},
         FunctionReadError,
     },
     translator::function::build_signature,

@@ -4,9 +4,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod expressions;
 
-use compiler::planner::pattern_plan::PatternPlan;
-
-pub(crate) struct FunctionExecutor {
-    plan: PatternPlan,
-}

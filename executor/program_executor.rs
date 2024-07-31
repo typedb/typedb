@@ -4,20 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
+use compiler::planner::program_plan::ProgramPlan;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use encoding::graph::definition::definition_key::DefinitionKey;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
+use crate::batch::ImmutableRow;
+use crate::function_executor::FunctionExecutor;
 
-use crate::{
-    executor::{
-        batch::ImmutableRow, function_executor::FunctionExecutor, pattern_executor::PatternExecutor, VariablePosition,
-    },
-    planner::program_plan::ProgramPlan,
-};
+
+use crate::pattern_executor::PatternExecutor;
+use crate::VariablePosition;
 
 pub struct ProgramExecutor {
     entry: PatternExecutor,
@@ -26,7 +32,7 @@ pub struct ProgramExecutor {
 
 impl ProgramExecutor {
     pub fn new<Snapshot: ReadableSnapshot>(
-        program_plan: ProgramPlan,
+        program_plan: &ProgramPlan,
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {

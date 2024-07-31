@@ -15,7 +15,7 @@ use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::executor::{
+use crate::{
     batch::Row,
     instruction::{
         has_executor::{

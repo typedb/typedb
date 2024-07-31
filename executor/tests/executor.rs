@@ -7,30 +7,32 @@
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use concept::{
-    thing::{object::ObjectAPI, statistics::Statistics},
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
+    thing::{statistics::Statistics},
+    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use ir::{
-    inference::type_inference::infer_types,
     program::{
         function_signature::HashMapFunctionIndex,
-        program::{CompiledSchemaFunctions, Program},
+        program::{Program},
     },
     translator::match_::translate_match,
 };
 use itertools::Itertools;
+use compiler::inference::annotated_functions::CompiledSchemaFunctions;
+use compiler::inference::type_inference::infer_types;
+use compiler::planner::pattern_plan::PatternPlan;
+use compiler::planner::program_plan::ProgramPlan;
+use concept::thing::object::ObjectAPI;
+use concept::type_::OwnerAPI;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    snapshot::{ReadSnapshot, WriteSnapshot},
 };
-use traversal::{
-    executor::program_executor::ProgramExecutor,
-    planner::{pattern_plan::PatternPlan, program_plan::ProgramPlan},
-};
-
+use executor::program_executor::ProgramExecutor;
+use storage::snapshot::CommittableSnapshot;
 use crate::common::{load_managers, setup_storage};
 
 mod common;
@@ -128,7 +130,7 @@ fn test_planning_traversal() {
         PatternPlan::from_block(annotated_program.get_entry(), annotated_program.get_entry_annotations(), &statistics);
     let program_plan =
         ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
-    let executor = ProgramExecutor::new(program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     {
         let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());

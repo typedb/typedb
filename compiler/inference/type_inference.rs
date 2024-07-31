@@ -4,25 +4,31 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
 use ir::{
-    pattern::constraint::Constraint,
     program::{function::FunctionIR, program::Program},
 };
 use storage::snapshot::ReadableSnapshot;
 
-use super::pattern_type_inference::{infer_types_for_block, TypeInferenceGraph};
-use crate::{
+use super::pattern_type_inference::{infer_types_for_block};
+use crate::inference::{
     annotated_functions::{CompiledLocalFunctions, CompiledSchemaFunctions},
     annotated_program::AnnotatedProgram,
     TypeInferenceError,
 };
+use crate::inference::type_annotations::{FunctionAnnotations, TypeAnnotations};
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
@@ -80,145 +86,8 @@ pub fn infer_types_for_function(
 ) -> Result<FunctionAnnotations, TypeInferenceError> {
     let root_tig = infer_types_for_block(snapshot, function.block(), type_manager, schema_functions, local_functions)?;
     let body_annotations = TypeAnnotations::build(root_tig);
-    let return_annotations = function.return_operation().output_annotations(&body_annotations.variables);
+    let return_annotations = function.return_operation().output_annotations(body_annotations.variable_annotations());
     Ok(FunctionAnnotations { return_annotations, block_annotations: body_annotations })
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypeAnnotations {
-    variables: HashMap<Variable, Arc<HashSet<Type>>>,
-    constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-}
-
-impl TypeAnnotations {
-    pub fn new(
-        variables: HashMap<Variable, Arc<HashSet<Type>>>,
-        constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    ) -> Self {
-        TypeAnnotations { variables, constraints }
-    }
-
-    pub(crate) fn build(inference_graph: TypeInferenceGraph<'_>) -> Self {
-        let mut vertex_annotations = HashMap::new();
-        let mut constraint_annotations = HashMap::new();
-        inference_graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
-        Self::new(vertex_annotations, constraint_annotations)
-    }
-
-    pub fn variable_annotations(&self, variable: Variable) -> Option<&Arc<HashSet<Type>>> {
-        self.variables.get(&variable)
-    }
-
-    pub fn constraint_annotations(&self, constraint: Constraint<Variable>) -> Option<&ConstraintTypeAnnotations> {
-        self.constraints.get(&constraint)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ConstraintTypeAnnotations {
-    LeftRight(LeftRightAnnotations),
-    LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here, since they do not actually co-constrain Schema types possible.
-                                                     //       in other words, they are always right to left or deal only in value types.
-}
-
-impl ConstraintTypeAnnotations {
-    pub fn get_left_right(&self) -> &LeftRightAnnotations {
-        match self {
-            ConstraintTypeAnnotations::LeftRight(annotations) => annotations,
-            ConstraintTypeAnnotations::LeftRightFiltered(_) => panic!("Unexpected type."),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LeftRightAnnotations {
-    left_to_right: Arc<BTreeMap<Type, Vec<Type>>>,
-    right_to_left: Arc<BTreeMap<Type, Vec<Type>>>,
-}
-
-impl LeftRightAnnotations {
-    pub fn new(left_to_right: BTreeMap<Type, Vec<Type>>, right_to_left: BTreeMap<Type, Vec<Type>>) -> Self {
-        Self { left_to_right: Arc::new(left_to_right), right_to_left: Arc::new(right_to_left) }
-    }
-
-    pub(crate) fn build(
-        left_to_right_set: BTreeMap<Type, BTreeSet<Type>>,
-        right_to_left_set: BTreeMap<Type, BTreeSet<Type>>,
-    ) -> Self {
-        let mut left_to_right = BTreeMap::new();
-        for (left, right_set) in left_to_right_set {
-            left_to_right.insert(left, right_set.into_iter().collect());
-        }
-        let mut right_to_left = BTreeMap::new();
-        for (right, left_set) in right_to_left_set {
-            right_to_left.insert(right, left_set.into_iter().collect());
-        }
-        Self::new(left_to_right, right_to_left)
-    }
-
-    pub fn left_to_right(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
-        self.left_to_right.clone()
-    }
-
-    pub fn right_to_left(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
-        self.right_to_left.clone()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LeftRightFilteredAnnotations {
-    // Filtered edges are encoded as  (left,right,filter) and (right,left,filter).
-    pub(crate) left_to_right: BTreeMap<Type, Vec<Type>>,
-    pub(crate) filters_on_right: BTreeMap<Type, HashSet<Type>>, // The key is the type of the right variable
-
-    pub(crate) right_to_left: BTreeMap<Type, Vec<Type>>,
-    pub(crate) filters_on_left: BTreeMap<Type, HashSet<Type>>, // The key is the type of the left variable
-}
-
-impl LeftRightFilteredAnnotations {
-    pub(crate) fn build(
-        relation_to_role: BTreeMap<Type, BTreeSet<Type>>,
-        role_to_relation: BTreeMap<Type, BTreeSet<Type>>,
-        player_to_role: BTreeMap<Type, BTreeSet<Type>>,
-        role_to_player: BTreeMap<Type, BTreeSet<Type>>,
-    ) -> Self {
-        let mut role_to_player = role_to_player;
-        let mut role_to_relation = role_to_relation;
-        let mut left_to_right = BTreeMap::new();
-        let mut right_to_left = BTreeMap::new();
-        let mut filters_on_right = BTreeMap::new();
-        let mut filters_on_left = BTreeMap::new();
-        for (relation, role_set) in relation_to_role {
-            for role in &role_set {
-                left_to_right.insert(relation.clone(), role_to_player.remove(role).unwrap().into_iter().collect());
-            }
-            filters_on_left.insert(relation, role_set.into_iter().collect());
-        }
-
-        for (player, role_set) in player_to_role {
-            for role in &role_set {
-                right_to_left.insert(player.clone(), role_to_relation.remove(role).unwrap().into_iter().collect());
-            }
-            filters_on_right.insert(player, role_set.into_iter().collect());
-        }
-        Self { left_to_right, filters_on_right, right_to_left, filters_on_left }
-    }
-}
-
-#[derive(Debug)]
-pub struct FunctionAnnotations {
-    pub(crate) block_annotations: TypeAnnotations,
-    pub(crate) return_annotations: Vec<BTreeSet<Type>>,
-}
-
-impl FunctionAnnotations {
-    pub fn body_annotations(&self) -> &TypeAnnotations {
-        &self.block_annotations
-    }
-
-    pub fn return_annotations(&self) -> &Vec<BTreeSet<Type>> {
-        &self.return_annotations
-    }
 }
 
 #[cfg(test)]
@@ -251,7 +120,7 @@ pub mod tests {
     };
     use itertools::Itertools;
 
-    use crate::{
+    use crate::inference::{
         annotated_functions::CompiledSchemaFunctions,
         pattern_type_inference::{
             infer_types_for_block, tests::expected_edge, NestedTypeInferenceGraphDisjunction, TypeInferenceGraph,
@@ -262,10 +131,11 @@ pub mod tests {
             setup_storage,
         },
         type_inference::{
-            infer_types, infer_types_for_function, ConstraintTypeAnnotations, LeftRightAnnotations,
-            LeftRightFilteredAnnotations, TypeAnnotations,
+            infer_types, infer_types_for_function,
+            TypeAnnotations,
         },
     };
+    use crate::inference::type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations};
 
     pub(crate) fn expected_left_right_annotation(
         constraint: &Constraint<Variable>,
@@ -283,10 +153,7 @@ pub mod tests {
             left_to_right.get_mut(l).unwrap().push(r.clone());
             right_to_left.get_mut(r).unwrap().push(l.clone());
         }
-        ConstraintTypeAnnotations::LeftRight(LeftRightAnnotations {
-            left_to_right: Arc::new(left_to_right),
-            right_to_left: Arc::new(right_to_left),
-        })
+        ConstraintTypeAnnotations::LeftRight(LeftRightAnnotations::new(left_to_right, right_to_left))
     }
 
     #[test]
@@ -395,8 +262,8 @@ pub mod tests {
                 (constraint2, ConstraintTypeAnnotations::LeftRightFiltered(lra2)),
             ]),
         );
-        assert_eq!(expected_annotations.variables, type_annotations.variables);
-        assert_eq!(expected_annotations.constraints, type_annotations.constraints);
+        assert_eq!(expected_annotations.variable_annotations(), type_annotations.variable_annotations());
+        assert_eq!(expected_annotations.constraint_annotations(), type_annotations.constraint_annotations());
     }
 
     #[test]
@@ -414,35 +281,35 @@ pub mod tests {
             FunctionID::Preamble(0),
             FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0))),
         ]
-        .iter()
-        .map(|function_id| {
-            let mut builder = FunctionalBlock::builder();
-            let mut f_conjunction = builder.conjunction_mut();
-            let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
-            let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
-            let f_var_name = f_conjunction.get_or_declare_variable("called_name").unwrap();
-            f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT).unwrap();
-            f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type).unwrap();
-            f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
-            let f_ir = FunctionIR::new(builder.finish(), vec![], ReturnOperationIR::Stream(vec![f_var_animal]));
+            .iter()
+            .map(|function_id| {
+                let mut builder = FunctionalBlock::builder();
+                let mut f_conjunction = builder.conjunction_mut();
+                let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
+                let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
+                let f_var_name = f_conjunction.get_or_declare_variable("called_name").unwrap();
+                f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT).unwrap();
+                f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type).unwrap();
+                f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
+                let f_ir = FunctionIR::new(builder.finish(), vec![], ReturnOperationIR::Stream(vec![f_var_animal]));
 
-            let mut builder = FunctionalBlock::builder();
-            let mut conjunction = builder.conjunction_mut();
-            let context = BlockContext::new();
-            let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
+                let mut builder = FunctionalBlock::builder();
+                let mut conjunction = builder.conjunction_mut();
+                let context = BlockContext::new();
+                let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
 
-            let callee_signature = FunctionSignature::new(
-                function_id.clone(),
-                vec![],
-                vec![(VariableCategory::Object, VariableOptionality::Required)],
-                true,
-            );
-            conjunction.constraints_mut().add_function_call(vec![var_animal], &callee_signature, vec![]).unwrap();
-            let entry = builder.finish();
-            (entry, f_ir)
-        })
-        .collect_tuple()
-        .unwrap();
+                let callee_signature = FunctionSignature::new(
+                    function_id.clone(),
+                    vec![],
+                    vec![(VariableCategory::Object, VariableOptionality::Required)],
+                    true,
+                );
+                conjunction.constraints_mut().add_function_call(vec![var_animal], &callee_signature, vec![]).unwrap();
+                let entry = builder.finish();
+                (entry, f_ir)
+            })
+            .collect_tuple()
+            .unwrap();
 
         let snapshot = storage.open_snapshot_read();
         let f_annotations = {
@@ -455,7 +322,7 @@ pub mod tests {
             let f_var_animal_type = f_ir.block().context().get_variable("called_animal_type").unwrap();
             let f_var_name = f_ir.block().context().get_variable("called_name").unwrap();
             assert_eq!(
-                f_annotations.block_annotations.variables,
+                *f_annotations.block_annotations.variable_annotations(),
                 HashMap::from([
                     (f_var_animal, Arc::new(HashSet::from([type_cat.clone()]))),
                     (f_var_animal_type, Arc::new(HashSet::from([type_cat.clone()]))),
@@ -474,8 +341,8 @@ pub mod tests {
                     .unwrap(),
             );
             assert_eq!(
-                annotations_without_schema_cache.variables,
-                HashMap::from([(var_animal, Arc::new(HashSet::from(object_types.clone()))),])
+                *annotations_without_schema_cache.variable_annotations(),
+                HashMap::from([(var_animal, Arc::new(HashSet::from(object_types.clone()))), ])
             );
         }
         {
@@ -488,9 +355,9 @@ pub mod tests {
                 &type_manager,
                 Arc::new(CompiledSchemaFunctions::empty()),
             )
-            .unwrap();
+                .unwrap();
             assert_eq!(
-                annotations_with_local_cache.entry_annotations.variables,
+                *annotations_with_local_cache.entry_annotations.variable_annotations(),
                 HashMap::from([(var_animal, Arc::new(HashSet::from([type_cat.clone()])))]),
             );
         }
@@ -504,7 +371,7 @@ pub mod tests {
             let annotations_with_schema_cache =
                 infer_types(Program::new(entry, vec![]), &snapshot, &type_manager, Arc::new(schema_cache)).unwrap();
             assert_eq!(
-                annotations_with_schema_cache.entry_annotations.variables,
+                *annotations_with_schema_cache.entry_annotations.variable_annotations(),
                 HashMap::from([(var_animal, Arc::new(HashSet::from([type_cat.clone()])))]),
             );
         }

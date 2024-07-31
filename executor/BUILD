@@ -19,6 +19,7 @@ rust_library(
         "//answer",
         "//common/lending_iterator",
         "//common/logger",
+        "//compiler",
         "//concept",
         "//encoding",
         "//ir",

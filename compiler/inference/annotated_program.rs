@@ -4,14 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use std::sync::Arc;
 
 use ir::program::{block::FunctionalBlock, function::FunctionIR, function_signature::FunctionID};
 
-use crate::{
-    annotated_functions::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions},
-    type_inference::{FunctionAnnotations, TypeAnnotations},
-};
+use crate::inference::annotated_functions::{CompiledFunctions, CompiledLocalFunctions, CompiledSchemaFunctions};
+use crate::inference::type_annotations::{FunctionAnnotations, TypeAnnotations};
 
 pub struct AnnotatedProgram {
     pub(crate) entry: FunctionalBlock,
@@ -63,11 +67,10 @@ pub mod tests {
     };
     use typeql::query::Pipeline;
 
-    use crate::{
-        annotated_functions::CompiledSchemaFunctions,
-        tests::{managers, schema_consts::setup_types, setup_storage},
-        type_inference::infer_types,
-    };
+    use crate::inference::annotated_functions::CompiledSchemaFunctions;
+    use crate::inference::tests::{managers, setup_storage};
+    use crate::inference::tests::schema_consts::setup_types;
+    use crate::inference::type_inference::infer_types;
 
     #[test]
     fn from_typeql() {
@@ -112,12 +115,12 @@ pub mod tests {
                 .get_function_annotations(function_id)
                 .unwrap()
                 .block_annotations
-                .variable_annotations(var_f_c)
+                .variable_annotations_of(var_f_c)
                 .unwrap()
         );
         assert_eq!(
             &Arc::new(HashSet::from([type_cat.clone()])),
-            annotated_program.entry_annotations.variable_annotations(var_x).unwrap(),
+            annotated_program.entry_annotations.variable_annotations_of(var_x).unwrap(),
         );
     }
 }

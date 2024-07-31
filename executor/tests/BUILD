@@ -11,6 +11,7 @@ executor_deps = [
     "//concept",
     "//common/bytes",
     "//common/lending_iterator",
+    "//compiler",
     "//durability",
     "//encoding",
     "//executor",
@@ -21,7 +22,7 @@ executor_deps = [
 ]
 
 rust_test(
-    name = "executor",
+    name = "test_executor",
     crate_root = "executor.rs",
     srcs = ["executor.rs", "common.rs"],
     deps = executor_deps + [
@@ -30,21 +31,21 @@ rust_test(
 )
 
 rust_test(
-    name = "executor_has",
+    name = "test_executor_has",
     crate_root = "executor_has.rs",
     srcs = ["executor_has.rs", "common.rs"],
     deps = executor_deps,
 )
 
 rust_test(
-    name = "executor_rp",
+    name = "test_executor_rp",
     crate_root = "executor_rp.rs",
     srcs = ["executor_rp.rs", "common.rs"],
     deps = executor_deps,
 )
 
 rust_test(
-    name = "select",
+    name = "test_select",
     crate_root = "select.rs",
     srcs = ["select.rs", "common.rs"],
     deps = executor_deps,

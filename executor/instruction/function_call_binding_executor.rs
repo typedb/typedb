@@ -5,8 +5,8 @@
  */
 
 use ir::pattern::constraint::FunctionCallBinding;
+use crate::VariablePosition;
 
-use crate::executor::VariablePosition;
 
 pub(crate) struct FunctionCallBindingIteratorExecutor {
     function_call_binding: FunctionCallBinding<VariablePosition>,

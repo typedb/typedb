@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::executor::{instruction::VariableModes, VariablePosition};
+use crate::{instruction::VariableModes, VariablePosition};
 
 pub(crate) struct RolePlayerIteratorExecutor {
     role_player: ir::pattern::constraint::RolePlayer<VariablePosition>,

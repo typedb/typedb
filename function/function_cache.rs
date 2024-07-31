@@ -5,14 +5,17 @@
  */
 
 use std::{collections::HashMap, iter::zip, sync::Arc};
+use compiler::inference::annotated_functions::{CompiledFunctions, CompiledSchemaFunctions};
+use compiler::inference::type_annotations::FunctionAnnotations;
+use compiler::inference::type_inference::infer_types_for_functions;
 
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::program::{
     function::FunctionIR,
     function_signature::{FunctionIDTrait, FunctionSignature, HashMapFunctionIndex},
-    program::{CompiledFunctions, CompiledSchemaFunctions, Program},
 };
+use ir::program::program::Program;
 use storage::{sequence_number::SequenceNumber, MVCCStorage};
 
 use crate::{function::SchemaFunction, function_manager::FunctionReader, FunctionManagerError};

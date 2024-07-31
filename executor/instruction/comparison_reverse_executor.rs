@@ -5,8 +5,8 @@
  */
 
 use ir::pattern::constraint::Comparison;
+use crate::VariablePosition;
 
-use crate::executor::VariablePosition;
 
 pub(crate) struct ComparisonReverseIteratorExecutor {
     comparision: Comparison<VariablePosition>,

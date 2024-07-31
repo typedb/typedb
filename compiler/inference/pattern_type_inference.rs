@@ -4,6 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync::Arc,
@@ -18,9 +24,9 @@ use ir::{
 use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{
+use crate::inference::{
     annotated_functions::{CompiledLocalFunctions, CompiledSchemaFunctions},
-    type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
+    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
     type_seeder::TypeSeeder,
     TypeInferenceError,
 };
@@ -317,19 +323,10 @@ pub mod tests {
     };
     use itertools::Itertools;
 
-    use crate::{
-        annotated_functions::CompiledSchemaFunctions,
-        pattern_type_inference::{
-            infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
-        },
-        tests::{
-            managers,
-            schema_consts::{
-                setup_types, LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_NAME,
-            },
-            setup_storage,
-        },
-    };
+    use crate::inference::annotated_functions::CompiledSchemaFunctions;
+    use crate::inference::pattern_type_inference::{infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph};
+    use crate::inference::tests::schema_consts::{LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_NAME, setup_types};
+    use crate::inference::tests::{managers, setup_storage};
 
     pub(crate) fn expected_edge(
         constraint: &Constraint<Variable>,

@@ -6,7 +6,7 @@
 
 use encoding::value::value::Value;
 
-use crate::expressions::{
+use crate::instruction::expressions::{
     evaluator::ExpressionEvaluationState, expression_compiler::ExpressionInstruction, op_codes::ExpressionOpCode,
     ExpressionEvaluationError,
 };
@@ -33,7 +33,7 @@ impl ExpressionInstruction for ListIndex {
     const OP_CODE: ExpressionOpCode = ExpressionOpCode::ListIndex;
 
     fn evaluate<'a>(state: &mut ExpressionEvaluationState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let mut list = state.pop_list();
+        let list = state.pop_list();
         let index = state.pop_value().unwrap_long();
         if let Some(value) = list.get(index as usize) {
             state.push_value(value.clone()); // Should we avoid cloning?

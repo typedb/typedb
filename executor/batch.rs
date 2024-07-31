@@ -4,6 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use std::{
     borrow::Cow,
     fmt::{Display, Formatter},
@@ -13,8 +19,8 @@ use std::{
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
 use lending_iterator::LendingIterator;
+use crate::VariablePosition;
 
-use crate::executor::VariablePosition;
 
 const BATCH_ROWS_MAX: u32 = 64;
 

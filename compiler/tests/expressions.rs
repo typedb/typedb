@@ -8,12 +8,11 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
-use inference::{
+use compiler::instruction::{
     expressions::{
         evaluator::{ExpressionEvaluator, ExpressionValue},
         expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType},
     },
-    ExpressionCompilationError,
 };
 use ir::{
     pattern::constraint::Constraint, program::function_signature::HashMapFunctionIndex,
@@ -21,6 +20,7 @@ use ir::{
 };
 use itertools::Itertools;
 use typeql::query::stage::Stage;
+use compiler::inference::ExpressionCompilationError;
 
 #[derive(Debug)]
 pub enum PatternDefitionOrExpressionCompilationError {

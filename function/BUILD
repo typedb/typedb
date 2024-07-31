@@ -18,10 +18,10 @@ rust_library(
         "//common/primitive",
         "//resource",
         "//concept",
+        "//compiler",
         "//durability",
         "//encoding",
         "//ir",
-        "//inference",
         "//storage",
 
         "@vaticle_typeql//rust:typeql",

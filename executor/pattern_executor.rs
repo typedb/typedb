@@ -4,26 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use std::{cmp::Ordering, collections::HashMap, fmt::Display, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::{inference::type_inference::TypeAnnotations, program::block::BlockContext};
 use itertools::Itertools;
+use compiler::inference::type_annotations::TypeAnnotations;
+use compiler::planner::pattern_plan::{AssignmentStep, DisjunctionStep, Instruction, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step, UnsortedJoinStep};
+use ir::program::block::BlockContext;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
-
-use crate::{
-    executor::{
-        batch::{Batch, BatchRowIterator, ImmutableRow, Row},
-        instruction::{iterator::TupleIterator, InstructionExecutor},
-        SelectedPositions, VariablePosition,
-    },
-    planner::pattern_plan::{
-        AssignmentStep, DisjunctionStep, Instruction, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
-        UnsortedJoinStep,
-    },
-};
+use crate::batch::{Batch, BatchRowIterator, ImmutableRow, Row};
+use crate::instruction::InstructionExecutor;
+use crate::instruction::iterator::TupleIterator;
+use crate::{SelectedPositions, VariablePosition};
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, VariablePosition>,
@@ -37,12 +37,12 @@ pub(crate) struct PatternExecutor {
 
 impl PatternExecutor {
     pub(crate) fn new(
-        plan: PatternPlan,
+        plan: &PatternPlan,
         type_annotations: &TypeAnnotations,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
-        let PatternPlan { steps, context } = plan;
+        let (steps, context) = (plan.steps(), plan.context());
         let mut variable_positions = HashMap::new();
         let mut step_executors = Vec::with_capacity(steps.len());
         for step in steps {
@@ -189,7 +189,7 @@ enum StepExecutor {
 
 impl StepExecutor {
     fn new(
-        step: Step,
+        step: &Step,
         block_context: &BlockContext,
         variable_positions: &HashMap<Variable, VariablePosition>,
         type_annotations: &TypeAnnotations,
@@ -200,10 +200,10 @@ impl StepExecutor {
         match step {
             Step::Intersection(IntersectionStep { sort_variable, instructions, selected_variables, .. }) => {
                 let executor = IntersectionExecutor::new(
-                    sort_variable,
-                    instructions,
+                    *sort_variable,
+                    instructions.clone(),
                     row_width,
-                    selected_variables,
+                    selected_variables.clone(),
                     block_context.get_variables_named(),
                     variable_positions,
                     type_annotations,
@@ -214,7 +214,12 @@ impl StepExecutor {
             }
             Step::UnsortedJoin(UnsortedJoinStep { iterate_instruction, check_instructions, .. }) => {
                 let executor =
-                    UnsortedJoinExecutor::new(iterate_instruction, check_instructions, row_width, variable_positions);
+                    UnsortedJoinExecutor::new(
+                        iterate_instruction.clone(),
+                        check_instructions.clone(),
+                        row_width,
+                        variable_positions
+                    );
                 Ok(Self::UnsortedJoin(executor))
             }
             Step::Assignment(AssignmentStep { .. }) => {

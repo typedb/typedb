@@ -208,8 +208,11 @@ impl PartialEq<Annotation> for PlaysAnnotation {
     fn eq(&self, annotation: &Annotation) -> bool {
         match annotation {
             Annotation::Cardinality(other_cardinality) => {
-                let Self::Cardinality(cardinality) = self;
-                cardinality == other_cardinality
+                if let Self::Cardinality(cardinality) = self {
+                    cardinality == other_cardinality
+                } else {
+                    false
+                }
             }
             Annotation::Abstract(_) => false,
             Annotation::Independent(_) => false,

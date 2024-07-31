@@ -13,7 +13,7 @@ package(default_visibility = [
     "//function:__subpackages__",
     "//inference:__subpackages__",
     "//ir:__subpackages__",
-    "//planner:__subpackages__",
+    "//compiler:__subpackages__",
     "//traversal:__subpackages__",
     "//query:__subpackages__",
     "//tests/behaviour:__subpackages__",

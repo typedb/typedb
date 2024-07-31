@@ -12,8 +12,9 @@ use ir::pattern::expression::{
     BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation,
     Operator,
 };
+use crate::inference::ExpressionCompilationError;
 
-use crate::{
+use crate::instruction::{
     expressions::{
         builtins::{
             list_operations,
@@ -25,7 +26,6 @@ use crate::{
         op_codes::ExpressionOpCode,
         ExpressionEvaluationError,
     },
-    ExpressionCompilationError,
 };
 
 pub trait ExpressionInstruction: Sized {
@@ -91,7 +91,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    pub fn pop_type_single(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+    pub(crate) fn pop_type_single(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
         match self.type_stack.pop() {
             Some(ExpressionValueType::Single(value)) => Ok(value),
             Some(ExpressionValueType::List(_)) => Err(ExpressionCompilationError::ExpectedSingleWasList),
@@ -99,7 +99,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    pub fn pop_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+    pub(crate) fn pop_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
         match self.type_stack.pop() {
             Some(ExpressionValueType::List(value)) => Ok(value),
             Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
@@ -107,11 +107,11 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    pub fn push_type_single(&mut self, value: ValueTypeCategory) {
+    pub(crate) fn push_type_single(&mut self, value: ValueTypeCategory) {
         self.type_stack.push(ExpressionValueType::Single(value));
     }
 
-    pub fn push_type_list(&mut self, value: ValueTypeCategory) {
+    pub(crate) fn push_type_list(&mut self, value: ValueTypeCategory) {
         self.type_stack.push(ExpressionValueType::List(value));
     }
     fn peek_type_single(&self) -> Result<&ValueTypeCategory, ExpressionCompilationError> {
@@ -122,7 +122,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    pub fn peek_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+    pub(crate) fn peek_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
         match self.type_stack.last() {
             Some(ExpressionValueType::List(value)) => Ok(*value),
             Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
@@ -130,7 +130,7 @@ impl<'this> ExpressionTreeCompiler<'this> {
         }
     }
 
-    pub fn append_instruction(&mut self, op_code: ExpressionOpCode) {
+    pub(crate) fn append_instruction(&mut self, op_code: ExpressionOpCode) {
         self.instructions.push(op_code)
     }
 }

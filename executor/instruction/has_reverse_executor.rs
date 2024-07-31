@@ -22,7 +22,7 @@ use lending_iterator::{
 };
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
-use crate::executor::{
+use crate::{
     batch::ImmutableRow,
     instruction::{
         has_executor::{HasFilterFn, HasOrderingFn},

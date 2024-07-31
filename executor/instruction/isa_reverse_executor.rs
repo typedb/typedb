@@ -25,7 +25,7 @@ use lending_iterator::{adaptors::Map, AsHkt, LendingIterator};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::executor::{
+use crate::{
     batch::ImmutableRow,
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},

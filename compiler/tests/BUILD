@@ -13,9 +13,9 @@ rust_test(
     deps = [
         "//answer",
         "//common/bytes",
+        "//compiler",
         "//encoding",
         "//ir",
-        "//inference",
         "@vaticle_typeql//rust:typeql",
         "@crates//:itertools",
     ],

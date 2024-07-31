@@ -4,6 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use std::collections::{HashMap, HashSet};
 
 use answer::{variable::Variable, Type};
@@ -17,11 +23,9 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{
-    expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType},
-    type_inference::TypeAnnotations,
-    TypeInferenceError,
-};
+use crate::inference::type_annotations::TypeAnnotations;
+use crate::inference::TypeInferenceError;
+use crate::instruction::expressions::expression_compiler::{CompiledExpression, ExpressionTreeCompiler, ExpressionValueType};
 
 struct ExpressionInferenceContext<'this, Snapshot: ReadableSnapshot> {
     block: &'this FunctionalBlock,
@@ -134,7 +138,7 @@ fn resolve_type_for_variable<'context, Snapshot: ReadableSnapshot>(
         };
         // TODO: We're throwing off the information about the category here
         Ok(compiled_expression.return_type())
-    } else if let Some(types) = context.type_annotations.variable_annotations(variable) {
+    } else if let Some(types) = context.type_annotations.variable_annotations_of(variable) {
         let vec = types
             .iter()
             .map(|type_| match type_ {

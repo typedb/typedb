@@ -5,6 +5,9 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
+use compiler::inference::type_inference::infer_types;
+use compiler::planner::pattern_plan::{Instruction, IntersectionStep, IterateBounds, PatternPlan, Step};
+use compiler::planner::program_plan::ProgramPlan;
 
 use concept::error::ConceptReadError;
 use encoding::value::label::Label;
@@ -29,6 +32,8 @@ use traversal::{
         program_plan::ProgramPlan,
     },
 };
+use traversal::batch::ImmutableRow;
+use traversal::program_executor::ProgramExecutor;
 
 use crate::common::{load_managers, setup_storage};
 

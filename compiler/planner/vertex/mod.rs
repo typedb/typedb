@@ -8,7 +8,8 @@ use std::{collections::HashMap, ops::Deref};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::{inference::type_inference::TypeAnnotations, pattern::constraint::Has};
+use ir::pattern::constraint::Has;
+use crate::inference::type_annotations::TypeAnnotations;
 
 const OPEN_ITERATOR_RELATIVE_COST: f64 = 5.0;
 const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
@@ -69,7 +70,7 @@ impl ThingPlanner {
         statistics: &Statistics,
     ) -> Self {
         let expected_size = type_annotations
-            .variable_annotations(variable)
+            .variable_annotations_of(variable)
             .expect("expected thing variable to have been annotated with types")
             .iter()
             .filter_map(|type_| match type_ {
@@ -122,8 +123,8 @@ impl HasPlanner {
         let owner = constraint.owner();
         let attribute = constraint.attribute();
 
-        let owner_types = type_annotations.variable_annotations(owner).unwrap().deref();
-        let attribute_types = type_annotations.variable_annotations(attribute).unwrap().deref();
+        let owner_types = type_annotations.variable_annotations_of(owner).unwrap().deref();
+        let attribute_types = type_annotations.variable_annotations_of(attribute).unwrap().deref();
 
         let expected_size = itertools::iproduct!(owner_types, attribute_types)
             .filter_map(|(owner, attribute)| {

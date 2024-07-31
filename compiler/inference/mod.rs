@@ -47,13 +47,13 @@ use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
 use ir::pattern::{expression::Operator, variable_category::VariableCategory};
 
-mod annotated_functions;
-mod annotated_program;
+pub mod annotated_functions;
+pub mod annotated_program;
 pub mod expression_inference;
-pub mod expressions;
 pub mod pattern_type_inference;
 pub mod type_inference;
 mod type_seeder;
+pub mod type_annotations;
 
 #[derive(Debug)]
 pub enum TypeInferenceError {
@@ -61,7 +61,8 @@ pub enum TypeInferenceError {
     LabelNotResolved(String),
 
     MultipleAssignmentsForSingleVariable { variable: Variable },
-    CircularDependencyInExpressions { variable: Variable }, // TODO: Improve error
+    CircularDependencyInExpressions { variable: Variable },
+    // TODO: Improve error
     CouldNotDetermineValueTypeForVariable { variable: Variable },
     ExpressionVariableDidNotHaveSingleValueType { variable: Variable },
     ExpressionVariableHasNoValueType { variable: Variable },
@@ -200,11 +201,11 @@ pub mod tests {
 
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use encoding::{
+        EncodingKeyspace,
         graph::{
             definition::definition_key_generator::DefinitionKeyGenerator,
             thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
         },
-        EncodingKeyspace,
     };
     use storage::{durability_client::WALClient, MVCCStorage};
 
@@ -265,7 +266,7 @@ pub mod tests {
         use answer::Type as TypeAnnotation;
         use concept::type_::{
             annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation,
-            type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
+            Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager,
         };
         use encoding::value::{label::Label, value_type::ValueType};
         use storage::{

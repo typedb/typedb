@@ -4,12 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
-    inference::type_inference::TypeAnnotations,
     pattern::{
         constraint::{Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, RolePlayer},
         variable_category::VariableCategory,
@@ -18,10 +23,10 @@ use ir::{
     program::block::{BlockContext, FunctionalBlock},
 };
 use itertools::Itertools;
+use crate::inference::type_annotations::TypeAnnotations;
 
-use self::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost};
+use crate::planner::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost};
 
-mod vertex;
 
 pub struct PatternPlan {
     pub(crate) steps: Vec<Step>,
@@ -160,12 +165,16 @@ impl PatternPlan {
         Self { steps, context: block.context().clone() }
     }
 
-    pub(crate) fn steps(&self) -> &[Step] {
+    pub fn steps(&self) -> &[Step] {
         &self.steps
     }
 
     pub(crate) fn into_steps(self) -> impl Iterator<Item = Step> {
         self.steps.into_iter()
+    }
+
+    pub fn context(&self) -> &BlockContext {
+        &self.context
     }
 }
 
@@ -209,7 +218,7 @@ pub enum Step {
 }
 
 impl Step {
-    pub(crate) fn unbound_variables(&self) -> &[Variable] {
+    pub fn unbound_variables(&self) -> &[Variable] {
         match self {
             Step::Intersection(step) => step.unbound_variables(),
             Step::UnsortedJoin(step) => step.unbound_variables(),
@@ -222,12 +231,11 @@ impl Step {
 }
 
 pub struct IntersectionStep {
-    pub(crate) sort_variable: Variable,
-    pub(crate) instructions: Vec<Instruction>,
+    pub sort_variable: Variable,
+    pub instructions: Vec<Instruction>,
     unbound_variables: Vec<Variable>,
     bound_variables: Vec<Variable>,
-
-    pub(crate) selected_variables: Vec<Variable>,
+    pub selected_variables: Vec<Variable>,
 }
 
 impl IntersectionStep {
@@ -261,8 +269,8 @@ impl IntersectionStep {
 }
 
 pub struct UnsortedJoinStep {
-    pub(crate) iterate_instruction: Instruction,
-    pub(crate) check_instructions: Vec<Instruction>,
+    pub iterate_instruction: Instruction,
+    pub check_instructions: Vec<Instruction>,
     unbound_variables: Vec<Variable>,
     bound_variables: Vec<Variable>,
     selected_variables: Vec<Variable>,
@@ -320,22 +328,22 @@ impl AssignmentStep {
 }
 
 pub struct DisjunctionStep {
-    pub(crate) disjunction: Vec<PatternPlan>,
+    pub disjunction: Vec<PatternPlan>,
 }
 
 pub struct NegationStep {
-    pub(crate) negation: PatternPlan,
+    pub negation: PatternPlan,
 }
 
 pub struct OptionalStep {
-    pub(crate) optional: PatternPlan,
+    pub optional: PatternPlan,
 }
 
-pub(crate) trait InstructionAPI {
+pub trait InstructionAPI {
     fn constraint(&self) -> Constraint<Variable>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Instruction {
     // type -> thing
     Isa(Isa<Variable>, IterateBounds<Variable>),
@@ -368,7 +376,7 @@ pub enum Instruction {
 }
 
 impl Instruction {
-    pub(crate) fn contains_bound_var(&self, var: Variable) -> bool {
+    pub fn contains_bound_var(&self, var: Variable) -> bool {
         let mut found = false;
         self.bound_vars_foreach(|v| {
             if v == var {
