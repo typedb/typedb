@@ -1105,9 +1105,10 @@ impl TypeManager {
             .create_role_type(snapshot)
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let role = RoleType::new(type_vertex);
+        let relates = Relates::new(relation_type, role.clone());
 
         TypeWriter::storage_put_label(snapshot, role.clone(), label);
-        TypeWriter::storage_put_relates(snapshot, relation_type, role.clone());
+        TypeWriter::storage_put_edge(snapshot, relates);
         TypeWriter::storage_put_type_vertex_property(snapshot, role.clone(), Some(ordering));
         Ok(role)
     }
@@ -1136,21 +1137,51 @@ impl TypeManager {
         }
     }
 
+    fn delete_object_type_capabilities(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        object_type: ObjectType<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        for owns in TypeReader::get_capabilities_declared::<Owns<'static>>(snapshot, object_type.clone())?
+        {
+            // TODO: Put it in a single place for owns
+            TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
+            self.unset_capability(snapshot, owns)?;
+        }
+
+        for plays in TypeReader::get_capabilities_declared::<Plays<'static>>(snapshot, object_type.clone())?
+        {
+            self.unset_capability(snapshot, plays)?;
+        }
+
+        Ok(())
+    }
+
+    fn validate_delete_type(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        type_: impl KindAPI<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, type_.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_no_instances_to_delete(snapshot, thing_manager, type_)
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        Ok(())
+    }
+
     pub(crate) fn delete_entity_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         entity_type: EntityType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, entity_type.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_delete_type(snapshot, thing_manager, entity_type.clone())?;
 
-        OperationTimeValidation::validate_no_instances_to_delete(snapshot, thing_manager, entity_type.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        self.unset_supertype(snapshot, entity_type.clone())?;
-        TypeWriter::storage_delete_label(snapshot, entity_type);
-        Ok(())
+        self.delete_object_type_capabilities(snapshot, entity_type.clone().into_owned_object_type())?;
+        self.delete_type(snapshot, entity_type)
     }
 
     pub(crate) fn delete_relation_type(
@@ -1159,20 +1190,14 @@ impl TypeManager {
         thing_manager: &ThingManager,
         relation_type: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, relation_type.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_delete_type(snapshot, thing_manager, relation_type.clone())?;
 
-        OperationTimeValidation::validate_no_instances_to_delete(snapshot, thing_manager, relation_type.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        let declared_relates = TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation_type.clone())?;
-        for (_role_type, relates) in declared_relates.iter() {
+        let declared_relates = TypeReader::get_capabilities_declared::<Relates<'static>>(snapshot, relation_type.clone())?;
+        for relates in declared_relates.iter() {
             self.delete_role_type(snapshot, thing_manager, relates.role())?;
         }
-
-        self.unset_supertype(snapshot, relation_type.clone())?;
-        TypeWriter::storage_delete_label(snapshot, relation_type);
-        Ok(())
+        self.delete_object_type_capabilities(snapshot, relation_type.clone().into_owned_object_type())?;
+        self.delete_type(snapshot, relation_type)
     }
 
     pub(crate) fn delete_attribute_type(
@@ -1181,21 +1206,16 @@ impl TypeManager {
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, attribute_type.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        OperationTimeValidation::validate_no_instances_to_delete(snapshot, thing_manager, attribute_type.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_delete_type(snapshot, thing_manager, attribute_type.clone())?;
 
         for owns in
             TypeReader::get_capabilities_for_interface_declared::<Owns<'static>>(snapshot, attribute_type.clone())?
         {
-            self.unset_owns(snapshot, thing_manager, owns.owner(), owns.attribute())?
+            TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
+            self.unset_capability(snapshot, owns)?;
         }
-
-        self.unset_supertype(snapshot, attribute_type.clone())?;
-        TypeWriter::storage_delete_label(snapshot, attribute_type);
-        Ok(())
+        // TODO: delete value
+        self.delete_type(snapshot, attribute_type)
     }
 
     pub(crate) fn delete_role_type(
@@ -1204,26 +1224,51 @@ impl TypeManager {
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
+        self.validate_delete_type(snapshot, thing_manager, role_type.clone())?;
         // TODO: We have a commit-time check for overrides not being left hanging, but maybe we should clean it/reject here. We DO check that there are no subtypes for type deletion.
-        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, role_type.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        OperationTimeValidation::validate_no_instances_to_delete(
-            snapshot,
-            thing_manager,
-            role_type.clone().into_owned(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        for plays in TypeReader::get_capabilities_for_interface_declared::<Plays<'static>>(snapshot, role_type.clone())?
-        {
-            self.unset_plays(snapshot, thing_manager, plays.player(), plays.role())?
-        }
 
         let relates = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone())?;
-        TypeWriter::storage_delete_relates(snapshot, relates.relation(), role_type.clone());
-        self.unset_supertype(snapshot, role_type.clone())?;
-        TypeWriter::storage_delete_label(snapshot, role_type);
+        self.delete_relates_and_its_role_type(snapshot, relates)
+    }
+
+    fn delete_relates_and_its_role_type(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relates: Relates<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        for plays in TypeReader::get_capabilities_for_interface_declared::<Plays<'static>>(snapshot, relates.role())?
+        {
+            self.unset_capability(snapshot, plays)?;
+        }
+
+        self.unset_capability(snapshot, relates.clone())?;
+        TypeWriter::storage_delete_type_vertex_property::<Ordering>(snapshot, relates.role());
+        self.delete_type(snapshot, relates.role())
+    }
+
+    fn delete_type(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_: impl KindAPI<'static>,
+    ) -> Result<(), ConceptWriteError> {
+
+        // TODO: Delete annotations
+
+        self.unset_supertype(snapshot, type_.clone())?;
+        TypeWriter::storage_delete_label(snapshot, type_.clone());
+        TypeWriter::storage_delete_vertex(snapshot, type_);
+        Ok(())
+    }
+
+    fn unset_capability(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        capability: impl Capability<'static>,
+    ) -> Result<(), ConceptWriteError> {
+
+        // TODO: Delete annotations
+        self.unset_override(snapshot, capability.clone())?;
+        TypeWriter::storage_delete_edge(snapshot, capability.clone());
         Ok(())
     }
 
@@ -1409,6 +1454,17 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, subtype.clone()).is_ok());
         TypeWriter::storage_may_delete_supertype(snapshot, subtype.clone())?;
+        Ok(())
+    }
+
+    fn unset_override<CAP: Capability<'static>>(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        overriding_capability: CAP,
+    ) -> Result<(), ConceptWriteError> {
+        if TypeReader::get_capability_override(snapshot, overriding_capability.clone())?.is_some() {
+            TypeWriter::storage_delete_type_edge_overridden(snapshot, overriding_capability);
+        }
         Ok(())
     }
 
@@ -1737,7 +1793,7 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
-        TypeWriter::storage_put_capability(snapshot, owns.clone());
+        TypeWriter::storage_put_edge(snapshot, owns.clone());
         TypeWriter::storage_put_type_edge_property(snapshot, owns, Some(ordering));
         Ok(())
     }
@@ -1765,7 +1821,7 @@ impl TypeManager {
         let owns_declared = owner.get_owns_declared(snapshot, self)?;
         if let Some(owns) = owns_declared.iter().find(|owns| owns.attribute() == attribute_type) {
             TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
-            TypeWriter::storage_delete_capability(snapshot, owns.clone());
+            self.unset_capability(snapshot, owns.clone())?;
         }
         Ok(())
     }
@@ -1879,7 +1935,7 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
-        TypeWriter::storage_put_capability(snapshot, plays.clone());
+        TypeWriter::storage_put_edge(snapshot, plays.clone());
         Ok(plays)
     }
 
@@ -1905,7 +1961,7 @@ impl TypeManager {
 
         let plays_declared = player.get_plays_declared(snapshot, self)?;
         if let Some(plays) = plays_declared.iter().find(|plays| plays.role() == role_type) {
-            TypeWriter::storage_delete_capability(snapshot, plays.clone());
+            self.unset_capability(snapshot, plays.clone())?;
         }
         Ok(())
     }

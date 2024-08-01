@@ -282,7 +282,7 @@ impl TypeReader {
 
     pub(crate) fn get_capabilities_declared<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        owner: impl TypeAPI<'static>,
+        owner: impl TypeVertexEncoding<'static>,
     ) -> Result<HashSet<CAP>, ConceptReadError> {
         let owns_prefix = CAP::prefix_for_canonical_edges_from(CAP::ObjectType::new(owner.into_vertex()));
         snapshot

@@ -20,7 +20,9 @@ use encoding::{
     value::{label::Label, string_bytes::StringBytes, value_type::ValueType},
     AsBytes, Keyable,
 };
+use encoding::graph::type_::edge::TypeEdge;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use storage::key_range::KeyRange;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -71,7 +73,10 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
     }
 
-    // TODO: why is this "may delete label"?
+    pub(crate) fn storage_delete_vertex(snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+        snapshot.delete(type_.vertex().as_storage_key().into_owned_array());
+    }
+
     pub(crate) fn storage_delete_label(snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let existing_label = TypeReader::get_label(snapshot, type_.clone()).unwrap();
         if let Some(label) = existing_label {
@@ -117,37 +122,17 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     // Type edges
-    pub(crate) fn storage_put_relates(
-        snapshot: &mut Snapshot,
-        relation: RelationType<'static>,
-        role: RoleType<'static>,
-    ) {
-        let relates = Relates::from_vertices(relation, role);
-        snapshot.put(relates.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-        snapshot.put(relates.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
-    }
-
-    pub(crate) fn storage_delete_relates(
-        snapshot: &mut Snapshot,
-        relation: RelationType<'static>,
-        role: RoleType<'static>,
-    ) {
-        let relates = Relates::from_vertices(relation, role);
-        snapshot.delete(relates.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-        snapshot.delete(relates.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
-    }
-
-    pub(crate) fn storage_put_capability<CAP>(snapshot: &mut Snapshot, capability: CAP)
+    pub(crate) fn storage_put_edge<EDGE>(snapshot: &mut Snapshot, capability: EDGE)
     where
-        CAP: TypeEdgeEncoding<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + Clone,
     {
         snapshot.put(capability.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
         snapshot.put(capability.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_capability<CAP>(snapshot: &mut Snapshot, capability: CAP)
+    pub(crate) fn storage_delete_edge<EDGE>(snapshot: &mut Snapshot, capability: EDGE)
     where
-        CAP: TypeEdgeEncoding<'static> + Clone,
+        EDGE: TypeEdgeEncoding<'static> + Clone,
     {
         snapshot.delete(capability.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
         snapshot.delete(capability.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
