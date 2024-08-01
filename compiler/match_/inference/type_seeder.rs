@@ -13,7 +13,7 @@ use std::{
 use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI},
+    type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
 };
 use encoding::value::value_type::ValueTypeCategory;
 use ir::{

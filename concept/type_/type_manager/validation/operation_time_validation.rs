@@ -20,28 +20,26 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use paste::paste;
-use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
+use storage::{snapshot::ReadableSnapshot};
 
 use crate::{
     error::ConceptReadError,
     thing::{
         object::{Object, ObjectAPI},
-        relation::RolePlayerIterator,
         thing_manager::ThingManager,
-        ThingAPI,
     },
     type_::{
         annotation::{
-            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationRange,
-            AnnotationRegex, AnnotationUnique, AnnotationValues,
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationRange,
+            AnnotationRegex, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{Constraint, ConstraintValidationMode},
         entity_type::EntityType,
         object_type::{with_object_type, ObjectType},
         owns::{Owns, OwnsAnnotation},
-        plays::{Plays, PlaysAnnotation},
-        relates::{Relates, RelatesAnnotation},
+        plays::{Plays},
+        relates::{Relates},
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::{
@@ -72,9 +70,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::error::ConceptWriteError;
 use crate::type_::annotation::AnnotationAbstract;
-use crate::type_::relation_type::RelationTypeAnnotation;
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -362,7 +358,7 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                                 let declared_annotations =
                                     TypeReader::get_type_edge_annotations_declared(snapshot, overriding.clone())?;
                                 overriding_annotations_to_revalidate
-                                    .retain(|annotation| !declared_annotations.contains(annotation));
+                                    .retain(|annotation| !declared_annotations.contains(&annotation.clone().into()));
 
                                 capabilities_and_annotations_to_check.push_front((
                                     subtype.clone(),
@@ -439,7 +435,7 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                             let mut overridings = overrides
                                 .iter()
                                 .filter(|(_, overridden)| &current_capability == overridden)
-                                .map(|(overriding, overridden)| overriding.clone());
+                                .map(|(overriding, _)| overriding.clone());
 
                             if overridings.clone().peekable().peek().is_some() {
                                 while let Some(overriding) = overridings.next() {
@@ -492,7 +488,7 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                             let mut overridings = overrides
                                 .iter()
                                 .filter(|(_, overridden)| &current_capability == overridden)
-                                .map(|(overriding, overridden)| overriding.clone());
+                                .map(|(overriding, _)| overriding.clone());
 
                             if overridings.clone().peekable().peek().is_some() {
                                 while let Some(overriding) = overridings.next() {
@@ -1334,7 +1330,7 @@ impl OperationTimeValidation {
         for (_, implementation) in implementations {
             let implementation_annotations = TypeReader::get_type_edge_annotations(snapshot, implementation)
                 .map_err(SchemaValidationError::ConceptRead)?;
-            if implementation_annotations.keys().map(|annotation| annotation.category()).contains(&annotation_category)
+            if implementation_annotations.keys().map(|annotation| annotation.clone().into().category()).contains(&annotation_category)
             {
                 return Err(
                     SchemaValidationError::CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsImplementation(
@@ -1625,7 +1621,7 @@ impl OperationTimeValidation {
         let subtype_declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, edge.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
         for subtype_annotation in subtype_declared_annotations {
-            let category = subtype_annotation.category();
+            let category = subtype_annotation.clone().into().category();
 
             Self::validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations(
                 snapshot,
@@ -1638,7 +1634,7 @@ impl OperationTimeValidation {
                 type_manager,
                 edge.clone(),
                 overridden_edge.clone(),
-                subtype_annotation,
+                subtype_annotation.clone().into(),
             )?;
         }
         Ok(())
@@ -2059,7 +2055,7 @@ impl OperationTimeValidation {
         annotations: &mut HashSet<Annotation>,
     ) -> Result<(), ConceptReadError> {
         let declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())?;
-        annotations.retain(|annotation| !declared_annotations.contains(annotation));
+        annotations.retain(|annotation| !declared_annotations.contains(&annotation.clone().into()));
         Ok(())
     }
 
@@ -2429,7 +2425,7 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?;
 
         for existing_annotation in existing_annotations {
-            let existing_annotation_category = existing_annotation.category();
+            let existing_annotation_category = existing_annotation.clone().into().category();
             if !existing_annotation_category.declarable_alongside(annotation_category) {
                 let interface = edge.interface();
                 return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
@@ -2533,36 +2529,33 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?;
         for (annotation, _) in annotations {
             match annotation {
-                Annotation::Unique(_) => Self::validate_owns_value_type_compatible_with_unique_annotation(
+                OwnsAnnotation::Unique(_) => Self::validate_owns_value_type_compatible_with_unique_annotation(
                     snapshot,
                     owns.clone(),
                     value_type.clone(),
                 )?,
-                Annotation::Key(_) => Self::validate_owns_value_type_compatible_with_key_annotation(
+                OwnsAnnotation::Key(_) => Self::validate_owns_value_type_compatible_with_key_annotation(
                     snapshot,
                     owns.clone(),
                     value_type.clone(),
                 )?,
-                Annotation::Regex(_) => Self::validate_annotation_regex_compatible_value_type(
+                OwnsAnnotation::Regex(_) => Self::validate_annotation_regex_compatible_value_type(
                     snapshot,
                     owns.attribute(),
                     value_type.clone(),
                 )?,
-                Annotation::Range(_) => Self::validate_annotation_range_compatible_value_type(
+                OwnsAnnotation::Range(_) => Self::validate_annotation_range_compatible_value_type(
                     snapshot,
                     owns.attribute(),
                     value_type.clone(),
                 )?,
-                Annotation::Values(_) => Self::validate_annotation_values_compatible_value_type(
+                OwnsAnnotation::Values(_) => Self::validate_annotation_values_compatible_value_type(
                     snapshot,
                     owns.attribute(),
                     value_type.clone(),
                 )?,
-                | Annotation::Abstract(_)
-                | Annotation::Distinct(_)
-                | Annotation::Independent(_)
-                | Annotation::Cardinality(_)
-                | Annotation::Cascade(_) => {}
+                | OwnsAnnotation::Distinct(_)
+                | OwnsAnnotation::Cardinality(_) => {}
             }
         }
         Ok(())
@@ -2838,14 +2831,15 @@ impl OperationTimeValidation {
                 let updated_annotations = new_override_annotations
                     .keys()
                     .filter(|new_override_annotation| {
+                        let new_override_annotation_category = (*new_override_annotation).clone().into().category();
                         !old_declared_annotations
                             .iter()
-                            .map(|annotation| annotation.category())
-                            .contains(&new_override_annotation.category())
+                            .map(|annotation| annotation.clone().into().category())
+                            .contains(&new_override_annotation_category)
                             && !old_override_annotations.contains_key(&new_override_annotation)
-                            && new_override_annotation.category().inheritable()
+                            && new_override_annotation_category.inheritable()
                     })
-                    .map(|new_override_annotation| new_override_annotation.clone())
+                    .map(|new_override_annotation| new_override_annotation.clone().into())
                     .collect::<HashSet<Annotation>>();
 
                 updated_annotations_from_overrides.push((old_capability.clone(), updated_annotations));
@@ -2870,7 +2864,7 @@ impl OperationTimeValidation {
                 let updated_annotations = new_annotations
                     .keys()
                     .filter(|new_annotation| !old_annotations.contains_key(*new_annotation))
-                    .cloned()
+                    .map(|new_annotation| new_annotation.clone().into())
                     .collect::<HashSet<Annotation>>();
 
                 updated_annotations_from_inheritance.push((old_capability.clone(), updated_annotations));
@@ -2903,7 +2897,7 @@ impl OperationTimeValidation {
         let old_inherited_annotations = old_annotations
             .into_iter()
             .filter(|(_, source)| &capability != source)
-            .map(|(annotation, _)| annotation.clone())
+            .map(|(annotation, _)| annotation.clone().into())
             .collect::<HashSet<Annotation>>();
         let new_annotations = TypeReader::get_type_edge_annotations(snapshot, capability_override.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -2912,13 +2906,15 @@ impl OperationTimeValidation {
         // (should be checked on the schema level), so we don't consider them updated
         Ok(new_annotations
             .keys()
+            .map(|new_annotation| new_annotation.clone().into())
             .filter(|new_annotation| {
+                let new_annotation_category = new_annotation.category();
                 !declared_annotations
                     .iter()
-                    .map(|annotation| annotation.category())
-                    .contains(&new_annotation.category())
+                    .map(|annotation| annotation.clone().into().category())
+                    .contains(&new_annotation_category)
                     && !old_inherited_annotations.contains(&new_annotation)
-                    && new_annotation.category().inheritable()
+                    && new_annotation_category.inheritable()
             })
             .map(|new_annotation| new_annotation.clone())
             .collect::<HashSet<Annotation>>())
@@ -2965,7 +2961,7 @@ impl OperationTimeValidation {
             .collect::<HashSet<Annotation>>())
     }
 
-    pub(crate) fn validate_deleted_struct_is_not_used(
+    pub(crate) fn validate_deleted_struct_is_not_used_in_schema(
         snapshot: &impl ReadableSnapshot,
         definition_key: &DefinitionKey<'static>,
     ) -> Result<(), SchemaValidationError> {

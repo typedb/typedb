@@ -94,10 +94,10 @@ impl<'a> Relates<'a> {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match relates_annotation {
             RelatesAnnotation::Distinct(_) => {
-                type_manager.unset_edge_annotation_distinct(snapshot, self.clone().into_owned())?
+                type_manager.unset_capability_annotation_distinct(snapshot, self.clone().into_owned())?
             }
             RelatesAnnotation::Cardinality(_) => {
-                type_manager.unset_edge_annotation_cardinality(snapshot, self.clone().into_owned())?
+                type_manager.unset_capability_annotation_cardinality(snapshot, self.clone().into_owned())?
             }
         }
         Ok(())

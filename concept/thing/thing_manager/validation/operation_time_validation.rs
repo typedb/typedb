@@ -4,7 +4,6 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     error::ConceptReadError,
     thing::{
-        object::Object,
         thing_manager::{validation::DataValidationError, ThingManager},
     },
     type_::{

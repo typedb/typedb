@@ -96,7 +96,7 @@ impl<'a> Plays<'a> {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match plays_annotation {
             PlaysAnnotation::Cardinality(_) => {
-                type_manager.unset_edge_annotation_cardinality(snapshot, self.clone().into_owned())?
+                type_manager.unset_capability_annotation_cardinality(snapshot, self.clone().into_owned())?
             }
         }
         Ok(())

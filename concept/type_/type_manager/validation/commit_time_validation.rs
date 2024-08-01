@@ -630,14 +630,14 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_redundant_edge_annotations<EDGE: Capability<'static>>(
+    fn validate_redundant_edge_annotations<CAP: Capability<'static>>(
         _type_manager: &TypeManager,
         snapshot: &impl ReadableSnapshot,
-        edge: EDGE,
-        annotation: &Annotation,
+        edge: CAP,
+        annotation: &CAP::AnnotationType,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        if !annotation.category().inheritable() {
+        if !annotation.clone().into().category().inheritable() {
             return Ok(());
         }
 
@@ -647,11 +647,11 @@ impl CommitTimeValidation {
             if overridden_edge_annotations.keys().contains(&annotation) {
                 validation_errors.push(
                     SchemaValidationError::CannotRedeclareInheritedAnnotationWithoutSpecializationForCapability(
-                        EDGE::KIND,
+                        CAP::KIND,
                         get_label_or_concept_read_err(snapshot, edge.object())?,
                         get_label_or_concept_read_err(snapshot, overridden_edge.object())?,
                         get_label_or_concept_read_err(snapshot, edge.interface())?,
-                        annotation.clone(),
+                        annotation.clone().into(),
                     ),
                 );
             }
@@ -822,7 +822,7 @@ impl CommitTimeValidation {
         let declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, edge.clone())?;
 
         for annotation in declared_annotations {
-            let annotation_category = annotation.category();
+            let annotation_category = annotation.clone().into().category();
 
             if let Err(err) = validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations(
                 snapshot,
@@ -838,7 +838,7 @@ impl CommitTimeValidation {
                     type_manager,
                     edge.clone(),
                     overridden_edge.clone(),
-                    annotation.clone(),
+                    annotation.clone().into(),
                 ) {
                     validation_errors.push(err);
                 }

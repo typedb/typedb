@@ -161,7 +161,7 @@ where
         TypeReader::get_type_edge_annotations(snapshot, edge.clone()).map_err(SchemaValidationError::ConceptRead)?;
 
     for (existing_annotation, _) in existing_annotations {
-        let existing_annotation_category = existing_annotation.category();
+        let existing_annotation_category = existing_annotation.clone().into().category();
         if !annotation_category.declarable_below(existing_annotation_category) {
             let interface = edge.interface();
             return Err(SchemaValidationError::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(
@@ -670,8 +670,8 @@ where
     let annotation = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
         .map_err(SchemaValidationError::ConceptRead)?
         .into_keys()
-        .find(|found_annotation| found_annotation.category() == annotation_category);
-    Ok(annotation)
+        .find(|found_annotation| found_annotation.clone().into().category() == annotation_category);
+    Ok(annotation.map(|val| val.clone().into()))
 }
 
 pub(crate) fn type_get_owner_of_annotation_category<T: KindAPI<'static>>(
@@ -698,7 +698,7 @@ pub(crate) fn edge_get_owner_of_annotation_category<CAP: Capability<'static>>(
         TypeReader::get_type_edge_annotations(snapshot, edge.clone()).map_err(SchemaValidationError::ConceptRead)?;
     let found_annotation = annotations
         .iter()
-        .map(|(existing_annotation, source)| (existing_annotation.clone().category(), source))
+        .map(|(existing_annotation, source)| (existing_annotation.clone().into().category(), source))
         .find(|(existing_category, _)| existing_category == &annotation_category);
 
     Ok(found_annotation.map(|(_, owner)| owner.clone()))

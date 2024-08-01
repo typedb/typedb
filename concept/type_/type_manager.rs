@@ -236,19 +236,44 @@ macro_rules! get_type_annotations {
     }
 }
 
-macro_rules! save_annotation {
+macro_rules! storage_save_annotation {
     ($snapshot:ident, $type_:ident, $annotation:ident, $put_func:path, $insert_func:path) => {
         match $annotation {
-            | Annotation::Abstract(_)
-            | Annotation::Distinct(_)
-            | Annotation::Independent(_)
-            | Annotation::Unique(_)
-            | Annotation::Key(_)
-            | Annotation::Cascade(_) => $put_func($snapshot, $type_, None::<A>),
+            Annotation::Abstract(_) => $put_func($snapshot, $type_, None::<AnnotationAbstract>),
+            Annotation::Distinct(_) => $put_func($snapshot, $type_, None::<AnnotationDistinct>),
+            Annotation::Independent(_) => $put_func($snapshot, $type_, None::<AnnotationIndependent>),
+            Annotation::Unique(_) => $put_func($snapshot, $type_, None::<AnnotationUnique>),
+            Annotation::Key(_) => $put_func($snapshot, $type_, None::<AnnotationKey>),
+            Annotation::Cascade(_) => $put_func($snapshot, $type_, None::<AnnotationCascade>),
             Annotation::Cardinality(card) => $insert_func($snapshot, $type_, Some(card)),
             Annotation::Regex(regex) => $insert_func($snapshot, $type_, Some(regex)),
             Annotation::Range(range) => $insert_func($snapshot, $type_, Some(range)),
             Annotation::Values(values) => $insert_func($snapshot, $type_, Some(values)),
+        }
+    };
+}
+
+macro_rules! storage_delete_annotation {
+    ($snapshot:ident, $type_:ident, $annotation_category:ident, $get_func:path, $delete_func:ident) => {
+        let annotations = $get_func($snapshot, $type_.clone())?;
+        let annotation_exists = annotations
+            .into_iter()
+            .find(|annotation| annotation.clone().into().category() == $annotation_category)
+            .is_some();
+
+        if annotation_exists {
+            match $annotation_category {
+                AnnotationCategory::Abstract => TypeWriter::$delete_func::<AnnotationAbstract>($snapshot, $type_),
+                AnnotationCategory::Distinct => TypeWriter::$delete_func::<AnnotationDistinct>($snapshot, $type_),
+                AnnotationCategory::Independent => TypeWriter::$delete_func::<AnnotationIndependent>($snapshot, $type_),
+                AnnotationCategory::Unique => TypeWriter::$delete_func::<AnnotationUnique>($snapshot, $type_),
+                AnnotationCategory::Key => TypeWriter::$delete_func::<AnnotationKey>($snapshot, $type_),
+                AnnotationCategory::Cardinality => TypeWriter::$delete_func::<AnnotationCardinality>($snapshot, $type_),
+                AnnotationCategory::Regex => TypeWriter::$delete_func::<AnnotationRegex>($snapshot, $type_),
+                AnnotationCategory::Cascade => TypeWriter::$delete_func::<AnnotationCascade>($snapshot, $type_),
+                AnnotationCategory::Range => TypeWriter::$delete_func::<AnnotationRange>($snapshot, $type_),
+                AnnotationCategory::Values => TypeWriter::$delete_func::<AnnotationValues>($snapshot, $type_),
+            }
         }
     };
 }
@@ -1021,7 +1046,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         definition_key: &DefinitionKey<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_deleted_struct_is_not_used(snapshot, definition_key)
+        OperationTimeValidation::validate_deleted_struct_is_not_used_in_schema(snapshot, definition_key)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_delete_struct(snapshot, definition_key);
@@ -1090,16 +1115,6 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.create_role_type_unconditional(snapshot, label, relation_type, ordering)
-    }
-
-    fn create_role_type_unconditional(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        label: &Label<'_>,
-        relation_type: RelationType<'static>,
-        ordering: Ordering,
-    ) -> Result<RoleType<'static>, ConceptWriteError> {
         let type_vertex = self
             .vertex_generator
             .create_role_type(snapshot)
@@ -1144,14 +1159,12 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         for owns in TypeReader::get_capabilities_declared::<Owns<'static>>(snapshot, object_type.clone())?
         {
-            // TODO: Put it in a single place for owns
-            TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
-            self.unset_capability(snapshot, owns)?;
+            self.unset_owns_unchecked(snapshot, owns)?;
         }
 
         for plays in TypeReader::get_capabilities_declared::<Plays<'static>>(snapshot, object_type.clone())?
         {
-            self.unset_capability(snapshot, plays)?;
+            self.unset_plays_unchecked(snapshot, plays)?;
         }
 
         Ok(())
@@ -1211,10 +1224,10 @@ impl TypeManager {
         for owns in
             TypeReader::get_capabilities_for_interface_declared::<Owns<'static>>(snapshot, attribute_type.clone())?
         {
-            TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
-            self.unset_capability(snapshot, owns)?;
+            self.unset_owns_unchecked(snapshot, owns)?;
         }
-        // TODO: delete value
+
+        self.unset_attribute_type_value_type(snapshot, attribute_type.clone())?;
         self.delete_type(snapshot, attribute_type)
     }
 
@@ -1238,10 +1251,10 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         for plays in TypeReader::get_capabilities_for_interface_declared::<Plays<'static>>(snapshot, relates.role())?
         {
-            self.unset_capability(snapshot, plays)?;
+            self.unset_plays_unchecked(snapshot, plays)?;
         }
 
-        self.unset_capability(snapshot, relates.clone())?;
+        self.unset_relates_unchecked(snapshot, relates.clone())?;
         TypeWriter::storage_delete_type_vertex_property::<Ordering>(snapshot, relates.role());
         self.delete_type(snapshot, relates.role())
     }
@@ -1251,13 +1264,38 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
-
-        // TODO: Delete annotations
-
+        for annotation in TypeReader::get_type_annotations_declared(snapshot, type_.clone())? {
+            self.unset_annotation(snapshot, type_.clone(), annotation.into().category())?;
+        }
         self.unset_supertype(snapshot, type_.clone())?;
         TypeWriter::storage_delete_label(snapshot, type_.clone());
         TypeWriter::storage_delete_vertex(snapshot, type_);
         Ok(())
+    }
+
+    fn unset_owns_unchecked(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owns: Owns<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
+        self.unset_capability(snapshot, owns)
+    }
+
+    fn unset_plays_unchecked(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        plays: Plays<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        self.unset_capability(snapshot, plays)
+    }
+
+    fn unset_relates_unchecked(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relates: Relates<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        self.unset_capability(snapshot, relates)
     }
 
     fn unset_capability(
@@ -1265,8 +1303,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         capability: impl Capability<'static>,
     ) -> Result<(), ConceptWriteError> {
-
-        // TODO: Delete annotations
+        for annotation in TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())? {
+            self.unset_capability_annotation(snapshot, capability.clone(), annotation.clone().into().category())?;
+        }
         self.unset_override(snapshot, capability.clone())?;
         TypeWriter::storage_delete_edge(snapshot, capability.clone());
         Ok(())
@@ -1414,6 +1453,14 @@ impl TypeManager {
         OperationTimeValidation::validate_value_type_can_be_unset(snapshot, thing_manager, attribute_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        self.unset_attribute_type_value_type(snapshot, attribute_type)
+    }
+
+    fn unset_attribute_type_value_type(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<(), ConceptWriteError> {
         let value_type = attribute_type.get_value_type_declared(snapshot, self)?;
         if value_type.is_some() {
             TypeWriter::storage_unset_value_type(snapshot, attribute_type);
@@ -1820,8 +1867,7 @@ impl TypeManager {
 
         let owns_declared = owner.get_owns_declared(snapshot, self)?;
         if let Some(owns) = owns_declared.iter().find(|owns| owns.attribute() == attribute_type) {
-            TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
-            self.unset_capability(snapshot, owns.clone())?;
+            self.unset_owns_unchecked(snapshot, owns.clone())?;
         }
         Ok(())
     }
@@ -1961,7 +2007,7 @@ impl TypeManager {
 
         let plays_declared = player.get_plays_declared(snapshot, self)?;
         if let Some(plays) = plays_declared.iter().find(|plays| plays.role() == role_type) {
-            self.unset_capability(snapshot, plays.clone())?;
+            self.unset_plays_unchecked(snapshot, plays.clone())?;
         }
         Ok(())
     }
@@ -2126,7 +2172,7 @@ impl TypeManager {
         OperationTimeValidation::validate_new_abstract_annotation_compatible_with_type_and_subtypes_instances(snapshot, self, thing_manager, type_.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_annotation::<AnnotationAbstract>(snapshot, type_, annotation)
+        self.set_annotation(snapshot, type_, annotation)
     }
 
     pub(crate) fn unset_annotation_abstract(
@@ -2134,7 +2180,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_annotation::<AnnotationAbstract>(snapshot, type_, AnnotationCategory::Abstract)
+        let annotation_category = AnnotationCategory::Abstract;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.unset_annotation(snapshot, type_, annotation_category)
     }
 
     pub(crate) fn unset_relation_type_annotation_abstract(
@@ -2203,7 +2251,7 @@ impl TypeManager {
         OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_annotation::<AnnotationIndependent>(snapshot, attribute_type, annotation)
+        self.set_annotation(snapshot, attribute_type, annotation)
     }
 
     pub(crate) fn unset_annotation_independent(
@@ -2211,7 +2259,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_annotation::<AnnotationIndependent>(snapshot, type_, AnnotationCategory::Independent)
+        let annotation_category = AnnotationCategory::Independent;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.unset_annotation(snapshot, type_, annotation_category)
     }
 
     pub(crate) fn set_relates_overridden(
@@ -2295,8 +2345,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Distinct(AnnotationDistinct);
 
-        self.validate_set_edge_annotation_general(snapshot, owns.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
 
         OperationTimeValidation::validate_owns_distinct_annotation_ordering(snapshot, owns.clone(), None, Some(true))
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -2310,7 +2359,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_edge_annotation::<AnnotationDistinct>(snapshot, owns, annotation)
+        self.set_edge_annotation(snapshot, owns, annotation)
     }
 
     pub(crate) fn set_relates_annotation_distinct(
@@ -2321,8 +2370,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Distinct(AnnotationDistinct);
 
-        self.validate_set_edge_annotation_general(snapshot, relates.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_set_capability_annotation_general(snapshot, relates.clone(), annotation.clone())?;
 
         OperationTimeValidation::validate_relates_distinct_annotation_ordering(
             snapshot,
@@ -2341,15 +2389,17 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_edge_annotation::<AnnotationDistinct>(snapshot, relates, annotation)
+        self.set_edge_annotation(snapshot, relates, annotation)
     }
 
-    pub(crate) fn unset_edge_annotation_distinct<CAP: Capability<'static>>(
+    pub(crate) fn unset_capability_annotation_distinct<CAP: Capability<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        edge: CAP,
+        capability: CAP,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_edge_annotation::<AnnotationDistinct>(snapshot, edge, AnnotationCategory::Distinct)
+        let annotation_category = AnnotationCategory::Distinct;
+        self.validate_unset_capability_annotation_general(snapshot, capability.clone(), annotation_category.clone())?;
+        self.unset_capability_annotation(snapshot, capability, annotation_category)
     }
 
     pub(crate) fn set_owns_annotation_unique(
@@ -2360,8 +2410,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Unique(AnnotationUnique);
 
-        self.validate_set_edge_annotation_general(snapshot, owns.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
 
         OperationTimeValidation::validate_owns_value_type_compatible_with_unique_annotation(
             snapshot,
@@ -2380,7 +2429,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_edge_annotation::<AnnotationUnique>(snapshot, owns, annotation)
+        self.set_edge_annotation(snapshot, owns, annotation)
     }
 
     pub(crate) fn unset_owns_annotation_unique(
@@ -2388,7 +2437,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_edge_annotation::<AnnotationUnique>(snapshot, owns, AnnotationCategory::Unique)
+        let annotation_category = AnnotationCategory::Unique;
+        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+        self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
     pub(crate) fn set_owns_annotation_key(
@@ -2399,8 +2450,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Key(AnnotationKey);
 
-        self.validate_set_edge_annotation_general(snapshot, owns.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
 
         OperationTimeValidation::validate_owns_value_type_compatible_with_key_annotation(
             snapshot,
@@ -2428,15 +2478,17 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_edge_annotation::<AnnotationKey>(snapshot, owns, annotation)
+        self.set_edge_annotation(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_edge_annotation_key<CAP: Capability<'static>>(
+    pub(crate) fn unset_owns_annotation_key(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        edge: CAP,
+        owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_edge_annotation::<AnnotationKey>(snapshot, edge, AnnotationCategory::Key)
+        let annotation_category = AnnotationCategory::Key;
+        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+        self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
     pub(crate) fn set_owns_annotation_cardinality(
@@ -2507,8 +2559,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Cardinality(cardinality);
 
-        self.validate_set_edge_annotation_general(snapshot, edge.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_set_capability_annotation_general(snapshot, edge.clone(), annotation.clone())?;
 
         OperationTimeValidation::validate_cardinality_arguments(cardinality)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -2524,15 +2575,17 @@ impl TypeManager {
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
-        self.set_edge_annotation::<AnnotationCardinality>(snapshot, edge, annotation)
+        self.set_edge_annotation(snapshot, edge, annotation)
     }
 
-    pub(crate) fn unset_edge_annotation_cardinality<CAP: Capability<'static>>(
+    pub(crate) fn unset_capability_annotation_cardinality<CAP: Capability<'static>>(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        edge: CAP,
+        capability: CAP,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_edge_annotation::<AnnotationCardinality>(snapshot, edge, AnnotationCategory::Cardinality)
+        let annotation_category = AnnotationCategory::Cardinality;
+        self.validate_unset_capability_annotation_general(snapshot, capability.clone(), annotation_category.clone())?;
+        self.unset_capability_annotation(snapshot, capability, annotation_category)
     }
 
     pub(crate) fn set_annotation_regex(
@@ -2574,7 +2627,7 @@ impl TypeManager {
         OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_annotation::<AnnotationRegex>(snapshot, attribute_type, annotation)
+        self.set_annotation(snapshot, attribute_type, annotation)
     }
 
     pub(crate) fn unset_annotation_regex(
@@ -2582,7 +2635,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_annotation::<AnnotationRegex>(snapshot, type_, AnnotationCategory::Regex)
+        let annotation_category = AnnotationCategory::Regex;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.unset_annotation(snapshot, type_, annotation_category)
     }
 
     pub(crate) fn set_owns_annotation_regex(
@@ -2594,8 +2649,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Regex(regex.clone());
 
-        self.validate_set_edge_annotation_general(snapshot, owns.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
 
         OperationTimeValidation::validate_regex_arguments(regex.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -2631,15 +2685,17 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_edge_annotation::<AnnotationRegex>(snapshot, owns, annotation)
+        self.set_edge_annotation(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_edge_annotation_regex<CAP: Capability<'static>>(
+    pub(crate) fn unset_owns_annotation_regex(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        edge: CAP,
+        owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_edge_annotation::<AnnotationRegex>(snapshot, edge, AnnotationCategory::Regex)
+        let annotation_category = AnnotationCategory::Regex;
+        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+        self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
     pub(crate) fn set_annotation_cascade(
@@ -2656,7 +2712,7 @@ impl TypeManager {
         OperationTimeValidation::validate_new_annotation_compatible_with_relation_type_and_subtypes_instances(snapshot, self, thing_manager, relation_type.clone(), annotation.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_annotation::<AnnotationCascade>(snapshot, relation_type, annotation)
+        self.set_annotation(snapshot, relation_type, annotation)
     }
 
     pub(crate) fn unset_annotation_cascade(
@@ -2664,7 +2720,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_annotation::<AnnotationCascade>(snapshot, type_, AnnotationCategory::Cascade)
+        let annotation_category = AnnotationCategory::Cascade;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.unset_annotation(snapshot, type_, annotation_category)
     }
 
     pub(crate) fn set_annotation_range(
@@ -2710,7 +2768,7 @@ impl TypeManager {
         OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_annotation::<AnnotationRange>(snapshot, attribute_type, annotation)
+        self.set_annotation(snapshot, attribute_type, annotation)
     }
 
     pub(crate) fn unset_annotation_range(
@@ -2718,7 +2776,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_annotation::<AnnotationRange>(snapshot, type_, AnnotationCategory::Range)
+        let annotation_category = AnnotationCategory::Range;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.unset_annotation(snapshot, type_, annotation_category)
     }
 
     pub(crate) fn set_owns_annotation_range(
@@ -2730,8 +2790,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Range(range.clone());
 
-        self.validate_set_edge_annotation_general(snapshot, owns.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
 
         let owns_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute())?;
 
@@ -2771,15 +2830,17 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_edge_annotation::<AnnotationRange>(snapshot, owns, annotation)
+        self.set_edge_annotation(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_edge_annotation_range<CAP: Capability<'static>>(
+    pub(crate) fn unset_owns_annotation_range(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        edge: CAP,
+        owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_edge_annotation::<AnnotationRange>(snapshot, edge, AnnotationCategory::Range)
+        let annotation_category = AnnotationCategory::Range;
+        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+        self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
     pub(crate) fn set_annotation_values(
@@ -2825,7 +2886,7 @@ impl TypeManager {
         OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_annotation::<AnnotationValues>(snapshot, attribute_type, annotation)
+        self.set_annotation(snapshot, attribute_type, annotation)
     }
 
     pub(crate) fn unset_annotation_values(
@@ -2833,7 +2894,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_annotation::<AnnotationValues>(snapshot, type_, AnnotationCategory::Values)
+        let annotation_category = AnnotationCategory::Values;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.unset_annotation(snapshot, type_, annotation_category)
     }
 
     pub(crate) fn set_owns_annotation_values(
@@ -2845,8 +2908,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Values(values.clone());
 
-        self.validate_set_edge_annotation_general(snapshot, owns.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
 
         let owns_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute())?;
 
@@ -2886,24 +2948,26 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        self.set_edge_annotation::<AnnotationValues>(snapshot, owns, annotation)
+        self.set_edge_annotation(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_edge_annotation_values<CAP: Capability<'static>>(
+    pub(crate) fn unset_owns_annotation_values(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        edge: CAP,
+        owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_edge_annotation::<AnnotationValues>(snapshot, edge, AnnotationCategory::Values)
+        let annotation_category = AnnotationCategory::Values;
+        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+        self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
-    fn set_annotation<A: TypeVertexPropertyEncoding<'static>>(
+    fn set_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
         annotation: Annotation,
     ) -> Result<(), ConceptWriteError> {
-        save_annotation!(
+        storage_save_annotation!(
             snapshot,
             type_,
             annotation,
@@ -2913,13 +2977,13 @@ impl TypeManager {
         Ok(())
     }
 
-    fn set_edge_annotation<A: TypeEdgePropertyEncoding<'static>>(
+    fn set_edge_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: impl Capability<'static>,
         annotation: Annotation,
     ) -> Result<(), ConceptWriteError> {
-        save_annotation!(
+        storage_save_annotation!(
             snapshot,
             edge,
             annotation,
@@ -2929,54 +2993,37 @@ impl TypeManager {
         Ok(())
     }
 
-    fn unset_annotation<A: TypeVertexPropertyEncoding<'static>>(
+    fn unset_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_unset_annotation_is_not_inherited(
+        storage_delete_annotation!(
             snapshot,
-            type_.clone(),
+            type_,
             annotation_category,
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        let annotations = TypeReader::get_type_annotations_declared(snapshot, type_.clone())?;
-        let annotation_exists =
-            annotations.into_iter().map(|annotation| annotation.into().category()).contains(&annotation_category);
-
-        if annotation_exists {
-            TypeWriter::storage_delete_type_vertex_property::<A>(snapshot, type_);
-        }
+            TypeReader::get_type_annotations_declared,
+            storage_delete_type_vertex_property
+        );
         Ok(())
     }
 
-    fn unset_edge_annotation<A: TypeEdgePropertyEncoding<'static>>(
+    fn unset_capability_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: impl Capability<'static>,
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_unset_edge_annotation_is_not_inherited(
+        storage_delete_annotation!(
             snapshot,
-            edge.clone(),
+            edge,
             annotation_category,
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        let annotations = TypeReader::get_type_edge_annotations_declared(snapshot, edge.clone())?;
-        let annotation_exists =
-            annotations.into_iter().map(|annotation| annotation.category()).contains(&annotation_category);
-
-        if annotation_exists {
-            TypeWriter::storage_delete_type_edge_property::<A>(snapshot, edge);
-        }
+            TypeReader::get_type_edge_annotations_declared,
+            storage_delete_type_edge_property
+        );
         Ok(())
     }
-
-    // Common validations for set annotation operations are separated to be called before
-    // instance checks that require specific types.
 
     fn validate_set_annotation_general(
         &self,
@@ -3003,25 +3050,59 @@ impl TypeManager {
         Ok(())
     }
 
-    fn validate_set_edge_annotation_general(
+    fn validate_set_capability_annotation_general(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        edge: impl Capability<'static>,
+        capability: impl Capability<'static>,
         annotation: Annotation,
-    ) -> Result<(), SchemaValidationError> {
+    ) -> Result<(), ConceptWriteError> {
         let category = annotation.category();
 
         OperationTimeValidation::validate_declared_edge_annotation_is_compatible_with_declared_annotations(
             snapshot,
-            edge.clone(),
+            capability.clone(),
             category.clone(),
-        )?;
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations(
             snapshot,
-            edge.clone(),
+            capability.clone(),
             category.clone(),
-        )?;
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        Ok(())
+    }
+
+    fn validate_unset_annotation_general(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_: impl KindAPI<'static>,
+        annotation_category: AnnotationCategory,
+    ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_unset_annotation_is_not_inherited(
+            snapshot,
+            type_.clone(),
+            annotation_category,
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        Ok(())
+    }
+
+    fn validate_unset_capability_annotation_general(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        edge: impl Capability<'static>,
+        annotation_category: AnnotationCategory,
+    ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_unset_edge_annotation_is_not_inherited(
+            snapshot,
+            edge.clone(),
+            annotation_category,
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         Ok(())
     }

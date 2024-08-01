@@ -559,10 +559,10 @@ impl TypeReader {
     }
 
     // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs
-    pub(crate) fn get_type_edge_annotations_declared<'b, CAP: Capability<'b>>(
+    pub(crate) fn get_type_edge_annotations_declared<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         edge: CAP,
-    ) -> Result<HashSet<Annotation>, ConceptReadError> {
+    ) -> Result<HashSet<CAP::AnnotationType>, ConceptReadError> {
         let type_edge = edge.to_canonical_type_edge();
         snapshot
             .iterate_range(KeyRange::new_inclusive(
@@ -571,7 +571,7 @@ impl TypeReader {
             ))
             .collect_cloned_hashset(|key, value| {
                 let annotation_key = TypeEdgeProperty::new(Bytes::Reference(key.byte_ref()));
-                match annotation_key.infix() {
+                let annotation = match annotation_key.infix() {
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
                     Infix::PropertyAnnotationUnique => Annotation::Unique(AnnotationUnique),
@@ -599,7 +599,8 @@ impl TypeReader {
                     | Infix::PropertyLinksOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
                     }
-                }
+                };
+                CAP::AnnotationType::from(annotation)
             })
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
@@ -607,8 +608,8 @@ impl TypeReader {
     pub(crate) fn get_type_edge_annotations<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         edge: CAP,
-    ) -> Result<HashMap<Annotation, CAP>, ConceptReadError> {
-        let mut annotations: HashMap<Annotation, CAP> = HashMap::new();
+    ) -> Result<HashMap<CAP::AnnotationType, CAP>, ConceptReadError> {
+        let mut annotations: HashMap<CAP::AnnotationType, CAP> = HashMap::new();
         let mut edge_opt = Some(edge);
         let mut declared = true;
         while let Some(edge) = edge_opt {

@@ -21,8 +21,16 @@ use encoding::{
     layout::infix::{
         Infix,
         Infix::{
-            PropertyAnnotationAbstract, PropertyAnnotationCascade, PropertyAnnotationDistinct,
-            PropertyAnnotationIndependent, PropertyAnnotationKey, PropertyAnnotationUnique,
+            PropertyAnnotationAbstract,
+            PropertyAnnotationDistinct,
+            PropertyAnnotationIndependent,
+            PropertyAnnotationUnique,
+            PropertyAnnotationKey,
+            PropertyAnnotationCardinality,
+            PropertyAnnotationRegex,
+            PropertyAnnotationCascade,
+            PropertyAnnotationRange,
+            PropertyAnnotationValues,
         },
     },
     value::{value::Value, value_type::ValueType, ValueEncodable},
@@ -585,25 +593,35 @@ macro_rules! empty_type_vertex_property_encoding {
     };
 }
 
-empty_type_vertex_property_encoding!(AnnotationAbstract, PropertyAnnotationAbstract);
-empty_type_vertex_property_encoding!(AnnotationIndependent, PropertyAnnotationIndependent);
-empty_type_vertex_property_encoding!(AnnotationDistinct, PropertyAnnotationDistinct);
+// It is a sign of poor architecture, but it lets us wrap other general places for annotations,
+// otherwise we'd need to write "unreachable"s on every caller's side
+macro_rules! unreachable_type_vertex_property_encoding {
+    ($property:ident, $infix:ident) => {
+        impl<'a> TypeVertexPropertyEncoding<'a> for $property {
+            const INFIX: Infix = $infix;
 
-impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationCardinality {
-    const INFIX: Infix = Infix::PropertyAnnotationCardinality;
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
-        // TODO this .unwrap() should be handled as an error
-        // although it does indicate data corruption
-        bincode::deserialize(value.bytes()).unwrap()
-    }
+            fn from_value_bytes<'b>(value: ByteReference<'b>) -> $property {
+                unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
+            }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
-    }
+            fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+                unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
+            }
+        }
+    };
 }
 
+unreachable_type_vertex_property_encoding!(AnnotationDistinct, PropertyAnnotationDistinct);
+unreachable_type_vertex_property_encoding!(AnnotationUnique, PropertyAnnotationUnique);
+unreachable_type_vertex_property_encoding!(AnnotationKey, PropertyAnnotationKey);
+unreachable_type_vertex_property_encoding!(AnnotationCardinality, PropertyAnnotationCardinality);
+
+empty_type_vertex_property_encoding!(AnnotationAbstract, PropertyAnnotationAbstract);
+empty_type_vertex_property_encoding!(AnnotationIndependent, PropertyAnnotationIndependent);
+empty_type_vertex_property_encoding!(AnnotationCascade, PropertyAnnotationCascade);
+
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
-    const INFIX: Infix = Infix::PropertyAnnotationRegex;
+    const INFIX: Infix = PropertyAnnotationRegex;
 
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> AnnotationRegex {
         // TODO this .unwrap() should be handled as an error
@@ -616,10 +634,8 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
     }
 }
 
-empty_type_vertex_property_encoding!(AnnotationCascade, PropertyAnnotationCascade);
-
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRange {
-    const INFIX: Infix = Infix::PropertyAnnotationRange;
+    const INFIX: Infix = PropertyAnnotationRange;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
@@ -632,7 +648,7 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRange {
 }
 
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationValues {
-    const INFIX: Infix = Infix::PropertyAnnotationValues;
+    const INFIX: Infix = PropertyAnnotationValues;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
@@ -661,12 +677,34 @@ macro_rules! empty_type_edge_property_encoder {
     };
 }
 
+// It is a sign of poor architecture, but it lets us wrap other general places for annotations,
+// otherwise we'd need to write "unreachable"s on every caller's side
+macro_rules! unreachable_type_edge_property_encoder {
+    ($property:ident, $infix:ident) => {
+        impl<'a> TypeEdgePropertyEncoding<'a> for $property {
+            const INFIX: Infix = $infix;
+
+            fn from_value_bytes<'b>(value: ByteReference<'b>) -> $property {
+                unreachable!("TypeEdgePropertyEncoding is not be implemented for {}", stringify!($property))
+            }
+
+            fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+                unreachable!("TypeEdgePropertyEncoding is not be implemented for {}", stringify!($property))
+            }
+        }
+    };
+}
+
+unreachable_type_edge_property_encoder!(AnnotationAbstract, PropertyAnnotationAbstract);
+unreachable_type_edge_property_encoder!(AnnotationIndependent, PropertyAnnotationIndependent);
+unreachable_type_edge_property_encoder!(AnnotationCascade, PropertyAnnotationCascade);
+
 empty_type_edge_property_encoder!(AnnotationDistinct, PropertyAnnotationDistinct);
-empty_type_edge_property_encoder!(AnnotationKey, PropertyAnnotationKey);
 empty_type_edge_property_encoder!(AnnotationUnique, PropertyAnnotationUnique);
+empty_type_edge_property_encoder!(AnnotationKey, PropertyAnnotationKey);
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
-    const INFIX: Infix = Infix::PropertyAnnotationCardinality;
+    const INFIX: Infix = PropertyAnnotationCardinality;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
@@ -679,7 +717,7 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
 }
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
-    const INFIX: Infix = Infix::PropertyAnnotationRegex;
+    const INFIX: Infix = PropertyAnnotationRegex;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
@@ -692,7 +730,7 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
 }
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
-    const INFIX: Infix = Infix::PropertyAnnotationRange;
+    const INFIX: Infix = PropertyAnnotationRange;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
@@ -705,7 +743,7 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
 }
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationValues {
-    const INFIX: Infix = Infix::PropertyAnnotationValues;
+    const INFIX: Infix = PropertyAnnotationValues;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
