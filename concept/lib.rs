@@ -11,7 +11,6 @@ use bytes::byte_reference::ByteReference;
 
 pub mod error;
 pub mod iterator;
-mod messages;
 pub mod thing;
 pub mod type_;
 

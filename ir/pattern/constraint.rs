@@ -4,20 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt,
-    iter::{empty, zip},
-};
+use std::{collections::HashMap, fmt};
 
 use answer::variable::Variable;
 use itertools::Itertools;
 
 use crate::{
     pattern::{
-        expression::ExpressionTree,
+        expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
-        variable_category::{VariableCategory, VariableOptionality},
+        variable_category::VariableCategory,
         IrID, ScopeId,
     },
     program::{block::BlockContext, function_signature::FunctionSignature},
@@ -175,21 +171,41 @@ impl<'cx> ConstraintsBuilder<'cx> {
         Ok(as_ref.as_comparison().unwrap())
     }
 
-    pub fn add_function_call(
+    pub fn add_function_binding(
         &mut self,
         assigned: Vec<Variable>,
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
     ) -> Result<&FunctionCallBinding<Variable>, PatternDefinitionError> {
-        use PatternDefinitionError::{
-            FunctionCallReturnArgCountMismatch, FunctionRequiredArgumentReceivedOptionalVariable,
-        };
+        let function_call = self.create_function_call(&assigned, callee_signature, arguments)?;
+        let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream);
+        for (index, var) in binding.ids_assigned().enumerate() {
+            self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
+        }
+        for (caller_var, callee_arg_index) in binding.function_call.call_id_mapping() {
+            self.context.set_variable_category(
+                *caller_var,
+                callee_signature.arguments[*callee_arg_index],
+                binding.clone().into(),
+            )?;
+        }
+        let as_ref = self.constraints.add_constraint(binding);
+        Ok(as_ref.as_function_call_binding().unwrap())
+    }
+
+    fn create_function_call(
+        &mut self,
+        assigned: &Vec<Variable>,
+        callee_signature: &FunctionSignature,
+        arguments: Vec<Variable>,
+    ) -> Result<FunctionCall<Variable>, PatternDefinitionError> {
+        use PatternDefinitionError::FunctionCallReturnCountMismatch;
         debug_assert!(assigned.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
         debug_assert!(arguments.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
 
         // Validate
         if assigned.len() != callee_signature.returns.len() {
-            Err(FunctionCallReturnArgCountMismatch {
+            Err(FunctionCallReturnCountMismatch {
                 assigned_var_count: assigned.len(),
                 function_return_count: callee_signature.returns.len(),
             })?
@@ -204,27 +220,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
         // Construct
         let call_variable_mapping =
             arguments.iter().enumerate().map(|(index, variable)| (variable.clone(), index)).collect();
-        let function_call = FunctionCall::new(
-            callee_signature.function_id.clone(),
-            call_variable_mapping,
-            callee_signature.return_is_stream,
-        );
-        let binding = FunctionCallBinding::new(assigned, function_call);
-
-        for (index, var) in binding.ids_assigned().enumerate() {
-            self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
-        }
-
-        for (caller_var, callee_arg_index) in binding.function_call.call_id_mapping() {
-            self.context.set_variable_category(
-                *caller_var,
-                callee_signature.arguments[*callee_arg_index],
-                binding.clone().into(),
-            )?;
-        }
-
-        let as_ref = self.constraints.add_constraint(binding);
-        Ok(as_ref.as_function_call_binding().unwrap())
+        Ok(FunctionCall::new(callee_signature.function_id.clone(), call_variable_mapping))
     }
 
     pub fn add_expression(
@@ -373,7 +369,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_expression_binding(&self) -> Option<&ExpressionBinding<ID>> {
+    pub fn as_expression_binding(&self) -> Option<&ExpressionBinding<ID>> {
         match self {
             Constraint::ExpressionBinding(binding) => Some(binding),
             _ => None,
@@ -405,13 +401,21 @@ pub enum ConstraintIDSide {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Label<ID: IrID> {
-    pub(crate) left: ID,
-    pub(crate) type_: String,
+    left: ID,
+    type_label: String,
 }
 
 impl<ID: IrID> Label<ID> {
     fn new(identifier: ID, type_: String) -> Self {
-        Self { left: identifier, type_ }
+        Self { left: identifier, type_label: type_ }
+    }
+
+    pub fn left(&self) -> ID {
+        self.left
+    }
+
+    pub fn type_label(&self) -> &str {
+        &self.type_label
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
@@ -436,7 +440,7 @@ impl<ID: IrID> fmt::Display for Label<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: implement indentation without rewriting it everywhere
         // write!(f, "{: >width$} {} type {}", "", self.left, self.type_, width=f.width().unwrap_or(0))
-        write!(f, "{} label {}", self.left, self.type_)
+        write!(f, "{} label {}", self.left, self.type_label)
     }
 }
 
@@ -463,11 +467,11 @@ impl<ID: IrID> Sub<ID> {
         function(self.supertype, ConstraintIDSide::Right)
     }
 
-    pub(crate) fn subtype(&self) -> ID {
+    pub fn subtype(&self) -> ID {
         self.subtype
     }
 
-    pub(crate) fn supertype(&self) -> ID {
+    pub fn supertype(&self) -> ID {
         self.supertype
     }
 }
@@ -672,12 +676,20 @@ impl ExpressionBinding<Variable> {
         Self { left, expression }
     }
 
-    pub fn left(&self) -> &Variable {
-        &self.left
+    pub fn left(&self) -> Variable {
+        self.left
     }
 
     pub fn expression(&self) -> &ExpressionTree<Variable> {
         &self.expression
+    }
+
+    pub(crate) fn validate(&self, context: &mut BlockContext) -> Result<(), ExpressionDefinitionError> {
+        if self.expression().is_empty() {
+            Err(ExpressionDefinitionError::EmptyExpressionTree {})
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -697,14 +709,15 @@ impl<ID: IrID> fmt::Display for ExpressionBinding<ID> {
 pub struct FunctionCallBinding<ID: IrID> {
     assigned: Vec<ID>,
     function_call: FunctionCall<ID>,
+    is_stream: bool,
 }
 
 impl<ID: IrID> FunctionCallBinding<ID> {
-    fn new(left: Vec<ID>, function_call: FunctionCall<ID>) -> Self {
-        Self { assigned: left, function_call }
+    fn new(left: Vec<ID>, function_call: FunctionCall<ID>, is_stream: bool) -> Self {
+        Self { assigned: left, function_call, is_stream }
     }
 
-    pub(crate) fn assigned(&self) -> &Vec<ID> {
+    pub fn assigned(&self) -> &Vec<ID> {
         &self.assigned
     }
 
@@ -712,9 +725,8 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         &self.function_call
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> {
-        panic!("Unimplemented");
-        empty()
+    pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
+        self.ids_assigned().chain(self.function_call.argument_ids())
     }
 
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> + '_ {
@@ -743,7 +755,7 @@ impl<ID: IrID> From<FunctionCallBinding<ID>> for Constraint<ID> {
 
 impl<ID: IrID> fmt::Display for FunctionCallBinding<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.function_call.return_is_stream() {
+        if self.is_stream {
             write!(f, "{} in {}", self.ids_assigned().map(|i| i.to_string()).join(", "), self.function_call())
         } else {
             write!(f, "{} = {}", self.ids_assigned().map(|i| i.to_string()).join(", "), self.function_call())

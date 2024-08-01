@@ -33,7 +33,7 @@ impl Optional {
         ConjunctionBuilder::new(context, &mut optional.conjunction)
     }
 
-    pub(crate) fn conjunction(&self) -> &Conjunction {
+    pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
     }
 

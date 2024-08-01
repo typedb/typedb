@@ -5,17 +5,17 @@
  */
 
 use encoding::graph::definition::{definition_key::DefinitionKey, function::FunctionDefinition};
-use ir::program::function_signature::FunctionIDTrait;
+use ir::program::function_signature::FunctionIDAPI;
 
 use crate::FunctionManagerError;
 
 pub type SchemaFunction = Function<DefinitionKey<'static>>;
-pub struct Function<FunctionIDType: FunctionIDTrait> {
+pub struct Function<FunctionIDType: FunctionIDAPI> {
     pub(crate) function_id: FunctionIDType,
     pub(crate) parsed: typeql::schema::definable::Function,
 }
 
-impl<FunctionIDType: FunctionIDTrait> Function<FunctionIDType> {
+impl<FunctionIDType: FunctionIDAPI> Function<FunctionIDType> {
     pub fn function_id(&self) -> FunctionIDType {
         self.function_id.clone()
     }
@@ -25,7 +25,7 @@ impl<FunctionIDType: FunctionIDTrait> Function<FunctionIDType> {
     }
 }
 
-impl<FunctionIDType: FunctionIDTrait> Function<FunctionIDType> {
+impl<FunctionIDType: FunctionIDAPI> Function<FunctionIDType> {
     pub(crate) fn build(
         function_id: FunctionIDType,
         definition: FunctionDefinition,

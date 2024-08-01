@@ -21,7 +21,6 @@ use encoding::{
     value::label::Label,
     AsBytes,
 };
-use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use serde::{Deserialize, Serialize};

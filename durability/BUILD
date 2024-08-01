@@ -6,11 +6,13 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 package(default_visibility = [
     "//concept:__subpackages__",
+    "//compiler:__subpackages__",
     "//database:__subpackages__",
     "//durability/tests:__subpackages__",
     "//durability/benches:__subpackages__",
-    "//function:__subpackages__",
     "//encoding:__subpackages__",
+    "//executor:__subpackages__",
+    "//function:__subpackages__",
     "//ir:__subpackages__",
     "//storage:__subpackages__",
     "//tests:__subpackages__",

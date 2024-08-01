@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding};
+use encoding::graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::type_::type_manager::type_reader::TypeReader;

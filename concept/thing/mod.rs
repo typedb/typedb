@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::ops::RangeBounds;
-
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::thing::{vertex_attribute::AttributeID, vertex_object::ObjectVertex, ThingVertex},
@@ -19,7 +17,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::{entity::Entity, thing_manager::ThingManager},
+    thing::thing_manager::ThingManager,
     type_::{type_manager::TypeManager, TypeAPI},
     ConceptStatus,
 };

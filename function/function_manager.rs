@@ -7,6 +7,9 @@
 use std::{iter::zip, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
+use compiler::inference::{
+    annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types_for_functions,
+};
 use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::{
@@ -20,13 +23,12 @@ use encoding::{
     AsBytes, Keyable,
 };
 use ir::{
-    inference::type_inference::infer_types_for_functions,
     program::{
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
-        program::{CompiledSchemaFunctions, Program},
+        program::Program,
         FunctionReadError,
     },
-    translator::function::build_signature,
+    translation::function::build_signature,
 };
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -68,7 +70,7 @@ impl FunctionManager {
             HashMapFunctionIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let ir = Program::compile_functions(&function_index, functions.iter().map(|f| &f.parsed)).unwrap();
         // Run type-inference
-        infer_types_for_functions(ir, snapshot, type_manager, &CompiledSchemaFunctions::empty())
+        infer_types_for_functions(ir, snapshot, type_manager, &AnnotatedCommittedFunctions::empty())
             .map_err(|source| FunctionManagerError::TypeInference { source })?;
         Ok(())
     }
@@ -338,7 +340,7 @@ pub mod tests {
             let function_annotations = cache.get_function_annotations(expected_function_id.clone()).unwrap();
             let function_ir = cache.get_function_ir(expected_function_id.clone()).unwrap();
             let var_c = *function_ir.block().context().get_variable_named("c", function_ir.block().scope_id()).unwrap();
-            let var_c_annotations = function_annotations.body_annotations().variable_annotations(var_c).unwrap();
+            let var_c_annotations = function_annotations.body_annotations().variable_annotations_of(var_c).unwrap();
             assert_eq!(&Arc::new(HashSet::from([type_cat.clone()])), var_c_annotations);
         }
     }

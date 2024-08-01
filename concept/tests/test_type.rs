@@ -110,7 +110,7 @@ fn entity_usage() {
         let supertype = child_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
         assert_eq!(supertype, person_type);
         let supertypes = child_type.get_supertypes(&snapshot, &type_manager).unwrap();
-        assert_eq!(supertypes.len(), 2);
+        assert_eq!(supertypes.len(), 1);
 
         // --- child owns age ---
         child_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
@@ -179,7 +179,7 @@ fn entity_usage() {
         let supertype = child_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
         assert_eq!(supertype, person_type);
         let supertypes = child_type.get_supertypes(&snapshot, &type_manager).unwrap();
-        assert_eq!(supertypes.len(), 2);
+        assert_eq!(supertypes.len(), 1);
 
         // --- child owns age ---
         let all_owns = child_type.get_owns_declared(&snapshot, &type_manager).unwrap();

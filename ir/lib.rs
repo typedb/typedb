@@ -14,18 +14,19 @@ use std::{
 };
 
 use answer::variable::Variable;
+use typeql::{
+    common::token,
+    statement::{InIterable, StructDeconstruct},
+};
 
 use crate::{
     pattern::{constraint::Constraint, expression::ExpressionDefinitionError, variable_category::VariableCategory},
     program::FunctionReadError,
 };
 
-pub mod expressions;
-pub mod inference;
-mod optimisation;
 pub mod pattern;
 pub mod program;
-pub mod translator;
+pub mod translation;
 
 #[derive(Debug)]
 pub enum PatternDefinitionError {
@@ -40,16 +41,13 @@ pub enum PatternDefinitionError {
         category_2: VariableCategory,
         category_2_source: Constraint<Variable>,
     },
-    FunctionCallReturnArgCountMismatch {
+    FunctionCallReturnCountMismatch {
         assigned_var_count: usize,
         function_return_count: usize,
     },
     FunctionCallArgumentCountMismatch {
         expected: usize,
         actual: usize,
-    },
-    FunctionRequiredArgumentReceivedOptionalVariable {
-        variable: Variable,
     },
     UnresolvedFunction {
         function_name: String,
@@ -64,12 +62,11 @@ pub enum PatternDefinitionError {
         function_name: String,
         index: usize,
     },
+    InAssignmentMustBeListOrStream {
+        in_assignment: InIterable,
+    },
     FunctionRead {
         source: FunctionReadError,
-    },
-    // TODO: Should expressions have their own errors?
-    FunctionCallInExpressionDidNotReturnSingleValue {
-        function_name: String,
     },
     ParseError {
         source: typeql::common::error::Error,
@@ -81,10 +78,17 @@ pub enum PatternDefinitionError {
     ExpressionDefinition {
         source: ExpressionDefinitionError,
     },
-    BuiltinArgumentCountMismatch {
-        builtin: String,
+    ExpressionAssignmentMustOneVariable {
+        assigned: Vec<Variable>,
+    },
+    ExpressionBuiltinArgumentCountMismatch {
+        builtin: token::Function,
         expected: usize,
         actual: usize,
+    },
+
+    UnimplementedStructAssignment {
+        deconstruct: StructDeconstruct,
     },
 }
 
@@ -97,21 +101,22 @@ impl fmt::Display for PatternDefinitionError {
 impl Error for PatternDefinitionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::DisjointVariableReuse { .. } => None,
-            Self::VariableCategoryMismatch { .. } => None,
-            Self::FunctionCallReturnArgCountMismatch { .. } => None,
-            Self::FunctionCallArgumentCountMismatch { .. } => None,
-            Self::FunctionRequiredArgumentReceivedOptionalVariable { .. } => None,
-            Self::UnresolvedFunction { .. } => None,
-            Self::ExpectedStreamReceivedSingle { .. } => None,
-            Self::ExpectedSingeReceivedStream { .. } => None,
-            Self::OptionalVariableForRequiredArgument { .. } => None,
-            Self::FunctionCallInExpressionDidNotReturnSingleValue { .. } => None,
-            Self::LiteralParseError { .. } => None,
-            Self::BuiltinArgumentCountMismatch { .. } => None,
+            Self::DisjointVariableReuse { .. }
+            | Self::VariableCategoryMismatch { .. }
+            | Self::FunctionCallReturnCountMismatch { .. }
+            | Self::FunctionCallArgumentCountMismatch { .. }
+            | Self::UnresolvedFunction { .. }
+            | Self::ExpectedStreamReceivedSingle { .. }
+            | Self::ExpectedSingeReceivedStream { .. }
+            | Self::OptionalVariableForRequiredArgument { .. }
+            | Self::LiteralParseError { .. }
+            | Self::ExpressionBuiltinArgumentCountMismatch { .. }
+            | Self::InAssignmentMustBeListOrStream { .. }
+            | Self::ExpressionAssignmentMustOneVariable { .. }
+            | Self::UnimplementedStructAssignment { .. } => None,
+            Self::ParseError { source } => Some(source),
             Self::FunctionRead { source } => Some(source),
             Self::ExpressionDefinition { source } => Some(source),
-            Self::ParseError { source } => Some(source),
         }
     }
 }

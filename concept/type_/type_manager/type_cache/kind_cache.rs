@@ -117,7 +117,7 @@ impl EntityTypeCache {
             .iterate_range(KeyRange::new_within(EntityType::prefix_for_kind(), EntityType::PREFIX.fixed_width_keys()))
             .collect_cloned_hashset(|key, _| EntityType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
             .unwrap();
-        let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap();
+        let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_entity_id).map(|_| None).collect::<Box<[_]>>();
 
         for entity in entities.into_iter() {
@@ -140,7 +140,7 @@ impl RelationTypeCache {
             ))
             .collect_cloned_hashset(|key, _| RelationType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
             .unwrap();
-        let max_relation_id = relations.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
+        let max_relation_id = relations.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_relation_id).map(|_| None).collect::<Box<[_]>>();
         for relation in relations.into_iter() {
             let cache = RelationTypeCache {
@@ -162,7 +162,7 @@ impl AttributeTypeCache {
             .iterate_range(KeyRange::new_within(AttributeType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| AttributeType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
             .unwrap();
-        let max_attribute_id = attributes.iter().map(|a| a.vertex().type_id_().as_u16()).max().unwrap();
+        let max_attribute_id = attributes.iter().map(|a| a.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Box<[_]>>();
         for attribute in attributes {
             let cache = AttributeTypeCache {
@@ -187,7 +187,7 @@ impl RoleTypeCache {
             .iterate_range(KeyRange::new_within(RoleType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| RoleType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
             .unwrap();
-        let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
+        let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_role_id).map(|_| None).collect::<Box<[_]>>();
         for role in roles.into_iter() {
             let ordering = TypeReader::get_type_ordering(snapshot, role.clone()).unwrap();

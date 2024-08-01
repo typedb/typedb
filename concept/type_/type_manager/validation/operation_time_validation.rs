@@ -7,13 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::{
-        definition::definition_key::DefinitionKey,
-        thing::{edge::ThingEdgeRolePlayer, vertex_object::ObjectVertex, ThingVertex},
-        type_::CapabilityKind,
-        Typed,
-    },
-    layout::prefix::Prefix,
+    graph::{definition::definition_key::DefinitionKey, thing::edge::ThingEdgeRolePlayer, type_::CapabilityKind},
     value::{label::Label, value_type::ValueType},
 };
 use itertools::Itertools;
@@ -21,7 +15,7 @@ use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    thing::{object::ObjectAPI, relation::RolePlayerIterator, thing_manager::ThingManager, ThingAPI},
+    thing::{relation::RolePlayerIterator, thing_manager::ThingManager, ThingAPI},
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues,

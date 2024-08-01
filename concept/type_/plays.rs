@@ -20,7 +20,7 @@ use crate::{
         object_type::ObjectType,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, Ordering, TypeAPI,
+        Capability, TypeAPI,
     },
 };
 
@@ -214,7 +214,6 @@ impl PartialEq<Annotation> for PlaysAnnotation {
                     false
                 }
             }
-
             Annotation::Abstract(_) => false,
             Annotation::Independent(_) => false,
             Annotation::Distinct(_) => false,

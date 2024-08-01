@@ -24,7 +24,7 @@ use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
-    error::{ConceptReadError, ConceptWriteError},
+    error::ConceptWriteError,
     type_::{
         attribute_type::AttributeType, owns::Owns, relates::Relates, relation_type::RelationType, role_type::RoleType,
         sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride, KindAPI, Ordering,

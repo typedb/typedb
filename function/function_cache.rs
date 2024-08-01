@@ -6,15 +6,17 @@
 
 use std::{collections::HashMap, iter::zip, sync::Arc};
 
+use compiler::inference::{
+    annotated_functions::{AnnotatedCommittedFunctions, AnnotatedFunctions},
+    type_annotations::FunctionAnnotations,
+    type_inference::infer_types_for_functions,
+};
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::{
-    inference::type_inference::{infer_types_for_functions, FunctionAnnotations},
-    program::{
-        function::FunctionIR,
-        function_signature::{FunctionIDTrait, FunctionSignature, HashMapFunctionIndex},
-        program::{CompiledFunctions, CompiledSchemaFunctions, Program},
-    },
+use ir::program::{
+    function::Function,
+    function_signature::{FunctionIDAPI, FunctionSignature, HashMapFunctionIndex},
+    program::Program,
 };
 use storage::{sequence_number::SequenceNumber, MVCCStorage};
 
@@ -22,7 +24,7 @@ use crate::{function::SchemaFunction, function_manager::FunctionReader, Function
 
 pub struct FunctionCache {
     uncompiled: Box<[Option<SchemaFunction>]>,
-    compiled: CompiledSchemaFunctions,
+    compiled: AnnotatedCommittedFunctions,
     index: HashMap<String, FunctionSignature>,
 }
 
@@ -45,7 +47,7 @@ impl FunctionCache {
         let ir = Program::compile_functions(&function_index, functions.iter().map(|f| &f.parsed)).unwrap();
         // Run type-inference
         let local_function_cache =
-            infer_types_for_functions(ir, &snapshot, &type_manager, &CompiledSchemaFunctions::empty())
+            infer_types_for_functions(ir, &snapshot, &type_manager, &AnnotatedCommittedFunctions::empty())
                 .map_err(|source| FunctionManagerError::TypeInference { source })?;
 
         // Convert them to our cache
@@ -53,7 +55,7 @@ impl FunctionCache {
             functions.iter().map(|function| function.function_id.as_usize() + 1).max().unwrap_or(0);
         let mut uncompiled_functions =
             (0..required_cache_count).map(|_| None).collect::<Box<[Option<SchemaFunction>]>>();
-        let mut ir_cache = (0..required_cache_count).map(|_| None).collect::<Box<[Option<FunctionIR>]>>();
+        let mut ir_cache = (0..required_cache_count).map(|_| None).collect::<Box<[Option<Function>]>>();
         let mut annotations_cache =
             (0..required_cache_count).map(|_| None).collect::<Box<[Option<FunctionAnnotations>]>>();
 
@@ -68,7 +70,7 @@ impl FunctionCache {
             ir_cache[cache_index] = Some(ir);
             annotations_cache[cache_index] = Some(annotations);
         }
-        let compiled_functions = CompiledSchemaFunctions::new(ir_cache, annotations_cache);
+        let compiled_functions = AnnotatedCommittedFunctions::new(ir_cache, annotations_cache);
         let index = function_index.into_parts();
         Ok(Self { uncompiled: uncompiled_functions, compiled: compiled_functions, index })
     }
@@ -81,14 +83,14 @@ impl FunctionCache {
         self.uncompiled[definition_key.as_usize()].as_ref()
     }
 
-    pub(crate) fn get_function_ir(&self, definition_key: DefinitionKey<'static>) -> Option<&FunctionIR> {
-        self.compiled.get_function_ir(definition_key)
+    pub(crate) fn get_function_ir(&self, definition_key: DefinitionKey<'static>) -> Option<&Function> {
+        self.compiled.get_function(definition_key)
     }
 
     pub(crate) fn get_function_annotations(
         &self,
         definition_key: DefinitionKey<'static>,
     ) -> Option<&FunctionAnnotations> {
-        self.compiled.get_function_annotations(definition_key)
+        self.compiled.get_annotations(definition_key)
     }
 }

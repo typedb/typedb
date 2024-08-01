@@ -19,7 +19,7 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
-pub(crate) trait Indexable {
+pub trait Indexable {
     const INDEX_PREFIX: Prefix;
 }
 

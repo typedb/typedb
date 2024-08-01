@@ -27,7 +27,7 @@ impl Disjunction {
         todo!()
     }
 
-    pub(crate) fn conjunctions(&self) -> &Vec<Conjunction> {
+    pub fn conjunctions(&self) -> &Vec<Conjunction> {
         &self.conjunctions
     }
 }

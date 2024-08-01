@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 package(default_visibility = ["//visibility:public"])
 
 rust_library(
@@ -13,11 +13,10 @@ rust_library(
         "*.rs",
         "expressions/*.rs",
         "expressions/builtins/*.rs",
-        "inference/*.rs",
         "optimisation/*.rs",
         "pattern/*.rs",
         "program/*.rs",
-        "translator/*.rs",
+        "translation/*.rs",
     ]),
     deps = [
         "//answer",
@@ -37,6 +36,11 @@ rust_library(
 
         "//util/test:test_utils", # dev dependency
     ],
+)
+
+rust_test(
+    name = "test_crate_ir",
+    crate = ":ir",
 )
 
 checkstyle_test(

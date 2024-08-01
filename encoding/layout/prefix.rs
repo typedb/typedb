@@ -6,8 +6,6 @@
 
 use bytes::util::increment_fixed;
 
-use crate::EncodingKeyspace;
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PrefixID {
     pub(crate) bytes: [u8; PrefixID::LENGTH],
@@ -22,50 +20,6 @@ impl PrefixID {
 
     pub const fn bytes(&self) -> [u8; PrefixID::LENGTH] {
         self.bytes
-    }
-
-    fn keyspace(&self) -> EncodingKeyspace {
-        match Prefix::from_prefix_id(*self) {
-            | Prefix::VertexEntityType
-            | Prefix::VertexRelationType
-            | Prefix::VertexAttributeType
-            | Prefix::VertexRoleType
-            | Prefix::EdgeSub
-            | Prefix::EdgeSubReverse
-            | Prefix::EdgeOwns
-            | Prefix::EdgeOwnsReverse
-            | Prefix::EdgePlays
-            | Prefix::EdgePlaysReverse
-            | Prefix::EdgeRelates
-            | Prefix::EdgeRelatesReverse
-            | Prefix::PropertyTypeVertex
-            | Prefix::IndexLabelToType
-            | Prefix::PropertyTypeEdge
-            | Prefix::DefinitionStruct
-            | Prefix::DefinitionFunction
-            | Prefix::IndexNameToDefinitionStruct
-            | Prefix::IndexNameToDefinitionFunction => EncodingKeyspace::Schema,
-            Prefix::VertexEntity => todo!(),
-            Prefix::VertexRelation => todo!(),
-            Prefix::VertexAttributeBoolean => todo!(),
-            Prefix::VertexAttributeLong => todo!(),
-            Prefix::VertexAttributeDouble => todo!(),
-            Prefix::VertexAttributeDecimal => todo!(),
-            Prefix::VertexAttributeDate => todo!(),
-            Prefix::VertexAttributeDateTime => todo!(),
-            Prefix::VertexAttributeDateTimeTZ => todo!(),
-            Prefix::VertexAttributeDuration => todo!(),
-            Prefix::VertexAttributeString => todo!(),
-            Prefix::VertexAttributeStruct => todo!(),
-            Prefix::EdgeHas => todo!(),
-            Prefix::EdgeHasReverse => todo!(),
-            Prefix::EdgeRolePlayer => todo!(),
-            Prefix::EdgeRolePlayerReverse => todo!(),
-            Prefix::EdgeRolePlayerIndex => todo!(),
-            Prefix::IndexValueToStruct => todo!(),
-            Prefix::PropertyObjectVertex => todo!(),
-            Prefix::_VertexAttributeLast => unreachable!("Marker enum variant should not be used."),
-        }
     }
 }
 

@@ -31,7 +31,7 @@ impl Negation {
         ConjunctionBuilder::new(context, &mut negation.conjunction)
     }
 
-    pub(crate) fn conjunction(&self) -> &Conjunction {
+    pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
     }
 }

@@ -15,7 +15,7 @@ use primitive::maybe_owns::MaybeOwns;
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
     program::FunctionReadError,
-    translator::function::build_signature,
+    translation::function::build_signature,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -82,17 +82,17 @@ impl Display for FunctionID {
     }
 }
 
-pub trait FunctionIDTrait: Clone + Into<FunctionID> {
+pub trait FunctionIDAPI: Clone + Into<FunctionID> {
     fn as_usize(&self) -> usize;
 }
 
-impl FunctionIDTrait for DefinitionKey<'static> {
+impl FunctionIDAPI for DefinitionKey<'static> {
     fn as_usize(&self) -> usize {
         self.definition_id().as_uint() as usize
     }
 }
 
-impl FunctionIDTrait for usize {
+impl FunctionIDAPI for usize {
     fn as_usize(&self) -> usize {
         *self
     }

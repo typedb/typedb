@@ -5,7 +5,7 @@
  */
 
 use ir::{
-    program::function_signature::HashMapFunctionIndex, translator::match_::translate_match, PatternDefinitionError,
+    program::function_signature::HashMapFunctionIndex, translation::match_::translate_match, PatternDefinitionError,
 };
 use typeql::query::stage::Stage;
 

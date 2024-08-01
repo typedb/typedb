@@ -18,6 +18,7 @@ rust_library(
         "//common/primitive",
         "//resource",
         "//concept",
+        "//compiler",
         "//durability",
         "//encoding",
         "//ir",
@@ -26,8 +27,6 @@ rust_library(
         "@vaticle_typeql//rust:typeql",
     ],
 )
-
-
 
 checkstyle_test(
     name = "checkstyle",

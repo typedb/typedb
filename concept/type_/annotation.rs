@@ -25,12 +25,7 @@ use encoding::{
             PropertyAnnotationIndependent, PropertyAnnotationKey, PropertyAnnotationUnique,
         },
     },
-    value::{
-        decimal_value::Decimal,
-        value::Value,
-        value_type::{ValueType, ValueTypeCategory},
-        ValueEncodable,
-    },
+    value::{value::Value, value_type::ValueType, ValueEncodable},
 };
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
@@ -770,7 +765,7 @@ mod hash_value {
             Value::DateTimeTZ(value) => value.hash(state),
             Value::String(value) => value.hash(state),
             Value::Duration(value) => value.hash(state),
-            Value::Struct(value) => unreachable!("Cannot hash a struct"),
+            Value::Struct(_value) => unreachable!("Cannot hash a struct"),
         }
     }
 

@@ -10,19 +10,6 @@ use std::{
     fmt::{Display, Formatter},
 };
 
-use concept::{
-    error::ConceptReadError,
-    type_::{
-        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues},
-        attribute_type::AttributeType,
-        object_type::ObjectType,
-        relation_type::RelationType,
-        role_type::RoleType,
-        type_manager::validation::SchemaValidationError,
-    },
-};
-use encoding::value::{label::Label, value_type::ValueType};
-
 pub mod attribute_type;
 mod owns;
 mod plays;

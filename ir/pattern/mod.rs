@@ -23,7 +23,7 @@ pub mod expression;
 pub mod function_call;
 pub mod nested_pattern;
 
-pub(crate) trait Scope {
+pub trait Scope {
     fn scope_id(&self) -> ScopeId;
 }
 

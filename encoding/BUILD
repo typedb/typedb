@@ -9,8 +9,11 @@ package(default_visibility = [
     "//answer:__subpackages__",
     "//concept:__subpackages__",
     "//database:__subpackages__",
+    "//executor:__subpackages__",
     "//function:__subpackages__",
+    "//inference:__subpackages__",
     "//ir:__subpackages__",
+    "//compiler:__subpackages__",
     "//traversal:__subpackages__",
     "//query:__subpackages__",
     "//tests/behaviour:__subpackages__",
@@ -43,7 +46,7 @@ rust_library(
 )
 
 rust_test(
-    name = "encoding_unit_tests",
+    name = "test_crate_encoding",
     crate = ":encoding",
     deps = [
         "@crates//:rand",

@@ -6,11 +6,9 @@
 
 use std::{error::Error, fmt};
 
+use compiler::inference::TypeInferenceError;
 use encoding::error::EncodingError;
-use ir::{
-    inference::TypeInferenceError,
-    program::{FunctionDefinitionError, FunctionReadError},
-};
+use ir::program::{FunctionDefinitionError, FunctionReadError};
 use storage::{snapshot::SnapshotGetError, ReadSnapshotOpenError};
 
 pub mod function;

@@ -29,21 +29,6 @@ rust_test(
     ],
 )
 
-
-rust_test(
-    name = "inference",
-    crate_root = "inference.rs",
-    srcs =  ["inference.rs"],
-    deps = [
-        "//answer",
-        "//common/bytes",
-        "//encoding",
-        "//ir:ir",
-        "//function:function",
-        "@vaticle_typeql//rust:typeql",
-    ],
-)
-
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

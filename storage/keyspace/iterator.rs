@@ -7,7 +7,6 @@
 use std::cmp::{max, Ordering};
 
 use bytes::{byte_array::ByteArray, Bytes};
-use itertools::Itertools;
 use lending_iterator::{
     adaptors::{SeekableMap, TakeWhile},
     LendingIterator, Peekable, Seekable,
