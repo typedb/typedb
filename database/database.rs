@@ -10,12 +10,15 @@ use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
+    time::Duration,
 };
 
 use concept::{
     error::ConceptWriteError,
     thing::statistics::{Statistics, StatisticsError},
+    type_::type_manager::type_cache::{TypeCache, TypeCacheCreateError},
 };
+use concurrency::IntervalRunner;
 use durability::wal::{WALError, WAL};
 use encoding::{
     error::EncodingError,
@@ -34,8 +37,8 @@ use storage::{
 
 #[derive(Debug, Clone)]
 pub(super) struct Schema {
-    pub(super) thing_statistics: Statistics,
-    // TODO type cache goes here
+    pub(super) thing_statistics: Arc<Statistics>,
+    pub(super) type_cache: Arc<TypeCache>,
 }
 
 pub struct Database<D> {
@@ -46,8 +49,10 @@ pub struct Database<D> {
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
 
-    pub(super) schema: RwLock<Arc<Schema>>,
-    pub(super) schema_txn_lock: RwLock<()>,
+    pub(super) schema: Arc<RwLock<Schema>>,
+    pub(super) schema_txn_lock: Arc<RwLock<()>>,
+
+    _statistics_updater: IntervalRunner,
 }
 
 impl<D> fmt::Debug for Database<D> {
@@ -76,8 +81,10 @@ impl Database<WALClient> {
         }
     }
 
+    const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
+
     fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
-        use DatabaseOpenError::{DirectoryCreate, Encoding, StorageOpen, WALOpen};
+        use DatabaseOpenError::{DirectoryCreate, Encoding, StorageOpen, TypeCacheInitialise, WALOpen};
 
         let name = name.as_ref();
 
@@ -95,7 +102,17 @@ impl Database<WALClient> {
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
-        let statistics = Statistics::new(storage.read_watermark());
+        let thing_statistics = Arc::new(Statistics::new(storage.read_watermark()));
+
+        let type_cache = Arc::new(
+            TypeCache::new(storage.clone(), SequenceNumber::MIN)
+                .map_err(|error| TypeCacheInitialise { source: error })?,
+        );
+
+        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache }));
+        let schema_txn_lock = Arc::new(RwLock::default());
+
+        let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone());
 
         Ok(Database::<WALClient> {
             name: name.to_owned(),
@@ -104,14 +121,16 @@ impl Database<WALClient> {
             definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
-            schema: RwLock::new(Arc::new(Schema { thing_statistics: statistics })),
-            schema_txn_lock: RwLock::default(),
+            schema,
+            schema_txn_lock,
+            _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         })
     }
 
     fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
-            CheckpointCreate, CheckpointLoad, DurabilityRead, Encoding, StatisticsInitialise, StorageOpen, WALOpen,
+            CheckpointCreate, CheckpointLoad, DurabilityRead, Encoding, StatisticsInitialise, StorageOpen,
+            TypeCacheInitialise, WALOpen,
         };
 
         let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
@@ -130,12 +149,23 @@ impl Database<WALClient> {
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
 
-        let mut statistics = storage
+        let mut thing_statistics = storage
             .durability()
             .find_last_unsequenced_type::<Statistics>()
             .map_err(|err| DurabilityRead { source: err })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
-        statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { source: err })?;
+        thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { source: err })?;
+        let thing_statistics = Arc::new(thing_statistics);
+
+        let type_cache = Arc::new(
+            TypeCache::new(storage.clone(), wal_last_sequence_number)
+                .map_err(|error| TypeCacheInitialise { source: error })?,
+        );
+
+        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache }));
+        let schema_txn_lock = Arc::new(RwLock::default());
+
+        let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone());
 
         let database = Database::<WALClient> {
             name: name.as_ref().to_owned(),
@@ -144,8 +174,9 @@ impl Database<WALClient> {
             definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
-            schema: RwLock::new(Arc::new(Schema { thing_statistics: statistics })),
-            schema_txn_lock: RwLock::default(),
+            schema,
+            schema_txn_lock,
+            _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         };
 
         let checkpoint_sequence_number =
@@ -185,34 +216,39 @@ impl Database<WALClient> {
         let _schema_write_lock = self.schema_txn_lock.write().unwrap();
 
         match Arc::get_mut(&mut self.storage) {
-            None => {
-                return Err(DatabaseResetError::StorageInUse {});
-            }
+            None => return Err(DatabaseResetError::StorageInUse {}),
             Some(storage) => storage.reset().map_err(|err| CorruptionStorageReset { source: err })?,
         }
         match Arc::get_mut(&mut self.definition_key_generator) {
-            None => {
-                return Err(CorruptionDefinitionKeyGeneratorInUse {});
-            }
+            None => return Err(CorruptionDefinitionKeyGeneratorInUse {}),
             Some(definition_key_generator) => definition_key_generator.reset(),
         }
         match Arc::get_mut(&mut self.type_vertex_generator) {
-            None => {
-                return Err(CorruptionTypeVertexGeneratorInUse {});
-            }
+            None => return Err(CorruptionTypeVertexGeneratorInUse {}),
             Some(type_vertex_generator) => type_vertex_generator.reset(),
         }
         match Arc::get_mut(&mut self.thing_vertex_generator) {
-            None => {
-                return Err(TypeVertexGeneratorInUse {});
-            }
+            None => return Err(TypeVertexGeneratorInUse {}),
             Some(thing_vertex_generator) => thing_vertex_generator.reset(),
         }
 
-        let schema = Arc::get_mut(&mut *locked_schema).unwrap();
-        schema.thing_statistics.reset(self.storage.read_watermark());
+        let thing_statistics = Arc::get_mut(&mut locked_schema.thing_statistics).unwrap();
+        thing_statistics.reset(self.storage.read_watermark());
 
         Ok(())
+    }
+}
+
+fn make_update_statistics_fn(
+    storage: Arc<MVCCStorage<WALClient>>,
+    schema: Arc<RwLock<Schema>>,
+    schema_txn_lock: Arc<RwLock<()>>,
+) -> impl Fn() {
+    move || {
+        let mut _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
+        let mut thing_statistics = (*schema.read().unwrap().thing_statistics).clone();
+        thing_statistics.may_synchronise(&storage).ok();
+        schema.write().unwrap().thing_statistics = Arc::new(thing_statistics);
     }
 }
 
@@ -229,6 +265,7 @@ pub enum DatabaseOpenError {
     Encoding { source: EncodingError },
     SchemaInitialise { source: ConceptWriteError },
     StatisticsInitialise { source: StatisticsError },
+    TypeCacheInitialise { source: TypeCacheCreateError },
 }
 
 impl fmt::Display for DatabaseOpenError {
@@ -248,9 +285,10 @@ impl Error for DatabaseOpenError {
             Self::DurabilityRead { source } => Some(source),
             Self::CheckpointLoad { source } => Some(source),
             Self::CheckpointCreate { source } => Some(source),
+            Self::Encoding { source } => Some(source),
             Self::SchemaInitialise { source } => Some(source),
             Self::StatisticsInitialise { source } => Some(source),
-            Self::Encoding { source } => Some(source),
+            Self::TypeCacheInitialise { source } => Some(source),
         }
     }
 }

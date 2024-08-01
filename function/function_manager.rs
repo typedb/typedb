@@ -22,13 +22,11 @@ use encoding::{
 use ir::{
     inference::type_inference::infer_types_for_functions,
     program::{
-        function_signature::{
-            FunctionID, FunctionIDTrait, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex,
-        },
+        function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionIndex},
         program::{CompiledSchemaFunctions, Program},
         FunctionReadError,
     },
-    translator::function::{build_signature, translate_function},
+    translator::function::build_signature,
 };
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -270,7 +268,8 @@ pub mod tests {
         let storage = setup_storage();
         let type_manager =
             TypeManager::new(Arc::new(DefinitionKeyGenerator::new()), Arc::new(TypeVertexGenerator::new()), None);
-        let ((type_animal, type_cat, type_dog), _) = setup_types(storage.clone().open_snapshot_write(), &type_manager);
+        let ((_type_animal, type_cat, _type_dog), _) =
+            setup_types(storage.clone().open_snapshot_write(), &type_manager);
         let functions_to_define = vec!["
         fun cat_names($c: animal) -> { name } :
             match
@@ -283,7 +282,7 @@ pub mod tests {
         let expected_function_id = DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0));
         let expected_signature = FunctionSignature::new(
             FunctionID::Schema(expected_function_id.clone()),
-            vec![(VariableCategory::Object, VariableOptionality::Required)],
+            vec![VariableCategory::Object],
             vec![(VariableCategory::Object, VariableOptionality::Required)],
             true,
         );
@@ -338,8 +337,7 @@ pub mod tests {
 
             let function_annotations = cache.get_function_annotations(expected_function_id.clone()).unwrap();
             let function_ir = cache.get_function_ir(expected_function_id.clone()).unwrap();
-            let var_c =
-                function_ir.block().context().get_variable_named("c", function_ir.block().scope_id()).unwrap().clone();
+            let var_c = *function_ir.block().context().get_variable_named("c", function_ir.block().scope_id()).unwrap();
             let var_c_annotations = function_annotations.body_annotations().variable_annotations(var_c).unwrap();
             assert_eq!(&Arc::new(HashSet::from([type_cat.clone()])), var_c_annotations);
         }
@@ -393,7 +391,7 @@ pub mod tests {
             cat.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
             dog.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
             animal
-                .set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract))
+                .set_annotation(&mut snapshot, type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract))
                 .unwrap();
 
             // Ownerships

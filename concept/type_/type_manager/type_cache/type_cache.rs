@@ -40,6 +40,7 @@ use crate::type_::{
 };
 
 // TODO: could/should we slab allocate the schema cache?
+#[derive(Debug)]
 pub struct TypeCache {
     open_sequence_number: SequenceNumber,
 
@@ -146,11 +147,8 @@ impl TypeCache {
     ) -> HashMap<Label<'static>, T> {
         type_cache_array
             .iter()
-            .filter_map(|entry| {
-                entry
-                    .as_ref()
-                    .map(|cache| (cache.common_type_cache().label.clone(), cache.common_type_cache().type_.clone()))
-            })
+            .flatten()
+            .map(|cache| (cache.common_type_cache().label.clone(), cache.common_type_cache().type_.clone()))
             .collect()
     }
 
@@ -159,9 +157,8 @@ impl TypeCache {
     ) -> HashMap<String, DefinitionKey<'static>> {
         struct_cache_array
             .iter()
-            .filter_map(|entry| {
-                entry.as_ref().map(|cache| (cache.definition.name.clone(), cache.definition_key.clone()))
-            })
+            .flatten()
+            .map(|cache| (cache.definition.name.clone(), cache.definition_key.clone()))
             .collect()
     }
 
@@ -193,27 +190,15 @@ impl TypeCache {
     }
 
     pub(crate) fn get_entity_types(&self) -> Vec<EntityType<'static>> {
-        self.entity_types
-            .iter()
-            .filter_map(Option::as_ref)
-            .map(|cache| cache.common_type_cache().type_.clone())
-            .collect()
+        self.entity_types.iter().flatten().map(|cache| cache.common_type_cache().type_.clone()).collect()
     }
 
     pub(crate) fn get_relation_types(&self) -> Vec<RelationType<'static>> {
-        self.relation_types
-            .iter()
-            .filter_map(Option::as_ref)
-            .map(|cache| cache.common_type_cache().type_.clone())
-            .collect()
+        self.relation_types.iter().flatten().map(|cache| cache.common_type_cache().type_.clone()).collect()
     }
 
     pub(crate) fn get_attribute_types(&self) -> Vec<AttributeType<'static>> {
-        self.attribute_types
-            .iter()
-            .filter_map(Option::as_ref)
-            .map(|cache| cache.common_type_cache().type_.clone())
-            .collect()
+        self.attribute_types.iter().flatten().map(|cache| cache.common_type_cache().type_.clone()).collect()
     }
 
     pub(crate) fn get_role_types(&self) -> Vec<RoleType<'static>> {
@@ -282,16 +267,16 @@ impl TypeCache {
         &T::get_cache(self, type_).common_type_cache().annotations
     }
 
-    pub(crate) fn get_owns_for_attribute_type_declared<'a>(
+    pub(crate) fn get_owns_for_attribute_type_declared(
         &self,
-        attribute_type: AttributeType<'a>,
+        attribute_type: AttributeType<'_>,
     ) -> &HashSet<Owns<'static>> {
         &AttributeType::get_cache(self, attribute_type).owns_declared
     }
 
-    pub(crate) fn get_owns_for_attribute_type<'a>(
+    pub(crate) fn get_owns_for_attribute_type(
         &self,
-        attribute_type: AttributeType<'a>,
+        attribute_type: AttributeType<'_>,
     ) -> &HashMap<ObjectType<'static>, Owns<'static>> {
         &AttributeType::get_cache(self, attribute_type).owns
     }
@@ -326,31 +311,31 @@ impl TypeCache {
         &T::get_cache(self, type_).owner_player_cache().owns_overridden
     }
 
-    pub(crate) fn get_role_type_ordering<'a>(&self, role_type: RoleType<'a>) -> Ordering {
-        RoleType::get_cache(&self, role_type).ordering
+    pub(crate) fn get_role_type_ordering(&self, role_type: RoleType<'_>) -> Ordering {
+        RoleType::get_cache(self, role_type).ordering
     }
 
-    pub(crate) fn get_role_type_relates_declared<'a>(&self, role_type: RoleType<'a>) -> &Relates<'static> {
-        &RoleType::get_cache(&self, role_type).relates_declared
+    pub(crate) fn get_role_type_relates_declared(&self, role_type: RoleType<'_>) -> &Relates<'static> {
+        &RoleType::get_cache(self, role_type).relates_declared
     }
 
-    pub(crate) fn get_role_type_relates<'a>(
+    pub(crate) fn get_role_type_relates(
         &self,
-        role_type: RoleType<'a>,
+        role_type: RoleType<'_>,
     ) -> &HashMap<RelationType<'static>, Relates<'static>> {
         &RoleType::get_cache(self, role_type).relates
     }
 
-    pub(crate) fn get_relation_type_relates_declared<'a>(
+    pub(crate) fn get_relation_type_relates_declared(
         &self,
-        relation_type: RelationType<'a>,
+        relation_type: RelationType<'_>,
     ) -> &HashSet<Relates<'static>> {
         &RelationType::get_cache(self, relation_type).relates_declared
     }
 
-    pub(crate) fn get_relation_type_relates<'a>(
+    pub(crate) fn get_relation_type_relates(
         &self,
-        relation_type: RelationType<'a>,
+        relation_type: RelationType<'_>,
     ) -> &HashMap<RoleType<'static>, Relates<'static>> {
         &RelationType::get_cache(self, relation_type).relates
     }
@@ -373,13 +358,13 @@ impl TypeCache {
         &self.relates.get(&relates).unwrap().overrides
     }
 
-    pub(crate) fn get_plays_for_role_type_declared<'a>(&self, role_type: RoleType<'a>) -> &HashSet<Plays<'static>> {
+    pub(crate) fn get_plays_for_role_type_declared(&self, role_type: RoleType<'_>) -> &HashSet<Plays<'static>> {
         &RoleType::get_cache(self, role_type).plays_declared
     }
 
-    pub(crate) fn get_plays_for_role_type<'a>(
+    pub(crate) fn get_plays_for_role_type(
         &self,
-        role_type: RoleType<'a>,
+        role_type: RoleType<'_>,
     ) -> &HashMap<ObjectType<'static>, Plays<'static>> {
         &RoleType::get_cache(self, role_type).plays
     }
@@ -429,11 +414,11 @@ impl TypeCache {
         &self.plays.get(&plays).unwrap().annotations
     }
 
-    pub(crate) fn get_attribute_type_value_type<'a>(
+    pub(crate) fn get_attribute_type_value_type(
         &self,
-        attribute_type: AttributeType<'a>,
+        attribute_type: AttributeType<'_>,
     ) -> &Option<(ValueType, AttributeType<'static>)> {
-        &AttributeType::get_cache(&self, attribute_type).value_type
+        &AttributeType::get_cache(self, attribute_type).value_type
     }
 
     pub(crate) fn get_owns_annotations_declared<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {

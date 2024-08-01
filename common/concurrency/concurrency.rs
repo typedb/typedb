@@ -4,9 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod kind_cache;
-mod selection;
-mod struct_definition_cache;
-mod type_cache;
+mod interval_runner;
 
-pub use self::type_cache::{TypeCache, TypeCacheCreateError};
+pub use crate::interval_runner::IntervalRunner;

@@ -227,7 +227,7 @@ impl OwnsCache {
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, owns.clone())
                     .unwrap()
                     .into_iter()
-                    .map(|annotation| OwnsAnnotation::from(annotation))
+                    .map(OwnsAnnotation::from)
                     .collect(),
                 annotations: TypeReader::get_type_edge_annotations(snapshot, owns.clone())
                     .unwrap()
@@ -259,7 +259,7 @@ impl PlaysCache {
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, plays.clone())
                     .unwrap()
                     .into_iter()
-                    .map(|annotation| PlaysAnnotation::from(annotation))
+                    .map(PlaysAnnotation::from)
                     .collect(),
                 annotations: TypeReader::get_type_edge_annotations(snapshot, plays.clone())
                     .unwrap()
@@ -291,7 +291,7 @@ impl RelatesCache {
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, relates.clone())
                     .unwrap()
                     .into_iter()
-                    .map(|annotation| RelatesAnnotation::from(annotation))
+                    .map(RelatesAnnotation::from)
                     .collect(),
                 annotations: TypeReader::get_type_edge_annotations(snapshot, relates.clone())
                     .unwrap()
@@ -331,7 +331,7 @@ impl<T: KindAPI<'static, SelfStatic = T>> CommonTypeCache<T> {
 }
 
 impl OwnerPlayerCache {
-    fn create<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnerPlayerCache
+    fn create<Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnerPlayerCache
     where
         Snapshot: ReadableSnapshot,
         T: KindAPI<'static> + ObjectTypeAPI<'static> + PlayerAPI<'static>,
