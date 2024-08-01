@@ -73,7 +73,7 @@ fn define_types<'a>(
             let label = Label::parse_from(type_declaration.label.ident.as_str());
             match type_declaration.kind {
                 None => {
-                    return Err(DefineError::TypeCreateRequiresKind { type_declaration: type_declaration.clone() });
+                    // Refers to an existing type.
                 }
                 Some(token::Kind::Entity) => {
                     type_manager.create_entity_type(snapshot, &label).map_err(|err| DefineError::TypeCreateError {
@@ -363,7 +363,6 @@ fn define_capabilities_relates<'a>(
                         }
                         CapabilityBase::Relates(relates) => match &type_ {
                             TypeEnum::Relation(relation_type) => {
-                                println!("Relates is {}", &relates.related);
                                 if let Some((role_label, is_list)) = type_ref_to_label_and_is_list(&relates.related) {
                                     let ordering = if is_list { Ordering::Ordered } else { Ordering::Unordered };
                                     relation_type
