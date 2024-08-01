@@ -15,7 +15,7 @@ use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::program::{
     function::Function,
-    function_signature::{FunctionIDTrait, FunctionSignature, HashMapFunctionIndex},
+    function_signature::{FunctionIDAPI, FunctionSignature, HashMapFunctionIndex},
     program::Program,
 };
 use storage::{sequence_number::SequenceNumber, MVCCStorage};

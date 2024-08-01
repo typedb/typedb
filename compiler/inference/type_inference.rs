@@ -295,7 +295,7 @@ pub mod tests {
                 vec![(VariableCategory::Object, VariableOptionality::Required)],
                 true,
             );
-            conjunction.constraints_mut().add_function_call(vec![var_animal], &callee_signature, vec![]).unwrap();
+            conjunction.constraints_mut().add_function_binding(vec![var_animal], &callee_signature, vec![]).unwrap();
             let entry = builder.finish();
             (entry, f_ir)
         })

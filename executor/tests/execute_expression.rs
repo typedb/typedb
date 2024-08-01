@@ -241,7 +241,7 @@ fn test_functions() {
     assert!(matches!(
         compile_expression_via_match("round(3.5e0, 4.5e0)", HashMap::new()),
         Err(PatternDefitionOrExpressionCompilationError::PatternDefinition {
-            source: PatternDefinitionError::BuiltinArgumentCountMismatch { .. }
+            source: PatternDefinitionError::ExpressionBuiltinArgumentCountMismatch { .. }
         })
     ));
 }

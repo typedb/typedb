@@ -37,7 +37,7 @@ rust_library(
 )
 
 rust_test(
-    name = "storage_unit_tests",
+    name = "test_unit_storage",
     crate = ":storage",
     deps = ["//util/test:test_utils"],
 )

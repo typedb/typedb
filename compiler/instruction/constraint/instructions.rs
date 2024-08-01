@@ -69,7 +69,7 @@ impl ConstraintInstruction {
             ConstraintInstruction::FunctionCallBinding(call) => call.function_call().argument_ids().for_each(apply),
             ConstraintInstruction::ComparisonGenerator(comparison) => apply(comparison.rhs()),
             ConstraintInstruction::ComparisonGeneratorReverse(comparison) => apply(comparison.lhs()),
-            ConstraintInstruction::ExpressionBinding(binding) => binding.expression().ids().for_each(apply),
+            ConstraintInstruction::ExpressionBinding(binding) => binding.expression().variables().for_each(apply),
         }
     }
 

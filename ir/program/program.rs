@@ -8,7 +8,7 @@ use crate::{
     program::{
         block::FunctionalBlock,
         function::Function,
-        function_signature::{FunctionIDTrait, FunctionSignatureIndex},
+        function_signature::{FunctionIDAPI, FunctionSignatureIndex},
         FunctionDefinitionError, ProgramDefinitionError,
     },
     translation::{function::translate_function, match_::translate_match},
@@ -105,7 +105,7 @@ pub mod tests {
             match
                 $x isa animal;
                 $n in cat_names($x);
-            filter $x;
+            select $x;
         ";
         let query = typeql::parse_query(raw_query).unwrap().into_pipeline();
         let Pipeline { stages, preambles, .. } = query;

@@ -98,7 +98,7 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
     compiled_expressions.insert(binding.left().clone(), None);
     // Compile any dependent expressions first
     let mut variable_value_types: HashMap<Variable, ExpressionValueType> = HashMap::new();
-    for expr in binding.expression().tree() {
+    for expr in binding.expression().expressions_preorder() {
         let variable_opt = match expr {
             Expression::Variable(variable) => Some(*variable),
             Expression::ListIndex(list_index) => Some(list_index.list_variable()),

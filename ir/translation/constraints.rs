@@ -10,6 +10,8 @@ use typeql::{
     statement::AssignmentPattern,
     type_::NamedType,
 };
+use typeql::expression::{Expression, FunctionCall};
+use typeql::statement::InIterable;
 
 use crate::{
     pattern::constraint::{ConstraintsBuilder, IsaKind},
@@ -25,10 +27,14 @@ pub(super) fn add_statement(
 ) -> Result<(), PatternDefinitionError> {
     match stmt {
         typeql::Statement::Is(_) => todo!(),
-        typeql::Statement::InStream(in_stream) => add_in_iterable_statement(function_index, constraints, in_stream)?,
+        typeql::Statement::InStream(InIterable { lhs, rhs, .. }) => {
+            let assigned = assignment_typeql_vars_to_variables(constraints, lhs)?;
+            add_typeql_binding(function_index, constraints, assigned, rhs, true)?
+        },
         typeql::Statement::Comparison(_) => todo!(),
         typeql::Statement::Assignment(assignment) => {
-            add_typeql_assignment(function_index, constraints, &assignment.lhs, &assignment.rhs)?
+            let assigned: Vec<Variable> = assignment_pattern_to_variables(constraints, &assignment.lhs)?;
+            add_typeql_binding(function_index, constraints, assigned, &assignment.rhs, false)?
         }
         typeql::Statement::Thing(thing) => add_thing_statement(constraints, thing)?,
         typeql::Statement::AttributeValue(_) => todo!(),
@@ -201,88 +207,58 @@ fn add_typeql_relation(
     Ok(())
 }
 
-fn add_in_iterable_statement(
+fn add_typeql_binding(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
-    in_stream: &typeql::statement::InIterable,
-) -> Result<(), PatternDefinitionError> {
-    todo!()
-    // match &in_stream.rhs.name {
-    //     FunctionName::Builtin(_) => todo!(),
-    //     FunctionName::Identifier(identifier) => add_function_call_user(
-    //         function_index,
-    //         constraints,
-    //         &AssignmentPattern::Variables(in_stream.lhs.clone()),
-    //         identifier.as_str(),
-    //         &in_stream.rhs.args,
-    //         true,
-    //     ),
-    // }
-}
-
-fn add_function_call_user(
-    function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
-    lhs: &AssignmentPattern,
-    function_name: &str,
-    args: &Vec<TypeQLExpression>,
-    expects_stream: bool,
-) -> Result<(), PatternDefinitionError> {
-    let assigned: Vec<Variable> = assignment_pattern_to_variables(constraints, lhs)?;
-    let arguments: Vec<Variable> = split_out_inline_expressions(function_index, constraints, args)?;
-    add_function_call_user_impl(function_index, constraints, assigned, function_name, arguments, expects_stream)
-}
-
-fn add_typeql_assignment(
-    function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
-    lhs: &AssignmentPattern,
+    assigned: Vec<Variable>,
     rhs: &TypeQLExpression,
+    is_stream_binding: bool,
 ) -> Result<(), PatternDefinitionError> {
-    if let typeql::expression::Expression::Function(function_call) = rhs {
-        if let FunctionName::Identifier(identifier) = &function_call.name {
-            return add_function_call_user(
+    match rhs {
+        Expression::Function(FunctionCall { name: FunctionName::Identifier(identifier), args, .. }) => {
+            let arguments: Vec<Variable> = split_out_inline_expressions(function_index, constraints, &args)?;
+            add_function_call_binding_user(
                 function_index,
                 constraints,
-                lhs,
+                assigned,
                 identifier.as_str(),
-                &function_call.args,
-                false,
-            );
+                arguments,
+                is_stream_binding
+            )
         }
-    }
-
-    let lhs = match lhs {
-        AssignmentPattern::Variables(typeql_vars) => {
-            let mut vars =
-                typeql_vars.iter().map(|v| register_typeql_var(constraints, v)).collect::<Result<Vec<_>, _>>()?;
-            if typeql_vars.len() == 1 {
-                vars.pop().unwrap()
+        Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. })
+        | Expression::Variable(_)
+        | Expression::ListIndex(_)
+        | Expression::Value(_)
+        | Expression::Operation(_)
+        | Expression::Paren(_)
+        | Expression::List(_)
+        | Expression::ListIndexRange(_) => {
+            let expression = build_expression(function_index, constraints, rhs)?;
+            if assigned.len() != 1 {
+                Err(PatternDefinitionError::ExpressionAssignmentMustOneVariable { assigned })
             } else {
-                todo!("I don't know what's allowed and what isn't")
+                constraints.add_expression(*assigned.get(0).unwrap(), expression)?;
+                Ok(())
             }
         }
-        AssignmentPattern::Deconstruct(_) => todo!("later"),
-    };
-    let expression = build_expression(function_index, constraints, rhs)?;
-    constraints.add_expression(lhs, expression)?;
-    Ok(())
+    }
 }
 
 // Helpers
-pub(super) fn add_function_call_user_impl(
+pub(super) fn add_function_call_binding_user(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
     assigned: Vec<Variable>,
     function_name: &str,
     arguments: Vec<Variable>,
-    expects_stream: bool,
+    must_be_stream: bool,
 ) -> Result<(), PatternDefinitionError> {
     let function_opt = function_index
         .get_function_signature(function_name)
         .map_err(|source| PatternDefinitionError::FunctionRead { source })?;
     if let Some(callee) = function_opt {
-        match (expects_stream, callee.return_is_stream) {
+        match (must_be_stream, callee.return_is_stream) {
             (true, true) | (false, false) => {}
             (false, true) => {
                 Err(PatternDefinitionError::ExpectedSingeReceivedStream { function_name: function_name.to_owned() })?
@@ -291,7 +267,7 @@ pub(super) fn add_function_call_user_impl(
                 Err(PatternDefinitionError::ExpectedStreamReceivedSingle { function_name: function_name.to_owned() })?
             }
         }
-        constraints.add_function_call(assigned.clone(), &callee, arguments)?;
+        constraints.add_function_binding(assigned, &callee, arguments)?;
         Ok(())
     } else {
         Err(PatternDefinitionError::UnresolvedFunction { function_name: function_name.to_owned() })
@@ -304,13 +280,19 @@ fn assignment_pattern_to_variables(
 ) -> Result<Vec<Variable>, PatternDefinitionError> {
     match assignment {
         AssignmentPattern::Variables(vars) => {
-            vars.iter().map(|variable| register_typeql_var(constraints, variable)).collect::<Result<Vec<_>, _>>()
+            assignment_typeql_vars_to_variables(constraints, vars)
         }
         AssignmentPattern::Deconstruct(struct_deconstruct) => {
-            // If we do want to support this, introduce anonymous variables and another deconstruct IR.
-            todo!()
+            Err(PatternDefinitionError::UnimplementedStructAssignment { deconstruct: struct_deconstruct.clone() })
         }
     }
+}
+
+fn assignment_typeql_vars_to_variables(
+    constraints: &mut ConstraintsBuilder<'_>,
+    vars: &Vec<typeql::Variable>
+) -> Result<Vec<Variable>, PatternDefinitionError> {
+    vars.iter().map(|variable| register_typeql_var(constraints, variable)).collect::<Result<Vec<_>, _>>()
 }
 
 pub(super) fn split_out_inline_expressions(

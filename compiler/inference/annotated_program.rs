@@ -81,7 +81,7 @@ pub mod tests {
             match
                 $x isa animal;
                 $n in cat_names($x);
-            filter $x;
+            select $x;
         ";
         let query = typeql::parse_query(raw_query).unwrap().into_pipeline();
         let Pipeline { stages, preambles, .. } = query;

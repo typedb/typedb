@@ -19,12 +19,11 @@ pub struct FunctionCall<ID: IrID> {
     function_id: FunctionID,
     // map call variable to index of argument
     call_variable_mapping: BTreeMap<ID, usize>,
-    return_is_stream: bool,
 }
 
 impl<ID: IrID> FunctionCall<ID> {
-    pub fn new(function_id: FunctionID, call_variable_mapping: BTreeMap<ID, usize>, return_is_stream: bool) -> Self {
-        Self { function_id, call_variable_mapping, return_is_stream }
+    pub fn new(function_id: FunctionID, call_variable_mapping: BTreeMap<ID, usize>) -> Self {
+        Self { function_id, call_variable_mapping }
     }
 
     pub fn function_id(&self) -> FunctionID {
@@ -37,10 +36,6 @@ impl<ID: IrID> FunctionCall<ID> {
 
     pub fn argument_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.call_variable_mapping.keys().into_iter().cloned()
-    }
-
-    pub(crate) fn return_is_stream(&self) -> bool {
-        self.return_is_stream
     }
 }
 
