@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub use type_cache::TypeCache;
 
 mod kind_cache;
 mod selection;
