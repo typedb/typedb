@@ -13,11 +13,11 @@ use answer::variable::Variable;
 use ir::pattern::IrID;
 
 pub mod batch;
+pub mod expression_executor;
 mod function_executor;
 pub(crate) mod instruction;
 pub mod pattern_executor;
 pub mod program_executor;
-pub mod expression_executor;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct VariablePosition {

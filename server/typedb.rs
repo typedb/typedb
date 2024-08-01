@@ -77,7 +77,7 @@ impl Server {
     pub fn reset_else_recreate_database(&mut self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
         // TODO: this is a partial implementation, only single threaded and without cooperative transaction shutdown
         // remove from map to make DB unavailable
-        let mut db = self.databases.remove(name.as_ref());
+        let db = self.databases.remove(name.as_ref());
         let result = if let Some(db) = db {
             match Arc::try_unwrap(db) {
                 Ok(mut unwrapped) => {

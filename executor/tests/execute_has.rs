@@ -8,12 +8,12 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::{
     inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
+    instruction::constraint::instructions::{ConstraintInstruction, Inputs},
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
     },
 };
-use compiler::instruction::constraint::instructions::{ConstraintInstruction, Inputs};
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,

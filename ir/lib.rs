@@ -13,10 +13,11 @@ use std::{
     fmt::{self},
 };
 
-use typeql::common::token;
-use typeql::statement::{InIterable, StructDeconstruct};
-
 use answer::variable::Variable;
+use typeql::{
+    common::token,
+    statement::{InIterable, StructDeconstruct},
+};
 
 use crate::{
     pattern::{constraint::Constraint, expression::ExpressionDefinitionError, variable_category::VariableCategory},

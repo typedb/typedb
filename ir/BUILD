@@ -39,7 +39,7 @@ rust_library(
 )
 
 rust_test(
-    name = "test_unit_ir",
+    name = "test_crate_ir",
     crate = ":ir",
 )
 

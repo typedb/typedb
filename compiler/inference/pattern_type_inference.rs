@@ -328,7 +328,7 @@ pub mod tests {
     #[test]
     fn basic_binary_edges() {
         // Some version of `$a isa animal, has name $n;`
-        let storage = setup_storage();
+        let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
         let function_index = HashMapFunctionIndex::empty();
 
@@ -575,7 +575,7 @@ pub mod tests {
     #[test]
     fn basic_nested_graphs() {
         // Some version of `$a isa animal, has name $n;`
-        let storage = setup_storage();
+        let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
         let function_index = HashMapFunctionIndex::empty();
 
@@ -696,7 +696,7 @@ pub mod tests {
 
     #[test]
     fn no_type_constraints() {
-        let storage = setup_storage();
+        let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
         let function_index = HashMapFunctionIndex::empty();
 
@@ -753,7 +753,7 @@ pub mod tests {
 
     #[test]
     fn role_players() {
-        let storage = setup_storage();
+        let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
         let function_index = HashMapFunctionIndex::empty();
 

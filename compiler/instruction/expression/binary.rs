@@ -4,13 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use std::{marker::PhantomData, ops::Rem};
 
 use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 
 use crate::instruction::expression::{
-    CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
-    op_codes::ExpressionOpCode,
+    op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
 };
 
 pub trait BinaryExpression<T1: DBValue, T2: DBValue, R: DBValue> {
@@ -36,7 +41,6 @@ where
     F: BinaryExpression<T1, T2, R>,
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
-
 }
 
 impl<T1, T2, R, F> CompilableExpression for Binary<T1, T2, R, F>

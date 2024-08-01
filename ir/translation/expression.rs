@@ -14,8 +14,8 @@ use crate::{
     pattern::{
         constraint::ConstraintsBuilder,
         expression::{
-            BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange,
-            Operation, Operator,
+            BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ExpressionTreeNodeId, ListConstructor,
+            ListIndex, ListIndexRange, Operation, Operator,
         },
     },
     program::function_signature::FunctionSignatureIndex,
@@ -25,7 +25,6 @@ use crate::{
     },
     PatternDefinitionError,
 };
-use crate::pattern::expression::ExpressionTreeNodeId;
 
 pub(crate) fn build_expression(
     function_index: &impl FunctionSignatureIndex,
@@ -163,15 +162,15 @@ fn to_builtin_id(
 
 #[cfg(test)]
 pub mod tests {
-    use itertools::Itertools;
     use encoding::value::value::Value;
+    use itertools::Itertools;
 
     use crate::{
         pattern::expression::{Expression, Operation, Operator},
         program::{block::FunctionalBlock, function_signature::HashMapFunctionIndex},
+        translation::match_::translate_match,
         PatternDefinitionError,
     };
-    use crate::translation::match_::translate_match;
 
     fn parse_query_get_match(query_str: &str) -> Result<FunctionalBlock, PatternDefinitionError> {
         let mut query = typeql::parse_query(query_str).unwrap().into_pipeline();
@@ -192,8 +191,13 @@ pub mod tests {
         let var_y = block.context().get_variable_named("y", block.scope_id()).unwrap();
 
         let lhs = block.conjunction().constraints()[0].as_expression_binding().unwrap().left();
-        let rhs = block.conjunction().constraints()[0].as_expression_binding().unwrap().expression()
-            .expressions_preorder().cloned().collect_vec();
+        let rhs = block.conjunction().constraints()[0]
+            .as_expression_binding()
+            .unwrap()
+            .expression()
+            .expression_tree_preorder()
+            .cloned()
+            .collect_vec();
         assert_eq!(lhs, *var_y);
         assert_eq!(
             rhs,

@@ -8,10 +8,9 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use compiler::{
-    inference::type_annotations::TypeAnnotations,
+    inference::type_annotations::TypeAnnotations, instruction::constraint::instructions::ConstraintInstruction,
+    planner::pattern_plan::InstructionAPI,
 };
-use compiler::instruction::constraint::instructions::ConstraintInstruction;
-use compiler::planner::pattern_plan::InstructionAPI;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::pattern::constraint::Constraint;
 use storage::snapshot::ReadableSnapshot;

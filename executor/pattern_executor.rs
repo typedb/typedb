@@ -6,25 +6,24 @@
 
 use std::{cmp::Ordering, collections::HashMap, fmt::Display, sync::Arc};
 
-use itertools::Itertools;
-
 use answer::{variable::Variable, variable_value::VariableValue};
 use compiler::{
     inference::type_annotations::TypeAnnotations,
+    instruction::constraint::instructions::ConstraintInstruction,
     planner::pattern_plan::{
         AssignmentStep, DisjunctionStep, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
         UnsortedJoinStep,
     },
 };
-use compiler::instruction::constraint::instructions::ConstraintInstruction;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::program::block::BlockContext;
+use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{Batch, BatchRowIterator, ImmutableRow, Row},
-    instruction::{InstructionExecutor, iterator::TupleIterator},
+    instruction::{iterator::TupleIterator, InstructionExecutor},
     SelectedPositions, VariablePosition,
 };
 

@@ -6,24 +6,22 @@
 
 use std::collections::{HashMap, HashSet};
 
-use itertools::Itertools;
-
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
     pattern::{
         constraint::{Constraint, ExpressionBinding},
-        variable_category::VariableCategory
-        ,
+        variable_category::VariableCategory,
     },
     program::block::{BlockContext, FunctionalBlock},
 };
+use itertools::Itertools;
 
 use crate::{
     inference::type_annotations::TypeAnnotations,
+    instruction::constraint::instructions::{ConstraintInstruction, Inputs},
     planner::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost},
 };
-use crate::instruction::constraint::instructions::{Inputs, ConstraintInstruction};
 
 pub struct PatternPlan {
     pub(crate) steps: Vec<Step>,
@@ -164,7 +162,7 @@ impl PatternPlan {
         &self.steps
     }
 
-    pub(crate) fn into_steps(self) -> impl Iterator<Item=Step> {
+    pub(crate) fn into_steps(self) -> impl Iterator<Item = Step> {
         self.steps.into_iter()
     }
 
@@ -234,7 +232,11 @@ pub struct IntersectionStep {
 }
 
 impl IntersectionStep {
-    pub fn new(sort_variable: Variable, instructions: Vec<ConstraintInstruction>, selected_variables: &[Variable]) -> Self {
+    pub fn new(
+        sort_variable: Variable,
+        instructions: Vec<ConstraintInstruction>,
+        selected_variables: &[Variable],
+    ) -> Self {
         let mut input_variables = Vec::with_capacity(instructions.len() * 2);
         let mut new_variables = Vec::with_capacity(instructions.len() * 2);
         instructions.iter().for_each(|instruction| {

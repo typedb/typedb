@@ -15,13 +15,13 @@ use compiler::{
     inference::ExpressionCompilationError,
 };
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
+use executor::expression_executor::{ExpressionExecutor, ExpressionValue};
 use ir::{
-    pattern::constraint::Constraint, PatternDefinitionError,
-    program::function_signature::HashMapFunctionIndex, translation::match_::translate_match,
+    pattern::constraint::Constraint, program::function_signature::HashMapFunctionIndex,
+    translation::match_::translate_match, PatternDefinitionError,
 };
 use itertools::Itertools;
 use typeql::query::stage::Stage;
-use executor::expression_executor::{ExpressionExecutor, ExpressionValue};
 
 #[derive(Debug)]
 pub enum PatternDefitionOrExpressionCompilationError {
@@ -63,7 +63,7 @@ fn compile_expression_via_match(
             Constraint::ExpressionBinding(binding) => binding,
             _ => unreachable!(),
         };
-        let compiled = ExpressionCompilationContext::compile(expression_binding.expression(), variable_types_mapped)?;
+        let compiled = ExpressionCompilationContext::compile(expression_binding.expression(), &variable_types_mapped)?;
         Ok((variable_mapping, compiled))
     } else {
         unreachable!();
@@ -110,7 +110,7 @@ fn test_basic() {
                 ("b", ExpressionValueType::Single(ValueTypeCategory::Long)),
             ]),
         )
-            .unwrap();
+        .unwrap();
         let (a, b) = ["a", "b"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
 
         let inputs =
@@ -259,7 +259,7 @@ fn list_ops() {
             "$y[1]",
             HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))]),
         )
-            .unwrap();
+        .unwrap();
         let (y,) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
 
         let inputs =
@@ -273,7 +273,7 @@ fn list_ops() {
             "$y[1..3]",
             HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))]),
         )
-            .unwrap();
+        .unwrap();
         let (y,) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
 
         let inputs = HashMap::from([(

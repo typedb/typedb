@@ -4,12 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::collections::HashMap;
-use itertools::Itertools;
+
 use answer::variable::Variable;
-use ir::pattern::constraint::{Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, RolePlayer};
-use ir::pattern::IrID;
+use ir::pattern::{
+    constraint::{Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, RolePlayer},
+    IrID,
+};
+use itertools::Itertools;
+
 use crate::planner::pattern_plan::InstructionAPI;
 
 #[derive(Debug, Clone)]
@@ -75,23 +78,24 @@ impl ConstraintInstruction {
 
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(Variable)) {
         match self {
-            ConstraintInstruction::Isa(isa, inputs) | ConstraintInstruction::IsaReverse(isa, inputs) => isa.ids_foreach(|var, _| {
-                if !inputs.inputs().iter().contains(&var) {
-                    apply(var)
-                }
-            }),
-            ConstraintInstruction::Has(has, inputs) | ConstraintInstruction::HasReverse(has, inputs) => has.ids_foreach(|var, _| {
-                if !inputs.inputs().iter().contains(&var) {
-                    apply(var)
-                }
-            }),
-            ConstraintInstruction::RolePlayer(rp, inputs) | ConstraintInstruction::RolePlayerReverse(rp, inputs) => {
-                rp.ids_foreach(|var, _| {
+            ConstraintInstruction::Isa(isa, inputs) | ConstraintInstruction::IsaReverse(isa, inputs) => isa
+                .ids_foreach(|var, _| {
                     if !inputs.inputs().iter().contains(&var) {
                         apply(var)
                     }
-                })
-            }
+                }),
+            ConstraintInstruction::Has(has, inputs) | ConstraintInstruction::HasReverse(has, inputs) => has
+                .ids_foreach(|var, _| {
+                    if !inputs.inputs().iter().contains(&var) {
+                        apply(var)
+                    }
+                }),
+            ConstraintInstruction::RolePlayer(rp, inputs) | ConstraintInstruction::RolePlayerReverse(rp, inputs) => rp
+                .ids_foreach(|var, _| {
+                    if !inputs.inputs().iter().contains(&var) {
+                        apply(var)
+                    }
+                }),
             ConstraintInstruction::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
             ConstraintInstruction::ComparisonGenerator(comparison) => apply(comparison.lhs()),
             ConstraintInstruction::ComparisonGeneratorReverse(comparison) => apply(comparison.rhs()),
@@ -109,7 +113,9 @@ impl InstructionAPI for ConstraintInstruction {
         match self {
             ConstraintInstruction::Isa(isa, _) | ConstraintInstruction::IsaReverse(isa, _) => isa.clone().into(),
             ConstraintInstruction::Has(has, _) | ConstraintInstruction::HasReverse(has, _) => has.clone().into(),
-            ConstraintInstruction::RolePlayer(rp, _) | ConstraintInstruction::RolePlayerReverse(rp, _) => rp.clone().into(),
+            ConstraintInstruction::RolePlayer(rp, _) | ConstraintInstruction::RolePlayerReverse(rp, _) => {
+                rp.clone().into()
+            }
             ConstraintInstruction::FunctionCallBinding(call) => call.clone().into(),
             | ConstraintInstruction::ComparisonGenerator(cmp)
             | ConstraintInstruction::ComparisonGeneratorReverse(cmp)

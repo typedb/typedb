@@ -91,7 +91,7 @@ pub mod tests {
         let function_id = FunctionID::Preamble(0);
         let function_index = HashMapFunctionIndex::build([(FunctionID::Preamble(0), &function)].into_iter());
         let program = Program::compile(&function_index, &entry, vec![&function]).unwrap();
-        let storage = setup_storage();
+        let (_tmp_dir, storage) = setup_storage();
         let (type_manager, _) = managers();
         let ((type_animal, type_cat, type_dog), _, _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);

@@ -1043,7 +1043,7 @@ pub mod tests {
         // cat-name sub animal-name; dog-name sub animal-name;
 
         // Some version of `$a isa animal, has name $n;`
-        let storage = setup_storage();
+        let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
@@ -1127,7 +1127,7 @@ pub mod tests {
     fn test_no_constraints() {
         // dog sub animal, owns dog-name; cat sub animal owns cat-name;
         // cat-name sub animal-name; dog-name sub animal-name;
-        let storage = setup_storage();
+        let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), (type_fears, _, _)) =
@@ -1185,7 +1185,7 @@ pub mod tests {
 
     #[test]
     fn test_comparison() {
-        let storage = setup_storage();
+        let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), (type_fears, _, _)) =

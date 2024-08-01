@@ -6,12 +6,10 @@
 
 use answer::variable::Variable;
 use typeql::{
-    expression::{Expression as TypeQLExpression, FunctionName},
-    statement::AssignmentPattern,
+    expression::{Expression as TypeQLExpression, Expression, FunctionCall, FunctionName},
+    statement::{AssignmentPattern, InIterable},
     type_::NamedType,
 };
-use typeql::expression::{Expression, FunctionCall};
-use typeql::statement::InIterable;
 
 use crate::{
     pattern::constraint::{ConstraintsBuilder, IsaKind},
@@ -30,7 +28,7 @@ pub(super) fn add_statement(
         typeql::Statement::InStream(InIterable { lhs, rhs, .. }) => {
             let assigned = assignment_typeql_vars_to_variables(constraints, lhs)?;
             add_typeql_binding(function_index, constraints, assigned, rhs, true)?
-        },
+        }
         typeql::Statement::Comparison(_) => todo!(),
         typeql::Statement::Assignment(assignment) => {
             let assigned: Vec<Variable> = assignment_pattern_to_variables(constraints, &assignment.lhs)?;
@@ -223,7 +221,7 @@ fn add_typeql_binding(
                 assigned,
                 identifier.as_str(),
                 arguments,
-                is_stream_binding
+                is_stream_binding,
             )
         }
         Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. })
@@ -279,9 +277,7 @@ fn assignment_pattern_to_variables(
     assignment: &AssignmentPattern,
 ) -> Result<Vec<Variable>, PatternDefinitionError> {
     match assignment {
-        AssignmentPattern::Variables(vars) => {
-            assignment_typeql_vars_to_variables(constraints, vars)
-        }
+        AssignmentPattern::Variables(vars) => assignment_typeql_vars_to_variables(constraints, vars),
         AssignmentPattern::Deconstruct(struct_deconstruct) => {
             Err(PatternDefinitionError::UnimplementedStructAssignment { deconstruct: struct_deconstruct.clone() })
         }
@@ -290,7 +286,7 @@ fn assignment_pattern_to_variables(
 
 fn assignment_typeql_vars_to_variables(
     constraints: &mut ConstraintsBuilder<'_>,
-    vars: &Vec<typeql::Variable>
+    vars: &Vec<typeql::Variable>,
 ) -> Result<Vec<Variable>, PatternDefinitionError> {
     vars.iter().map(|variable| register_typeql_var(constraints, variable)).collect::<Result<Vec<_>, _>>()
 }

@@ -259,7 +259,7 @@ pub mod tests {
 
     #[test]
     fn test_functions() {
-        let storage = setup_storage();
+        let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), (type_fears, _, _)) =

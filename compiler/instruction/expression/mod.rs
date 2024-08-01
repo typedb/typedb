@@ -10,21 +10,19 @@ use std::{
 };
 
 use binary::BinaryExpression;
-use encoding::value::value::DBValue;
-use encoding::value::value_type::ValueTypeCategory;
+use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 use load_cast::ImplicitCast;
 use unary::UnaryExpression;
 
 use crate::{
-    expression::expression_compiler::ExpressionCompilationContext,
-    inference::ExpressionCompilationError,
+    expression::expression_compiler::ExpressionCompilationContext, inference::ExpressionCompilationError,
     instruction::expression::op_codes::ExpressionOpCode,
 };
 
-pub mod op_codes;
 pub mod binary;
 pub mod list_operations;
 pub mod load_cast;
+pub mod op_codes;
 pub mod operators;
 pub mod unary;
 

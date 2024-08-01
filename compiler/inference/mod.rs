@@ -199,6 +199,7 @@ pub mod tests {
     use std::sync::Arc;
 
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+    use durability::wal::WAL;
     use encoding::{
         graph::{
             definition::definition_key_generator::DefinitionKeyGenerator,
@@ -207,8 +208,11 @@ pub mod tests {
         EncodingKeyspace,
     };
     use storage::{durability_client::WALClient, MVCCStorage};
+    use test_utils::{create_tmp_dir, init_logging, TempDir};
 
-    use crate::pattern_type_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph};
+    use crate::inference::pattern_type_inference::{
+        NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
+    };
 
     impl<'this> PartialEq<Self> for TypeInferenceEdge<'this> {
         fn eq(&self, other: &Self) -> bool {
@@ -240,14 +244,15 @@ pub mod tests {
 
     impl<'this> Eq for NestedTypeInferenceGraphDisjunction<'this> {}
 
-    pub(crate) fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
+    pub(crate) fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
         init_logging();
         let storage_path = create_tmp_dir();
         let wal = WAL::create(&storage_path).unwrap();
-        Arc::new(
+        let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
-        )
+        );
+        (storage_path, storage)
     }
 
     pub(crate) fn managers() -> (Arc<TypeManager>, ThingManager) {

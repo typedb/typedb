@@ -4,6 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use std::marker::PhantomData;
 
 use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
@@ -12,8 +18,7 @@ use crate::{
     expression::expression_compiler::ExpressionCompilationContext,
     inference::ExpressionCompilationError,
     instruction::expression::{
-        CompilableExpression,
-        ExpressionEvaluationError, ExpressionInstruction, op_codes::ExpressionOpCode,
+        op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
     },
 };
 

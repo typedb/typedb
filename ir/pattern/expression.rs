@@ -13,11 +13,7 @@ use std::{
 use answer::variable::Variable;
 use encoding::value::value::Value;
 
-use crate::{
-    pattern::{constraint::ExpressionBinding, IrID},
-    program::block::BlockContext,
-    PatternDefinitionError,
-};
+use crate::{pattern::IrID, PatternDefinitionError};
 
 enum ExpectedArgumentType {
     Single,
@@ -41,7 +37,7 @@ impl ExpressionTree<Variable> {
         self.preorder_tree.is_empty()
     }
 
-    pub fn expressions_preorder(&self) -> impl Iterator<Item=&Expression<Variable>> {
+    pub fn expression_tree_preorder(&self) -> impl Iterator<Item = &Expression<Variable>> {
         self.preorder_tree.iter()
     }
 
@@ -90,7 +86,11 @@ pub struct Operation {
 }
 
 impl Operation {
-    pub(crate) fn new(operator: Operator, left_expression_id: ExpressionTreeNodeId, right_expression_id: ExpressionTreeNodeId) -> Operation {
+    pub(crate) fn new(
+        operator: Operator,
+        left_expression_id: ExpressionTreeNodeId,
+        right_expression_id: ExpressionTreeNodeId,
+    ) -> Operation {
         Self { operator, left_expression_id, right_expression_id }
     }
 
@@ -182,7 +182,11 @@ pub struct ListIndexRange<ID: IrID> {
 }
 
 impl<ID: IrID> ListIndexRange<ID> {
-    pub(crate) fn new(list_variable: ID, from_expression_id: ExpressionTreeNodeId, to_expression_id: ExpressionTreeNodeId) -> Self {
+    pub(crate) fn new(
+        list_variable: ID,
+        from_expression_id: ExpressionTreeNodeId,
+        to_expression_id: ExpressionTreeNodeId,
+    ) -> Self {
         Self { list_variable, from_expression_id, to_expression_id }
     }
 

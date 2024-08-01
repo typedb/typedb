@@ -176,9 +176,8 @@ pub mod tests {
 
     use crate::{
         pattern::expression::Expression, program::function_signature::HashMapFunctionIndex,
-        PatternDefinitionError,
+        translation::match_::translate_match, PatternDefinitionError,
     };
-    use crate::translation::match_::translate_match;
 
     fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, PatternDefinitionError> {
         let query = format!("match $x = {}; select $x;", s);
@@ -186,8 +185,13 @@ pub mod tests {
             typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap()
         {
             let block = translate_match(&HashMapFunctionIndex::empty(), &match_)?.finish();
-            let x = &block.conjunction().constraints()[0].as_expression_binding()
-                .unwrap().expression().expressions_preorder().next().unwrap();
+            let x = &block.conjunction().constraints()[0]
+                .as_expression_binding()
+                .unwrap()
+                .expression()
+                .expression_tree_preorder()
+                .next()
+                .unwrap();
             match x {
                 Expression::Constant(constant) => Ok(constant.clone()),
                 _ => unreachable!(),

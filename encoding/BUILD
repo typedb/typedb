@@ -46,7 +46,7 @@ rust_library(
 )
 
 rust_test(
-    name = "encoding_unit_tests",
+    name = "test_crate_encoding",
     crate = ":encoding",
     deps = [
         "@crates//:rand",

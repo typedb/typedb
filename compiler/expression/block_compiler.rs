@@ -10,11 +10,12 @@ use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
-        conjunction::Conjunction, constraint::ExpressionBinding, expression::Expression, nested_pattern::NestedPattern,
+        conjunction::Conjunction, expression::ExpressionTree, nested_pattern::NestedPattern,
         variable_category::VariableCategory,
     },
     program::block::FunctionalBlock,
 };
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -29,9 +30,11 @@ struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block FunctionalBlock,
     snapshot: &'block Snapshot,
     type_manager: &'block TypeManager,
-
     type_annotations: &'block TypeAnnotations,
-    expressions_by_assignment: HashMap<Variable, &'block ExpressionBinding<Variable>>,
+
+    compiled_expressions: HashMap<Variable, CompiledExpression>,
+    variable_value_types: HashMap<Variable, ExpressionValueType>,
+    visited_expressions: HashSet<Variable>,
 }
 
 pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
@@ -39,36 +42,36 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     type_manager: &'block TypeManager,
     block: &'block FunctionalBlock,
     type_annotations: &'block TypeAnnotations,
-) -> Result<HashMap<Variable, Option<CompiledExpression>>, TypeInferenceError> {
+) -> Result<HashMap<Variable, CompiledExpression>, TypeInferenceError> {
     let mut expression_index = HashMap::new();
     index_expressions(block.conjunction(), &mut expression_index)?;
-    let expression_bindings: Vec<&ExpressionBinding<Variable>> =
-        expression_index.values().map(|by_ref| by_ref.clone()).collect();
-    let context = BlockExpressionsCompilationContext {
+    let assigned_variables = expression_index.keys().cloned().collect_vec();
+    let mut context = BlockExpressionsCompilationContext {
         block,
         snapshot,
         type_manager,
         type_annotations,
-        expressions_by_assignment: expression_index,
+        variable_value_types: HashMap::new(),
+        visited_expressions: HashSet::new(),
+        compiled_expressions: HashMap::new(),
     };
 
-    let mut compiled_expressions: HashMap<Variable, Option<CompiledExpression>> = HashMap::new();
-    for binding in expression_bindings {
-        compile_expressions_recursive(&context, binding, &mut compiled_expressions)?
+    for variable in assigned_variables {
+        compile_expressions_recursive(&mut context, variable, &expression_index)?
     }
-    Ok(compiled_expressions)
+    Ok(context.compiled_expressions)
 }
 
 fn index_expressions<'block>(
     conjunction: &'block Conjunction,
-    index: &mut HashMap<Variable, &'block ExpressionBinding<Variable>>,
+    index: &mut HashMap<Variable, &'block ExpressionTree<Variable>>,
 ) -> Result<(), TypeInferenceError> {
     for constraint in conjunction.constraints() {
         if let Some(expression_binding) = constraint.as_expression_binding() {
             if index.contains_key(&expression_binding.left()) {
                 Err(TypeInferenceError::MultipleAssignmentsForSingleVariable { variable: expression_binding.left() })?;
             }
-            index.insert(expression_binding.left(), expression_binding);
+            index.insert(expression_binding.left(), expression_binding.expression());
         }
     }
     for nested in conjunction.nested_patterns() {
@@ -90,50 +93,40 @@ fn index_expressions<'block>(
 }
 
 fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
-    context: &BlockExpressionsCompilationContext<'a, Snapshot>,
-    binding: &ExpressionBinding<Variable>,
-    compiled_expressions: &mut HashMap<Variable, Option<CompiledExpression>>,
+    context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
+    assigned_variable: Variable,
+    expression_assignments: &HashMap<Variable, &'a ExpressionTree<Variable>>,
 ) -> Result<(), TypeInferenceError> {
-    debug_assert!(!compiled_expressions.contains_key(&binding.left()));
-    compiled_expressions.insert(binding.left().clone(), None);
-    // Compile any dependent expressions first
-    let mut variable_value_types: HashMap<Variable, ExpressionValueType> = HashMap::new();
-    for expr in binding.expression().expressions_preorder() {
-        let variable_opt = match expr {
-            Expression::Variable(variable) => Some(*variable),
-            Expression::ListIndex(list_index) => Some(list_index.list_variable()),
-            Expression::ListIndexRange(list_range) => Some(list_range.list_variable()),
-            Expression::Constant(_) | Expression::Operation(_) | Expression::BuiltInCall(_) | Expression::List(_) => {
-                None
-            }
-        };
-        if let Some(variable) = variable_opt {
-            variable_value_types
-                .insert(variable.clone(), resolve_type_for_variable(context, variable, compiled_expressions)?);
-        }
+    context.visited_expressions.insert(assigned_variable);
+    let expression = expression_assignments.get(&assigned_variable).unwrap();
+    for variable in expression.variables() {
+        resolve_type_for_variable(context, variable, expression_assignments)?;
     }
-    let compiled = ExpressionCompilationContext::compile(&binding.expression(), variable_value_types)
+    let compiled = ExpressionCompilationContext::compile(expression, &context.variable_value_types)
         .map_err(|source| TypeInferenceError::ExpressionCompilation { source })?;
-    compiled_expressions.insert(binding.left().clone(), Some(compiled));
+    context.compiled_expressions.insert(assigned_variable, compiled);
     Ok(())
 }
 
 fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
-    context: &BlockExpressionsCompilationContext<'a, Snapshot>,
+    context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
-    compiled_expressions: &mut HashMap<Variable, Option<CompiledExpression>>,
-) -> Result<ExpressionValueType, TypeInferenceError> {
-    if let Some(binding) = context.expressions_by_assignment.get(&variable) {
-        let compiled_expression = match compiled_expressions.get(&variable) {
-            Some(None) => Err(TypeInferenceError::CircularDependencyInExpressions { variable: variable })?,
-            Some(Some(compiled_expression)) => compiled_expression,
-            None => {
-                compile_expressions_recursive(context, binding, compiled_expressions)?;
-                compiled_expressions.get(&variable).unwrap().as_ref().unwrap()
+    expression_assignments: &HashMap<Variable, &'a ExpressionTree<Variable>>,
+) -> Result<(), TypeInferenceError> {
+    if expression_assignments.contains_key(&variable) {
+        if !context.compiled_expressions.contains_key(&variable) {
+            if context.visited_expressions.contains(&variable) {
+                return Err(TypeInferenceError::CircularDependencyInExpressions { variable })?;
+            } else {
+                compile_expressions_recursive(context, variable, expression_assignments)?;
+                context
+                    .variable_value_types
+                    .insert(variable, context.compiled_expressions.get(&variable).unwrap().return_type);
+                Ok(())
             }
-        };
-        // TODO: We're throwing off the information about the category here
-        Ok(compiled_expression.return_type())
+        } else {
+            Ok(())
+        }
     } else if let Some(types) = context.type_annotations.variable_annotations_of(variable) {
         let vec = types
             .iter()
@@ -150,10 +143,12 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             let variable_category = context.block.context().get_variable_category(variable.clone()).unwrap();
             match variable_category {
                 VariableCategory::Attribute | VariableCategory::Value => {
-                    Ok(ExpressionValueType::Single(value_type.category()))
+                    context.variable_value_types.insert(variable, ExpressionValueType::Single(value_type.category()));
+                    Ok(())
                 }
                 VariableCategory::AttributeList | VariableCategory::ValueList => {
-                    Ok(ExpressionValueType::List(value_type.category()))
+                    context.variable_value_types.insert(variable, ExpressionValueType::List(value_type.category()));
+                    Ok(())
                 }
                 _ => Err(TypeInferenceError::VariableInExpressionMustBeValueOrAttribute {
                     variable: variable.clone(),

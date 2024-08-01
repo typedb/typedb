@@ -7,14 +7,21 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::expression::compiled_expression::CompiledExpression;
-use compiler::instruction::expression::binary::{Binary, BinaryExpression, MathRemainderLong};
-use compiler::instruction::expression::ExpressionEvaluationError;
-use compiler::instruction::expression::list_operations::{ListConstructor, ListIndex, ListIndexRange};
-use compiler::instruction::expression::load_cast::{CastBinaryLeft, CastBinaryRight, CastLeftLongToDouble, CastRightLongToDouble, CastUnary, CastUnaryLongToDouble, ImplicitCast, LoadConstant, LoadVariable};
-use compiler::instruction::expression::op_codes::ExpressionOpCode;
-use compiler::instruction::expression::operators;
-use compiler::instruction::expression::unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble, Unary, UnaryExpression};
+use compiler::{
+    expression::compiled_expression::CompiledExpression,
+    instruction::expression::{
+        binary::{Binary, BinaryExpression, MathRemainderLong},
+        list_operations::{ListConstructor, ListIndex, ListIndexRange},
+        load_cast::{
+            CastBinaryLeft, CastBinaryRight, CastLeftLongToDouble, CastRightLongToDouble, CastUnary,
+            CastUnaryLongToDouble, ImplicitCast, LoadConstant, LoadVariable,
+        },
+        op_codes::ExpressionOpCode,
+        operators,
+        unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble, Unary, UnaryExpression},
+        ExpressionEvaluationError,
+    },
+};
 use encoding::value::value::{DBValue, Value};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -129,17 +136,16 @@ fn evaluate_instruction(
     }
 }
 
-
 pub trait ExpressionEvaluation {
     fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError>;
 }
 
 impl<T1, T2, R, F> ExpressionEvaluation for Binary<T1, T2, R, F>
-    where
-        T1: DBValue,
-        T2: DBValue,
-        R: DBValue,
-        F: BinaryExpression<T1, T2, R>,
+where
+    T1: DBValue,
+    T2: DBValue,
+    R: DBValue,
+    F: BinaryExpression<T1, T2, R>,
 {
     fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
         let a2: T2 = T2::from_db_value(state.pop_value()).unwrap();
@@ -150,7 +156,6 @@ impl<T1, T2, R, F> ExpressionEvaluation for Binary<T1, T2, R, F>
 }
 
 impl ExpressionEvaluation for ListConstructor {
-
     fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
         let mut n_elements = state.pop_value().unwrap_long() as usize;
         let mut elements: Vec<Value<'static>> = Vec::with_capacity(n_elements);
@@ -163,7 +168,6 @@ impl ExpressionEvaluation for ListConstructor {
 }
 
 impl ExpressionEvaluation for ListIndex {
-
     fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
         let list = state.pop_list();
         let index = state.pop_value().unwrap_long();
@@ -177,7 +181,6 @@ impl ExpressionEvaluation for ListIndex {
 }
 
 impl ExpressionEvaluation for ListIndexRange {
-
     fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
         let mut list = state.pop_list();
         let to_index = state.pop_value().unwrap_long() as usize;
@@ -240,10 +243,10 @@ impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryR
 }
 
 impl<T1, R, F> ExpressionEvaluation for Unary<T1, R, F>
-    where
-        T1: DBValue,
-        R: DBValue,
-        F: UnaryExpression<T1, R>,
+where
+    T1: DBValue,
+    R: DBValue,
+    F: UnaryExpression<T1, R>,
 {
     fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
         let a1: T1 = T1::from_db_value(state.pop_value()).unwrap();
