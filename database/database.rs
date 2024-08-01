@@ -50,9 +50,9 @@ pub struct Database<D> {
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
 
     pub(super) schema: Arc<RwLock<Schema>>,
-    pub(super) schema_txn_lock: RwLock<()>,
+    pub(super) schema_txn_lock: Arc<RwLock<()>>,
 
-    statistics_updater: IntervalRunner,
+    _statistics_updater: IntervalRunner,
 }
 
 impl<D> fmt::Debug for Database<D> {
@@ -110,7 +110,9 @@ impl Database<WALClient> {
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache }));
-        let update_statistics = update_statistics_action(storage.clone(), schema.clone());
+        let schema_txn_lock = Arc::new(RwLock::default());
+
+        let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone());
 
         Ok(Database::<WALClient> {
             name: name.to_owned(),
@@ -120,8 +122,8 @@ impl Database<WALClient> {
             type_vertex_generator,
             thing_vertex_generator,
             schema,
-            schema_txn_lock: RwLock::default(),
-            statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
+            schema_txn_lock,
+            _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         })
     }
 
@@ -161,8 +163,9 @@ impl Database<WALClient> {
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache }));
+        let schema_txn_lock = Arc::new(RwLock::default());
 
-        let update_statistics = update_statistics_action(storage.clone(), schema.clone());
+        let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone());
 
         let database = Database::<WALClient> {
             name: name.as_ref().to_owned(),
@@ -172,8 +175,8 @@ impl Database<WALClient> {
             type_vertex_generator,
             thing_vertex_generator,
             schema,
-            schema_txn_lock: RwLock::default(),
-            statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
+            schema_txn_lock,
+            _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         };
 
         let checkpoint_sequence_number =
@@ -236,12 +239,16 @@ impl Database<WALClient> {
     }
 }
 
-fn update_statistics_action(storage: Arc<MVCCStorage<WALClient>>, schema: Arc<RwLock<Schema>>) -> impl Fn() {
+fn make_update_statistics_fn(
+    storage: Arc<MVCCStorage<WALClient>>,
+    schema: Arc<RwLock<Schema>>,
+    schema_txn_lock: Arc<RwLock<()>>,
+) -> impl Fn() {
     move || {
-        let mut schema_lock = schema.write().unwrap();
-        let mut thing_statistics = (*schema_lock.thing_statistics).clone();
+        let mut _schema_txn_guard = schema_txn_lock.read().unwrap();
+        let mut thing_statistics = (*schema.read().unwrap().thing_statistics).clone();
         thing_statistics.may_synchronise(&storage).ok();
-        schema_lock.thing_statistics = Arc::new(thing_statistics);
+        schema.write().unwrap().thing_statistics = Arc::new(thing_statistics);
     }
 }
 
