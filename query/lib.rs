@@ -11,6 +11,7 @@ mod define;
 mod error;
 pub mod query_manager;
 mod util;
+mod insert;
 
 #[derive(Debug)]
 pub enum SymbolResolutionError {
