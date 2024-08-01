@@ -76,7 +76,7 @@ impl InstructionExecutor {
                     isa.clone().into_ids(positions),
                     variable_modes,
                     sort_by_position,
-                    type_annotations.constraint_annotations_of(isa.into()).unwrap().get_left_right().left_to_right(),
+                    type_annotations.constraint_annotations_of(isa.into()).unwrap().get_left_right().right_to_left(),
                     type_annotations.variable_annotations_of(thing).unwrap().clone(),
                 );
                 Ok(Self::Isa(provider))
@@ -154,7 +154,7 @@ impl InstructionExecutor {
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum VariableMode {
-    BoundSelect,
+    Input,
     UnboundSelect,
     UnboundCount,
     UnboundCheck,
@@ -165,7 +165,7 @@ impl VariableMode {}
 impl VariableMode {
     pub(crate) const fn new(is_bound: bool, is_selected: bool, is_named: bool) -> VariableMode {
         match (is_bound, is_selected, is_named) {
-            (true, _, _) => Self::BoundSelect,
+            (true, _, _) => Self::Input,
             (false, true, _) => Self::UnboundSelect,
             (false, false, true) => Self::UnboundCount,
             (false, false, false) => Self::UnboundCheck,
@@ -173,7 +173,7 @@ impl VariableMode {
     }
 
     pub(crate) fn is_bound(&self) -> bool {
-        matches!(self, Self::BoundSelect)
+        matches!(self, Self::Input)
     }
 
     pub(crate) fn is_unbound(&self) -> bool {
@@ -227,11 +227,12 @@ impl VariableModes {
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum BinaryIterateMode {
+    // [x, y] in standard order, sorted by x, then y
     Unbound,
-    // [x, y] in standard order
-    UnboundInverted,
     // [x, y] in [y, x] sort order
-    BoundFrom, // [X, y], where X is bound
+    UnboundInverted,
+    // [X, y], where X is bound
+    BoundFrom,
 }
 
 impl BinaryIterateMode {

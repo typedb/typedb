@@ -34,7 +34,7 @@ pub(crate) struct PatternExecutor {
     step_executors: Vec<StepExecutor>,
     // modifiers: Modifier,
     initialised: bool,
-    outputs: Option<Batch>,
+    output: Option<Batch>,
 }
 
 impl PatternExecutor {
@@ -68,7 +68,7 @@ impl PatternExecutor {
             step_executors,
             // modifiers:
             initialised: false,
-            outputs: None,
+            output: None,
         })
     }
 
@@ -96,7 +96,7 @@ impl PatternExecutor {
     ) -> Result<Option<Batch>, ConceptReadError> {
         let steps_len = self.step_executors.len();
 
-        let (mut current_step, mut last_batch, mut direction) = if self.initialised {
+        let (mut current_step, mut last_step_batch, mut direction) = if self.initialised {
             (steps_len - 1, None, Direction::Backward)
         } else {
             self.initialised = true;
@@ -107,10 +107,10 @@ impl PatternExecutor {
             match direction {
                 Direction::Forward => {
                     if current_step >= steps_len {
-                        return Ok(last_batch);
+                        return Ok(last_step_batch);
                     } else {
                         let batch = self.step_executors[current_step].batch_from(
-                            last_batch.take().unwrap(),
+                            last_step_batch.take().unwrap(),
                             snapshot,
                             thing_manager,
                         )?;
@@ -124,7 +124,7 @@ impl PatternExecutor {
                                 }
                             }
                             Some(batch) => {
-                                last_batch = Some(batch);
+                                last_step_batch = Some(batch);
                                 current_step += 1;
                             }
                         }
@@ -142,7 +142,7 @@ impl PatternExecutor {
                         }
                         Some(batch) => {
                             direction = Direction::Forward;
-                            last_batch = Some(batch);
+                            last_step_batch = Some(batch);
                             current_step += 1;
                         }
                     }
@@ -361,6 +361,7 @@ impl IntersectionExecutor {
         thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
         debug_assert!(self.output.is_none());
+        // TODO: this may not have to reopen iterators
         self.may_create_intersection_iterators(snapshot, thing_manager)?;
         self.may_compute_next_batch(snapshot, thing_manager)?;
         Ok(self.output.take())

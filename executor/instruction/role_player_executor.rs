@@ -19,9 +19,13 @@ pub(crate) struct RolePlayerIteratorExecutor {
 
 #[derive(Debug, Copy, Clone)]
 enum TernaryIterateMode {
+    // [x, y, z] = standard sort order
     Unbound,
+    // [y, x, z] sort order
     UnboundInverted,
+    // [X, y, z] sort order
     BoundFrom,
+    // [X, Y, z]
     BoundFromBoundTo,
 }
 

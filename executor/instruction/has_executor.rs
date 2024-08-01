@@ -251,13 +251,13 @@ impl HasExecutor {
         }
     }
 }
-
+//
 // struct HasCheckExecutor {
-//     has: Has<Position>,
+//     has: ir::pattern::constraint::Has<VariablePosition>,
 // }
 //
 // impl HasCheckExecutor {
-//     pub(crate) fn new(has: Has<Position>) -> Self {
+//     pub(crate) fn new(ir::pattern::constraint::Has<VariablePosition>,) -> Self {
 //         Self { has }
 //     }
 //

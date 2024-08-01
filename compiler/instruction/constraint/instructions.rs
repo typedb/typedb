@@ -36,9 +36,9 @@ pub enum ConstraintInstruction {
     // RolePlayerIndex(IR, IterateBounds)
     FunctionCallBinding(FunctionCallBinding<Variable>),
 
-    // lhs derived from rhs. We need to decide if lhs will always be sorted
+    // rhs derived from lhs. We need to decide if rhs will always be sorted
     ComparisonGenerator(Comparison<Variable>),
-    // rhs derived from lhs
+    // lhs derived from rhs
     ComparisonGeneratorReverse(Comparison<Variable>),
     // lhs and rhs are known
     ComparisonCheck(Comparison<Variable>),

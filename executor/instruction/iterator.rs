@@ -462,7 +462,7 @@ fn enumerated_range(variable_modes: &VariableModes, positions: &TuplePositions) 
     let mut last_enumerated = None;
     for (i, position) in positions.positions().iter().enumerate() {
         match variable_modes.get(*position).unwrap() {
-            VariableMode::BoundSelect | VariableMode::UnboundSelect => {
+            VariableMode::Input | VariableMode::UnboundSelect => {
                 last_enumerated = Some(i as TupleIndex);
             }
             VariableMode::UnboundCount => {}
@@ -476,7 +476,7 @@ fn enumerated_or_counted_range(variable_modes: &VariableModes, positions: &Tuple
     let mut last_enumerated_or_counted = None;
     for (i, position) in positions.positions().iter().enumerate() {
         match variable_modes.get(*position).unwrap() {
-            VariableMode::BoundSelect | VariableMode::UnboundSelect | VariableMode::UnboundCount => {
+            VariableMode::Input | VariableMode::UnboundSelect | VariableMode::UnboundCount => {
                 last_enumerated_or_counted = Some(i as TupleIndex)
             }
             VariableMode::UnboundCheck => {}
