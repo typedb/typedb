@@ -245,7 +245,7 @@ fn make_update_statistics_fn(
     schema_txn_lock: Arc<RwLock<()>>,
 ) -> impl Fn() {
     move || {
-        let mut _schema_txn_guard = schema_txn_lock.read().unwrap();
+        let mut _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
         let mut thing_statistics = (*schema.read().unwrap().thing_statistics).clone();
         thing_statistics.may_synchronise(&storage).ok();
         schema.write().unwrap().thing_statistics = Arc::new(thing_statistics);
