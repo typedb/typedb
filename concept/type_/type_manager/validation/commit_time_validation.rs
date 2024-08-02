@@ -28,8 +28,8 @@ use crate::{
                     get_label_or_concept_read_err, is_interface_hidden_by_overrides,
                     is_overridden_interface_object_declared_supertype_or_self,
                     is_overridden_interface_object_one_of_supertypes_or_self,
-                    validate_declared_annotation_is_compatible_with_other_inherited_annotations,
-                    validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations,
+                    validate_declared_annotation_is_compatible_with_inherited_annotations,
+                    validate_declared_capability_annotation_is_compatible_with_inherited_annotations,
                     validate_edge_annotations_narrowing_of_inherited_annotations,
                     validate_edge_override_ordering_match, validate_role_name_uniqueness_non_transitive,
                     validate_type_annotations_narrowing_of_inherited_annotations,
@@ -374,7 +374,7 @@ impl CommitTimeValidation {
 
         for interface_type in TypeReader::get_capabilities::<CAP>(snapshot, type_.clone())?.keys() {
             if interface_type.is_abstract(snapshot, type_manager)? {
-                validation_errors.push(SchemaValidationError::NonAbstractTypeCannotHaveAbstractCapability(
+                validation_errors.push(SchemaValidationError::NonAbstractTypeCannotHaveAbstractInterfaceCapability(
                     CAP::KIND,
                     get_label_or_concept_read_err(snapshot, type_.clone())?,
                     get_label_or_concept_read_err(snapshot, interface_type.clone())?,
@@ -697,8 +697,9 @@ impl CommitTimeValidation {
                     validation_errors.push(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
                         CAP::KIND,
                         get_label_or_concept_read_err(snapshot, capability.object())?,
-                        get_label_or_concept_read_err(snapshot, overridden_capability.object())?,
                         get_label_or_concept_read_err(snapshot, capability.interface())?,
+                        get_label_or_concept_read_err(snapshot, overridden_capability.object())?,
+                        get_label_or_concept_read_err(snapshot, overridden_capability.interface())?,
                         *capability_card,
                         *overridden_card,
                     ));
@@ -782,7 +783,7 @@ impl CommitTimeValidation {
         for annotation in declared_annotations {
             let annotation_category = annotation.clone().into().category();
 
-            if let Err(err) = validate_declared_annotation_is_compatible_with_other_inherited_annotations(
+            if let Err(err) = validate_declared_annotation_is_compatible_with_inherited_annotations(
                 snapshot,
                 type_.clone(),
                 annotation_category,
@@ -824,7 +825,7 @@ impl CommitTimeValidation {
         for annotation in declared_annotations {
             let annotation_category = annotation.clone().into().category();
 
-            if let Err(err) = validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations(
+            if let Err(err) = validate_declared_capability_annotation_is_compatible_with_inherited_annotations(
                 snapshot,
                 edge.clone(),
                 annotation_category,

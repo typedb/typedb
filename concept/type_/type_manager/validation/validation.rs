@@ -103,6 +103,7 @@ pub(crate) fn is_overridden_interface_object_declared_supertype_or_self<T: KindA
     Ok(TypeReader::get_supertype(snapshot, type_.clone())? == Some(overridden.clone()))
 }
 
+// TODO: Doesn't work correct!
 pub(crate) fn find_overriding_capability_for_interface<CAP: Capability<'static>>(
     snapshot: &impl ReadableSnapshot,
     object_type: CAP::ObjectType,
@@ -130,7 +131,7 @@ pub(crate) fn is_interface_hidden_by_overrides<CAP: Capability<'static>>(
         .is_some())
 }
 
-pub(crate) fn validate_declared_annotation_is_compatible_with_other_inherited_annotations(
+pub(crate) fn validate_declared_annotation_is_compatible_with_inherited_annotations(
     snapshot: &impl ReadableSnapshot,
     type_: impl KindAPI<'static>,
     annotation_category: AnnotationCategory,
@@ -144,7 +145,7 @@ pub(crate) fn validate_declared_annotation_is_compatible_with_other_inherited_an
             return Err(SchemaValidationError::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(
                 annotation_category,
                 existing_annotation_category,
-                get_label_or_concept_read_err(snapshot, type_).map_err(SchemaValidationError::ConceptRead)?,
+                get_label_or_schema_err(snapshot, type_)?,
             ));
         }
     }
@@ -152,25 +153,24 @@ pub(crate) fn validate_declared_annotation_is_compatible_with_other_inherited_an
     Ok(())
 }
 
-pub(crate) fn validate_declared_edge_annotation_is_compatible_with_other_inherited_annotations<EDGE>(
+pub(crate) fn validate_declared_capability_annotation_is_compatible_with_inherited_annotations<
+    CAP: Capability<'static>,
+>(
     snapshot: &impl ReadableSnapshot,
-    edge: EDGE,
+    capability: CAP,
     annotation_category: AnnotationCategory,
-) -> Result<(), SchemaValidationError>
-where
-    EDGE: Capability<'static>,
-{
-    let existing_annotations =
-        TypeReader::get_type_edge_annotations(snapshot, edge.clone()).map_err(SchemaValidationError::ConceptRead)?;
+) -> Result<(), SchemaValidationError> {
+    let existing_annotations = TypeReader::get_type_edge_annotations(snapshot, capability.clone())
+        .map_err(SchemaValidationError::ConceptRead)?;
 
     for (existing_annotation, _) in existing_annotations {
         let existing_annotation_category = existing_annotation.clone().into().category();
         if !annotation_category.declarable_below(existing_annotation_category) {
-            let interface = edge.interface();
-            return Err(SchemaValidationError::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(
+            return Err(SchemaValidationError::DeclaredCapabilityAnnotationIsNotCompatibleWithInheritedAnnotation(
                 annotation_category,
                 existing_annotation_category,
-                get_label_or_concept_read_err(snapshot, interface).map_err(SchemaValidationError::ConceptRead)?,
+                get_label_or_schema_err(snapshot, capability.object())?,
+                get_label_or_schema_err(snapshot, capability.interface())?,
             ));
         }
     }
@@ -215,8 +215,9 @@ pub(crate) fn validate_cardinality_narrows_inherited_cardinality<CAP: Capability
         Err(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
             CAP::KIND,
             get_label_or_schema_err(snapshot, edge.object())?,
-            get_label_or_schema_err(snapshot, overridden_edge.object())?,
             get_label_or_schema_err(snapshot, edge.interface())?,
+            get_label_or_schema_err(snapshot, overridden_edge.object())?,
+            get_label_or_schema_err(snapshot, overridden_edge.interface())?,
             cardinality,
             overridden_cardinality,
         ))
@@ -276,7 +277,7 @@ pub(crate) fn validate_edge_regex_narrows_inherited_regex<CAP: Capability<'stati
 
     if let Some(override_owns) = overridden_owns {
         if let Some(supertype_annotation) =
-            edge_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Regex)?
+            capability_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Regex)?
         {
             match supertype_annotation {
                 Annotation::Regex(supertype_regex) => {
@@ -285,8 +286,9 @@ pub(crate) fn validate_edge_regex_narrows_inherited_regex<CAP: Capability<'stati
                     } else {
                         Err(SchemaValidationError::OnlyOneRegexCanBeSetForTypeEdgeHierarchy(
                             get_label_or_schema_err(snapshot, owns.object())?,
-                            get_label_or_schema_err(snapshot, override_owns.object())?,
                             get_label_or_schema_err(snapshot, owns.interface())?,
+                            get_label_or_schema_err(snapshot, override_owns.object())?,
+                            get_label_or_schema_err(snapshot, override_owns.interface())?,
                             regex.clone(),
                             supertype_regex.clone(),
                         ))
@@ -354,7 +356,7 @@ pub(crate) fn validate_edge_range_narrows_inherited_range<CAP: Capability<'stati
 
     if let Some(override_owns) = overridden_owns {
         if let Some(supertype_annotation) =
-            edge_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Range)?
+            capability_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Range)?
         {
             match supertype_annotation {
                 Annotation::Range(supertype_range) => {
@@ -363,8 +365,9 @@ pub(crate) fn validate_edge_range_narrows_inherited_range<CAP: Capability<'stati
                     } else {
                         Err(SchemaValidationError::RangeShouldNarrowInheritedEdgeRange(
                             get_label_or_schema_err(snapshot, owns.object())?,
-                            get_label_or_schema_err(snapshot, override_owns.object())?,
                             get_label_or_schema_err(snapshot, owns.interface())?,
+                            get_label_or_schema_err(snapshot, override_owns.object())?,
+                            get_label_or_schema_err(snapshot, override_owns.interface())?,
                             range.clone(),
                             supertype_range.clone(),
                         ))
@@ -431,7 +434,7 @@ pub(crate) fn validate_edge_values_narrows_inherited_values<CAP: Capability<'sta
 
     if let Some(override_owns) = overridden_owns {
         if let Some(supertype_annotation) =
-            edge_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Values)?
+            capability_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Values)?
         {
             match supertype_annotation {
                 Annotation::Values(supertype_values) => {
@@ -440,8 +443,9 @@ pub(crate) fn validate_edge_values_narrows_inherited_values<CAP: Capability<'sta
                     } else {
                         Err(SchemaValidationError::ValuesShouldNarrowInheritedEdgeValues(
                             get_label_or_schema_err(snapshot, owns.object())?,
-                            get_label_or_schema_err(snapshot, override_owns.object())?,
                             get_label_or_schema_err(snapshot, owns.interface())?,
+                            get_label_or_schema_err(snapshot, override_owns.object())?,
+                            get_label_or_schema_err(snapshot, override_owns.interface())?,
                             values.clone(),
                             supertype_values.clone(),
                         ))
@@ -662,13 +666,13 @@ pub(crate) fn type_get_annotation_by_category(
     Ok(annotation.map(|val| val.clone().into()))
 }
 
-pub(crate) fn edge_get_annotation_by_category<EDGE>(
+pub(crate) fn capability_get_annotation_by_category<CAP>(
     snapshot: &impl ReadableSnapshot,
-    edge: EDGE,
+    edge: CAP,
     annotation_category: AnnotationCategory,
 ) -> Result<Option<Annotation>, SchemaValidationError>
 where
-    EDGE: Capability<'static> + Clone,
+    CAP: Capability<'static> + Clone,
 {
     let annotation = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
         .map_err(SchemaValidationError::ConceptRead)?

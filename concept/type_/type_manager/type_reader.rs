@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use bytes::Bytes;
 use encoding::{
@@ -231,7 +231,7 @@ impl TypeReader {
         subtype: T,
     ) -> Result<Vec<T>, ConceptReadError>
     where
-        T: KindAPI<'static>,
+        T: TypeAPI<'static>,
     {
         // supertypes do NOT include themselves by design
         let mut supertypes: Vec<T> = Vec::new();
@@ -260,7 +260,7 @@ impl TypeReader {
 
     pub fn get_subtypes_transitive<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T>, ConceptReadError>
     where
-        T: KindAPI<'static>,
+        T: TypeAPI<'static>,
     {
         //subtypes DO NOT include themselves by design
         let mut subtypes: Vec<T> = Vec::new();
@@ -315,40 +315,108 @@ impl TypeReader {
         Ok(transitive_capabilities)
     }
 
+    pub(crate) fn get_object_capabilities_overrides_declared<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        object_type: CAP::ObjectType,
+    ) -> Result<HashMap<CAP, CAP>, ConceptReadError> {
+        let mut capability_to_overridden: HashMap<CAP, CAP> = HashMap::new();
+        let declared_capabilities = Self::get_capabilities_declared::<CAP>(snapshot, object_type)?;
+        for capability in declared_capabilities.into_iter() {
+            debug_assert!(!capability_to_overridden.contains_key(&capability));
+            if let Some(overridden) = Self::get_capability_override(snapshot, capability.clone())? {
+                capability_to_overridden.insert(capability, overridden);
+            }
+        }
+        Ok(capability_to_overridden)
+    }
+
     pub(crate) fn get_object_capabilities_overrides<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         object_type: CAP::ObjectType,
     ) -> Result<HashMap<CAP, CAP>, ConceptReadError> {
-        let mut capability_to_override: HashMap<CAP, CAP> = HashMap::new();
+        let mut capability_to_overridden: HashMap<CAP, CAP> = HashMap::new();
         let mut current_type = Some(object_type);
-        while current_type.is_some() {
-            let declared_capabilities =
-                Self::get_capabilities_declared::<CAP>(snapshot, current_type.as_ref().unwrap().clone())?;
-            for capability in declared_capabilities.into_iter() {
-                if !capability_to_override.contains_key(&capability) {
-                    if let Some(overridden) = Self::get_capability_override(snapshot, capability.clone())? {
-                        capability_to_override.insert(capability, overridden);
-                    }
-                }
-            }
-            current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
+        while let Some(current_type_val) = &current_type {
+            let current_type_capability_to_overridden =
+                Self::get_object_capabilities_overrides_declared(snapshot, current_type_val.clone())?;
+            capability_to_overridden.extend(current_type_capability_to_overridden.into_iter());
+            current_type = Self::get_supertype(snapshot, current_type_val.clone())?;
         }
-        Ok(capability_to_override)
+        Ok(capability_to_overridden)
     }
 
-    pub(crate) fn get_capability_override<CAP>(
+    pub(crate) fn get_capability_override<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
-    ) -> Result<Option<CAP>, ConceptReadError>
-    where
-        CAP: Capability<'static>,
-    {
+    ) -> Result<Option<CAP>, ConceptReadError> {
         let override_property_key = EdgeOverride::<CAP>::build_key(capability);
         snapshot
             .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
                 EdgeOverride::<CAP>::from_value_bytes(overridden_edge_bytes).overrides
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
+    }
+
+    pub(crate) fn get_overriding_capabilities<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        capability: CAP,
+    ) -> Result<Vec<CAP>, ConceptReadError> {
+        let mut overriding_capabilities: Vec<CAP> = Vec::new();
+        let mut object_types: VecDeque<CAP::ObjectType> = VecDeque::from([capability.object()]);
+
+        while let Some(current_object_type) = object_types.pop_back() {
+            let capability_to_overridden =
+                Self::get_object_capabilities_overrides_declared::<CAP>(snapshot, current_object_type.clone())?;
+
+            let old_len = overriding_capabilities.len();
+            capability_to_overridden
+                .into_iter()
+                .filter(|(_, overridden)| overridden == &capability)
+                .for_each(|(overriding, _)| overriding_capabilities.push(overriding));
+
+            let capability_overridden_for_type = old_len < overriding_capabilities.len();
+            if !capability_overridden_for_type {
+                let subtypes = Self::get_subtypes(snapshot, current_object_type)?;
+                subtypes.into_iter().for_each(|subtype| object_types.push_front(subtype));
+            }
+        }
+
+        Ok(overriding_capabilities)
+    }
+
+    pub(crate) fn get_overriding_capabilities_transitive<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        capability: CAP,
+    ) -> Result<Vec<CAP>, ConceptReadError> {
+        let mut overriding_capabilities: Vec<CAP> = Vec::new();
+        let mut object_types_and_capabilities: VecDeque<(CAP::ObjectType, CAP)> =
+            VecDeque::from([(capability.object(), capability)]);
+
+        while let Some((current_object_type, capability_to_check)) = object_types_and_capabilities.pop_back() {
+            let capability_to_overridden =
+                Self::get_object_capabilities_overrides_declared::<CAP>(snapshot, current_object_type.clone())?;
+
+            let mut current_overriding_capabilities: Vec<CAP> = capability_to_overridden
+                .into_iter()
+                .filter(|(_, overridden)| overridden == &capability_to_check)
+                .map(|(overriding, _)| overriding)
+                .collect();
+
+            if current_overriding_capabilities.is_empty() {
+                current_overriding_capabilities.push(capability_to_check.clone());
+            } else {
+                overriding_capabilities.extend(current_overriding_capabilities.clone());
+            }
+
+            let subtypes = Self::get_subtypes(snapshot, current_object_type)?;
+            for subtype in subtypes {
+                current_overriding_capabilities.iter().cloned().for_each(|overriding_capability| {
+                    object_types_and_capabilities.push_front((subtype.clone(), overriding_capability))
+                });
+            }
+        }
+
+        Ok(overriding_capabilities)
     }
 
     pub(crate) fn get_capabilities_for_interface_declared<CAP>(
