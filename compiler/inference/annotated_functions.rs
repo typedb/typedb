@@ -10,6 +10,7 @@ use ir::program::{function::Function, function_signature::FunctionIDAPI};
 use crate::inference::type_annotations::FunctionAnnotations;
 
 /// Indexed by Function ID
+#[derive(Debug)]
 pub struct IndexedAnnotatedFunctions {
     ir: Box<[Option<Function>]>,
     annotations: Box<[Option<FunctionAnnotations>]>,

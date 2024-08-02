@@ -14,7 +14,7 @@ use crate::{
     program::block::BlockContext,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Negation {
     conjunction: Conjunction,
 }

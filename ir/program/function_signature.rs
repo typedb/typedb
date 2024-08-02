@@ -8,6 +8,7 @@ use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
 };
+use std::fmt::Debug;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 use primitive::maybe_owns::MaybeOwns;
@@ -24,6 +25,7 @@ pub enum FunctionID {
     Preamble(usize),
 }
 
+#[derive(Debug)]
 pub struct FunctionSignature {
     pub(crate) function_id: FunctionID,
     pub(crate) arguments: Vec<VariableCategory>, // TODO: Arguments cannot be optional
@@ -82,7 +84,7 @@ impl Display for FunctionID {
     }
 }
 
-pub trait FunctionIDAPI: Clone + Into<FunctionID> {
+pub trait FunctionIDAPI: Debug + Clone + Into<FunctionID> {
     fn as_usize(&self) -> usize;
 }
 

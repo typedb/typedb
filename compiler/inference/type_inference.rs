@@ -66,7 +66,7 @@ pub fn infer_types_for_functions(
     // Further, In a chain of three functions where the first two bodies have no function calls
     // but rely on the third function to infer annotations, the annotations will not reach the first function.
     let (ir, _) = preliminary_annotations.into_parts();
-    let annotated = AnnotatedUnindexedFunctions::new(ir, annotations_res?.into_boxed_slice());
+    let annotated = AnnotatedUnindexedFunctions::new(ir, annotations_res.into_boxed_slice());
     Ok(annotated)
 }
 
