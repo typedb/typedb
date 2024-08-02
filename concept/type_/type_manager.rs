@@ -991,8 +991,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
     ) -> Result<EntityType<'static>, ConceptWriteError> {
-        if let Some(entity_type) = self.get_entity_type(snapshot, &label)
-            .map_err(|source| ConceptWriteError::ConceptRead { source })? {
+        if let Some(entity_type) =
+            self.get_entity_type(snapshot, &label).map_err(|source| ConceptWriteError::ConceptRead { source })?
+        {
             Ok(entity_type)
         } else {
             OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
@@ -1014,8 +1015,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
     ) -> Result<RelationType<'static>, ConceptWriteError> {
-        if let Some(relation_type) = self.get_relation_type(snapshot, &label)
-            .map_err(|source| ConceptWriteError::ConceptRead { source })? {
+        if let Some(relation_type) =
+            self.get_relation_type(snapshot, &label).map_err(|source| ConceptWriteError::ConceptRead { source })?
+        {
             Ok(relation_type)
         } else {
             OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
@@ -1076,8 +1078,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
     ) -> Result<AttributeType<'static>, ConceptWriteError> {
-        if let Some(attribute_type) = self.get_attribute_type(snapshot, &label)
-            .map_err(|source| ConceptWriteError::ConceptRead { source })? {
+        if let Some(attribute_type) =
+            self.get_attribute_type(snapshot, &label).map_err(|source| ConceptWriteError::ConceptRead { source })?
+        {
             Ok(attribute_type)
         } else {
             OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())

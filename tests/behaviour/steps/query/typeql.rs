@@ -15,7 +15,6 @@ use crate::{
     Context,
 };
 
-
 #[apply(generic_step)]
 #[step(expr = r"typeql define{may_error}")]
 async fn typeql_define(context: &mut Context, may_error: MayError, step: &Step) {
@@ -35,23 +34,23 @@ async fn typeql_insert(context: &mut Context, may_error: MayError, step: &Step) 
     });
 }
 
-
 #[apply(generic_step)]
 #[step(expr = r"get answers of typeql get")]
 async fn typeql_get(context: &mut Context, step: &Step) {
     let typeql_get = step.docstring.as_ref().unwrap().as_str();
-    with_read_tx!(context, |tx| { // Can't read_tx because execute always takes a mut snapshot
+    with_read_tx!(context, |tx| {
+        // Can't read_tx because execute always takes a mut snapshot
         // let result = QueryManager::new().execute(&mut tx.snapshot, &tx.type_manager, typeql_get);
         println!("TypeQL get is ignored!")
     });
 }
 
-
 #[apply(generic_step)]
 #[step(expr = r"uniquely identify answer concepts")]
 async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
     let table = step.table.as_ref().unwrap();
-    with_read_tx!(context, |tx| { // Can't read_tx because execute always takes a mut snapshot
+    with_read_tx!(context, |tx| {
+        // Can't read_tx because execute always takes a mut snapshot
         println!("Uniquely identify is ignored!")
     });
 }

@@ -9,21 +9,30 @@
 use concept::{
     error::ConceptReadError,
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
-        role_type::RoleType, type_manager::TypeManager, KindAPI,
+        annotation::{
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
+            AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
+        },
+        attribute_type::AttributeType,
+        entity_type::EntityType,
+        object_type::ObjectType,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::TypeManager,
+        KindAPI,
     },
 };
-use encoding::value::{label::Label, value_type::ValueTypeCategory};
+use encoding::{
+    graph::type_::Kind,
+    value::{label::Label, value_type::ValueTypeCategory},
+};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    annotation::Annotation as TypeQLAnnotation,
-    common::token::{ValueType, Kind as TypeQLKind},
+    annotation::{Annotation as TypeQLAnnotation, CardinalityRange},
+    common::token::{Kind as TypeQLKind, ValueType},
     schema::definable::type_::Capability,
     type_::{BuiltinValueType, NamedType},
 };
-use typeql::annotation::CardinalityRange;
-use concept::type_::annotation::{Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues};
-use encoding::graph::type_::Kind;
 
 use crate::SymbolResolutionError;
 
@@ -51,14 +60,14 @@ pub(crate) fn translate_annotation(typeql_kind: &TypeQLAnnotation) -> Annotation
             // };
             // Annotation::Cardinality(AnnotationCardinality::new(start, end))
         }
-        TypeQLAnnotation::Cascade(_) =>Annotation::Cascade(AnnotationCascade),
+        TypeQLAnnotation::Cascade(_) => Annotation::Cascade(AnnotationCascade),
         TypeQLAnnotation::Distinct(_) => Annotation::Distinct(AnnotationDistinct),
 
         TypeQLAnnotation::Independent(_) => Annotation::Independent(AnnotationIndependent),
         TypeQLAnnotation::Key(_) => Annotation::Key(AnnotationKey),
         TypeQLAnnotation::Range(range) => {
             todo!("Parse literals after rebasing")
-        },
+        }
         TypeQLAnnotation::Regex(regex) => {
             // Annotation::Regex(AnnotationRegex::new(regex.regex.value))
             todo!("Make typeql members public")
@@ -67,7 +76,7 @@ pub(crate) fn translate_annotation(typeql_kind: &TypeQLAnnotation) -> Annotation
         TypeQLAnnotation::Unique(_) => Annotation::Unique(AnnotationUnique),
         TypeQLAnnotation::Values(values) => {
             todo!("Parse literals after rebasing")
-        },
+        }
     }
 }
 
@@ -90,7 +99,6 @@ pub(crate) fn resolve_type(
     type_manager: &TypeManager,
     label: &Label<'_>,
 ) -> Result<answer::Type, SymbolResolutionError> {
-
     match try_resolve_type(snapshot, type_manager, label) {
         Ok(Some(type_)) => Ok(type_),
         Ok(None) => Err(SymbolResolutionError::TypeNotFound { label: label.clone().into_owned() }),
