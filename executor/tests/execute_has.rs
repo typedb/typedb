@@ -7,7 +7,7 @@
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::{
-    inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
+    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     instruction::constraint::instructions::{
         ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs, IsaReverseInstruction,
     },
@@ -284,10 +284,11 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     let program = Program::new(block.finish(), Vec::new());
 
-    let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
-    let annotated_program =
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+    let annotated_program = {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, _) = load_managers(storage.clone());
+        infer_types(program, &snapshot, &type_manager, Arc::new(IndexedAnnotatedFunctions::empty())).unwrap()
+    };
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -347,10 +348,11 @@ fn traverse_has_unbounded_sorted_to_merged() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     let program = Program::new(block.finish(), Vec::new());
 
-    let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
-    let annotated_program =
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+    let annotated_program = {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, _) = load_managers(storage.clone());
+        infer_types(program, &snapshot, &type_manager, Arc::new(IndexedAnnotatedFunctions::empty())).unwrap()
+    };
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -425,11 +427,11 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     let program = Program::new(block.finish(), Vec::new());
 
-    let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
-
-    let annotated_program =
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+    let annotated_program = {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, _) = load_managers(storage.clone());
+        infer_types(program, &snapshot, &type_manager, Arc::new(IndexedAnnotatedFunctions::empty())).unwrap()
+    };
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(

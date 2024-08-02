@@ -170,7 +170,7 @@ pub mod tests {
     use typeql::query::stage::Stage;
 
     use crate::{
-        pattern::expression::Expression, program::function_signature::HashMapFunctionIndex,
+        pattern::expression::Expression, program::function_signature::HashMapFunctionSignatureIndex,
         translation::match_::translate_match, PatternDefinitionError,
     };
 
@@ -179,7 +179,7 @@ pub mod tests {
         if let Stage::Match(match_) =
             typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap()
         {
-            let block = translate_match(&HashMapFunctionIndex::empty(), &match_)?.finish();
+            let block = translate_match(&HashMapFunctionSignatureIndex::empty(), &match_)?.finish();
             let x = &block.conjunction().constraints()[0]
                 .as_expression_binding()
                 .unwrap()

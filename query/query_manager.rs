@@ -8,8 +8,14 @@ use concept::type_::type_manager::TypeManager;
 use function::function::Function;
 use storage::snapshot::WritableSnapshot;
 use typeql::{query::SchemaQuery, Query};
+use concept::thing::thing_manager::ThingManager;
+use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
+use ir::program::function_signature::{FunctionID, HashMapFunctionSignatureIndex};
+use ir::program::FunctionDefinitionError;
+use ir::translation::function::translate_function;
 
 use crate::{define, error::QueryError};
+use crate::match_::MatchClause;
 
 pub struct QueryManager {}
 
@@ -23,6 +29,8 @@ impl QueryManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        function_manager: &FunctionManager,
         query: &str,
     ) -> Result<(), QueryError> {
         let parsed = typeql::parse_query(query)
@@ -40,7 +48,34 @@ impl QueryManager {
                     todo!()
                 }
             },
-            Query::Pipeline(pipeline) => {}
+            Query::Pipeline(pipeline) => {
+                let query_functions_signatures = HashMapFunctionSignatureIndex::build(
+                    pipeline.preambles.iter()
+                        .enumerate()
+                        .map(|(index, preamble)| (FunctionID::Preamble(index), &preamble.function))
+                );
+                let function_signatures = ReadThroughFunctionSignatureIndex::new(
+                    snapshot, function_manager, query_functions_signatures
+                );
+                let query_functions: Vec<_> = pipeline.preambles.iter().map(|preamble|
+                    translate_function(&function_signatures, &preamble.function)
+                )
+                    .collect::<Result<Vec<_>, FunctionDefinitionError>>()
+                    .map_err(|err| QueryError::PipelineFunctionDefinition { source: err })?;
+
+                for stage in &pipeline.stages {
+                    match stage {
+                        typeql::query::Stage::Match(match_) => MatchClause::new(match_),
+                        typeql::query::Stage::Insert(insert) => {},
+                        typeql::query::Stage::Put(put) => {},
+                        typeql::query::Stage::Update(update) => {},
+                        typeql::query::Stage::Fetch(fetch) => {},
+                        typeql::query::Stage::Delete(delete) => {},
+                        typeql::query::Stage::Reduce(reduce) => {},
+                        typeql::query::Stage::Modifier(modifier) => {},
+                    }
+                };
+            }
         }
 
         // 1. parse query into list of TypeQL clauses

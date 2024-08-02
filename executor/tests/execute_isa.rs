@@ -5,9 +5,8 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
-
 use compiler::{
-    inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
+    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     instruction::constraint::instructions::{ConstraintInstruction, Inputs, IsaReverseInstruction},
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
@@ -82,7 +81,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
     let annotated_program =
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+        infer_types(program, &snapshot, &type_manager, Arc::new(IndexedAnnotatedFunctions::empty())).unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(

@@ -42,34 +42,6 @@ impl Program {
         (entry, functions)
     }
 
-    pub fn compile<'index>(
-        function_index: &impl FunctionSignatureIndex,
-        match_: &typeql::query::stage::Match,
-        preamble_functions: Vec<&typeql::Function>,
-    ) -> Result<Self, ProgramDefinitionError> {
-        let functions: Vec<Function> = preamble_functions
-            .iter()
-            .map(|function| {
-                translate_function(function_index, &function)
-                    .map_err(|source| ProgramDefinitionError::FunctionDefinition { source })
-            })
-            .collect::<Result<Vec<Function>, ProgramDefinitionError>>()?;
-        let entry = translate_match(function_index, match_)
-            .map_err(|source| ProgramDefinitionError::PatternDefinition { source })?
-            .finish();
-
-        Ok(Self { entry, functions })
-    }
-
-    pub fn compile_functions<'index, 'functions>(
-        function_index: &impl FunctionSignatureIndex,
-        functions_to_compile: impl Iterator<Item = &'functions typeql::Function>,
-    ) -> Result<Vec<Function>, FunctionDefinitionError> {
-        let ir: Result<Vec<Function>, FunctionDefinitionError> =
-            functions_to_compile.map(|function| translate_function(function_index, &function)).collect();
-        Ok(ir?)
-    }
-
     fn all_variables_categorised(block: &FunctionalBlock) -> bool {
         let context = block.context();
         let mut variables = context.variables();
@@ -84,12 +56,14 @@ pub mod tests {
     use crate::{
         pattern::constraint::Constraint,
         program::{
-            function_signature::{FunctionID, HashMapFunctionIndex},
+            function_signature::{FunctionID, HashMapFunctionSignatureIndex},
             program::Program,
             ProgramDefinitionError,
         },
         PatternDefinitionError,
     };
+    use crate::translation::function::translate_function;
+    use crate::translation::match_::translate_match;
 
     #[test]
     fn from_typeql() {
@@ -107,21 +81,19 @@ pub mod tests {
         ";
         let query = typeql::parse_query(raw_query).unwrap().into_pipeline();
         let Pipeline { stages, preambles, .. } = query;
-        let entry = stages.into_iter().map(|stage| stage.into_match()).find(|_| true).unwrap();
-        let function = preambles.into_iter().map(|preamble| preamble.function).find(|_| true).unwrap();
-
+        let typeql_match = stages.into_iter().map(|stage| stage.into_match()).find(|_| true).unwrap();
+        let typeql_function = preambles.into_iter().map(|preamble| preamble.function).find(|_| true).unwrap();
         let function_id = FunctionID::Preamble(0);
-
-        let should_be_unresolved_error = Program::compile(&HashMapFunctionIndex::empty(), &entry, vec![]);
+        let should_be_unresolved_error = translate_match(&HashMapFunctionSignatureIndex::empty(), &typeql_match);
         assert!(matches!(
             should_be_unresolved_error,
-            Err(ProgramDefinitionError::PatternDefinition {
-                source: PatternDefinitionError::UnresolvedFunction { .. }
-            })
+            Err(PatternDefinitionError::UnresolvedFunction { .. })
         ));
 
-        let function_index = HashMapFunctionIndex::build([(FunctionID::Preamble(0), &function)].into_iter());
-        let program = Program::compile(&function_index, &entry, vec![&function]).unwrap();
+        let function_index = HashMapFunctionSignatureIndex::build([(FunctionID::Preamble(0), &typeql_function)].into_iter());
+        let function = translate_function(&function_index, &typeql_function).unwrap();
+        let entry = translate_match(&function_index, &typeql_match).unwrap().finish();
+        let program = Program::new(entry, vec![function]);
         match &program.entry.conjunction().constraints()[2] {
             Constraint::FunctionCallBinding(call) => {
                 assert_eq!(function_id, call.function_call().function_id())

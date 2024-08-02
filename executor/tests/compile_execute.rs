@@ -7,7 +7,7 @@
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::{
-    inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
+    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     planner::{pattern_plan::PatternPlan, program_plan::ProgramPlan},
 };
 use concept::{
@@ -20,7 +20,7 @@ use concept::{
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::program_executor::ProgramExecutor;
 use ir::{
-    program::{function_signature::HashMapFunctionIndex, program::Program},
+    program::{function_signature::HashMapFunctionSignatureIndex, program::Program},
     translation::match_::translate_match,
 };
 use itertools::Itertools;
@@ -110,7 +110,7 @@ fn test_has_planning_traversal() {
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
 
     // IR
-    let empty_function_index = HashMapFunctionIndex::empty();
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let builder = translate_match(&empty_function_index, &match_).unwrap();
     // builder.add_limit(3);
     // builder.add_filter(vec!["person", "age"]).unwrap();
@@ -121,7 +121,7 @@ fn test_has_planning_traversal() {
     let (type_manager, thing_manager) = load_managers(storage.clone());
     let program = Program::new(block, Vec::new());
     let annotated_program =
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+        infer_types(program, &snapshot, &type_manager, Arc::new(IndexedAnnotatedFunctions::empty())).unwrap();
     let pattern_plan = PatternPlan::from_block(&annotated_program, &statistics);
     let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();

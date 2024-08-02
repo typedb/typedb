@@ -14,9 +14,11 @@ rust_library(
     ]),
     deps = [
         "//answer",
+        "//compiler",
         "//concept",
-        "//function",
         "//encoding",
+        "//executor",
+        "//function",
         "//ir",
         "//storage",
 

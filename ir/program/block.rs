@@ -24,6 +24,8 @@ use crate::{
 };
 
 // A functional block is exactly 1 Conjunction + any number of modifiers
+
+#[derive(Debug, Clone)]
 pub struct FunctionalBlock {
     context: BlockContext,
     conjunction: Conjunction,

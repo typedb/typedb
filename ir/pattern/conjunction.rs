@@ -18,7 +18,7 @@ use super::{
 };
 use crate::{program::block::BlockContext, PatternDefinitionError};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Conjunction {
     scope_id: ScopeId,
     constraints: Constraints,

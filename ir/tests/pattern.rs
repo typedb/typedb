@@ -5,13 +5,13 @@
  */
 
 use ir::{
-    program::function_signature::HashMapFunctionIndex, translation::match_::translate_match, PatternDefinitionError,
+    program::function_signature::HashMapFunctionSignatureIndex, translation::match_::translate_match, PatternDefinitionError,
 };
 use typeql::query::stage::Stage;
 
 #[test]
 fn build_conjunction_constraints() {
-    let empty_function_index = HashMapFunctionIndex::empty();
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
 
     let query = "match $person isa person, has name $name;";
     let parsed = typeql::parse_query(query).unwrap();
@@ -64,7 +64,7 @@ fn build_conjunction_constraints() {
 
 #[test]
 fn variable_category_mismatch() {
-    let empty_function_index = HashMapFunctionIndex::empty();
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
 
     let query = "match
         $person isa $person-type;
@@ -100,7 +100,7 @@ fn variable_category_mismatch() {
 
 #[test]
 fn variable_category_narrowing() {
-    let empty_function_index = HashMapFunctionIndex::empty();
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
 
     let query = "match $person isa $person-type, has $name-type $name;";
     let parsed = typeql::parse_query(query).unwrap(); // TODO
