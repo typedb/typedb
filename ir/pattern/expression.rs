@@ -14,6 +14,7 @@ use answer::variable::Variable;
 use encoding::value::value::Value;
 
 use crate::{pattern::IrID, PatternDefinitionError};
+use crate::pattern::variable_category::VariableCategory;
 
 enum ExpectedArgumentType {
     Single,
@@ -44,6 +45,7 @@ impl ExpressionTree<Variable> {
     pub fn get_root(&self) -> &Expression<Variable> {
         self.preorder_tree.last().unwrap()
     }
+
     pub fn get(&self, expression_id: ExpressionTreeNodeId) -> &Expression<Variable> {
         &self.preorder_tree[expression_id]
     }
@@ -76,6 +78,20 @@ pub enum Expression<ID: IrID> {
 
     List(ListConstructor),
     ListIndexRange(ListIndexRange<ID>),
+}
+
+impl<ID: IrID> Expression<ID> {
+    pub fn return_category(&self) -> VariableCategory {
+        match self {
+            Expression::Constant(_) => {}
+            Expression::Variable(_) => {}
+            Expression::Operation(_) => {}
+            Expression::BuiltInCall(_) => {}
+            Expression::ListIndex(_) => {}
+            Expression::List(_) => {}
+            Expression::ListIndexRange(_) => {}
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

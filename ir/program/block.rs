@@ -192,6 +192,10 @@ impl BlockContext {
         self.variable_declaration.iter()
     }
 
+    pub fn named_variable_mapping(&self) -> &HashMap<String, Variable> {
+        &self.variable_names_index
+    }
+
     fn allocate_variable(&mut self) -> Variable {
         let variable = Variable::new(self.variable_id_allocator);
         self.variable_id_allocator += 1;
@@ -215,7 +219,11 @@ impl BlockContext {
     }
 
     pub fn get_variable_category(&self, variable: Variable) -> Option<VariableCategory> {
-        self.variable_categories.get(&variable).map(|(category, _optionality)| *category)
+        self.variable_categories.get(&variable).map(|(category, _constraint)| *category)
+    }
+
+    pub fn get_variable_optionality(&self, variable: Variable) -> Option<VariableOptionality> {
+        self.variable_optionality.get(&variable).cloned()
     }
 
     pub(crate) fn set_variable_category(

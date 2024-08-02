@@ -309,7 +309,8 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     ))];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -365,7 +366,8 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &[var_person, var_attribute],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -444,7 +446,8 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         &[var_person, var_age],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();

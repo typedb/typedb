@@ -167,7 +167,8 @@ fn anonymous_vars_not_enumerated_or_counted() {
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(),  HashMap::new(), HashMap::new());
 
     // Executor
     let executor = {
@@ -243,7 +244,8 @@ fn unselected_named_vars_counted() {
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(),  HashMap::new(),HashMap::new());
 
     // Executor
     let executor = {
@@ -342,7 +344,8 @@ fn cartesian_named_counted_checked() {
         &vec![var_person, var_age],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(),  HashMap::new(),HashMap::new());
 
     // Executor
     let executor = {

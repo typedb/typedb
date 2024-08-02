@@ -176,8 +176,8 @@ impl<'cx> ConstraintsBuilder<'cx> {
                 && self.context.is_variable_available(self.constraints.scope, rhs)
         );
         let comparison = Comparison::new(lhs, rhs);
-        self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
-        self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
+        self.context.set_variable_category(lhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
+        self.context.set_variable_category(rhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
 
         let as_ref = self.constraints.add_constraint(comparison);
         Ok(as_ref.as_comparison().unwrap())
@@ -241,9 +241,11 @@ impl<'cx> ConstraintsBuilder<'cx> {
     ) -> Result<&ExpressionBinding<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
-        binding.validate(self.context).map_err(|source| PatternDefinitionError::ExpressionDefinition { source })?;
-        // TODO: Does this mean an expression can't return a list? Else, we can get it from validate.
-        self.context.set_variable_category(variable, VariableCategory::Value, binding.clone().into())?;
+        binding
+            .validate(&mut self.context)
+            .map_err(|source| PatternDefinitionError::ExpressionDefinition { source })?;
+        // WARNING: we can't set a variable category here, since we don't know if the expression will produce a
+        //          Value, a ValueList, or a ThingList! We will know this at compilation time
         let as_ref = self.constraints.add_constraint(binding);
         Ok(as_ref.as_expression_binding().unwrap())
     }

@@ -123,7 +123,7 @@ fn test_has_planning_traversal() {
     let annotated_program =
         infer_types(program, &snapshot, &type_manager, Arc::new(IndexedAnnotatedFunctions::empty())).unwrap();
     let pattern_plan = PatternPlan::from_block(&annotated_program, &statistics);
-    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
 

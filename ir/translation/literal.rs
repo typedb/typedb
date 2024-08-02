@@ -184,9 +184,7 @@ pub mod tests {
                 .as_expression_binding()
                 .unwrap()
                 .expression()
-                .expression_tree_preorder()
-                .next()
-                .unwrap();
+                .get_root();
             match x {
                 Expression::Constant(constant) => Ok(constant.clone()),
                 _ => unreachable!(),

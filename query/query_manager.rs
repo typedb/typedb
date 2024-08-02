@@ -5,17 +5,18 @@
  */
 
 use concept::type_::type_manager::TypeManager;
-use function::function::Function;
-use storage::snapshot::WritableSnapshot;
-use typeql::{query::SchemaQuery, Query};
-use concept::thing::thing_manager::ThingManager;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use typeql::{query::SchemaQuery};
+use typeql::query::Pipeline;
+use concept::thing::statistics::Statistics;
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
-use ir::program::function_signature::{FunctionID, HashMapFunctionSignatureIndex};
+use ir::program::function_signature::{FunctionID, FunctionSignatureIndex, HashMapFunctionSignatureIndex};
 use ir::program::FunctionDefinitionError;
 use ir::translation::function::translate_function;
 
 use crate::{define, error::QueryError};
 use crate::match_::MatchClause;
+use crate::pipeline::ExecutableStage;
 
 pub struct QueryManager {}
 
@@ -25,96 +26,87 @@ impl QueryManager {
         QueryManager {}
     }
 
-    pub fn execute(
+    pub fn execute_schema(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        function_manager: &FunctionManager,
-        query: &str,
+        query: SchemaQuery,
     ) -> Result<(), QueryError> {
-        let parsed = typeql::parse_query(query)
-            .map_err(|err| QueryError::ParseError { typeql_query: query.to_string(), source: err })?;
-
-        match parsed {
-            Query::Schema(query) => match query {
-                SchemaQuery::Define(define) => {
-                    define::execute(snapshot, type_manager, define).map_err(|err| QueryError::Define { source: err })?
-                }
-                SchemaQuery::Redefine(redefine) => {
-                    todo!()
-                }
-                SchemaQuery::Undefine(undefine) => {
-                    todo!()
-                }
-            },
-            Query::Pipeline(pipeline) => {
-                let query_functions_signatures = HashMapFunctionSignatureIndex::build(
-                    pipeline.preambles.iter()
-                        .enumerate()
-                        .map(|(index, preamble)| (FunctionID::Preamble(index), &preamble.function))
-                );
-                let function_signatures = ReadThroughFunctionSignatureIndex::new(
-                    snapshot, function_manager, query_functions_signatures
-                );
-                let query_functions: Vec<_> = pipeline.preambles.iter().map(|preamble|
-                    translate_function(&function_signatures, &preamble.function)
-                )
-                    .collect::<Result<Vec<_>, FunctionDefinitionError>>()
-                    .map_err(|err| QueryError::PipelineFunctionDefinition { source: err })?;
-
-                for stage in &pipeline.stages {
-                    match stage {
-                        typeql::query::Stage::Match(match_) => MatchClause::new(match_),
-                        typeql::query::Stage::Insert(insert) => {},
-                        typeql::query::Stage::Put(put) => {},
-                        typeql::query::Stage::Update(update) => {},
-                        typeql::query::Stage::Fetch(fetch) => {},
-                        typeql::query::Stage::Delete(delete) => {},
-                        typeql::query::Stage::Reduce(reduce) => {},
-                        typeql::query::Stage::Modifier(modifier) => {},
-                    }
-                };
+        // let parsed = typeql::parse_query(query)
+        //     .map_err(|err| QueryError::ParseError { typeql_query: query.to_string(), source: err })?;
+        match query {
+            SchemaQuery::Define(define) => {
+                define::execute(snapshot, &type_manager, define)
+                    .map_err(|err| QueryError::Define { source: err })
+            }
+            SchemaQuery::Redefine(redefine) => {
+                todo!()
+            }
+            SchemaQuery::Undefine(undefine) => {
+                todo!()
             }
         }
-
-        // 1. parse query into list of TypeQL clauses
-        // 2. expand implicit clauses, eg. fetch clause; -> filter clause; fetch clause;
-        // 3. parse query-bound functions
-        // 4. generate list of executors
-        // 5. Execute each executor
-
-        Ok(())
     }
 
-    // TODO: take in parsed TypeQL clause
-    fn create_executor(&self, clause: &str) {
-        // match clause
+    pub fn prepare_pipeline(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        function_manager: &FunctionManager,
+        function_index: &impl FunctionSignatureIndex,
+        statistics: &Statistics,
+        pipeline: Pipeline,
+    ) -> Result<Vec<ExecutableStage>, QueryError> {
+        let query_functions_signatures = HashMapFunctionSignatureIndex::build(
+            pipeline.preambles.iter()
+                .enumerate()
+                .map(|(index, preamble)| (FunctionID::Preamble(index), &preamble.function))
+        );
+        let function_signatures = ReadThroughFunctionSignatureIndex::new(
+            snapshot, function_manager, query_functions_signatures,
+        );
+        let query_functions: Vec<_> = pipeline.preambles.iter().map(|preamble|
+            translate_function(&function_signatures, &preamble.function)
+        )
+            .collect::<Result<Vec<_>, FunctionDefinitionError>>()
+            .map_err(|err| QueryError::PipelineFunctionDefinition { source: err })?;
+
+        let mut executable_pipeline = Vec::new();
+        for stage in &pipeline.stages {
+            let executable_stage = match stage {
+                typeql::query::stage::Stage::Match(match_) => ExecutableStage::Match(MatchClause::new(
+                    snapshot,
+                    type_manager,
+                    function_manager,
+                    function_index,
+                    statistics,
+                    &query_functions,
+                    match_,
+                )?),
+                typeql::query::stage::Stage::Insert(insert) => {
+                    todo!()
+                }
+                typeql::query::stage::Stage::Put(put) => {
+                    todo!()
+                }
+                typeql::query::stage::Stage::Update(update) => {
+                    todo!()
+                }
+                typeql::query::stage::Stage::Fetch(fetch) => {
+                    todo!()
+                }
+                typeql::query::stage::Stage::Delete(delete) => {
+                    todo!()
+                }
+                typeql::query::stage::Stage::Reduce(reduce) => {
+                    todo!()
+                }
+                typeql::query::stage::Stage::Modifier(modifier) => {
+                    todo!()
+                }
+            };
+            executable_pipeline.push(executable_stage);
+        };
+        Ok(executable_pipeline)
     }
-
-    fn create_match_executor(&self, query_functions: Vec<Function<usize>>) {
-        // let conjunction = Conjunction::new();
-        // ... build conjunction...
-    }
-}
-
-enum Stage {
-    Match,
-    Insert,
-    Delete,
-    Put,
-    Fetch,
-    Assert,
-    Select,
-    Sort,
-    Offset,
-    Limit,
-}
-
-trait PipelineStage {}
-
-enum QueryReturn {
-    MapStream,
-    JSONStream,
-    Aggregate,
 }

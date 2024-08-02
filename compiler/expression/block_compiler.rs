@@ -25,6 +25,7 @@ use crate::{
     },
     inference::{type_annotations::TypeAnnotations, TypeInferenceError},
 };
+use crate::expression::ExpressionCompileError;
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block FunctionalBlock,
@@ -42,7 +43,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     type_manager: &'block TypeManager,
     block: &'block FunctionalBlock,
     type_annotations: &'block TypeAnnotations,
-) -> Result<HashMap<Variable, CompiledExpression>, TypeInferenceError> {
+) -> Result<HashMap<Variable, CompiledExpression>, ExpressionCompileError> {
     let mut expression_index = HashMap::new();
     index_expressions(block.conjunction(), &mut expression_index)?;
     let assigned_variables = expression_index.keys().cloned().collect_vec();
@@ -65,11 +66,11 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
 fn index_expressions<'block>(
     conjunction: &'block Conjunction,
     index: &mut HashMap<Variable, &'block ExpressionTree<Variable>>,
-) -> Result<(), TypeInferenceError> {
+) -> Result<(), ExpressionCompileError> {
     for constraint in conjunction.constraints() {
         if let Some(expression_binding) = constraint.as_expression_binding() {
             if index.contains_key(&expression_binding.left()) {
-                Err(TypeInferenceError::MultipleAssignmentsForSingleVariable { variable: expression_binding.left() })?;
+                Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable { assign_variable: expression_binding.left() })?;
             }
             index.insert(expression_binding.left(), expression_binding.expression());
         }
@@ -96,14 +97,13 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     assigned_variable: Variable,
     expression_assignments: &HashMap<Variable, &'a ExpressionTree<Variable>>,
-) -> Result<(), TypeInferenceError> {
+) -> Result<(), ExpressionCompileError> {
     context.visited_expressions.insert(assigned_variable);
     let expression = expression_assignments.get(&assigned_variable).unwrap();
     for variable in expression.variables() {
         resolve_type_for_variable(context, variable, expression_assignments)?;
     }
-    let compiled = ExpressionCompilationContext::compile(expression, &context.variable_value_types)
-        .map_err(|source| TypeInferenceError::ExpressionCompilation { source })?;
+    let compiled = ExpressionCompilationContext::compile(expression, &context.variable_value_types)?;
     context.compiled_expressions.insert(assigned_variable, compiled);
     Ok(())
 }
@@ -112,11 +112,11 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
     expression_assignments: &HashMap<Variable, &'a ExpressionTree<Variable>>,
-) -> Result<(), TypeInferenceError> {
+) -> Result<(), ExpressionCompileError> {
     if expression_assignments.contains_key(&variable) {
         if !context.compiled_expressions.contains_key(&variable) {
             if context.visited_expressions.contains(&variable) {
-                return Err(TypeInferenceError::CircularDependencyInExpressions { variable })?;
+                return Err(ExpressionCompileError::CircularDependencyInExpressions { assign_variable: variable })?;
             } else {
                 compile_expressions_recursive(context, variable, expression_assignments)?;
                 context
@@ -133,14 +133,14 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             .map(|type_| match type_ {
                 Type::Attribute(attribute_type) => attribute_type
                     .get_value_type(context.snapshot, context.type_manager)
-                    .map_err(|source| TypeInferenceError::ConceptRead { source }),
+                    .map_err(|source| ExpressionCompileError::ConceptRead { source }),
                 _ => Ok(None),
             })
-            .collect::<Result<HashSet<_>, TypeInferenceError>>()?;
+            .collect::<Result<HashSet<_>, ExpressionCompileError>>()?;
         if vec.len() != 1 {
-            Err(TypeInferenceError::ExpressionVariableDidNotHaveSingleValueType { variable: variable.clone() })
+            Err(ExpressionCompileError::VariableDidNotHaveSingleValueType { variable })
         } else if let Some(value_type) = &vec.iter().find(|_| true).unwrap() {
-            let variable_category = context.block.context().get_variable_category(variable.clone()).unwrap();
+            let variable_category = context.block.context().get_variable_category(variable).unwrap();
             match variable_category {
                 VariableCategory::Attribute | VariableCategory::Value => {
                     context.variable_value_types.insert(variable, ExpressionValueType::Single(value_type.category()));
@@ -150,15 +150,15 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                     context.variable_value_types.insert(variable, ExpressionValueType::List(value_type.category()));
                     Ok(())
                 }
-                _ => Err(TypeInferenceError::VariableInExpressionMustBeValueOrAttribute {
-                    variable: variable.clone(),
+                _ => Err(ExpressionCompileError::VariableMustBeValueOrAttribute {
+                    variable,
                     actual_category: variable_category,
                 })?,
             }
         } else {
-            Err(TypeInferenceError::ExpressionVariableHasNoValueType { variable: variable.clone() })
+            Err(ExpressionCompileError::VariableHasNoValueType { variable })
         }
     } else {
-        Err(TypeInferenceError::CouldNotDetermineValueTypeForVariable { variable: variable.clone() })
+        Err(ExpressionCompileError::CouldNotDetermineValueTypeForVariable { variable })
     }
 }
