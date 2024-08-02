@@ -16,20 +16,58 @@ use concept::{
 use encoding::value::{label::Label, value_type::ValueTypeCategory};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    common::token::{ValueType, Kind as TypeQLKInd},
+    annotation::Annotation as TypeQLAnnotation,
+    common::token::{ValueType, Kind as TypeQLKind},
     schema::definable::type_::Capability,
     type_::{BuiltinValueType, NamedType},
 };
+use typeql::annotation::CardinalityRange;
+use concept::type_::annotation::{Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues};
 use encoding::graph::type_::Kind;
 
 use crate::SymbolResolutionError;
 
-pub(crate) fn translate_kind(typeql_kind: TypeQLKInd) -> Kind {
+pub(crate) fn translate_kind(typeql_kind: TypeQLKind) -> Kind {
     match typeql_kind {
-        TypeQLKInd::Entity => Kind::Entity,
-        TypeQLKInd::Relation => Kind::Relation,
-        TypeQLKInd::Attribute => Kind::Attribute,
-        TypeQLKInd::Role => Kind::Role,
+        TypeQLKind::Entity => Kind::Entity,
+        TypeQLKind::Relation => Kind::Relation,
+        TypeQLKind::Attribute => Kind::Attribute,
+        TypeQLKind::Role => Kind::Role,
+    }
+}
+
+pub(crate) fn translate_annotation(typeql_kind: &TypeQLAnnotation) -> Annotation {
+    match typeql_kind {
+        TypeQLAnnotation::Abstract(_) => Annotation::Abstract(AnnotationAbstract),
+        TypeQLAnnotation::Cardinality(cardinality) => {
+            todo!("Make typeql members public")
+            // let (start, end) = match cardinality.range {
+            //     CardinalityRange::Exact(start) => {
+            //         (start.value.parse::<u64>().unwrap(), Some(start.value.parse::<u64>().unwrap()))
+            //     },
+            //     CardinalityRange::Range(start, end) => {
+            //         (start.value.parse::<u64>().unwrap(), end.map(|e| e.value.parse::<u64>().unwrap()))
+            //     }
+            // };
+            // Annotation::Cardinality(AnnotationCardinality::new(start, end))
+        }
+        TypeQLAnnotation::Cascade(_) =>Annotation::Cascade(AnnotationCascade),
+        TypeQLAnnotation::Distinct(_) => Annotation::Distinct(AnnotationDistinct),
+
+        TypeQLAnnotation::Independent(_) => Annotation::Independent(AnnotationIndependent),
+        TypeQLAnnotation::Key(_) => Annotation::Key(AnnotationKey),
+        TypeQLAnnotation::Range(range) => {
+            todo!("Parse literals after rebasing")
+        },
+        TypeQLAnnotation::Regex(regex) => {
+            // Annotation::Regex(AnnotationRegex::new(regex.regex.value))
+            todo!("Make typeql members public")
+        }
+        TypeQLAnnotation::Subkey(_) => todo!(),
+        TypeQLAnnotation::Unique(_) => Annotation::Unique(AnnotationUnique),
+        TypeQLAnnotation::Values(values) => {
+            todo!("Parse literals after rebasing")
+        },
     }
 }
 

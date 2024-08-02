@@ -991,17 +991,22 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
     ) -> Result<EntityType<'static>, ConceptWriteError> {
-        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        if let Some(entity_type) = self.get_entity_type(snapshot, &label)
+            .map_err(|source| ConceptWriteError::ConceptRead { source })? {
+            Ok(entity_type)
+        } else {
+            OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let type_vertex = self
-            .vertex_generator
-            .create_entity_type(snapshot)
-            .map_err(|err| ConceptWriteError::Encoding { source: err })?;
-        let entity = EntityType::new(type_vertex);
+            let type_vertex = self
+                .vertex_generator
+                .create_entity_type(snapshot)
+                .map_err(|err| ConceptWriteError::Encoding { source: err })?;
+            let entity = EntityType::new(type_vertex);
 
-        TypeWriter::storage_put_label(snapshot, entity.clone(), label);
-        Ok(entity)
+            TypeWriter::storage_put_label(snapshot, entity.clone(), label);
+            Ok(entity)
+        }
     }
 
     pub fn create_relation_type(
@@ -1009,17 +1014,22 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
     ) -> Result<RelationType<'static>, ConceptWriteError> {
-        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        if let Some(relation_type) = self.get_relation_type(snapshot, &label)
+            .map_err(|source| ConceptWriteError::ConceptRead { source })? {
+            Ok(relation_type)
+        } else {
+            OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let type_vertex = self
-            .vertex_generator
-            .create_relation_type(snapshot)
-            .map_err(|err| ConceptWriteError::Encoding { source: err })?;
-        let relation = RelationType::new(type_vertex);
+            let type_vertex = self
+                .vertex_generator
+                .create_relation_type(snapshot)
+                .map_err(|err| ConceptWriteError::Encoding { source: err })?;
+            let relation = RelationType::new(type_vertex);
 
-        TypeWriter::storage_put_label(snapshot, relation.clone(), label);
-        Ok(relation)
+            TypeWriter::storage_put_label(snapshot, relation.clone(), label);
+            Ok(relation)
+        }
     }
 
     pub(crate) fn create_role_type(
@@ -1066,17 +1076,22 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
     ) -> Result<AttributeType<'static>, ConceptWriteError> {
-        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        if let Some(attribute_type) = self.get_attribute_type(snapshot, &label)
+            .map_err(|source| ConceptWriteError::ConceptRead { source })? {
+            Ok(attribute_type)
+        } else {
+            OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let type_vertex = self
-            .vertex_generator
-            .create_attribute_type(snapshot)
-            .map_err(|err| ConceptWriteError::Encoding { source: err })?;
-        let attribute_type = AttributeType::new(type_vertex);
+            let type_vertex = self
+                .vertex_generator
+                .create_attribute_type(snapshot)
+                .map_err(|err| ConceptWriteError::Encoding { source: err })?;
+            let attribute_type = AttributeType::new(type_vertex);
 
-        TypeWriter::storage_put_label(snapshot, attribute_type.clone(), label);
-        Ok(attribute_type)
+            TypeWriter::storage_put_label(snapshot, attribute_type.clone(), label);
+            Ok(attribute_type)
+        }
     }
 
     pub(crate) fn delete_entity_type(
