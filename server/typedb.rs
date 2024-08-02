@@ -61,9 +61,7 @@ impl Server {
         let db = self.databases.remove(name.as_ref());
         if let Some(db) = db {
             match Arc::try_unwrap(db) {
-                Ok(unwrapped) => {
-                    unwrapped.delete()?;
-                }
+                Ok(unwrapped) => unwrapped.delete()?,
                 Err(arc) => {
                     // failed to delete since it's in use - let's re-insert for now instead of losing the reference
                     self.databases.insert(name.as_ref().to_owned(), arc);
