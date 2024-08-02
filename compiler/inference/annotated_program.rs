@@ -4,9 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashMap;
 use std::sync::Arc;
+use answer::variable::Variable;
 
 use ir::program::{block::FunctionalBlock, function::Function, function_signature::FunctionID};
+use crate::expression::compiled_expression::CompiledExpression;
 
 use crate::inference::{
     annotated_functions::{IndexedAnnotatedFunctions, AnnotatedFunctions, AnnotatedUnindexedFunctions},
@@ -16,6 +19,7 @@ use crate::inference::{
 pub struct AnnotatedProgram {
     pub(crate) entry: FunctionalBlock,
     pub(crate) entry_annotations: TypeAnnotations,
+    pub(crate) entry_expressions: HashMap<Variable, CompiledExpression>,
     pub(crate) schema_functions: Arc<IndexedAnnotatedFunctions>,
     pub(crate) preamble_functions: AnnotatedUnindexedFunctions,
 }
@@ -24,10 +28,11 @@ impl AnnotatedProgram {
     pub(crate) fn new(
         entry: FunctionalBlock,
         entry_annotations: TypeAnnotations,
+        entry_expressions: HashMap<Variable, CompiledExpression>,
         local_functions: AnnotatedUnindexedFunctions,
         schema_functions: Arc<IndexedAnnotatedFunctions>,
     ) -> Self {
-        Self { entry, entry_annotations, preamble_functions: local_functions, schema_functions: schema_functions }
+        Self { entry, entry_annotations, entry_expressions, preamble_functions: local_functions, schema_functions: schema_functions }
     }
 
     pub fn get_entry(&self) -> &FunctionalBlock {
@@ -36,6 +41,10 @@ impl AnnotatedProgram {
 
     pub fn get_entry_annotations(&self) -> &TypeAnnotations {
         &self.entry_annotations
+    }
+
+    pub fn get_entry_expressions(&self) -> &HashMap<Variable, CompiledExpression> {
+        &self.entry_expressions
     }
 
     pub fn contains_functions(&self) -> bool {

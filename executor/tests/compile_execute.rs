@@ -124,7 +124,7 @@ fn test_planning_traversal() {
     let pattern_plan =
         PatternPlan::from_block(annotated_program.get_entry(), annotated_program.get_entry_annotations(), &statistics);
     let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     {

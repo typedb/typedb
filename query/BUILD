@@ -13,6 +13,7 @@ rust_library(
         "*.rs",
     ]),
     deps = [
+        "//answer",
         "//common/lending_iterator",
         "//compiler",
         "//concept",

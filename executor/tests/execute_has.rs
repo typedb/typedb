@@ -159,7 +159,7 @@ fn traverse_has_unbounded_sorted_from() {
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = {
@@ -224,7 +224,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = {
@@ -311,7 +311,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = {

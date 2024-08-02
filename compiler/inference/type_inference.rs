@@ -8,10 +8,12 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
+use std::os::unix::raw::blkcnt_t;
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
 use ir::program::{function::Function, program::Program};
+use ir::program::block::FunctionalBlock;
 use storage::snapshot::ReadableSnapshot;
 
 use super::pattern_type_inference::infer_types_for_block;
@@ -24,17 +26,16 @@ use crate::inference::{
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
-pub fn infer_types(
-    program: Program,
-    snapshot: &impl ReadableSnapshot,
+pub fn infer_types<Snapshot: ReadableSnapshot>(
+    entry: &FunctionalBlock,
+    functions: Vec<Function>,
+    snapshot: &Snapshot,
     type_manager: &TypeManager,
-    annotated_schema_functions: Arc<IndexedAnnotatedFunctions>,
-) -> Result<AnnotatedProgram, TypeInferenceError> {
-    let (entry, functions) = program.into_parts();
+    annotated_schema_functions: &IndexedAnnotatedFunctions,
+) -> Result<(TypeAnnotations, AnnotatedUnindexedFunctions), TypeInferenceError> {
     let preamble_functions = infer_types_for_functions(functions, snapshot, type_manager, &annotated_schema_functions)?;
     let root_tig = infer_types_for_block(snapshot, &entry, type_manager, &annotated_schema_functions, Some(&preamble_functions))?;
-    let entry_annotations = TypeAnnotations::build(root_tig);
-    Ok(AnnotatedProgram::new(entry, entry_annotations, preamble_functions, annotated_schema_functions))
+    Ok((TypeAnnotations::build(root_tig), preamble_functions))
 }
 
 pub fn infer_types_for_functions(

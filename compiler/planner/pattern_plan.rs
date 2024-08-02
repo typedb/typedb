@@ -22,6 +22,7 @@ use crate::{
     instruction::constraint::instructions::{ConstraintInstruction, Inputs},
     planner::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost},
 };
+use crate::expression::compiled_expression::CompiledExpression;
 
 pub struct PatternPlan {
     pub(crate) steps: Vec<Step>,
@@ -44,7 +45,12 @@ impl PatternPlan {
         Self { steps, context }
     }
 
-    pub fn from_block(block: &FunctionalBlock, type_annotations: &TypeAnnotations, statistics: &Statistics) -> Self {
+    pub fn from_block(
+        block: &FunctionalBlock,
+        type_annotations: &TypeAnnotations,
+        expressions: &HashMap<Variable, CompiledExpression>,
+        statistics: &Statistics
+    ) -> Self {
         assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
         let conjunction = block.conjunction();
         assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
@@ -162,6 +168,10 @@ impl PatternPlan {
         &self.steps
     }
 
+    pub fn outputs(&self) -> &[Variable] {
+        self.steps.last().unwrap().selected_variables()
+    }
+
     pub(crate) fn into_steps(self) -> impl Iterator<Item = Step> {
         self.steps.into_iter()
     }
@@ -211,11 +221,22 @@ pub enum Step {
 }
 
 impl Step {
-    pub fn unbound_variables(&self) -> &[Variable] {
+    pub fn selected_variables(&self) -> &[Variable] {
+        match self {
+            Step::Intersection(step) => &step.selected_variables,
+            Step::UnsortedJoin(step) => &step.selected_variables,
+            Step::Assignment(step) => todo!(),
+            Step::Disjunction(_) => todo!(),
+            Step::Negation(_) => todo!(),
+            Step::Optional(_) => todo!(),
+        }
+    }
+
+    pub fn new_variables(&self) -> &[Variable] {
         match self {
             Step::Intersection(step) => step.new_variables(),
-            Step::UnsortedJoin(step) => step.unbound_variables(),
-            Step::Assignment(step) => step.unbound_variables(),
+            Step::UnsortedJoin(step) => step.new_variables(),
+            Step::Assignment(step) => step.new_variables(),
             Step::Disjunction(_) => todo!(),
             Step::Negation(_) => &[],
             Step::Optional(_) => todo!(),
@@ -307,7 +328,7 @@ impl UnsortedJoinStep {
         }
     }
 
-    fn unbound_variables(&self) -> &[Variable] {
+    fn new_variables(&self) -> &[Variable] {
         &self.new_variables
     }
 }
@@ -319,7 +340,7 @@ pub struct AssignmentStep {
 }
 
 impl AssignmentStep {
-    fn unbound_variables(&self) -> &[Variable] {
+    fn new_variables(&self) -> &[Variable] {
         &self.unbound
     }
 }

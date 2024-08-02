@@ -11,15 +11,16 @@ pub enum VariableCategory {
     Type,
     ThingType,
     RoleType,
-    Thing,
 
+    Thing,
     Object,
-    // TODO: if we introduce Entity and Relation, we will also have to introduce Entity/RelationRoleImpl
+
     Attribute,
     Value,
 
     ThingList,
     ObjectList,
+
     AttributeList,
     ValueList,
 }
