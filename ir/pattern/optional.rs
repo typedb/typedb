@@ -16,7 +16,7 @@ use crate::{
     program::block::BlockContext,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Optional {
     conjunction: Conjunction,
 }

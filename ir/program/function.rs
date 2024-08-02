@@ -73,12 +73,14 @@ impl ReturnOperation {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum Reducer {
     Count(ReducerInput),
     Sum(ReducerInput),
     // First, Any etc.
 }
 
+#[derive(Debug, Clone)]
 pub enum ReducerInput {
     Variable,
     Reducer,

@@ -7,6 +7,8 @@
 use std::{error::Error, fmt};
 use typeql::query::stage::Match;
 use compiler::inference::TypeInferenceError;
+use concept::error::ConceptReadError;
+use function::FunctionError;
 use ir::PatternDefinitionError;
 use ir::program::FunctionDefinitionError;
 
@@ -15,8 +17,10 @@ use crate::define::DefineError;
 #[derive(Debug)]
 pub enum QueryError {
     ParseError { typeql_query: String, source: typeql::common::Error },
+    ReadError { source: ConceptReadError },
     Define { source: DefineError },
     Pattern { source: PatternDefinitionError },
+    Function { source: FunctionError },
     PipelineFunctionDefinition { source: FunctionDefinitionError },
     MatchWithFunctionsTypeInferenceFailure { clause: Match, source: TypeInferenceError },
 }
@@ -30,11 +34,13 @@ impl fmt::Display for QueryError {
 impl Error for QueryError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            QueryError::ParseError { source, .. } => Some(source),
-            QueryError::Define { source, .. } => Some(source),
-            QueryError::Pattern { source, .. } => Some(source),
-            QueryError::PipelineFunctionDefinition { source, .. } => Some(source),
-            QueryError::MatchWithFunctionsTypeInferenceFailure { source, .. } => Some(source),
+            Self::ParseError { source, .. }
+            | Self::ReadError { source, .. }
+            | Self::Define { source, .. }
+            | Self::Pattern { source, .. }
+            | Self::Function { source, .. }
+            | Self::PipelineFunctionDefinition { source, .. }
+            | Self::MatchWithFunctionsTypeInferenceFailure { source, .. } => Some(source),
         }
     }
 }

@@ -21,7 +21,7 @@ use crate::{
     PatternDefinitionError::FunctionCallArgumentCountMismatch,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Constraints {
     scope: ScopeId,
     constraints: Vec<Constraint<Variable>>,
