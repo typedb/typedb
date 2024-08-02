@@ -6,3 +6,5 @@
 mod define;
 mod error;
 mod query_manager;
+mod pipeline;
+mod match_;

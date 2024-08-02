@@ -115,11 +115,11 @@ pub trait FunctionSignatureIndex {
         -> Result<Option<MaybeOwns<'_, FunctionSignature>>, FunctionReadError>;
 }
 
-pub struct HashMapFunctionIndex {
+pub struct HashMapFunctionSignatureIndex {
     index: HashMap<String, FunctionSignature>,
 }
 
-impl HashMapFunctionIndex {
+impl HashMapFunctionSignatureIndex {
     pub fn build<'func>(buffered_typeql: impl Iterator<Item = (FunctionID, &'func typeql::Function)>) -> Self {
         let index = buffered_typeql
             .map(|(function_id, function)| {
@@ -133,12 +133,12 @@ impl HashMapFunctionIndex {
         Self::build([].into_iter())
     }
 
-    pub fn into_parts(self) -> HashMap<String, FunctionSignature> {
+    pub fn into_map(self) -> HashMap<String, FunctionSignature> {
         self.index
     }
 }
 
-impl FunctionSignatureIndex for HashMapFunctionIndex {
+impl FunctionSignatureIndex for HashMapFunctionSignatureIndex {
     fn get_function_signature(
         &self,
         name: &str,

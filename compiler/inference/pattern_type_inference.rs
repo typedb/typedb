@@ -19,7 +19,7 @@ use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::inference::{
-    annotated_functions::{AnnotatedCommittedFunctions, AnnotatedUncommittedFunctions},
+    annotated_functions::{IndexedAnnotatedFunctions, AnnotatedUnindexedFunctions},
     type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
     type_seeder::TypeSeeder,
     TypeInferenceError,
@@ -31,8 +31,8 @@ pub(crate) fn infer_types_for_block<'graph>(
     snapshot: &impl ReadableSnapshot,
     block: &'graph FunctionalBlock,
     type_manager: &TypeManager,
-    schema_functions: &AnnotatedCommittedFunctions,
-    local_function_cache: Option<&AnnotatedUncommittedFunctions>,
+    schema_functions: &IndexedAnnotatedFunctions,
+    local_function_cache: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
     let mut tig = TypeSeeder::new(snapshot, type_manager, schema_functions, local_function_cache)
         .seed_types(block.context(), block.conjunction())?;
@@ -286,12 +286,12 @@ pub mod tests {
     use answer::{variable::Variable, Type as TypeAnnotation};
     use ir::{
         pattern::constraint::{Constraint, IsaKind},
-        program::{block::FunctionalBlock, function_signature::HashMapFunctionIndex},
+        program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
     };
     use itertools::Itertools;
 
     use crate::inference::{
-        annotated_functions::AnnotatedCommittedFunctions,
+        annotated_functions::IndexedAnnotatedFunctions,
         pattern_type_inference::{
             infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
         },
@@ -330,7 +330,7 @@ pub mod tests {
         // Some version of `$a isa animal, has name $n;`
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
-        let function_index = HashMapFunctionIndex::empty();
+        let function_index = HashMapFunctionSignatureIndex::empty();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -358,7 +358,7 @@ pub mod tests {
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
             let tig =
-                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &block, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -418,7 +418,7 @@ pub mod tests {
 
             let constraints = block.conjunction().constraints();
             let tig =
-                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &block, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -476,7 +476,7 @@ pub mod tests {
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
             let tig =
-                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &block, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -521,7 +521,7 @@ pub mod tests {
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
             let tig =
-                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &block, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -577,7 +577,7 @@ pub mod tests {
         // Some version of `$a isa animal, has name $n;`
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
-        let function_index = HashMapFunctionIndex::empty();
+        let function_index = HashMapFunctionSignatureIndex::empty();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -618,7 +618,7 @@ pub mod tests {
 
             let snapshot = storage.clone().open_snapshot_write();
             let tig =
-                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &block, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
 
             let conjunction = block.conjunction();
@@ -698,7 +698,7 @@ pub mod tests {
     fn no_type_constraints() {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
-        let function_index = HashMapFunctionIndex::empty();
+        let function_index = HashMapFunctionSignatureIndex::empty();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -723,7 +723,7 @@ pub mod tests {
             let conjunction = block.conjunction();
             let constraints = conjunction.constraints();
             let tig =
-                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &block, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -755,7 +755,7 @@ pub mod tests {
     fn role_players() {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
-        let function_index = HashMapFunctionIndex::empty();
+        let function_index = HashMapFunctionSignatureIndex::empty();
 
         let ((type_animal, type_cat, type_dog), _, (type_fears, type_has_fear, type_is_feared)) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -804,7 +804,7 @@ pub mod tests {
             let conjunction = block.conjunction();
             let constraints = conjunction.constraints();
             let tig =
-                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &block, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
 
             let expected_graph = TypeInferenceGraph {

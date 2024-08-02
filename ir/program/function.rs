@@ -15,6 +15,7 @@ use crate::program::block::FunctionalBlock;
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
+#[derive(Debug, Clone)]
 pub struct Function {
     // Variable categories for args & return can be read from the block's context.
     arguments: Vec<Variable>,
@@ -38,6 +39,7 @@ impl Function {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum ReturnOperation {
     Stream(Vec<Variable>),
     Single(Vec<Reducer>),

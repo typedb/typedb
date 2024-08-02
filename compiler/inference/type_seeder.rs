@@ -31,7 +31,7 @@ use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::inference::{
-    annotated_functions::{AnnotatedCommittedFunctions, AnnotatedFunctions, AnnotatedUncommittedFunctions},
+    annotated_functions::{IndexedAnnotatedFunctions, AnnotatedFunctions, AnnotatedUnindexedFunctions},
     pattern_type_inference::{
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
     },
@@ -42,16 +42,16 @@ use crate::inference::{
 pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
-    schema_functions: &'this AnnotatedCommittedFunctions,
-    local_functions: Option<&'this AnnotatedUncommittedFunctions>,
+    schema_functions: &'this IndexedAnnotatedFunctions,
+    local_functions: Option<&'this AnnotatedUnindexedFunctions>,
 }
 
 impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     pub(crate) fn new(
         snapshot: &'this Snapshot,
         type_manager: &'this TypeManager,
-        schema_functions: &'this AnnotatedCommittedFunctions,
-        local_functions: Option<&'this AnnotatedUncommittedFunctions>,
+        schema_functions: &'this IndexedAnnotatedFunctions,
+        local_functions: Option<&'this AnnotatedUnindexedFunctions>,
     ) -> Self {
         TypeSeeder { snapshot, type_manager, schema_functions, local_functions }
     }
@@ -1027,7 +1027,7 @@ pub mod tests {
     use storage::snapshot::CommittableSnapshot;
 
     use crate::inference::{
-        annotated_functions::AnnotatedCommittedFunctions,
+        annotated_functions::IndexedAnnotatedFunctions,
         pattern_type_inference::{tests::expected_edge, TypeInferenceGraph},
         tests::{
             managers,
@@ -1116,7 +1116,7 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let empty_function_cache = AnnotatedCommittedFunctions::empty();
+            let empty_function_cache = IndexedAnnotatedFunctions::empty();
             let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), conjunction).unwrap();
             assert_eq!(expected_tig, tig);
@@ -1172,7 +1172,7 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let empty_function_cache = AnnotatedCommittedFunctions::empty();
+            let empty_function_cache = IndexedAnnotatedFunctions::empty();
             let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), conjunction).unwrap();
             if expected_tig != tig {
@@ -1245,7 +1245,7 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let empty_function_cache = AnnotatedCommittedFunctions::empty();
+            let empty_function_cache = IndexedAnnotatedFunctions::empty();
             let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
             let tig = seeder.seed_types(block.context(), conjunction).unwrap();
             assert_eq!(expected_tig.vertices, tig.vertices);

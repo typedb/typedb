@@ -9,12 +9,13 @@ use ir::program::{function::Function, function_signature::FunctionIDAPI};
 
 use crate::inference::type_annotations::FunctionAnnotations;
 
-pub struct AnnotatedCommittedFunctions {
+/// Indexed by Function ID
+pub struct IndexedAnnotatedFunctions {
     ir: Box<[Option<Function>]>,
     annotations: Box<[Option<FunctionAnnotations>]>,
 }
 
-impl AnnotatedCommittedFunctions {
+impl IndexedAnnotatedFunctions {
     pub fn new(ir: Box<[Option<Function>]>, annotations: Box<[Option<FunctionAnnotations>]>) -> Self {
         Self { ir, annotations }
     }
@@ -30,9 +31,11 @@ pub trait AnnotatedFunctions {
     fn get_function(&self, id: Self::ID) -> Option<&Function>;
 
     fn get_annotations(&self, id: Self::ID) -> Option<&FunctionAnnotations>;
+
+    fn is_empty(&self) -> bool;
 }
 
-impl AnnotatedFunctions for AnnotatedCommittedFunctions {
+impl AnnotatedFunctions for IndexedAnnotatedFunctions {
     type ID = DefinitionKey<'static>;
 
     fn get_function(&self, id: Self::ID) -> Option<&Function> {
@@ -42,16 +45,20 @@ impl AnnotatedFunctions for AnnotatedCommittedFunctions {
     fn get_annotations(&self, id: Self::ID) -> Option<&FunctionAnnotations> {
         self.annotations.get(id.as_usize())?.as_ref()
     }
+
+    fn is_empty(&self) -> bool {
+        self.annotations.is_empty()
+    }
 }
 
-// May hold IR & Annotations for either Schema functions or Preamble functions
+// May hold IR & Annotations for either uncommitted Schema functions or Preamble functions
 // For schema functions, The index does not correspond to function_id.as_usize().
-pub struct AnnotatedUncommittedFunctions {
+pub struct AnnotatedUnindexedFunctions {
     ir: Box<[Function]>,
     annotations: Box<[FunctionAnnotations]>,
 }
 
-impl AnnotatedUncommittedFunctions {
+impl AnnotatedUnindexedFunctions {
     pub fn new(ir: Box<[Function]>, annotations: Box<[FunctionAnnotations]>) -> Self {
         Self { ir, annotations }
     }
@@ -66,7 +73,7 @@ impl AnnotatedUncommittedFunctions {
     }
 }
 
-impl AnnotatedFunctions for AnnotatedUncommittedFunctions {
+impl AnnotatedFunctions for AnnotatedUnindexedFunctions {
     type ID = usize;
 
     fn get_function(&self, id: Self::ID) -> Option<&Function> {
@@ -75,5 +82,9 @@ impl AnnotatedFunctions for AnnotatedUncommittedFunctions {
 
     fn get_annotations(&self, id: Self::ID) -> Option<&FunctionAnnotations> {
         self.annotations.get(id)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.annotations.is_empty()
     }
 }

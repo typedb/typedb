@@ -5,7 +5,7 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
-use compiler::inference::annotated_functions::AnnotatedCommittedFunctions;
+use compiler::inference::annotated_functions::IndexedAnnotatedFunctions;
 use compiler::inference::type_inference::infer_types;
 use compiler::instruction::constraint::instructions::{ConstraintInstruction, Inputs};
 
@@ -85,7 +85,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(IndexedAnnotatedFunctions::empty())).unwrap()
     };
 
     // Plan

@@ -7,7 +7,7 @@
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::{
-    inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
+    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     instruction::constraint::instructions::{ConstraintInstruction, Inputs},
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
@@ -153,7 +153,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(IndexedAnnotatedFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -226,7 +226,7 @@ fn unselected_named_vars_counted() {
     let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(IndexedAnnotatedFunctions::empty())).unwrap()
     };
 
     // Plan
@@ -310,7 +310,7 @@ fn cartesian_named_counted_checked() {
     let annotated_program = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
+        infer_types(program, &snapshot, &type_manager, Arc::new(IndexedAnnotatedFunctions::empty())).unwrap()
     };
 
     // Plan

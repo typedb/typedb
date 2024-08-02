@@ -13,9 +13,11 @@ rust_library(
         "*.rs",
     ]),
     deps = [
+        "//compiler",
         "//concept",
-        "//function",
         "//encoding",
+        "//executor",
+        "//function",
         "//ir",
         "//storage",
 

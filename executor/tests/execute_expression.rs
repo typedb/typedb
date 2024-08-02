@@ -17,7 +17,7 @@ use compiler::{
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
 use executor::expression_executor::{ExpressionExecutor, ExpressionValue};
 use ir::{
-    pattern::constraint::Constraint, program::function_signature::HashMapFunctionIndex,
+    pattern::constraint::Constraint, program::function_signature::HashMapFunctionSignatureIndex,
     translation::match_::translate_match, PatternDefinitionError,
 };
 use itertools::Itertools;
@@ -47,7 +47,7 @@ fn compile_expression_via_match(
 ) -> Result<(HashMap<String, Variable>, CompiledExpression), PatternDefitionOrExpressionCompilationError> {
     let query = format!("match $x = {}; select $x;", s);
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap() {
-        let block = translate_match(&HashMapFunctionIndex::empty(), &match_)?.finish();
+        let block = translate_match(&HashMapFunctionSignatureIndex::empty(), &match_)?.finish();
         let variable_mapping = variable_types
             .keys()
             .map(|name| {
