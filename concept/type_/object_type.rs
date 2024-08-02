@@ -4,9 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-};
+use std::collections::{HashMap, HashSet};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -29,7 +27,6 @@ use crate::{
     ConceptAPI,
 };
 
-
 macro_rules! with_object_type {
     ($object_type:ident, |$type_:ident| $expr:expr) => {
         match $object_type.clone() {
@@ -39,9 +36,11 @@ macro_rules! with_object_type {
     };
 }
 pub(crate) use with_object_type;
-use crate::thing::object::Object;
-use crate::thing::thing_manager::ThingManager;
-use crate::type_::ThingTypeAPI;
+
+use crate::{
+    thing::{object::Object, thing_manager::ThingManager},
+    type_::ThingTypeAPI,
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ObjectType<'a> {
@@ -68,9 +67,7 @@ impl<'a> TypeVertexEncoding<'a> for ObjectType<'a> {
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
-        with_object_type!(self, |object| {
-            object.into_vertex()
-        })
+        with_object_type!(self, |object| { object.into_vertex() })
     }
 }
 
@@ -92,9 +89,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
-        with_object_type!(self, |object| {
-            object.set_owns(snapshot, type_manager, attribute_type, ordering)
-        })
+        with_object_type!(self, |object| { object.set_owns(snapshot, type_manager, attribute_type, ordering) })
     }
 
     fn unset_owns(
@@ -104,9 +99,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        with_object_type!(self, |object| {
-            object.unset_owns(snapshot, type_manager, thing_manager, attribute_type)
-        })
+        with_object_type!(self, |object| { object.unset_owns(snapshot, type_manager, thing_manager, attribute_type) })
     }
 
     fn get_owns_declared<'m>(
@@ -114,9 +107,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_owns_declared(snapshot, type_manager)
-        })
+        with_object_type!(self, |object| { object.get_owns_declared(snapshot, type_manager) })
     }
 
     fn get_owns_attribute(
@@ -125,9 +116,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_owns_attribute(snapshot, type_manager, attribute_type)
-        })
+        with_object_type!(self, |object| { object.get_owns_attribute(snapshot, type_manager, attribute_type) })
     }
 
     fn get_owns<'m>(
@@ -135,9 +124,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_owns(snapshot, type_manager)
-        })
+        with_object_type!(self, |object| { object.get_owns(snapshot, type_manager) })
     }
 
     fn get_owns_overrides<'m>(
@@ -145,9 +132,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_owns_overrides(snapshot, type_manager)
-        })
+        with_object_type!(self, |object| { object.get_owns_overrides(snapshot, type_manager) })
     }
 }
 
@@ -172,9 +157,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.is_abstract(snapshot, type_manager)
-        })
+        with_object_type!(self, |object| { object.is_abstract(snapshot, type_manager) })
     }
 
     fn delete(
@@ -183,9 +166,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError> {
-        with_object_type!(self, |object| {
-            object.delete(snapshot, type_manager, thing_manager)
-        })
+        with_object_type!(self, |object| { object.delete(snapshot, type_manager, thing_manager) })
     }
 
     fn get_label<'m>(
@@ -193,9 +174,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_label(snapshot, type_manager)
-        })
+        with_object_type!(self, |object| { object.get_label(snapshot, type_manager) })
     }
 
     fn get_supertype(
@@ -213,11 +192,13 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, ConceptReadError> {
-        Ok(MaybeOwns::Owned(
-            with_object_type!(self, |object| {
-                object.get_supertypes_transitive(snapshot, type_manager)?.iter().map(|type_| type_.clone().into_owned_object_type()).collect_vec()
-            })
-        ))
+        Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
+            object
+                .get_supertypes_transitive(snapshot, type_manager)?
+                .iter()
+                .map(|type_| type_.clone().into_owned_object_type())
+                .collect_vec()
+        })))
     }
 
     fn get_subtypes<'m>(
@@ -225,11 +206,13 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, ConceptReadError> {
-        Ok(MaybeOwns::Owned(
-            with_object_type!(self, |object| {
-                object.get_subtypes(snapshot, type_manager)?.iter().map(|type_| type_.clone().into_owned_object_type()).collect_vec()
-            })
-        ))
+        Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
+            object
+                .get_subtypes(snapshot, type_manager)?
+                .iter()
+                .map(|type_| type_.clone().into_owned_object_type())
+                .collect_vec()
+        })))
     }
 
     fn get_subtypes_transitive<'m>(
@@ -237,11 +220,13 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, ConceptReadError> {
-        Ok(MaybeOwns::Owned(
-            with_object_type!(self, |object| {
-                object.get_subtypes_transitive(snapshot, type_manager)?.iter().map(|type_| type_.clone().into_owned_object_type()).collect_vec()
-            })
-        ))
+        Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
+            object
+                .get_subtypes_transitive(snapshot, type_manager)?
+                .iter()
+                .map(|type_| type_.clone().into_owned_object_type())
+                .collect_vec()
+        })))
     }
 }
 
@@ -262,9 +247,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
-        with_object_type!(self, |object| {
-            object.set_plays(snapshot, type_manager, role_type)
-        })
+        with_object_type!(self, |object| { object.set_plays(snapshot, type_manager, role_type) })
     }
 
     fn unset_plays(
@@ -274,9 +257,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        with_object_type!(self, |object| {
-            object.unset_plays(snapshot, type_manager, thing_manager, role_type)
-        })
+        with_object_type!(self, |object| { object.unset_plays(snapshot, type_manager, thing_manager, role_type) })
     }
 
     fn get_plays_declared<'m>(
@@ -284,9 +265,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_plays_declared(snapshot, type_manager)
-        })
+        with_object_type!(self, |object| { object.get_plays_declared(snapshot, type_manager) })
     }
 
     fn get_plays_role(
@@ -295,9 +274,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_plays_role(snapshot, type_manager, role_type)
-        })
+        with_object_type!(self, |object| { object.get_plays_role(snapshot, type_manager, role_type) })
     }
 
     fn get_plays<'m>(
@@ -305,9 +282,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_plays(snapshot, type_manager)
-        })
+        with_object_type!(self, |object| { object.get_plays(snapshot, type_manager) })
     }
 }
 <<<<<<< HEAD

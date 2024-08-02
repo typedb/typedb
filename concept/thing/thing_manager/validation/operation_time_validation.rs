@@ -3,9 +3,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
-    thing::{
-        thing_manager::{validation::DataValidationError, ThingManager},
-    },
+    thing::thing_manager::{validation::DataValidationError, ThingManager},
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, type_manager::TypeManager,
         ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,

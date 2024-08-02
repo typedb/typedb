@@ -1157,13 +1157,11 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         object_type: ObjectType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        for owns in TypeReader::get_capabilities_declared::<Owns<'static>>(snapshot, object_type.clone())?
-        {
+        for owns in TypeReader::get_capabilities_declared::<Owns<'static>>(snapshot, object_type.clone())? {
             self.unset_owns_unchecked(snapshot, owns)?;
         }
 
-        for plays in TypeReader::get_capabilities_declared::<Plays<'static>>(snapshot, object_type.clone())?
-        {
+        for plays in TypeReader::get_capabilities_declared::<Plays<'static>>(snapshot, object_type.clone())? {
             self.unset_plays_unchecked(snapshot, plays)?;
         }
 
@@ -1205,7 +1203,8 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         self.validate_delete_type(snapshot, thing_manager, relation_type.clone())?;
 
-        let declared_relates = TypeReader::get_capabilities_declared::<Relates<'static>>(snapshot, relation_type.clone())?;
+        let declared_relates =
+            TypeReader::get_capabilities_declared::<Relates<'static>>(snapshot, relation_type.clone())?;
         for relates in declared_relates.iter() {
             self.delete_role_type(snapshot, thing_manager, relates.role())?;
         }
@@ -1238,9 +1237,21 @@ impl TypeManager {
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
         self.validate_delete_type(snapshot, thing_manager, role_type.clone())?;
-        // TODO: We have a commit-time check for overrides not being left hanging, but maybe we should clean it/reject here. We DO check that there are no subtypes for type deletion.
 
         let relates = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone())?;
+
+        OperationTimeValidation::validate_no_overriding_capabilities_for_capability_unset(snapshot, relates.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_no_instances_to_unset_relates(
+            snapshot,
+            self,
+            thing_manager,
+            relates.relation(),
+            role_type.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         self.delete_relates_and_its_role_type(snapshot, relates)
     }
 
@@ -1249,8 +1260,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         relates: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
-        for plays in TypeReader::get_capabilities_for_interface_declared::<Plays<'static>>(snapshot, relates.role())?
-        {
+        for plays in TypeReader::get_capabilities_for_interface_declared::<Plays<'static>>(snapshot, relates.role())? {
             self.unset_plays_unchecked(snapshot, plays)?;
         }
 
@@ -1852,21 +1862,23 @@ impl TypeManager {
         owner: ObjectType<'static>,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: We have a commit-time check for overrides not being left hanging, but maybe we should clean it/reject here. We DO check that there are no subtypes for type deletion.
         OperationTimeValidation::validate_unset_owns_is_not_inherited(snapshot, owner.clone(), attribute_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_no_instances_to_unset_owns(
-            snapshot,
-            self,
-            thing_manager,
-            owner.clone(),
-            attribute_type.clone(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
         let owns_declared = owner.get_owns_declared(snapshot, self)?;
         if let Some(owns) = owns_declared.iter().find(|owns| owns.attribute() == attribute_type) {
+            OperationTimeValidation::validate_no_overriding_capabilities_for_capability_unset(snapshot, owns.clone())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+            OperationTimeValidation::validate_no_instances_to_unset_owns(
+                snapshot,
+                self,
+                thing_manager,
+                owner.clone(),
+                attribute_type.clone(),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
             self.unset_owns_unchecked(snapshot, owns.clone())?;
         }
         Ok(())
@@ -1992,21 +2004,23 @@ impl TypeManager {
         player: ObjectType<'static>,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: We have a commit-time check for overrides not being left hanging, but maybe we should clean it/reject here. We DO check that there are no subtypes for type deletion.
         OperationTimeValidation::validate_unset_plays_is_not_inherited(snapshot, player.clone(), role_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_no_instances_to_unset_plays(
-            snapshot,
-            self,
-            thing_manager,
-            player.clone(),
-            role_type.clone(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
         let plays_declared = player.get_plays_declared(snapshot, self)?;
         if let Some(plays) = plays_declared.iter().find(|plays| plays.role() == role_type) {
+            OperationTimeValidation::validate_no_overriding_capabilities_for_capability_unset(snapshot, plays.clone())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+            OperationTimeValidation::validate_no_instances_to_unset_plays(
+                snapshot,
+                self,
+                thing_manager,
+                player.clone(),
+                role_type.clone(),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
             self.unset_plays_unchecked(snapshot, plays.clone())?;
         }
         Ok(())
@@ -2169,8 +2183,13 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_new_abstract_annotation_compatible_with_type_and_subtypes_instances(snapshot, self, thing_manager, type_.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_new_abstract_annotation_compatible_with_type_and_subtypes_instances(
+            snapshot,
+            self,
+            thing_manager,
+            type_.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation(snapshot, type_, annotation)
     }
@@ -2248,8 +2267,14 @@ impl TypeManager {
         self.validate_set_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
 
         // It won't validate anything, but placing this call here helps maintain the verification consistency
-        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(
+            snapshot,
+            self,
+            thing_manager,
+            attribute_type.clone(),
+            annotation.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation(snapshot, attribute_type, annotation)
     }
@@ -2624,8 +2649,14 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(
+            snapshot,
+            self,
+            thing_manager,
+            attribute_type.clone(),
+            annotation.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation(snapshot, attribute_type, annotation)
     }
@@ -2709,8 +2740,14 @@ impl TypeManager {
         self.validate_set_annotation_general(snapshot, relation_type.clone(), annotation.clone())?;
 
         // It won't validate anything, but placing this call here helps maintain the verification consistency
-        OperationTimeValidation::validate_new_annotation_compatible_with_relation_type_and_subtypes_instances(snapshot, self, thing_manager, relation_type.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_new_annotation_compatible_with_relation_type_and_subtypes_instances(
+            snapshot,
+            self,
+            thing_manager,
+            relation_type.clone(),
+            annotation.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation(snapshot, relation_type, annotation)
     }
@@ -2765,8 +2802,14 @@ impl TypeManager {
 
         // TODO: Maybe for the future: check if compatible with existing VALUES annotation
 
-        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(
+            snapshot,
+            self,
+            thing_manager,
+            attribute_type.clone(),
+            annotation.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation(snapshot, attribute_type, annotation)
     }
@@ -2883,8 +2926,14 @@ impl TypeManager {
 
         // TODO: Maybe for the future: check if compatible with existing RANGE annotation
 
-        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(snapshot, self, thing_manager, attribute_type.clone(), annotation.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_new_annotation_compatible_with_attribute_type_and_subtypes_instances(
+            snapshot,
+            self,
+            thing_manager,
+            attribute_type.clone(),
+            annotation.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         self.set_annotation(snapshot, attribute_type, annotation)
     }

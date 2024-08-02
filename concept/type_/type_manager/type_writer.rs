@@ -11,7 +11,7 @@ use encoding::{
     graph::{
         definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
         type_::{
-            edge::TypeEdgeEncoding,
+            edge::{TypeEdge, TypeEdgeEncoding},
             index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
             property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
             vertex::TypeVertexEncoding,
@@ -20,19 +20,16 @@ use encoding::{
     value::{label::Label, string_bytes::StringBytes, value_type::ValueType},
     AsBytes, Keyable,
 };
-use encoding::graph::type_::edge::TypeEdge;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_range::KeyRange;
-use storage::snapshot::WritableSnapshot;
+use storage::{key_range::KeyRange, snapshot::WritableSnapshot};
 
 use crate::{
     error::ConceptWriteError,
     type_::{
         attribute_type::AttributeType, owns::Owns, relates::Relates, relation_type::RelationType, role_type::RoleType,
-        sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride, Ordering,
+        sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride, Ordering, TypeAPI,
     },
 };
-use crate::type_::TypeAPI;
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
     snapshot: PhantomData<Snapshot>,

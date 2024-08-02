@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashMap;
+
 use encoding::value::label::Label;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -101,16 +103,17 @@ pub(crate) fn is_overridden_interface_object_declared_supertype_or_self<T: KindA
     Ok(TypeReader::get_supertype(snapshot, type_.clone())? == Some(overridden.clone()))
 }
 
-pub(crate) fn is_interface_overridden<CAP: Capability<'static>>(
+pub(crate) fn find_overriding_capability_for_interface<CAP: Capability<'static>>(
     snapshot: &impl ReadableSnapshot,
     object_type: CAP::ObjectType,
     interface_type: CAP::InterfaceType,
-) -> Result<bool, ConceptReadError> {
+) -> Result<Option<CAP>, ConceptReadError> {
     let capabilities_overrides = TypeReader::get_object_capabilities_overrides::<CAP>(snapshot, object_type)?;
     Ok(capabilities_overrides
-        .values()
-        .map(|overridden_capability| overridden_capability.interface())
-        .contains(&interface_type))
+        .iter()
+        .find(|(overriding, overridden)| overridden.interface() == interface_type)
+        .map(|(overriding, overridden)| overriding)
+        .cloned())
 }
 
 pub(crate) fn is_interface_hidden_by_overrides<CAP: Capability<'static>>(
