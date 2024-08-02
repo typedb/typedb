@@ -16,12 +16,22 @@ use concept::{
 use encoding::value::{label::Label, value_type::ValueTypeCategory};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    common::token::ValueType,
+    common::token::{ValueType, Kind as TypeQLKInd},
     schema::definable::type_::Capability,
     type_::{BuiltinValueType, NamedType},
 };
+use encoding::graph::type_::Kind;
 
 use crate::SymbolResolutionError;
+
+pub(crate) fn translate_kind(typeql_kind: TypeQLKInd) -> Kind {
+    match typeql_kind {
+        TypeQLKInd::Entity => Kind::Entity,
+        TypeQLKInd::Relation => Kind::Relation,
+        TypeQLKInd::Attribute => Kind::Attribute,
+        TypeQLKInd::Role => Kind::Role,
+    }
+}
 
 pub(crate) fn as_value_type_category(value_type: &ValueType) -> ValueTypeCategory {
     match value_type {
@@ -42,6 +52,7 @@ pub(crate) fn resolve_type(
     type_manager: &TypeManager,
     label: &Label<'_>,
 ) -> Result<answer::Type, SymbolResolutionError> {
+
     match try_resolve_type(snapshot, type_manager, label) {
         Ok(Some(type_)) => Ok(type_),
         Ok(None) => Err(SymbolResolutionError::TypeNotFound { label: label.clone().into_owned() }),
@@ -54,6 +65,7 @@ pub(crate) fn try_resolve_type(
     type_manager: &TypeManager,
     label: &Label<'_>,
 ) -> Result<Option<answer::Type>, ConceptReadError> {
+    // TODO: Introduce a method on type_manager that does this in one step
     let type_ = if let Some(object_type) = type_manager.get_object_type(snapshot, label)? {
         match object_type {
             ObjectType::Entity(entity_type) => Some(answer::Type::Entity(entity_type)),

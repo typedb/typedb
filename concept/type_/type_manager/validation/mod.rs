@@ -33,7 +33,7 @@ mod validation;
 #[derive(Debug, Clone)]
 pub enum SchemaValidationError {
     ConceptRead(ConceptReadError),
-    LabelShouldBeUnique(Label<'static>),
+    LabelShouldBeUnique { label: Label<'static>, existing_kind: Kind },
     StructNameShouldBeUnique(String),
     StructShouldHaveAtLeastOneField(String),
     StructCannotBeDeletedAsItsUsedAsValueTypeForAttributeTypes(String, usize),
@@ -165,7 +165,7 @@ impl Error for SchemaValidationError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ConceptRead(source) => Some(source),
-            Self::LabelShouldBeUnique(_) => None,
+            Self::LabelShouldBeUnique{ .. } => None,
             Self::StructNameShouldBeUnique(_) => None,
             Self::StructShouldHaveAtLeastOneField(_) => None,
             Self::StructCannotBeDeletedAsItsUsedAsValueTypeForAttributeTypes(_, _) => None,
