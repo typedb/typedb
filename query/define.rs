@@ -86,7 +86,7 @@ pub(crate) fn process_struct_definitions(
     definables: &Vec<Definable>,
 ) -> Result<(), DefineError> {
     filter_variants!(Definable::Struct : definables)
-        .try_for_each(|struct_| define_structs(snapshot, type_manager, struct_))?;
+        .try_for_each(|struct_| define_struct(snapshot, type_manager, struct_))?;
     filter_variants!(Definable::Struct : definables)
         .try_for_each(|struct_| define_struct_fields(snapshot, type_manager, &struct_))?;
     Ok(())
@@ -135,7 +135,7 @@ pub(crate) fn process_functions(
     Ok(())
 }
 
-fn define_structs<'a>(
+fn define_struct<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     struct_definable: &typeql::schema::definable::Struct,
@@ -175,27 +175,18 @@ fn get_struct_field_value_type_optionality(
     type_manager: &TypeManager,
     field: &Field,
 ) -> Result<(ValueType, bool), DefineError> {
+    let optional = matches!(&field.type_, TypeRefAny::Optional(_));
     match &field.type_ {
-        TypeRefAny::Type(type_ref) => match type_ref {
-            TypeRef::Named(named) => {
-                let value_type = resolve_value_type(snapshot, type_manager, named)
-                    .map_err(|source| DefineError::StructFieldCouldNotResolveValueType { source })?;
-                Ok((value_type, false))
-            }
-            TypeRef::Variable(_) => {
-                return Err(DefineError::StructFieldIllegalVariable { field_declaration: field.clone() });
-            }
+        TypeRefAny::Type(TypeRef::Named(named))
+        | TypeRefAny::Optional(Optional { inner: TypeRef::Named(named), .. }) => {
+            let value_type = resolve_value_type(snapshot, type_manager, named)
+                .map_err(|source| DefineError::StructFieldCouldNotResolveValueType { source })?;
+            Ok((value_type, optional))
         },
-        TypeRefAny::Optional(Optional { inner: type_ref, .. }) => match type_ref {
-            TypeRef::Named(named) => {
-                let value_type = resolve_value_type(snapshot, type_manager, named)
-                    .map_err(|source| DefineError::StructFieldCouldNotResolveValueType { source })?;
-                Ok((value_type, false))
-            }
-            TypeRef::Variable(_) => {
-                return Err(DefineError::StructFieldIllegalVariable { field_declaration: field.clone() });
-            }
-        },
+        TypeRefAny::Type(TypeRef::Variable(variable))
+        | TypeRefAny::Optional(Optional { inner: TypeRef::Variable(variable), .. }) => {
+            return Err(DefineError::StructFieldIllegalVariable { field_declaration: field.clone() });
+        }
         TypeRefAny::List(_) => {
             return Err(DefineError::StructFieldIllegalList { field_declaration: field.clone() });
         }
@@ -210,7 +201,6 @@ fn define_types<'a>(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     match type_declaration.kind {
         None => {
-            // Refers to an existing type.
             resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
             Ok(())
         }
@@ -266,6 +256,7 @@ fn define_type_annotations<'a>(
     Ok(())
 }
 
+
 fn define_capabilities_alias<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
@@ -313,11 +304,7 @@ fn define_capabilities_sub<'a>(
                 type_.set_supertype(snapshot, type_manager, supertype)
             }
             (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => {
-                return Err(DefineError::TypeCannotHaveCapability {
-                    label: label.clone(),
-                    kind: Kind::Role,
-                    capability: capability.clone(),
-                })?;
+                return Err(err_unsupported_capability(&label, Kind::Role, capability));
             }
             _ => unreachable!(),
         }
@@ -336,11 +323,7 @@ fn define_capabilities_value_type<'a>(
     for capability in &type_declaration.capabilities {
         let value_type_statement = unwrap_or_else!(CapabilityBase::ValueType = &capability.base; {continue;});
         let attribute_type = unwrap_or_else!(TypeEnum::Attribute = &type_; {
-            return Err(DefineError::TypeCannotHaveCapability {
-                label: label.to_owned(),
-                kind: type_.kind(),
-                capability: capability.clone(),
-            })?;
+            return Err(err_unsupported_capability(&label, type_.kind(), capability));
         });
         let value_type = resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
             .map_err(|source| DefineError::AttributeTypeBadValueType { source })?;
@@ -361,11 +344,7 @@ fn define_capabilities_relates<'a>(
     for capability in &type_declaration.capabilities {
         let relates = unwrap_or_else!(CapabilityBase::Relates = &capability.base ;{continue;});
         let relation_type = unwrap_or_else!(TypeEnum::Relation = &type_ ;{
-            return Err(DefineError::TypeCannotHaveCapability {
-                label: label.to_owned(),
-                kind: type_.kind(),
-                capability: capability.clone(),
-            })?;
+            return Err(err_unsupported_capability(&label, type_.kind(), capability));
         });
 
         let (role_label, is_list) = type_ref_to_label_and_is_list(&relates.related).map_err(|_| {
@@ -454,11 +433,7 @@ fn define_capabilities_relates<'a>(
 //
 //                         }
 //                         _ => {
-//                             Err(DefineError::TypeCannotHaveCapability {
-//                                 label: label.to_owned(),
-//                                 kind: type_.kind(),
-//                                 capability: capability.clone(),
-//                             })?;
+//                             return Err(err_unsupported_capability(&label, type_.kind(), capability));
 //                         }
 //                     },
 //                 }
@@ -495,11 +470,7 @@ fn define_capabilities_owns<'a>(
                     .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), source })?;
             }
             _ => {
-                Err(DefineError::TypeCannotHaveCapability {
-                    label: label.to_owned(),
-                    kind: type_.kind(),
-                    capability: capability.clone(),
-                })?;
+                return Err(err_unsupported_capability(&label, type_.kind(), capability));
             }
         }
     }
@@ -524,11 +495,7 @@ fn define_capabilities_plays<'a>(
                 TypeEnum::Entity(entity_type) => ObjectType::Entity(entity_type.clone()),
                 TypeEnum::Relation(relation_type) => ObjectType::Relation(relation_type.clone()),
                 _ => {
-                    return Err(DefineError::TypeCannotHaveCapability {
-                        label: role_label.to_owned(),
-                        kind: type_.kind(),
-                        capability: capability.clone(),
-                    })?;
+                    return Err(err_unsupported_capability(&label, type_.kind(), capability));
                 }
             };
             as_object_type
@@ -670,6 +637,14 @@ pub enum DefineError {
         subtype_kind: Kind,
         supertype_kind: Kind,
     },
+}
+
+fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &Capability) -> DefineError {
+    DefineError::TypeCannotHaveCapability {
+        label: label.to_owned(),
+        kind: kind,
+        capability: capability.clone(),
+    }
 }
 
 impl fmt::Display for DefineError {
