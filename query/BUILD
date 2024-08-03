@@ -19,6 +19,7 @@ rust_library(
         "//encoding",
         "//ir",
         "//storage",
+        "//traversal",
 
         "@vaticle_typeql//rust:typeql",
     ],

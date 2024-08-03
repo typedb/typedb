@@ -26,6 +26,7 @@ use encoding::{
     graph::type_::Kind,
     value::{label::Label, value_type::ValueType},
 };
+use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     common::token,
@@ -40,7 +41,7 @@ use typeql::{
 };
 
 use crate::{
-    util::{resolve_type, resolve_value_type},
+    util::{resolve_type, resolve_value_type, type_ref_to_label_and_ordering},
     SymbolResolutionError,
 };
 
@@ -59,9 +60,6 @@ macro_rules! filter_variants {
     };
 }
 pub(crate) use filter_variants;
-use ir::{translation::tokens::translate_annotation, LiteralParseError};
-
-use crate::util::type_ref_to_label_and_ordering;
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,

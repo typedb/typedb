@@ -32,6 +32,14 @@ impl<'a> VariableValue<'a> {
         }
     }
 
+    pub fn as_value(&self) -> &Value<'a> {
+        match self {
+            VariableValue::Value(value) => value,
+            // TODO: Do we want to implicit cast from values?
+            _ => panic!("VariableValue is not a value"),
+        }
+    }
+
     pub fn into_owned(self) -> VariableValue<'static> {
         match self {
             VariableValue::Empty => VariableValue::Empty,
