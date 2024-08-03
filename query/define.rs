@@ -97,6 +97,7 @@ pub(crate) fn process_type_declarations(
     type_manager: &TypeManager,
     definables: &Vec<Definable>,
 ) -> Result<(), DefineError> {
+    // TODO: Annotations on capabilities; Overrides; Idempotency checks.
     filter_variants!(Definable::TypeDeclaration : definables)
         .try_for_each(|declaration| define_types(snapshot, type_manager, declaration))?;
     filter_variants!(Definable::TypeDeclaration : definables)
@@ -347,13 +348,12 @@ fn define_capabilities_relates<'a>(
             return Err(err_unsupported_capability(&label, type_.kind(), capability));
         });
 
-        let (role_label, is_list) = type_ref_to_label_and_is_list(&relates.related).map_err(|_| {
+        let (role_label, ordering) = type_ref_to_label_and_ordering(&relates.related).map_err(|_| {
             DefineError::RelatesRoleMustBeLabelAndNotOptional {
                 relation: label.to_owned(),
                 role_label: relates.related.clone(),
             }
         })?;
-        let ordering = if is_list { Ordering::Ordered } else { Ordering::Unordered };
         if let Some(relates) = relation_type
             .get_relates_of_role(snapshot, type_manager, role_label.ident.as_str())
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?
@@ -377,71 +377,6 @@ fn define_capabilities_relates<'a>(
     }
     Ok(())
 }
-//
-// fn define_capabilities_relates_overrides<'a>(
-//     snapshot: &mut impl WritableSnapshot,
-//     type_manager: &TypeManager,
-//     definables: &Vec<Definable>,
-// ) -> Result<(), DefineError> {
-//     for definable in definables {
-//         if let Definable::TypeDeclaration(type_declaration) = definable {
-//             if type_declaration.capabilities.is_empty() {
-//                 continue;
-//             }
-//             let label = Label::parse_from(type_declaration.label.ident.as_str());
-//             let type_ = resolve_type(snapshot, type_manager, &label)
-//                 .map_err(|source| DefineError::TypeLookup { source })?;
-//             for capability in &type_declaration.capabilities {
-//                 if let CapabilityBase::Relates(relates) = &capability.base {
-//                     match &type_ {
-//                         TypeEnum::Relation(relation_type) => {
-//                             let (overriding_label, overriding_is_list) = type_ref_to_label_and_is_list(&relates.related)
-//                                 .map_err(|_| {
-//                                     Err(DefineError::RelatesRoleMustBeLabelAndNotOptional {
-//                                         relation: label.to_owned(),
-//                                         role_label: relates.related.clone(),
-//                                     })
-//                                 })?;
-//                             let (overridden_label, overridden_is_list) = type_ref_to_label_and_is_list(&relates.related)
-//                                 .map_err(|_| {
-//                                     Err(DefineError::RelatesRoleMustBeLabelAndNotOptional {
-//                                         relation: label.to_owned(),
-//                                         role_label: relates.related.clone(),
-//                                     })
-//                                 })?;
-//
-//                             let overriding_ordering = if overriding_is_list { Ordering::Ordered } else { Ordering::Unordered };
-//                             let overridden_ordering = if overridden_is_list { Ordering::Ordered } else { Ordering::Unordered };
-//                             let overridding_relates = relation_type.get_relates_of_role(snapshot, type_manager, role_label.ident.as_str())
-//                                 .map_err(|source| DefineError::UnexpectedConceptRead { source })?
-//                             {
-//
-//                             }
-//                             if let Some(overriding_relates) =
-//                             {
-//                                 if ordering != existing_ordering {
-//                                     Err(DefineError::CreateRelatesModifiesExistingOrdering { label: label.clone(), existing_ordering, new_ordering: ordering })?;
-//                                 }
-//                             } else {
-//                                 relation_type
-//                                     .create_relates(snapshot, type_manager, role_label.ident.as_str(), ordering)
-//                                     .map_err(|source| DefineError::CreateRelates {
-//                                         source,
-//                                         relates: relates.to_owned(),
-//                                     })?;
-//                             }
-//
-//                         }
-//                         _ => {
-//                             return Err(err_unsupported_capability(&label, type_.kind(), capability));
-//                         }
-//                     },
-//                 }
-//             }
-//         }
-//     }
-//     Ok(())
-// }
 
 fn define_capabilities_owns<'a>(
     snapshot: &mut impl WritableSnapshot,
@@ -453,11 +388,10 @@ fn define_capabilities_owns<'a>(
         .map_err(|source| crate::define::DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
         let owns = unwrap_or_else!(CapabilityBase::Owns = &capability.base ;{continue;});
-        let (attr_label, is_list) = type_ref_to_label_and_is_list(&owns.owned)
+        let (attr_label, ordering) = type_ref_to_label_and_ordering(&owns.owned)
             .map_err(|_| DefineError::OwnsAttributeMustBeLabelOrList { owns: owns.clone() })?;
         let attribute_type = AttributeType::resolve_for(snapshot, type_manager, &attr_label, capability)
             .map_err(|source| DefineError::TypeLookup { source })?;
-        let ordering = if is_list { Ordering::Ordered } else { Ordering::Unordered };
         match &type_ {
             TypeEnum::Entity(entity_type) => {
                 ObjectType::Entity(entity_type.clone())
@@ -516,11 +450,11 @@ fn define_functions<'a>(
     Ok(())
 }
 
-fn type_ref_to_label_and_is_list(type_ref: &TypeRefAny) -> Result<(typeql::Label, bool), ()> {
+fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(typeql::Label, Ordering), ()> {
     match type_ref {
-        TypeRefAny::Type(TypeRef::Named(NamedType::Label(label))) => Ok((label.clone(), false)),
+        TypeRefAny::Type(TypeRef::Named(NamedType::Label(label))) => Ok((label.clone(), Ordering::Unordered)),
         TypeRefAny::List(typeql::type_::List { inner: TypeRef::Named(NamedType::Label(label)), .. }) => {
-            Ok((label.clone(), true))
+            Ok((label.clone(), Ordering::Ordered))
         }
         _ => Err(()),
     }
