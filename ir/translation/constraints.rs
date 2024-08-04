@@ -34,7 +34,7 @@ pub(super) fn add_statement(
             let assigned: Vec<Variable> = assignment_pattern_to_variables(constraints, &assignment.lhs)?;
             add_typeql_binding(function_index, constraints, assigned, &assignment.rhs, false)?
         }
-        typeql::Statement::Thing(thing) => add_thing_statement(constraints, thing)?,
+        typeql::Statement::Thing(thing) => add_thing_statement(function_index, constraints, thing)?,
         typeql::Statement::AttributeValue(_) => todo!(),
         typeql::Statement::AttributeComparison(_) => todo!(),
         typeql::Statement::Type(type_) => add_type_statement(constraints, type_)?,
@@ -43,6 +43,7 @@ pub(super) fn add_statement(
 }
 
 fn add_thing_statement(
+    function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
     thing: &typeql::statement::Thing,
 ) -> Result<(), PatternDefinitionError> {
@@ -58,7 +59,7 @@ fn add_thing_statement(
         match constraint {
             typeql::statement::thing::Constraint::Isa(isa) => add_typeql_isa(constraints, var, isa)?,
             typeql::statement::thing::Constraint::Iid(_) => todo!(),
-            typeql::statement::thing::Constraint::Has(has) => add_typeql_has(constraints, var, has)?,
+            typeql::statement::thing::Constraint::Has(has) => add_typeql_has(function_index, constraints, var, has)?,
             typeql::statement::thing::Constraint::Links(links) => {
                 add_typeql_relation(constraints, var, &links.relation)?
             }
@@ -92,14 +93,18 @@ fn add_type_statement(
 }
 
 fn extend_from_inline_typeql_expression(
+    function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
     expression: &TypeQLExpression,
 ) -> Result<Variable, PatternDefinitionError> {
-    let var = match expression {
-        TypeQLExpression::Variable(typeql_var) => register_typeql_var(constraints, &typeql_var)?,
-        _ => todo!(),
-    };
-    Ok(var)
+    if let TypeQLExpression::Variable(typeql_var) = expression {
+        register_typeql_var(constraints, &typeql_var)
+    } else {
+        let expression = build_expression(function_index, constraints, expression)?;
+        let assigned = constraints.create_anonymous_variable()?;
+        constraints.add_expression(assigned, expression)?;
+        Ok(assigned)
+    }
 }
 
 pub(crate) fn register_typeql_var(
@@ -165,18 +170,22 @@ fn add_typeql_isa(
 }
 
 fn add_typeql_has(
+    function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
     owner: Variable,
     has: &typeql::statement::thing::Has,
 ) -> Result<(), PatternDefinitionError> {
-    let attr = match &has.value {
-        typeql::statement::thing::HasValue::Variable(var) => var,
+    let attribute = match &has.value {
+        typeql::statement::thing::HasValue::Variable(var) => register_typeql_var(constraints, var)?,
         typeql::statement::thing::HasValue::Expression(expression) => {
-            todo!();
+            let assigned = extend_from_inline_typeql_expression(function_index, constraints, expression)?;
+            let attribute = constraints.create_anonymous_variable()?;
+            constraints.add_comparison(attribute, assigned)?;
+            attribute
         }
-        typeql::statement::thing::HasValue::Comparison(_) => todo!(),
+        typeql::statement::thing::HasValue::Comparison(_) => todo!("Same as above?"),
     };
-    let attribute = register_typeql_var(constraints, attr)?;
+
     constraints.add_has(owner, attribute)?;
     if let Some(type_) = &has.type_ {
         let attribute_type = register_typeql_type_var_any(constraints, type_)?;

@@ -21,7 +21,8 @@ use encoding::{
     graph::type_::{CapabilityKind::Plays, Kind},
     value::{label::Label, value::Value},
 };
-use ir::pattern::constraint::{Constraint, Constraints, Isa};
+use ir::pattern::constraint::{Comparison, Constraint, Constraints, Isa};
+use ir::pattern::expression::Expression;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::inference::type_annotations::TypeAnnotations;
@@ -167,13 +168,32 @@ fn collect_values_from_attribute_value(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
 ) -> Result<Sources<Value<'static>>, InsertCompilationError> {
-    let value_constants = Sources::new();
+    let values = filter_variants!(Constraint::ExpressionBinding : constraints).map(|binding| {
+        match binding.expression().get_root() {
+            Expression::Constant(constant) => Ok((binding.left(), constant.clone())),
+            _ => Err(InsertCompilationError::CompoundExpressionsNotAllowed { variable: binding.left() })
+        }
+    }).collect::<Result<HashMap<_,_>, _>>()?;
     // filter_variants!(Constraint::AttributeValue : &constraints).try_for_each(|attribute_value| {
     //     let attribute_variable: Variable = None.unwrap();  // TODO
     //     let value_variable: Variable = None.unwrap(); // TODO
     //     todo!("remove me once the variables at the top are no longer None.unwrap()");
     //     Ok(())
     // })?;
+    let mut value_constants = Sources::new();
+    filter_variants!(Constraint::Comparison : constraints).try_for_each(|cmp| {
+        if let Some(value) = values.get(&cmp.lhs()) {
+            value_constants.insert(cmp.rhs(), value.clone())
+                .map_err(|_|  InsertCompilationError::MultipleValuesForInsertableAttributeVariable { variable: cmp.rhs() })?;
+        } else if let Some(value) = values.get(&cmp.rhs()) {
+            value_constants.insert(cmp.lhs(), value.clone())
+                .map_err(|_|  InsertCompilationError::MultipleValuesForInsertableAttributeVariable { variable: cmp.lhs() })?;
+        } else {
+            Err(InsertCompilationError::TODO__IllegalComparison { comparison: cmp.clone() })?;
+        }
+        Ok(())
+    })?;
+
     Ok(value_constants)
 }
 
@@ -269,6 +289,9 @@ pub enum InsertCompilationError {
     CouldNotDetermineValueVariableSource { variable: Variable },
     CouldNotDetermineInsertedVariableSource { variable: Variable },
     MultipleTypeConstraintsForVariable { variable: Variable },
+    CompoundExpressionsNotAllowed { variable: Variable },
+    TODO__IllegalComparison { comparison: Comparison<Variable> },
+    MultipleValuesForInsertableAttributeVariable { variable: Variable },
 }
 
 impl Display for InsertCompilationError {
