@@ -17,4 +17,5 @@ pub mod function_plan;
 pub mod pattern_plan;
 pub mod program_plan;
 
+pub mod insert_planner;
 mod vertex;

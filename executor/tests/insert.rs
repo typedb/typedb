@@ -6,12 +6,10 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
+use compiler::inference::annotated_functions::AnnotatedCommittedFunctions;
 use concept::type_::{Ordering, OwnerAPI, PlayerAPI};
 use encoding::value::{label::Label, value_type::ValueType};
-use ir::program::{
-    function_signature::HashMapFunctionIndex,
-    program::{CompiledSchemaFunctions, Program},
-};
+use ir::program::{function_signature::HashMapFunctionIndex, program::Program};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WriteSnapshot},
@@ -77,16 +75,16 @@ fn basic() {
     .unwrap()
     .into_insert();
     let block =
-        ir::translator::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
+        ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
     let snapshot = storage.clone().open_snapshot_write();
-    let annotated_program = ir::inference::type_inference::infer_types(
+    let annotated_program = compiler::inference::type_inference::infer_types(
         Program::new(block, vec![]),
         &snapshot,
         &type_manager,
-        Arc::new(CompiledSchemaFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
+        Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
     )
     .unwrap();
-    let insert_executor = query::insert_planner::build_insert_plan(
+    let insert_executor = compiler::planner::insert_planner::build_insert_plan(
         &HashMap::new(),
         annotated_program.get_entry_annotations(),
         annotated_program.get_entry().conjunction().constraints(),

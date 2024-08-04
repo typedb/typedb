@@ -11,6 +11,7 @@ use std::{
 };
 
 use answer::{variable::Variable, variable_value::VariableValue, Thing, Type};
+use compiler::planner::insert_planner::{InsertInstruction, InsertPlan, ThingSource, TypeSource, ValueSource};
 use concept::{
     error::ConceptWriteError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
@@ -20,7 +21,7 @@ use encoding::value::value::Value;
 use ir::pattern::constraint::{Constraint, Isa};
 use storage::snapshot::WritableSnapshot;
 
-use crate::executor::{batch::Row, VariablePosition};
+use crate::{batch::Row, VariablePosition};
 
 // TODO: Move to utils
 macro_rules! filter_variants {
@@ -36,36 +37,6 @@ macro_rules! try_unwrap_as {
             None
         }
     };
-}
-
-pub enum VariableSource {
-    TypeConstant(TypeSource),
-    ValueConstant(ValueSource),
-    ThingSource(ThingSource),
-}
-
-pub enum TypeSource {
-    Input(VariablePosition),
-    TypeConstant(usize),
-}
-
-pub enum ValueSource {
-    Input(VariablePosition),
-    ValueConstant(usize),
-}
-
-pub enum ThingSource {
-    Input(VariablePosition),
-    Inserted(usize),
-}
-
-pub enum InsertInstruction {
-    // TODO: Just replace this with regular `Constraint`s and use a mapped-row?
-    Entity { type_: TypeSource },
-    Attribute { type_: TypeSource, value: ValueSource },
-    Relation { type_: TypeSource },
-    Has { owner: ThingSource, attribute: ThingSource }, // TODO: Ordering
-    RolePlayer { relation: ThingSource, player: ThingSource, role: TypeSource }, // TODO: Ordering
 }
 
 struct ExecutionConcepts<'a, 'row> {
@@ -86,7 +57,7 @@ impl<'a, 'row> ExecutionConcepts<'a, 'row> {
         ExecutionConcepts { input, type_constants, value_constants, created_things }
     }
 
-    fn get_input(&self, position: &VariablePosition) -> &VariableValue<'static> {
+    fn get_input(&self, position: &usize) -> &VariableValue<'static> {
         todo!()
     }
 
@@ -126,30 +97,15 @@ impl<'a, 'row> ExecutionConcepts<'a, 'row> {
 }
 
 pub struct InsertExecutor {
-    instructions: Vec<InsertInstruction>,
-    type_constants: Vec<answer::Type>,
-    value_constants: Vec<Value<'static>>,
-
+    plan: InsertPlan,
     reused_created_things: Vec<answer::Thing<'static>>, // internal mutability is cleaner
-
-    output_row: Vec<VariableSource>,
 }
 
 impl InsertExecutor {
-    pub fn new(
-        instructions: Vec<InsertInstruction>,
-        type_constants: Vec<answer::Type>,
-        value_constants: Vec<Value<'static>>,
-        n_inserted_concepts: usize,
-    ) -> Self {
-        let output_row = Vec::new(); // TODO
-        Self {
-            instructions,
-            type_constants,
-            value_constants,
-            output_row,
-            reused_created_things: Vec::with_capacity(n_inserted_concepts),
-        }
+    pub fn new(plan: InsertPlan) -> Self {
+        // let output_row = Vec::new(); // TODO
+        let reused_created_things = Vec::with_capacity(plan.n_created_concepts);
+        Self { plan, reused_created_things }
     }
 }
 
@@ -159,9 +115,11 @@ pub(crate) fn execute<'row>(
     insert: &mut InsertExecutor,
     input: &Row<'row>,
 ) -> Result<(), InsertError> {
-    let InsertExecutor { type_constants, value_constants, reused_created_things, .. } = insert;
+    let InsertExecutor { plan, reused_created_things } = insert;
+    let InsertPlan { type_constants, value_constants, .. } = plan;
+
     let context = ExecutionConcepts { input, type_constants, value_constants, created_things: reused_created_things };
-    for instruction in &insert.instructions {
+    for instruction in &plan.instructions {
         match instruction {
             InsertInstruction::Entity { type_ } => {
                 let entity_type = try_unwrap_as!(answer::Type::Entity: context.get_type(type_)).unwrap();

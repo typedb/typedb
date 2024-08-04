@@ -21,23 +21,62 @@ use encoding::{
     graph::type_::{CapabilityKind::Plays, Kind},
     value::{label::Label, value::Value},
 };
-use ir::{
-    inference::type_inference::TypeAnnotations,
-    pattern::constraint::{Constraint, Constraints, Isa},
-};
+use ir::pattern::constraint::{Constraint, Constraints, Isa};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use traversal::executor::{
-    insert_executor::{InsertExecutor, InsertInstruction, ThingSource, TypeSource, ValueSource, VariableSource},
-    VariablePosition,
-};
 
-use crate::define::filter_variants;
+use crate::inference::type_annotations::TypeAnnotations;
+
+macro_rules! filter_variants {
+    ($variant:path : $iterable:expr) => {
+        $iterable.iter().filter_map(|item| if let $variant(inner) = item { Some(inner) } else { None })
+    };
+}
+
+pub type VariablePosition = usize; // Why is that not in plan.
+
+pub enum VariableSource {
+    TypeConstant(TypeSource),
+    ValueConstant(ValueSource),
+    ThingSource(ThingSource),
+}
+
+pub enum TypeSource {
+    Input(VariablePosition),
+    TypeConstant(usize),
+}
+
+pub enum ValueSource {
+    Input(VariablePosition),
+    ValueConstant(usize),
+}
+
+pub enum ThingSource {
+    Input(VariablePosition),
+    Inserted(usize),
+}
+
+pub enum InsertInstruction {
+    // TODO: Just replace this with regular `Constraint`s and use a mapped-row?
+    Entity { type_: TypeSource },
+    Attribute { type_: TypeSource, value: ValueSource },
+    Relation { type_: TypeSource },
+    Has { owner: ThingSource, attribute: ThingSource }, // TODO: Ordering
+    RolePlayer { relation: ThingSource, player: ThingSource, role: TypeSource }, // TODO: Ordering
+}
+
+pub struct InsertPlan {
+    pub instructions: Vec<InsertInstruction>,
+    pub type_constants: Vec<answer::Type>,
+    pub value_constants: Vec<Value<'static>>,
+    pub n_created_concepts: usize,
+    pub output_row: Vec<VariableSource>, // Where to copy from
+}
 
 pub fn build_insert_plan(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     constraints: &[Constraint<Variable>],
-) -> Result<InsertExecutor, InsertCompilationError> {
+) -> Result<InsertPlan, InsertCompilationError> {
     let type_constants = collect_type_from_labels(constraints, type_annotations)?;
     let value_constants = collect_values_from_attribute_value(constraints, &input_variables)?;
     let isa_kinds = collect_kind_from_isa(constraints, input_variables, type_annotations)?;
@@ -83,7 +122,13 @@ pub fn build_insert_plan(
             | Constraint::Comparison(_) => unreachable!(),
         }
     }
-    Ok(InsertExecutor::new(instructions, type_constants.items, value_constants.items, isa_kinds.items.len()))
+    Ok(InsertPlan {
+        instructions,
+        type_constants: type_constants.items,
+        value_constants: value_constants.items,
+        n_created_concepts: isa_kinds.items.len(),
+        output_row: vec![], // TODO
+    })
 }
 
 fn collect_kind_from_isa(
@@ -96,7 +141,7 @@ fn collect_kind_from_isa(
         if input_variables.contains_key(&isa.thing()) {
             Err(InsertCompilationError::IsaConstraintForBoundVariable { variable: isa.thing().clone() })?;
         }
-        let annotations = match type_annotations.variable_annotations(isa.type_()) {
+        let annotations = match type_annotations.variable_annotations_of(isa.type_()) {
             Some(annotations) => annotations,
             None => Err(InsertCompilationError::IsaTypeHadNoAnnotations { isa: isa.clone() })?,
         };
@@ -138,7 +183,7 @@ fn collect_type_from_labels(
 ) -> Result<Sources<Type>, InsertCompilationError> {
     let mut type_constants: Sources<Type> = Sources::new();
     filter_variants!(Constraint::Label : &constraints).try_for_each(|label| {
-        let annotations = type_annotations.variable_annotations(label.left()).unwrap();
+        let annotations = type_annotations.variable_annotations_of(label.left()).unwrap();
         debug_assert!(annotations.len() == 1);
         let inserted_type = annotations.iter().find(|_| true).unwrap().clone();
         type_constants

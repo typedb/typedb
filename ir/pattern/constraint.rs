@@ -496,14 +496,6 @@ impl<ID: IrID> Label<ID> {
         &self.type_label
     }
 
-    pub fn left(&self) -> ID {
-        self.left
-    }
-
-    pub fn type_(&self) -> &str {
-        self.type_.as_str()
-    }
-
     pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
         [self.left].into_iter()
     }

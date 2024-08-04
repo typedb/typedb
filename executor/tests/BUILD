@@ -52,6 +52,15 @@ rust_test(
 )
 
 rust_test(
+    name = "test_insert",
+    crate_root = "insert.rs",
+    srcs = ["insert.rs", "common.rs"],
+    deps = deps + [
+        "//query:query",
+    ],
+)
+
+rust_test(
     name = "test_execute_expression",
     crate_root = "execute_expression.rs",
     srcs = ["execute_expression.rs"],
