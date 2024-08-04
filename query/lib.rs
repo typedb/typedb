@@ -9,9 +9,10 @@ use typeql::schema::definable::type_::Capability;
 
 mod define;
 mod error;
+mod insert;
+pub mod insert_planner;
 pub mod query_manager;
-mod util;
-mod insert_planner;
+mod util; // TODO: Undo pub
 
 #[derive(Debug)]
 pub enum SymbolResolutionError {

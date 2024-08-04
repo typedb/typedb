@@ -18,10 +18,10 @@ use ir::pattern::IrID;
 pub mod batch;
 pub mod expression_executor;
 mod function_executor;
+pub mod insert_executor;
 pub(crate) mod instruction;
 pub mod pattern_executor;
 pub mod program_executor;
-pub mod insert_executor;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct VariablePosition {

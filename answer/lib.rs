@@ -167,16 +167,16 @@ impl<'a> Thing<'a> {
 
     pub fn as_object(&self) -> Object<'_> {
         match self {
-            Thing::Entity(entity) => Object::Entity(entity.as_reference()),
+                Thing::Entity(entity) => Object::Entity(entity.as_reference()),
             Thing::Relation(relation) => Object::Relation(relation.as_reference()),
-            _ => panic!("Thing is not an Attribute."),
+            _ => panic!("Thing is not an Object."),
         }
     }
 
     pub fn as_relation(&self) -> Relation<'_> {
         match self {
             Thing::Relation(relation) => relation.as_reference(),
-            _ => panic!("Thing is not an Attribute."),
+            _ => panic!("Thing is not an relation."),
         }
     }
 

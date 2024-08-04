@@ -171,7 +171,9 @@ fn add_typeql_has(
 ) -> Result<(), PatternDefinitionError> {
     let attr = match &has.value {
         typeql::statement::thing::HasValue::Variable(var) => var,
-        typeql::statement::thing::HasValue::Expression(_) => todo!(),
+        typeql::statement::thing::HasValue::Expression(expression) => {
+
+        },
         typeql::statement::thing::HasValue::Comparison(_) => todo!(),
     };
     let attribute = register_typeql_var(constraints, attr)?;

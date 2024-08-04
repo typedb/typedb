@@ -1,28 +1,40 @@
-use std::cell::Cell;
-use crate::executor::VariablePosition;
-
 /*
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::{
+    cell::Cell,
+    collections::HashMap,
+    error::Error,
+    fmt::{Debug, Display, Formatter},
+};
 
-use std::collections::HashMap;
-use answer::{Thing, Type};
-use concept::type_::type_manager::TypeManager;
-use storage::snapshot::WritableSnapshot;
-use answer::variable::Variable;
-use answer::variable_value::VariableValue;
-use concept::error::ConceptWriteError;
-use concept::thing::thing_manager::ThingManager;
+use answer::{variable::Variable, variable_value::VariableValue, Thing, Type};
+use concept::{
+    error::ConceptWriteError,
+    thing::{object::ObjectAPI, thing_manager::ThingManager},
+    type_::{type_manager::TypeManager, Ordering},
+};
 use encoding::value::value::Value;
 use ir::pattern::constraint::{Constraint, Isa};
-use crate::executor::batch::Row;
+use storage::snapshot::WritableSnapshot;
+
+use crate::executor::{batch::Row, VariablePosition};
 
 // TODO: Move to utils
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {
-        $iterable.iter().filter_map(|item| if let $variant(inner) = item { Some(inner) } else { None })
+        $iterable.iter.filter_map(|item| if let $variant(inner) = item { Some(inner) } else { None })
+    };
+}
+macro_rules! try_unwrap_as {
+    ($variant:path : $item:expr) => {
+        if let $variant(inner) = $item {
+            Some(inner)
+        } else {
+            None
+        }
     };
 }
 
@@ -48,11 +60,12 @@ pub enum ThingSource {
 }
 
 pub enum InsertInstruction {
+    // TODO: Just replace this with regular `Constraint`s and use a mapped-row?
     Entity { type_: TypeSource },
     Attribute { type_: TypeSource, value: ValueSource },
     Relation { type_: TypeSource },
-    Has {owner: ThingSource, attribute: ThingSource },
-    RolePlayer { relation: ThingSource, player: ThingSource, role: TypeSource } ,
+    Has { owner: ThingSource, attribute: ThingSource }, // TODO: Ordering
+    RolePlayer { relation: ThingSource, player: ThingSource, role: TypeSource }, // TODO: Ordering
 }
 
 struct ExecutionConcepts<'a, 'row> {
@@ -63,48 +76,47 @@ struct ExecutionConcepts<'a, 'row> {
 }
 
 impl<'a, 'row> ExecutionConcepts<'a, 'row> {
-    fn new(input: &'a Row<'row>, type_constants: &'a Vec<answer::Type>, value_constants: &'a Vec<Value<'static>>, created_things: &'a mut Vec<answer::Thing<'static>>) -> ExecutionConcepts<'a, 'row> {
+    fn new(
+        input: &'a Row<'row>,
+        type_constants: &'a Vec<answer::Type>,
+        value_constants: &'a Vec<Value<'static>>,
+        created_things: &'a mut Vec<answer::Thing<'static>>,
+    ) -> ExecutionConcepts<'a, 'row> {
         // TODO: Should we keep an attribute cache to avoid re-creating attributes with the same value?
         ExecutionConcepts { input, type_constants, value_constants, created_things }
     }
 
-    fn get_input(&self, position: VariablePosition) -> &VariableValue<'static> {
+    fn get_input(&self, position: &VariablePosition) -> &VariableValue<'static> {
         todo!()
     }
 
-     fn get_value(&self, at: ValueSource) -> &Value<'static> {
-         match at {
-             ValueSource::ValueConstant(index) => self.value_constants.get(index).unwrap(),
-             ValueSource::Input(position) => {
-                 match self.get_input(position) {
-                     VariableValue::Value(value) => value,
-                     _ => unreachable!()
-                 }
-             }
-         }
-     }
-
-    fn get_type(&self, at: TypeSource) -> &answer::Type {
+    fn get_value(&self, at: &ValueSource) -> &Value<'static> {
         match at {
-            TypeSource::TypeConstant(index) => self.type_constants.get(index).unwrap(),
-            TypeSource::Input(position) => {
-                match self.get_input(position) {
-                    VariableValue::Type(type_) => type_,
-                    _ => unreachable!()
-                }
-            }
+            ValueSource::ValueConstant(index) => self.value_constants.get(*index).unwrap(),
+            ValueSource::Input(position) => match self.get_input(position) {
+                VariableValue::Value(value) => value,
+                _ => unreachable!(),
+            },
         }
     }
 
-    fn get_thing(&self, at: ThingSource) -> &answer::Thing<'static> {
+    fn get_type(&self, at: &TypeSource) -> &answer::Type {
         match at {
-            ThingSource::Inserted(index) => self.created_things.get(index).unwrap(),
-            ThingSource::Input(position) => {
-                match self.get_input(position) {
-                    VariableValue::Thing(thing) => thing,
-                    _ => unreachable!()
-                }
-            }
+            TypeSource::TypeConstant(index) => self.type_constants.get(*index).unwrap(),
+            TypeSource::Input(position) => match self.get_input(position) {
+                VariableValue::Type(type_) => type_,
+                _ => unreachable!(),
+            },
+        }
+    }
+
+    fn get_thing(&self, at: &ThingSource) -> &answer::Thing<'static> {
+        match at {
+            ThingSource::Inserted(index) => self.created_things.get(*index).unwrap(),
+            ThingSource::Input(position) => match self.get_input(position) {
+                VariableValue::Thing(thing) => thing,
+                _ => unreachable!(),
+            },
         }
     }
 
@@ -118,76 +130,93 @@ pub struct InsertExecutor {
     type_constants: Vec<answer::Type>,
     value_constants: Vec<Value<'static>>,
 
-    reused_created_things: Vec<VariableValue<'static>>, // internal mutability is cleaner
-}
+    reused_created_things: Vec<answer::Thing<'static>>, // internal mutability is cleaner
 
+    output_row: Vec<VariableSource>,
+}
 
 impl InsertExecutor {
     pub fn new(
         instructions: Vec<InsertInstruction>,
         type_constants: Vec<answer::Type>,
         value_constants: Vec<Value<'static>>,
-        n_inserted_concepts: usize
+        n_inserted_concepts: usize,
     ) -> Self {
-        Self { instructions, type_constants, value_constants, reused_created_things: Vec::with_capacity(n_inserted_concepts)}
+        let output_row = Vec::new(); // TODO
+        Self {
+            instructions,
+            type_constants,
+            value_constants,
+            output_row,
+            reused_created_things: Vec::with_capacity(n_inserted_concepts),
+        }
     }
 }
 
-pub(crate) fn execute(
+pub(crate) fn execute<'row>(
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
-    insert: &InsertExecutor,
-    input: Row
-) -> Result<Row, InsertError> {
-    let new_concepts = create_new_concepts_for_isa_constraints(snapshot, thing_manager, insert, &input)?;
-    Ok(todo!("Create new row from input & created concepts according to what's needed"))
+    insert: &mut InsertExecutor,
+    input: &Row<'row>,
+) -> Result<(), InsertError> {
+    let InsertExecutor { type_constants, value_constants, reused_created_things, .. } = insert;
+    let context = ExecutionConcepts { input, type_constants, value_constants, created_things: reused_created_things };
+    for instruction in &insert.instructions {
+        match instruction {
+            InsertInstruction::Entity { type_ } => {
+                let entity_type = try_unwrap_as!(answer::Type::Entity: context.get_type(type_)).unwrap();
+                thing_manager
+                    .create_entity(snapshot, entity_type.clone())
+                    .map_err(|source| InsertError::ConceptWrite { source })?;
+            }
+            InsertInstruction::Attribute { type_, value } => {
+                let attribute_type = try_unwrap_as!(answer::Type::Attribute: context.get_type(type_)).unwrap();
+                thing_manager
+                    .create_attribute(snapshot, attribute_type.clone(), context.get_value(value).clone())
+                    .map_err(|source| InsertError::ConceptWrite { source })?;
+            }
+            InsertInstruction::Relation { type_ } => {
+                let relation_type = try_unwrap_as!(answer::Type::Relation: context.get_type(type_)).unwrap();
+                thing_manager
+                    .create_relation(snapshot, relation_type.clone())
+                    .map_err(|source| InsertError::ConceptWrite { source })?;
+            }
+            InsertInstruction::Has { attribute, owner } => {
+                let owner_thing = context.get_thing(owner);
+                let attribute = context.get_thing(attribute);
+                owner_thing
+                    .as_object()
+                    .set_has_unordered(snapshot, thing_manager, attribute.as_attribute())
+                    .map_err(|source| InsertError::ConceptWrite { source })?;
+            }
+            InsertInstruction::RolePlayer { relation, player, role } => {
+                let relation_thing = try_unwrap_as!(answer::Thing::Relation : context.get_thing(relation)).unwrap();
+                let player_thing = context.get_thing(player).as_object();
+                let role_type = try_unwrap_as!(answer::Type::RoleType : context.get_type(role)).unwrap();
+                relation_thing
+                    .add_player(snapshot, thing_manager, role_type.clone(), player_thing)
+                    .map_err(|source| InsertError::ConceptWrite { source })?;
+            }
+        }
+    }
+    Ok(()) // TODO: Create output row
 }
 
-fn create_new_concepts_for_isa_constraints(
-    snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager,
-    insert: &InsertExecutor, input: &Row
-) -> Result<HashMap<Variable, VariableValue>, InsertError> {
-    filter_variants!(Constraint::Isa: &insert.constraints).map(|isa| {
-        create_new_concepts_for_single_isa(snapshot, type_manager, thing_manager, insert,&input, isa)
-            .map(|thing| VariableValue::Thing(thing))
-    }).collect()
-}
-
-
-
-fn create_new_concepts_for_single_isa(
-    snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, thing_manager: &ThingManager,
-    insert: &InsertExecutor, input: &Row, isa: &Isa<Variable>,
-) -> Result<Thing, InsertError> {
-    debug_assert!(
-        insert.input_vars_to_positions.contains_key(&isa.thing()) && !insert.input_vars_to_positions.contains_key(&isa.thing()),
-        "Should be caught at pipeline construction"
-    );
-
-    let type_ = insert.types_for_isa.get(&isa.type_()).unwrap().clone();
-    match type_ {
-        Type::Entity(entity_type) => {
-            thing_manager.create_entity(snapshot, entity_type).map(|entity| Thing::Entity(entity))
-        },
-        Type::Relation(relation_type) => {
-            thing_manager.create_relation(snapshot, relation_type).map(|relation| Thing::Relation(relation))
-        },
-        Type::Attribute(attribute_type) => {
-            let value = if let Some(value) = insert.constants.get(&isa.thing()) {
-                value
-            } else {
-                insert.try_get_from_input(input, &isa.thing()).as_value().unwrap()
-            };
-            thing_manager.create_attribute(snapshot, attribute_type, value.clone())
-                .map(|attribute| Thing::Attribute(attribute))
-        },
-        Type::RoleType(_) => unreachable!("Roles can't have an isa in an insert clause"),
-    }.map_err(|source| InsertError::ConceptWrite { source })
-}
-
-fn create_capability() -> Result<(), InsertError>
-
+#[derive(Debug, Clone)]
 pub enum InsertError {
     ConceptWrite { source: ConceptWriteError },
 }
 
+impl Display for InsertError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for InsertError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::ConceptWrite { source, .. } => Some(source),
+        }
+    }
+}
