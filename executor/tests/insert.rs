@@ -9,9 +9,11 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 use compiler::inference::annotated_functions::AnnotatedCommittedFunctions;
 use concept::type_::{Ordering, OwnerAPI, PlayerAPI};
 use encoding::value::{label::Label, value_type::ValueType};
+use encoding::value::value::Value;
 use executor::batch::Row;
 use executor::insert_executor::InsertExecutor;
 use ir::program::{function_signature::HashMapFunctionIndex, program::Program};
+use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WriteSnapshot},
@@ -67,7 +69,7 @@ fn basic() {
     setup_schema(storage.clone());
     let typeql_insert = typeql::parse_query(
         "
-        insert $p isa person, has name \"John\";
+        insert $p isa person, has age 10;
     ",
     )
     .unwrap()
@@ -99,5 +101,14 @@ fn basic() {
     });
     let mut executor = InsertExecutor::new(insert_plan);
     executor::insert_executor::execute(&mut snapshot, &thing_manager, &mut executor, &Row::new(vec![].as_mut_slice(), &mut 1)).unwrap();
+    snapshot.commit().unwrap();
+
+    {
+        let snapshot = storage.clone().open_snapshot_read();
+        let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
+        let age_type = type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
+        let attr_name_john = thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+        assert_eq!(1, attr_name_john.get_owners(&snapshot, &thing_manager).count());
+    }
 
 }
