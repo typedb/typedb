@@ -180,7 +180,7 @@ fn add_typeql_has(
         typeql::statement::thing::HasValue::Expression(expression) => {
             let assigned = extend_from_inline_typeql_expression(function_index, constraints, expression)?;
             let attribute = constraints.create_anonymous_variable()?;
-            constraints.add_comparison(attribute, assigned)?;
+            constraints.add_comparison(attribute, assigned)?; // TODO: I should probably not piggy back on comparison like this.
             attribute
         }
         typeql::statement::thing::HasValue::Comparison(_) => todo!("Same as above?"),

@@ -9,6 +9,8 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 use compiler::inference::annotated_functions::AnnotatedCommittedFunctions;
 use concept::type_::{Ordering, OwnerAPI, PlayerAPI};
 use encoding::value::{label::Label, value_type::ValueType};
+use executor::batch::Row;
+use executor::insert_executor::InsertExecutor;
 use ir::program::{function_signature::HashMapFunctionIndex, program::Program};
 use storage::{
     durability_client::WALClient,
@@ -76,7 +78,7 @@ fn basic() {
     .into_insert();
     let block =
         ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
-    let snapshot = storage.clone().open_snapshot_write();
+    let mut snapshot = storage.clone().open_snapshot_write();
     let annotated_program = compiler::inference::type_inference::infer_types(
         Program::new(block, vec![]),
         &snapshot,
@@ -84,10 +86,18 @@ fn basic() {
         Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
     )
     .unwrap();
-    let insert_executor = compiler::planner::insert_planner::build_insert_plan(
+    let insert_plan = compiler::planner::insert_planner::build_insert_plan(
         &HashMap::new(),
         annotated_program.get_entry_annotations(),
         annotated_program.get_entry().conjunction().constraints(),
     )
     .unwrap();
+
+    println!("{:?}", &insert_plan.instructions);
+    insert_plan.debug_info.iter().for_each(|(k,v)| {
+        println!("{:?} -> {:?}", k, annotated_program.get_entry().context().get_variables_named().get(v))
+    });
+    let mut executor = InsertExecutor::new(insert_plan);
+    executor::insert_executor::execute(&mut snapshot, &thing_manager, &mut executor, &Row::new(vec![].as_mut_slice(), &mut 1)).unwrap();
+
 }

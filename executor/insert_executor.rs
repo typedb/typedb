@@ -109,7 +109,7 @@ impl InsertExecutor {
     }
 }
 
-pub(crate) fn execute<'row>(
+pub fn execute<'row>( // TODO: pub(crate)
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     insert: &mut InsertExecutor,
@@ -123,21 +123,24 @@ pub(crate) fn execute<'row>(
         match instruction {
             InsertInstruction::Entity { type_ } => {
                 let entity_type = try_unwrap_as!(answer::Type::Entity: context.get_type(type_)).unwrap();
-                thing_manager
+                let inserted = thing_manager
                     .create_entity(snapshot, entity_type.clone())
                     .map_err(|source| InsertError::ConceptWrite { source })?;
+                context.created_things.push(Thing::Entity(inserted));
             }
             InsertInstruction::Attribute { type_, value } => {
                 let attribute_type = try_unwrap_as!(answer::Type::Attribute: context.get_type(type_)).unwrap();
-                thing_manager
+                let inserted = thing_manager
                     .create_attribute(snapshot, attribute_type.clone(), context.get_value(value).clone())
                     .map_err(|source| InsertError::ConceptWrite { source })?;
+                context.created_things.push(Thing::Attribute(inserted));
             }
             InsertInstruction::Relation { type_ } => {
                 let relation_type = try_unwrap_as!(answer::Type::Relation: context.get_type(type_)).unwrap();
-                thing_manager
+                let inserted = thing_manager
                     .create_relation(snapshot, relation_type.clone())
                     .map_err(|source| InsertError::ConceptWrite { source })?;
+                context.created_things.push(Thing::Relation(inserted));
             }
             InsertInstruction::Has { attribute, owner } => {
                 let owner_thing = context.get_thing(owner);

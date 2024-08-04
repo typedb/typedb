@@ -35,27 +35,32 @@ macro_rules! filter_variants {
 
 pub type VariablePosition = usize; // Why is that not in plan.
 
+#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
 pub enum VariableSource {
     TypeConstant(TypeSource),
     ValueConstant(ValueSource),
     ThingSource(ThingSource),
 }
 
+#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
 pub enum TypeSource {
     Input(VariablePosition),
     TypeConstant(usize),
 }
 
+#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
 pub enum ValueSource {
     Input(VariablePosition),
     ValueConstant(usize),
 }
 
+#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
 pub enum ThingSource {
     Input(VariablePosition),
     Inserted(usize),
 }
 
+#[derive(Debug)]
 pub enum InsertInstruction {
     // TODO: Just replace this with regular `Constraint`s and use a mapped-row?
     Entity { type_: TypeSource },
@@ -71,6 +76,7 @@ pub struct InsertPlan {
     pub value_constants: Vec<Value<'static>>,
     pub n_created_concepts: usize,
     pub output_row: Vec<VariableSource>, // Where to copy from
+    pub debug_info: HashMap<VariableSource, Variable>,
 }
 
 pub fn build_insert_plan(
@@ -79,8 +85,9 @@ pub fn build_insert_plan(
     constraints: &[Constraint<Variable>],
 ) -> Result<InsertPlan, InsertCompilationError> {
     let type_constants = collect_type_from_labels(constraints, type_annotations)?;
-    let value_constants = collect_values_from_attribute_value(constraints, &input_variables)?;
+    let value_constants = collect_values_from_expression_and_comparison(constraints, &input_variables)?;
     let isa_kinds = collect_kind_from_isa(constraints, input_variables, type_annotations)?;
+    // extend_isa_from_has_and_value(constraints, input_variables, &value_constants, &mut isa_kinds)?;
 
     let mut instructions = Vec::new();
     filter_variants!(Constraint::Isa : constraints).enumerate().try_for_each(|(i, isa)| {
@@ -115,21 +122,34 @@ pub fn build_insert_plan(
                     role: get_type_source(input_variables, &type_constants.index, role_player.role_type())?,
                 });
             }
-            Constraint::Isa(_) => {} // already handled
-            Constraint::Label(_)
-            | Constraint::Sub(_)
+            Constraint::Isa(_)
+            | Constraint::Label(_)
             | Constraint::ExpressionBinding(_)
-            | Constraint::FunctionCallBinding(_)
-            | Constraint::Comparison(_) => unreachable!(),
+            | Constraint::Comparison(_)=> {} // already handled
+            Constraint::Sub(_)
+            | Constraint::FunctionCallBinding(_)=> unreachable!(),
         }
     }
-    Ok(InsertPlan {
+
+    Ok(assemble_plan(instructions, value_constants, type_constants, isa_kinds))
+}
+
+fn assemble_plan(instructions: Vec<InsertInstruction>, value_sources: Sources<Value<'static>>, type_sources: Sources<Type>, kind_sources: Sources<Kind>) -> InsertPlan {
+    let Sources { items: value_constants, index: value_index } = value_sources;
+    let Sources { items: type_constants, index: type_index } = type_sources;
+    let Sources { items: inserted_kinds, index: isa_index} = kind_sources;
+    let mut debug_info = HashMap::new();
+    isa_index.into_iter().for_each(|(v,i)| { debug_info.insert(VariableSource::ThingSource(ThingSource::Inserted(i)), v); });
+    type_index.into_iter().for_each(|(v,i)| { debug_info.insert(VariableSource::TypeConstant(TypeSource::TypeConstant(i)), v); });
+    value_index.into_iter().for_each(|(v,i)| { debug_info.insert(VariableSource::ValueConstant(ValueSource::ValueConstant(i)), v); });
+    InsertPlan {
         instructions,
-        type_constants: type_constants.items,
-        value_constants: value_constants.items,
-        n_created_concepts: isa_kinds.items.len(),
+        type_constants,
+        value_constants,
+        n_created_concepts: inserted_kinds.len(),
         output_row: vec![], // TODO
-    })
+        debug_info,
+    }
 }
 
 fn collect_kind_from_isa(
@@ -164,7 +184,7 @@ fn collect_kind_from_isa(
     Ok(inserted_things)
 }
 
-fn collect_values_from_attribute_value(
+fn collect_values_from_expression_and_comparison(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
 ) -> Result<Sources<Value<'static>>, InsertCompilationError> {
@@ -174,12 +194,6 @@ fn collect_values_from_attribute_value(
             _ => Err(InsertCompilationError::CompoundExpressionsNotAllowed { variable: binding.left() })
         }
     }).collect::<Result<HashMap<_,_>, _>>()?;
-    // filter_variants!(Constraint::AttributeValue : &constraints).try_for_each(|attribute_value| {
-    //     let attribute_variable: Variable = None.unwrap();  // TODO
-    //     let value_variable: Variable = None.unwrap(); // TODO
-    //     todo!("remove me once the variables at the top are no longer None.unwrap()");
-    //     Ok(())
-    // })?;
     let mut value_constants = Sources::new();
     filter_variants!(Constraint::Comparison : constraints).try_for_each(|cmp| {
         if let Some(value) = values.get(&cmp.lhs()) {
@@ -196,6 +210,24 @@ fn collect_values_from_attribute_value(
 
     Ok(value_constants)
 }
+
+// TODO: Remove. Turns out we already have an isa for attributes with value
+// fn extend_isa_from_has_and_value(
+//     constraints: &[Constraint<Variable>],
+//     input_variables: &HashMap<Variable, VariablePosition>,
+//     value_constants: &Sources<Value<'static>>,
+//     isa: &mut Sources<Kind>,
+// ) -> Result<(), InsertCompilationError> {
+//     filter_variants!(Constraint::Has : constraints).try_for_each(|has| {
+//         if value_constants.index.contains_key(&has.attribute()) {
+//             debug_assert!(!input_variables.contains_key(&has.attribute()));
+//             isa.insert(has.attribute(), Kind::Attribute).map_err(|_| {
+//                 InsertCompilationError::TODO__IllegalState { msg: "extend_isa_from_has_and_value" }
+//             })?;
+//         }
+//         Ok(())
+//     })
+// }
 
 fn collect_type_from_labels(
     constraints: &[Constraint<Variable>],
@@ -292,6 +324,7 @@ pub enum InsertCompilationError {
     CompoundExpressionsNotAllowed { variable: Variable },
     TODO__IllegalComparison { comparison: Comparison<Variable> },
     MultipleValuesForInsertableAttributeVariable { variable: Variable },
+    TODO__IllegalState { msg: &'static str },
 }
 
 impl Display for InsertCompilationError {
