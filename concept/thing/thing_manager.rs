@@ -598,35 +598,25 @@ impl ThingManager {
     ) -> Result<((Prefix, TypeID), (Prefix, TypeID)), ConceptReadError> {
         let mut min: Option<(Prefix, TypeID)> = None;
         let mut max: Option<(Prefix, TypeID)> = None;
-        for result in
-            attribute_types.map(|attribute_type| match attribute_type.get_value_type(snapshot, self.type_manager()) {
-                Ok(Some(value_type)) => Ok(Some((
-                    AttributeVertex::value_type_category_to_prefix_type(value_type.category()),
-                    attribute_type.vertex().type_id_(),
-                ))),
-                Ok(None) => Ok(None),
-                Err(err) => Err(err),
-            })
-        {
-            match result? {
-                None => {}
-                Some((prefix, type_id)) => {
-                    if min.is_none()
-                        || min.is_some_and(|(min_prefix, min_type_id)| {
-                            (min_prefix.prefix_id().bytes(), min_type_id.bytes())
-                                > (prefix.prefix_id().bytes(), type_id.bytes())
-                        })
-                    {
-                        min = Some((prefix, type_id));
-                    }
-                    if max.is_none()
-                        || max.is_some_and(|(max_prefix, max_type_id)| {
-                            (max_prefix.prefix_id().bytes(), max_type_id.bytes())
-                                < (prefix.prefix_id().bytes(), type_id.bytes())
-                        })
-                    {
-                        max = Some((prefix, type_id));
-                    }
+        for attribute_type in attribute_types {
+            if let Some(value_type) = attribute_type.get_value_type(snapshot, self.type_manager())? {
+                let prefix = AttributeVertex::value_type_category_to_prefix_type(value_type.category());
+                let type_id = attribute_type.vertex().type_id_();
+                if min.is_none()
+                    || min.is_some_and(|(min_prefix, min_type_id)| {
+                        (min_prefix.prefix_id().bytes(), min_type_id.bytes())
+                            > (prefix.prefix_id().bytes(), type_id.bytes())
+                    })
+                {
+                    min = Some((prefix, type_id));
+                }
+                if max.is_none()
+                    || max.is_some_and(|(max_prefix, max_type_id)| {
+                        (max_prefix.prefix_id().bytes(), max_type_id.bytes())
+                            < (prefix.prefix_id().bytes(), type_id.bytes())
+                    })
+                {
+                    max = Some((prefix, type_id));
                 }
             }
         }
@@ -634,9 +624,9 @@ impl ThingManager {
         Ok((min.unwrap(), max.unwrap()))
     }
 
-    pub(crate) fn get_owners<'this>(
-        &'this self,
-        snapshot: &'this impl ReadableSnapshot,
+    pub(crate) fn get_owners(
+        &self,
+        snapshot: &impl ReadableSnapshot,
         attribute: Attribute<'_>,
     ) -> AttributeOwnerIterator {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
@@ -645,9 +635,9 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_owners_by_type<'this, 'a>(
-        &'this self,
-        snapshot: &'this impl ReadableSnapshot,
+    pub(crate) fn get_owners_by_type<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
         attribute: Attribute<'_>,
         owner_type: impl ObjectTypeAPI<'a>,
     ) -> AttributeOwnerIterator {
@@ -681,9 +671,9 @@ impl ThingManager {
         snapshot.any_in_range(KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
-    pub(crate) fn get_relations_roles<'this, 'a>(
-        &'this self,
-        snapshot: &'this impl ReadableSnapshot,
+    pub(crate) fn get_relations_roles<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
         player: impl ObjectAPI<'a>,
     ) -> RelationRoleIterator {
         let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.into_vertex());
