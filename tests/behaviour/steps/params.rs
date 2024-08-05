@@ -307,6 +307,30 @@ impl FromStr for ObjectRootLabel {
 }
 
 #[derive(Debug, Parameter)]
+#[param(name = "root_label_extended", regex = r"(attribute|entity|relation|role|object)")]
+pub(crate) enum RootLabelExtended {
+    Attribute,
+    Entity,
+    Relation,
+    Role,
+    Object,
+}
+
+impl FromStr for RootLabelExtended {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "attribute" => Self::Attribute,
+            "entity" => Self::Entity,
+            "relation" => Self::Relation,
+            "role" => Self::Role,
+            "object" => Self::Object,
+            invalid => return Err(format!("Invalid `RootLabelExtended`: {invalid}")),
+        })
+    }
+}
+
+#[derive(Debug, Parameter)]
 #[param(name = "value_type", regex = "(boolean|long|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)")]
 pub(crate) enum ValueType {
     Boolean,

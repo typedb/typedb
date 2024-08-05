@@ -295,6 +295,55 @@ pub async fn relation_role_get_supertype(
 }
 
 #[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get supertype {exists_or_doesnt}")]
+pub async fn relation_role_get_supertype_exists(
+    context: &mut Context,
+    relation_label: Label,
+    role_label: Label,
+    exists: ExistsOrDoesnt,
+) {
+    with_read_tx!(context, |tx| {
+        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let role = tx
+            .type_manager
+            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        let superrole = role.get_supertype(&tx.snapshot, &tx.type_manager).unwrap();
+        exists.check(
+            &superrole,
+            &format!("superrole for role type {}", role_label.into_typedb()),
+        );
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get supertypes {is_empty_or_not}")]
+pub async fn relation_role_supertypes_is_empty(
+    context: &mut Context,
+    relation_label: Label,
+    role_label: Label,
+    is_empty_or_not: IsEmptyOrNot,
+    step: &Step,
+) {
+    with_read_tx!(context, |tx| {
+        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let role = tx
+            .type_manager
+            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        let is_empty = role
+            .get_supertypes_transitive(&tx.snapshot, &tx.type_manager)
+            .unwrap()
+            .is_empty();
+        is_empty_or_not.check(is_empty);
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) get supertypes {contains_or_doesnt}:")]
 pub async fn relation_role_supertypes_contain(
     context: &mut Context,
