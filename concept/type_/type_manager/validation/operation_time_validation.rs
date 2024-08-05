@@ -828,7 +828,7 @@ macro_rules! new_annotation_compatible_with_type_and_subtypes_instances_validati
     };
 }
 
-macro_rules! changed_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation {
+macro_rules! updated_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation {
     ($func_name:ident, $type_:ident, $validation_func:path) => {
         pub(crate) fn $func_name(
             snapshot: &impl ReadableSnapshot,
@@ -3022,22 +3022,22 @@ impl OperationTimeValidation {
             Kind::Entity => {
                 let entity_type = EntityType::new(type_.vertex().into_owned());
                 let entity_supertype = EntityType::new(new_supertype.vertex().into_owned());
-                Self::validate_changed_annotations_compatible_with_entity_type_and_subtypes_instances_on_supertype_change(snapshot, type_manager, thing_manager, entity_type, entity_supertype)
+                Self::validate_updated_annotations_compatible_with_entity_type_and_subtypes_instances_on_supertype_change(snapshot, type_manager, thing_manager, entity_type, entity_supertype)
             }
             Kind::Attribute => {
                 let attribute_type = AttributeType::new(type_.vertex().into_owned());
                 let attribute_supertype = AttributeType::new(new_supertype.vertex().into_owned());
-                Self::validate_changed_annotations_compatible_with_attribute_type_and_subtypes_instances_on_supertype_change(snapshot, type_manager, thing_manager, attribute_type, attribute_supertype)
+                Self::validate_updated_annotations_compatible_with_attribute_type_and_subtypes_instances_on_supertype_change(snapshot, type_manager, thing_manager, attribute_type, attribute_supertype)
             }
             Kind::Relation => {
                 let relation_type = RelationType::new(type_.vertex().into_owned());
                 let relation_supertype = RelationType::new(new_supertype.vertex().into_owned());
-                Self::validate_changed_annotations_compatible_with_relation_type_and_subtypes_instances_on_supertype_change(snapshot, type_manager, thing_manager, relation_type, relation_supertype)
+                Self::validate_updated_annotations_compatible_with_relation_type_and_subtypes_instances_on_supertype_change(snapshot, type_manager, thing_manager, relation_type, relation_supertype)
             }
             Kind::Role => {
                 let role_type = RoleType::new(type_.vertex().into_owned());
                 let role_supertype = RoleType::new(new_supertype.vertex().into_owned());
-                Self::validate_changed_annotations_compatible_with_role_type_and_subtypes_instances_on_supertype_change(
+                Self::validate_updated_annotations_compatible_with_role_type_and_subtypes_instances_on_supertype_change(
                     snapshot,
                     type_manager,
                     thing_manager,
@@ -3595,23 +3595,23 @@ impl OperationTimeValidation {
         Self::get_role_type_or_its_subtype_with_violated_new_annotation_constraints
     );
 
-    changed_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
-        validate_changed_annotations_compatible_with_entity_type_and_subtypes_instances_on_supertype_change,
+    updated_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
+        validate_updated_annotations_compatible_with_entity_type_and_subtypes_instances_on_supertype_change,
         EntityType,
         Self::get_entity_type_or_its_subtype_with_violated_new_annotation_constraints
     );
-    changed_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
-        validate_changed_annotations_compatible_with_relation_type_and_subtypes_instances_on_supertype_change,
+    updated_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
+        validate_updated_annotations_compatible_with_relation_type_and_subtypes_instances_on_supertype_change,
         RelationType,
         Self::get_relation_type_or_its_subtype_with_violated_new_annotation_constraints
     );
-    changed_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
-        validate_changed_annotations_compatible_with_attribute_type_and_subtypes_instances_on_supertype_change,
+    updated_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
+        validate_updated_annotations_compatible_with_attribute_type_and_subtypes_instances_on_supertype_change,
         AttributeType,
         Self::get_attribute_type_or_its_subtype_with_violated_new_annotation_constraints
     );
-    changed_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
-        validate_changed_annotations_compatible_with_role_type_and_subtypes_instances_on_supertype_change,
+    updated_annotations_compatible_with_type_and_subtypes_instances_on_supertype_change_validation!(
+        validate_updated_annotations_compatible_with_role_type_and_subtypes_instances_on_supertype_change,
         RoleType,
         Self::get_role_type_or_its_subtype_with_violated_new_annotation_constraints
     );
