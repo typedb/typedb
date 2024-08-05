@@ -157,6 +157,82 @@ fn traverse_has_unbounded_sorted_from() {
 }
 
 #[test]
+fn traverse_has_bounded_sorted_from_chain_intersect() {
+    let (_tmp_dir, storage) = setup_storage();
+
+    setup_database(storage.clone());
+
+    // query:
+    //   match
+    //    $person-1 has name $name;
+    //    $person-2 has name $name; # reverse!
+
+    // IR
+    let mut block = FunctionalBlock::builder();
+    let mut conjunction = block.conjunction_mut();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
+    let var_person_1 = conjunction.get_or_declare_variable("person-1").unwrap();
+    let var_person_2 = conjunction.get_or_declare_variable("person-2").unwrap();
+    let var_name = conjunction.get_or_declare_variable("name").unwrap();
+
+    let isa_person_1 = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_1, var_person_type).unwrap().clone();
+    let has_name_1 = conjunction.constraints_mut().add_has(var_person_1, var_name).unwrap().clone();
+    let has_name_2 = conjunction.constraints_mut().add_has(var_person_2, var_name).unwrap().clone();
+
+    // add all constraints to make type inference return correct types, though we only plan Has's
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_1, var_person_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_2, var_person_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
+    block.add_limit(3);
+
+    let program = Program::new(block.finish(), Vec::new());
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+
+    // Plan
+    let steps = vec![
+        Step::Intersection(IntersectionStep::new(
+            var_person_1,
+            vec![ConstraintInstruction::IsaReverse(isa_person_1, Inputs::None([]))],
+            &[var_person_1],
+        )),
+        Step::Intersection(IntersectionStep::new(
+            var_name,
+            vec![
+                ConstraintInstruction::Has(has_name_1, Inputs::Single([var_person_1])),
+                ConstraintInstruction::HasReverse(has_name_2, Inputs::None([])),
+            ],
+            &[var_person_2, var_name],
+        )),
+    ];
+    // TODO: incorporate the filter
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+
+    // Executor
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+
+    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 3); // $person-1 is $person-2, one per name
+
+    for row in rows {
+        let r = row.unwrap();
+        assert_eq!(r.get_multiplicity(), 1);
+        print!("{}", r);
+    }
+}
+
+#[test]
 fn traverse_has_unbounded_sorted_from_intersect() {
     let (_tmp_dir, storage) = setup_storage();
 
