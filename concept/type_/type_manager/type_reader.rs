@@ -72,23 +72,23 @@ impl TypeReader {
         }
     }
 
-    pub(crate) fn role_types_by_name(
+    pub(crate) fn get_roles_by_name(
         snapshot: &impl ReadableSnapshot,
-        name: &str,
-    ) -> Result<HashMap<String, RoleType<'static>>, ConceptReadError> {
-        let key = LabelToTypeVertexIndex::build(Label::build(name).inverted_scoped_name_for_index()).into_storage_key();
+        name: String,
+    ) -> Result<Vec<RoleType<'static>>, ConceptReadError> {
+        let mut name_with_colon = name;
+        name_with_colon.push(':');
+        let key =
+            LabelToTypeVertexIndex::build(Label::build(name_with_colon.as_str()).inverted_scoped_name_for_index())
+                .into_storage_key();
         let vec = snapshot
             .iterate_range(KeyRange::new_within(key, IdentifierIndex::<TypeVertex<'static>>::FIXED_WIDTH_ENCODING))
             .collect_cloned_vec(|key, value| match RoleType::from_bytes(Bytes::copy(value.bytes())) {
                 Err(_) => None,
-                Ok(role_type) => {
-                    let name =
-                        LabelToTypeVertexIndex::new(Bytes::Reference(key.byte_ref())).identifier().as_str().to_owned();
-                    Some((name, role_type))
-                }
+                Ok(role_type) => Some(role_type),
             })
             .map_err(|source| ConceptReadError::SnapshotIterate { source })?;
-        Ok(vec.into_iter().filter_map(|x| x).collect::<HashMap<_, _>>())
+        Ok(vec.into_iter().filter_map(|x| x).collect())
     }
 
     pub(crate) fn get_struct_definition_key(

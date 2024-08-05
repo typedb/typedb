@@ -22,7 +22,7 @@ use encoding::{
     value::{label::Label, value::Value},
 };
 use ir::pattern::{
-    constraint::{Comparison, Constraint, Constraints, Isa},
+    constraint::{Comparison, Constraint, Constraints, Isa, RoleName},
     expression::Expression,
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -86,10 +86,14 @@ pub fn build_insert_plan(
     type_annotations: &TypeAnnotations,
     constraints: &[Constraint<Variable>],
 ) -> Result<InsertPlan, InsertCompilationError> {
-    let type_constants = collect_type_from_labels(constraints, type_annotations)?;
+    let mut type_constants = collect_type_from_labels_and_role_names(constraints, type_annotations)?;
+    extend_type_constants_for_untyped_role_players_from_annotations(
+        constraints,
+        type_annotations,
+        &mut type_constants,
+    )?;
     let value_constants = collect_values_from_expression_and_comparison(constraints, &input_variables)?;
     let isa_kinds = collect_kind_from_isa(constraints, input_variables, type_annotations)?;
-    // extend_isa_from_has_and_value(constraints, input_variables, &value_constants, &mut isa_kinds)?;
 
     let mut instructions = Vec::new();
     filter_variants!(Constraint::Isa : constraints).enumerate().try_for_each(|(i, isa)| {
@@ -117,7 +121,7 @@ pub fn build_insert_plan(
                     attribute: get_thing_source(input_variables, &isa_kinds.index, has.attribute())?,
                 });
             }
-            Constraint::RolePlayer(role_player) => {
+            Constraint::Links(role_player) => {
                 instructions.push(InsertInstruction::RolePlayer {
                     relation: get_thing_source(input_variables, &isa_kinds.index, role_player.relation())?,
                     player: get_thing_source(input_variables, &isa_kinds.index, role_player.player())?,
@@ -126,6 +130,7 @@ pub fn build_insert_plan(
             }
             Constraint::Isa(_)
             | Constraint::Label(_)
+            | Constraint::RoleName(_)
             | Constraint::ExpressionBinding(_)
             | Constraint::Comparison(_) => {} // already handled
             Constraint::Sub(_) | Constraint::FunctionCallBinding(_) => unreachable!(),
@@ -243,7 +248,7 @@ fn collect_values_from_expression_and_comparison(
 //     })
 // }
 
-fn collect_type_from_labels(
+fn collect_type_from_labels_and_role_names(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
 ) -> Result<Sources<Type>, InsertCompilationError> {
@@ -257,7 +262,44 @@ fn collect_type_from_labels(
             .map_err(|_| InsertCompilationError::MultipleTypeConstraintsForVariable { variable: label.left() })?;
         Ok(())
     })?;
+    filter_variants!(Constraint::RoleName : &constraints).try_for_each(|role_name| {
+        let annotations = type_annotations.variable_annotations_of(role_name.left()).unwrap();
+        if annotations.len() > 1 {
+            Err(InsertCompilationError::InternalRoleNameHadMultipleCandidates { role_name: role_name.clone() })?;
+        }
+        debug_assert!(annotations.len() == 1);
+        let inserted_type = annotations.iter().find(|_| true).unwrap().clone();
+        type_constants.insert(role_name.left(), inserted_type).map_err(|_| {
+            InsertCompilationError::TODO__IllegalState {
+                msg: "I expect Variables with role name constraints to be anonymous",
+            }
+        })?;
+        Ok(())
+    })?;
     Ok(type_constants)
+}
+
+fn extend_type_constants_for_untyped_role_players_from_annotations(
+    constraints: &[Constraint<Variable>],
+    type_annotations: &TypeAnnotations,
+    type_constants: &mut Sources<Type>,
+) -> Result<(), InsertCompilationError> {
+    filter_variants!(Constraint::Links : &constraints).try_for_each(|role_player| {
+        if !type_constants.index.contains_key(&role_player.role_type()) {
+            // Fall back to type-inference
+            let annotations = type_annotations.variable_annotations_of(role_player.role_type()).unwrap();
+            if annotations.len() > 1 {
+                Err(InsertCompilationError::RoleTypeCouldNotBeUniquelyDetermined {
+                    variable: role_player.role_type(),
+                })?;
+            }
+            debug_assert!(annotations.len() == 1);
+            let type_ = annotations.iter().find(|_| true).unwrap();
+            type_constants.insert(role_player.role_type(), type_.clone()).unwrap();
+        }
+        Ok(())
+    })?;
+    Ok(())
 }
 
 struct Sources<T> {
@@ -339,6 +381,8 @@ pub enum InsertCompilationError {
     TODO__IllegalComparison { comparison: Comparison<Variable> },
     MultipleValuesForInsertableAttributeVariable { variable: Variable },
     TODO__IllegalState { msg: &'static str },
+    InternalRoleNameHadMultipleCandidates { role_name: RoleName<Variable> },
+    RoleTypeCouldNotBeUniquelyDetermined { variable: Variable },
 }
 
 impl Display for InsertCompilationError {

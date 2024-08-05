@@ -7,14 +7,21 @@
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::inference::annotated_functions::AnnotatedCommittedFunctions;
-use concept::type_::{Ordering, OwnerAPI, PlayerAPI};
+use concept::{
+    error::ConceptReadError,
+    thing::{object::Object, relation::Relation, thing_manager::ThingManager},
+    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
+};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{batch::Row, insert_executor::InsertExecutor};
+use executor::{
+    batch::Row,
+    insert_executor::{InsertError, InsertExecutor},
+};
 use ir::program::{function_signature::HashMapFunctionIndex, program::Program};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
 };
 
@@ -60,28 +67,18 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
     snapshot.commit().unwrap();
 }
 
-#[test]
-fn basic_has() {
-    let (_tmp_dir, storage) = setup_storage();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
-    setup_schema(storage.clone());
-    let typeql_insert = typeql::parse_query(
-        "
-        insert $p isa person, has age 10;
-    ",
-    )
-    .unwrap()
-    .into_pipeline()
-    .stages
-    .pop()
-    .unwrap()
-    .into_insert();
+fn execute_insert(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    query_str: &str,
+) -> Result<(), InsertError> {
+    let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
     let block =
         ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
-    let mut snapshot = storage.clone().open_snapshot_write();
     let annotated_program = compiler::inference::type_inference::infer_types(
         Program::new(block, vec![]),
-        &snapshot,
+        snapshot,
         &type_manager,
         Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
     )
@@ -99,12 +96,20 @@ fn basic_has() {
     });
     let mut executor = InsertExecutor::new(insert_plan);
     executor::insert_executor::execute(
-        &mut snapshot,
+        snapshot,
         &thing_manager,
         &mut executor,
         &Row::new(vec![].as_mut_slice(), &mut 1),
     )
-    .unwrap();
+}
+
+#[test]
+fn has() {
+    let (_tmp_dir, storage) = setup_storage();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    setup_schema(storage.clone());
+    let mut snapshot = storage.clone().open_snapshot_write();
+    execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person, has age 10;").unwrap();
     snapshot.commit().unwrap();
 
     {
@@ -114,56 +119,112 @@ fn basic_has() {
         let attr_name_john =
             thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
         assert_eq!(1, attr_name_john.get_owners(&snapshot, &thing_manager).count());
+        snapshot.close_resources()
     }
 }
 
 #[test]
-fn basic_role_player() {
+fn relation() {
     let (_tmp_dir, storage) = setup_storage();
     let (type_manager, thing_manager) = load_managers(storage.clone());
     setup_schema(storage.clone());
-    let typeql_insert = typeql::parse_query(
-        "
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let query_str = "
+        insert
+         $p isa person; $g isa group;
+         (member: $p, group: $g) isa membership;
+    ";
+    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str).unwrap();
+    snapshot.commit().unwrap();
+    // read back
+    {
+        let snapshot = storage.open_snapshot_read();
+        let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
+        let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
+        let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
+        let member_role = membership_type
+            .get_relates_of_role(&snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name.as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        let group_role = membership_type
+            .get_relates_of_role(&snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name.as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        let relations: Vec<Relation<'_>> = thing_manager
+            .get_relations_in(&snapshot, membership_type.clone())
+            .map_static(|item| item.map(|relation| relation.clone().into_owned()))
+            .try_collect()
+            .unwrap();
+        assert_eq!(1, relations.len());
+        let role_players = relations[0]
+            .get_players(&snapshot, &thing_manager)
+            .map_static(|item| {
+                item.map(|(roleplayer, _)| (roleplayer.player().into_owned(), roleplayer.role_type().into_owned()))
+            })
+            .try_collect::<Vec<_>, _>()
+            .unwrap();
+        assert!(role_players.iter().any(|(player, role)| {
+            (player.type_().clone(), role.clone()) == (ObjectType::Entity(person_type.clone()), member_role.clone())
+        }));
+        assert!(role_players.iter().any(|(player, role)| {
+            (player.type_().clone(), role.clone()) == (ObjectType::Entity(group_type.clone()), group_role.clone())
+        }));
+        snapshot.close_resources();
+    }
+}
+
+#[test]
+fn relation_with_inferred_roles() {
+    let (_tmp_dir, storage) = setup_storage();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    setup_schema(storage.clone());
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let query_str = "
         insert
          $p isa person; $g isa group;
          ($p, $g) isa membership;
-         (membership:member: $p, membership:group: $g) isa membership;
-    ",
-    )
-    .unwrap()
-    .into_pipeline()
-    .stages
-    .pop()
-    .unwrap()
-    .into_insert();
-    let block =
-        ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
-    let mut snapshot = storage.clone().open_snapshot_write();
-    let annotated_program = compiler::inference::type_inference::infer_types(
-        Program::new(block, vec![]),
-        &snapshot,
-        &type_manager,
-        Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
-    )
-    .unwrap();
-    let insert_plan = compiler::planner::insert_planner::build_insert_plan(
-        &HashMap::new(),
-        annotated_program.get_entry_annotations(),
-        annotated_program.get_entry().conjunction().constraints(),
-    )
-    .unwrap();
-
-    println!("{:?}", &insert_plan.instructions);
-    insert_plan.debug_info.iter().for_each(|(k, v)| {
-        println!("{:?} -> {:?}", k, annotated_program.get_entry().context().get_variables_named().get(v))
-    });
-    let mut executor = InsertExecutor::new(insert_plan);
-    executor::insert_executor::execute(
-        &mut snapshot,
-        &thing_manager,
-        &mut executor,
-        &Row::new(vec![].as_mut_slice(), &mut 1),
-    )
-    .unwrap();
+    ";
+    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str).unwrap();
     snapshot.commit().unwrap();
+    // read back
+    {
+        let snapshot = storage.open_snapshot_read();
+        let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
+        let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
+        let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
+        let member_role = membership_type
+            .get_relates_of_role(&snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name.as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        let group_role = membership_type
+            .get_relates_of_role(&snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name.as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        let relations: Vec<Relation<'_>> = thing_manager
+            .get_relations_in(&snapshot, membership_type.clone())
+            .map_static(|item| item.map(|relation| relation.clone().into_owned()))
+            .try_collect()
+            .unwrap();
+        assert_eq!(1, relations.len());
+        let role_players = relations[0]
+            .get_players(&snapshot, &thing_manager)
+            .map_static(|item| {
+                item.map(|(roleplayer, _)| (roleplayer.player().into_owned(), roleplayer.role_type().into_owned()))
+            })
+            .try_collect::<Vec<_>, _>()
+            .unwrap();
+        assert!(role_players.iter().any(|(player, role)| {
+            (player.type_().clone(), role.clone()) == (ObjectType::Entity(person_type.clone()), member_role.clone())
+        }));
+        assert!(role_players.iter().any(|(player, role)| {
+            (player.type_().clone(), role.clone()) == (ObjectType::Entity(group_type.clone()), group_role.clone())
+        }));
+        snapshot.close_resources();
+    }
 }

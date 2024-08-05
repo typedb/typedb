@@ -382,6 +382,23 @@ impl TypeManager {
         fn get_attribute_type_label() -> AttributeType = get_label;
     }
 
+    pub fn get_roles_by_name(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        name: &str,
+    ) -> Result<Option<MaybeOwns<'_, Vec<RoleType<'static>>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(cache.get_roles_by_name(name).map(|roles| MaybeOwns::Borrowed(roles)))
+        } else {
+            let roles = TypeReader::get_roles_by_name(snapshot, name.to_owned())?;
+            if roles.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(MaybeOwns::Owned(roles)))
+            }
+        }
+    }
+
     pub(crate) fn get_entity_type_owns_declared(
         &self,
         snapshot: &impl ReadableSnapshot,

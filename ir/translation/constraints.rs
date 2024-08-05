@@ -5,10 +5,12 @@
  */
 
 use answer::variable::Variable;
+use encoding::value::label::Label;
 use typeql::{
     expression::{Expression as TypeQLExpression, Expression, FunctionCall, FunctionName},
     statement::{AssignmentPattern, InIterable},
     type_::NamedType,
+    ScopedLabel, TypeRef, TypeRefAny,
 };
 
 use crate::{
@@ -140,10 +142,22 @@ fn register_typeql_type_var(
 ) -> Result<Variable, PatternDefinitionError> {
     match type_ {
         typeql::TypeRef::Named(NamedType::Label(label)) => register_type_label_var(constraints, label),
-        typeql::TypeRef::Named(NamedType::Role(scoped_label)) => todo!(),
+        typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
+            register_type_scoped_label_var(constraints, scoped_label)
+        }
         typeql::TypeRef::Named(NamedType::BuiltinValueType(builtin)) => todo!(),
         typeql::TypeRef::Variable(var) => register_typeql_var(constraints, var),
     }
+}
+
+fn register_type_scoped_label_var(
+    constraints: &mut ConstraintsBuilder<'_>,
+    scoped_label: &ScopedLabel,
+) -> Result<Variable, PatternDefinitionError> {
+    let label = Label::build_scoped(scoped_label.name.ident.as_str(), scoped_label.scope.ident.as_str());
+    let variable = constraints.create_anonymous_variable()?;
+    constraints.add_label(variable, label.scoped_name.as_str())?;
+    Ok(variable)
 }
 
 fn register_type_label_var(
@@ -201,9 +215,26 @@ fn add_typeql_relation(
 ) -> Result<(), PatternDefinitionError> {
     for role_player in &roleplayers.role_players {
         match role_player {
-            typeql::statement::thing::RolePlayer::Typed(type_, var) => {
-                let player = register_typeql_var(constraints, var)?;
-                let type_ = register_typeql_type_var_any(constraints, type_)?;
+            typeql::statement::thing::RolePlayer::Typed(type_ref, player_var) => {
+                let type_ = match type_ref {
+                    TypeRefAny::Type(TypeRef::Named(NamedType::Label(name))) => {
+                        let variable = constraints.create_anonymous_variable()?;
+                        constraints.add_role_name(variable, name.ident.as_str())?;
+                        variable
+                    }
+                    TypeRefAny::Type(TypeRef::Variable(var)) => register_typeql_var(constraints, var)?,
+                    TypeRefAny::Type(TypeRef::Named(NamedType::Role(name))) => {
+                        return Err(PatternDefinitionError::ScopedRoleNameInRelation {
+                            role_player: role_player.clone(),
+                        });
+                    }
+                    TypeRefAny::Optional(_) => todo!(),
+                    TypeRefAny::List(_) => todo!(),
+                    TypeRefAny::Type(TypeRef::Named(NamedType::BuiltinValueType(_))) => {
+                        unreachable!("Why do we allow value types here?")
+                    }
+                };
+                let player = register_typeql_var(constraints, player_var)?;
                 constraints.add_links(relation, player, type_)?;
             }
             typeql::statement::thing::RolePlayer::Untyped(var) => {

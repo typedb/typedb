@@ -92,6 +92,18 @@ impl<'cx> ConstraintsBuilder<'cx> {
         Ok(as_ref.as_label().unwrap())
     }
 
+    pub fn add_role_name(
+        &mut self,
+        variable: Variable,
+        name: &str,
+    ) -> Result<&RoleName<Variable>, PatternDefinitionError> {
+        debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
+        let role_name = RoleName::new(variable, name.to_owned());
+        self.context.set_variable_category(variable, VariableCategory::Type, role_name.clone().into())?;
+        let as_ref = self.constraints.add_constraint(role_name);
+        Ok(as_ref.as_role_name().unwrap())
+    }
+
     pub fn add_sub(
         &mut self,
         subtype: Variable,
@@ -300,6 +312,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Constraint<ID: IrID> {
     Label(Label<ID>),
+    RoleName(RoleName<ID>),
     Sub(Sub<ID>),
     Isa(Isa<ID>),
     Links(Links<ID>),
@@ -316,6 +329,7 @@ impl<ID: IrID> Constraint<ID> {
     pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
             Constraint::Label(label) => Box::new(label.ids()),
+            Constraint::RoleName(role_name) => Box::new(role_name.ids()),
             Constraint::Sub(sub) => Box::new(sub.ids()),
             Constraint::Isa(isa) => Box::new(isa.ids()),
             Constraint::Links(rp) => Box::new(rp.ids()),
@@ -335,6 +349,7 @@ impl<ID: IrID> Constraint<ID> {
     {
         match self {
             Constraint::Label(label) => label.ids_foreach(function),
+            Constraint::RoleName(role_name) => role_name.ids_foreach(function),
             Constraint::Sub(sub) => sub.ids_foreach(function),
             Constraint::Isa(isa) => isa.ids_foreach(function),
             Constraint::Links(rp) => rp.ids_foreach(function),
@@ -377,6 +392,13 @@ impl<ID: IrID> Constraint<ID> {
     pub(crate) fn as_label(&self) -> Option<&Label<ID>> {
         match self {
             Constraint::Label(label) => Some(label),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn as_role_name(&self) -> Option<&RoleName<ID>> {
+        match self {
+            Constraint::RoleName(role_name) => Some(role_name),
             _ => None,
         }
     }
@@ -456,6 +478,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Constraint::Label(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::RoleName(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Sub(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Isa(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Links(constraint) => fmt::Display::fmt(constraint, f),
@@ -519,6 +542,49 @@ impl<ID: IrID> fmt::Display for Label<ID> {
         // TODO: implement indentation without rewriting it everywhere
         // write!(f, "{: >width$} {} type {}", "", self.left, self.type_, width=f.width().unwrap_or(0))
         write!(f, "{} label {}", self.left, self.type_label)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct RoleName<ID> {
+    left: ID,
+    name: String,
+}
+
+impl<ID: IrID> RoleName<ID> {
+    pub fn new(left: ID, name: String) -> Self {
+        Self { left, name }
+    }
+
+    pub fn left(&self) -> ID {
+        self.left
+    }
+
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [self.left].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+    where
+        F: FnMut(ID, ConstraintIDSide),
+    {
+        function(self.left, ConstraintIDSide::Left)
+    }
+}
+
+impl<ID: IrID> From<RoleName<ID>> for Constraint<ID> {
+    fn from(value: RoleName<ID>) -> Self {
+        Constraint::RoleName(value)
+    }
+}
+
+impl<ID: IrID> fmt::Display for RoleName<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} role-name {}", self.left, &self.name)
     }
 }
 
