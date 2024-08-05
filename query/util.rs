@@ -11,6 +11,7 @@ use concept::{
     type_::{object_type::ObjectType, type_manager::TypeManager, Ordering},
 };
 use encoding::value::label::Label;
+use ir::translation::literal;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     type_::{BuiltinValueType, NamedType},

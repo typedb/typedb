@@ -6,6 +6,7 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
+use answer::variable_value::VariableValue;
 use compiler::inference::annotated_functions::AnnotatedCommittedFunctions;
 use concept::{
     error::ConceptReadError,
@@ -18,6 +19,7 @@ use executor::{
     insert_executor::{InsertError, InsertExecutor},
 };
 use ir::program::{function_signature::HashMapFunctionIndex, program::Program};
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -72,7 +74,7 @@ fn execute_insert(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     query_str: &str,
-) -> Result<(), InsertError> {
+) -> Result<Vec<VariableValue<'static>>, InsertError> {
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
     let block =
         ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
@@ -94,13 +96,18 @@ fn execute_insert(
     insert_plan.debug_info.iter().for_each(|(k, v)| {
         println!("{:?} -> {:?}", k, annotated_program.get_entry().context().get_variables_named().get(v))
     });
+    let mut output_vec = (0..insert_plan.n_created_concepts).map(|_| VariableValue::Empty).collect_vec();
+    let mut output_multiplicity = 0;
+    let output = Row::new(&mut output_vec, &mut output_multiplicity);
     let mut executor = InsertExecutor::new(insert_plan);
     executor::insert_executor::execute(
         snapshot,
         &thing_manager,
         &mut executor,
         &Row::new(vec![].as_mut_slice(), &mut 1),
-    )
+        output,
+    )?;
+    Ok(output_vec)
 }
 
 #[test]

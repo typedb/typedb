@@ -39,8 +39,8 @@ pub type VariablePosition = usize; // Why is that not in plan.
 
 #[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
 pub enum VariableSource {
-    TypeConstant(TypeSource),
-    ValueConstant(ValueSource),
+    TypeSource(TypeSource),
+    ValueSource(ValueSource),
     ThingSource(ThingSource),
 }
 
@@ -146,6 +146,13 @@ fn assemble_plan(
     type_sources: Sources<Type>,
     kind_sources: Sources<Kind>,
 ) -> InsertPlan {
+    // TODO: Maybe take output row as parameter?
+    let output_row = kind_sources
+        .index
+        .iter()
+        .map(|(_, i)| VariableSource::ThingSource(ThingSource::Inserted(*i)))
+        .collect::<Vec<_>>();
+
     let Sources { items: value_constants, index: value_index } = value_sources;
     let Sources { items: type_constants, index: type_index } = type_sources;
     let Sources { items: inserted_kinds, index: isa_index } = kind_sources;
@@ -154,17 +161,18 @@ fn assemble_plan(
         debug_info.insert(VariableSource::ThingSource(ThingSource::Inserted(i)), v);
     });
     type_index.into_iter().for_each(|(v, i)| {
-        debug_info.insert(VariableSource::TypeConstant(TypeSource::TypeConstant(i)), v);
+        debug_info.insert(VariableSource::TypeSource(TypeSource::TypeConstant(i)), v);
     });
     value_index.into_iter().for_each(|(v, i)| {
-        debug_info.insert(VariableSource::ValueConstant(ValueSource::ValueConstant(i)), v);
+        debug_info.insert(VariableSource::ValueSource(ValueSource::ValueConstant(i)), v);
     });
+
     InsertPlan {
         instructions,
         type_constants,
         value_constants,
         n_created_concepts: inserted_kinds.len(),
-        output_row: vec![], // TODO
+        output_row,
         debug_info,
     }
 }

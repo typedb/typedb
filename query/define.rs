@@ -17,7 +17,7 @@ use concept::{
         owns::OwnsAnnotation,
         plays::PlaysAnnotation,
         relates::RelatesAnnotation,
-        relation_type::RelationTypeAnnotation,
+        relation_type::{RelationType, RelationTypeAnnotation},
         type_manager::TypeManager,
         Ordering, OwnerAPI, PlayerAPI,
     },
@@ -60,6 +60,7 @@ macro_rules! filter_variants {
     };
 }
 pub(crate) use filter_variants;
+use ir::LiteralParseError;
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,
@@ -402,7 +403,6 @@ fn define_capabilities_owns(
         };
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&owns.owned)
             .map_err(|_| DefineError::OwnsAttributeMustBeLabelOrList { owns: owns.clone() })?;
-
         let wrapped_attribute_type =
             resolve_type(snapshot, type_manager, &attr_label).map_err(|source| DefineError::TypeLookup { source })?;
         let TypeEnum::Attribute(attribute_type) = wrapped_attribute_type else {
@@ -605,6 +605,9 @@ pub enum DefineError {
         capability: Capability,
         expected_kind: Kind,
         actual_kind: Kind,
+    },
+    LiteralParseError {
+        source: LiteralParseError,
     },
     LiteralParseError {
         source: LiteralParseError,

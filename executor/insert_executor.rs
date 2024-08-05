@@ -11,7 +11,9 @@ use std::{
 };
 
 use answer::{variable::Variable, variable_value::VariableValue, Thing, Type};
-use compiler::planner::insert_planner::{InsertInstruction, InsertPlan, ThingSource, TypeSource, ValueSource};
+use compiler::planner::insert_planner::{
+    InsertInstruction, InsertPlan, ThingSource, TypeSource, ValueSource, VariableSource,
+};
 use concept::{
     error::ConceptWriteError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
@@ -109,15 +111,18 @@ impl InsertExecutor {
     }
 }
 
-pub fn execute<'row>(
+pub fn execute<'input, 'output>(
     // TODO: pub(crate)
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     insert: &mut InsertExecutor,
-    input: &Row<'row>,
-) -> Result<(), InsertError> {
+    input: &Row<'input>,
+    output: Row<'output>,
+) -> Result<Row<'output>, InsertError> {
+    debug_assert!(input.multiplicity() == 1); // Else, we have to return a set of rows.
+
     let InsertExecutor { plan, reused_created_things } = insert;
-    let InsertPlan { type_constants, value_constants, .. } = plan;
+    let InsertPlan { type_constants, value_constants, output_row: output_row_plan, .. } = plan;
 
     let context = ExecutionConcepts { input, type_constants, value_constants, created_things: reused_created_things };
     for instruction in &plan.instructions {
@@ -161,7 +166,17 @@ pub fn execute<'row>(
             }
         }
     }
-    Ok(()) // TODO: Create output row
+    let mut output = output;
+    for (i, source) in output_row_plan.iter().enumerate() {
+        let value = match source {
+            VariableSource::TypeSource(s) => VariableValue::Type(context.get_type(s).clone()),
+            VariableSource::ValueSource(s) => VariableValue::Value(context.get_value(s).clone()),
+            VariableSource::ThingSource(s) => VariableValue::Thing(context.get_thing(s).clone()),
+        };
+        output.set(VariablePosition::new(i as u32), value)
+    }
+    output.set_multiplicity(1);
+    Ok(output) // TODO: Create output row
 }
 
 #[derive(Debug, Clone)]
