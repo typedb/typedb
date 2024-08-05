@@ -31,9 +31,9 @@ use crate::{
                     validate_declared_annotation_is_compatible_with_inherited_annotations,
                     validate_declared_capability_annotation_is_compatible_with_inherited_annotations,
                     validate_edge_annotations_narrowing_of_inherited_annotations,
-                    validate_edge_override_ordering_match, validate_role_name_uniqueness_non_transitive,
+                    validate_owns_override_ordering_match, validate_role_name_uniqueness_non_transitive,
                     validate_type_annotations_narrowing_of_inherited_annotations,
-                    validate_type_supertype_ordering_match,
+                    validate_role_type_supertype_ordering_match,
                 },
                 SchemaValidationError,
             },
@@ -864,7 +864,7 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
         if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
-            if let Err(err) = validate_type_supertype_ordering_match(snapshot, type_, supertype, None) {
+            if let Err(err) = validate_role_type_supertype_ordering_match(snapshot, type_, supertype, None) {
                 validation_errors.push(err);
             }
         }
@@ -878,7 +878,7 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
         if let Some(overridden_edge) = TypeReader::get_capability_override(snapshot, edge.clone())? {
-            if let Err(err) = validate_edge_override_ordering_match(snapshot, edge, overridden_edge, None) {
+            if let Err(err) = validate_owns_override_ordering_match(snapshot, edge, overridden_edge, None) {
                 validation_errors.push(err);
             }
         }

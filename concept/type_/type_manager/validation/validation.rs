@@ -284,7 +284,7 @@ pub(crate) fn validate_edge_regex_narrows_inherited_regex<CAP: Capability<'stati
                     return if supertype_regex.regex() == regex.regex() {
                         Ok(())
                     } else {
-                        Err(SchemaValidationError::OnlyOneRegexCanBeSetForTypeEdgeHierarchy(
+                        Err(SchemaValidationError::OnlyOneRegexCanBeSetForCapabilitiesHierarchy(
                             get_label_or_schema_err(snapshot, owns.object())?,
                             get_label_or_schema_err(snapshot, owns.interface())?,
                             get_label_or_schema_err(snapshot, override_owns.object())?,
@@ -363,7 +363,7 @@ pub(crate) fn validate_edge_range_narrows_inherited_range<CAP: Capability<'stati
                     return if supertype_range.narrowed_correctly_by(&range) {
                         Ok(())
                     } else {
-                        Err(SchemaValidationError::RangeShouldNarrowInheritedEdgeRange(
+                        Err(SchemaValidationError::RangeShouldNarrowInheritedCapabilityRange(
                             get_label_or_schema_err(snapshot, owns.object())?,
                             get_label_or_schema_err(snapshot, owns.interface())?,
                             get_label_or_schema_err(snapshot, override_owns.object())?,
@@ -441,7 +441,7 @@ pub(crate) fn validate_edge_values_narrows_inherited_values<CAP: Capability<'sta
                     return if supertype_values.narrowed_correctly_by(&values) {
                         Ok(())
                     } else {
-                        Err(SchemaValidationError::ValuesShouldNarrowInheritedEdgeValues(
+                        Err(SchemaValidationError::ValuesShouldNarrowInheritedCapabilityValues(
                             get_label_or_schema_err(snapshot, owns.object())?,
                             get_label_or_schema_err(snapshot, owns.interface())?,
                             get_label_or_schema_err(snapshot, override_owns.object())?,
@@ -527,7 +527,7 @@ pub(crate) fn validate_edge_annotations_narrowing_of_inherited_annotations<CAP: 
     Ok(())
 }
 
-pub(crate) fn validate_type_supertype_ordering_match(
+pub(crate) fn validate_role_type_supertype_ordering_match(
     snapshot: &impl ReadableSnapshot,
     type_: RoleType<'static>,
     supertype: RoleType<'static>,
@@ -550,25 +550,25 @@ pub(crate) fn validate_type_supertype_ordering_match(
     }
 }
 
-pub(crate) fn validate_edge_override_ordering_match(
+pub(crate) fn validate_owns_override_ordering_match(
     snapshot: &impl ReadableSnapshot,
-    edge: Owns<'static>,
-    overridden_edge: Owns<'static>,
+    owns: Owns<'static>,
+    overridden_owns: Owns<'static>,
     set_subtype_owns_ordering: Option<Ordering>,
 ) -> Result<(), SchemaValidationError> {
     let edge_ordering = set_subtype_owns_ordering.unwrap_or(
-        TypeReader::get_type_edge_ordering(snapshot, edge.clone()).map_err(SchemaValidationError::ConceptRead)?,
+        TypeReader::get_type_edge_ordering(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?,
     );
-    let overridden_edge_ordering = TypeReader::get_type_edge_ordering(snapshot, overridden_edge.clone())
+    let overridden_edge_ordering = TypeReader::get_type_edge_ordering(snapshot, overridden_owns.clone())
         .map_err(SchemaValidationError::ConceptRead)?;
 
     if edge_ordering == overridden_edge_ordering {
         Ok(())
     } else {
         Err(SchemaValidationError::OrderingDoesNotMatchWithOverride(
-            get_label_or_schema_err(snapshot, edge.owner())?,
-            get_label_or_schema_err(snapshot, overridden_edge.owner())?,
-            get_label_or_schema_err(snapshot, edge.attribute())?,
+            get_label_or_schema_err(snapshot, owns.owner())?,
+            get_label_or_schema_err(snapshot, overridden_owns.owner())?,
+            get_label_or_schema_err(snapshot, owns.attribute())?,
             edge_ordering,
             overridden_edge_ordering,
         ))
@@ -681,7 +681,7 @@ where
     Ok(annotation.map(|val| val.clone().into()))
 }
 
-pub(crate) fn type_get_owner_of_annotation_category<T: KindAPI<'static>>(
+pub(crate) fn type_get_source_of_annotation_category<T: KindAPI<'static>>(
     snapshot: &impl ReadableSnapshot,
     type_: T,
     annotation_category: AnnotationCategory,
@@ -692,8 +692,7 @@ pub(crate) fn type_get_owner_of_annotation_category<T: KindAPI<'static>>(
         .iter()
         .map(|(existing_annotation, source)| (existing_annotation.clone().into().category(), source))
         .find(|(existing_category, _)| existing_category == &annotation_category);
-
-    Ok(found_annotation.map(|(_, owner)| owner.clone()))
+    Ok(found_annotation.map(|(_, source)| source.clone()))
 }
 
 pub(crate) fn edge_get_owner_of_annotation_category<CAP: Capability<'static>>(

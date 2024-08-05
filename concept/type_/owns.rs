@@ -95,7 +95,7 @@ impl<'a> Owns<'a> {
         thing_manager: &ThingManager,
         overridden: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_owns_overridden(snapshot, thing_manager, self.clone().into_owned(), overridden)
+        type_manager.set_owns_override(snapshot, thing_manager, self.clone().into_owned(), overridden)
     }
 
     pub fn unset_override(

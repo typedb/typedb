@@ -52,7 +52,7 @@ impl<'a> Relates<'a> {
         thing_manager: &ThingManager,
         overridden: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_relates_overridden(snapshot, thing_manager, self.clone().into_owned(), overridden)
+        type_manager.set_relates_override(snapshot, thing_manager, self.clone().into_owned(), overridden)
     }
 
     pub fn unset_override(

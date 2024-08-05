@@ -70,11 +70,10 @@ pub enum SchemaValidationError {
     ),
     OrderingDoesNotMatchWithSupertype(Label<'static>, Label<'static>, Ordering, Ordering),
     OrderingDoesNotMatchWithOverride(Label<'static>, Label<'static>, Label<'static>, Ordering, Ordering),
-    CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(Label<'static>, Option<Label<'static>>, Label<'static>),
+    CannotChangeSupertypeAsCapabilityOverrideIsImplicitlyLost(CapabilityKind, Label<'static>, Option<Label<'static>>, Label<'static>, Label<'static>, Label<'static>, Label<'static>),
     CannotChangeSupertypeAsOwnsOverrideIsImplicitlyLost(Label<'static>, Option<Label<'static>>, Label<'static>),
     CannotChangeSupertypeAsPlaysOverrideIsImplicitlyLost(Label<'static>, Option<Label<'static>>, Label<'static>),
-    CannotChangeSupertypeAsOwnsIsOverriddenInTheNewSupertype(Label<'static>, Label<'static>, Label<'static>),
-    CannotChangeSupertypeAsPlaysIsOverriddenInTheNewSupertype(Label<'static>, Label<'static>, Label<'static>),
+    CannotChangeSupertypeAsCapabilityIsOverriddenInTheNewSupertype(CapabilityKind, Label<'static>, Label<'static>, Label<'static>),
     RelatesOverrideIsNotInherited(Label<'static>, Label<'static>),
     OwnsOverrideIsNotInherited(Label<'static>, Label<'static>),
     PlaysOverrideIsNotInherited(Label<'static>, Label<'static>),
@@ -85,7 +84,7 @@ pub enum SchemaValidationError {
     ValueTypeIsNotCompatibleWithValuesAnnotation(Label<'static>, Option<ValueType>),
     ValueTypeIsNotKeyableForKeyAnnotation(Label<'static>, Label<'static>, Option<ValueType>),
     ValueTypeIsNotKeyableForUniqueAnnotation(Label<'static>, Label<'static>, Option<ValueType>),
-    CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsImplementation(Label<'static>, AnnotationCategory),
+    CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsCapability(Label<'static>, AnnotationCategory),
     CannotSetAnnotationToCapabilityBecauseItAlreadyExistsForItsInterface(
         Label<'static>,
         Label<'static>,
@@ -115,7 +114,7 @@ pub enum SchemaValidationError {
     OnlyOneRegexCanBeSetForTypeHierarchy(Label<'static>, Label<'static>, AnnotationRegex, AnnotationRegex),
     RangeShouldNarrowInheritedRange(Label<'static>, Label<'static>, AnnotationRange, AnnotationRange),
     ValuesShouldNarrowInheritedValues(Label<'static>, Label<'static>, AnnotationValues, AnnotationValues),
-    OnlyOneRegexCanBeSetForTypeEdgeHierarchy(
+    OnlyOneRegexCanBeSetForCapabilitiesHierarchy(
         Label<'static>,
         Label<'static>,
         Label<'static>,
@@ -123,7 +122,7 @@ pub enum SchemaValidationError {
         AnnotationRegex,
         AnnotationRegex,
     ),
-    RangeShouldNarrowInheritedEdgeRange(
+    RangeShouldNarrowInheritedCapabilityRange(
         Label<'static>,
         Label<'static>,
         Label<'static>,
@@ -131,7 +130,7 @@ pub enum SchemaValidationError {
         AnnotationRange,
         AnnotationRange,
     ),
-    ValuesShouldNarrowInheritedEdgeValues(
+    ValuesShouldNarrowInheritedCapabilityValues(
         Label<'static>,
         Label<'static>,
         Label<'static>,
@@ -172,13 +171,16 @@ pub enum SchemaValidationError {
     ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(
         Label<'static>,
         Label<'static>,
+        Label<'static>,
     ),
     ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(
         Label<'static>,
         Option<Label<'static>>,
+        Label<'static>,
     ),
     CannotDeleteTypeWithExistingInstances(Label<'static>),
     CannotUnsetValueTypeWithExistingInstances(Label<'static>),
+    CannotChangeValueTypeWithExistingInstances(Label<'static>),
     CannotSetAbstractToTypeWithExistingInstances(Label<'static>),
     CannotUnsetCapabilityWithExistingInstances(CapabilityKind, Label<'static>, Label<'static>, Label<'static>),
     CannotOverrideCapabilityWithExistingInstances(CapabilityKind, Label<'static>, Label<'static>, Label<'static>),
@@ -260,11 +262,10 @@ impl Error for SchemaValidationError {
             Self::OverriddenCapabilityInterfaceIsNotSupertype(_, _, _, _) => None,
             Self::OrderingDoesNotMatchWithSupertype(_, _, _, _) => None,
             Self::OrderingDoesNotMatchWithOverride(_, _, _, _, _) => None,
-            Self::CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(_, _, _) => None,
+            Self::CannotChangeSupertypeAsCapabilityOverrideIsImplicitlyLost(_, _, _, _, _, _, _) => None,
             Self::CannotChangeSupertypeAsOwnsOverrideIsImplicitlyLost(_, _, _) => None,
             Self::CannotChangeSupertypeAsPlaysOverrideIsImplicitlyLost(_, _, _) => None,
-            Self::CannotChangeSupertypeAsOwnsIsOverriddenInTheNewSupertype(_, _, _) => None,
-            Self::CannotChangeSupertypeAsPlaysIsOverriddenInTheNewSupertype(_, _, _) => None,
+            Self::CannotChangeSupertypeAsCapabilityIsOverriddenInTheNewSupertype(_, _, _, _) => None,
             Self::RelatesOverrideIsNotInherited(_, _) => None,
             Self::OwnsOverrideIsNotInherited(_, _) => None,
             Self::PlaysOverrideIsNotInherited(_, _) => None,
@@ -280,7 +281,7 @@ impl Error for SchemaValidationError {
             Self::ValueTypeIsNotCompatibleWithValuesAnnotation(_, _) => None,
             Self::ValueTypeIsNotKeyableForKeyAnnotation(_, _, _) => None,
             Self::ValueTypeIsNotKeyableForUniqueAnnotation(_, _, _) => None,
-            Self::CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsImplementation(_, _) => None,
+            Self::CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsCapability(_, _) => None,
             Self::CannotSetAnnotationToCapabilityBecauseItAlreadyExistsForItsInterface(_, _, _) => None,
             Self::InvalidCardinalityArguments(_) => None,
             Self::InvalidRegexArguments(_) => None,
@@ -292,9 +293,9 @@ impl Error for SchemaValidationError {
             Self::OnlyOneRegexCanBeSetForTypeHierarchy(_, _, _, _) => None,
             Self::RangeShouldNarrowInheritedRange(_, _, _, _) => None,
             Self::ValuesShouldNarrowInheritedValues(_, _, _, _) => None,
-            Self::OnlyOneRegexCanBeSetForTypeEdgeHierarchy(_, _, _, _, _, _) => None,
-            Self::RangeShouldNarrowInheritedEdgeRange(_, _, _, _, _, _) => None,
-            Self::ValuesShouldNarrowInheritedEdgeValues(_, _, _, _, _, _) => None,
+            Self::OnlyOneRegexCanBeSetForCapabilitiesHierarchy(_, _, _, _, _, _) => None,
+            Self::RangeShouldNarrowInheritedCapabilityRange(_, _, _, _, _, _) => None,
+            Self::ValuesShouldNarrowInheritedCapabilityValues(_, _, _, _, _, _) => None,
             Self::CannotUnsetInheritedOwns(_, _) => None,
             Self::CannotUnsetInheritedPlays(_, _) => None,
             Self::CannotUnsetInheritedAnnotation(_, _) => None,
@@ -309,12 +310,13 @@ impl Error for SchemaValidationError {
             Self::CannotRedeclareInheritedCapabilityWithoutSpecializationWithOverride(_, _, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForType(_, _, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForCapability(_, _, _, _, _) => None,
-            Self::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(_, _) => {
+            Self::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(_, _, _) => {
                 None
             }
-            Self::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(_, _) => None,
+            Self::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(_, _, _) => None,
             Self::CannotDeleteTypeWithExistingInstances(_) => None,
             Self::CannotUnsetValueTypeWithExistingInstances(_) => None,
+            Self::CannotChangeValueTypeWithExistingInstances(_) => None,
             Self::CannotSetAbstractToTypeWithExistingInstances(_) => None,
             Self::CannotUnsetCapabilityWithExistingInstances(_, _, _, _) => None,
             Self::CannotOverrideCapabilityWithExistingInstances(_, _, _, _) => None,

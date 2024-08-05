@@ -57,7 +57,7 @@ impl<'a> Plays<'a> {
         thing_manager: &ThingManager,
         overridden: Plays<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_plays_overridden(snapshot, thing_manager, self.clone().into_owned(), overridden)
+        type_manager.set_plays_override(snapshot, thing_manager, self.clone().into_owned(), overridden)
     }
 
     pub fn unset_override(

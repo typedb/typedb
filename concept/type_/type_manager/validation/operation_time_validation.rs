@@ -51,17 +51,17 @@ use crate::{
                     get_opt_label_or_schema_err, is_interface_hidden_by_overrides,
                     is_ordering_compatible_with_distinct_annotation,
                     is_overridden_interface_object_one_of_supertypes_or_self, type_get_annotation_by_category,
-                    type_get_owner_of_annotation_category, type_has_annotation_category,
+                    type_get_source_of_annotation_category, type_has_annotation_category,
                     validate_cardinality_narrows_inherited_cardinality,
                     validate_declared_annotation_is_compatible_with_inherited_annotations,
                     validate_declared_capability_annotation_is_compatible_with_inherited_annotations,
                     validate_edge_annotations_narrowing_of_inherited_annotations,
-                    validate_edge_override_ordering_match, validate_edge_range_narrows_inherited_range,
+                    validate_owns_override_ordering_match, validate_edge_range_narrows_inherited_range,
                     validate_edge_regex_narrows_inherited_regex, validate_edge_values_narrows_inherited_values,
                     validate_key_narrows_inherited_cardinality, validate_role_name_uniqueness_non_transitive,
                     validate_type_annotations_narrowing_of_inherited_annotations,
                     validate_type_range_narrows_inherited_range, validate_type_regex_narrows_inherited_regex,
-                    validate_type_supertype_abstractness, validate_type_supertype_ordering_match,
+                    validate_type_supertype_abstractness, validate_role_type_supertype_ordering_match,
                     validate_type_values_narrows_inherited_values,
                 },
                 SchemaValidationError,
@@ -84,17 +84,27 @@ macro_rules! object_type_match {
 macro_rules! for_type_and_subtypes_transitive {
     ($snapshot:ident, $type_:ident, $closure:expr) => {
         $closure($type_.clone())?;
-        TypeReader::get_subtypes_transitive($snapshot, $type_)
+        TypeReader::get_subtypes_transitive($snapshot, $type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|subtype| $closure(subtype))?;
     };
 }
 
+macro_rules! for_type_and_supertypes_transitive {
+    ($snapshot:ident, $type_:ident, $closure:expr) => {
+        $closure($type_.clone())?;
+        TypeReader::get_supertypes_transitive($snapshot, $type_.clone())
+            .map_err(SchemaValidationError::ConceptRead)?
+            .into_iter()
+            .try_for_each(|supertype| $closure(supertype))?;
+    };
+}
+
 macro_rules! for_capability_and_overriding_capabilities_transitive {
     ($snapshot:ident, $capability:ident, $closure:expr) => {
         $closure($capability.clone())?;
-        TypeReader::get_overriding_capabilities_transitive($snapshot, $capability)
+        TypeReader::get_overriding_capabilities_transitive($snapshot, $capability.clone())
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|current_capability| $closure(current_capability))?;
@@ -992,7 +1002,18 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_role_names_compatible_with_new_relation_supertype(
+    pub(crate) fn validate_role_names_compatible_with_new_relation_supertype_transitive(
+        snapshot: &impl ReadableSnapshot,
+        relation_subtype: RelationType<'static>,
+        relation_supertype: RelationType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        for_type_and_subtypes_transitive!(snapshot, relation_subtype, |type_: RelationType<'static>| {
+            Self::validate_role_names_compatible_with_new_relation_supertype(snapshot, type_, relation_supertype.clone())
+        });
+        Ok(())
+    }
+
+    fn validate_role_names_compatible_with_new_relation_supertype(
         snapshot: &impl ReadableSnapshot,
         relation_subtype: RelationType<'static>,
         relation_supertype: RelationType<'static>,
@@ -1004,77 +1025,48 @@ impl OperationTimeValidation {
         for subtype_relates in subtype_relates_declared {
             let role = subtype_relates.role();
             let role_label = get_label_or_schema_err(snapshot, role)?;
-            validate_role_name_uniqueness_non_transitive(snapshot, relation_supertype.clone(), &role_label)?;
-
-            let relation_supertype_supertypes =
-                TypeReader::get_supertypes_transitive(snapshot, relation_supertype.clone().into_owned())
-                    .map_err(SchemaValidationError::ConceptRead)?;
-            for supertype in relation_supertype_supertypes {
-                validate_role_name_uniqueness_non_transitive(snapshot, supertype, &role_label)?;
-            }
+            for_type_and_supertypes_transitive!(snapshot, relation_supertype, |type_: RelationType<'static>| {
+                validate_role_name_uniqueness_non_transitive(snapshot, type_.clone(), &role_label)
+            });
         }
 
         Ok(())
     }
 
-    pub(crate) fn validate_relates_overrides_compatible_with_new_supertype(
+    pub(crate) fn validate_capabilities_are_not_overridden_in_the_new_supertype_transitive<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        relation_subtype: RelationType<'static>,
-        relation_supertype: Option<RelationType<'static>>,
+        object_subtype: CAP::ObjectType,
+        object_supertype: CAP::ObjectType,
     ) -> Result<(), SchemaValidationError> {
-        let supertype_relates_with_roles: HashMap<RoleType<'static>, Relates<'static>> = match &relation_supertype {
-            None => HashMap::new(),
-            Some(relation_supertype) => TypeReader::get_capabilities(snapshot, relation_supertype.clone())
-                .map_err(SchemaValidationError::ConceptRead)?,
-        };
-
-        let subtype_relates_declared: HashSet<Relates<'static>> =
-            TypeReader::get_capabilities_declared(snapshot, relation_subtype.clone())
-                .map_err(SchemaValidationError::ConceptRead)?;
-
-        for subtype_relates in subtype_relates_declared {
-            if let Some(old_relates_override) = TypeReader::get_capability_override(snapshot, subtype_relates)
-                .map_err(SchemaValidationError::ConceptRead)?
-            {
-                if !supertype_relates_with_roles
-                    .iter()
-                    .any(|(_, supertype_relates)| supertype_relates == &old_relates_override)
-                {
-                    let role_type_overridden = old_relates_override.role();
-                    return Err(SchemaValidationError::CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(
-                        get_label_or_schema_err(snapshot, relation_subtype)?,
-                        get_opt_label_or_schema_err(snapshot, relation_supertype)?,
-                        get_label_or_schema_err(snapshot, role_type_overridden)?,
-                    ));
-                }
-            }
-        }
-
+        for_type_and_subtypes_transitive!(snapshot, object_subtype, |type_: CAP::ObjectType| {
+            Self::validate_owns_are_not_overridden_in_the_new_supertype::<CAP>(snapshot, type_, object_supertype.clone())
+        });
         Ok(())
     }
 
-    pub(crate) fn validate_owns_are_not_overridden_in_the_new_supertype(
+    pub(crate) fn validate_owns_are_not_overridden_in_the_new_supertype<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        owner_subtype: ObjectType<'static>,
-        owner_supertype: ObjectType<'static>,
+        object_subtype: CAP::ObjectType,
+        object_supertype: CAP::ObjectType,
     ) -> Result<(), SchemaValidationError> {
-        let subtype_owns_declared: HashSet<Owns<'static>> =
-            TypeReader::get_capabilities_declared(snapshot, owner_subtype.clone())
+        let subtype_capabilities_declared: HashSet<CAP> =
+            TypeReader::get_capabilities_declared(snapshot, object_subtype.clone())
                 .map_err(SchemaValidationError::ConceptRead)?;
 
-        for subtype_owns in subtype_owns_declared {
-            let attribute_type = subtype_owns.attribute();
-            if is_interface_hidden_by_overrides::<Owns<'static>>(
+        for subtype_capability in subtype_capabilities_declared {
+            let interface_type = subtype_capability.interface();
+            if is_interface_hidden_by_overrides::<CAP>(
                 snapshot,
-                owner_supertype.clone(),
-                attribute_type.clone(),
+                object_supertype.clone(),
+                interface_type.clone(),
             )
             .map_err(SchemaValidationError::ConceptRead)?
             {
-                return Err(SchemaValidationError::CannotChangeSupertypeAsOwnsIsOverriddenInTheNewSupertype(
-                    get_label_or_schema_err(snapshot, owner_subtype)?,
-                    get_label_or_schema_err(snapshot, owner_supertype)?,
-                    get_label_or_schema_err(snapshot, attribute_type)?,
+                return Err(SchemaValidationError::CannotChangeSupertypeAsCapabilityIsOverriddenInTheNewSupertype(
+                    CAP::KIND,
+                    get_label_or_schema_err(snapshot, object_subtype)?,
+                    get_label_or_schema_err(snapshot, object_supertype)?,
+                    get_label_or_schema_err(snapshot, interface_type)?,
                 ));
             }
         }
@@ -1082,96 +1074,77 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_owns_overrides_compatible_with_new_supertype(
+    pub(crate) fn validate_capability_overrides_compatible_with_new_supertype_transitive<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        owner_subtype: ObjectType<'static>,
-        owner_supertype: Option<ObjectType<'static>>,
+        object_subtype: CAP::ObjectType,
+        object_supertype: Option<CAP::ObjectType>,
     ) -> Result<(), SchemaValidationError> {
-        let supertype_owns_with_attributes: HashMap<AttributeType<'static>, Owns<'static>> = match &owner_supertype {
+        let supertype_capability_with_interface_types: HashMap<CAP::InterfaceType, CAP> = match &object_supertype {
             None => HashMap::new(),
-            Some(owner_supertype) => TypeReader::get_capabilities(snapshot, owner_supertype.clone())
+            Some(object_supertype) => TypeReader::get_capabilities(snapshot, object_supertype.clone())
                 .map_err(SchemaValidationError::ConceptRead)?,
         };
 
-        let subtype_owns_declared: HashSet<Owns<'static>> =
-            TypeReader::get_capabilities_declared(snapshot, owner_subtype.clone())
+        let subtype_capabilities_declared: HashSet<CAP> =
+            TypeReader::get_capabilities_declared(snapshot, object_subtype.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+        let subtype_capabilities: HashMap<CAP::InterfaceType, CAP> =
+            TypeReader::get_capabilities(snapshot, object_subtype.clone())
                 .map_err(SchemaValidationError::ConceptRead)?;
 
-        for subtype_owns in subtype_owns_declared {
-            if let Some(old_owns_override) = TypeReader::get_capability_override(snapshot, subtype_owns)
+        for subtype_capability in &subtype_capabilities_declared {
+            if let Some(old_capability_override) = TypeReader::get_capability_override(snapshot, subtype_capability.clone())
                 .map_err(SchemaValidationError::ConceptRead)?
             {
-                if !supertype_owns_with_attributes
+                if !supertype_capability_with_interface_types
                     .iter()
-                    .any(|(_, supertype_owns)| supertype_owns == &old_owns_override)
+                    .any(|(_, supertype_capability)| supertype_capability == &old_capability_override)
                 {
-                    let attribute_type_overridden = old_owns_override.attribute();
-                    return Err(SchemaValidationError::CannotChangeSupertypeAsOwnsOverrideIsImplicitlyLost(
-                        get_label_or_schema_err(snapshot, owner_subtype)?,
-                        get_opt_label_or_schema_err(snapshot, owner_supertype)?,
-                        get_label_or_schema_err(snapshot, attribute_type_overridden)?,
+                    // Ordering and annotations don't need to be rechecked as it's the same edge
+                    return Err(SchemaValidationError::CannotChangeSupertypeAsCapabilityOverrideIsImplicitlyLost(
+                        CAP::KIND,
+                        get_label_or_schema_err(snapshot, object_subtype)?,
+                        get_opt_label_or_schema_err(snapshot, object_supertype)?,
+                        get_label_or_schema_err(snapshot, subtype_capability.object())?,
+                        get_label_or_schema_err(snapshot, subtype_capability.interface())?,
+                        get_label_or_schema_err(snapshot, old_capability_override.object())?,
+                        get_label_or_schema_err(snapshot, old_capability_override.interface())?,
                     ));
                 }
             }
         }
 
-        Ok(())
-    }
+        let subtype_subtypes = TypeReader::get_subtypes_transitive(snapshot, object_subtype.clone())
+            .map_err(SchemaValidationError::ConceptRead)?;
+        for subsubtype in subtype_subtypes {
+            let subsubtype_capabilities_declared: HashSet<CAP> =
+                TypeReader::get_capabilities_declared(snapshot, subsubtype.clone())
+                    .map_err(SchemaValidationError::ConceptRead)?;
 
-    pub(crate) fn validate_plays_are_not_overridden_in_the_new_supertype(
-        snapshot: &impl ReadableSnapshot,
-        player_subtype: ObjectType<'static>,
-        player_supertype: ObjectType<'static>,
-    ) -> Result<(), SchemaValidationError> {
-        let subtype_plays_declared: HashSet<Plays<'static>> =
-            TypeReader::get_capabilities_declared(snapshot, player_subtype.clone())
-                .map_err(SchemaValidationError::ConceptRead)?;
-
-        for subtype_plays in subtype_plays_declared {
-            let role_type = subtype_plays.role();
-            if is_interface_hidden_by_overrides::<Plays<'static>>(snapshot, player_supertype.clone(), role_type.clone())
-                .map_err(SchemaValidationError::ConceptRead)?
-            {
-                return Err(SchemaValidationError::CannotChangeSupertypeAsPlaysIsOverriddenInTheNewSupertype(
-                    get_label_or_schema_err(snapshot, player_subtype)?,
-                    get_label_or_schema_err(snapshot, player_supertype)?,
-                    get_label_or_schema_err(snapshot, role_type)?,
-                ));
-            }
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn validate_plays_overrides_compatible_with_new_supertype<T: ObjectTypeAPI<'static>>(
-        snapshot: &impl ReadableSnapshot,
-        player_subtype: T,
-        player_supertype: Option<T>,
-    ) -> Result<(), SchemaValidationError> {
-        let supertype_plays_with_roles: HashMap<RoleType<'static>, Plays<'static>> = match &player_supertype {
-            None => HashMap::new(),
-            Some(player_supertype) => {
-                TypeReader::get_capabilities(snapshot, player_supertype.clone().into_owned_object_type())
+            for subsubtype_capability in subsubtype_capabilities_declared {
+                if let Some(old_capability_override) = TypeReader::get_capability_override(snapshot, subsubtype_capability.clone())
                     .map_err(SchemaValidationError::ConceptRead)?
-            }
-        };
-
-        let subtype_plays_declared: HashSet<Plays<'static>> =
-            TypeReader::get_capabilities_declared(snapshot, player_subtype.clone())
-                .map_err(SchemaValidationError::ConceptRead)?;
-
-        for subtype_plays in subtype_plays_declared {
-            if let Some(old_plays_override) = TypeReader::get_capability_override(snapshot, subtype_plays)
-                .map_err(SchemaValidationError::ConceptRead)?
-            {
-                if !supertype_plays_with_roles.iter().any(|(_, supertype_plays)| supertype_plays == &old_plays_override)
                 {
-                    let role_type_overridden = old_plays_override.role();
-                    return Err(SchemaValidationError::CannotChangeSupertypeAsPlaysOverrideIsImplicitlyLost(
-                        get_label_or_schema_err(snapshot, player_subtype)?,
-                        get_opt_label_or_schema_err(snapshot, player_supertype)?,
-                        get_label_or_schema_err(snapshot, role_type_overridden)?,
-                    ));
+                    let is_in_subtype = subtype_capabilities.values().contains(&old_capability_override);
+                    let is_in_subtype_declared = subtype_capabilities_declared.contains(&old_capability_override);
+                    let is_lost = is_in_subtype && !is_in_subtype_declared;
+                    if is_lost {
+                        if !supertype_capability_with_interface_types
+                            .iter()
+                            .any(|(_, supertype_capability)| supertype_capability == &old_capability_override)
+                        {
+                            // Ordering and annotations don't need to be rechecked as it's the same edge
+                            return Err(SchemaValidationError::CannotChangeSupertypeAsCapabilityOverrideIsImplicitlyLost(
+                                CAP::KIND,
+                                get_label_or_schema_err(snapshot, object_subtype)?,
+                                get_opt_label_or_schema_err(snapshot, object_supertype)?,
+                                get_label_or_schema_err(snapshot, subsubtype_capability.object())?,
+                                get_label_or_schema_err(snapshot, subsubtype_capability.interface())?,
+                                get_label_or_schema_err(snapshot, old_capability_override.object())?,
+                                get_label_or_schema_err(snapshot, old_capability_override.interface())?,
+                            ));
+                        }
+                    }
                 }
             }
         }
@@ -1195,7 +1168,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_value_type_is_compatible_with_new_supertypes_value_type(
+    pub(crate) fn validate_value_type_is_compatible_with_new_supertypes_value_type_transitive(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         subtype: AttributeType<'static>,
@@ -1214,7 +1187,7 @@ impl OperationTimeValidation {
         match (&subtype_declared_value_type, &subtype_transitive_value_type, &supertype_value_type) {
             (None, None, None) => Ok(()),
             (None, None, Some(_)) => Ok(()),
-            (None, Some(_), None) => Self::validate_when_attribute_type_loses_value_type(
+            (None, Some(_), None) => Self::validate_when_attribute_type_loses_value_type_transitive(
                 snapshot,
                 thing_manager,
                 subtype,
@@ -1262,7 +1235,7 @@ impl OperationTimeValidation {
                                 .map_err(SchemaValidationError::ConceptRead)?;
                         match supertype_value_type {
                             Some(_) => Ok(()),
-                            None => Self::validate_when_attribute_type_loses_value_type(
+                            None => Self::validate_when_attribute_type_loses_value_type_transitive(
                                 snapshot,
                                 thing_manager,
                                 attribute_type,
@@ -1270,7 +1243,7 @@ impl OperationTimeValidation {
                             ),
                         }
                     }
-                    None => Self::validate_when_attribute_type_loses_value_type(
+                    None => Self::validate_when_attribute_type_loses_value_type_transitive(
                         snapshot,
                         thing_manager,
                         attribute_type,
@@ -1390,25 +1363,36 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_annotation_set_only_for_interface<CAP: Capability<'static>>(
+    pub(crate) fn validate_annotation_set_only_for_interface_transitive<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        interface: CAP::InterfaceType,
+        interface_type: CAP::InterfaceType,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError> {
-        let implementations = TypeReader::get_capabilities_for_interface::<CAP>(snapshot, interface.clone())
+        for_type_and_subtypes_transitive!(snapshot, interface_type, |type_: CAP::InterfaceType| {
+            Self::validate_annotation_set_only_for_interface::<CAP>(snapshot, type_.clone(), annotation_category.clone())
+        });
+        Ok(())
+    }
+
+    fn validate_annotation_set_only_for_interface<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        interface_type: CAP::InterfaceType,
+        annotation_category: AnnotationCategory,
+    ) -> Result<(), SchemaValidationError> {
+        let capabilities = TypeReader::get_capabilities_for_interface::<CAP>(snapshot, interface_type.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
 
-        for (_, implementation) in implementations {
-            let implementation_annotations = TypeReader::get_type_edge_annotations(snapshot, implementation)
+        for (_, capability) in capabilities {
+            let capability_annotations = TypeReader::get_type_edge_annotations(snapshot, capability)
                 .map_err(SchemaValidationError::ConceptRead)?;
-            if implementation_annotations
+            if capability_annotations
                 .keys()
                 .map(|annotation| annotation.clone().into().category())
                 .contains(&annotation_category)
             {
                 return Err(
-                    SchemaValidationError::CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsImplementation(
-                        get_label_or_schema_err(snapshot, interface)?,
+                    SchemaValidationError::CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsCapability(
+                        get_label_or_schema_err(snapshot, interface_type)?,
                         annotation_category,
                     ),
                 );
@@ -1565,6 +1549,105 @@ impl OperationTimeValidation {
         Ok(())
     }
 
+    pub(crate) fn validate_subtypes_narrow_regex(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+        regex: AnnotationRegex,
+    ) -> Result<(), SchemaValidationError> {
+        TypeReader::get_subtypes_transitive(snapshot, attribute_type.clone())
+            .map_err(SchemaValidationError::ConceptRead)?
+            .into_iter()
+            .try_for_each(|subtype| {
+                if let Some(subtype_annotation) =
+                    type_get_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Regex)?
+                {
+                    match &subtype_annotation {
+                        Annotation::Regex(subtype_regex) => {
+                            return if subtype_regex.regex() == regex.regex() {
+                                Ok(())
+                            } else {
+                                Err(SchemaValidationError::OnlyOneRegexCanBeSetForTypeHierarchy(
+                                    get_label_or_schema_err(snapshot, subtype)?,
+                                    get_label_or_schema_err(snapshot, attribute_type.clone())?,
+                                    subtype_regex.clone(),
+                                    regex.clone(),
+                                ))
+                            };
+                        }
+                        _ => unreachable!("Should not reach it for Regex-related function"),
+                    }
+                }
+                Ok(())
+            })?;
+        Ok(())
+    }
+
+    pub(crate) fn validate_subtypes_narrow_range(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+        range: AnnotationRange,
+    ) -> Result<(), SchemaValidationError> {
+        TypeReader::get_subtypes_transitive(snapshot, attribute_type.clone())
+            .map_err(SchemaValidationError::ConceptRead)?
+            .into_iter()
+            .try_for_each(|subtype| {
+                if let Some(subtype_annotation) =
+                    type_get_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Range)?
+                {
+                    match &subtype_annotation {
+                        Annotation::Range(subtype_range) => {
+                            return if range.narrowed_correctly_by(subtype_range) {
+                                Ok(())
+                            } else {
+                                Err(SchemaValidationError::RangeShouldNarrowInheritedRange(
+                                    get_label_or_schema_err(snapshot, subtype)?,
+                                    get_label_or_schema_err(snapshot, attribute_type.clone())?,
+                                    subtype_range.clone(),
+                                    range.clone(),
+                                ))
+                            };
+                        }
+                        _ => unreachable!("Should not reach it for Range-related function"),
+                    }
+                }
+                Ok(())
+            })?;
+        Ok(())
+    }
+
+    pub(crate) fn validate_subtypes_narrow_values(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+        values: AnnotationValues,
+    ) -> Result<(), SchemaValidationError> {
+        TypeReader::get_subtypes_transitive(snapshot, attribute_type.clone())
+            .map_err(SchemaValidationError::ConceptRead)?
+            .into_iter()
+            .try_for_each(|subtype| {
+                if let Some(subtype_annotation) =
+                    type_get_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Values)?
+                {
+                    match &subtype_annotation {
+                        Annotation::Values(subtype_values) => {
+                            return if values.narrowed_correctly_by(subtype_values) {
+                                Ok(())
+                            } else {
+                                Err(SchemaValidationError::ValuesShouldNarrowInheritedValues(
+                                    get_label_or_schema_err(snapshot, subtype)?,
+                                    get_label_or_schema_err(snapshot, attribute_type.clone())?,
+                                    subtype_values.clone(),
+                                    values.clone(),
+                                ))
+                            };
+                        }
+                        _ => unreachable!("Should not reach it for Values-related function"),
+                    }
+                }
+                Ok(())
+            })?;
+        Ok(())
+    }
+
     pub(crate) fn validate_overriding_capabilities_narrow_regex(
         snapshot: &impl ReadableSnapshot,
         owns: Owns<'static>,
@@ -1582,7 +1665,7 @@ impl OperationTimeValidation {
                             return if overriding_regex.regex() == regex.regex() {
                                 Ok(())
                             } else {
-                                Err(SchemaValidationError::OnlyOneRegexCanBeSetForTypeEdgeHierarchy(
+                                Err(SchemaValidationError::OnlyOneRegexCanBeSetForCapabilitiesHierarchy(
                                     get_label_or_schema_err(snapshot, overriding_owns.object())?,
                                     get_label_or_schema_err(snapshot, overriding_owns.interface())?,
                                     get_label_or_schema_err(snapshot, owns.object())?,
@@ -1597,7 +1680,6 @@ impl OperationTimeValidation {
                 }
                 Ok(())
             })?;
-
         Ok(())
     }
 
@@ -1618,7 +1700,7 @@ impl OperationTimeValidation {
                             return if range.narrowed_correctly_by(overriding_range) {
                                 Ok(())
                             } else {
-                                Err(SchemaValidationError::RangeShouldNarrowInheritedEdgeRange(
+                                Err(SchemaValidationError::RangeShouldNarrowInheritedCapabilityRange(
                                     get_label_or_schema_err(snapshot, overriding_owns.object())?,
                                     get_label_or_schema_err(snapshot, overriding_owns.interface())?,
                                     get_label_or_schema_err(snapshot, owns.object())?,
@@ -1633,7 +1715,6 @@ impl OperationTimeValidation {
                 }
                 Ok(())
             })?;
-
         Ok(())
     }
 
@@ -1656,7 +1737,7 @@ impl OperationTimeValidation {
                             return if values.narrowed_correctly_by(overriding_values) {
                                 Ok(())
                             } else {
-                                Err(SchemaValidationError::ValuesShouldNarrowInheritedEdgeValues(
+                                Err(SchemaValidationError::ValuesShouldNarrowInheritedCapabilityValues(
                                     get_label_or_schema_err(snapshot, overriding_owns.object())?,
                                     get_label_or_schema_err(snapshot, overriding_owns.interface())?,
                                     get_label_or_schema_err(snapshot, owns.object())?,
@@ -1671,7 +1752,6 @@ impl OperationTimeValidation {
                 }
                 Ok(())
             })?;
-
         Ok(())
     }
 
@@ -1798,7 +1878,7 @@ impl OperationTimeValidation {
         supertype_role: RoleType<'static>,
         set_subtype_role_ordering: Option<Ordering>,
     ) -> Result<(), SchemaValidationError> {
-        validate_type_supertype_ordering_match(snapshot, subtype_role, supertype_role, set_subtype_role_ordering)
+        validate_role_type_supertype_ordering_match(snapshot, subtype_role, supertype_role, set_subtype_role_ordering)
     }
 
     pub(crate) fn validate_overriding_owns_ordering_match(
@@ -1810,7 +1890,7 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|overriding_owns| {
-                validate_edge_override_ordering_match(
+                validate_owns_override_ordering_match(
                     snapshot,
                     overriding_owns,
                     owns.clone(),
@@ -1826,7 +1906,7 @@ impl OperationTimeValidation {
         supertype_owns: Owns<'static>,
         set_subtype_owns_ordering: Option<Ordering>,
     ) -> Result<(), SchemaValidationError> {
-        validate_edge_override_ordering_match(snapshot, subtype_owns, supertype_owns, set_subtype_owns_ordering)
+        validate_owns_override_ordering_match(snapshot, subtype_owns, supertype_owns, set_subtype_owns_ordering)
     }
 
     pub(crate) fn validate_supertype_annotations_compatibility<T: KindAPI<'static>>(
@@ -2029,31 +2109,50 @@ impl OperationTimeValidation {
     pub(crate) fn validate_value_type_compatible_with_inherited_value_type(
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
-        value_type: Option<ValueType>,
-        inherited_value_type_with_source: Option<(ValueType, AttributeType<'static>)>,
+        value_type: ValueType,
     ) -> Result<(), SchemaValidationError> {
-        match value_type {
-            Some(value_type) => {
-                if let Some((inherited_value_type, inherited_value_type_source)) = inherited_value_type_with_source {
-                    if inherited_value_type == value_type {
-                        Ok(())
-                    } else {
-                        Err(SchemaValidationError::ValueTypeNotCompatibleWithInheritedValueType(
-                            get_label_or_schema_err(snapshot, attribute_type)?,
-                            get_label_or_schema_err(snapshot, inherited_value_type_source)?,
-                            value_type,
-                            inherited_value_type,
-                        ))
-                    }
-                } else {
+        let inherited_value_type_with_source = TypeReader::get_value_type(snapshot, attribute_type.clone())
+            .map_err(SchemaValidationError::ConceptRead)?;
+        match inherited_value_type_with_source {
+            Some((inherited_value_type, inherited_value_type_source)) => {
+                if inherited_value_type == value_type {
                     Ok(())
+                } else {
+                    Err(SchemaValidationError::ValueTypeNotCompatibleWithInheritedValueType(
+                        get_label_or_schema_err(snapshot, attribute_type)?,
+                        get_label_or_schema_err(snapshot, inherited_value_type_source)?,
+                        value_type,
+                        inherited_value_type,
+                    ))
                 }
             }
-            None => Ok(()),
+            None => Ok(())
         }
     }
 
-    pub(crate) fn validate_when_attribute_type_loses_value_type(
+    pub(crate) fn validate_when_attribute_type_loses_value_type_transitive(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        attribute_type: AttributeType<'static>,
+        value_type: Option<ValueType>,
+    ) -> Result<(), SchemaValidationError> {
+        for_type_and_subtypes_transitive!(snapshot, attribute_type, |type_: AttributeType<'static>| {
+            let type_value_type = TypeReader::get_value_type(snapshot, type_.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+            if let Some((type_value_type, type_value_type_source)) = type_value_type {
+                if type_value_type_source == attribute_type {
+                    debug_assert!(value_type.clone().unwrap_or(type_value_type.clone()) == type_value_type);
+                    Self::validate_when_attribute_type_loses_value_type(
+                        snapshot, thing_manager, type_.clone(), value_type.clone()
+                    )?;
+                }
+            }
+            Ok(())
+        });
+        Ok(())
+    }
+
+    fn validate_when_attribute_type_loses_value_type(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
@@ -2074,8 +2173,9 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relation_type_does_not_acquire_cascade_annotation_with_new_supertype(
+    pub(crate) fn validate_relation_type_does_not_acquire_cascade_annotation_to_lose_instances_with_new_supertype(
         snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
         relation_type: RelationType<'static>,
         new_supertype: RelationType<'static>,
     ) -> Result<(), SchemaValidationError> {
@@ -2087,47 +2187,74 @@ impl OperationTimeValidation {
                     type_get_annotation_by_category(snapshot, new_supertype.clone(), AnnotationCategory::Cascade)?;
                 match new_supertype_annotation {
                     None => Ok(()),
-                    Some(_) => Err(SchemaValidationError::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(
-                        get_label_or_schema_err(snapshot, relation_type)?,
-                        get_label_or_schema_err(snapshot, new_supertype)?,
-                    )),
+                    Some(_) => {
+                        for_type_and_subtypes_transitive!(snapshot, relation_type, |type_: RelationType<'static>| {
+                            let type_annotation =
+                                type_get_annotation_by_category(snapshot, type_.clone(), AnnotationCategory::Cascade)?;
+                            if type_annotation.is_none() {
+                                let type_has_instances = Self::has_instances_of_type(snapshot, thing_manager, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
+                                if type_has_instances {
+                                    return Err(SchemaValidationError::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(
+                                        get_label_or_schema_err(snapshot, relation_type.clone())?,
+                                        get_label_or_schema_err(snapshot, new_supertype.clone())?,
+                                        get_label_or_schema_err(snapshot, type_.clone())?,
+                                    ));
+                                }
+                            }
+                            Ok(())
+                        });
+                        Ok(())
+                    },
                 }
-            }
+            },
             Some(_) => Ok(()),
         }
     }
 
-    pub(crate) fn validate_attribute_type_does_not_lose_independent_annotation_with_new_supertype(
+    pub(crate) fn validate_attribute_type_does_not_lose_instances_with_independent_annotation_with_new_supertype(
         snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         new_supertype: Option<AttributeType<'static>>,
     ) -> Result<(), SchemaValidationError> {
-        let annotation_owner =
-            type_get_owner_of_annotation_category(snapshot, attribute_type.clone(), AnnotationCategory::Independent)?;
-        match annotation_owner {
-            Some(owner) => {
-                if attribute_type == owner {
-                    Ok(())
-                } else {
-                    let new_supertype_annotation = match &new_supertype {
-                        None => None,
-                        Some(new_supertype) => type_get_annotation_by_category(
-                            snapshot,
-                            new_supertype.clone(),
-                            AnnotationCategory::Independent,
-                        )?,
-                    };
+        let subtype_annotations_source =
+            type_get_source_of_annotation_category(snapshot, attribute_type.clone(), AnnotationCategory::Independent)?;
+        let supertype_annotation = match &new_supertype {
+            None => None,
+            Some(new_supertype) => type_get_annotation_by_category(snapshot, new_supertype.clone(), AnnotationCategory::Independent)?,
+        };
 
-                    match new_supertype_annotation {
-                        Some(_) => Ok(()),
-                        None => Err(SchemaValidationError::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(
-                            get_label_or_schema_err(snapshot, attribute_type)?,
-                            get_opt_label_or_schema_err(snapshot, new_supertype)?,
-                        )),
-                    }
+        match (subtype_annotations_source, supertype_annotation) {
+            (Some(annotation_source), None) => {
+                if annotation_source != attribute_type {
+                    let lost_source = annotation_source;
+                    for_type_and_subtypes_transitive!(snapshot, attribute_type, |type_: AttributeType<'static>| {
+                        let annotation_source =
+                            type_get_source_of_annotation_category(snapshot, type_.clone(), AnnotationCategory::Independent)?;
+                        match annotation_source {
+                            None => {
+                                debug_assert!(false, "This annotation should be inherited by all the subtypes of the attribute type");
+                                Ok(())
+                            },
+                            Some(annotation_source) => {
+                                if lost_source == annotation_source {
+                                    let type_has_instances = Self::has_instances_of_type(snapshot, thing_manager, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
+                                    if type_has_instances {
+                                        return Err(SchemaValidationError::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(
+                                            get_label_or_schema_err(snapshot, attribute_type.clone())?,
+                                            get_opt_label_or_schema_err(snapshot, new_supertype.clone())?,
+                                            get_label_or_schema_err(snapshot, type_.clone())?,
+                                        ));
+                                    }
+                                }
+                                Ok(())
+                            }
+                        }
+                    });
                 }
-            }
-            None => Ok(()),
+                Ok(())
+            },
+            _ => Ok(()),
         }
     }
 
@@ -2190,15 +2317,15 @@ impl OperationTimeValidation {
         type_: T,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError> {
-        let annotation_owner = type_get_owner_of_annotation_category(snapshot, type_.clone(), annotation_category)?;
-        match annotation_owner {
-            Some(owner) => {
-                if type_ == owner {
+        let annotation_source = type_get_source_of_annotation_category(snapshot, type_.clone(), annotation_category)?;
+        match annotation_source {
+            Some(source) => {
+                if type_ == source {
                     Ok(())
                 } else {
                     Err(SchemaValidationError::CannotUnsetInheritedAnnotation(
                         annotation_category,
-                        get_label_or_schema_err(snapshot, owner)?,
+                        get_label_or_schema_err(snapshot, source)?,
                     ))
                 }
             }
@@ -2789,7 +2916,18 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_attribute_type_value_type_compatible_with_declared_annotations(
+    pub(crate) fn validate_attribute_type_value_type_compatible_with_declared_annotations_transitive(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+        value_type: Option<ValueType>,
+    ) -> Result<(), SchemaValidationError> {
+        for_type_and_subtypes_transitive!(snapshot, attribute_type, |type_: AttributeType<'static>| {
+            Self::validate_attribute_type_value_type_compatible_with_declared_annotations(snapshot, type_, value_type.clone())
+        });
+        Ok(())
+    }
+
+    fn validate_attribute_type_value_type_compatible_with_declared_annotations(
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
@@ -2820,7 +2958,18 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_value_type_compatible_with_all_owns_annotations(
+    pub(crate) fn validate_value_type_compatible_with_all_owns_annotations_transitive(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+        value_type: Option<ValueType>,
+    ) -> Result<(), SchemaValidationError> {
+        for_type_and_subtypes_transitive!(snapshot, attribute_type, |type_: AttributeType<'static>| {
+            Self::validate_value_type_compatible_with_all_owns_annotations(snapshot, type_, value_type.clone())
+        });
+        Ok(())
+    }
+
+    fn validate_value_type_compatible_with_all_owns_annotations(
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
@@ -2939,7 +3088,28 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_no_instances_to_unset_value_type<'a>(
+    pub(crate) fn validate_no_instances_to_change_value_type<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        for_type_and_subtypes_transitive!(snapshot, attribute_type, |type_: AttributeType<'static>| {
+            let has_instances = Self::has_instances_of_type(snapshot, thing_manager, attribute_type.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+            if has_instances {
+                Err(SchemaValidationError::CannotChangeValueTypeWithExistingInstances(get_label_or_schema_err(
+                    snapshot,
+                    type_,
+                )?))
+            } else {
+                Ok(())
+            }
+        });
+        Ok(())
+    }
+
+    fn validate_no_instances_to_unset_value_type<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'a>,

@@ -1459,7 +1459,7 @@ pub mod tests {
         let type_age = {
             let mut snapshot = storage.clone().open_snapshot_write();
             let type_age = type_manager.create_attribute_type(&mut snapshot, &Label::build("age")).unwrap();
-            type_age.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+            type_age.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
             snapshot.commit().unwrap();
             TypeAnnotation::Attribute(type_age)
         };
