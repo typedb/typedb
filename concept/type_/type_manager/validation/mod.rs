@@ -70,10 +70,23 @@ pub enum SchemaValidationError {
     ),
     OrderingDoesNotMatchWithSupertype(Label<'static>, Label<'static>, Ordering, Ordering),
     OrderingDoesNotMatchWithOverride(Label<'static>, Label<'static>, Label<'static>, Ordering, Ordering),
-    CannotChangeSupertypeAsCapabilityOverrideIsImplicitlyLost(CapabilityKind, Label<'static>, Option<Label<'static>>, Label<'static>, Label<'static>, Label<'static>, Label<'static>),
+    CannotChangeSupertypeAsCapabilityOverrideIsImplicitlyLost(
+        CapabilityKind,
+        Label<'static>,
+        Option<Label<'static>>,
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+    ),
     CannotChangeSupertypeAsOwnsOverrideIsImplicitlyLost(Label<'static>, Option<Label<'static>>, Label<'static>),
     CannotChangeSupertypeAsPlaysOverrideIsImplicitlyLost(Label<'static>, Option<Label<'static>>, Label<'static>),
-    CannotChangeSupertypeAsCapabilityIsOverriddenInTheNewSupertype(CapabilityKind, Label<'static>, Label<'static>, Label<'static>),
+    CannotChangeSupertypeAsCapabilityIsOverriddenInTheNewSupertype(
+        CapabilityKind,
+        Label<'static>,
+        Label<'static>,
+        Label<'static>,
+    ),
     RelatesOverrideIsNotInherited(Label<'static>, Label<'static>),
     OwnsOverrideIsNotInherited(Label<'static>, Label<'static>),
     PlaysOverrideIsNotInherited(Label<'static>, Label<'static>),
@@ -310,10 +323,14 @@ impl Error for SchemaValidationError {
             Self::CannotRedeclareInheritedCapabilityWithoutSpecializationWithOverride(_, _, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForType(_, _, _, _) => None,
             Self::CannotRedeclareInheritedAnnotationWithoutSpecializationForCapability(_, _, _, _, _) => None,
-            Self::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(_, _, _) => {
+            Self::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(
+                _,
+                _,
+                _,
+            ) => None,
+            Self::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(_, _, _) => {
                 None
             }
-            Self::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(_, _, _) => None,
             Self::CannotDeleteTypeWithExistingInstances(_) => None,
             Self::CannotUnsetValueTypeWithExistingInstances(_) => None,
             Self::CannotChangeValueTypeWithExistingInstances(_) => None,

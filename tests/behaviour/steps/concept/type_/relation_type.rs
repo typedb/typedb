@@ -311,10 +311,7 @@ pub async fn relation_role_get_supertype_exists(
             .unwrap()
             .role();
         let superrole = role.get_supertype(&tx.snapshot, &tx.type_manager).unwrap();
-        exists.check(
-            &superrole,
-            &format!("superrole for role type {}", role_label.into_typedb()),
-        );
+        exists.check(&superrole, &format!("superrole for role type {}", role_label.into_typedb()));
     });
 }
 
@@ -335,10 +332,7 @@ pub async fn relation_role_supertypes_is_empty(
             .unwrap()
             .unwrap()
             .role();
-        let is_empty = role
-            .get_supertypes_transitive(&tx.snapshot, &tx.type_manager)
-            .unwrap()
-            .is_empty();
+        let is_empty = role.get_supertypes_transitive(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(is_empty);
     });
 }

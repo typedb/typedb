@@ -43,19 +43,19 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
-    name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
     const CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None));
 
     let person_owns_age =
         person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
-    person_owns_age.set_annotation(&mut snapshot, &type_manager, CARDINALITY_ANY).unwrap();
+    person_owns_age.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
 
     let person_owns_name =
         person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
-    person_owns_name.set_annotation(&mut snapshot, &type_manager, CARDINALITY_ANY).unwrap();
+    person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
 
     let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
     let person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();

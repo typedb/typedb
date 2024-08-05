@@ -1422,25 +1422,32 @@ impl TypeManager {
             snapshot,
             attribute_type.clone(),
             value_type.clone(),
-        ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_attribute_type_value_type_compatible_with_declared_annotations_transitive(
             snapshot,
             attribute_type.clone(),
             Some(value_type.clone()),
-        ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_value_type_compatible_with_all_owns_annotations_transitive(
             snapshot,
             attribute_type.clone(),
             Some(value_type.clone()),
-        ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let existing_value_type = TypeReader::get_value_type_without_source(snapshot, attribute_type.clone())?;
         match existing_value_type {
             Some(existing_value_type) if value_type != existing_value_type => {
-                OperationTimeValidation::validate_no_instances_to_change_value_type(snapshot, thing_manager, attribute_type.clone())
-                    .map_err(|source| ConceptWriteError::SchemaValidation {  source } )?;
+                OperationTimeValidation::validate_no_instances_to_change_value_type(
+                    snapshot,
+                    thing_manager,
+                    attribute_type.clone(),
+                )
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
             }
             _ => {}
         }
@@ -1593,11 +1600,9 @@ impl TypeManager {
         let object_subtype = subtype.clone().into_owned_object_type();
         let object_supertype = supertype.clone().into_owned_object_type();
 
-        OperationTimeValidation::validate_capabilities_are_not_overridden_in_the_new_supertype_transitive::<Owns<'static>>(
-            snapshot,
-            object_subtype.clone(),
-            object_supertype.clone(),
-        )
+        OperationTimeValidation::validate_capabilities_are_not_overridden_in_the_new_supertype_transitive::<
+            Owns<'static>,
+        >(snapshot, object_subtype.clone(), object_supertype.clone())
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_capability_overrides_compatible_with_new_supertype_transitive::<Owns<'static>>(
@@ -1625,11 +1630,9 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_capabilities_are_not_overridden_in_the_new_supertype_transitive::<Plays<'static>>(
-            snapshot,
-            object_subtype.clone(),
-            object_supertype.clone(),
-        )
+        OperationTimeValidation::validate_capabilities_are_not_overridden_in_the_new_supertype_transitive::<
+            Plays<'static>,
+        >(snapshot, object_subtype.clone(), object_supertype.clone())
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_capability_overrides_compatible_with_new_supertype_transitive::<Plays<'static>>(
@@ -1754,11 +1757,9 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_capability_overrides_compatible_with_new_supertype_transitive::<Relates<'static>>(
-            snapshot,
-            subtype.clone(),
-            Some(supertype.clone()),
-        )
+        OperationTimeValidation::validate_capability_overrides_compatible_with_new_supertype_transitive::<
+            Relates<'static>,
+        >(snapshot, subtype.clone(), Some(supertype.clone()))
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_relation_type_does_not_acquire_cascade_annotation_to_lose_instances_with_new_supertype(
@@ -1796,7 +1797,9 @@ impl TypeManager {
         thing_manager: &ThingManager,
         subtype: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_capability_overrides_compatible_with_new_supertype_transitive::<Relates<'static>>(
+        OperationTimeValidation::validate_capability_overrides_compatible_with_new_supertype_transitive::<
+            Relates<'static>,
+        >(
             snapshot,
             subtype.clone(),
             None, // supertype

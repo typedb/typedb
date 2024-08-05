@@ -1312,7 +1312,7 @@ pub mod tests {
         let (type_manager, thing_manager) = managers();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager);
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         {
             // Case 1: $a isa cat, has animal-name $n;
@@ -1396,7 +1396,7 @@ pub mod tests {
         let (type_manager, thing_manager) = managers();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), (type_fears, _, _)) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager);
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         {
             // // Case 1: $a has $n;
@@ -1455,7 +1455,7 @@ pub mod tests {
         let (type_manager, thing_manager) = managers();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), (type_fears, _, _)) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager);
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
         let type_age = {
             let mut snapshot = storage.clone().open_snapshot_write();
             let type_age = type_manager.create_attribute_type(&mut snapshot, &Label::build("age")).unwrap();

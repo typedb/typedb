@@ -113,7 +113,7 @@ fn attribute_create() {
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
         age_type
             .set_annotation(
                 &mut snapshot,
@@ -123,7 +123,7 @@ fn attribute_create() {
             )
             .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
         name_type
             .set_annotation(
                 &mut snapshot,
@@ -185,7 +185,7 @@ fn has() {
         let (type_manager, thing_manager) = load_managers(storage.clone());
 
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
         age_type
             .set_annotation(
                 &mut snapshot,
@@ -195,7 +195,7 @@ fn has() {
             )
             .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
         name_type
             .set_annotation(
                 &mut snapshot,
@@ -261,9 +261,9 @@ fn attribute_cleanup_on_concurrent_detach() {
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         let owns_age = person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Ordered).unwrap();
@@ -446,7 +446,7 @@ fn role_player_distinct() {
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         let company_type = type_manager.create_entity_type(&mut snapshot, &company_label).unwrap();
         person_type.set_plays(&mut snapshot, &type_manager, employee_type.clone()).unwrap();
-        company_type.set_plays(&mut snapshot, &type_manager, employee_type.clone()).unwrap();
+        company_type.set_plays(&mut snapshot, &type_manager, employer_type.clone()).unwrap();
 
         let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
         let company_1 = thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
@@ -704,7 +704,7 @@ fn attribute_string_write_read() {
     let attr_type = {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
-        attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+        attr_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
         attr_type
             .set_annotation(
                 &mut snapshot,
@@ -792,7 +792,9 @@ fn attribute_struct_write_read() {
                 AttributeTypeAnnotation::Independent(AnnotationIndependent),
             )
             .unwrap();
-        attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
+        attr_type
+            .set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Struct(struct_key.clone()))
+            .unwrap();
         snapshot.commit().unwrap();
         struct_key
     };
@@ -871,7 +873,9 @@ fn read_attribute_struct_by_field() {
         let mut snapshot = storage.clone().open_snapshot_write();
         let struct_key = define_struct(&mut snapshot, &type_manager, struct_spec.0, struct_spec.1);
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
-        attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
+        attr_type
+            .set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Struct(struct_key.clone()))
+            .unwrap();
         attr_type
             .set_annotation(
                 &mut snapshot,

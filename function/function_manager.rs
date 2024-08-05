@@ -243,7 +243,7 @@ impl<'snapshot, Snapshot: ReadableSnapshot> FunctionSignatureIndex
 pub mod tests {
     use std::{collections::HashSet, sync::Arc};
 
-    use concept::type_::type_manager::TypeManager;
+    use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use durability::wal::WAL;
     use encoding::{
         graph::{
@@ -251,6 +251,7 @@ pub mod tests {
                 definition_key::{DefinitionID, DefinitionKey},
                 definition_key_generator::DefinitionKeyGenerator,
             },
+            thing::vertex_generator::ThingVertexGenerator,
             type_::vertex_generator::TypeVertexGenerator,
         },
         layout::prefix::Prefix,
@@ -285,8 +286,10 @@ pub mod tests {
         let storage = setup_storage();
         let type_manager =
             TypeManager::new(Arc::new(DefinitionKeyGenerator::new()), Arc::new(TypeVertexGenerator::new()), None);
+        let thing_manager = ThingManager::new(Arc::new(ThingVertexGenerator::new()), type_manager.clone());
+
         let ((_type_animal, type_cat, _type_dog), _) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager);
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, thing_manager);
         let functions_to_define = vec!["
         fun cat_names($c: animal) -> { name } :
             match
@@ -368,9 +371,12 @@ pub mod tests {
 
     pub(crate) mod test_schema {
         use answer::Type as TypeAnnotation;
-        use concept::type_::{
-            annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation,
-            type_manager::TypeManager, Ordering, OwnerAPI,
+        use concept::{
+            thing::thing_manager::ThingManager,
+            type_::{
+                annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation,
+                entity_type::EntityTypeAnnotation, type_manager::TypeManager, Ordering, OwnerAPI,
+            },
         };
         use encoding::value::{label::Label, value_type::ValueType};
         use storage::{
@@ -389,6 +395,7 @@ pub mod tests {
         pub(crate) fn setup_types<Snapshot: WritableSnapshot + CommittableSnapshot<WALClient>>(
             snapshot_: Snapshot,
             type_manager: &TypeManager,
+            thing_manager: &ThingManager,
         ) -> ((TypeAnnotation, TypeAnnotation, TypeAnnotation), (TypeAnnotation, TypeAnnotation, TypeAnnotation))
         {
             // dog sub animal, owns dog-name; cat sub animal owns cat-name;
@@ -399,31 +406,41 @@ pub mod tests {
             let name = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_NAME)).unwrap();
             let catname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_CATNAME)).unwrap();
             let dogname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_DOGNAME)).unwrap();
-            name.set_annotation(&mut snapshot, type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract))
-                .unwrap();
-            catname.set_supertype(&mut snapshot, type_manager, name.clone()).unwrap();
-            dogname.set_supertype(&mut snapshot, type_manager, name.clone()).unwrap();
+            name.set_annotation(
+                &mut snapshot,
+                type_manager,
+                thing_manager,
+                AttributeTypeAnnotation::Abstract(AnnotationAbstract),
+            )
+            .unwrap();
+            catname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
+            dogname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
 
-            name.set_value_type(&mut snapshot, type_manager, ValueType::String).unwrap();
-            catname.set_value_type(&mut snapshot, type_manager, ValueType::String).unwrap();
-            dogname.set_value_type(&mut snapshot, type_manager, ValueType::String).unwrap();
+            name.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
+            catname.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
+            dogname.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
 
             // Entities
             let animal = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_ANIMAL)).unwrap();
             let cat = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_CAT)).unwrap();
             let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG)).unwrap();
-            cat.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
-            dog.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
+            cat.set_supertype(&mut snapshot, type_manager, thing_manager, animal.clone()).unwrap();
+            dog.set_supertype(&mut snapshot, type_manager, thing_manager, animal.clone()).unwrap();
             animal
-                .set_annotation(&mut snapshot, type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract))
+                .set_annotation(
+                    &mut snapshot,
+                    type_manager,
+                    thing_manager,
+                    EntityTypeAnnotation::Abstract(AnnotationAbstract),
+                )
                 .unwrap();
 
             // Ownerships
             let animal_owns = animal.set_owns(&mut snapshot, type_manager, name.clone(), Ordering::Unordered).unwrap();
             let cat_owns = cat.set_owns(&mut snapshot, type_manager, catname.clone(), Ordering::Unordered).unwrap();
             let dog_owns = dog.set_owns(&mut snapshot, type_manager, dogname.clone(), Ordering::Unordered).unwrap();
-            cat_owns.set_override(&mut snapshot, type_manager, animal_owns.clone()).unwrap();
-            dog_owns.set_override(&mut snapshot, type_manager, animal_owns.clone()).unwrap();
+            cat_owns.set_override(&mut snapshot, type_manager, thing_manager, animal_owns.clone()).unwrap();
+            dog_owns.set_override(&mut snapshot, type_manager, thing_manager, animal_owns.clone()).unwrap();
 
             snapshot.commit().unwrap();
 

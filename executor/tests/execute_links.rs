@@ -66,9 +66,9 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let membership_group_type = relates_group.role();
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
-    name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
     let person_owns_age =
         person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
