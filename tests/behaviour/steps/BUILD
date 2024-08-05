@@ -13,14 +13,18 @@ rust_library(
     crate_root = "lib.rs",
     deps = [
         "//common/lending_iterator",
+        "//compiler:compiler",
         "//concept:concept",
         "//database:database",
+        "//executor:executor",
         "//encoding:encoding",
+        "//ir:ir",
         "//query:query",
         "//server:server",
         "//storage:storage",
         "//durability:durability",
         "//util/test:test_utils",
+        "@vaticle_typeql//rust:typeql",
 
         "@crates//:chrono",
         "@crates//:chrono-tz",
