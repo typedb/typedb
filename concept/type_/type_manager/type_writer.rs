@@ -69,7 +69,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         debug_assert!(TypeReader::get_label(snapshot, type_.clone()).unwrap().is_none());
         Self::storage_put_type_vertex_property(snapshot, type_.clone(), Some(label.clone().into_owned()));
 
-        let label_to_vertex_key = LabelToTypeVertexIndex::build(label.scoped_name());
+        let label_to_vertex_key = LabelToTypeVertexIndex::build(label.inverted_scoped_name_for_index());
         let vertex_value = ByteArray::from(type_.into_vertex().bytes());
         snapshot.put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
     }

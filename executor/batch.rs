@@ -123,7 +123,6 @@ pub struct Row<'a> {
 }
 
 impl<'a> Row<'a> {
-
     // TODO: pub(crate)
     pub fn new(row: &'a mut [VariableValue<'static>], multiplicity: &'a mut u64) -> Self {
         Self { row, multiplicity }

@@ -31,7 +31,7 @@ pub struct IdentifierIndex<'a, T: Indexable> {
 impl<'a, T: Indexable> IdentifierIndex<'a, T> {
     pub const FIXED_WIDTH_ENCODING: bool = false;
 
-    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= PrefixID::LENGTH);
         Self { bytes, indexed_type: PhantomData }
     }

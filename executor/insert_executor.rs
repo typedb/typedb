@@ -109,7 +109,8 @@ impl InsertExecutor {
     }
 }
 
-pub fn execute<'row>( // TODO: pub(crate)
+pub fn execute<'row>(
+    // TODO: pub(crate)
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     insert: &mut InsertExecutor,

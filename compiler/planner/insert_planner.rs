@@ -21,8 +21,10 @@ use encoding::{
     graph::type_::{CapabilityKind::Plays, Kind},
     value::{label::Label, value::Value},
 };
-use ir::pattern::constraint::{Comparison, Constraint, Constraints, Isa};
-use ir::pattern::expression::Expression;
+use ir::pattern::{
+    constraint::{Comparison, Constraint, Constraints, Isa},
+    expression::Expression,
+};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::inference::type_annotations::TypeAnnotations;
@@ -125,23 +127,33 @@ pub fn build_insert_plan(
             Constraint::Isa(_)
             | Constraint::Label(_)
             | Constraint::ExpressionBinding(_)
-            | Constraint::Comparison(_)=> {} // already handled
-            Constraint::Sub(_)
-            | Constraint::FunctionCallBinding(_)=> unreachable!(),
+            | Constraint::Comparison(_) => {} // already handled
+            Constraint::Sub(_) | Constraint::FunctionCallBinding(_) => unreachable!(),
         }
     }
 
     Ok(assemble_plan(instructions, value_constants, type_constants, isa_kinds))
 }
 
-fn assemble_plan(instructions: Vec<InsertInstruction>, value_sources: Sources<Value<'static>>, type_sources: Sources<Type>, kind_sources: Sources<Kind>) -> InsertPlan {
+fn assemble_plan(
+    instructions: Vec<InsertInstruction>,
+    value_sources: Sources<Value<'static>>,
+    type_sources: Sources<Type>,
+    kind_sources: Sources<Kind>,
+) -> InsertPlan {
     let Sources { items: value_constants, index: value_index } = value_sources;
     let Sources { items: type_constants, index: type_index } = type_sources;
-    let Sources { items: inserted_kinds, index: isa_index} = kind_sources;
+    let Sources { items: inserted_kinds, index: isa_index } = kind_sources;
     let mut debug_info = HashMap::new();
-    isa_index.into_iter().for_each(|(v,i)| { debug_info.insert(VariableSource::ThingSource(ThingSource::Inserted(i)), v); });
-    type_index.into_iter().for_each(|(v,i)| { debug_info.insert(VariableSource::TypeConstant(TypeSource::TypeConstant(i)), v); });
-    value_index.into_iter().for_each(|(v,i)| { debug_info.insert(VariableSource::ValueConstant(ValueSource::ValueConstant(i)), v); });
+    isa_index.into_iter().for_each(|(v, i)| {
+        debug_info.insert(VariableSource::ThingSource(ThingSource::Inserted(i)), v);
+    });
+    type_index.into_iter().for_each(|(v, i)| {
+        debug_info.insert(VariableSource::TypeConstant(TypeSource::TypeConstant(i)), v);
+    });
+    value_index.into_iter().for_each(|(v, i)| {
+        debug_info.insert(VariableSource::ValueConstant(ValueSource::ValueConstant(i)), v);
+    });
     InsertPlan {
         instructions,
         type_constants,
@@ -188,20 +200,22 @@ fn collect_values_from_expression_and_comparison(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
 ) -> Result<Sources<Value<'static>>, InsertCompilationError> {
-    let values = filter_variants!(Constraint::ExpressionBinding : constraints).map(|binding| {
-        match binding.expression().get_root() {
+    let values = filter_variants!(Constraint::ExpressionBinding : constraints)
+        .map(|binding| match binding.expression().get_root() {
             Expression::Constant(constant) => Ok((binding.left(), constant.clone())),
-            _ => Err(InsertCompilationError::CompoundExpressionsNotAllowed { variable: binding.left() })
-        }
-    }).collect::<Result<HashMap<_,_>, _>>()?;
+            _ => Err(InsertCompilationError::CompoundExpressionsNotAllowed { variable: binding.left() }),
+        })
+        .collect::<Result<HashMap<_, _>, _>>()?;
     let mut value_constants = Sources::new();
     filter_variants!(Constraint::Comparison : constraints).try_for_each(|cmp| {
         if let Some(value) = values.get(&cmp.lhs()) {
-            value_constants.insert(cmp.rhs(), value.clone())
-                .map_err(|_|  InsertCompilationError::MultipleValuesForInsertableAttributeVariable { variable: cmp.rhs() })?;
+            value_constants.insert(cmp.rhs(), value.clone()).map_err(|_| {
+                InsertCompilationError::MultipleValuesForInsertableAttributeVariable { variable: cmp.rhs() }
+            })?;
         } else if let Some(value) = values.get(&cmp.rhs()) {
-            value_constants.insert(cmp.lhs(), value.clone())
-                .map_err(|_|  InsertCompilationError::MultipleValuesForInsertableAttributeVariable { variable: cmp.lhs() })?;
+            value_constants.insert(cmp.lhs(), value.clone()).map_err(|_| {
+                InsertCompilationError::MultipleValuesForInsertableAttributeVariable { variable: cmp.lhs() }
+            })?;
         } else {
             Err(InsertCompilationError::TODO__IllegalComparison { comparison: cmp.clone() })?;
         }

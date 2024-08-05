@@ -83,6 +83,18 @@ impl<'a> Label<'a> {
         self.scoped_name.as_reference()
     }
 
+    pub fn inverted_scoped_name_for_index(&'a self) -> StringBytes<'a, LABEL_SCOPED_NAME_STRING_INLINE> {
+        if let Some(scope) = &self.scope {
+            let mut vec = Vec::with_capacity(self.name.length() + 1 + scope.length());
+            vec.extend_from_slice(self.name.bytes().bytes());
+            vec.push(':' as u8);
+            vec.extend_from_slice(scope.bytes().bytes());
+            StringBytes::new(Bytes::copy(vec.as_slice()))
+        } else {
+            StringBytes::new(Bytes::reference(self.name.bytes().bytes()))
+        }
+    }
+
     pub fn into_owned(self) -> Label<'static> {
         Label {
             name: self.name.into_owned(),
