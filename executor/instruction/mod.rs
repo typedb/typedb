@@ -22,8 +22,7 @@ use crate::{
         comparison_reverse_executor::ComparisonReverseIteratorExecutor,
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator,
-        role_player_executor::RolePlayerIteratorExecutor,
-        role_player_reverse_executor::RolePlayerReverseIteratorExecutor, InstructionExecutor::HasReverse,
+        role_player_executor::RolePlayerExecutor, role_player_reverse_executor::RolePlayerReverseExecutor,
     },
     VariablePosition,
 };
@@ -40,13 +39,13 @@ mod role_player_reverse_executor;
 pub(crate) mod tuple;
 
 pub(crate) enum InstructionExecutor {
-    Isa(IsaReverseExecutor),
+    IsaReverse(IsaReverseExecutor),
 
     Has(HasExecutor),
     HasReverse(HasReverseExecutor),
 
-    RolePlayer(RolePlayerIteratorExecutor),
-    RolePlayerReverse(RolePlayerReverseIteratorExecutor),
+    RolePlayer(RolePlayerExecutor),
+    RolePlayerReverse(RolePlayerReverseExecutor),
 
     // RolePlayerIndex(RolePlayerIndexExecutor),
     FunctionCallBinding(FunctionCallBindingIteratorExecutor),
@@ -79,7 +78,7 @@ impl InstructionExecutor {
                     type_annotations.constraint_annotations_of(isa.into()).unwrap().get_left_right().right_to_left(),
                     type_annotations.variable_annotations_of(thing).unwrap().clone(),
                 );
-                Ok(Self::Isa(provider))
+                Ok(Self::IsaReverse(provider))
             }
             ConstraintInstruction::Has(has, _) => {
                 let has_attribute = has.attribute();
@@ -225,7 +224,7 @@ impl VariableModes {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum BinaryIterateMode {
     // [x, y] in standard order, sorted by x, then y
     Unbound,
@@ -269,7 +268,7 @@ impl BinaryIterateMode {
     }
 
     pub(crate) fn is_inverted(&self) -> bool {
-        matches!(self, Self::UnboundInverted)
+        self == &Self::UnboundInverted
     }
 }
 

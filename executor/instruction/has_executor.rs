@@ -81,9 +81,7 @@ impl HasExecutor {
         debug_assert!(!variable_modes.fully_bound());
         let iterate_mode = BinaryIterateMode::new(has.clone(), false, &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
-            BinaryIterateMode::Unbound => {
-                Self::create_has_filter_owners_attributes(owner_attribute_types.clone(), attribute_types.clone())
-            }
+            BinaryIterateMode::Unbound => Self::create_has_filter_owners_attributes(owner_attribute_types.clone()),
             BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {
                 Self::create_has_filter_attributes(attribute_types.clone())
             }
@@ -94,7 +92,7 @@ impl HasExecutor {
             TuplePositions::Pair([has.owner(), has.attribute()])
         };
 
-        let owner_cache = if matches!(iterate_mode, BinaryIterateMode::UnboundInverted) {
+        let owner_cache = if iterate_mode == BinaryIterateMode::UnboundInverted {
             Some(inverted_instances_cache(
                 owner_attribute_types.keys().map(|t| t.as_object_type()),
                 snapshot,
@@ -215,16 +213,13 @@ impl HasExecutor {
         }
     }
 
-    fn create_has_filter_owners_attributes(
-        owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
-        attribute_types: Arc<HashSet<Type>>,
-    ) -> Arc<HasFilterFn> {
+    fn create_has_filter_owners_attributes(owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<HasFilterFn> {
         Arc::new({
             move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
-                Ok((has, _)) => {
-                    owner_attribute_types.contains_key(&Type::from(has.owner().type_()))
-                        && attribute_types.contains(&Type::Attribute(has.attribute().type_()))
-                }
+                Ok((has, _)) => match owner_attribute_types.get(&Type::from(has.owner().type_())) {
+                    Some(attribute_types) => attribute_types.contains(&Type::Attribute(has.attribute().type_())),
+                    None => false,
+                },
                 Err(_) => true,
             }
         }) as Arc<HasFilterFn>

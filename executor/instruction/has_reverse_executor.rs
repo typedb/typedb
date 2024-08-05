@@ -57,22 +57,20 @@ pub(crate) type HasReverseBoundedSortedOwner =
     Map<Filter<HasReverseIterator, Arc<HasFilterFn>>, HasToTupleFn, AsHkt![TupleResult<'_>]>;
 
 impl HasReverseExecutor {
-    pub(crate) fn new<Snapshot: ReadableSnapshot>(
+    pub(crate) fn new(
         has: ir::pattern::constraint::Has<VariablePosition>,
         variable_modes: VariableModes,
         sort_by: Option<VariablePosition>,
         attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
         owner_types: Arc<HashSet<Type>>,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(attribute_owner_types.len() > 0);
         debug_assert!(!variable_modes.fully_bound());
         let iterate_mode = BinaryIterateMode::new(has.clone(), true, &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
-            BinaryIterateMode::Unbound => {
-                Self::create_has_filter_attributes_owners(attribute_owner_types.clone(), owner_types.clone())
-            }
+            BinaryIterateMode::Unbound => Self::create_has_filter_attributes_owners(attribute_owner_types.clone()),
             BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {
                 Self::create_has_filter_owners(owner_types.clone())
             }
@@ -83,7 +81,7 @@ impl HasReverseExecutor {
             TuplePositions::Pair([has.attribute(), has.owner()])
         };
 
-        let attribute_cache = if matches!(iterate_mode, BinaryIterateMode::UnboundInverted) {
+        let attribute_cache = if iterate_mode == BinaryIterateMode::UnboundInverted {
             Some(inverted_instances_cache(
                 attribute_owner_types.keys().map(|type_| type_.as_attribute_type()),
                 snapshot,
@@ -92,6 +90,7 @@ impl HasReverseExecutor {
         } else {
             None
         };
+
         Ok(Self {
             has,
             iterate_mode,
@@ -205,15 +204,12 @@ impl HasReverseExecutor {
         (min.unwrap(), max.unwrap())
     }
 
-    fn create_has_filter_attributes_owners(
-        attributes_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
-        owner_types: Arc<HashSet<Type>>,
-    ) -> Arc<HasFilterFn> {
+    fn create_has_filter_attributes_owners(attributes_owner_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<HasFilterFn> {
         Arc::new(move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
-            Ok((has, _)) => {
-                attributes_owner_types.contains_key(&Type::from(has.attribute().type_()))
-                    && owner_types.contains(&Type::from(has.owner().type_()))
-            }
+            Ok((has, _)) => match attributes_owner_types.get(&Type::from(has.attribute().type_())) {
+                Some(owner_types) => owner_types.contains(&Type::from(has.owner().type_())),
+                None => false,
+            },
             Err(_) => true,
         }) as Arc<HasFilterFn>
     }
