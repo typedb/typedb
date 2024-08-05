@@ -63,7 +63,7 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
 }
 
 #[test]
-fn basic() {
+fn basic_has() {
     let (_tmp_dir, storage) = setup_storage();
     let (type_manager, thing_manager) = load_managers(storage.clone());
     setup_schema(storage.clone());
@@ -72,12 +72,12 @@ fn basic() {
         insert $p isa person, has age 10;
     ",
     )
-    .unwrap()
-    .into_pipeline()
-    .stages
-    .pop()
-    .unwrap()
-    .into_insert();
+        .unwrap()
+        .into_pipeline()
+        .stages
+        .pop()
+        .unwrap()
+        .into_insert();
     let block =
         ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
     let mut snapshot = storage.clone().open_snapshot_write();
@@ -87,13 +87,13 @@ fn basic() {
         &type_manager,
         Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
     )
-    .unwrap();
+        .unwrap();
     let insert_plan = compiler::planner::insert_planner::build_insert_plan(
         &HashMap::new(),
         annotated_program.get_entry_annotations(),
         annotated_program.get_entry().conjunction().constraints(),
     )
-    .unwrap();
+        .unwrap();
 
     println!("{:?}", &insert_plan.instructions);
     insert_plan.debug_info.iter().for_each(|(k,v)| {
@@ -110,5 +110,52 @@ fn basic() {
         let attr_name_john = thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
         assert_eq!(1, attr_name_john.get_owners(&snapshot, &thing_manager).count());
     }
+
+}
+
+#[test]
+fn basic_role_player() {
+    let (_tmp_dir, storage) = setup_storage();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    setup_schema(storage.clone());
+    let typeql_insert = typeql::parse_query(
+        "
+        insert
+         $p isa person; $g isa group;
+         ($p, $g) isa membership;
+         (membership:member: $p, membership:group: $g) isa membership;
+    ",
+    )
+        .unwrap()
+        .into_pipeline()
+        .stages
+        .pop()
+        .unwrap()
+        .into_insert();
+    let block =
+        ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let annotated_program = compiler::inference::type_inference::infer_types(
+        Program::new(block, vec![]),
+        &snapshot,
+        &type_manager,
+        Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
+    )
+        .unwrap();
+    let insert_plan = compiler::planner::insert_planner::build_insert_plan(
+        &HashMap::new(),
+        annotated_program.get_entry_annotations(),
+        annotated_program.get_entry().conjunction().constraints(),
+    )
+        .unwrap();
+
+    println!("{:?}", &insert_plan.instructions);
+    insert_plan.debug_info.iter().for_each(|(k,v)| {
+        println!("{:?} -> {:?}", k, annotated_program.get_entry().context().get_variables_named().get(v))
+    });
+    let mut executor = InsertExecutor::new(insert_plan);
+    executor::insert_executor::execute(&mut snapshot, &thing_manager, &mut executor, &Row::new(vec![].as_mut_slice(), &mut 1)).unwrap();
+    snapshot.commit().unwrap();
+
 
 }
