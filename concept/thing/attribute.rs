@@ -27,7 +27,6 @@ use iterator::State;
 use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
-    key_range::KeyRange,
     key_value::StorageKey,
     snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
 };
@@ -35,14 +34,8 @@ use storage::{
 use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{
-        object::{HasReverseIterator, Object},
-        thing_manager::ThingManager,
-        HKInstance, ThingAPI,
-    },
-    type_::{
-        attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI,
-    },
+    thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
+    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -101,15 +94,6 @@ impl<'a> Attribute<'a> {
         owner_type: impl ObjectTypeAPI<'o>,
     ) -> AttributeOwnerIterator {
         thing_manager.get_owners_by_type(snapshot, self.as_reference(), owner_type)
-    }
-
-    pub fn get_owners_by_type_range(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        owner_type_range: KeyRange<ObjectType<'static>>,
-    ) -> HasReverseIterator {
-        thing_manager.get_owners_by_type_range(snapshot, self.as_reference(), owner_type_range)
     }
 
     pub fn next_possible(&self) -> Attribute<'static> {

@@ -647,7 +647,7 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_owners_by_type_range(
+    pub fn get_has_reverse_by_attribute_and_owner_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute: Attribute<'_>,

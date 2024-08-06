@@ -134,8 +134,12 @@ impl HasReverseExecutor {
 
                 if let Some([attr]) = self.attribute_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
-                    let iterator = attr
-                        .get_owners_by_type_range(snapshot, thing_manager, owner_type_range)
+                    let iterator = thing_manager
+                        .get_has_reverse_by_attribute_and_owner_type_range(
+                            snapshot,
+                            attr.as_reference(),
+                            owner_type_range,
+                        )
                         .filter::<_, HasFilterFn>(self.filter_fn.clone());
                     let as_tuples: HasReverseUnboundedSortedOwnerSingle =
                         iterator.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
@@ -148,9 +152,9 @@ impl HasReverseExecutor {
                     // // TODO: we could create a reusable space for these temporarily held iterators so we don't have allocate again before the merging iterator
                     let attributes = self.attribute_cache.as_ref().unwrap().iter();
                     let iterators = attributes.map(|attribute| {
-                        Peekable::new(attribute.get_owners_by_type_range(
+                        Peekable::new(thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                             snapshot,
-                            thing_manager,
+                            attribute.as_reference(),
                             owner_type_range.clone(),
                         ))
                     });
@@ -175,8 +179,11 @@ impl HasReverseExecutor {
                 let (min_owner_type, max_owner_type) = Self::min_max_types(&*self.owner_types);
                 let type_range =
                     KeyRange::new_inclusive(min_owner_type.as_object_type(), max_owner_type.as_object_type());
-                let iterator =
-                    attribute.as_thing().as_attribute().get_owners_by_type_range(snapshot, thing_manager, type_range);
+                let iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
+                    snapshot,
+                    attribute.as_thing().as_attribute(),
+                    type_range,
+                );
                 let filtered = iterator.filter::<_, HasFilterFn>(self.filter_fn.clone());
                 let as_tuples: HasReverseBoundedSortedOwner =
                     filtered.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
