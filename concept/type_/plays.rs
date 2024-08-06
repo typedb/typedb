@@ -65,7 +65,7 @@ impl<'a> Plays<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.unset_plays_overridden(snapshot, self.clone().into_owned())
+        type_manager.unset_plays_override(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(

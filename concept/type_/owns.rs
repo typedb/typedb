@@ -103,7 +103,7 @@ impl<'a> Owns<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.unset_owns_overridden(snapshot, self.clone().into_owned())
+        type_manager.unset_owns_override(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(

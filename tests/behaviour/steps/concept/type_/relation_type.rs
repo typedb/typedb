@@ -68,7 +68,7 @@ pub async fn relation_role_set_override(
     context: &mut Context,
     type_label: Label,
     role_label: Label,
-    supertype_label: Label,
+    superrole_label: Label,
     may_error: MayError,
 ) {
     with_schema_tx!(context, |tx| {
@@ -79,21 +79,20 @@ pub async fn relation_role_set_override(
             .resolve_relates(&tx.snapshot, relation_type.clone(), role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
-        let relation_supertype = relation_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
-        if let Some(overridden_relates) = tx
-            .type_manager
-            .resolve_relates(&tx.snapshot, relation_supertype, supertype_label.into_typedb().name().as_str())
-            .unwrap()
-        {
-            let res = relates.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_relates);
-            may_error.check_concept_write_without_read_errors(&res);
-        } else {
-            // TODO: It is a little hacky as we don't test the concept api itself, but it is a correct behavior for TypeQL, so
-            // it's easier to support such tests here as well
-            may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
-                BehaviourConceptTestExecutionError::CannotFindRoleToOverride,
-            ));
+        if let Some(relation_supertype) = relation_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap() {
+            if let Some(overridden_relates) = tx
+                .type_manager
+                .resolve_relates(&tx.snapshot, relation_supertype, superrole_label.into_typedb().name().as_str())
+                .unwrap()
+            {
+                let res = relates.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_relates);
+                may_error.check_concept_write_without_read_errors(&res);
+                return;
+            }
         }
+        may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
+            BehaviourConceptTestExecutionError::CannotFindRelationTypeRoleTypeToOverride,
+        ));
     });
 }
 

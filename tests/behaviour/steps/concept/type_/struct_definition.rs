@@ -13,6 +13,7 @@ use crate::{
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
+use crate::concept::type_::BehaviourConceptTestExecutionError;
 
 #[apply(generic_step)]
 #[step(expr = "create struct: {type_label}{may_error}")]
@@ -40,7 +41,9 @@ pub async fn struct_delete(context: &mut Context, type_label: Label, may_error: 
                 definition_key,
             ));
         } else {
-            assert!(may_error.expects_error());
+            may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
+                BehaviourConceptTestExecutionError::CannotFindStructDefinition,
+            ));
         }
     });
 }

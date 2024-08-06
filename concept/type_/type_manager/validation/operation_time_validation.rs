@@ -47,7 +47,7 @@ use crate::{
             validation::{
                 validation::{
                     capability_get_annotation_by_category, edge_get_owner_of_annotation_category,
-                    find_overriding_capability_for_interface, get_label_or_concept_read_err, get_label_or_schema_err,
+                    get_label_or_concept_read_err, get_label_or_schema_err,
                     get_opt_label_or_schema_err, is_interface_hidden_by_overrides,
                     is_ordering_compatible_with_distinct_annotation,
                     is_overridden_interface_object_one_of_supertypes_or_self, type_get_annotation_by_category,
@@ -71,6 +71,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::type_::type_manager::validation::validation::{capability_get_declared_annotation_by_category, type_get_declared_annotation_by_category};
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -919,11 +920,10 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
     ) -> Result<(), SchemaValidationError> {
-        let overriding_capability =
-            find_overriding_capability_for_interface::<CAP>(snapshot, capability.object(), capability.interface())
-                .map_err(SchemaValidationError::ConceptRead)?;
+        let overriding_capabilities = TypeReader::get_overriding_capabilities(snapshot, capability.clone())
+            .map_err(SchemaValidationError::ConceptRead)?;
 
-        match overriding_capability {
+        match overriding_capabilities.first() {
             Some(overriding_capability) => {
                 Err(SchemaValidationError::CannotUnsetCapabilityWithExistingOverridingCapabilities(
                     CAP::KIND,
@@ -1571,7 +1571,7 @@ impl OperationTimeValidation {
             .into_iter()
             .try_for_each(|subtype| {
                 if let Some(subtype_annotation) =
-                    type_get_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Regex)?
+                    type_get_declared_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Regex)?
                 {
                     match &subtype_annotation {
                         Annotation::Regex(subtype_regex) => {
@@ -1604,7 +1604,7 @@ impl OperationTimeValidation {
             .into_iter()
             .try_for_each(|subtype| {
                 if let Some(subtype_annotation) =
-                    type_get_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Range)?
+                    type_get_declared_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Range)?
                 {
                     match &subtype_annotation {
                         Annotation::Range(subtype_range) => {
@@ -1637,7 +1637,7 @@ impl OperationTimeValidation {
             .into_iter()
             .try_for_each(|subtype| {
                 if let Some(subtype_annotation) =
-                    type_get_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Values)?
+                    type_get_declared_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Values)?
                 {
                     match &subtype_annotation {
                         Annotation::Values(subtype_values) => {
@@ -1670,7 +1670,7 @@ impl OperationTimeValidation {
             .into_iter()
             .try_for_each(|overriding_owns| {
                 if let Some(overriding_annotation) =
-                    capability_get_annotation_by_category(snapshot, overriding_owns.clone(), AnnotationCategory::Regex)?
+                    capability_get_declared_annotation_by_category(snapshot, overriding_owns.clone(), AnnotationCategory::Regex)?
                 {
                     match &overriding_annotation {
                         Annotation::Regex(overriding_regex) => {
@@ -1705,7 +1705,7 @@ impl OperationTimeValidation {
             .into_iter()
             .try_for_each(|overriding_owns| {
                 if let Some(overriding_annotation) =
-                    capability_get_annotation_by_category(snapshot, overriding_owns.clone(), AnnotationCategory::Range)?
+                    capability_get_declared_annotation_by_category(snapshot, overriding_owns.clone(), AnnotationCategory::Range)?
                 {
                     match &overriding_annotation {
                         Annotation::Range(overriding_range) => {
@@ -1739,7 +1739,7 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|overriding_owns| {
-                if let Some(overriding_annotation) = capability_get_annotation_by_category(
+                if let Some(overriding_annotation) = capability_get_declared_annotation_by_category(
                     snapshot,
                     overriding_owns.clone(),
                     AnnotationCategory::Values,
@@ -1777,13 +1777,41 @@ impl OperationTimeValidation {
         validate_cardinality_narrows_inherited_cardinality(snapshot, type_manager, edge, overridden_edge, cardinality)
     }
 
-    pub(crate) fn validate_type_supertype_abstractness<T: KindAPI<'static>>(
+    pub(crate) fn validate_type_supertype_abstractness_to_set_abstract_annotation<T: KindAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         attribute_type: T,
-        supertype: Option<T>,
-        set_subtype_abstract: Option<bool>,
     ) -> Result<(), SchemaValidationError> {
-        validate_type_supertype_abstractness(snapshot, attribute_type, supertype, set_subtype_abstract)
+        // Supertype is read from the storage, set_subtype_abstract is true
+        validate_type_supertype_abstractness(
+            snapshot,
+            type_manager,
+            attribute_type,
+            None, // supertype is read from storage
+            Some(true), // set_subtype_abstract
+            None, // supertype is abstract is read from storage
+        )
+    }
+
+    pub(crate) fn validate_no_abstract_subtypes_to_unset_abstract_annotation<T: KindAPI<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        attribute_type: T,
+    ) -> Result<(), SchemaValidationError> {
+        attribute_type.get_subtypes(snapshot, type_manager)
+            .map_err(SchemaValidationError::ConceptRead)?
+            .into_iter()
+            .try_for_each(|subtype| {
+                validate_type_supertype_abstractness(
+                    snapshot,
+                    type_manager,
+                    subtype.clone(),
+                    Some(attribute_type.clone()), // supertype is read from storage
+                    None, // subtype is abstract is read from storage
+                    Some(false), // set_supertype_abstract
+                )
+            })?;
+        Ok(())
     }
 
     pub(crate) fn validate_type_regex_narrows_inherited_regex<T: KindAPI<'static>>(
@@ -1923,6 +1951,7 @@ impl OperationTimeValidation {
 
     pub(crate) fn validate_supertype_annotations_compatibility<T: KindAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         subtype: T,
         supertype: T,
     ) -> Result<(), SchemaValidationError> {
@@ -1939,6 +1968,7 @@ impl OperationTimeValidation {
 
             validate_type_annotations_narrowing_of_inherited_annotations(
                 snapshot,
+                type_manager,
                 subtype.clone(),
                 supertype.clone(),
                 subtype_annotation,

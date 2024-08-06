@@ -16,6 +16,7 @@ use crate::{
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
+use crate::concept::type_::BehaviourConceptTestExecutionError;
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) set plays: {type_label}{may_error}")]
@@ -129,17 +130,22 @@ pub async fn get_plays_set_override(
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
 
-        let player_supertype = player_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
-        let overridden_role_type =
-            tx.type_manager.get_role_type(&tx.snapshot, &overridden_role_label.into_typedb()).unwrap().unwrap();
-        let overridden_plays_opt =
-            player_supertype.get_plays_role(&tx.snapshot, &tx.type_manager, overridden_role_type).unwrap();
-        if let Some(overridden_plays) = overridden_plays_opt {
-            let res = plays.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_plays);
-            may_error.check_concept_write_without_read_errors(&res);
-        } else {
-            assert!(may_error.expects_error());
+        if let Some(player_supertype) = player_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap() {
+            let overridden_role_type =
+                tx.type_manager.get_role_type(&tx.snapshot, &overridden_role_label.into_typedb()).unwrap().unwrap();
+            let overridden_plays_opt =
+                player_supertype.get_plays_role(&tx.snapshot, &tx.type_manager, overridden_role_type).unwrap();
+
+            if let Some(overridden_plays) = overridden_plays_opt {
+                let res = plays.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_plays);
+                may_error.check_concept_write_without_read_errors(&res);
+                return;
+            }
         }
+
+        may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
+            BehaviourConceptTestExecutionError::CannotFindObjectTypeRoleTypeToOverride,
+        ));
     });
 }
 

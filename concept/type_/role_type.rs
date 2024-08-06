@@ -144,8 +144,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains_key(&RoleTypeAnnotation::Abstract(AnnotationAbstract)))
+        type_manager.get_type_is_abstract(snapshot, self.clone())
     }
 
     fn delete(

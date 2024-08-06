@@ -15,6 +15,7 @@ use crate::{
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
+use crate::concept::type_::BehaviourConceptTestExecutionError;
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) set owns: {type_label}{may_error}")]
@@ -86,19 +87,23 @@ pub async fn get_owns_set_override(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = owner.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
 
-        let owner_supertype = owner.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
-        let overridden_attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &overridden_type_label.into_typedb()).unwrap().unwrap();
+        if let Some(owner_supertype) = owner.get_supertype(&tx.snapshot, &tx.type_manager).unwrap() {
+            let overridden_attr_type =
+                tx.type_manager.get_attribute_type(&tx.snapshot, &overridden_type_label.into_typedb()).unwrap().unwrap();
+            let overridden_owns_opt = owner_supertype
+                .get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, overridden_attr_type)
+                .unwrap();
 
-        let overridden_owns_opt = owner_supertype
-            .get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, overridden_attr_type)
-            .unwrap(); // This may also error
-        if let Some(overridden_owns) = overridden_owns_opt {
-            let res = owns.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_owns);
-            may_error.check_concept_write_without_read_errors(&res);
-        } else {
-            assert!(may_error.expects_error()); // We error by not finding the type to override
+            if let Some(overridden_owns) = overridden_owns_opt {
+                let res = owns.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_owns);
+                may_error.check_concept_write_without_read_errors(&res);
+                return;
+            }
         }
+
+        may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
+            BehaviourConceptTestExecutionError::CannotFindObjectTypeAttributeTypeToOverride,
+        ));
     });
 }
 

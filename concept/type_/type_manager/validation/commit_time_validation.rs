@@ -794,6 +794,7 @@ impl CommitTimeValidation {
             if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
                 if let Err(err) = validate_type_annotations_narrowing_of_inherited_annotations(
                     snapshot,
+                    type_manager,
                     type_.clone(),
                     supertype.clone(),
                     annotation.clone(),

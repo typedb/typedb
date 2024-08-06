@@ -947,16 +947,27 @@ impl TypeManager {
     pub fn get_cardinality<'a, CAP: Capability<'a>>(
         &self,
         snapshot: &impl ReadableSnapshot,
-        interface_impl: CAP,
+        capability: CAP,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         let cardinality = Constraint::compute_cardinality(
-            interface_impl.get_annotations(snapshot, self)?.keys(),
-            Some(interface_impl.get_default_cardinality(snapshot, self)?),
+            capability.get_annotations(snapshot, self)?.keys(),
+            Some(capability.get_default_cardinality(snapshot, self)?),
         );
         match cardinality {
             Some(cardinality) => Ok(cardinality),
             None => Err(ConceptReadError::CorruptMissingMandatoryCardinality),
         }
+    }
+
+    pub fn get_type_is_abstract<'a, T: KindAPI<'a>>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_: T,
+    ) -> Result<bool, ConceptReadError> {
+        let is_abstract = Constraint::compute_abstract(
+            type_.get_annotations(snapshot, self)?.keys(),
+        );
+        Ok(is_abstract.is_some())
     }
 
     pub(crate) fn get_independent_attribute_types(
@@ -1496,6 +1507,7 @@ impl TypeManager {
 
         OperationTimeValidation::validate_supertype_annotations_compatibility(
             snapshot,
+            self,
             subtype.clone(),
             supertype.clone(),
         )
@@ -1947,7 +1959,7 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn unset_owns_overridden(
+    pub(crate) fn unset_owns_override(
         &self,
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
@@ -2070,7 +2082,7 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn unset_plays_overridden(
+    pub(crate) fn unset_plays_override(
         &self,
         snapshot: &mut impl WritableSnapshot,
         plays: Plays<'static>,
@@ -2106,8 +2118,9 @@ impl TypeManager {
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
-        OperationTimeValidation::validate_overriding_owns_ordering_match(snapshot, owns.clone(), Some(ordering))
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        // TODO: It is an operation blocking call unless we allow ordered sub unordered.
+        // OperationTimeValidation::validate_overriding_owns_ordering_match(snapshot, owns.clone(), Some(ordering))
+        //     .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_set_owns_ordering(snapshot, owns, ordering);
         Ok(())
@@ -2173,11 +2186,10 @@ impl TypeManager {
 
         self.validate_set_annotation_general(snapshot, type_.clone(), annotation.clone())?;
 
-        OperationTimeValidation::validate_type_supertype_abstractness(
+        OperationTimeValidation::validate_type_supertype_abstractness_to_set_abstract_annotation(
             snapshot,
+            self,
             type_.clone(),
-            None,       // supertype: will be read from storage
-            Some(true), // set abstract annotation
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -2199,6 +2211,14 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Abstract;
         self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+
+        OperationTimeValidation::validate_no_abstract_subtypes_to_unset_abstract_annotation(
+            snapshot,
+            self,
+            type_.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         self.unset_annotation(snapshot, type_, annotation_category)
     }
 
@@ -2354,15 +2374,15 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn unset_relates_overridden(
+    pub(crate) fn unset_relates_override(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relates: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.unset_supertype(snapshot, relates.role())?;
-
-        if relates.role().get_supertype(snapshot, self)?.is_some() {
+        let role_type = relates.role();
+        if role_type.get_supertype(snapshot, self)?.is_some() {
             TypeWriter::storage_delete_type_edge_overridden(snapshot, relates);
+            self.unset_supertype(snapshot, role_type)?;
         }
         Ok(())
     }

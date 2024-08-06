@@ -42,14 +42,12 @@ async fn relation_add_player_for_role(
             let role_type = relates.role();
             let res = relation.add_player(&mut tx.snapshot, &tx.thing_manager, role_type, player);
             may_error.check_concept_write_without_read_errors(&res);
-        } else {
-            // TODO: It is a little hacky as we don't test the concept api itself, but it is a correct behavior for TypeQL, so
-            // it's easier to support such tests here as well
-            may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
-                BehaviourConceptTestExecutionError::CannotFindRoleToAddPlayerTo,
-            ));
+            return;
         }
     });
+    may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
+        BehaviourConceptTestExecutionError::CannotFindRoleToAddPlayerTo,
+    ));
 }
 
 #[apply(generic_step)]
