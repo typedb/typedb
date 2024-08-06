@@ -25,12 +25,6 @@ use storage::snapshot::WritableSnapshot;
 
 use crate::{batch::Row, VariablePosition};
 
-// TODO: Move to utils
-macro_rules! filter_variants {
-    ($variant:path : $iterable:expr) => {
-        $iterable.iter.filter_map(|item| if let $variant(inner) = item { Some(inner) } else { None })
-    };
-}
 macro_rules! try_unwrap_as {
     ($variant:path : $item:expr) => {
         if let $variant(inner) = $item {
@@ -100,7 +94,7 @@ impl<'a, 'row> ExecutionConcepts<'a, 'row> {
 
 pub struct InsertExecutor {
     plan: InsertPlan,
-    reused_created_things: Vec<answer::Thing<'static>>, // internal mutability is cleaner
+    reused_created_things: Vec<answer::Thing<'static>>,
 }
 
 impl InsertExecutor {

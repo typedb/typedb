@@ -35,7 +35,7 @@ impl<'a> VariableValue<'a> {
     pub fn as_value(&self) -> &Value<'a> {
         match self {
             VariableValue::Value(value) => value,
-            // TODO: Do we want to implicit cast from values?
+            // TODO: Do we want to implicit cast from attributes?
             _ => panic!("VariableValue is not a value"),
         }
     }
