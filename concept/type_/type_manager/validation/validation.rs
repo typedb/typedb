@@ -573,7 +573,7 @@ pub(crate) fn type_has_declared_annotation<T: KindAPI<'static>>(
     annotation: Annotation,
 ) -> Result<bool, ConceptReadError> {
     let has = TypeReader::get_type_annotations_declared(snapshot, type_.clone())?
-        .contains(&T::AnnotationType::from(annotation));
+        .contains(&T::AnnotationType::try_from(annotation).unwrap());
     Ok(has)
 }
 

@@ -265,8 +265,10 @@ pub enum OwnsAnnotation {
     Values(AnnotationValues),
 }
 
-impl From<Annotation> for Result<OwnsAnnotation, AnnotationError> {
-    fn from(annotation: Annotation) -> Result<OwnsAnnotation, AnnotationError> {
+impl TryFrom<Annotation> for OwnsAnnotation {
+    type Error = AnnotationError;
+
+    fn try_from(annotation: Annotation) -> Result<OwnsAnnotation, AnnotationError> {
         match annotation {
             Annotation::Distinct(annotation) => Ok(OwnsAnnotation::Distinct(annotation)),
             Annotation::Unique(annotation) => Ok(OwnsAnnotation::Unique(annotation)),
@@ -279,16 +281,6 @@ impl From<Annotation> for Result<OwnsAnnotation, AnnotationError> {
             | Annotation::Abstract(_) | Annotation::Independent(_) | Annotation::Cascade(_) => {
                 Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category()))
             }
-        }
-    }
-}
-
-impl From<Annotation> for OwnsAnnotation {
-    fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<OwnsAnnotation, AnnotationError> = annotation.into();
-        match into_annotation {
-            Ok(into_annotation) => into_annotation,
-            Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),
         }
     }
 }

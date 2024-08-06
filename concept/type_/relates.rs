@@ -174,8 +174,10 @@ pub enum RelatesAnnotation {
     Cardinality(AnnotationCardinality),
 }
 
-impl From<Annotation> for Result<RelatesAnnotation, AnnotationError> {
-    fn from(annotation: Annotation) -> Result<RelatesAnnotation, AnnotationError> {
+impl TryFrom<Annotation> for RelatesAnnotation {
+    type Error = AnnotationError;
+
+    fn try_from(annotation: Annotation) -> Result<RelatesAnnotation, AnnotationError> {
         match annotation {
             Annotation::Distinct(annotation) => Ok(RelatesAnnotation::Distinct(annotation)),
             Annotation::Cardinality(annotation) => Ok(RelatesAnnotation::Cardinality(annotation)),
@@ -188,16 +190,6 @@ impl From<Annotation> for Result<RelatesAnnotation, AnnotationError> {
             | Annotation::Cascade(_)
             | Annotation::Range(_)
             | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-        }
-    }
-}
-
-impl From<Annotation> for RelatesAnnotation {
-    fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<RelatesAnnotation, AnnotationError> = annotation.into();
-        match into_annotation {
-            Ok(into_annotation) => into_annotation,
-            Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),
         }
     }
 }

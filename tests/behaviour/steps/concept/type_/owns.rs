@@ -137,7 +137,7 @@ pub async fn get_owns_set_annotation(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type.clone()).unwrap().unwrap();
         let value_type = attr_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
-        let res = owns.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(value_type).into());
+        let res = owns.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(value_type).try_into().unwrap());
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -186,7 +186,7 @@ pub async fn get_owns_annotations_contains(
         let actual_contains = owns
             .get_annotations(&tx.snapshot, &tx.type_manager)
             .unwrap()
-            .contains_key(&annotation.into_typedb(value_type).into());
+            .contains_key(&annotation.into_typedb(value_type).try_into().unwrap());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -243,7 +243,7 @@ pub async fn get_owns_declared_annotations_contains(
         let actual_contains = owns
             .get_annotations_declared(&tx.snapshot, &tx.type_manager)
             .unwrap()
-            .contains(&annotation.into_typedb(value_type).into());
+            .contains(&annotation.into_typedb(value_type).try_into().unwrap());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }

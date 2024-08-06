@@ -202,7 +202,7 @@ async fn object_get_has_with_annotations(
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
     object_root.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
-    let annotations = annotations.into_typedb().into_iter().map(|anno| anno.into()).collect_vec();
+    let annotations = annotations.into_typedb().into_iter().map(|anno| anno.try_into().unwrap()).collect_vec();
     let actuals = with_read_tx!(context, |tx| {
         let attribute_types = object
             .type_()

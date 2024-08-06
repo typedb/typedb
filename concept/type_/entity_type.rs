@@ -328,8 +328,9 @@ pub enum EntityTypeAnnotation {
     Abstract(AnnotationAbstract),
 }
 
-impl From<Annotation> for Result<EntityTypeAnnotation, AnnotationError> {
-    fn from(annotation: Annotation) -> Result<EntityTypeAnnotation, AnnotationError> {
+impl TryFrom<Annotation> for EntityTypeAnnotation {
+    type Error = AnnotationError;
+    fn try_from(annotation: Annotation) -> Result<EntityTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(EntityTypeAnnotation::Abstract(annotation)),
 
@@ -342,16 +343,6 @@ impl From<Annotation> for Result<EntityTypeAnnotation, AnnotationError> {
             | Annotation::Cascade(_)
             | Annotation::Range(_)
             | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
-        }
-    }
-}
-
-impl From<Annotation> for EntityTypeAnnotation {
-    fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<EntityTypeAnnotation, AnnotationError> = annotation.into();
-        match into_annotation {
-            Ok(into_annotation) => into_annotation,
-            Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),
         }
     }
 }

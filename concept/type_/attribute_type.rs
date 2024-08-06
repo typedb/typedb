@@ -321,8 +321,10 @@ pub enum AttributeTypeAnnotation {
     Values(AnnotationValues),
 }
 
-impl From<Annotation> for Result<AttributeTypeAnnotation, AnnotationError> {
-    fn from(annotation: Annotation) -> Result<AttributeTypeAnnotation, AnnotationError> {
+impl TryFrom<Annotation> for AttributeTypeAnnotation {
+    type Error = AnnotationError;
+
+    fn try_from(annotation: Annotation) -> Result<AttributeTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(AttributeTypeAnnotation::Abstract(annotation)),
             Annotation::Independent(annotation) => Ok(AttributeTypeAnnotation::Independent(annotation)),
@@ -337,16 +339,6 @@ impl From<Annotation> for Result<AttributeTypeAnnotation, AnnotationError> {
             | Annotation::Cascade(_) => {
                 Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
             }
-        }
-    }
-}
-
-impl From<Annotation> for AttributeTypeAnnotation {
-    fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<AttributeTypeAnnotation, AnnotationError> = annotation.into();
-        match into_annotation {
-            Ok(into_annotation) => into_annotation,
-            Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),
         }
     }
 }
