@@ -19,7 +19,6 @@ use executor::{
     insert_executor::{InsertError, InsertExecutor},
 };
 use ir::program::{function_signature::HashMapFunctionIndex, program::Program};
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -96,7 +95,7 @@ fn execute_insert(
     insert_plan.debug_info.iter().for_each(|(k, v)| {
         println!("{:?} -> {:?}", k, annotated_program.get_entry().context().get_variables_named().get(v))
     });
-    let mut output_vec = (0..insert_plan.n_created_concepts).map(|_| VariableValue::Empty).collect_vec();
+    let mut output_vec = (0..insert_plan.n_created_concepts).map(|_| VariableValue::Empty).collect::<Vec<_>>();
     let mut output_multiplicity = 0;
     let output = Row::new(&mut output_vec, &mut output_multiplicity);
     let mut executor = InsertExecutor::new(insert_plan);

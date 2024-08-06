@@ -60,7 +60,6 @@ macro_rules! filter_variants {
     };
 }
 pub(crate) use filter_variants;
-use ir::LiteralParseError;
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,
@@ -605,9 +604,6 @@ pub enum DefineError {
         capability: Capability,
         expected_kind: Kind,
         actual_kind: Kind,
-    },
-    LiteralParseError {
-        source: LiteralParseError,
     },
     LiteralParseError {
         source: LiteralParseError,

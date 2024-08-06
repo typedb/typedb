@@ -19,6 +19,8 @@ deps = [
     "//storage",
     "@vaticle_typeql//rust:typeql",
     "//util/test:test_utils",
+
+
 ]
 
 rust_test(
