@@ -2148,11 +2148,13 @@ impl OperationTimeValidation {
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
+        let mut affected_sources: HashSet<AttributeType<'static>> = TypeReader::get_supertypes_transitive(snapshot, attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)?.into_iter().collect();
+        affected_sources.insert(attribute_type.clone());
         for_type_and_subtypes_transitive!(snapshot, attribute_type, |type_: AttributeType<'static>| {
             let type_value_type =
                 TypeReader::get_value_type(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
             if let Some((type_value_type, type_value_type_source)) = type_value_type {
-                if type_value_type_source == attribute_type {
+                if affected_sources.contains(&type_value_type_source) {
                     debug_assert!(value_type.clone().unwrap_or(type_value_type.clone()) == type_value_type);
                     Self::validate_when_attribute_type_loses_value_type(
                         snapshot,
