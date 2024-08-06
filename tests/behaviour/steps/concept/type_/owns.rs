@@ -137,7 +137,11 @@ pub async fn get_owns_set_annotation(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type.clone()).unwrap().unwrap();
         let value_type = attr_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
-        let res = owns.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(value_type).try_into().unwrap());
+        let res = owns.set_annotation(
+            &mut tx.snapshot,
+            &tx.type_manager,
+            annotation.into_typedb(value_type).try_into().unwrap(),
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }

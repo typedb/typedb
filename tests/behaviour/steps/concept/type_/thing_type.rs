@@ -202,8 +202,11 @@ pub async fn type_set_annotation(
 ) {
     with_write_tx!(context, |tx| {
         with_type_and_value_type!(tx, root_label, type_label, type_, value_type, {
-            let res =
-                type_.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(value_type).try_into().unwrap());
+            let res = type_.set_annotation(
+                &mut tx.snapshot,
+                &tx.type_manager,
+                annotation.into_typedb(value_type).try_into().unwrap(),
+            );
             may_error.check_concept_write_without_read_errors(&res);
         });
     });

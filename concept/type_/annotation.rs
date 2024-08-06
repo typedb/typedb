@@ -558,7 +558,7 @@ pub trait DefaultFrom<FromType, ErrorType> {
 
 impl<T> DefaultFrom<AnnotationCategory, AnnotationError> for T
 where
-    T: TryFrom<Annotation, Error=AnnotationError>,
+    T: TryFrom<Annotation, Error = AnnotationError>,
 {
     // Note: creating default annotation from category is a workaround for creating new category types per Attribute/Entity/Relation/etc
     fn try_getting_default(from: AnnotationCategory) -> Result<Self, AnnotationError> {

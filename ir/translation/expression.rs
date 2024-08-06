@@ -5,8 +5,12 @@
  */
 
 use answer::variable::Variable;
-use typeql::{common::token::{ArithmeticOperator, Function}, expression::{BuiltinFunctionName, Expression as TypeQLExpression, FunctionName}, Literal};
 use encoding::value::value::Value;
+use typeql::{
+    common::token::{ArithmeticOperator, Function},
+    expression::{BuiltinFunctionName, Expression as TypeQLExpression, FunctionName},
+    Literal,
+};
 
 use crate::{
     pattern::{
@@ -17,9 +21,7 @@ use crate::{
         },
     },
     program::function_signature::FunctionSignatureIndex,
-    translation::{
-        constraints::{add_function_call_binding_user, register_typeql_var, split_out_inline_expressions},
-    },
+    translation::constraints::{add_function_call_binding_user, register_typeql_var, split_out_inline_expressions},
     PatternDefinitionError,
 };
 
@@ -210,9 +212,7 @@ pub mod tests {
 }
 
 // TODO: Introduce the error wrapping trait
-fn parse_literal(
-    literal: &Literal,
-) -> Result<Value<'static>, PatternDefinitionError> {
+fn parse_literal(literal: &Literal) -> Result<Value<'static>, PatternDefinitionError> {
     super::literal::parse_literal(literal)
         .map_err(|source| PatternDefinitionError::LiteralParseError { literal: literal.to_string(), source })
 }

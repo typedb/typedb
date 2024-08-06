@@ -19,7 +19,7 @@ use concept::{
         relates::RelatesAnnotation,
         relation_type::RelationTypeAnnotation,
         type_manager::TypeManager,
-        Ordering, OwnerAPI, PlayerAPI,
+        KindAPI, Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use encoding::{
@@ -38,7 +38,6 @@ use typeql::{
     type_::{NamedType, Optional},
     Definable, ScopedLabel, TypeRef, TypeRefAny,
 };
-use concept::type_::KindAPI;
 
 use crate::{
     util::{resolve_type, resolve_value_type, translate_annotation},
@@ -101,24 +100,16 @@ pub(crate) fn process_type_declarations(
 ) -> Result<(), DefineError> {
     // TODO: Annotations on capabilities; Overrides; Idempotency checks.
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
-    declarations.clone().try_for_each(|declaration| {
-        define_types(snapshot, type_manager, declaration)
-    })?;
-    declarations.clone().try_for_each(|declaration| {
-        define_type_annotations(snapshot, type_manager, declaration)
-    })?;
-    declarations.clone().try_for_each(|declaration| {
-        define_capabilities_sub(snapshot, type_manager, declaration)
-    })?;
-    declarations.clone().try_for_each(|declaration| {
-        define_capabilities_alias(snapshot, type_manager, declaration)
-    })?;
-    declarations.clone().try_for_each(|declaration| {
-        define_capabilities_value_type(snapshot, type_manager, declaration)
-    })?;
-    declarations.clone().try_for_each(|declaration| {
-        define_capabilities_relates(snapshot, type_manager, declaration)
-    })?;
+    declarations.clone().try_for_each(|declaration| define_types(snapshot, type_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| define_type_annotations(snapshot, type_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| define_capabilities_sub(snapshot, type_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| define_capabilities_alias(snapshot, type_manager, declaration))?;
+    declarations
+        .clone()
+        .try_for_each(|declaration| define_capabilities_value_type(snapshot, type_manager, declaration))?;
+    declarations
+        .clone()
+        .try_for_each(|declaration| define_capabilities_relates(snapshot, type_manager, declaration))?;
     // declarations.clone().try_for_each(|declaration| {
     //     define_capabilities_relates_overrides(snapshot, type_manager, definables)
     // })?;
@@ -209,24 +200,26 @@ fn define_types<'a>(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     match type_declaration.kind {
         None => {
-            resolve_type(snapshot, type_manager, &label)
-                .map_err(|source| DefineError::TypeLookup { source })?;
+            resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
         }
         Some(token::Kind::Role) => {
             return Err(DefineError::RoleTypeDirectCreate { type_declaration: type_declaration.clone() })?;
         }
         Some(token::Kind::Entity) => {
-            type_manager.create_entity_type(snapshot, &label).map(|x| answer::Type::Entity(x))
-                .map_err(|err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() })?;
-        },
+            type_manager.create_entity_type(snapshot, &label).map(|x| answer::Type::Entity(x)).map_err(|err| {
+                DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
+            })?;
+        }
         Some(token::Kind::Relation) => {
-            type_manager.create_relation_type(snapshot, &label).map(|x| answer::Type::Relation(x))
-                .map_err(|err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() })?;
-        },
+            type_manager.create_relation_type(snapshot, &label).map(|x| answer::Type::Relation(x)).map_err(|err| {
+                DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
+            })?;
+        }
         Some(token::Kind::Attribute) => {
-            type_manager.create_attribute_type(snapshot, &label).map(|x| answer::Type::Attribute(x))
-                .map_err(|err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() })?;
-        },
+            type_manager.create_attribute_type(snapshot, &label).map(|x| answer::Type::Attribute(x)).map_err(
+                |err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() },
+            )?;
+        }
     }
     Ok(())
 }
@@ -243,26 +236,24 @@ fn define_type_annotations<'a>(
         match type_.clone() {
             TypeEnum::Entity(entity) => {
                 let converted = EntityTypeAnnotation::try_from(annotation.clone())
-                        .map_err(|source| DefineError::IllegalAnnotation { source })?;
-                entity.set_annotation(snapshot, type_manager, converted).map_err(|source| {
-                    DefineError::SetAnnotation { source, label: label.to_owned(), annotation }
-                })?;
+                    .map_err(|source| DefineError::IllegalAnnotation { source })?;
+                entity
+                    .set_annotation(snapshot, type_manager, converted)
+                    .map_err(|source| DefineError::SetAnnotation { source, label: label.to_owned(), annotation })?;
             }
             TypeEnum::Relation(relation) => {
-                let converted: RelationTypeAnnotation =
-                    RelationTypeAnnotation::try_from(annotation.clone())
-                        .map_err(|source| DefineError::IllegalAnnotation { source })?;
-                relation.set_annotation(snapshot, type_manager, converted).map_err(|source| {
-                    DefineError::SetAnnotation { source, label: label.to_owned(), annotation }
-                })?;
+                let converted: RelationTypeAnnotation = RelationTypeAnnotation::try_from(annotation.clone())
+                    .map_err(|source| DefineError::IllegalAnnotation { source })?;
+                relation
+                    .set_annotation(snapshot, type_manager, converted)
+                    .map_err(|source| DefineError::SetAnnotation { source, label: label.to_owned(), annotation })?;
             }
             TypeEnum::Attribute(attribute) => {
-                let converted: AttributeTypeAnnotation =
-                    AttributeTypeAnnotation::try_from(annotation.clone())
-                        .map_err(|source| DefineError::IllegalAnnotation { source })?;
-                attribute.set_annotation(snapshot, type_manager, converted).map_err(|source| {
-                    DefineError::SetAnnotation { source, label: label.to_owned(), annotation }
-                })?;
+                let converted: AttributeTypeAnnotation = AttributeTypeAnnotation::try_from(annotation.clone())
+                    .map_err(|source| DefineError::IllegalAnnotation { source })?;
+                attribute
+                    .set_annotation(snapshot, type_manager, converted)
+                    .map_err(|source| DefineError::SetAnnotation { source, label: label.to_owned(), annotation })?;
             }
             TypeEnum::RoleType(_) => unreachable!("Role annotations are syntactically on relates"),
         }
@@ -297,7 +288,13 @@ fn define_capabilities_sub<'a>(
         let supertype = resolve_type(snapshot, type_manager, &supertype_label)
             .map_err(|source| DefineError::TypeLookup { source })?;
         if type_.kind() != supertype.kind() {
-            return Err(err_capability_kind_mismatch(&label, &supertype_label, capability, type_.kind(), supertype.kind()))?;
+            return Err(err_capability_kind_mismatch(
+                &label,
+                &supertype_label,
+                capability,
+                type_.kind(),
+                supertype.kind(),
+            ))?;
         }
 
         match (&type_, supertype) {
@@ -384,9 +381,8 @@ fn define_capabilities_relates<'a>(
         // Handle annotations
         for typeql_annotation in &capability.annotations {
             let annotation = translate_annotation(typeql_annotation)?;
-            let relates_annotation =
-                RelatesAnnotation::try_from(annotation.clone())
-                    .map_err(|source| DefineError::IllegalAnnotation { source })?;
+            let relates_annotation = RelatesAnnotation::try_from(annotation.clone())
+                .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created
                 .set_annotation(snapshot, type_manager, relates_annotation)
                 .map_err(|source| DefineError::SetAnnotation { label: label.clone(), source, annotation })?
@@ -401,40 +397,34 @@ fn define_capabilities_owns<'a>(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label)
-        .map_err(|source| DefineError::TypeLookup { source })?;
+    let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
         let owns = unwrap_or_else!(CapabilityBase::Owns = &capability.base ;{continue;});
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&owns.owned)
             .map_err(|_| DefineError::OwnsAttributeMustBeLabelOrList { owns: owns.clone() })?;
 
-        let wrapped_attribute_type = resolve_type(snapshot, type_manager, &attr_label)
-            .map_err(|source| DefineError::TypeLookup { source })?;
+        let wrapped_attribute_type =
+            resolve_type(snapshot, type_manager, &attr_label).map_err(|source| DefineError::TypeLookup { source })?;
         let attribute_type = unwrap_or_else!(TypeEnum::Attribute = wrapped_attribute_type; {
             return Err(
                 err_capability_kind_mismatch(&label, &attr_label, capability, Kind::Attribute, wrapped_attribute_type.kind())
             );
         });
         let created = match &type_ {
-            TypeEnum::Entity(entity_type) => {
-                ObjectType::Entity(entity_type.clone())
+            TypeEnum::Entity(entity_type) => ObjectType::Entity(entity_type.clone())
                 .set_owns(snapshot, type_manager, attribute_type, ordering)
-                .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), source })?
-            }
-            TypeEnum::Relation(relation_type) => {
-                ObjectType::Relation(relation_type.clone())
+                .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), source })?,
+            TypeEnum::Relation(relation_type) => ObjectType::Relation(relation_type.clone())
                 .set_owns(snapshot, type_manager, attribute_type, ordering)
-                .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), source })?
-            }
+                .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), source })?,
             _ => {
                 return Err(err_unsupported_capability(&label, type_.kind(), capability));
             }
         };
         for typeql_annotation in &capability.annotations {
             let annotation = translate_annotation(typeql_annotation)?;
-            let owns_annotation =
-                OwnsAnnotation::try_from(annotation.clone())
-                    .map_err(|source| DefineError::IllegalAnnotation { source })?;
+            let owns_annotation = OwnsAnnotation::try_from(annotation.clone())
+                .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created
                 .set_annotation(snapshot, type_manager, owns_annotation)
                 .map_err(|source| DefineError::SetAnnotation { label: label.clone(), source, annotation })?;
@@ -443,12 +433,19 @@ fn define_capabilities_owns<'a>(
     Ok(())
 }
 
-fn err_capability_kind_mismatch(capability_receiver: &Label<'_>, capability_provider: &Label<'_>, capability: &Capability, expected_kind: Kind, actual_kind: Kind) -> DefineError {
+fn err_capability_kind_mismatch(
+    capability_receiver: &Label<'_>,
+    capability_provider: &Label<'_>,
+    capability: &Capability,
+    expected_kind: Kind,
+    actual_kind: Kind,
+) -> DefineError {
     DefineError::CapabilityKindMismatch {
         capability_receiver: capability_receiver.clone().into_owned(),
         capability_provider: capability_provider.clone().into_owned(),
         capability: capability.clone(),
-        expected_kind, actual_kind,
+        expected_kind,
+        actual_kind,
     }
 }
 
@@ -482,9 +479,8 @@ fn define_capabilities_plays<'a>(
 
         for typeql_annotation in &capability.annotations {
             let annotation = translate_annotation(typeql_annotation)?;
-            let plays_annotation =
-                PlaysAnnotation::try_from(annotation.clone())
-                    .map_err(|source| DefineError::IllegalAnnotation { source })?;
+            let plays_annotation = PlaysAnnotation::try_from(annotation.clone())
+                .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created
                 .set_annotation(snapshot, type_manager, plays_annotation)
                 .map_err(|source| DefineError::SetAnnotation { label: label.clone(), source, annotation })?;
@@ -505,7 +501,7 @@ fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(Label<'stati
     match type_ref {
         TypeRefAny::Type(TypeRef::Named(NamedType::Label(label))) => {
             Ok((Label::parse_from(label.ident.as_str()), Ordering::Unordered))
-        },
+        }
         TypeRefAny::List(typeql::type_::List { inner: TypeRef::Named(NamedType::Label(label)), .. }) => {
             Ok((Label::parse_from(label.ident.as_str()), Ordering::Ordered))
         }

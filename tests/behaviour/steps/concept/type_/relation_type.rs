@@ -475,7 +475,11 @@ pub async fn relation_role_set_annotation(
         let res;
         match parsed_annotation {
             annotation::Annotation::Abstract(_) => {
-                res = relates.role().set_annotation(&mut tx.snapshot, &tx.type_manager, parsed_annotation.try_into().unwrap());
+                res = relates.role().set_annotation(
+                    &mut tx.snapshot,
+                    &tx.type_manager,
+                    parsed_annotation.try_into().unwrap(),
+                );
             }
             annotation::Annotation::Distinct(_) | annotation::Annotation::Cardinality(_) => {
                 res = relates.set_annotation(&mut tx.snapshot, &tx.type_manager, parsed_annotation.try_into().unwrap());
