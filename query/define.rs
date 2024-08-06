@@ -209,17 +209,25 @@ fn define_types<'a>(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     match type_declaration.kind {
         None => {
-            resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
-            Ok(())
+            resolve_type(snapshot, type_manager, &label)
+                .map_err(|source| DefineError::TypeLookup { source })?;
         }
         Some(token::Kind::Role) => {
-            Err(DefineError::RoleTypeDirectCreate { type_declaration: type_declaration.clone() })?
+            return Err(DefineError::RoleTypeDirectCreate { type_declaration: type_declaration.clone() })?;
         }
-        Some(token::Kind::Entity) => type_manager.create_entity_type(snapshot, &label).map(|_| ()),
-        Some(token::Kind::Relation) => type_manager.create_relation_type(snapshot, &label).map(|_| ()),
-        Some(token::Kind::Attribute) => type_manager.create_attribute_type(snapshot, &label).map(|_| ()),
+        Some(token::Kind::Entity) => {
+            type_manager.create_entity_type(snapshot, &label).map(|x| answer::Type::Entity(x))
+                .map_err(|err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() })?;
+        },
+        Some(token::Kind::Relation) => {
+            type_manager.create_relation_type(snapshot, &label).map(|x| answer::Type::Relation(x))
+                .map_err(|err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() })?;
+        },
+        Some(token::Kind::Attribute) => {
+            type_manager.create_attribute_type(snapshot, &label).map(|x| answer::Type::Attribute(x))
+                .map_err(|err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() })?;
+        },
     }
-    .map_err(|err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() })?;
     Ok(())
 }
 
@@ -234,8 +242,7 @@ fn define_type_annotations<'a>(
         let annotation = translate_annotation(typeql_annotation)?;
         match type_.clone() {
             TypeEnum::Entity(entity) => {
-                let converted =
-                    <Result<EntityTypeAnnotation, AnnotationError> as From<Annotation>>::from(annotation.clone())
+                let converted = EntityTypeAnnotation::try_from(annotation.clone())
                         .map_err(|source| DefineError::IllegalAnnotation { source })?;
                 entity.set_annotation(snapshot, type_manager, converted).map_err(|source| {
                     DefineError::SetAnnotation { source, label: label.to_owned(), annotation }
@@ -243,7 +250,7 @@ fn define_type_annotations<'a>(
             }
             TypeEnum::Relation(relation) => {
                 let converted: RelationTypeAnnotation =
-                    <Result<RelationTypeAnnotation, AnnotationError> as From<Annotation>>::from(annotation.clone())
+                    RelationTypeAnnotation::try_from(annotation.clone())
                         .map_err(|source| DefineError::IllegalAnnotation { source })?;
                 relation.set_annotation(snapshot, type_manager, converted).map_err(|source| {
                     DefineError::SetAnnotation { source, label: label.to_owned(), annotation }
@@ -251,7 +258,7 @@ fn define_type_annotations<'a>(
             }
             TypeEnum::Attribute(attribute) => {
                 let converted: AttributeTypeAnnotation =
-                    <Result<AttributeTypeAnnotation, AnnotationError> as From<Annotation>>::from(annotation.clone())
+                    AttributeTypeAnnotation::try_from(annotation.clone())
                         .map_err(|source| DefineError::IllegalAnnotation { source })?;
                 attribute.set_annotation(snapshot, type_manager, converted).map_err(|source| {
                     DefineError::SetAnnotation { source, label: label.to_owned(), annotation }
@@ -378,7 +385,7 @@ fn define_capabilities_relates<'a>(
         for typeql_annotation in &capability.annotations {
             let annotation = translate_annotation(typeql_annotation)?;
             let relates_annotation =
-                <Result<RelatesAnnotation, AnnotationError> as From<Annotation>>::from(annotation.clone())
+                RelatesAnnotation::try_from(annotation.clone())
                     .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created
                 .set_annotation(snapshot, type_manager, relates_annotation)
@@ -426,7 +433,7 @@ fn define_capabilities_owns<'a>(
         for typeql_annotation in &capability.annotations {
             let annotation = translate_annotation(typeql_annotation)?;
             let owns_annotation =
-                <Result<OwnsAnnotation, AnnotationError> as From<Annotation>>::from(annotation.clone())
+                OwnsAnnotation::try_from(annotation.clone())
                     .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created
                 .set_annotation(snapshot, type_manager, owns_annotation)
@@ -476,7 +483,7 @@ fn define_capabilities_plays<'a>(
         for typeql_annotation in &capability.annotations {
             let annotation = translate_annotation(typeql_annotation)?;
             let plays_annotation =
-                <Result<PlaysAnnotation, AnnotationError> as From<Annotation>>::from(annotation.clone())
+                PlaysAnnotation::try_from(annotation.clone())
                     .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created
                 .set_annotation(snapshot, type_manager, plays_annotation)
