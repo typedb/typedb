@@ -131,7 +131,7 @@ impl HasExecutor {
                 let iterator: Filter<HasIterator, Arc<HasFilterFn>> = thing_manager
                     .get_has_from_owner_type_range_unordered(snapshot, key_range)
                     .filter::<_, HasFilterFn>(filter_fn);
-                let as_tuples: Map<Filter<HasIterator, Arc<HasFilterFn>>, HasToTupleFn, TupleResult> =
+                let as_tuples: Map<Filter<HasIterator, Arc<HasFilterFn>>, HasToTupleFn, TupleResult<'_>> =
                     iterator.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
                 Ok(TupleIterator::HasUnbounded(SortedTupleIterator::new(
                     as_tuples,

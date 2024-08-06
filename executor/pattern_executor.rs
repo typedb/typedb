@@ -706,7 +706,7 @@ impl CartesianIterator {
         Ok(reopened)
     }
 
-    fn write_into(&mut self, row: &mut Row) {
+    fn write_into(&mut self, row: &mut Row<'_>) {
         for &executor_index in &self.cartesian_executor_indices {
             let iterator = self.iterators[executor_index].as_mut().unwrap();
             iterator.write_values(row)

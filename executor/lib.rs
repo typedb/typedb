@@ -4,6 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![deny(unused_must_use)]
+#![deny(elided_lifetimes_in_paths)]
+
 use std::{
     collections::HashMap,
     fmt::{Display, Formatter},

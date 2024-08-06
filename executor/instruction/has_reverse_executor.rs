@@ -118,7 +118,7 @@ impl HasReverseExecutor {
                 let iterator: Filter<HasReverseIterator, Arc<HasFilterFn>> = thing_manager
                     .get_has_from_attribute_type_range(snapshot, attribute_types_in_range)?
                     .filter::<_, HasFilterFn>(filter_fn);
-                let as_tuples: Map<Filter<HasReverseIterator, Arc<HasFilterFn>>, HasToTupleFn, TupleResult> =
+                let as_tuples: Map<Filter<HasReverseIterator, Arc<HasFilterFn>>, HasToTupleFn, TupleResult<'_>> =
                     iterator.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
                 Ok(TupleIterator::HasReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,

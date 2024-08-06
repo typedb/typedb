@@ -131,7 +131,7 @@ impl<'a> Row<'a> {
         self.row.len()
     }
 
-    pub(crate) fn get(&self, position: VariablePosition) -> &VariableValue {
+    pub(crate) fn get(&self, position: VariablePosition) -> &VariableValue<'_> {
         &self.row[position.as_usize()]
     }
 
@@ -170,7 +170,7 @@ impl<'a> ImmutableRow<'a> {
         self.row.len()
     }
 
-    pub fn get(&self, position: VariablePosition) -> &VariableValue {
+    pub fn get(&self, position: VariablePosition) -> &VariableValue<'_> {
         &self.row[position.as_usize()]
     }
 

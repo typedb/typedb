@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{borrow::BorrowMut, collections::HashMap};
 
 use answer::variable::Variable;
 use compiler::{
@@ -106,9 +106,23 @@ impl InstructionExecutor {
                 )?;
                 Ok(Self::HasReverse(executor))
             }
-            ConstraintInstruction::RolePlayer(rp, _) => {
-                todo!()
-                // Ok(Self::RolePlayer(RolePlayerExecutor::new(rp.into_ids(variable_to_position), mode)))
+            ConstraintInstruction::RolePlayer(role_player, _) => {
+                let rp_player = role_player.player();
+                let get_left_right_filtered = type_annotations
+                    .constraint_annotations_of(role_player.clone().into())
+                    .unwrap()
+                    .get_left_right_filtered();
+                let executor = RolePlayerExecutor::new(
+                    role_player.into_ids(positions),
+                    variable_modes,
+                    sort_by_position,
+                    get_left_right_filtered.left_to_right(),
+                    get_left_right_filtered.filters_on_right(),
+                    type_annotations.variable_annotations_of(rp_player).unwrap().clone(),
+                    snapshot,
+                    thing_manager,
+                )?;
+                Ok(Self::RolePlayer(executor))
             }
             ConstraintInstruction::RolePlayerReverse(rp, mode) => {
                 todo!()
@@ -139,10 +153,10 @@ impl InstructionExecutor {
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
-            InstructionExecutor::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            InstructionExecutor::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::RolePlayer(executor) => todo!(),
+            InstructionExecutor::RolePlayer(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::RolePlayerReverse(executor) => todo!(),
             InstructionExecutor::FunctionCallBinding(executor) => todo!(),
             InstructionExecutor::Comparison(executor) => todo!(),
@@ -151,7 +165,7 @@ impl InstructionExecutor {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum VariableMode {
     Input,
     UnboundSelect,
@@ -172,7 +186,7 @@ impl VariableMode {
     }
 
     pub(crate) fn is_bound(&self) -> bool {
-        matches!(self, Self::Input)
+        self == &Self::Input
     }
 
     pub(crate) fn is_unbound(&self) -> bool {

@@ -45,6 +45,13 @@ impl Type {
         }
     }
 
+    pub fn as_relation_type(&self) -> RelationType<'static> {
+        match self {
+            Type::Relation(relation) => relation.clone().into_owned(),
+            _ => panic!("Type is not an Relation type."),
+        }
+    }
+
     pub fn as_attribute_type(&self) -> AttributeType<'static> {
         match self {
             Type::Attribute(attribute) => attribute.clone().into_owned(),

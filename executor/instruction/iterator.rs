@@ -15,6 +15,7 @@ use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
 
+use super::role_player_executor::RolePlayerUnboundedSortedRelation;
 use crate::{
     batch::Row,
     instruction::{
@@ -90,6 +91,16 @@ pub(crate) enum TupleIterator {
     HasReverseUnboundedInvertedSingle(SortedTupleIterator<HasReverseUnboundedSortedOwnerSingle>),
     HasReverseUnboundedInvertedMerged(SortedTupleIterator<HasReverseUnboundedSortedOwnerMerged>),
     HasReverseBounded(SortedTupleIterator<HasReverseBoundedSortedOwner>),
+
+    RolePlayerUnbounded(SortedTupleIterator<RolePlayerUnboundedSortedRelation>),
+    // RolePlayerUnboundedInvertedSingle(SortedTupleIterator<HasUnboundedSortedAttributeSingle>),
+    // RolePlayerUnboundedInvertedMerged(SortedTupleIterator<HasUnboundedSortedAttributeMerged>),
+    // RolePlayerBounded(SortedTupleIterator<HasBoundedSortedAttribute>),
+
+    // RolePlayerReverseUnbounded(SortedTupleIterator<HasReverseUnboundedSortedAttribute>),
+    // RolePlayerReverseUnboundedInvertedSingle(SortedTupleIterator<HasReverseUnboundedSortedOwnerSingle>),
+    // RolePlayerReverseUnboundedInvertedMerged(SortedTupleIterator<HasReverseUnboundedSortedOwnerMerged>),
+    // RolePlayerReverseBounded(SortedTupleIterator<HasReverseBoundedSortedOwner>),
 }
 
 impl {

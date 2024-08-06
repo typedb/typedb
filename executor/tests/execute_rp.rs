@@ -17,7 +17,10 @@ use compiler::{
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, relates::RelatesAnnotation, Ordering, OwnerAPI, PlayerAPI},
+    type_::{
+        annotation::AnnotationCardinality, owns::OwnsAnnotation, relates::RelatesAnnotation, Ordering, OwnerAPI,
+        PlayerAPI,
+    },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
@@ -80,6 +83,19 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     person_type.set_plays(&mut snapshot, &type_manager, membership_member_type.clone()).unwrap();
     group_type.set_plays(&mut snapshot, &type_manager, membership_group_type.clone()).unwrap();
 
+    /*
+    insert
+         $person_1 isa person, has age 10, has age 11;
+         $person_2 isa person, has age 10;
+         $person_3 isa person, has name "Abby", has name "Bobby";
+
+         $group_1 isa group;
+         $group_2 isa group;
+
+         $membership_1 isa membership, links(member: $person_1, group: $group_1);
+         $membership_2 isa membership, links(member: $person_3, group: $group_2);
+    */
+
     let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
     let person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
     let person_3 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
@@ -110,7 +126,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
         .add_player(&mut snapshot, &thing_manager, membership_member_type.clone(), person_3.clone().into_owned_object())
         .unwrap();
     membership_2
-        .add_player(&mut snapshot, &thing_manager, membership_member_type.clone(), group_2.clone().into_owned_object())
+        .add_player(&mut snapshot, &thing_manager, membership_group_type.clone(), group_2.clone().into_owned_object())
         .unwrap();
 
     person_1.set_has_unordered(&mut snapshot, &thing_manager, age_1.as_reference()).unwrap();
@@ -204,7 +220,7 @@ fn traverse_rp_unbounded_sorted_from() {
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
-    assert_eq!(rows.len(), 7);
+    assert_eq!(rows.len(), 2);
 
     for row in rows {
         let r = row.unwrap();

@@ -50,7 +50,7 @@ use storage::{
     snapshot::{write::Write, ReadableSnapshot, WritableSnapshot},
 };
 
-use super::{decode_role_players, encode_role_players, HKInstance};
+use super::{decode_role_players, encode_role_players, relation::RelationRolePlayerIterator, HKInstance};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     iterator::InstanceIterator,
@@ -690,6 +690,18 @@ impl ThingManager {
     ) -> bool {
         let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation.into_vertex());
         snapshot.any_in_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING), buffered_only)
+    }
+
+    pub fn get_relation_role_players_from_relation_type_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type_range: KeyRange<RelationType<'static>>,
+    ) -> RelationRolePlayerIterator {
+        let range = relation_type_range.map(
+            |type_| ThingEdgeRolePlayer::prefix_from_relation_type(type_.into_vertex()),
+            |_| ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+        );
+        RelationRolePlayerIterator::new(snapshot.iterate_range(range))
     }
 
     pub(crate) fn get_role_players(

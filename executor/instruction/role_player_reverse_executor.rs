@@ -8,12 +8,12 @@ use ir::pattern::constraint::RolePlayer;
 
 use crate::VariablePosition;
 
-pub(crate) struct RolePlayerReverseIteratorExecutor {
+pub(crate) struct RolePlayerReverseExecutor {
     role_player: RolePlayer<VariablePosition>,
 }
 
-impl RolePlayerReverseIteratorExecutor {
-    pub(crate) fn new(role_player: RolePlayer<VariablePosition>) -> RolePlayerReverseIteratorExecutor {
+impl RolePlayerReverseExecutor {
+    pub(crate) fn new(role_player: RolePlayer<VariablePosition>) -> RolePlayerReverseExecutor {
         Self { role_player }
     }
 }

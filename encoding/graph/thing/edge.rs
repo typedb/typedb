@@ -380,6 +380,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     const RANGE_ROLE_ID: Range<usize> = Self::RANGE_TO.end..Self::RANGE_TO.end + TypeID::LENGTH;
     const LENGTH: usize = PrefixID::LENGTH + 2 * ObjectVertex::LENGTH + TypeID::LENGTH;
     pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
+    pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
@@ -419,6 +420,16 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
+    pub fn prefix_from_relation_type(
+        relation_type: TypeVertex<'_>,
+    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TYPE }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes.bytes_mut()[Self::range_from_relation_type()]
+            .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(relation_type).bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
     pub fn prefix_reverse_from_player(
         player: ObjectVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
@@ -434,6 +445,10 @@ impl<'a> ThingEdgeRolePlayer<'a> {
 
     pub fn prefix_reverse() -> StorageKey<'static, { PrefixID::LENGTH }> {
         StorageKey::new_owned(Self::KEYSPACE, ByteArray::copy(&Self::PREFIX_REVERSE.prefix_id().bytes()))
+    }
+
+    const fn range_from_relation_type() -> Range<usize> {
+        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + THING_VERTEX_LENGTH_PREFIX_TYPE
     }
 
     pub fn is_role_player(key: StorageKeyReference<'_>) -> bool {
@@ -456,6 +471,10 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     pub fn to(&self) -> ObjectVertex<'_> {
         // TODO: copy?
         ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_TO])))
+    }
+
+    pub fn into_from(self) -> ObjectVertex<'a> {
+        ObjectVertex::new(self.bytes.into_range(Self::RANGE_FROM))
     }
 
     pub fn into_to(self) -> ObjectVertex<'a> {

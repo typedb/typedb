@@ -280,6 +280,16 @@ impl<'a> Display for RelationType<'a> {
     }
 }
 
+impl<'a> primitive::prefix::Prefix for RelationType<'a> {
+    fn starts_with(&self, other: &Self) -> bool {
+        self.vertex().starts_with(&other.vertex())
+    }
+
+    fn into_starts_with(self, other: Self) -> bool {
+        self.vertex().as_reference().into_starts_with(other.vertex().as_reference())
+    }
+}
+
 impl<'a> OwnerAPI<'a> for RelationType<'a> {
     fn set_owns(
         &self,
