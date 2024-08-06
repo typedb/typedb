@@ -79,18 +79,14 @@ impl<'a> Attribute<'a> {
         }
     }
 
-    pub fn get_owners<'m>(
-        &self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
-    ) -> AttributeOwnerIterator {
+    pub fn get_owners(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> AttributeOwnerIterator {
         thing_manager.get_owners(snapshot, self.as_reference())
     }
 
-    pub fn get_owners_by_type<'m, 'o>(
+    pub fn get_owners_by_type<'o>(
         &self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
         owner_type: impl ObjectTypeAPI<'o>,
     ) -> AttributeOwnerIterator {
         thing_manager.get_owners_by_type(snapshot, self.as_reference(), owner_type)
