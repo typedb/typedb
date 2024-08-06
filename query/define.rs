@@ -98,7 +98,7 @@ pub(crate) fn process_type_declarations(
     type_manager: &TypeManager,
     definables: &[Definable],
 ) -> Result<(), DefineError> {
-    // TODO: Annotations on capabilities; Overrides; Idempotency checks.
+    // TODO: Overrides; Idempotency checks.
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
     declarations.clone().try_for_each(|declaration| define_types(snapshot, type_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| define_type_annotations(snapshot, type_manager, declaration))?;
@@ -495,18 +495,6 @@ fn define_functions<'a>(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     Ok(())
-}
-
-fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(Label<'static>, Ordering), ()> {
-    match type_ref {
-        TypeRefAny::Type(TypeRef::Named(NamedType::Label(label))) => {
-            Ok((Label::parse_from(label.ident.as_str()), Ordering::Unordered))
-        }
-        TypeRefAny::List(typeql::type_::List { inner: TypeRef::Named(NamedType::Label(label)), .. }) => {
-            Ok((Label::parse_from(label.ident.as_str()), Ordering::Ordered))
-        }
-        _ => Err(()),
-    }
 }
 
 #[derive(Debug)]

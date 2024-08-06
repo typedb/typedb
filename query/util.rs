@@ -22,11 +22,8 @@ use encoding::{
     value::{label::Label, value::Value, value_type::ValueTypeCategory},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use typeql::{
-    annotation::{Annotation as TypeQLAnnotation, CardinalityRange},
-    common::token::{Kind as TypeQLKind, ValueType},
-    type_::{BuiltinValueType, NamedType},
-};
+use typeql::{annotation::{Annotation as TypeQLAnnotation, CardinalityRange}, common::token::{Kind as TypeQLKind, ValueType}, type_::{BuiltinValueType, NamedType}, TypeRef, TypeRefAny};
+use concept::type_::Ordering;
 
 use crate::{define::DefineError, SymbolResolutionError};
 
@@ -36,6 +33,18 @@ pub(crate) fn translate_kind(typeql_kind: TypeQLKind) -> Kind {
         TypeQLKind::Relation => Kind::Relation,
         TypeQLKind::Attribute => Kind::Attribute,
         TypeQLKind::Role => Kind::Role,
+    }
+}
+
+fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(Label<'static>, Ordering), ()> {
+    match type_ref {
+        TypeRefAny::Type(TypeRef::Named(NamedType::Label(label))) => {
+            Ok((Label::parse_from(label.ident.as_str()), Ordering::Unordered))
+        }
+        TypeRefAny::List(typeql::type_::List { inner: TypeRef::Named(NamedType::Label(label)), .. }) => {
+            Ok((Label::parse_from(label.ident.as_str()), Ordering::Ordered))
+        }
+        _ => Err(()),
     }
 }
 
