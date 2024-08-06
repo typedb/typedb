@@ -299,7 +299,7 @@ impl<'a> Relation<'a> {
         Relation::new(ObjectVertex::new(Bytes::Array(bytes)))
     }
 
-    pub(crate) fn as_reference(&self) -> Relation<'_> {
+    pub fn as_reference(&self) -> Relation<'_> {
         Relation { vertex: self.vertex.as_reference() }
     }
 

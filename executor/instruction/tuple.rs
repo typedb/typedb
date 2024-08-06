@@ -186,5 +186,11 @@ pub(crate) fn relation_role_player_to_tuple_relation_player_role<'a>(
 pub(crate) fn relation_role_player_to_tuple_player_relation_role<'a>(
     result: Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>,
 ) -> TupleResult<'a> {
-    todo!()
+    let (rel, rp, count) = result?;
+    let role_type = rp.role_type();
+    Ok(Tuple::Triple([
+        VariableValue::Thing(rp.into_player().into()),
+        VariableValue::Thing(rel.into()),
+        VariableValue::Type(role_type.into()),
+    ]))
 }

@@ -379,8 +379,11 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     const RANGE_TO: Range<usize> = Self::RANGE_FROM.end..Self::RANGE_FROM.end + ObjectVertex::LENGTH;
     const RANGE_ROLE_ID: Range<usize> = Self::RANGE_TO.end..Self::RANGE_TO.end + TypeID::LENGTH;
     const LENGTH: usize = PrefixID::LENGTH + 2 * ObjectVertex::LENGTH + TypeID::LENGTH;
-    pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
     pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
+    pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
+    pub const LENGTH_PREFIX_FROM_TO_TYPE: usize =
+        PrefixID::LENGTH + ObjectVertex::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
+    pub const LENGTH_PREFIX_FROM_TO: usize = PrefixID::LENGTH + ObjectVertex::LENGTH + ObjectVertex::LENGTH;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
@@ -411,6 +414,16 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         ThingEdgeRolePlayer { bytes: Bytes::Array(bytes) }
     }
 
+    pub fn prefix_from_relation_type(
+        relation_type: TypeVertex<'_>,
+    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TYPE }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes.bytes_mut()[Self::range_from_relation_type()]
+            .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(relation_type).bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
     pub fn prefix_from_relation(
         relation: ObjectVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
@@ -420,13 +433,26 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
-    pub fn prefix_from_relation_type(
-        relation_type: TypeVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TYPE }> {
-        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
+    pub fn prefix_from_relation_player_type(
+        relation: ObjectVertex<'_>,
+        player_type: TypeVertex<'_>,
+    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TO_TYPE }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from_relation_type()]
-            .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(relation_type).bytes());
+        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
+        bytes.bytes_mut()[Self::range_to_player_type()]
+            .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(player_type).bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn prefix_from_relation_player(
+        relation: ObjectVertex<'_>,
+        player: ObjectVertex<'_>,
+    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TO }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(player.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -449,6 +475,10 @@ impl<'a> ThingEdgeRolePlayer<'a> {
 
     const fn range_from_relation_type() -> Range<usize> {
         Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + THING_VERTEX_LENGTH_PREFIX_TYPE
+    }
+
+    const fn range_to_player_type() -> Range<usize> {
+        Self::LENGTH_PREFIX_FROM..Self::LENGTH_PREFIX_FROM + THING_VERTEX_LENGTH_PREFIX_TYPE
     }
 
     pub fn is_role_player(key: StorageKeyReference<'_>) -> bool {
