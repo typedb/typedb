@@ -11,15 +11,15 @@ use concept::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationError},
-        attribute_type::{AttributeType, AttributeTypeAnnotation},
-        entity_type::{EntityType, EntityTypeAnnotation},
+        attribute_type::AttributeTypeAnnotation,
+        entity_type::EntityTypeAnnotation,
         object_type::ObjectType,
         owns::OwnsAnnotation,
         plays::PlaysAnnotation,
         relates::RelatesAnnotation,
-        relation_type::{RelationType, RelationTypeAnnotation},
+        relation_type::RelationTypeAnnotation,
         type_manager::TypeManager,
-        KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use encoding::{
@@ -38,6 +38,7 @@ use typeql::{
     type_::{NamedType, Optional},
     Definable, ScopedLabel, TypeRef, TypeRefAny,
 };
+use concept::type_::KindAPI;
 
 use crate::{
     util::{resolve_type, resolve_value_type, translate_annotation},
@@ -145,7 +146,7 @@ pub(crate) fn process_functions(
 fn define_struct<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    struct_definable: &typeql::schema::definable::Struct,
+    struct_definable: &Struct,
 ) -> Result<(), DefineError> {
     let name = struct_definable.ident.as_str();
     type_manager
@@ -157,7 +158,7 @@ fn define_struct<'a>(
 fn define_struct_fields<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    struct_definable: &typeql::schema::definable::Struct,
+    struct_definable: &Struct,
 ) -> Result<(), DefineError> {
     let name = struct_definable.ident.as_str();
     let struct_key = type_manager
@@ -203,7 +204,7 @@ fn get_struct_field_value_type_optionality(
 fn define_types<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    type_declaration: &typeql::schema::definable::Type,
+    type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     match type_declaration.kind {
@@ -225,7 +226,7 @@ fn define_types<'a>(
 fn define_type_annotations<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    type_declaration: &typeql::schema::definable::Type,
+    type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
@@ -237,7 +238,7 @@ fn define_type_annotations<'a>(
                     <Result<EntityTypeAnnotation, AnnotationError> as From<Annotation>>::from(annotation.clone())
                         .map_err(|source| DefineError::IllegalAnnotation { source })?;
                 entity.set_annotation(snapshot, type_manager, converted).map_err(|source| {
-                    DefineError::SetAnnotation { source, label: label.to_owned(), annotation: annotation }
+                    DefineError::SetAnnotation { source, label: label.to_owned(), annotation }
                 })?;
             }
             TypeEnum::Relation(relation) => {
@@ -245,7 +246,7 @@ fn define_type_annotations<'a>(
                     <Result<RelationTypeAnnotation, AnnotationError> as From<Annotation>>::from(annotation.clone())
                         .map_err(|source| DefineError::IllegalAnnotation { source })?;
                 relation.set_annotation(snapshot, type_manager, converted).map_err(|source| {
-                    DefineError::SetAnnotation { source, label: label.to_owned(), annotation: annotation }
+                    DefineError::SetAnnotation { source, label: label.to_owned(), annotation }
                 })?;
             }
             TypeEnum::Attribute(attribute) => {
@@ -253,10 +254,10 @@ fn define_type_annotations<'a>(
                     <Result<AttributeTypeAnnotation, AnnotationError> as From<Annotation>>::from(annotation.clone())
                         .map_err(|source| DefineError::IllegalAnnotation { source })?;
                 attribute.set_annotation(snapshot, type_manager, converted).map_err(|source| {
-                    DefineError::SetAnnotation { source, label: label.to_owned(), annotation: annotation }
+                    DefineError::SetAnnotation { source, label: label.to_owned(), annotation }
                 })?;
             }
-            TypeEnum::RoleType(role) => unreachable!("Role annotations are syntactically on relates"),
+            TypeEnum::RoleType(_) => unreachable!("Role annotations are syntactically on relates"),
         }
     }
     Ok(())
@@ -265,7 +266,7 @@ fn define_type_annotations<'a>(
 fn define_capabilities_alias<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    type_declaration: &typeql::schema::definable::Type,
+    type_declaration: &Type,
 ) -> Result<(), DefineError> {
     &type_declaration
         .capabilities
@@ -278,7 +279,7 @@ fn define_capabilities_alias<'a>(
 fn define_capabilities_sub<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    type_declaration: &typeql::schema::definable::Type,
+    type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
@@ -315,7 +316,7 @@ fn define_capabilities_sub<'a>(
 fn define_capabilities_value_type<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    type_declaration: &typeql::schema::definable::Type,
+    type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
@@ -336,7 +337,7 @@ fn define_capabilities_value_type<'a>(
 fn define_capabilities_relates<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    type_declaration: &typeql::schema::definable::Type,
+    type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
@@ -390,11 +391,11 @@ fn define_capabilities_relates<'a>(
 fn define_capabilities_owns<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    type_declaration: &typeql::schema::definable::Type,
+    type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label)
-        .map_err(|source| crate::define::DefineError::TypeLookup { source })?;
+        .map_err(|source| DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
         let owns = unwrap_or_else!(CapabilityBase::Owns = &capability.base ;{continue;});
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&owns.owned)
@@ -447,7 +448,7 @@ fn err_capability_kind_mismatch(capability_receiver: &Label<'_>, capability_prov
 fn define_capabilities_plays<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    type_declaration: &typeql::schema::definable::Type,
+    type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
@@ -612,7 +613,7 @@ pub enum DefineError {
 }
 
 fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &Capability) -> DefineError {
-    DefineError::TypeCannotHaveCapability { label: label.to_owned(), kind: kind, capability: capability.clone() }
+    DefineError::TypeCannotHaveCapability { label: label.to_owned(), kind, capability: capability.clone() }
 }
 
 impl fmt::Display for DefineError {

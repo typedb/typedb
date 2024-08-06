@@ -21,12 +21,10 @@ use encoding::{
     graph::type_::Kind,
     value::{label::Label, value::Value, value_type::ValueTypeCategory},
 };
-use ir::translation::literal;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     annotation::{Annotation as TypeQLAnnotation, CardinalityRange},
     common::token::{Kind as TypeQLKind, ValueType},
-    schema::definable::type_::Capability,
     type_::{BuiltinValueType, NamedType},
 };
 
