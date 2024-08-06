@@ -23,7 +23,7 @@ use crate::{
         compiled_expression::{CompiledExpression, ExpressionValueType},
         expression_compiler::ExpressionCompilationContext,
     },
-    inference::{type_annotations::TypeAnnotations, TypeInferenceError},
+    inference::{type_annotations::TypeAnnotations},
 };
 use crate::expression::ExpressionCompileError;
 

@@ -44,8 +44,8 @@ use std::{
 
 use answer::variable::Variable;
 use concept::error::ConceptReadError;
-use encoding::value::value_type::ValueTypeCategory;
-use ir::pattern::{expression::Operator, variable_category::VariableCategory};
+use ir::pattern::{variable_category::VariableCategory};
+use crate::expression::ExpressionCompileError;
 
 pub mod annotated_functions;
 pub mod annotated_program;
@@ -65,7 +65,7 @@ pub enum TypeInferenceError {
     CouldNotDetermineValueTypeForVariable { variable: Variable },
     ExpressionVariableDidNotHaveSingleValueType { variable: Variable },
     ExpressionVariableHasNoValueType { variable: Variable },
-    ExpressionCompilation { source: ExpressionCompilationError },
+    ExpressionCompilation { source: ExpressionCompileError },
     VariableInExpressionMustBeValueOrAttribute { variable: Variable, actual_category: VariableCategory },
     RoleNameNotResolved(String),
 }
@@ -80,10 +80,15 @@ impl Error for TypeInferenceError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             TypeInferenceError::ConceptRead { source } => Some(source),
+            TypeInferenceError::ExpressionCompilation { source } => Some(source),
             TypeInferenceError::LabelNotResolved(_) => None,
             TypeInferenceError::RoleNameNotResolved(_) => None,
             TypeInferenceError::MultipleAssignmentsForSingleVariable { .. } => None,
             TypeInferenceError::CircularDependencyInExpressions { .. } => None,
+            TypeInferenceError::CouldNotDetermineValueTypeForVariable { .. } => None,
+            TypeInferenceError::ExpressionVariableDidNotHaveSingleValueType { .. } => None,
+            TypeInferenceError::ExpressionVariableHasNoValueType { .. } => None,
+            TypeInferenceError::VariableInExpressionMustBeValueOrAttribute { .. } => None,
         }
     }
 }

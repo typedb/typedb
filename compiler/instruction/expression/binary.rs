@@ -17,6 +17,10 @@ use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 use crate::instruction::expression::{
     op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
 };
+use crate::{
+    expression::ExpressionCompileError,
+    expression::expression_compiler::ExpressionCompilationContext
+};
 
 pub trait BinaryExpression<T1: DBValue, T2: DBValue, R: DBValue> {
     const OP_CODE: ExpressionOpCode;
@@ -54,11 +58,11 @@ where
         Some(R::VALUE_TYPE_CATEGORY)
     }
 
-    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompilationError> {
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
         let a2 = builder.pop_type_single()?;
         let a1 = builder.pop_type_single()?;
         if (a1, a2) != (T1::VALUE_TYPE_CATEGORY, T2::VALUE_TYPE_CATEGORY) {
-            Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
+            Err(ExpressionCompileError::InternalUnexpectedValueType)?;
         }
         builder.push_type_single(R::VALUE_TYPE_CATEGORY);
         builder.append_instruction(Self::OP_CODE);
@@ -81,7 +85,6 @@ macro_rules! binary_instruction {
 
 pub(crate) use binary_instruction;
 
-use crate::{expression::expression_compiler::ExpressionCompilationContext, inference::ExpressionCompilationError};
 binary_instruction! {
     MathRemainderLong = MathRemainderLongImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }
 }

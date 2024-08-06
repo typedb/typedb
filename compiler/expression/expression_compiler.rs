@@ -9,13 +9,12 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use encoding::value::{value::Value, value_type::ValueTypeCategory, ValueEncodable};
 use ir::pattern::expression::{
-    BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ExpressionTreeNodeId, ListConstructor, ListIndex,
+    BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex,
     ListIndexRange, Operation, Operator,
 };
 
 use crate::{
     expression::compiled_expression::{CompiledExpression, ExpressionValueType},
-    inference::ExpressionCompilationError,
     instruction::expression::{
         list_operations,
         load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
@@ -25,6 +24,7 @@ use crate::{
         CompilableExpression, ExpressionInstruction,
     },
 };
+use crate::expression::ExpressionCompileError;
 
 pub struct ExpressionCompilationContext<'this> {
     expression_tree: &'this ExpressionTree<Variable>,
@@ -54,7 +54,7 @@ impl<'this> ExpressionCompilationContext<'this> {
     pub fn compile(
         expression_tree: &ExpressionTree<Variable>,
         variable_value_categories: &HashMap<Variable, ExpressionValueType>,
-    ) -> Result<CompiledExpression, ExpressionCompilationError> {
+    ) -> Result<CompiledExpression, ExpressionCompileError> {
         debug_assert!(expression_tree.variables().all(|var| variable_value_categories.contains_key(&var)));
         let mut builder = ExpressionCompilationContext::empty(expression_tree, variable_value_categories);
         builder.compile_recursive(expression_tree.get_root())?;
@@ -63,7 +63,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         Ok(CompiledExpression { instructions, variables: variable_stack, constants: constant_stack, return_type })
     }
 
-    fn compile_recursive(&mut self, expression: &Expression<Variable>) -> Result<(), ExpressionCompilationError> {
+    fn compile_recursive(&mut self, expression: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         match expression {
             Expression::Constant(constant) => self.compile_constant(constant),
             Expression::Variable(variable) => self.compile_variable(variable),
@@ -75,7 +75,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         }
     }
 
-    fn compile_constant(&mut self, constant: &Value<'static>) -> Result<(), ExpressionCompilationError> {
+    fn compile_constant(&mut self, constant: &Value<'static>) -> Result<(), ExpressionCompileError> {
         self.constant_stack.push(constant.clone());
 
         self.push_type_single(constant.value_type().category());
@@ -84,7 +84,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         Ok(())
     }
 
-    fn compile_variable(&mut self, variable: &Variable) -> Result<(), ExpressionCompilationError> {
+    fn compile_variable(&mut self, variable: &Variable) -> Result<(), ExpressionCompileError> {
         debug_assert!(self.variable_value_categories.contains_key(variable));
 
         self.variable_stack.push(variable.clone());
@@ -100,7 +100,7 @@ impl<'this> ExpressionCompilationContext<'this> {
     fn compile_list_constructor(
         &mut self,
         list_constructor: &ListConstructor,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         for expression_id in list_constructor.item_expression_ids().iter().rev() {
             self.compile_recursive(self.expression_tree.get(*expression_id))?;
         }
@@ -108,25 +108,25 @@ impl<'this> ExpressionCompilationContext<'this> {
         self.append_instruction(list_operations::ListConstructor::OP_CODE);
 
         if self.pop_type_single()? != ValueTypeCategory::Long {
-            Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
+            Err(ExpressionCompileError::InternalUnexpectedValueType)?;
         }
         let n_elements = list_constructor.item_expression_ids().len();
         if n_elements > 0 {
             let element_type = self.pop_type_single()?;
             for _ in 1..list_constructor.item_expression_ids().len() {
                 if self.pop_type_single()? != element_type {
-                    Err(ExpressionCompilationError::HeterogenousValuesInList)?;
+                    Err(ExpressionCompileError::HeterogenousValuesInList)?;
                 }
             }
             self.push_type_list(element_type)
         } else {
-            Err(ExpressionCompilationError::EmptyListConstructorCannotInferValueType)?;
+            Err(ExpressionCompileError::EmptyListConstructorCannotInferValueType)?;
         }
 
         Ok(())
     }
 
-    fn compile_list_index(&mut self, list_index: &ListIndex<Variable>) -> Result<(), ExpressionCompilationError> {
+    fn compile_list_index(&mut self, list_index: &ListIndex<Variable>) -> Result<(), ExpressionCompileError> {
         debug_assert!(self.variable_value_categories.contains_key(&list_index.list_variable()));
 
         self.compile_recursive(self.expression_tree.get(list_index.index_expression_id()))?;
@@ -137,7 +137,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         let list_variable_type = self.pop_type_list()?;
         let index_type = self.pop_type_single()?;
         if index_type != ValueTypeCategory::Long {
-            Err(ExpressionCompilationError::ListIndexMustBeLong)?
+            Err(ExpressionCompileError::ListIndexMustBeLong)?
         }
         self.push_type_single(list_variable_type); // reuse
         Ok(())
@@ -146,7 +146,7 @@ impl<'this> ExpressionCompilationContext<'this> {
     fn compile_list_index_range(
         &mut self,
         list_index_range: &ListIndexRange<Variable>,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         debug_assert!(self.variable_value_categories.contains_key(&list_index_range.list_variable()));
         self.compile_recursive(self.expression_tree.get(list_index_range.from_expression_id()))?;
         self.compile_recursive(self.expression_tree.get(list_index_range.to_expression_id()))?;
@@ -157,17 +157,17 @@ impl<'this> ExpressionCompilationContext<'this> {
         let list_variable_type = self.pop_type_list()?;
         let from_index_type = self.pop_type_single()?;
         if from_index_type != ValueTypeCategory::Long {
-            Err(ExpressionCompilationError::ListIndexMustBeLong)?
+            Err(ExpressionCompileError::ListIndexMustBeLong)?
         }
         let to_index_type = self.pop_type_single()?;
         if to_index_type != ValueTypeCategory::Long {
-            Err(ExpressionCompilationError::ListIndexMustBeLong)?
+            Err(ExpressionCompileError::ListIndexMustBeLong)?
         }
 
         Ok(self.push_type_single(list_variable_type))
     }
 
-    fn compile_op(&mut self, operation: &Operation) -> Result<(), ExpressionCompilationError> {
+    fn compile_op(&mut self, operation: &Operation) -> Result<(), ExpressionCompileError> {
         let operator = operation.operator();
         let right_expression = self.expression_tree.get(operation.right_expression_id());
         self.compile_recursive(self.expression_tree.get(operation.left_expression_id()))?;
@@ -190,10 +190,10 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
-        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+        Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Decimal,
             right_category,
@@ -204,7 +204,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
         match right_category {
@@ -216,7 +216,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                 CastLeftLongToDouble::validate_and_append(self)?;
                 self.compile_op_double_double(op)?;
             }
-            _ => Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+            _ => Err(ExpressionCompileError::UnsupportedOperandsForOperation {
                 op,
                 left_category: ValueTypeCategory::Long,
                 right_category,
@@ -229,7 +229,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
         match right_category {
@@ -241,7 +241,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             ValueTypeCategory::Double => {
                 self.compile_op_double_double(op)?;
             }
-            _ => Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+            _ => Err(ExpressionCompileError::UnsupportedOperandsForOperation {
                 op,
                 left_category: ValueTypeCategory::Double,
                 right_category,
@@ -254,10 +254,10 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
-        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+        Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Decimal,
             right_category,
@@ -268,10 +268,10 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
-        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+        Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::String,
             right_category,
@@ -282,10 +282,10 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
-        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+        Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Date,
             right_category,
@@ -296,10 +296,10 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
-        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+        Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::DateTime,
             right_category,
@@ -310,10 +310,10 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
-        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+        Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::DateTimeTZ,
             right_category,
@@ -324,10 +324,10 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
-        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+        Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Duration,
             right_category,
@@ -338,10 +338,10 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompilationError> {
+    ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
-        Err(ExpressionCompilationError::UnsupportedOperandsForOperation {
+        Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Struct,
             right_category,
@@ -349,7 +349,7 @@ impl<'this> ExpressionCompilationContext<'this> {
     }
 
     // Ops with Left, Right resolved
-    fn compile_op_long_long(&mut self, op: Operator) -> Result<(), ExpressionCompilationError> {
+    fn compile_op_long_long(&mut self, op: Operator) -> Result<(), ExpressionCompileError> {
         match op {
             Operator::Add => operators::OpLongAddLong::validate_and_append(self)?,
             Operator::Subtract => operators::OpLongSubtractLong::validate_and_append(self)?,
@@ -361,7 +361,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         Ok(())
     }
 
-    fn compile_op_double_double(&mut self, op: Operator) -> Result<(), ExpressionCompilationError> {
+    fn compile_op_double_double(&mut self, op: Operator) -> Result<(), ExpressionCompileError> {
         match op {
             Operator::Add => operators::OpDoubleAddDouble::validate_and_append(self)?,
             Operator::Subtract => operators::OpDoubleSubtractDouble::validate_and_append(self)?,
@@ -373,7 +373,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         Ok(())
     }
 
-    fn compile_builtin(&mut self, builtin: &BuiltInCall) -> Result<(), ExpressionCompilationError> {
+    fn compile_builtin(&mut self, builtin: &BuiltInCall) -> Result<(), ExpressionCompileError> {
         match builtin.builtin_id() {
             BuiltInFunctionID::Abs => {
                 self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
@@ -381,7 +381,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                     ValueTypeCategory::Long => MathAbsLong::validate_and_append(self)?,
                     ValueTypeCategory::Double => MathAbsDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
-                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
             BuiltInFunctionID::Ceil => {
@@ -389,7 +389,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                 match self.peek_type_single()? {
                     ValueTypeCategory::Double => MathCeilDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
-                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
             BuiltInFunctionID::Floor => {
@@ -397,7 +397,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                 match self.peek_type_single()? {
                     ValueTypeCategory::Double => MathFloorDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
-                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
             BuiltInFunctionID::Round => {
@@ -405,33 +405,33 @@ impl<'this> ExpressionCompilationContext<'this> {
                 match self.peek_type_single()? {
                     ValueTypeCategory::Double => MathRoundDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
-                    _ => Err(ExpressionCompilationError::UnsupportedArgumentsForBuiltin)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin)?,
                 }
             }
         }
         Ok(())
     }
 
-    fn pop_type(&mut self) -> Result<ExpressionValueType, ExpressionCompilationError> {
+    fn pop_type(&mut self) -> Result<ExpressionValueType, ExpressionCompileError> {
         match self.type_stack.pop() {
             Some(value) => Ok(value),
-            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+            None => Err(ExpressionCompileError::InternalStackWasEmpty)?,
         }
     }
 
-    pub(crate) fn pop_type_single(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+    pub(crate) fn pop_type_single(&mut self) -> Result<ValueTypeCategory, ExpressionCompileError> {
         match self.type_stack.pop() {
             Some(ExpressionValueType::Single(value)) => Ok(value),
-            Some(ExpressionValueType::List(_)) => Err(ExpressionCompilationError::ExpectedSingleWasList),
-            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+            Some(ExpressionValueType::List(_)) => Err(ExpressionCompileError::ExpectedSingleWasList),
+            None => Err(ExpressionCompileError::InternalStackWasEmpty)?,
         }
     }
 
-    pub(crate) fn pop_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+    pub(crate) fn pop_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompileError> {
         match self.type_stack.pop() {
             Some(ExpressionValueType::List(value)) => Ok(value),
-            Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
-            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+            Some(ExpressionValueType::Single(_)) => Err(ExpressionCompileError::ExpectedListWasSingle),
+            None => Err(ExpressionCompileError::InternalStackWasEmpty)?,
         }
     }
 
@@ -443,19 +443,19 @@ impl<'this> ExpressionCompilationContext<'this> {
         self.type_stack.push(ExpressionValueType::List(value));
     }
 
-    fn peek_type_single(&self) -> Result<&ValueTypeCategory, ExpressionCompilationError> {
+    fn peek_type_single(&self) -> Result<&ValueTypeCategory, ExpressionCompileError> {
         match self.type_stack.last() {
             Some(ExpressionValueType::Single(value)) => Ok(value),
-            Some(ExpressionValueType::List(_)) => Err(ExpressionCompilationError::ExpectedSingleWasList),
-            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+            Some(ExpressionValueType::List(_)) => Err(ExpressionCompileError::ExpectedSingleWasList),
+            None => Err(ExpressionCompileError::InternalStackWasEmpty)?,
         }
     }
 
-    pub(crate) fn peek_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompilationError> {
+    pub(crate) fn peek_type_list(&mut self) -> Result<ValueTypeCategory, ExpressionCompileError> {
         match self.type_stack.last() {
             Some(ExpressionValueType::List(value)) => Ok(*value),
-            Some(ExpressionValueType::Single(_)) => Err(ExpressionCompilationError::ExpectedListWasSingle),
-            None => Err(ExpressionCompilationError::InternalStackWasEmpty)?,
+            Some(ExpressionValueType::Single(_)) => Err(ExpressionCompileError::ExpectedListWasSingle),
+            None => Err(ExpressionCompileError::InternalStackWasEmpty)?,
         }
     }
 

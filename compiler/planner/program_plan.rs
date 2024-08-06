@@ -15,15 +15,16 @@ use crate::{
     inference::type_annotations::TypeAnnotations,
     planner::{function_plan::FunctionPlan, pattern_plan::PatternPlan},
 };
-use crate::expression::compiled_expression::CompiledExpression;
+use crate::expression::compiled_expression::{CompiledExpression, ExpressionValueType};
 use crate::inference::annotated_program::AnnotatedProgram;
 
 pub struct ProgramPlan {
-    entry: PatternPlan,
-    entry_type_annotations: TypeAnnotations,
+    // TODO: krishnan: Revert pub
+    pub entry: PatternPlan,
+    pub entry_type_annotations: TypeAnnotations,
     // TODO: this should have ValueType not ValueTypeCategory
-    entry_value_type_annotations: HashMap<Variable, ValueTypeCategory>,
-    functions: HashMap<DefinitionKey<'static>, FunctionPlan>,
+    pub entry_value_type_annotations: HashMap<Variable, ExpressionValueType>,
+    pub functions: HashMap<DefinitionKey<'static>, FunctionPlan>,
 }
 
 impl ProgramPlan {
@@ -35,7 +36,7 @@ impl ProgramPlan {
     ) -> Self {
         let mut entry_value_type_annotations = HashMap::new();
         for (variable, expression) in &entry_expressions {
-            entry_value_type_annotations.insert(*variable, expression.return_type().as_variable_category())
+            entry_value_type_annotations.insert(*variable, expression.return_type());
         }
 
         Self {
@@ -66,7 +67,7 @@ impl ProgramPlan {
         &self.entry_type_annotations
     }
 
-    pub fn entry_value_type_annotations(&self) -> &HashMap<Variable, ValueTypeCategory> {
+    pub fn entry_value_type_annotations(&self) -> &HashMap<Variable, ExpressionValueType> {
         &self.entry_value_type_annotations
     }
 }

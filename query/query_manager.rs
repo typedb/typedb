@@ -16,7 +16,9 @@ use ir::translation::function::translate_function;
 
 use crate::{define, error::QueryError};
 use crate::match_::MatchClause;
-use crate::pipeline::ExecutableStage;
+
+use crate::pipeline::NonTerminalStage as ExecutableStage; // TODO: Type didn't exist otherwise
+// use crate::pipeline::ExecutableStage;
 
 pub struct QueryManager {}
 

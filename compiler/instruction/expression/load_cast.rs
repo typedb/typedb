@@ -16,7 +16,7 @@ use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 
 use crate::{
     expression::expression_compiler::ExpressionCompilationContext,
-    inference::ExpressionCompilationError,
+    expression::ExpressionCompileError,
     instruction::expression::{
         op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
     },
@@ -70,10 +70,10 @@ impl<From: DBValue, To: ImplicitCast<From>> CompilableExpression for CastUnary<F
         Some(To::VALUE_TYPE_CATEGORY)
     }
 
-    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompilationError> {
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
         let value_before = builder.pop_type_single()?;
         if value_before != From::VALUE_TYPE_CATEGORY {
-            Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
+            Err(ExpressionCompileError::InternalUnexpectedValueType)?;
         }
         builder.push_type_single(To::VALUE_TYPE_CATEGORY);
 
@@ -91,11 +91,11 @@ impl<From: DBValue, To: ImplicitCast<From>> CompilableExpression for CastBinaryL
         Some(To::VALUE_TYPE_CATEGORY)
     }
 
-    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompilationError> {
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
         let right = builder.pop_type_single()?;
         let left_before = builder.pop_type_single()?;
         if left_before != From::VALUE_TYPE_CATEGORY {
-            Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
+            Err(ExpressionCompileError::InternalUnexpectedValueType)?;
         }
         builder.push_type_single(To::VALUE_TYPE_CATEGORY);
         builder.push_type_single(right);
@@ -114,10 +114,10 @@ impl<From: DBValue, To: ImplicitCast<From>> CompilableExpression for CastBinaryR
         Some(To::VALUE_TYPE_CATEGORY)
     }
 
-    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompilationError> {
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
         let right_before = builder.pop_type_single()?;
         if right_before != From::VALUE_TYPE_CATEGORY {
-            Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
+            Err(ExpressionCompileError::InternalUnexpectedValueType)?;
         }
         builder.push_type_single(To::VALUE_TYPE_CATEGORY);
 

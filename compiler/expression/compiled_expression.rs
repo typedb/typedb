@@ -6,7 +6,6 @@
 
 use answer::variable::Variable;
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
-use ir::pattern::variable_category::VariableCategory;
 
 use crate::instruction::expression::op_codes::ExpressionOpCode;
 

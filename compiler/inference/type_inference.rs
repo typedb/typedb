@@ -6,20 +6,17 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    sync::Arc,
 };
-use std::os::unix::raw::blkcnt_t;
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
-use ir::program::{function::Function, program::Program};
+use ir::program::{function::Function};
 use ir::program::block::FunctionalBlock;
 use storage::snapshot::ReadableSnapshot;
 
 use super::pattern_type_inference::infer_types_for_block;
 use crate::inference::{
     annotated_functions::{IndexedAnnotatedFunctions, AnnotatedUnindexedFunctions},
-    annotated_program::AnnotatedProgram,
     type_annotations::{FunctionAnnotations, TypeAnnotations},
     TypeInferenceError,
 };
@@ -363,7 +360,7 @@ pub mod tests {
             let annotations_with_schema_cache =
                 infer_types(Program::new(entry, vec![]), &snapshot, &type_manager, Arc::new(schema_cache)).unwrap();
             assert_eq!(
-                *annotations_with_schema_cache.entry_annotations.variable_annotations(),
+                *annotations_with_schema_cache.1.variable_annotations(),
                 HashMap::from([(var_animal, Arc::new(HashSet::from([type_cat.clone()])))]),
             );
         }
