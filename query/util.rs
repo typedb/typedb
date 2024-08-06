@@ -36,7 +36,7 @@ pub(crate) fn translate_kind(typeql_kind: TypeQLKind) -> Kind {
     }
 }
 
-fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(Label<'static>, Ordering), ()> {
+pub(crate) fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(Label<'static>, Ordering), ()> {
     match type_ref {
         TypeRefAny::Type(TypeRef::Named(NamedType::Label(label))) => {
             Ok((Label::parse_from(label.ident.as_str()), Ordering::Unordered))

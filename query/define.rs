@@ -70,6 +70,7 @@ macro_rules! filter_variants {
 }
 pub(crate) use filter_variants;
 use ir::LiteralParseError;
+use crate::util::type_ref_to_label_and_ordering;
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,
