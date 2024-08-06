@@ -7,5 +7,5 @@
 mod constraints;
 mod expression;
 pub mod function;
-mod literal;
+pub mod literal;
 pub mod match_;

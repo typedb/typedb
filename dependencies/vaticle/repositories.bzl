@@ -22,7 +22,7 @@ def vaticle_typeql():
     git_repository(
         name = "vaticle_typeql",
         remote = "https://github.com/krishnangovindraj/typeql",
-        commit = "ce6a20e2daff7ae70a79ed0bf366054c5d1f46c2",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql
+        commit = "ecd503d4450cb948c011f0999d9883bafcbbb32c",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql
     )
 
 def vaticle_typedb_common():
