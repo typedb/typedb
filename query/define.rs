@@ -38,10 +38,9 @@ use typeql::{
     type_::{NamedType, Optional},
     Definable, ScopedLabel, TypeRef, TypeRefAny,
 };
-use concept::type_::{KindAPI, TypeAPI};
 
 use crate::{
-    util::{resolve_type, resolve_value_type, translate_annotation, UnwrapTypeAs},
+    util::{resolve_type, resolve_value_type, translate_annotation},
     SymbolResolutionError,
 };
 
@@ -83,7 +82,7 @@ pub(crate) fn execute(
 pub(crate) fn process_struct_definitions(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    definables: &Vec<Definable>,
+    definables: &[Definable],
 ) -> Result<(), DefineError> {
     filter_variants!(Definable::Struct : definables)
         .try_for_each(|struct_| define_struct(snapshot, type_manager, struct_))?;
@@ -95,32 +94,37 @@ pub(crate) fn process_struct_definitions(
 pub(crate) fn process_type_declarations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    definables: &Vec<Definable>,
+    definables: &[Definable],
 ) -> Result<(), DefineError> {
     // TODO: Annotations on capabilities; Overrides; Idempotency checks.
-    filter_variants!(Definable::TypeDeclaration : definables)
-        .try_for_each(|declaration| define_types(snapshot, type_manager, declaration))?;
-    filter_variants!(Definable::TypeDeclaration : definables)
-        .try_for_each(|declaration| define_type_annotations(snapshot, type_manager, declaration))?;
-    filter_variants!(Definable::TypeDeclaration : definables)
-        .try_for_each(|declaration| define_capabilities_sub(snapshot, type_manager, declaration))?;
-    filter_variants!(Definable::TypeDeclaration : definables)
-        .try_for_each(|declaration| define_capabilities_alias(snapshot, type_manager, declaration))?;
-    filter_variants!(Definable::TypeDeclaration : definables)
-        .try_for_each(|declaration| define_capabilities_value_type(snapshot, type_manager, declaration))?;
-    filter_variants!(Definable::TypeDeclaration : definables)
-        .try_for_each(|declaration| define_capabilities_relates(snapshot, type_manager, declaration))?;
-    // filter_variants!(Definable::TypeDeclaration : definables).try_for_each(|declaration| {
+    let declarations = filter_variants!(Definable::TypeDeclaration : definables);
+    declarations.clone().try_for_each(|declaration| {
+        define_types(snapshot, type_manager, declaration)
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        define_type_annotations(snapshot, type_manager, declaration)
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        define_capabilities_sub(snapshot, type_manager, declaration)
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        define_capabilities_alias(snapshot, type_manager, declaration)
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        define_capabilities_value_type(snapshot, type_manager, declaration)
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        define_capabilities_relates(snapshot, type_manager, declaration)
+    })?;
+    // declarations.clone().try_for_each(|declaration| {
     //     define_capabilities_relates_overrides(snapshot, type_manager, definables)
     // })?;
-    filter_variants!(Definable::TypeDeclaration : definables)
-        .try_for_each(|declaration| define_capabilities_owns(snapshot, type_manager, declaration))?;
-    // filter_variants!(Definable::TypeDeclaration : definables).try_for_each(|declaration| {
+    declarations.clone().try_for_each(|declaration| define_capabilities_owns(snapshot, type_manager, declaration))?;
+    // declarations.clone().try_for_each(|declaration| {
     //     define_capabilities_owns_overrides(snapshot, type_manager, definables)
     // })?;
-    filter_variants!(Definable::TypeDeclaration : definables)
-        .try_for_each(|declaration| define_capabilities_plays(snapshot, type_manager, declaration))?;
-    // filter_variants!(Definable::TypeDeclaration : definables).try_for_each(|declaration| {
+    declarations.clone().try_for_each(|declaration| define_capabilities_plays(snapshot, type_manager, declaration))?;
+    // declarations.clone().try_for_each(|declaration| {
     //     define_capabilities_plays_overrides(snapshot, type_manager, definables)
     // })?;
     Ok(())
@@ -129,7 +133,7 @@ pub(crate) fn process_type_declarations(
 pub(crate) fn process_functions(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    definables: &Vec<Definable>,
+    definables: &[Definable],
 ) -> Result<(), DefineError> {
     filter_variants!(Definable::Function : definables)
         .try_for_each(|declaration| define_functions(snapshot, type_manager, definables))?;
@@ -285,13 +289,7 @@ fn define_capabilities_sub<'a>(
         let supertype = resolve_type(snapshot, type_manager, &supertype_label)
             .map_err(|source| DefineError::TypeLookup { source })?;
         if type_.kind() != supertype.kind() {
-            return Err(DefineError::SetSupertypeKindMismatch {
-                label: label.clone(),
-                supertype_label: supertype_label.clone(),
-                capability: capability.clone(),
-                subtype_kind: type_.kind(),
-                supertype_kind: supertype.kind(),
-            })?;
+            return Err(err_capability_kind_mismatch(&label, &supertype_label, capability, type_.kind(), supertype.kind()))?;
         }
 
         match (&type_, supertype) {
@@ -355,7 +353,7 @@ fn define_capabilities_relates<'a>(
             }
         })?;
         if let Some(relates) = relation_type
-            .get_relates_of_role(snapshot, type_manager, role_label.ident.as_str())
+            .get_relates_of_role(snapshot, type_manager, role_label.name.as_str())
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?
         {
             let existing_ordering = relates
@@ -371,7 +369,7 @@ fn define_capabilities_relates<'a>(
             }
         } else {
             relation_type
-                .create_relates(snapshot, type_manager, role_label.ident.as_str(), ordering)
+                .create_relates(snapshot, type_manager, role_label.name.as_str(), ordering)
                 .map_err(|source| DefineError::CreateRelates { source, relates: relates.to_owned() })?;
         }
     }
@@ -390,8 +388,14 @@ fn define_capabilities_owns<'a>(
         let owns = unwrap_or_else!(CapabilityBase::Owns = &capability.base ;{continue;});
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&owns.owned)
             .map_err(|_| DefineError::OwnsAttributeMustBeLabelOrList { owns: owns.clone() })?;
-        let attribute_type = AttributeType::resolve_for(snapshot, type_manager, &attr_label, capability)
+
+        let wrapped_attribute_type = resolve_type(snapshot, type_manager, &attr_label)
             .map_err(|source| DefineError::TypeLookup { source })?;
+        let attribute_type = unwrap_or_else!(TypeEnum::Attribute = wrapped_attribute_type; {
+            return Err(
+                err_capability_kind_mismatch(&label, &attr_label, capability, Kind::Attribute, wrapped_attribute_type.kind())
+            );
+        });
         match &type_ {
             TypeEnum::Entity(entity_type) => {
                 ObjectType::Entity(entity_type.clone())
@@ -409,6 +413,15 @@ fn define_capabilities_owns<'a>(
         }
     }
     Ok(())
+}
+
+fn err_capability_kind_mismatch(capability_receiver: &Label<'_>, capability_provider: &Label<'_>, capability: &Capability, expected_kind: Kind, actual_kind: Kind) -> DefineError {
+    DefineError::CapabilityKindMismatch {
+        capability_receiver: capability_receiver.clone().into_owned(),
+        capability_provider: capability_provider.clone().into_owned(),
+        capability: capability.clone(),
+        expected_kind, actual_kind,
+    }
 }
 
 fn define_capabilities_plays<'a>(
@@ -445,28 +458,20 @@ fn define_capabilities_plays<'a>(
 fn define_functions<'a>(
     snapshot: &impl WritableSnapshot,
     type_manager: &TypeManager,
-    definables: &Vec<Definable>,
+    definables: &[Definable],
 ) -> Result<(), DefineError> {
     Ok(())
 }
 
-fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(typeql::Label, Ordering), ()> {
+fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(Label<'static>, Ordering), ()> {
     match type_ref {
-        TypeRefAny::Type(TypeRef::Named(NamedType::Label(label))) => Ok((label.clone(), Ordering::Unordered)),
+        TypeRefAny::Type(TypeRef::Named(NamedType::Label(label))) => {
+            Ok((Label::parse_from(label.ident.as_str()), Ordering::Unordered))
+        },
         TypeRefAny::List(typeql::type_::List { inner: TypeRef::Named(NamedType::Label(label)), .. }) => {
-            Ok((label.clone(), Ordering::Ordered))
+            Ok((Label::parse_from(label.ident.as_str()), Ordering::Ordered))
         }
         _ => Err(()),
-    }
-}
-
-fn type_ref_to_scoped_label_and_is_list(type_ref: &TypeRefAny) -> Option<(ScopedLabel, bool)> {
-    match type_ref {
-        TypeRefAny::Type(TypeRef::Named(NamedType::Role(label))) => Some((label.clone(), false)),
-        TypeRefAny::List(typeql::type_::List { inner: TypeRef::Named(NamedType::Role(label)), .. }) => {
-            Some((label.clone(), true))
-        }
-        _ => None,
     }
 }
 
@@ -564,12 +569,12 @@ pub enum DefineError {
         label: Label<'static>,
         annotation: Annotation,
     },
-    SetSupertypeKindMismatch {
-        label: Label<'static>,
-        supertype_label: Label<'static>,
+    CapabilityKindMismatch {
+        capability_receiver: Label<'static>,
+        capability_provider: Label<'static>,
         capability: Capability,
-        subtype_kind: Kind,
-        supertype_kind: Kind,
+        expected_kind: Kind,
+        actual_kind: Kind,
     },
 }
 

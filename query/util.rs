@@ -13,13 +13,8 @@ use concept::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
             AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
-        attribute_type::AttributeType,
-        entity_type::EntityType,
         object_type::ObjectType,
-        relation_type::RelationType,
-        role_type::RoleType,
         type_manager::TypeManager,
-        KindAPI,
     },
 };
 use encoding::{
@@ -150,61 +145,6 @@ pub(crate) fn resolve_value_type(
             let category = as_value_type_category(token);
             let value_type = category.try_into_value_type().unwrap(); // unwrap is safe: builtins are never struct
             Ok(value_type)
-        }
-    }
-}
-
-pub(crate) trait UnwrapTypeAs<'a>: KindAPI<'a> {
-    fn unwrap(type_enum: answer::Type) -> Option<Self>;
-    fn resolve_for(
-        snapshot: &impl WritableSnapshot,
-        type_manager: &TypeManager,
-        typeql_label: &typeql::type_::Label,
-        capability: &Capability,
-    ) -> Result<Self, SymbolResolutionError> {
-        let label = Label::parse_from(typeql_label.ident.as_str());
-        let type_enum = resolve_type(snapshot, type_manager, &label)?;
-        let actual_kind = type_enum.kind();
-        match Self::unwrap(type_enum) {
-            Some(type_) => Ok(type_),
-            None => Err(SymbolResolutionError::KindMismatch {
-                label: label.to_owned(),
-                expected: Self::ROOT_KIND,
-                actual: actual_kind,
-                capability: capability.to_owned(),
-            }),
-        }
-    }
-}
-impl<'a> UnwrapTypeAs<'a> for EntityType<'a> {
-    fn unwrap(type_enum: answer::Type) -> Option<Self> {
-        match type_enum {
-            answer::Type::Entity(unwrapped) => Some(unwrapped),
-            _ => None,
-        }
-    }
-}
-impl<'a> UnwrapTypeAs<'a> for RelationType<'a> {
-    fn unwrap(type_enum: answer::Type) -> Option<Self> {
-        match type_enum {
-            answer::Type::Relation(unwrapped) => Some(unwrapped),
-            _ => None,
-        }
-    }
-}
-impl<'a> UnwrapTypeAs<'a> for AttributeType<'a> {
-    fn unwrap(type_enum: answer::Type) -> Option<Self> {
-        match type_enum {
-            answer::Type::Attribute(unwrapped) => Some(unwrapped),
-            _ => None,
-        }
-    }
-}
-impl<'a> UnwrapTypeAs<'a> for RoleType<'a> {
-    fn unwrap(type_enum: answer::Type) -> Option<Self> {
-        match type_enum {
-            answer::Type::RoleType(unwrapped) => Some(unwrapped),
-            _ => None,
         }
     }
 }
