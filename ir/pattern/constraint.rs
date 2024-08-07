@@ -262,6 +262,9 @@ pub enum Constraint<ID: IrID> {
     ExpressionBinding(ExpressionBinding<ID>),
     FunctionCallBinding(FunctionCallBinding<ID>),
     Comparison(Comparison<ID>),
+    Owns(Owns<ID>),
+    Relates(Relates<ID>),
+    Plays(Plays<ID>),
 }
 
 impl<ID: IrID> Constraint<ID> {
@@ -275,6 +278,9 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::ExpressionBinding(binding) => Box::new(binding.ids_assigned()),
             Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_assigned()),
             Constraint::Comparison(comparison) => Box::new(comparison.ids()),
+            Constraint::Owns(owns) => Box::new(owns.ids()),
+            Constraint::Relates(relates) => Box::new(relates.ids()),
+            Constraint::Plays(plays) => Box::new(plays.ids()),
         }
     }
 
@@ -291,6 +297,9 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::ExpressionBinding(binding) => binding.ids_foreach(function),
             Constraint::FunctionCallBinding(binding) => binding.ids_foreach(function),
             Constraint::Comparison(comparison) => comparison.ids_foreach(function),
+            Constraint::Owns(owns) => owns.ids_foreach(function),
+            Constraint::Relates(relates) => relates.ids_foreach(function),
+            Constraint::Plays(plays) => plays.ids_foreach(function),
         }
     }
 
@@ -388,6 +397,9 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Constraint::ExpressionBinding(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::FunctionCallBinding(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Comparison(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::Owns(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::Relates(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::Plays(constraint) => fmt::Display::fmt(constraint, f),
         }
     }
 }
@@ -807,3 +819,136 @@ impl<ID: IrID> fmt::Display for Comparison<ID> {
         todo!()
     }
 }
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Owns<ID> {
+    owner: ID,
+    attribute: ID,
+}
+
+impl<ID: IrID> Owns<ID> {
+    fn new(owner: ID, attribute: ID) -> Self {
+        Self { owner,attribute }
+    }
+
+    pub fn owner(&self) -> ID {
+        self.owner
+    }
+
+    pub fn attribute(&self) -> ID {
+        self.attribute
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.owner, self.attribute].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide),
+    {
+        function(self.owner, ConstraintIDSide::Left);
+        function(self.attribute, ConstraintIDSide::Right);
+    }
+}
+
+impl<ID: IrID> From<Owns<ID>> for Constraint<ID> {
+    fn from(val: Owns<ID>) -> Self {
+        Constraint::Owns(val)
+    }
+}
+
+impl<ID: IrID> fmt::Display for Owns<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Relates<ID> {
+    relation: ID,
+    role_type: ID,
+}
+
+impl<ID: IrID> Relates<ID> {
+    fn new(relation: ID, role: ID) -> Self {
+        Self { relation, role_type: role }
+    }
+
+    pub fn relation(&self) -> ID {
+        self.relation
+    }
+
+    pub fn role_type(&self) -> ID {
+        self.role_type
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.relation, self.role_type].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide),
+    {
+        function(self.relation, ConstraintIDSide::Left);
+        function(self.role_type, ConstraintIDSide::Right);
+    }
+}
+
+impl<ID: IrID> From<Relates<ID>> for Constraint<ID> {
+    fn from(val: Relates<ID>) -> Self {
+        Constraint::Relates(val)
+    }
+}
+
+impl<ID: IrID> fmt::Display for Relates<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Plays<ID> {
+    player: ID,
+    role_type: ID,
+}
+
+impl<ID: IrID> Plays<ID> {
+    fn new(player: ID, role: ID) -> Self {
+        Self { player, role_type: role }
+    }
+
+    pub fn player(&self) -> ID {
+        self.player
+    }
+
+    pub fn role_type(&self) -> ID {
+        self.role_type
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.player, self.role_type].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide),
+    {
+        function(self.player, ConstraintIDSide::Left);
+        function(self.role_type, ConstraintIDSide::Right);
+    }
+}
+
+impl<ID: IrID> From<Plays<ID>> for Constraint<ID> {
+    fn from(val: Plays<ID>) -> Self {
+        Constraint::Plays(val)
+    }
+}
+
+impl<ID: IrID> fmt::Display for Plays<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+

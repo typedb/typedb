@@ -96,6 +96,9 @@ impl PatternPlan {
                 Constraint::ExpressionBinding(_) => todo!(),
                 Constraint::FunctionCallBinding(_) => todo!(),
                 Constraint::Comparison(_) => todo!(),
+                Constraint::Owns(_) => todo!(),
+                Constraint::Relates(_) => todo!(),
+                Constraint::Plays(_) => todo!(),
             }
         }
 
@@ -151,6 +154,9 @@ impl PatternPlan {
                     Constraint::ExpressionBinding(_) => todo!(),
                     Constraint::FunctionCallBinding(_) => todo!(),
                     Constraint::Comparison(_) => todo!(),
+                    Constraint::Owns(_) => todo!(),
+                    Constraint::Relates(_) => todo!(),
+                    Constraint::Plays(_) => todo!(),
                 }
             }
         }

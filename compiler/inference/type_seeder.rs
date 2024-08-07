@@ -28,6 +28,7 @@ use ir::{
     program::{block::BlockContext, function::Function, function_signature::FunctionID},
 };
 use itertools::Itertools;
+use ir::pattern::constraint::{Owns, Plays, Relates};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::inference::{
@@ -297,6 +298,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             Constraint::Has(has) => self.try_propagating_vertex_annotation_impl(has, vertices)?,
             Constraint::Comparison(cmp) => self.try_propagating_vertex_annotation_impl(cmp, vertices)?,
             Constraint::ExpressionBinding(_) | Constraint::FunctionCallBinding(_) | Constraint::Label(_) => false,
+            Constraint::Owns(owns) => self.try_propagating_vertex_annotation_impl(owns, vertices)?,
+            Constraint::Relates(relates) => self.try_propagating_vertex_annotation_impl(relates, vertices)?,
+            Constraint::Plays(plays)  => self.try_propagating_vertex_annotation_impl(plays, vertices)?,
         };
         Ok(any_modified)
     }
@@ -418,6 +422,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
                 Constraint::Has(has) => edges.push(self.seed_edge(constraint, has, vertices)?),
                 Constraint::Comparison(cmp) => edges.push(self.seed_edge(constraint, cmp, vertices)?),
                 Constraint::ExpressionBinding(_) | Constraint::FunctionCallBinding(_) | Constraint::Label(_) => {} // Do nothing
+                Constraint::Owns(owns) => edges.push(self.seed_edge(constraint, owns, vertices)?),
+                Constraint::Relates(relates) => edges.push(self.seed_edge(constraint, relates, vertices)?),
+                Constraint::Plays(plays) => edges.push(self.seed_edge(constraint, plays, vertices)?),
             }
         }
         for disj in &mut tig.nested_disjunctions {
@@ -568,6 +575,7 @@ trait BinaryConstraint {
     ) -> Result<(), ConceptReadError>;
 }
 
+// Note: The schema and data constraints for Owns, Relates & Plays behave identically
 impl BinaryConstraint for Has<Variable> {
     fn left(&self) -> Variable {
         self.owner()
@@ -626,6 +634,55 @@ impl BinaryConstraint for Has<Variable> {
     }
 }
 
+impl BinaryConstraint for Owns<Variable> {
+    fn left(&self) -> Variable {
+        self.owner()
+    }
+
+    fn right(&self) -> Variable {
+        self.attribute()
+    }
+
+    fn annotate_left_to_right_for_type(&self, seeder: &TypeSeeder<'_, impl ReadableSnapshot>, left_type: &TypeAnnotation, collector: &mut BTreeSet<TypeAnnotation>) -> Result<(), ConceptReadError> {
+        let owner = match left_type {
+            TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
+            TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
+            _ => {
+                return Ok(());
+            } // It can't be another type => Do nothing and let type-inference clean it up
+        };
+        owner
+            .get_owns(seeder.snapshot, seeder.type_manager)?
+            .iter()
+            .map(|(attribute, _)| TypeAnnotation::Attribute(attribute.clone()))
+            .for_each(|type_| {
+                collector.insert(type_);
+            });
+        Ok(())
+    }
+
+    fn annotate_right_to_left_for_type(&self, seeder: &TypeSeeder<'_, impl ReadableSnapshot>, right_type: &TypeAnnotation, collector: &mut BTreeSet<TypeAnnotation>) -> Result<(), ConceptReadError> {
+        let attribute = match right_type {
+            TypeAnnotation::Attribute(attribute) => attribute,
+            _ => {
+                return Ok(());
+            } // It can't be another type => Do nothing and let type-inference clean it up
+        };
+        attribute
+            .get_owns(seeder.snapshot, seeder.type_manager)?
+            .iter()
+            .map(|(owner, _)| match owner {
+                ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
+                ObjectType::Relation(relation) => TypeAnnotation::Relation(relation.clone()),
+            })
+            .for_each(|type_| {
+                collector.insert(type_);
+            });
+        Ok(())
+    }
+}
+
+// TODO: Isa was always considered to be explicit with a sub constraint on the variable. This needs to be updated now.
 impl BinaryConstraint for Isa<Variable> {
     fn left(&self) -> Variable {
         self.thing()
@@ -963,6 +1020,64 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
     }
 }
 
+impl BinaryConstraint for Plays<Variable> {
+    fn left(&self) -> Variable {
+        self.player()
+    }
+
+    fn right(&self) -> Variable {
+        self.role_type()
+    }
+
+    fn annotate_left_to_right_for_type(
+        &self,
+        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        left_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), ConceptReadError> {
+        let player = match left_type {
+            TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
+            TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
+            _ => {
+                return Ok(());
+            } // It can't be another type => Do nothing and let type-inference clean it up
+        };
+        player
+            .get_plays(seeder.snapshot, seeder.type_manager)?
+            .iter()
+            .map(|(role_type, _)| TypeAnnotation::RoleType(role_type.clone()))
+            .for_each(|type_| {
+                collector.insert(type_);
+            });
+        Ok(())
+    }
+
+    fn annotate_right_to_left_for_type(
+        &self,
+        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        right_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), ConceptReadError> {
+        let role_type = match right_type {
+            TypeAnnotation::RoleType(role_type) => role_type,
+            _ => {
+                return Ok(());
+            } // It can't be another type => Do nothing and let type-inference clean it up
+        };
+        role_type
+            .get_players(seeder.snapshot, seeder.type_manager)?
+            .iter()
+            .map(|(player, _)| match player {
+                ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
+                ObjectType::Relation(relation) => TypeAnnotation::Relation(relation.clone()),
+            })
+            .for_each(|type_| {
+                collector.insert(type_);
+            });
+        Ok(())
+    }
+}
+
 impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
     fn left(&self) -> Variable {
         self.role_player.relation()
@@ -970,6 +1085,60 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
 
     fn right(&self) -> Variable {
         self.role_player.role_type()
+    }
+
+    fn annotate_left_to_right_for_type(
+        &self,
+        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        left_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), ConceptReadError> {
+        let relation = match left_type {
+            TypeAnnotation::Relation(relation) => relation.clone(),
+            _ => {
+                return Ok(());
+            } // It can't be another type => Do nothing and let type-inference clean it up
+        };
+        relation
+            .get_relates(seeder.snapshot, seeder.type_manager)?
+            .iter()
+            .map(|(role_type, _)| TypeAnnotation::RoleType(role_type.clone()))
+            .for_each(|type_| {
+                collector.insert(type_);
+            });
+        Ok(())
+    }
+
+    fn annotate_right_to_left_for_type(
+        &self,
+        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        right_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), ConceptReadError> {
+        let role_type = match right_type {
+            TypeAnnotation::RoleType(role_type) => role_type,
+            _ => {
+                return Ok(());
+            } // It can't be another type => Do nothing and let type-inference clean it up
+        };
+        role_type
+            .get_relations(seeder.snapshot, seeder.type_manager)?
+            .iter()
+            .map(|(relation, _)| TypeAnnotation::Relation(relation.clone()))
+            .for_each(|type_| {
+                collector.insert(type_);
+            });
+        Ok(())
+    }
+}
+
+impl BinaryConstraint for Relates<Variable> {
+    fn left(&self) -> Variable {
+        self.relation()
+    }
+
+    fn right(&self) -> Variable {
+        self.role_type()
     }
 
     fn annotate_left_to_right_for_type(
