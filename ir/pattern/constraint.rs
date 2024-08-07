@@ -239,7 +239,11 @@ impl<'cx> ConstraintsBuilder<'cx> {
         Ok(as_ref.as_expression_binding().unwrap())
     }
 
-    pub fn add_owns(&mut self, owner_type: Variable, attribute_type: Variable) -> Result<&Owns<Variable>, PatternDefinitionError> {
+    pub fn add_owns(
+        &mut self,
+        owner_type: Variable,
+        attribute_type: Variable,
+    ) -> Result<&Owns<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, owner_type)
                 && self.context.is_variable_available(self.constraints.scope, attribute_type)
@@ -251,7 +255,11 @@ impl<'cx> ConstraintsBuilder<'cx> {
         Ok(constraint.as_owns().unwrap())
     }
 
-    pub fn add_relates(&mut self, relation_type: Variable, role_type: Variable) -> Result<&Relates<Variable>, PatternDefinitionError> {
+    pub fn add_relates(
+        &mut self,
+        relation_type: Variable,
+        role_type: Variable,
+    ) -> Result<&Relates<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, relation_type)
                 && self.context.is_variable_available(self.constraints.scope, role_type)
@@ -263,7 +271,11 @@ impl<'cx> ConstraintsBuilder<'cx> {
         Ok(constraint.as_relates().unwrap())
     }
 
-    pub fn add_plays(&mut self, player_type: Variable, role_type: Variable) -> Result<&Plays<Variable>, PatternDefinitionError> {
+    pub fn add_plays(
+        &mut self,
+        player_type: Variable,
+        role_type: Variable,
+    ) -> Result<&Plays<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, player_type)
                 && self.context.is_variable_available(self.constraints.scope, role_type)
@@ -889,7 +901,7 @@ pub struct Owns<ID> {
 
 impl<ID: IrID> Owns<ID> {
     fn new(owner: ID, attribute: ID) -> Self {
-        Self { owner,attribute }
+        Self { owner, attribute }
     }
 
     pub fn owner(&self) -> ID {
@@ -905,8 +917,8 @@ impl<ID: IrID> Owns<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         function(self.owner, ConstraintIDSide::Left);
         function(self.attribute, ConstraintIDSide::Right);
@@ -949,8 +961,8 @@ impl<ID: IrID> Relates<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         function(self.relation, ConstraintIDSide::Left);
         function(self.role_type, ConstraintIDSide::Right);
@@ -993,8 +1005,8 @@ impl<ID: IrID> Plays<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         function(self.player, ConstraintIDSide::Left);
         function(self.role_type, ConstraintIDSide::Right);
@@ -1012,4 +1024,3 @@ impl<ID: IrID> fmt::Display for Plays<ID> {
         todo!()
     }
 }
-

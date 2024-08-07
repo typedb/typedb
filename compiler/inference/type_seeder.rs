@@ -19,7 +19,10 @@ use encoding::value::value_type::ValueTypeCategory;
 use ir::{
     pattern::{
         conjunction::Conjunction,
-        constraint::{Comparison, Constraint, FunctionCallBinding, Has, Isa, Label, RolePlayer, Sub},
+        constraint::{
+            Comparison, Constraint, FunctionCallBinding, Has, Isa, IsaKind, Label, Owns, Plays, Relates, RolePlayer,
+            Sub,
+        },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -28,7 +31,6 @@ use ir::{
     program::{block::BlockContext, function::Function, function_signature::FunctionID},
 };
 use itertools::Itertools;
-use ir::pattern::constraint::{IsaKind, Owns, Plays, Relates};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::inference::{
@@ -300,7 +302,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             Constraint::ExpressionBinding(_) | Constraint::FunctionCallBinding(_) | Constraint::Label(_) => false,
             Constraint::Owns(owns) => self.try_propagating_vertex_annotation_impl(owns, vertices)?,
             Constraint::Relates(relates) => self.try_propagating_vertex_annotation_impl(relates, vertices)?,
-            Constraint::Plays(plays)  => self.try_propagating_vertex_annotation_impl(plays, vertices)?,
+            Constraint::Plays(plays) => self.try_propagating_vertex_annotation_impl(plays, vertices)?,
         };
         Ok(any_modified)
     }
@@ -643,7 +645,12 @@ impl BinaryConstraint for Owns<Variable> {
         self.attribute()
     }
 
-    fn annotate_left_to_right_for_type(&self, seeder: &TypeSeeder<'_, impl ReadableSnapshot>, left_type: &TypeAnnotation, collector: &mut BTreeSet<TypeAnnotation>) -> Result<(), ConceptReadError> {
+    fn annotate_left_to_right_for_type(
+        &self,
+        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        left_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), ConceptReadError> {
         let owner = match left_type {
             TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
             TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
@@ -661,7 +668,12 @@ impl BinaryConstraint for Owns<Variable> {
         Ok(())
     }
 
-    fn annotate_right_to_left_for_type(&self, seeder: &TypeSeeder<'_, impl ReadableSnapshot>, right_type: &TypeAnnotation, collector: &mut BTreeSet<TypeAnnotation>) -> Result<(), ConceptReadError> {
+    fn annotate_right_to_left_for_type(
+        &self,
+        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        right_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), ConceptReadError> {
         let attribute = match right_type {
             TypeAnnotation::Attribute(attribute) => attribute,
             _ => {

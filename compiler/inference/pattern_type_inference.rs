@@ -875,7 +875,6 @@ pub mod tests {
         }
     }
 
-
     #[test]
     fn type_constraints() {
         // Some version of `$a isa animal, has name $n;`
@@ -894,11 +893,12 @@ pub mod tests {
             let snapshot = storage.clone().open_snapshot_write();
             let mut builder = FunctionalBlock::builder();
             let mut conjunction = builder.conjunction_mut();
-            let (var_animal, var_name, var_animal_type, var_owned_type) = ["animal", "name", "animal_type", "name_type"]
-                .into_iter()
-                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
-                .collect_tuple()
-                .unwrap();
+            let (var_animal, var_name, var_animal_type, var_owned_type) =
+                ["animal", "name", "animal_type", "name_type"]
+                    .into_iter()
+                    .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                    .collect_tuple()
+                    .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type).unwrap();
             conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT).unwrap();
@@ -1118,5 +1118,4 @@ pub mod tests {
             assert_eq!(expected_tig, tig);
         }
     }
-
 }
