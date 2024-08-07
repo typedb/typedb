@@ -11,9 +11,7 @@ use std::{
 };
 
 use answer::{variable::Variable, variable_value::VariableValue, Thing, Type};
-use compiler::planner::insert_planner::{
-    InsertInstruction, InsertPlan, ThingSource, TypeSource, ValueSource, VariableSource,
-};
+use compiler::planner::insert_planner::{Attribute, Entity, Has, InsertInstruction, InsertPlan, Relation, RolePlayer, ThingSource, TypeSource, ValueSource, VariableSource};
 use concept::{
     error::ConceptWriteError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
@@ -35,22 +33,22 @@ macro_rules! try_unwrap_as {
     };
 }
 
-struct ExecutionConcepts<'a, 'row> {
+struct WriteStageExecutionConcepts<'a, 'row> {
     input: &'a Row<'row>,
     type_constants: &'a Vec<answer::Type>,
     value_constants: &'a Vec<Value<'static>>,
     created_things: &'a mut Vec<answer::Thing<'static>>,
 }
 
-impl<'a, 'row> ExecutionConcepts<'a, 'row> {
+impl<'a, 'row> WriteStageExecutionConcepts<'a, 'row> {
     fn new(
         input: &'a Row<'row>,
         type_constants: &'a Vec<answer::Type>,
         value_constants: &'a Vec<Value<'static>>,
         created_things: &'a mut Vec<answer::Thing<'static>>,
-    ) -> ExecutionConcepts<'a, 'row> {
+    ) -> WriteStageExecutionConcepts<'a, 'row> {
         // TODO: Should we keep an attribute cache to avoid re-creating attributes with the same value?
-        ExecutionConcepts { input, type_constants, value_constants, created_things }
+        WriteStageExecutionConcepts { input, type_constants, value_constants, created_things }
     }
 
     fn get_input(&self, position: &usize) -> &VariableValue<'static> {
@@ -118,31 +116,31 @@ pub fn execute<'input, 'output>(
     let InsertExecutor { plan, reused_created_things } = insert;
     let InsertPlan { type_constants, value_constants, output_row: output_row_plan, .. } = plan;
 
-    let context = ExecutionConcepts { input, type_constants, value_constants, created_things: reused_created_things };
+    let context = WriteStageExecutionConcepts { input, type_constants, value_constants, created_things: reused_created_things };
     for instruction in &plan.instructions {
         match instruction {
-            InsertInstruction::Entity { type_ } => {
+            InsertInstruction::Entity(Entity { type_ }) => {
                 let entity_type = try_unwrap_as!(answer::Type::Entity: context.get_type(type_)).unwrap();
                 let inserted = thing_manager
                     .create_entity(snapshot, entity_type.clone())
                     .map_err(|source| InsertError::ConceptWrite { source })?;
                 context.created_things.push(Thing::Entity(inserted));
             }
-            InsertInstruction::Attribute { type_, value } => {
+            InsertInstruction::Attribute(Attribute { type_, value }) => {
                 let attribute_type = try_unwrap_as!(answer::Type::Attribute: context.get_type(type_)).unwrap();
                 let inserted = thing_manager
                     .create_attribute(snapshot, attribute_type.clone(), context.get_value(value).clone())
                     .map_err(|source| InsertError::ConceptWrite { source })?;
                 context.created_things.push(Thing::Attribute(inserted));
             }
-            InsertInstruction::Relation { type_ } => {
+            InsertInstruction::Relation(Relation { type_ }) => {
                 let relation_type = try_unwrap_as!(answer::Type::Relation: context.get_type(type_)).unwrap();
                 let inserted = thing_manager
                     .create_relation(snapshot, relation_type.clone())
                     .map_err(|source| InsertError::ConceptWrite { source })?;
                 context.created_things.push(Thing::Relation(inserted));
             }
-            InsertInstruction::Has { attribute, owner } => {
+            InsertInstruction::Has(Has { attribute, owner }) => {
                 let owner_thing = context.get_thing(owner);
                 let attribute = context.get_thing(attribute);
                 owner_thing
@@ -150,7 +148,7 @@ pub fn execute<'input, 'output>(
                     .set_has_unordered(snapshot, thing_manager, attribute.as_attribute())
                     .map_err(|source| InsertError::ConceptWrite { source })?;
             }
-            InsertInstruction::RolePlayer { relation, player, role } => {
+            InsertInstruction::RolePlayer(RolePlayer { relation, player, role }) => {
                 let relation_thing = try_unwrap_as!(answer::Thing::Relation : context.get_thing(relation)).unwrap();
                 let player_thing = context.get_thing(player).as_object();
                 let role_type = try_unwrap_as!(answer::Type::RoleType : context.get_type(role)).unwrap();

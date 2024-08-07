@@ -37,39 +37,15 @@ macro_rules! filter_variants {
 
 pub type VariablePosition = usize; // Why is that not in plan.
 
-#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
-pub enum VariableSource {
-    TypeSource(TypeSource),
-    ValueSource(ValueSource),
-    ThingSource(ThingSource),
-}
-
-#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
-pub enum TypeSource {
-    Input(VariablePosition),
-    TypeConstant(usize),
-}
-
-#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
-pub enum ValueSource {
-    Input(VariablePosition),
-    ValueConstant(usize),
-}
-
-#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
-pub enum ThingSource {
-    Input(VariablePosition),
-    Inserted(usize),
-}
 
 #[derive(Debug)]
 pub enum InsertInstruction {
     // TODO: Just replace this with regular `Constraint`s and use a mapped-row?
-    Entity { type_: TypeSource },
-    Attribute { type_: TypeSource, value: ValueSource },
-    Relation { type_: TypeSource },
-    Has { owner: ThingSource, attribute: ThingSource }, // TODO: Ordering
-    RolePlayer { relation: ThingSource, player: ThingSource, role: TypeSource }, // TODO: Ordering
+    Entity(IsaEntity),
+    Attribute(IsaAttribute),
+    Relation(IsaRelation),
+    Has(Has), // TODO: Ordering
+    RolePlayer(RolePlayer), // TODO: Ordering
 }
 
 pub struct InsertPlan {
@@ -101,12 +77,12 @@ pub fn build_insert_plan(
         let type_ = get_type_source(&input_variables, &type_constants.index, isa.type_())?;
         let kind = isa_kinds.items[i];
         let instruction = match kind {
-            Kind::Entity => InsertInstruction::Entity { type_ },
+            Kind::Entity => InsertInstruction::Entity(Entity { type_ }),
             Kind::Attribute => {
                 let value = get_value_source(&input_variables, &value_constants.index, isa.thing())?;
-                InsertInstruction::Attribute { type_, value }
+                InsertInstruction::Attribute(IsaAttribute { type_, value })
             }
-            Kind::Relation => InsertInstruction::Relation { type_ },
+            Kind::Relation => InsertInstruction::Relation(Relation { type_ }),
             Kind::Role => Err(InsertCompilationError::IsaStatementForRoleType { isa: isa.clone() })?,
         };
         instructions.push(instruction);
@@ -116,17 +92,17 @@ pub fn build_insert_plan(
     for constraint in constraints {
         match constraint {
             Constraint::Has(has) => {
-                instructions.push(InsertInstruction::Has {
+                instructions.push(InsertInstruction::Has(Has {
                     owner: get_thing_source(input_variables, &isa_kinds.index, has.owner())?,
                     attribute: get_thing_source(input_variables, &isa_kinds.index, has.attribute())?,
-                });
+                }));
             }
             Constraint::Links(role_player) => {
-                instructions.push(InsertInstruction::RolePlayer {
+                instructions.push(InsertInstruction::RolePlayer(RolePlayer {
                     relation: get_thing_source(input_variables, &isa_kinds.index, role_player.relation())?,
                     player: get_thing_source(input_variables, &isa_kinds.index, role_player.player())?,
                     role: get_type_source(input_variables, &type_constants.index, role_player.role_type())?,
-                });
+                }));
             }
             Constraint::Isa(_)
             | Constraint::Label(_)
