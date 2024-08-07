@@ -117,7 +117,7 @@ pub enum SchemaValidationError {
         AnnotationCardinality,
         AnnotationCardinality,
     ),
-    SummarizedCardinalityOfEdgesOverridingSingleEdgeOverflowsOverriddenCardinality(
+    SummarizedCardinalityOfCapabilitiesOverridingSingleCapabilityOverflowsConstraint(
         CapabilityKind,
         Label<'static>,
         Label<'static>,
@@ -302,7 +302,7 @@ impl Error for SchemaValidationError {
             Self::InvalidValuesArgumentsForValueType(_, _) => None,
             Self::KeyShouldNarrowInheritedCardinality(_, _, _, _) => None,
             Self::CardinalityDoesNotNarrowInheritedCardinality(_, _, _, _, _, _, _) => None,
-            Self::SummarizedCardinalityOfEdgesOverridingSingleEdgeOverflowsOverriddenCardinality(_, _, _, _, _) => None,
+            Self::SummarizedCardinalityOfCapabilitiesOverridingSingleCapabilityOverflowsConstraint(_, _, _, _, _) => None,
             Self::OnlyOneRegexCanBeSetForTypeHierarchy(_, _, _, _) => None,
             Self::RangeShouldNarrowInheritedRange(_, _, _, _) => None,
             Self::ValuesShouldNarrowInheritedValues(_, _, _, _) => None,

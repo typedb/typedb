@@ -1954,6 +1954,16 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_new_override(
+            snapshot,
+            self,
+            owns.clone(),
+            overridden.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        // TODO: Looks like we need to call for cardinality recheck of instances as well.....
+
         if owns.attribute() != overridden.attribute() {
             OperationTimeValidation::validate_no_instances_to_override_owns(
                 snapshot,
@@ -1983,6 +1993,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
+        // TODO: Looks like we need to call for cardinality recheck of instances as well.....
         if owns.get_override(snapshot, self)?.is_some() {
             TypeWriter::storage_delete_type_edge_overridden(snapshot, owns);
         }
@@ -2077,6 +2088,16 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_new_override(
+            snapshot,
+            self,
+            plays.clone(),
+            overridden.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        // TODO: Looks like we need to call for cardinality recheck of instances as well.....
+
         if plays.role() != overridden.role() {
             OperationTimeValidation::validate_no_instances_to_override_plays(
                 snapshot,
@@ -2106,6 +2127,8 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         plays: Plays<'static>,
     ) -> Result<(), ConceptWriteError> {
+        // TODO: Looks like we need to call for cardinality recheck of instances as well.....
+
         if plays.get_override(snapshot, self)?.is_some() {
             TypeWriter::storage_delete_type_edge_overridden(snapshot, plays);
         }
@@ -2366,6 +2389,16 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_new_override(
+            snapshot,
+            self,
+            relates.clone(),
+            overridden.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        // TODO: Looks like we need to call for cardinality recheck of instances as well.....
+
         if relates.role() != overridden.role() {
             OperationTimeValidation::validate_no_instances_to_override_relates(
                 snapshot,
@@ -2411,6 +2444,8 @@ impl TypeManager {
             None, // new_interface_supertype
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        // TODO: Looks like we need to call for cardinality recheck of instances as well.....
 
         let role_type = relates.role();
         if role_type.get_supertype(snapshot, self)?.is_some() {
@@ -2556,6 +2591,14 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_updated_cardinality_against_inheritance_line(
+            snapshot,
+            self,
+            owns.clone(),
+            AnnotationKey::CARDINALITY,
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         OperationTimeValidation::validate_new_annotation_compatible_with_owns_and_overriding_owns_instances(
             snapshot,
             self,
@@ -2575,6 +2618,8 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Key;
         self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+
+        // TODO: Looks like we need to call for cardinality recheck of instances as well.....
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
@@ -2657,6 +2702,9 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Cardinality;
         self.validate_unset_capability_annotation_general(snapshot, capability.clone(), annotation_category.clone())?;
+
+        // TODO: Looks like we need to call for cardinality recheck of instances as well.....
+
         self.unset_capability_annotation(snapshot, capability, annotation_category)
     }
 
@@ -3179,6 +3227,14 @@ impl TypeManager {
 
         OperationTimeValidation::validate_overriding_capabilities_narrow_cardinality(
             snapshot,
+            capability.clone(),
+            cardinality,
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_updated_cardinality_against_inheritance_line(
+            snapshot,
+            self,
             capability.clone(),
             cardinality,
         )

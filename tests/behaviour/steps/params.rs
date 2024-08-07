@@ -585,7 +585,7 @@ impl Annotation {
             }
             range if range.starts_with("@range") => {
                 assert!(
-                    range.starts_with("@range(") && range.ends_with(')'),
+                    range.starts_with("@range(") && range.ends_with(')') && range.contains(".."),
                     r#"Invalid @range format: {range:?}. Expected "@range(min..max)""#
                 );
                 assert!(value_type.is_some(), "ValueType is expected to parse annotation @range");

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use encoding::value::label::Label;
 use itertools::Itertools;
@@ -662,10 +662,10 @@ pub(crate) fn capability_get_annotation_by_category<CAP: Capability<'static>>(
 
 pub(crate) fn capability_get_declared_annotation_by_category<CAP: Capability<'static>>(
     snapshot: &impl ReadableSnapshot,
-    edge: CAP,
+    capability: CAP,
     annotation_category: AnnotationCategory,
 ) -> Result<Option<Annotation>, SchemaValidationError> {
-    let annotation = TypeReader::get_type_edge_annotations_declared(snapshot, edge.clone())
+    let annotation = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())
         .map_err(SchemaValidationError::ConceptRead)?
         .into_iter()
         .find(|found_annotation| found_annotation.clone().into().category() == annotation_category);
@@ -707,4 +707,81 @@ pub(crate) fn is_ordering_compatible_with_distinct_annotation(ordering: Ordering
     } else {
         true
     }
+}
+
+pub fn validate_capabilities_cardinality<CAP: Capability<'static>>(
+    type_manager: &TypeManager,
+    snapshot: &impl ReadableSnapshot,
+    type_: CAP::ObjectType,
+    not_stored_cardinalities: &HashMap<CAP, AnnotationCardinality>,
+    not_stored_overrides: &HashMap<CAP, CAP>,
+    validation_errors: &mut Vec<SchemaValidationError>,
+) -> Result<(), ConceptReadError> {
+    let mut cardinality_connections: HashMap<CAP, HashSet<CAP>> = HashMap::new();
+    let mut cardinalities: HashMap<CAP, AnnotationCardinality> = not_stored_cardinalities.clone();
+
+    let capability_declared: HashSet<CAP> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
+
+    for capability in capability_declared {
+        if !cardinalities.contains_key(&capability) {
+            cardinalities.insert(capability.clone(), capability.get_cardinality(snapshot, type_manager)?);
+        }
+
+        let not_stored_override = not_stored_overrides.get(&capability);
+        let mut current_overridden_capability = if let Some(not_stored_override) = not_stored_override {
+            Some(not_stored_override.clone())
+        } else {
+            TypeReader::get_capability_override(snapshot, capability.clone())?
+        };
+
+        while let Some(overridden_capability) = current_overridden_capability {
+            if !cardinalities.contains_key(&overridden_capability) {
+                cardinalities.insert(
+                    overridden_capability.clone(),
+                    overridden_capability.get_cardinality(snapshot, type_manager)?,
+                );
+            }
+
+            if !cardinality_connections.contains_key(&overridden_capability) {
+                cardinality_connections.insert(overridden_capability.clone(), HashSet::new());
+            }
+            cardinality_connections.get_mut(&overridden_capability).unwrap().insert(capability.clone());
+
+            let overridden_card = cardinalities.get(&overridden_capability).unwrap();
+            let capability_card = cardinalities.get(&overridden_capability).unwrap();
+
+            if !overridden_card.narrowed_correctly_by(capability_card) {
+                validation_errors.push(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
+                    CAP::KIND,
+                    get_label_or_concept_read_err(snapshot, capability.object())?,
+                    get_label_or_concept_read_err(snapshot, capability.interface())?,
+                    get_label_or_concept_read_err(snapshot, overridden_capability.object())?,
+                    get_label_or_concept_read_err(snapshot, overridden_capability.interface())?,
+                    *capability_card,
+                    *overridden_card,
+                ));
+            }
+
+            current_overridden_capability =
+                TypeReader::get_capability_override(snapshot, overridden_capability.clone())?;
+        }
+    }
+
+    for (root_capability, inheriting_capabilities) in cardinality_connections {
+        let root_cardinality = cardinalities.get(&root_capability).unwrap();
+        let inheriting_cardinality =
+            inheriting_capabilities.iter().filter_map(|capability| cardinalities.get(capability).copied()).sum();
+
+        if !root_cardinality.narrowed_correctly_by(&inheriting_cardinality) {
+            validation_errors.push(SchemaValidationError::SummarizedCardinalityOfCapabilitiesOverridingSingleCapabilityOverflowsConstraint(
+                CAP::KIND,
+                get_label_or_concept_read_err(snapshot, root_capability.object())?,
+                get_label_or_concept_read_err(snapshot, root_capability.interface())?,
+                *root_cardinality,
+                inheriting_cardinality,
+            ));
+        }
+    }
+
+    Ok(())
 }

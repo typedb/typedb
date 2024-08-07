@@ -41,6 +41,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, TypeAPI,
     },
 };
+use crate::type_::type_manager::validation::validation::validate_capabilities_cardinality;
 
 pub struct CommitTimeValidation {}
 
@@ -130,10 +131,12 @@ impl CommitTimeValidation {
                 type_.clone(),
                 validation_errors,
             )?;
-            Self::validate_capability_cardinality::<Relates<'static>>(
+            validate_capabilities_cardinality::<Relates<'static>>(
                 type_manager,
                 snapshot,
                 type_.clone(),
+                &HashMap::new(), // read everything from storage
+                &HashMap::new(), // read everything from storage
                 validation_errors,
             )?;
         }
@@ -216,10 +219,12 @@ impl CommitTimeValidation {
                 type_.clone().into_owned_object_type(),
                 validation_errors,
             )?;
-            Self::validate_capability_cardinality::<Owns<'static>>(
+            validate_capabilities_cardinality::<Owns<'static>>(
                 type_manager,
                 snapshot,
-                type_.clone(),
+                type_.clone().into_owned_object_type(),
+                &HashMap::new(), // read everything from storage
+                &HashMap::new(), // read everything from storage
                 validation_errors,
             )?;
         }
@@ -235,10 +240,12 @@ impl CommitTimeValidation {
                 type_.clone().into_owned_object_type(),
                 validation_errors,
             )?;
-            Self::validate_capability_cardinality::<Plays<'static>>(
+            validate_capabilities_cardinality::<Plays<'static>>(
                 type_manager,
                 snapshot,
-                type_.clone(),
+                type_.clone().into_owned_object_type(),
+                &HashMap::new(), // read everything from storage
+                &HashMap::new(), // read everything from storage
                 validation_errors,
             )?;
         }
@@ -653,75 +660,6 @@ impl CommitTimeValidation {
                         annotation.clone().into(),
                     ),
                 );
-            }
-        }
-
-        Ok(())
-    }
-
-    fn validate_capability_cardinality<CAP: Capability<'static>>(
-        type_manager: &TypeManager,
-        snapshot: &impl ReadableSnapshot,
-        type_: impl KindAPI<'static>,
-        validation_errors: &mut Vec<SchemaValidationError>,
-    ) -> Result<(), ConceptReadError> {
-        let mut cardinality_connections: HashMap<CAP, HashSet<CAP>> = HashMap::new();
-        let mut cardinalities: HashMap<CAP, AnnotationCardinality> = HashMap::new();
-
-        let capability_declared: HashSet<CAP> = TypeReader::get_capabilities_declared(snapshot, type_.clone())?;
-
-        for capability in capability_declared {
-            if !cardinalities.contains_key(&capability) {
-                cardinalities.insert(capability.clone(), capability.get_cardinality(snapshot, type_manager)?);
-            }
-
-            let mut current_overridden_capability = TypeReader::get_capability_override(snapshot, capability.clone())?;
-            while let Some(overridden_capability) = current_overridden_capability {
-                if !cardinalities.contains_key(&overridden_capability) {
-                    cardinalities.insert(
-                        overridden_capability.clone(),
-                        overridden_capability.get_cardinality(snapshot, type_manager)?,
-                    );
-                }
-
-                if !cardinality_connections.contains_key(&overridden_capability) {
-                    cardinality_connections.insert(overridden_capability.clone(), HashSet::new());
-                }
-                cardinality_connections.get_mut(&overridden_capability).unwrap().insert(capability.clone());
-
-                let overridden_card = cardinalities.get(&overridden_capability).unwrap();
-                let capability_card = cardinalities.get(&overridden_capability).unwrap();
-
-                if !overridden_card.narrowed_correctly_by(capability_card) {
-                    validation_errors.push(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
-                        CAP::KIND,
-                        get_label_or_concept_read_err(snapshot, capability.object())?,
-                        get_label_or_concept_read_err(snapshot, capability.interface())?,
-                        get_label_or_concept_read_err(snapshot, overridden_capability.object())?,
-                        get_label_or_concept_read_err(snapshot, overridden_capability.interface())?,
-                        *capability_card,
-                        *overridden_card,
-                    ));
-                }
-
-                current_overridden_capability =
-                    TypeReader::get_capability_override(snapshot, overridden_capability.clone())?;
-            }
-        }
-
-        for (root_capability, inheriting_capabilities) in cardinality_connections {
-            let root_cardinality = cardinalities.get(&root_capability).unwrap();
-            let inheriting_cardinality =
-                inheriting_capabilities.iter().filter_map(|capability| cardinalities.get(capability).copied()).sum();
-
-            if !root_cardinality.narrowed_correctly_by(&inheriting_cardinality) {
-                validation_errors.push(SchemaValidationError::SummarizedCardinalityOfEdgesOverridingSingleEdgeOverflowsOverriddenCardinality(
-                    CAP::KIND,
-                    get_label_or_concept_read_err(snapshot, root_capability.object())?,
-                    get_label_or_concept_read_err(snapshot, root_capability.interface())?,
-                    *root_cardinality,
-                    inheriting_cardinality,
-                ));
             }
         }
 

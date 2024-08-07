@@ -71,6 +71,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::type_::type_manager::validation::validation::validate_capabilities_cardinality;
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -1747,11 +1748,123 @@ impl OperationTimeValidation {
     pub(crate) fn validate_cardinality_narrows_inherited_cardinality<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        edge: CAP,
-        overridden_edge: CAP,
+        capability: CAP,
+        overridden_capability: CAP,
         cardinality: AnnotationCardinality,
     ) -> Result<(), SchemaValidationError> {
-        validate_cardinality_narrows_inherited_cardinality(snapshot, type_manager, edge, overridden_edge, cardinality)
+        validate_cardinality_narrows_inherited_cardinality(snapshot, type_manager, capability, overridden_capability, cardinality)
+    }
+
+    pub(crate) fn validate_updated_cardinality_against_inheritance_line<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        capability: CAP,
+        cardinality: AnnotationCardinality
+    ) -> Result<(), SchemaValidationError> {
+        let mut validation_errors = vec![];
+        let updated_cardinalities = HashMap::from([(capability.clone(), cardinality.clone())]);
+        if let Some(_) = TypeReader::get_capability_override(snapshot, capability.clone()).map_err(SchemaValidationError::ConceptRead)? {
+            validate_capabilities_cardinality::<CAP>(
+                type_manager,
+                snapshot,
+                capability.object(),
+                &updated_cardinalities,
+                &HashMap::new(), // read all overrides from storage as it's not changed
+                &mut validation_errors,
+            ).map_err(SchemaValidationError::ConceptRead)?;
+        }
+
+        if let Some(error) = validation_errors.first() {
+            return Err(error.clone());
+        }
+
+        // Preserve inheritance ordering in validations
+        // (expect errors from inheritance levels closer to the changed capability)
+        let mut checked_object_types: HashSet<CAP::ObjectType> = HashSet::new();
+        let overriding_capabilities = TypeReader::get_overriding_capabilities_transitive(snapshot, capability.clone()).map_err(SchemaValidationError::ConceptRead)?;
+        for overriding_capability in overriding_capabilities {
+            let already_checked = checked_object_types.insert(overriding_capability.object());
+            if already_checked {
+                continue;
+            }
+
+            validate_capabilities_cardinality::<CAP>(
+                type_manager,
+                snapshot,
+                overriding_capability.object(),
+                &updated_cardinalities,
+                &HashMap::new(), // read all overrides from storage as it's not changed
+                &mut validation_errors,
+            ).map_err(SchemaValidationError::ConceptRead)?;
+
+            if let Some(error) = validation_errors.first() {
+                return Err(error.clone());
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn validate_cardinality_of_inheritance_line_with_new_override<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        capability: CAP,
+        overridden_capability: CAP,
+    ) -> Result<(), SchemaValidationError> {
+        let mut validation_errors = vec![];
+
+        let cardinality_declared = Constraint::compute_cardinality(
+            TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone()).map_err(SchemaValidationError::ConceptRead)?.iter(),
+            None, // default
+        );
+
+        let cardinality = if let Some(cardinality_declared) = cardinality_declared {
+            cardinality_declared
+        } else {
+            // Does not check that it is narrowed by declared annotations here! Should be checked before this validation
+            overridden_capability.get_cardinality(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?
+        };
+
+        let updated_cardinalities = HashMap::from([(capability.clone(), cardinality)]);
+        let updated_overrides = HashMap::from([(capability.clone(), overridden_capability.clone())]);
+        validate_capabilities_cardinality::<CAP>(
+            type_manager,
+            snapshot,
+            capability.object(),
+            &updated_cardinalities,
+            &updated_overrides,
+            &mut validation_errors,
+        ).map_err(SchemaValidationError::ConceptRead)?;
+
+        if let Some(error) = validation_errors.first() {
+            return Err(error.clone());
+        }
+
+        // Preserve inheritance ordering in validations
+        // (expect errors from inheritance levels closer to the changed capability)
+        let mut checked_object_types: HashSet<CAP::ObjectType> = HashSet::new();
+        let overriding_capabilities = TypeReader::get_overriding_capabilities_transitive(snapshot, capability.clone()).map_err(SchemaValidationError::ConceptRead)?;
+        for overriding_capability in overriding_capabilities {
+            let already_checked = checked_object_types.insert(overriding_capability.object());
+            if already_checked {
+                continue;
+            }
+
+            validate_capabilities_cardinality::<CAP>(
+                type_manager,
+                snapshot,
+                overriding_capability.object(),
+                &updated_cardinalities,
+                &updated_overrides,
+                &mut validation_errors,
+            ).map_err(SchemaValidationError::ConceptRead)?;
+
+            if let Some(error) = validation_errors.first() {
+                return Err(error.clone());
+            }
+        }
+
+        Ok(())
     }
 
     pub(crate) fn validate_type_supertype_abstractness_to_set_abstract_annotation<T: KindAPI<'static>>(
@@ -2207,10 +2320,14 @@ impl OperationTimeValidation {
         match value_type {
             Some(_) => {
                 Self::validate_value_type_compatible_with_abstractness(snapshot, attribute_type.clone(), None, None)?;
+                // Check only declared as inherited ones should be checked on the supertype if it also loses its value type
+                let annotations = TypeReader::get_type_annotations_declared(snapshot, attribute_type.clone())
+                    .map_err(SchemaValidationError::ConceptRead)?;
                 Self::validate_attribute_type_value_type_compatible_with_annotations_and_arguments(
                     snapshot,
                     attribute_type.clone(),
                     None,
+                    annotations,
                 )?;
                 Self::validate_value_type_compatible_with_all_owns_annotations(snapshot, attribute_type.clone(), None)?;
                 Self::validate_no_instances_to_unset_value_type(snapshot, thing_manager, attribute_type)
@@ -3034,10 +3151,13 @@ impl OperationTimeValidation {
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
         for_type_and_subtypes_transitive!(snapshot, attribute_type, |type_: AttributeType<'static>| {
+            let annotations = TypeReader::get_type_annotations(snapshot, type_.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
             Self::validate_attribute_type_value_type_compatible_with_annotations_and_arguments(
                 snapshot,
                 type_,
                 value_type.clone(),
+                annotations.into_keys().collect(),
             )
         });
         Ok(())
@@ -3047,10 +3167,9 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
+        annotations: HashSet<AttributeTypeAnnotation>,
     ) -> Result<(), SchemaValidationError> {
-        let annotations = TypeReader::get_type_annotations(snapshot, attribute_type.clone())
-            .map_err(SchemaValidationError::ConceptRead)?;
-        for (annotation, _) in annotations {
+        for annotation in annotations {
             match annotation {
                 AttributeTypeAnnotation::Regex(regex) => {
                     Self::validate_annotation_regex_compatible_value_type(
