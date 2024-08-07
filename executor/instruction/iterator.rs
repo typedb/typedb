@@ -15,9 +15,6 @@ use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
 
-use super::role_player_executor::{
-    RolePlayerBoundedRelationSortedPlayer, RolePlayerUnboundedSortedPlayerMerged, RolePlayerUnboundedSortedPlayerSingle, RolePlayerUnboundedSortedRelation
-};
 use crate::{
     batch::Row,
     instruction::{
@@ -32,6 +29,16 @@ use crate::{
         isa_reverse_executor::{
             IsaUnboundedSortedThingAttributeSingle, IsaUnboundedSortedThingEntitySingle,
             IsaUnboundedSortedThingRelationSingle,
+        },
+        role_player_executor::{
+            RolePlayerBoundedRelationPlayer, RolePlayerBoundedRelationSortedPlayer,
+            RolePlayerUnboundedSortedPlayerMerged, RolePlayerUnboundedSortedPlayerSingle,
+            RolePlayerUnboundedSortedRelation,
+        },
+        role_player_reverse_executor::{
+            RolePlayerReverseBoundedPlayerRelation, RolePlayerReverseBoundedPlayerSortedRelation,
+            RolePlayerReverseUnboundedSortedPlayer, RolePlayerReverseUnboundedSortedRelationMerged,
+            RolePlayerReverseUnboundedSortedRelationSingle,
         },
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
         VariableMode, VariableModes,
@@ -98,11 +105,13 @@ pub(crate) enum TupleIterator {
     RolePlayerUnboundedInvertedSingle(SortedTupleIterator<RolePlayerUnboundedSortedPlayerSingle>),
     RolePlayerUnboundedInvertedMerged(SortedTupleIterator<RolePlayerUnboundedSortedPlayerMerged>),
     RolePlayerBoundedRelation(SortedTupleIterator<RolePlayerBoundedRelationSortedPlayer>),
+    RolePlayerBoundedRelationPlayer(SortedTupleIterator<RolePlayerBoundedRelationPlayer>),
 
-    // RolePlayerReverseUnbounded(SortedTupleIterator<HasReverseUnboundedSortedAttribute>),
-    // RolePlayerReverseUnboundedInvertedSingle(SortedTupleIterator<HasReverseUnboundedSortedOwnerSingle>),
-    // RolePlayerReverseUnboundedInvertedMerged(SortedTupleIterator<HasReverseUnboundedSortedOwnerMerged>),
-    // RolePlayerReverseBounded(SortedTupleIterator<HasReverseBoundedSortedOwner>),
+    RolePlayerReverseUnbounded(SortedTupleIterator<RolePlayerReverseUnboundedSortedPlayer>),
+    RolePlayerReverseUnboundedInvertedSingle(SortedTupleIterator<RolePlayerReverseUnboundedSortedRelationSingle>),
+    RolePlayerReverseUnboundedInvertedMerged(SortedTupleIterator<RolePlayerReverseUnboundedSortedRelationMerged>),
+    RolePlayerReverseBoundedPlayer(SortedTupleIterator<RolePlayerReverseBoundedPlayerSortedRelation>),
+    RolePlayerReverseBoundedPlayerRelation(SortedTupleIterator<RolePlayerReverseBoundedPlayerRelation>),
 }
 
 impl {

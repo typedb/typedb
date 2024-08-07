@@ -108,7 +108,7 @@ impl InstructionExecutor {
             }
             ConstraintInstruction::RolePlayer(role_player, _) => {
                 let rp_player = role_player.player();
-                let get_left_right_filtered = type_annotations
+                let left_right_filtered = type_annotations
                     .constraint_annotations_of(role_player.clone().into())
                     .unwrap()
                     .get_left_right_filtered();
@@ -116,17 +116,31 @@ impl InstructionExecutor {
                     role_player.into_ids(positions),
                     variable_modes,
                     sort_by_position,
-                    get_left_right_filtered.left_to_right(),
-                    get_left_right_filtered.filters_on_right(),
+                    left_right_filtered.left_to_right(),
+                    left_right_filtered.filters_on_right(),
                     type_annotations.variable_annotations_of(rp_player).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
                 Ok(Self::RolePlayer(executor))
             }
-            ConstraintInstruction::RolePlayerReverse(rp, mode) => {
-                todo!()
-                // Ok(Self::RolePlayerReverse(RolePlayerReverseExecutor::new(rp.into_ids(variable_to_position), mode)))
+            ConstraintInstruction::RolePlayerReverse(role_player, _) => {
+                let rp_relation = role_player.relation();
+                let left_right_filtered = type_annotations
+                    .constraint_annotations_of(role_player.clone().into())
+                    .unwrap()
+                    .get_left_right_filtered();
+                let executor = RolePlayerReverseExecutor::new(
+                    role_player.into_ids(positions),
+                    variable_modes,
+                    sort_by_position,
+                    left_right_filtered.right_to_left(),
+                    left_right_filtered.filters_on_left(),
+                    type_annotations.variable_annotations_of(rp_relation).unwrap().clone(),
+                    snapshot,
+                    thing_manager,
+                )?;
+                Ok(Self::RolePlayerReverse(executor))
             }
             ConstraintInstruction::FunctionCallBinding(function_call) => {
                 todo!()
@@ -157,7 +171,7 @@ impl InstructionExecutor {
             InstructionExecutor::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::RolePlayer(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::RolePlayerReverse(executor) => todo!(),
+            InstructionExecutor::RolePlayerReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::FunctionCallBinding(executor) => todo!(),
             InstructionExecutor::Comparison(executor) => todo!(),
             InstructionExecutor::ComparisonReverse(executor) => todo!(),

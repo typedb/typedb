@@ -419,7 +419,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from_relation_type()]
+        bytes.bytes_mut()[Self::range_from_type()]
             .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(relation_type).bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
@@ -440,7 +440,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
-        bytes.bytes_mut()[Self::range_to_player_type()]
+        bytes.bytes_mut()[Self::range_to_type()]
             .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(player_type).bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
@@ -465,6 +465,39 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
+    pub fn prefix_reverse_from_player_type(
+        player_type: TypeVertex<'_>,
+    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
+        bytes.bytes_mut()[Self::range_from_type()]
+            .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(player_type).bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn prefix_reverse_from_player_relation_type(
+        player: ObjectVertex<'_>,
+        relation_type: TypeVertex<'_>,
+    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TO_TYPE }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO_TYPE);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
+        bytes.bytes_mut()[Self::range_to_type()]
+            .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(relation_type).bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn prefix_reverse_from_player_relation(
+        player: ObjectVertex<'_>,
+        relation: ObjectVertex<'_>,
+    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TO }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(relation.bytes().bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
     pub fn prefix() -> StorageKey<'static, { PrefixID::LENGTH }> {
         StorageKey::new_owned(Self::KEYSPACE, ByteArray::copy(&Self::PREFIX.prefix_id().bytes()))
     }
@@ -473,11 +506,11 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         StorageKey::new_owned(Self::KEYSPACE, ByteArray::copy(&Self::PREFIX_REVERSE.prefix_id().bytes()))
     }
 
-    const fn range_from_relation_type() -> Range<usize> {
+    const fn range_from_type() -> Range<usize> {
         Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + THING_VERTEX_LENGTH_PREFIX_TYPE
     }
 
-    const fn range_to_player_type() -> Range<usize> {
+    const fn range_to_type() -> Range<usize> {
         Self::LENGTH_PREFIX_FROM..Self::LENGTH_PREFIX_FROM + THING_VERTEX_LENGTH_PREFIX_TYPE
     }
 
@@ -509,6 +542,42 @@ impl<'a> ThingEdgeRolePlayer<'a> {
 
     pub fn into_to(self) -> ObjectVertex<'a> {
         ObjectVertex::new(self.bytes.into_range(Self::RANGE_TO))
+    }
+
+    pub fn relation(&self) -> ObjectVertex<'_> {
+        if self.is_reverse() {
+            self.to()
+        } else {
+            self.from()
+        }
+    }
+
+    pub fn player(&self) -> ObjectVertex<'_> {
+        if self.is_reverse() {
+            self.from()
+        } else {
+            self.to()
+        }
+    }
+
+    pub fn into_relation(self) -> ObjectVertex<'a> {
+        if self.is_reverse() {
+            self.into_to()
+        } else {
+            self.into_from()
+        }
+    }
+
+    pub fn into_player(self) -> ObjectVertex<'a> {
+        if self.is_reverse() {
+            self.into_from()
+        } else {
+            self.into_to()
+        }
+    }
+
+    fn is_reverse(&self) -> bool {
+        self.bytes().bytes()[Self::RANGE_PREFIX] == Self::PREFIX_REVERSE.prefix_id().bytes()
     }
 
     pub fn role_id(&'a self) -> TypeID {

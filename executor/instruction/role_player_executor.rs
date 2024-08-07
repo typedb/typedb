@@ -78,6 +78,11 @@ pub(crate) type RolePlayerBoundedRelationSortedPlayer = Map<
     RelationRolePlayerToTupleFn,
     AsHkt![TupleResult<'_>],
 >;
+pub(crate) type RolePlayerBoundedRelationPlayer = Map<
+    Filter<RelationRolePlayerIterator, Arc<RolePlayerFilterFn>>,
+    RelationRolePlayerToTupleFn,
+    AsHkt![TupleResult<'_>],
+>;
 
 pub(crate) type RolePlayerFilterFn =
     dyn for<'a, 'b> FnHktHelper<&'a Result<(Relation<'b>, RolePlayer<'b>, u64), ConceptReadError>, bool>;
@@ -90,7 +95,7 @@ pub(crate) type RelationRolePlayerOrderingFn = for<'a, 'b> fn(
 ) -> Ordering;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum TernaryIterateMode {
+pub(crate) enum TernaryIterateMode {
     // [x, y, z] = standard sort order
     Unbound,
     // [y, x, z] sort order
@@ -102,7 +107,7 @@ enum TernaryIterateMode {
 }
 
 impl TernaryIterateMode {
-    fn new(
+    pub(crate) fn new(
         role_player: ir::pattern::constraint::RolePlayer<VariablePosition>,
         in_reverse_direction: bool,
         var_modes: &VariableModes,
@@ -111,24 +116,29 @@ impl TernaryIterateMode {
         debug_assert!(!var_modes.fully_bound());
         let is_relation_bound = var_modes.get(role_player.relation()).is_some_and(|mode| mode.is_bound());
         let is_player_bound = var_modes.get(role_player.player()).is_some_and(|mode| mode.is_bound());
-        if !is_relation_bound && !is_player_bound {
+
+        let is_from_bound = !in_reverse_direction && is_relation_bound || in_reverse_direction && is_player_bound;
+        let is_to_bound = !in_reverse_direction && is_player_bound || in_reverse_direction && is_relation_bound;
+        let from_variable = if in_reverse_direction { role_player.player() } else { role_player.relation() };
+
+        if !is_from_bound && !is_to_bound {
             match sort_by {
                 None => {
                     // arbitrarily pick from sorted
                     TernaryIterateMode::Unbound
                 }
-                Some(variable) => {
-                    if role_player.relation() == variable {
+                Some(sort_variable) => {
+                    if from_variable == sort_variable {
                         TernaryIterateMode::Unbound
                     } else {
                         TernaryIterateMode::UnboundInverted
                     }
                 }
             }
-        } else if is_relation_bound && !is_player_bound {
+        } else if is_from_bound && !is_to_bound {
             TernaryIterateMode::BoundFrom
         } else {
-            debug_assert!(is_relation_bound && is_player_bound);
+            debug_assert!(is_from_bound && is_to_bound);
             TernaryIterateMode::BoundFromBoundTo
         }
     }
@@ -147,7 +157,7 @@ impl RolePlayerExecutor {
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(!relation_player_types.is_empty());
         debug_assert!(!variable_modes.fully_bound());
-        let iterate_mode = TernaryIterateMode::new(role_player.clone(), false, &variable_modes, sort_by); // TODO
+        let iterate_mode = TernaryIterateMode::new(role_player.clone(), false, &variable_modes, sort_by);
         let filter_fn = Self::create_role_player_filter_relations_players_roles(
             relation_player_types.clone(),
             player_role_types.clone(),
@@ -195,7 +205,7 @@ impl RolePlayerExecutor {
                 let filter_fn = self.filter_fn.clone();
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let iterator: Filter<RelationRolePlayerIterator, Arc<RolePlayerFilterFn>> = thing_manager
-                    .get_relation_role_players_from_relation_type_range(snapshot, key_range)
+                    .get_relation_role_players_by_relation_type_range(snapshot, key_range)
                     .filter::<_, RolePlayerFilterFn>(filter_fn);
                 let as_tuples: RolePlayerUnboundedSortedRelation =
                     iterator.map(relation_role_player_to_tuple_relation_player_role);
@@ -215,7 +225,7 @@ impl RolePlayerExecutor {
                 if let Some([relation]) = self.relation_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = thing_manager
-                        .get_relation_role_players_from_relation_and_player_type_range(
+                        .get_relation_role_players_by_relation_and_player_type_range(
                             snapshot,
                             relation.as_reference(),
                             // TODO: this should be just the types owned by the one instance's type in the cache!
@@ -236,7 +246,7 @@ impl RolePlayerExecutor {
                     let iterators = relations
                         .map(|relation| {
                             Ok(Peekable::new(
-                                thing_manager.get_relation_role_players_from_relation_and_player_type_range(
+                                thing_manager.get_relation_role_players_by_relation_and_player_type_range(
                                     snapshot,
                                     relation.as_reference(),
                                     player_type_range.clone(),
@@ -270,7 +280,7 @@ impl RolePlayerExecutor {
 
                 let iterator = match row.get(self.role_player.relation()) {
                     VariableValue::Thing(Thing::Relation(relation)) => thing_manager
-                        .get_relation_role_players_from_relation_and_player_type_range(
+                        .get_relation_role_players_by_relation_and_player_type_range(
                             snapshot,
                             relation.as_reference(),
                             player_type_range,
@@ -292,11 +302,11 @@ impl RolePlayerExecutor {
                 let relation = row.get(self.role_player.relation()).as_thing().as_relation();
                 let player = row.get(self.role_player.player()).as_thing().as_object();
                 let iterator =
-                    thing_manager.get_relation_role_players_from_relation_and_player(snapshot, relation, player);
+                    thing_manager.get_relation_role_players_by_relation_and_player(snapshot, relation, player);
                 let filtered = iterator.filter::<_, RolePlayerFilterFn>(self.filter_fn.clone());
                 let as_tuples: RolePlayerBoundedRelationSortedPlayer =
                     filtered.map::<Result<Tuple<'_>, _>, _>(relation_role_player_to_tuple_relation_player_role);
-                Ok(TupleIterator::RolePlayerBoundedRelation(SortedTupleIterator::new(
+                Ok(TupleIterator::RolePlayerBoundedRelationPlayer(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -323,10 +333,6 @@ impl RolePlayerExecutor {
         })
     }
 
-    fn create_noop_filter() -> Arc<RolePlayerFilterFn> {
-        Arc::new(|_| true)
-    }
-
     fn compare_by_player_then_relation(
         pair: (
             &Result<(Relation<'_>, RolePlayer<'_>, u64), ConceptReadError>,
@@ -348,5 +354,3 @@ fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) 
         MinMaxResult::MinMax(min, max) => (min.clone(), max.clone()),
     }
 }
-
-impl RolePlayerExecutor {}

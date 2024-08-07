@@ -521,9 +521,9 @@ fn storage_key_to_relation_role_player<'a>(
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Relation<'a>, RolePlayer<'a>, u64) {
     let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
-    let relation = Relation::new(edge.from().into_owned());
+    let relation = Relation::new(edge.relation().into_owned());
     let role_type = RoleType::build_from_type_id(edge.role_id());
-    let player = Object::new(edge.into_to());
+    let player = Object::new(edge.into_player());
     let role_player = RolePlayer { player, role_type };
     (relation, role_player, decode_value_u64(value.as_reference()))
 }

@@ -44,8 +44,8 @@ pub(crate) struct SelectedPositions {
 }
 
 impl SelectedPositions {
-    fn new(selected_variables: &Vec<Variable>, variable_positions: &HashMap<Variable, VariablePosition>) -> Self {
-        Self { selected: selected_variables.iter().map(|pos| variable_positions[pos]).collect() }
+    fn new(selected_variables: &[Variable], variable_positions: &HashMap<Variable, VariablePosition>) -> Self {
+        Self { selected: selected_variables.iter().map(|var| variable_positions[var]).collect() }
     }
 
     fn iter_selected(&self) -> impl Iterator<Item = VariablePosition> + '_ {

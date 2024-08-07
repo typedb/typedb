@@ -57,6 +57,7 @@ impl PatternExecutor {
                 StepExecutor::new(step, context, &variable_positions, type_annotations, snapshot, thing_manager)?;
             step_executors.push(executor)
         }
+
         let mut variable_positions_index = vec![Variable::new(0); variable_positions.len()];
         for (variable, position) in &variable_positions {
             variable_positions_index[position.as_usize()] = *variable

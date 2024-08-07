@@ -155,6 +155,17 @@ impl<'a> Row<'a> {
     }
 }
 
+impl<'a> Display for Row<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} x [  ", self.multiplicity)?;
+        for value in &*self.row {
+            write!(f, "{value}  ")?
+        }
+        writeln!(f, "]")?;
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ImmutableRow<'a> {
     row: Cow<'a, [VariableValue<'static>]>,

@@ -692,7 +692,7 @@ impl ThingManager {
         snapshot.any_in_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
-    pub fn get_relation_role_players_from_relation_type_range(
+    pub fn get_relation_role_players_by_relation_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type_range: KeyRange<RelationType<'static>>,
@@ -704,7 +704,7 @@ impl ThingManager {
         RelationRolePlayerIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_relation_role_players_from_relation_and_player_type_range(
+    pub fn get_relation_role_players_by_relation_and_player_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
@@ -717,14 +717,41 @@ impl ThingManager {
         RelationRolePlayerIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_relation_role_players_from_relation_and_player<'a>(
+    pub fn get_relation_role_players_by_relation_and_player<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
-        player: impl ObjectAPI<'a>
+        player: impl ObjectAPI<'a>,
     ) -> RelationRolePlayerIterator {
         let prefix = ThingEdgeRolePlayer::prefix_from_relation_player(relation.into_vertex(), player.into_vertex());
-        RelationRolePlayerIterator::new(snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING)))
+        RelationRolePlayerIterator::new(
+            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING)),
+        )
+    }
+
+    pub fn get_relation_role_players_reverse_by_player_type_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        player_type_range: KeyRange<ObjectType<'static>>,
+    ) -> RelationRolePlayerIterator {
+        let range = player_type_range.map(
+            |type_| ThingEdgeRolePlayer::prefix_reverse_from_player_type(type_.into_vertex()),
+            |_| ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+        );
+        RelationRolePlayerIterator::new(snapshot.iterate_range(range))
+    }
+
+    pub fn get_relation_role_players_reverse_by_player_and_relation_type_range<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        player: impl ObjectAPI<'a>,
+        relation_type_range: KeyRange<RelationType<'static>>,
+    ) -> RelationRolePlayerIterator {
+        let range = relation_type_range.map(
+            |type_| ThingEdgeRolePlayer::prefix_reverse_from_player_relation_type(player.vertex(), type_.into_vertex()),
+            |_| ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+        );
+        RelationRolePlayerIterator::new(snapshot.iterate_range(range))
     }
 
     pub(crate) fn get_role_players(
