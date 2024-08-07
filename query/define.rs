@@ -339,10 +339,10 @@ fn define_capabilities_relates<'a>(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
-        let relates = unwrap_or_else!(CapabilityBase::Relates = &capability.base ;{continue;});
-        let relation_type = unwrap_or_else!(TypeEnum::Relation = &type_ ;{
+        let CapabilityBase::Relates(relates) = &capability.base else {continue;};
+        let TypeEnum::Relation(relation_type) = &type_ else {
             return Err(err_unsupported_capability(&label, type_.kind(), capability));
-        });
+        };
 
         let (role_label, ordering) = type_ref_to_label_and_ordering(&relates.related).map_err(|_| {
             DefineError::RelatesRoleMustBeLabelAndNotOptional {
@@ -373,7 +373,8 @@ fn define_capabilities_relates<'a>(
         };
         // Handle annotations
         for typeql_annotation in &capability.annotations {
-            let annotation = translate_annotation(typeql_annotation)?;
+            let annotation = translate_annotation(typeql_annotation)
+                .map_err(|source| DefineError::LiteralParseError { source })?;
             let relates_annotation = RelatesAnnotation::try_from(annotation.clone())
                 .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created
@@ -392,17 +393,17 @@ fn define_capabilities_owns<'a>(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
-        let owns = unwrap_or_else!(CapabilityBase::Owns = &capability.base ;{continue;});
+        let CapabilityBase::Owns(owns) = &capability.base else {continue;};
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&owns.owned)
             .map_err(|_| DefineError::OwnsAttributeMustBeLabelOrList { owns: owns.clone() })?;
 
         let wrapped_attribute_type =
             resolve_type(snapshot, type_manager, &attr_label).map_err(|source| DefineError::TypeLookup { source })?;
-        let attribute_type = unwrap_or_else!(TypeEnum::Attribute = wrapped_attribute_type; {
+        let TypeEnum::Attribute(attribute_type) = wrapped_attribute_type else {
             return Err(
                 err_capability_kind_mismatch(&label, &attr_label, capability, Kind::Attribute, wrapped_attribute_type.kind())
             );
-        });
+        };
         let created = match &type_ {
             TypeEnum::Entity(entity_type) => ObjectType::Entity(entity_type.clone())
                 .set_owns(snapshot, type_manager, attribute_type, ordering)
@@ -415,7 +416,8 @@ fn define_capabilities_owns<'a>(
             }
         };
         for typeql_annotation in &capability.annotations {
-            let annotation = translate_annotation(typeql_annotation)?;
+            let annotation = translate_annotation(typeql_annotation)
+                .map_err(|source| DefineError::LiteralParseError { source })?;
             let owns_annotation = OwnsAnnotation::try_from(annotation.clone())
                 .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created
@@ -450,7 +452,8 @@ fn define_capabilities_plays<'a>(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
-        let plays = unwrap_or_else!(CapabilityBase::Plays = &capability.base ;{continue;});
+        let CapabilityBase::Plays(plays)  = &capability.base else {continue;};
+        let CapabilityBase::Plays(plays)  = &capability.base else {continue;};
         let role_label = Label::build_scoped(plays.role.name.ident.as_str(), plays.role.scope.ident.as_str());
         let role_type_opt = type_manager
             .get_role_type(snapshot, &role_label)

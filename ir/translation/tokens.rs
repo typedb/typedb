@@ -63,7 +63,7 @@ pub fn translate_kind(typeql_kind: TypeQLKind) -> Kind {
     }
 }
 
-pub fn translate_value_type(typeql_value_type: TypeQLValueType) -> ValueType {
+pub fn translate_value_type(typeql_value_type: &TypeQLValueType) -> ValueType {
     match typeql_value_type {
         TypeQLValueType::Boolean => ValueType::Boolean,
         TypeQLValueType::Date => ValueType::Date,

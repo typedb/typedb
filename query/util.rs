@@ -90,9 +90,7 @@ pub(crate) fn resolve_value_type(
             name: scoped_label.name.ident.as_str().to_owned(),
         }),
         NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
-            let category = ir::translation::tokens::translate_value_type(token);
-            let value_type = category.try_into_value_type().unwrap(); // unwrap is safe: builtins are never struct
-            Ok(value_type)
+            Ok(ir::translation::tokens::translate_value_type(token))
         }
     }
 }
