@@ -8,12 +8,12 @@ use cucumber::gherkin::Step;
 use macro_rules_attribute::apply;
 
 use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
     params::{check_boolean, ContainsOrDoesnt, ExistsOrDoesnt, Label, MayError, Optional, ValueType},
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
-use crate::concept::type_::BehaviourConceptTestExecutionError;
 
 #[apply(generic_step)]
 #[step(expr = "create struct: {type_label}{may_error}")]

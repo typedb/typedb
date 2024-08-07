@@ -11,11 +11,11 @@ use macro_rules_attribute::apply;
 
 use super::thing_type::get_as_object_type;
 use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
-use crate::concept::type_::BehaviourConceptTestExecutionError;
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) set owns: {type_label}{may_error}")]
@@ -88,8 +88,11 @@ pub async fn get_owns_set_override(
         let owns = owner.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
 
         if let Some(owner_supertype) = owner.get_supertype(&tx.snapshot, &tx.type_manager).unwrap() {
-            let overridden_attr_type =
-                tx.type_manager.get_attribute_type(&tx.snapshot, &overridden_type_label.into_typedb()).unwrap().unwrap();
+            let overridden_attr_type = tx
+                .type_manager
+                .get_attribute_type(&tx.snapshot, &overridden_type_label.into_typedb())
+                .unwrap()
+                .unwrap();
             let overridden_owns_opt = owner_supertype
                 .get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, overridden_attr_type)
                 .unwrap();

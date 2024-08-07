@@ -46,11 +46,11 @@ use crate::{
             type_reader::TypeReader,
             validation::{
                 validation::{
-                    capability_get_annotation_by_category, edge_get_owner_of_annotation_category,
-                    get_label_or_concept_read_err, get_label_or_schema_err,
+                    capability_get_annotation_by_category, capability_get_declared_annotation_by_category,
+                    edge_get_owner_of_annotation_category, get_label_or_concept_read_err, get_label_or_schema_err,
                     get_opt_label_or_schema_err, is_interface_hidden_by_overrides,
-                    is_ordering_compatible_with_distinct_annotation,
-                    is_overridden_interface_object_one_of_supertypes_or_self, type_get_annotation_by_category,
+                    is_ordering_compatible_with_distinct_annotation, is_type_transitive_supertype_or_same,
+                    type_get_annotation_by_category, type_get_declared_annotation_by_category,
                     type_get_source_of_annotation_category, type_has_annotation_category,
                     validate_cardinality_narrows_inherited_cardinality,
                     validate_declared_annotation_is_compatible_with_inherited_annotations,
@@ -71,7 +71,6 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::type_::type_manager::validation::validation::{capability_get_declared_annotation_by_category, type_get_declared_annotation_by_category};
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -109,6 +108,17 @@ macro_rules! for_capability_and_overriding_capabilities_transitive {
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|current_capability| $closure(current_capability))?;
+    };
+}
+
+macro_rules! with_annotation_constraint_if_exists {
+    ($snapshot:ident, $type_:ident, $constraint_name:ident, $get_func:path, |$constraint:ident| $expr:expr) => {
+        if let Some(annotation) = $get_func($snapshot, $type_.clone(), AnnotationCategory::$constraint_name)? {
+            match &annotation {
+                Annotation::$constraint_name($constraint) => $expr,
+                _ => unreachable!("Should not reach it for {}-related function", stringify!($constraint_name)),
+            }
+        }
     };
 }
 
@@ -994,9 +1004,16 @@ impl OperationTimeValidation {
             TypeReader::get_supertypes_transitive(snapshot, relation_type.clone().into_owned())
                 .map_err(SchemaValidationError::ConceptRead)?;
 
+        let existing_relation_subtypes =
+            TypeReader::get_subtypes_transitive(snapshot, relation_type.clone().into_owned())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
         validate_role_name_uniqueness_non_transitive(snapshot, relation_type, label)?;
         for relation_supertype in existing_relation_supertypes {
             validate_role_name_uniqueness_non_transitive(snapshot, relation_supertype, label)?;
+        }
+        for relation_subtype in existing_relation_subtypes {
+            validate_role_name_uniqueness_non_transitive(snapshot, relation_subtype, label)?;
         }
 
         Ok(())
@@ -1290,18 +1307,6 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_owns_value_type_compatible_with_regex_annotation_transitive(
-        snapshot: &impl ReadableSnapshot,
-        owns: Owns<'static>,
-    ) -> Result<(), SchemaValidationError> {
-        for_capability_and_overriding_capabilities_transitive!(snapshot, owns, |current_owns: Owns<'static>| {
-            let value_type = TypeReader::get_value_type_without_source(snapshot, current_owns.attribute())
-                .map_err(SchemaValidationError::ConceptRead)?;
-            Self::validate_annotation_regex_compatible_value_type(snapshot, current_owns.attribute(), value_type)
-        });
-        Ok(())
-    }
-
     pub(crate) fn validate_annotation_regex_compatible_value_type(
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
@@ -1317,18 +1322,6 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_owns_value_type_compatible_with_range_annotation_transitive(
-        snapshot: &impl ReadableSnapshot,
-        owns: Owns<'static>,
-    ) -> Result<(), SchemaValidationError> {
-        for_capability_and_overriding_capabilities_transitive!(snapshot, owns, |current_owns: Owns<'static>| {
-            let value_type = TypeReader::get_value_type_without_source(snapshot, current_owns.attribute())
-                .map_err(SchemaValidationError::ConceptRead)?;
-            Self::validate_annotation_range_compatible_value_type(snapshot, current_owns.attribute(), value_type)
-        });
-        Ok(())
-    }
-
     pub(crate) fn validate_annotation_range_compatible_value_type(
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
@@ -1342,18 +1335,6 @@ impl OperationTimeValidation {
                 value_type,
             ))
         }
-    }
-
-    pub(crate) fn validate_owns_value_type_compatible_with_values_annotation_transitive(
-        snapshot: &impl ReadableSnapshot,
-        owns: Owns<'static>,
-    ) -> Result<(), SchemaValidationError> {
-        for_capability_and_overriding_capabilities_transitive!(snapshot, owns, |current_owns: Owns<'static>| {
-            let value_type = TypeReader::get_value_type_without_source(snapshot, current_owns.attribute())
-                .map_err(SchemaValidationError::ConceptRead)?;
-            Self::validate_annotation_values_compatible_value_type(snapshot, current_owns.attribute(), value_type)
-        });
-        Ok(())
     }
 
     pub(crate) fn validate_annotation_values_compatible_value_type(
@@ -1502,10 +1483,10 @@ impl OperationTimeValidation {
         range: AnnotationRange,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
-        if range.valid(value_type) {
+        if range.valid(value_type.clone()) {
             Ok(())
         } else {
-            Err(SchemaValidationError::InvalidRangeArguments(range))
+            Err(SchemaValidationError::InvalidRangeArgumentsForValueType(range, value_type))
         }
     }
 
@@ -1513,10 +1494,10 @@ impl OperationTimeValidation {
         values: AnnotationValues,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
-        if values.valid(value_type) {
+        if values.valid(value_type.clone()) {
             Ok(())
         } else {
-            Err(SchemaValidationError::InvalidValuesArguments(values))
+            Err(SchemaValidationError::InvalidValuesArgumentsForValueType(values, value_type))
         }
     }
 
@@ -1531,7 +1512,6 @@ impl OperationTimeValidation {
 
     pub(crate) fn validate_overriding_capabilities_narrow_cardinality<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
         capability: CAP,
         cardinality: AnnotationCardinality,
     ) -> Result<(), SchemaValidationError> {
@@ -1539,23 +1519,28 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|overriding_capability| {
-                let overriding_cardinality = overriding_capability
-                    .get_cardinality(snapshot, type_manager)
-                    .map_err(SchemaValidationError::ConceptRead)?;
-
-                if cardinality.narrowed_correctly_by(&overriding_cardinality) {
-                    Ok(())
-                } else {
-                    Err(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
-                        CAP::KIND,
-                        get_label_or_schema_err(snapshot, overriding_capability.object())?,
-                        get_label_or_schema_err(snapshot, overriding_capability.interface())?,
-                        get_label_or_schema_err(snapshot, capability.object())?,
-                        get_label_or_schema_err(snapshot, capability.interface())?,
-                        overriding_cardinality,
-                        cardinality,
-                    ))
-                }
+                with_annotation_constraint_if_exists!(
+                    snapshot,
+                    overriding_capability,
+                    Cardinality,
+                    capability_get_declared_annotation_by_category,
+                    |overriding_cardinality| {
+                        return if cardinality.narrowed_correctly_by(overriding_cardinality) {
+                            Ok(())
+                        } else {
+                            Err(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
+                                CAP::KIND,
+                                get_label_or_schema_err(snapshot, overriding_capability.object())?,
+                                get_label_or_schema_err(snapshot, overriding_capability.interface())?,
+                                get_label_or_schema_err(snapshot, capability.object())?,
+                                get_label_or_schema_err(snapshot, capability.interface())?,
+                                overriding_cardinality.clone(),
+                                cardinality,
+                            ))
+                        };
+                    }
+                );
+                Ok(())
             })?;
 
         Ok(())
@@ -1570,25 +1555,24 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|subtype| {
-                if let Some(subtype_annotation) =
-                    type_get_declared_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Regex)?
-                {
-                    match &subtype_annotation {
-                        Annotation::Regex(subtype_regex) => {
-                            return if subtype_regex.regex() == regex.regex() {
-                                Ok(())
-                            } else {
-                                Err(SchemaValidationError::OnlyOneRegexCanBeSetForTypeHierarchy(
-                                    get_label_or_schema_err(snapshot, subtype)?,
-                                    get_label_or_schema_err(snapshot, attribute_type.clone())?,
-                                    subtype_regex.clone(),
-                                    regex.clone(),
-                                ))
-                            };
-                        }
-                        _ => unreachable!("Should not reach it for Regex-related function"),
+                with_annotation_constraint_if_exists!(
+                    snapshot,
+                    subtype,
+                    Regex,
+                    type_get_declared_annotation_by_category,
+                    |subtype_regex| {
+                        return if subtype_regex.regex() == regex.regex() {
+                            Ok(())
+                        } else {
+                            Err(SchemaValidationError::OnlyOneRegexCanBeSetForTypeHierarchy(
+                                get_label_or_schema_err(snapshot, subtype)?,
+                                get_label_or_schema_err(snapshot, attribute_type.clone())?,
+                                subtype_regex.clone(),
+                                regex.clone(),
+                            ))
+                        };
                     }
-                }
+                );
                 Ok(())
             })?;
         Ok(())
@@ -1603,25 +1587,24 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|subtype| {
-                if let Some(subtype_annotation) =
-                    type_get_declared_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Range)?
-                {
-                    match &subtype_annotation {
-                        Annotation::Range(subtype_range) => {
-                            return if range.narrowed_correctly_by(subtype_range) {
-                                Ok(())
-                            } else {
-                                Err(SchemaValidationError::RangeShouldNarrowInheritedRange(
-                                    get_label_or_schema_err(snapshot, subtype)?,
-                                    get_label_or_schema_err(snapshot, attribute_type.clone())?,
-                                    subtype_range.clone(),
-                                    range.clone(),
-                                ))
-                            };
-                        }
-                        _ => unreachable!("Should not reach it for Range-related function"),
+                with_annotation_constraint_if_exists!(
+                    snapshot,
+                    subtype,
+                    Range,
+                    type_get_declared_annotation_by_category,
+                    |subtype_range| {
+                        return if range.narrowed_correctly_by(subtype_range) {
+                            Ok(())
+                        } else {
+                            Err(SchemaValidationError::RangeShouldNarrowInheritedRange(
+                                get_label_or_schema_err(snapshot, subtype)?,
+                                get_label_or_schema_err(snapshot, attribute_type.clone())?,
+                                subtype_range.clone(),
+                                range.clone(),
+                            ))
+                        };
                     }
-                }
+                );
                 Ok(())
             })?;
         Ok(())
@@ -1636,25 +1619,24 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|subtype| {
-                if let Some(subtype_annotation) =
-                    type_get_declared_annotation_by_category(snapshot, subtype.clone(), AnnotationCategory::Values)?
-                {
-                    match &subtype_annotation {
-                        Annotation::Values(subtype_values) => {
-                            return if values.narrowed_correctly_by(subtype_values) {
-                                Ok(())
-                            } else {
-                                Err(SchemaValidationError::ValuesShouldNarrowInheritedValues(
-                                    get_label_or_schema_err(snapshot, subtype)?,
-                                    get_label_or_schema_err(snapshot, attribute_type.clone())?,
-                                    subtype_values.clone(),
-                                    values.clone(),
-                                ))
-                            };
-                        }
-                        _ => unreachable!("Should not reach it for Values-related function"),
+                with_annotation_constraint_if_exists!(
+                    snapshot,
+                    subtype,
+                    Values,
+                    type_get_declared_annotation_by_category,
+                    |subtype_values| {
+                        return if values.narrowed_correctly_by(subtype_values) {
+                            Ok(())
+                        } else {
+                            Err(SchemaValidationError::ValuesShouldNarrowInheritedValues(
+                                get_label_or_schema_err(snapshot, subtype)?,
+                                get_label_or_schema_err(snapshot, attribute_type.clone())?,
+                                subtype_values.clone(),
+                                values.clone(),
+                            ))
+                        };
                     }
-                }
+                );
                 Ok(())
             })?;
         Ok(())
@@ -1669,27 +1651,26 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|overriding_owns| {
-                if let Some(overriding_annotation) =
-                    capability_get_declared_annotation_by_category(snapshot, overriding_owns.clone(), AnnotationCategory::Regex)?
-                {
-                    match &overriding_annotation {
-                        Annotation::Regex(overriding_regex) => {
-                            return if overriding_regex.regex() == regex.regex() {
-                                Ok(())
-                            } else {
-                                Err(SchemaValidationError::OnlyOneRegexCanBeSetForCapabilitiesHierarchy(
-                                    get_label_or_schema_err(snapshot, overriding_owns.object())?,
-                                    get_label_or_schema_err(snapshot, overriding_owns.interface())?,
-                                    get_label_or_schema_err(snapshot, owns.object())?,
-                                    get_label_or_schema_err(snapshot, owns.interface())?,
-                                    overriding_regex.clone(),
-                                    regex.clone(),
-                                ))
-                            };
-                        }
-                        _ => unreachable!("Should not reach it for Regex-related function"),
+                with_annotation_constraint_if_exists!(
+                    snapshot,
+                    overriding_owns,
+                    Regex,
+                    capability_get_declared_annotation_by_category,
+                    |overriding_regex| {
+                        return if overriding_regex.regex() == regex.regex() {
+                            Ok(())
+                        } else {
+                            Err(SchemaValidationError::OnlyOneRegexCanBeSetForCapabilitiesHierarchy(
+                                get_label_or_schema_err(snapshot, overriding_owns.object())?,
+                                get_label_or_schema_err(snapshot, overriding_owns.interface())?,
+                                get_label_or_schema_err(snapshot, owns.object())?,
+                                get_label_or_schema_err(snapshot, owns.interface())?,
+                                overriding_regex.clone(),
+                                regex.clone(),
+                            ))
+                        };
                     }
-                }
+                );
                 Ok(())
             })?;
         Ok(())
@@ -1704,27 +1685,26 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|overriding_owns| {
-                if let Some(overriding_annotation) =
-                    capability_get_declared_annotation_by_category(snapshot, overriding_owns.clone(), AnnotationCategory::Range)?
-                {
-                    match &overriding_annotation {
-                        Annotation::Range(overriding_range) => {
-                            return if range.narrowed_correctly_by(overriding_range) {
-                                Ok(())
-                            } else {
-                                Err(SchemaValidationError::RangeShouldNarrowInheritedCapabilityRange(
-                                    get_label_or_schema_err(snapshot, overriding_owns.object())?,
-                                    get_label_or_schema_err(snapshot, overriding_owns.interface())?,
-                                    get_label_or_schema_err(snapshot, owns.object())?,
-                                    get_label_or_schema_err(snapshot, owns.interface())?,
-                                    overriding_range.clone(),
-                                    range.clone(),
-                                ))
-                            };
-                        }
-                        _ => unreachable!("Should not reach it for Range-related function"),
+                with_annotation_constraint_if_exists!(
+                    snapshot,
+                    overriding_owns,
+                    Range,
+                    capability_get_declared_annotation_by_category,
+                    |overriding_range| {
+                        return if range.narrowed_correctly_by(overriding_range) {
+                            Ok(())
+                        } else {
+                            Err(SchemaValidationError::RangeShouldNarrowInheritedCapabilityRange(
+                                get_label_or_schema_err(snapshot, overriding_owns.object())?,
+                                get_label_or_schema_err(snapshot, overriding_owns.interface())?,
+                                get_label_or_schema_err(snapshot, owns.object())?,
+                                get_label_or_schema_err(snapshot, owns.interface())?,
+                                overriding_range.clone(),
+                                range.clone(),
+                            ))
+                        };
                     }
-                }
+                );
                 Ok(())
             })?;
         Ok(())
@@ -1739,29 +1719,26 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|overriding_owns| {
-                if let Some(overriding_annotation) = capability_get_declared_annotation_by_category(
+                with_annotation_constraint_if_exists!(
                     snapshot,
-                    overriding_owns.clone(),
-                    AnnotationCategory::Values,
-                )? {
-                    match &overriding_annotation {
-                        Annotation::Values(overriding_values) => {
-                            return if values.narrowed_correctly_by(overriding_values) {
-                                Ok(())
-                            } else {
-                                Err(SchemaValidationError::ValuesShouldNarrowInheritedCapabilityValues(
-                                    get_label_or_schema_err(snapshot, overriding_owns.object())?,
-                                    get_label_or_schema_err(snapshot, overriding_owns.interface())?,
-                                    get_label_or_schema_err(snapshot, owns.object())?,
-                                    get_label_or_schema_err(snapshot, owns.interface())?,
-                                    overriding_values.clone(),
-                                    values.clone(),
-                                ))
-                            };
-                        }
-                        _ => unreachable!("Should not reach it for Values-related function"),
+                    overriding_owns,
+                    Values,
+                    capability_get_declared_annotation_by_category,
+                    |overriding_values| {
+                        return if values.narrowed_correctly_by(overriding_values) {
+                            Ok(())
+                        } else {
+                            Err(SchemaValidationError::ValuesShouldNarrowInheritedCapabilityValues(
+                                get_label_or_schema_err(snapshot, overriding_owns.object())?,
+                                get_label_or_schema_err(snapshot, overriding_owns.interface())?,
+                                get_label_or_schema_err(snapshot, owns.object())?,
+                                get_label_or_schema_err(snapshot, owns.interface())?,
+                                overriding_values.clone(),
+                                values.clone(),
+                            ))
+                        };
                     }
-                }
+                );
                 Ok(())
             })?;
         Ok(())
@@ -1787,9 +1764,9 @@ impl OperationTimeValidation {
             snapshot,
             type_manager,
             attribute_type,
-            None, // supertype is read from storage
+            None,       // supertype is read from storage
             Some(true), // set_subtype_abstract
-            None, // supertype is abstract is read from storage
+            None,       // supertype is abstract is read from storage
         )
     }
 
@@ -1798,7 +1775,8 @@ impl OperationTimeValidation {
         type_manager: &TypeManager,
         attribute_type: T,
     ) -> Result<(), SchemaValidationError> {
-        attribute_type.get_subtypes(snapshot, type_manager)
+        attribute_type
+            .get_subtypes(snapshot, type_manager)
             .map_err(SchemaValidationError::ConceptRead)?
             .into_iter()
             .try_for_each(|subtype| {
@@ -1807,8 +1785,8 @@ impl OperationTimeValidation {
                     type_manager,
                     subtype.clone(),
                     Some(attribute_type.clone()), // supertype is read from storage
-                    None, // subtype is abstract is read from storage
-                    Some(false), // set_supertype_abstract
+                    None,                         // subtype is abstract is read from storage
+                    Some(false),                  // set_supertype_abstract
                 )
             })?;
         Ok(())
@@ -2089,12 +2067,8 @@ impl OperationTimeValidation {
         capability: CAP,
         interface_type_overridden: CAP::InterfaceType,
     ) -> Result<(), SchemaValidationError> {
-        if is_overridden_interface_object_one_of_supertypes_or_self(
-            snapshot,
-            capability.interface(),
-            interface_type_overridden.clone(),
-        )
-        .map_err(SchemaValidationError::ConceptRead)?
+        if is_type_transitive_supertype_or_same(snapshot, capability.interface(), interface_type_overridden.clone())
+            .map_err(SchemaValidationError::ConceptRead)?
         {
             Ok(())
         } else {
@@ -2157,7 +2131,7 @@ impl OperationTimeValidation {
             TypeReader::get_value_type(snapshot, attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)?;
         match inherited_value_type_with_source {
             Some((inherited_value_type, inherited_value_type_source)) => {
-                if inherited_value_type == value_type {
+                if inherited_value_type == value_type || inherited_value_type_source == attribute_type {
                     Ok(())
                 } else {
                     Err(SchemaValidationError::ValueTypeNotCompatibleWithInheritedValueType(
@@ -2172,13 +2146,38 @@ impl OperationTimeValidation {
         }
     }
 
+    pub(crate) fn validate_subtypes_value_types_compatible_with_new_value_type(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+        value_type: ValueType,
+    ) -> Result<(), SchemaValidationError> {
+        let subtypes = TypeReader::get_subtypes_transitive(snapshot, attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)?;
+        for subtype in subtypes.into_iter() {
+            if let Some(subtype_value_type) = TypeReader::get_value_type_declared(snapshot, subtype.clone()).map_err(SchemaValidationError::ConceptRead)? {
+                if subtype_value_type != value_type {
+                    return Err(SchemaValidationError::ValueTypeNotCompatibleWithInheritedValueType(
+                        get_label_or_schema_err(snapshot, subtype)?,
+                        get_label_or_schema_err(snapshot, attribute_type)?,
+                        subtype_value_type,
+                        value_type,
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn validate_when_attribute_type_loses_value_type_transitive(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
-        let mut affected_sources: HashSet<AttributeType<'static>> = TypeReader::get_supertypes_transitive(snapshot, attribute_type.clone()).map_err(SchemaValidationError::ConceptRead)?.into_iter().collect();
+        let mut affected_sources: HashSet<AttributeType<'static>> =
+            TypeReader::get_supertypes_transitive(snapshot, attribute_type.clone())
+                .map_err(SchemaValidationError::ConceptRead)?
+                .into_iter()
+                .collect();
         affected_sources.insert(attribute_type.clone());
         for_type_and_subtypes_transitive!(snapshot, attribute_type, |type_: AttributeType<'static>| {
             let type_value_type =
@@ -2208,7 +2207,7 @@ impl OperationTimeValidation {
         match value_type {
             Some(_) => {
                 Self::validate_value_type_compatible_with_abstractness(snapshot, attribute_type.clone(), None, None)?;
-                Self::validate_attribute_type_value_type_compatible_with_declared_annotations(
+                Self::validate_attribute_type_value_type_compatible_with_annotations_and_arguments(
                     snapshot,
                     attribute_type.clone(),
                     None,
@@ -2218,6 +2217,60 @@ impl OperationTimeValidation {
             }
             None => Ok(()),
         }
+    }
+
+    pub(crate) fn validate_interface_change_supertype_does_not_corrupt_capabilities_overrides_transitive<
+        CAP: Capability<'static>,
+    >(
+        snapshot: &impl ReadableSnapshot,
+        interface_type: CAP::InterfaceType,
+        new_interface_supertype: Option<CAP::InterfaceType>,
+    ) -> Result<(), SchemaValidationError> {
+        for_type_and_subtypes_transitive!(snapshot, interface_type, |type_: CAP::InterfaceType| {
+            Self::validate_interface_change_supertype_does_not_corrupt_capabilities_overrides::<CAP>(
+                snapshot,
+                type_,
+                new_interface_supertype.clone(),
+            )
+        });
+        Ok(())
+    }
+
+    fn validate_interface_change_supertype_does_not_corrupt_capabilities_overrides<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        interface_type: CAP::InterfaceType,
+        new_interface_supertype: Option<CAP::InterfaceType>,
+    ) -> Result<(), SchemaValidationError> {
+        let capabilities: HashSet<CAP> =
+            TypeReader::get_capabilities_for_interface_declared(snapshot, interface_type.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+        for capability in capabilities {
+            let capability_override = TypeReader::get_capability_override(snapshot, capability.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+            match capability_override {
+                Some(capability_override) if capability_override.interface() != interface_type => {
+                    if let Some(new_interface_supertype) = &new_interface_supertype {
+                        if is_type_transitive_supertype_or_same(
+                            snapshot,
+                            new_interface_supertype.clone(),
+                            capability_override.interface(),
+                        )
+                        .map_err(SchemaValidationError::ConceptRead)?
+                        {
+                            continue;
+                        }
+                    }
+                    return Err(SchemaValidationError::OverriddenCapabilityInterfaceIsNotSupertype(
+                        CAP::KIND,
+                        get_label_or_schema_err(snapshot, capability.object())?,
+                        get_label_or_schema_err(snapshot, interface_type)?,
+                        get_label_or_schema_err(snapshot, capability_override.interface())?,
+                    ));
+                }
+                _ => {}
+            }
+        }
+        Ok(())
     }
 
     pub(crate) fn validate_relation_type_does_not_acquire_cascade_annotation_to_lose_instances_with_new_supertype(
@@ -2975,13 +3028,13 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_attribute_type_value_type_compatible_with_declared_annotations_transitive(
+    pub(crate) fn validate_attribute_type_value_type_compatible_with_annotations_transitive(
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
         for_type_and_subtypes_transitive!(snapshot, attribute_type, |type_: AttributeType<'static>| {
-            Self::validate_attribute_type_value_type_compatible_with_declared_annotations(
+            Self::validate_attribute_type_value_type_compatible_with_annotations_and_arguments(
                 snapshot,
                 type_,
                 value_type.clone(),
@@ -2990,30 +3043,39 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_attribute_type_value_type_compatible_with_declared_annotations(
+    fn validate_attribute_type_value_type_compatible_with_annotations_and_arguments(
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
-        let annotations = TypeReader::get_type_annotations_declared(snapshot, attribute_type.clone())
+        let annotations = TypeReader::get_type_annotations(snapshot, attribute_type.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
-        for annotation in annotations {
+        for (annotation, _) in annotations {
             match annotation {
-                AttributeTypeAnnotation::Regex(_) => Self::validate_annotation_regex_compatible_value_type(
-                    snapshot,
-                    attribute_type.clone(),
-                    value_type.clone(),
-                )?,
-                AttributeTypeAnnotation::Range(_) => Self::validate_annotation_range_compatible_value_type(
-                    snapshot,
-                    attribute_type.clone(),
-                    value_type.clone(),
-                )?,
-                AttributeTypeAnnotation::Values(_) => Self::validate_annotation_values_compatible_value_type(
-                    snapshot,
-                    attribute_type.clone(),
-                    value_type.clone(),
-                )?,
+                AttributeTypeAnnotation::Regex(regex) => {
+                    Self::validate_annotation_regex_compatible_value_type(
+                        snapshot,
+                        attribute_type.clone(),
+                        value_type.clone(),
+                    )?;
+                    Self::validate_regex_arguments(regex)?
+                },
+                AttributeTypeAnnotation::Range(range) => {
+                    Self::validate_annotation_range_compatible_value_type(
+                        snapshot,
+                        attribute_type.clone(),
+                        value_type.clone(),
+                    )?;
+                    Self::validate_range_arguments(range, value_type.clone())?
+                },
+                AttributeTypeAnnotation::Values(values) => {
+                    Self::validate_annotation_values_compatible_value_type(
+                        snapshot,
+                        attribute_type.clone(),
+                        value_type.clone(),
+                    )?;
+                    Self::validate_values_arguments(values, value_type.clone())?
+                },
                 | AttributeTypeAnnotation::Abstract(_) | AttributeTypeAnnotation::Independent(_) => {}
             }
         }
@@ -3108,21 +3170,30 @@ impl OperationTimeValidation {
                     owns.clone(),
                     value_type.clone(),
                 )?,
-                OwnsAnnotation::Regex(_) => Self::validate_annotation_regex_compatible_value_type(
-                    snapshot,
-                    owns.attribute(),
-                    value_type.clone(),
-                )?,
-                OwnsAnnotation::Range(_) => Self::validate_annotation_range_compatible_value_type(
-                    snapshot,
-                    owns.attribute(),
-                    value_type.clone(),
-                )?,
-                OwnsAnnotation::Values(_) => Self::validate_annotation_values_compatible_value_type(
-                    snapshot,
-                    owns.attribute(),
-                    value_type.clone(),
-                )?,
+                OwnsAnnotation::Regex(regex) => {
+                    Self::validate_annotation_regex_compatible_value_type(
+                        snapshot,
+                        owns.attribute(),
+                        value_type.clone(),
+                    )?;
+                    Self::validate_regex_arguments(regex)?
+                },
+                OwnsAnnotation::Range(range) => {
+                    Self::validate_annotation_range_compatible_value_type(
+                        snapshot,
+                        owns.attribute(),
+                        value_type.clone(),
+                    )?;
+                    Self::validate_range_arguments(range, value_type.clone())?
+                },
+                OwnsAnnotation::Values(values) => {
+                    Self::validate_annotation_values_compatible_value_type(
+                        snapshot,
+                        owns.attribute(),
+                        value_type.clone(),
+                    )?;
+                    Self::validate_values_arguments(values, value_type.clone())?
+                },
                 | OwnsAnnotation::Distinct(_) | OwnsAnnotation::Cardinality(_) => {}
             }
         }

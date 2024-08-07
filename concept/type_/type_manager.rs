@@ -964,9 +964,7 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         type_: T,
     ) -> Result<bool, ConceptReadError> {
-        let is_abstract = Constraint::compute_abstract(
-            type_.get_annotations(snapshot, self)?.keys(),
-        );
+        let is_abstract = Constraint::compute_abstract(type_.get_annotations(snapshot, self)?.keys());
         Ok(is_abstract.is_some())
     }
 
@@ -1436,7 +1434,14 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_attribute_type_value_type_compatible_with_declared_annotations_transitive(
+        OperationTimeValidation::validate_subtypes_value_types_compatible_with_new_value_type(
+            snapshot,
+            attribute_type.clone(),
+            value_type.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_attribute_type_value_type_compatible_with_annotations_transitive(
             snapshot,
             attribute_type.clone(),
             Some(value_type.clone()),
@@ -1557,6 +1562,13 @@ impl TypeManager {
         OperationTimeValidation::validate_attribute_type_supertype_is_abstract(snapshot, self, supertype.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_interface_change_supertype_does_not_corrupt_capabilities_overrides_transitive::<Owns<'static>>(
+            snapshot,
+            subtype.clone(),
+            Some(supertype.clone()),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         OperationTimeValidation::validate_attribute_type_does_not_lose_instances_with_independent_annotation_with_new_supertype(
             snapshot,
             thing_manager,
@@ -1588,6 +1600,13 @@ impl TypeManager {
             thing_manager,
             subtype.clone(),
             None, // supertype
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_interface_change_supertype_does_not_corrupt_capabilities_overrides_transitive::<Owns<'static>>(
+            snapshot,
+            subtype.clone(),
+            None, // new_interface_supertype
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -2340,6 +2359,13 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_interface_change_supertype_does_not_corrupt_capabilities_overrides_transitive::<Plays<'static>>(
+            snapshot,
+            relates.role(),
+            Some(overridden.role()),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         if relates.role() != overridden.role() {
             OperationTimeValidation::validate_no_instances_to_override_relates(
                 snapshot,
@@ -2379,6 +2405,13 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         relates: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_interface_change_supertype_does_not_corrupt_capabilities_overrides_transitive::<Plays<'static>>(
+            snapshot,
+            relates.role(),
+            None, // new_interface_supertype
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         let role_type = relates.role();
         if role_type.get_supertype(snapshot, self)?.is_some() {
             TypeWriter::storage_delete_type_edge_overridden(snapshot, relates);
@@ -2518,7 +2551,6 @@ impl TypeManager {
 
         OperationTimeValidation::validate_overriding_capabilities_narrow_cardinality(
             snapshot,
-            self,
             owns.clone(),
             AnnotationKey::CARDINALITY,
         )
@@ -2639,15 +2671,15 @@ impl TypeManager {
 
         self.validate_set_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
 
-        OperationTimeValidation::validate_regex_arguments(regex.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
         OperationTimeValidation::validate_annotation_regex_compatible_value_type(
             snapshot,
             attribute_type.clone(),
             TypeReader::get_value_type_without_source(snapshot, attribute_type.clone())?,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_regex_arguments(regex.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_set_only_for_interface_transitive::<Owns<'static>>(
             snapshot,
@@ -2700,14 +2732,11 @@ impl TypeManager {
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
 
-        OperationTimeValidation::validate_regex_arguments(regex.clone())
+        OperationTimeValidation::validate_annotation_regex_compatible_value_type(snapshot, owns.attribute(), TypeReader::get_value_type_without_source(snapshot, owns.attribute())?)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_owns_value_type_compatible_with_regex_annotation_transitive(
-            snapshot,
-            owns.clone(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_regex_arguments(regex.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_set_only_for_capability_transitive(
             snapshot,
@@ -2858,14 +2887,12 @@ impl TypeManager {
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
 
-        OperationTimeValidation::validate_owns_value_type_compatible_with_range_annotation_transitive(
-            snapshot,
-            owns.clone(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        let attribute_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute())?;
 
-        let owns_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute())?;
-        OperationTimeValidation::validate_range_arguments(range.clone(), owns_value_type)
+        OperationTimeValidation::validate_annotation_range_compatible_value_type(snapshot, owns.attribute(), attribute_value_type.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_range_arguments(range.clone(), attribute_value_type)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_set_only_for_capability_transitive(
@@ -2986,14 +3013,12 @@ impl TypeManager {
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
 
-        OperationTimeValidation::validate_owns_value_type_compatible_with_values_annotation_transitive(
-            snapshot,
-            owns.clone(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        let attribute_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute())?;
 
-        let owns_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute())?;
-        OperationTimeValidation::validate_values_arguments(values.clone(), owns_value_type)
+        OperationTimeValidation::validate_annotation_values_compatible_value_type(snapshot, owns.attribute(), attribute_value_type.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_values_arguments(values.clone(), attribute_value_type)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_set_only_for_capability_transitive(
@@ -3154,7 +3179,6 @@ impl TypeManager {
 
         OperationTimeValidation::validate_overriding_capabilities_narrow_cardinality(
             snapshot,
-            self,
             capability.clone(),
             cardinality,
         )

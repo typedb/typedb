@@ -12,6 +12,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
+    thing::thing_manager::ThingManager,
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange, AnnotationRegex,
@@ -24,7 +25,6 @@ use crate::{
         Capability, KindAPI, Ordering, TypeAPI,
     },
 };
-use crate::thing::thing_manager::ThingManager;
 
 pub(crate) fn get_label_or_concept_read_err<'a>(
     snapshot: &impl ReadableSnapshot,
@@ -80,16 +80,16 @@ pub(crate) fn validate_role_name_uniqueness_non_transitive(
     }
 }
 
-pub(crate) fn is_overridden_interface_object_one_of_supertypes_or_self<T: KindAPI<'static>>(
+pub(crate) fn is_type_transitive_supertype_or_same<T: KindAPI<'static>>(
     snapshot: &impl ReadableSnapshot,
     type_: T,
-    overridden: T,
+    potential_supertype: T,
 ) -> Result<bool, ConceptReadError> {
-    if type_ == overridden {
+    if type_ == potential_supertype {
         return Ok(true);
     }
 
-    Ok(TypeReader::get_supertypes_transitive(snapshot, type_.clone())?.contains(&overridden.clone()))
+    Ok(TypeReader::get_supertypes_transitive(snapshot, type_.clone())?.contains(&potential_supertype.clone()))
 }
 
 pub(crate) fn is_overridden_interface_object_declared_supertype_or_self<T: KindAPI<'static>>(
@@ -460,7 +460,7 @@ pub(crate) fn validate_type_annotations_narrowing_of_inherited_annotations<T: Ki
             subtype.clone(),
             Some(supertype.clone()),
             Some(true), // set_subtype_abstract
-            None // set_supertype_abstract => read from storage
+            None,       // set_supertype_abstract => read from storage
         )?,
         Annotation::Regex(regex) => {
             validate_type_regex_narrows_inherited_regex(snapshot, subtype.clone(), Some(supertype.clone()), regex)?
@@ -582,8 +582,10 @@ pub(crate) fn validate_type_supertype_abstractness<T: KindAPI<'static>>(
     };
 
     if let Some(supertype) = supertype {
-        let subtype_abstract = set_subtype_abstract.unwrap_or(subtype.is_abstract(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?);
-        let supertype_abstract = set_supertype_abstract.unwrap_or(supertype.is_abstract(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?);
+        let subtype_abstract = set_subtype_abstract
+            .unwrap_or(subtype.is_abstract(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?);
+        let supertype_abstract = set_supertype_abstract
+            .unwrap_or(supertype.is_abstract(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?);
 
         match (subtype_abstract, supertype_abstract) {
             (false, false) | (false, true) | (true, true) => Ok(()),
@@ -609,14 +611,11 @@ pub(crate) fn type_has_declared_annotation<T: KindAPI<'static>>(
     Ok(has)
 }
 
-pub(crate) fn type_has_annotation_category<T>(
+pub(crate) fn type_has_annotation_category<T: KindAPI<'static>>(
     snapshot: &impl ReadableSnapshot,
     type_: T,
     annotation_category: AnnotationCategory,
-) -> Result<bool, SchemaValidationError>
-where
-    T: KindAPI<'static>,
-{
+) -> Result<bool, SchemaValidationError> {
     let has = TypeReader::get_type_annotations(snapshot, type_.clone())
         .map_err(SchemaValidationError::ConceptRead)?
         .keys()
@@ -649,14 +648,11 @@ pub(crate) fn type_get_declared_annotation_by_category(
     Ok(annotation.map(|val| val.clone().into()))
 }
 
-pub(crate) fn capability_get_annotation_by_category<CAP>(
+pub(crate) fn capability_get_annotation_by_category<CAP: Capability<'static>>(
     snapshot: &impl ReadableSnapshot,
     edge: CAP,
     annotation_category: AnnotationCategory,
-) -> Result<Option<Annotation>, SchemaValidationError>
-where
-    CAP: Capability<'static> + Clone,
-{
+) -> Result<Option<Annotation>, SchemaValidationError> {
     let annotation = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
         .map_err(SchemaValidationError::ConceptRead)?
         .into_keys()
@@ -664,14 +660,11 @@ where
     Ok(annotation.map(|val| val.clone().into()))
 }
 
-pub(crate) fn capability_get_declared_annotation_by_category<CAP>(
+pub(crate) fn capability_get_declared_annotation_by_category<CAP: Capability<'static>>(
     snapshot: &impl ReadableSnapshot,
     edge: CAP,
     annotation_category: AnnotationCategory,
-) -> Result<Option<Annotation>, SchemaValidationError>
-    where
-        CAP: Capability<'static> + Clone,
-{
+) -> Result<Option<Annotation>, SchemaValidationError> {
     let annotation = TypeReader::get_type_edge_annotations_declared(snapshot, edge.clone())
         .map_err(SchemaValidationError::ConceptRead)?
         .into_iter()

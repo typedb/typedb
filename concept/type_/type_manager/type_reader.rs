@@ -437,31 +437,31 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         interface_type: CAP::InterfaceType,
     ) -> Result<HashMap<CAP::ObjectType, CAP>, ConceptReadError> {
-        let mut impl_transitive: HashMap<CAP::ObjectType, CAP> = HashMap::new();
-        let declared_impl_set: HashSet<CAP> =
+        let mut capabilities: HashMap<CAP::ObjectType, CAP> = HashMap::new();
+        let capabilities_declared: HashSet<CAP> =
             Self::get_capabilities_for_interface_declared(snapshot, interface_type.clone())?;
 
-        for declared_impl in declared_impl_set {
+        for declared_capability in capabilities_declared {
             let mut stack = Vec::new();
-            stack.push(declared_impl.object());
+            stack.push(declared_capability.object());
             while let Some(sub_object) = stack.pop() {
-                let mut declared_impl_was_overridden = false;
-                for sub_owner_owns in Self::get_capabilities_declared::<CAP>(snapshot, sub_object.clone())? {
-                    if let Some(overridden_impl) = Self::get_capability_override(snapshot, sub_owner_owns.clone())? {
-                        declared_impl_was_overridden =
-                            declared_impl_was_overridden || overridden_impl.interface() == interface_type;
+                let mut declared_capability_was_overridden = false;
+                for sub_object_cap in Self::get_capabilities_declared::<CAP>(snapshot, sub_object.clone())? {
+                    if let Some(overridden_cap) = Self::get_capability_override(snapshot, sub_object_cap.clone())? {
+                        declared_capability_was_overridden =
+                            declared_capability_was_overridden || overridden_cap.interface() == interface_type;
                     }
                 }
-                if !declared_impl_was_overridden {
-                    debug_assert!(!impl_transitive.contains_key(&sub_object));
-                    impl_transitive.insert(sub_object.clone(), declared_impl.clone());
+                if !declared_capability_was_overridden {
+                    debug_assert!(!capabilities.contains_key(&sub_object));
+                    capabilities.insert(sub_object.clone(), declared_capability.clone());
                     Self::get_subtypes(snapshot, sub_object)?
                         .into_iter()
                         .for_each(|object_type| stack.push(object_type));
                 }
             }
         }
-        Ok(impl_transitive)
+        Ok(capabilities)
     }
 
     pub(crate) fn get_role_type_relates_declared(

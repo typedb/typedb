@@ -11,12 +11,12 @@ use macro_rules_attribute::apply;
 
 use super::thing_type::get_as_object_type;
 use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
     params::{Annotation, AnnotationCategory, ContainsOrDoesnt, IsEmptyOrNot, Label, MayError, RootLabel},
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
-use crate::concept::type_::BehaviourConceptTestExecutionError;
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) set plays: {type_label}{may_error}")]

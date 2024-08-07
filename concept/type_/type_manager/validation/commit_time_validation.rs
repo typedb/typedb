@@ -26,8 +26,7 @@ use crate::{
             validation::{
                 validation::{
                     get_label_or_concept_read_err, is_interface_hidden_by_overrides,
-                    is_overridden_interface_object_declared_supertype_or_self,
-                    is_overridden_interface_object_one_of_supertypes_or_self,
+                    is_overridden_interface_object_declared_supertype_or_self, is_type_transitive_supertype_or_same,
                     validate_declared_annotation_is_compatible_with_inherited_annotations,
                     validate_declared_capability_annotation_is_compatible_with_inherited_annotations,
                     validate_edge_annotations_narrowing_of_inherited_annotations,
@@ -468,7 +467,7 @@ impl CommitTimeValidation {
             }
 
             let attribute_type = owns.attribute();
-            if !is_overridden_interface_object_one_of_supertypes_or_self(
+            if !is_type_transitive_supertype_or_same(
                 // Any supertype (even transitive) fits
                 snapshot,
                 attribute_type.clone(),
@@ -517,7 +516,7 @@ impl CommitTimeValidation {
             }
 
             let role_type = plays.role();
-            if !is_overridden_interface_object_one_of_supertypes_or_self(
+            if !is_type_transitive_supertype_or_same(
                 // Any supertype (even transitive) fits
                 snapshot,
                 role_type.clone(),
