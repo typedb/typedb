@@ -44,16 +44,6 @@ use crate::{
     SymbolResolutionError,
 };
 
-macro_rules! unwrap_or_else {
-    ($variant:path = $to_unwrap:expr ; $else_:block) => {
-        if let $variant(inner) = $to_unwrap {
-            inner
-        } else {
-            $else_
-        };
-    };
-}
-
 macro_rules! try_unwrap {
     ($variant:path = $item:expr) => {
         if let $variant(inner) = $item {
@@ -286,7 +276,7 @@ fn define_capabilities_sub<'a>(
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
 
     for capability in &type_declaration.capabilities {
-        let sub = unwrap_or_else!(CapabilityBase::Sub = &capability.base ; {continue;});
+        let CapabilityBase::Sub(sub) = &capability.base else {continue;};
         let supertype_label = Label::parse_from(&sub.supertype_label.ident.as_str());
         let supertype = resolve_type(snapshot, type_manager, &supertype_label)
             .map_err(|source| DefineError::TypeLookup { source })?;
@@ -328,10 +318,10 @@ fn define_capabilities_value_type<'a>(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
-        let value_type_statement = unwrap_or_else!(CapabilityBase::ValueType = &capability.base; {continue;});
-        let attribute_type = unwrap_or_else!(TypeEnum::Attribute = &type_; {
+        let CapabilityBase::ValueType(value_type_statement) = &capability.base else {continue;};
+        let TypeEnum::Attribute(attribute_type) = &type_ else {
             return Err(err_unsupported_capability(&label, type_.kind(), capability));
-        });
+        };
         let value_type = resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
             .map_err(|source| DefineError::AttributeTypeBadValueType { source })?;
         attribute_type
