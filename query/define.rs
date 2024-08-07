@@ -19,7 +19,7 @@ use concept::{
         relates::RelatesAnnotation,
         relation_type::RelationTypeAnnotation,
         type_manager::TypeManager,
-        KindAPI, Ordering, OwnerAPI, PlayerAPI,
+        Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use encoding::{
@@ -35,7 +35,7 @@ use typeql::{
         type_::{Capability, CapabilityBase},
         Struct, Type,
     },
-    type_::{NamedType, Optional},
+    type_::{Optional},
     Definable, ScopedLabel, TypeRef, TypeRefAny,
 };
 
@@ -126,7 +126,7 @@ pub(crate) fn process_functions(
     Ok(())
 }
 
-fn define_struct<'a>(
+fn define_struct(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     struct_definable: &Struct,
@@ -138,7 +138,7 @@ fn define_struct<'a>(
     Ok(())
 }
 
-fn define_struct_fields<'a>(
+fn define_struct_fields(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     struct_definable: &Struct,
@@ -184,7 +184,7 @@ fn get_struct_field_value_type_optionality(
     }
 }
 
-fn define_types<'a>(
+fn define_types(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
@@ -216,7 +216,7 @@ fn define_types<'a>(
     Ok(())
 }
 
-fn define_type_annotations<'a>(
+fn define_type_annotations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
@@ -254,7 +254,7 @@ fn define_type_annotations<'a>(
     Ok(())
 }
 
-fn define_capabilities_alias<'a>(
+fn define_capabilities_alias(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
@@ -267,7 +267,7 @@ fn define_capabilities_alias<'a>(
     Ok(())
 }
 
-fn define_capabilities_sub<'a>(
+fn define_capabilities_sub(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
@@ -310,7 +310,7 @@ fn define_capabilities_sub<'a>(
     Ok(())
 }
 
-fn define_capabilities_value_type<'a>(
+fn define_capabilities_value_type(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
@@ -331,7 +331,7 @@ fn define_capabilities_value_type<'a>(
     Ok(())
 }
 
-fn define_capabilities_relates<'a>(
+fn define_capabilities_relates(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
@@ -385,7 +385,7 @@ fn define_capabilities_relates<'a>(
     Ok(())
 }
 
-fn define_capabilities_owns<'a>(
+fn define_capabilities_owns(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
@@ -444,7 +444,7 @@ fn err_capability_kind_mismatch(
     }
 }
 
-fn define_capabilities_plays<'a>(
+fn define_capabilities_plays(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
@@ -452,7 +452,6 @@ fn define_capabilities_plays<'a>(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
-        let CapabilityBase::Plays(plays)  = &capability.base else {continue;};
         let CapabilityBase::Plays(plays)  = &capability.base else {continue;};
         let role_label = Label::build_scoped(plays.role.name.ident.as_str(), plays.role.scope.ident.as_str());
         let role_type_opt = type_manager
@@ -486,7 +485,7 @@ fn define_capabilities_plays<'a>(
     Ok(())
 }
 
-fn define_functions<'a>(
+fn define_functions(
     snapshot: &impl WritableSnapshot,
     type_manager: &TypeManager,
     definables: &[Definable],
