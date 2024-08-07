@@ -213,6 +213,6 @@ pub mod tests {
 
 // TODO: Introduce the error wrapping trait
 fn parse_literal(literal: &Literal) -> Result<Value<'static>, PatternDefinitionError> {
-    super::literal::parse_literal(literal)
+    super::literal::translate_literal(literal)
         .map_err(|source| PatternDefinitionError::LiteralParseError { literal: literal.to_string(), source })
 }

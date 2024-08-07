@@ -15,7 +15,7 @@ use typeql::value::{DateTimeTZLiteral, Literal, Sign, SignedDecimalLiteral, Time
 
 use crate::{LiteralParseError, PatternDefinitionError};
 
-pub fn parse_literal(literal: &Literal) -> Result<Value<'static>, LiteralParseError> {
+pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, LiteralParseError> {
     // We don't know the final type yet. Zip with value-type annotations when constructing the executor.
     Ok(match &literal.inner {
         ValueLiteral::Boolean(boolean) => Value::Boolean(bool::from_typeql_literal(boolean)?),

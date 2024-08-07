@@ -9,32 +9,20 @@
 use concept::{
     error::ConceptReadError,
     type_::{
-        annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
-            AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
-        },
         object_type::ObjectType,
         type_manager::TypeManager,
     },
 };
 use encoding::{
-    graph::type_::Kind,
-    value::{label::Label, value::Value, value_type::ValueTypeCategory},
+    value::label::Label,
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use typeql::{annotation::{Annotation as TypeQLAnnotation, CardinalityRange}, common::token::{Kind as TypeQLKind, ValueType}, type_::{BuiltinValueType, NamedType}, TypeRef, TypeRefAny};
+use typeql::{type_::{NamedType}, TypeRef, TypeRefAny};
+use typeql::type_::BuiltinValueType;
 use concept::type_::Ordering;
 
 use crate::{define::DefineError, SymbolResolutionError};
 
-pub(crate) fn translate_kind(typeql_kind: TypeQLKind) -> Kind {
-    match typeql_kind {
-        TypeQLKind::Entity => Kind::Entity,
-        TypeQLKind::Relation => Kind::Relation,
-        TypeQLKind::Attribute => Kind::Attribute,
-        TypeQLKind::Role => Kind::Role,
-    }
-}
 
 pub(crate) fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(Label<'static>, Ordering), ()> {
     match type_ref {
@@ -48,68 +36,6 @@ pub(crate) fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(L
     }
 }
 
-fn try_parse_literal_opt(literal_opt: Option<&typeql::Literal>) -> Result<Option<Value<'static>>, DefineError> {
-    Ok(if let Some(literal) = literal_opt {
-        Some(
-            ir::translation::literal::parse_literal(literal)
-                .map_err(|source| DefineError::LiteralParseError { source })?,
-        )
-    } else {
-        None
-    })
-}
-
-pub(crate) fn translate_annotation(typeql_kind: &TypeQLAnnotation) -> Result<Annotation, DefineError> {
-    Ok(match typeql_kind {
-        TypeQLAnnotation::Abstract(_) => Annotation::Abstract(AnnotationAbstract),
-        TypeQLAnnotation::Cardinality(cardinality) => {
-            let (start, end) = match &cardinality.range {
-                CardinalityRange::Exact(start) => {
-                    (start.value.parse::<u64>().unwrap(), Some(start.value.parse::<u64>().unwrap()))
-                }
-                CardinalityRange::Range(start, end) => {
-                    (start.value.parse::<u64>().unwrap(), end.as_ref().map(|e| e.value.parse::<u64>().unwrap()))
-                }
-            };
-            Annotation::Cardinality(AnnotationCardinality::new(start, end))
-        }
-        TypeQLAnnotation::Cascade(_) => Annotation::Cascade(AnnotationCascade),
-        TypeQLAnnotation::Distinct(_) => Annotation::Distinct(AnnotationDistinct),
-
-        TypeQLAnnotation::Independent(_) => Annotation::Independent(AnnotationIndependent),
-        TypeQLAnnotation::Key(_) => Annotation::Key(AnnotationKey),
-        TypeQLAnnotation::Range(range) => Annotation::Range(AnnotationRange::new(
-            try_parse_literal_opt(range.min.as_ref())?,
-            try_parse_literal_opt(range.max.as_ref())?,
-        )),
-        TypeQLAnnotation::Regex(regex) => Annotation::Regex(AnnotationRegex::new(regex.regex.value.clone())),
-        TypeQLAnnotation::Subkey(_) => {
-            todo!()
-        }
-        TypeQLAnnotation::Unique(_) => Annotation::Unique(AnnotationUnique),
-        TypeQLAnnotation::Values(values) => Annotation::Values(AnnotationValues::new(
-            values
-                .values
-                .iter()
-                .map(|value| Ok(try_parse_literal_opt(Some(value))?.unwrap()))
-                .collect::<Result<Vec<_>, _>>()?,
-        )),
-    })
-}
-
-pub(crate) fn as_value_type_category(value_type: &ValueType) -> ValueTypeCategory {
-    match value_type {
-        ValueType::Boolean => ValueTypeCategory::Boolean,
-        ValueType::Date => ValueTypeCategory::Date,
-        ValueType::DateTime => ValueTypeCategory::DateTime,
-        ValueType::DateTimeTZ => ValueTypeCategory::DateTimeTZ,
-        ValueType::Decimal => ValueTypeCategory::Decimal,
-        ValueType::Double => ValueTypeCategory::Double,
-        ValueType::Duration => ValueTypeCategory::Duration,
-        ValueType::Long => ValueTypeCategory::Long,
-        ValueType::String => ValueTypeCategory::String,
-    }
-}
 
 pub(crate) fn resolve_type(
     snapshot: &impl WritableSnapshot,
@@ -164,7 +90,7 @@ pub(crate) fn resolve_value_type(
             name: scoped_label.name.ident.as_str().to_owned(),
         }),
         NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
-            let category = as_value_type_category(token);
+            let category = ir::translation::tokens::translate_value_type(token);
             let value_type = category.try_into_value_type().unwrap(); // unwrap is safe: builtins are never struct
             Ok(value_type)
         }

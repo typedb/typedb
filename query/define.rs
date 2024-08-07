@@ -40,7 +40,7 @@ use typeql::{
 };
 
 use crate::{
-    util::{resolve_type, resolve_value_type, translate_annotation},
+    util::{resolve_type, resolve_value_type},
     SymbolResolutionError,
 };
 
@@ -70,6 +70,7 @@ macro_rules! filter_variants {
 }
 pub(crate) use filter_variants;
 use ir::LiteralParseError;
+use ir::translation::tokens::translate_annotation;
 use crate::util::type_ref_to_label_and_ordering;
 
 pub(crate) fn execute(
@@ -233,7 +234,8 @@ fn define_type_annotations<'a>(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for typeql_annotation in &type_declaration.annotations {
-        let annotation = translate_annotation(typeql_annotation)?;
+        let annotation = translate_annotation(typeql_annotation)
+            .map_err(|source|DefineError::LiteralParseError { source })?;
         match type_.clone() {
             TypeEnum::Entity(entity) => {
                 let converted = EntityTypeAnnotation::try_from(annotation.clone())
@@ -479,7 +481,8 @@ fn define_capabilities_plays<'a>(
         };
 
         for typeql_annotation in &capability.annotations {
-            let annotation = translate_annotation(typeql_annotation)?;
+            let annotation = translate_annotation(typeql_annotation)
+                .map_err(|source|DefineError::LiteralParseError { source })?;
             let plays_annotation = PlaysAnnotation::try_from(annotation.clone())
                 .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created
