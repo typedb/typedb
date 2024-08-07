@@ -200,7 +200,7 @@ impl IntoIterator for ImmutableRow<'static> {
 impl<'a> Display for ImmutableRow<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} x [  ", self.multiplicity)?;
-        for value in self.row.as_ref() {
+        for value in &*self.row {
             write!(f, "{value}  ")?
         }
         writeln!(f, "]")?;

@@ -483,7 +483,6 @@ fn traverse_rp_bounded_relation_player() {
 
     for row in rows {
         let r = row.unwrap();
-        print!("{}", r);
-        println!()
+        println!("{}", r);
     }
 }
