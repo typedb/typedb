@@ -239,6 +239,42 @@ impl<'cx> ConstraintsBuilder<'cx> {
         Ok(as_ref.as_expression_binding().unwrap())
     }
 
+    pub fn add_owns(&mut self, owner_type: Variable, attribute_type: Variable) -> Result<&Owns<Variable>, PatternDefinitionError> {
+        debug_assert!(
+            self.context.is_variable_available(self.constraints.scope, owner_type)
+                && self.context.is_variable_available(self.constraints.scope, attribute_type)
+        );
+        let has = Constraint::from(Owns::new(owner_type, attribute_type));
+        self.context.set_variable_category(owner_type, VariableCategory::ThingType, has.clone())?;
+        self.context.set_variable_category(attribute_type, VariableCategory::ThingType, has.clone())?;
+        let constraint = self.constraints.add_constraint(has);
+        Ok(constraint.as_owns().unwrap())
+    }
+
+    pub fn add_relates(&mut self, relation_type: Variable, role_type: Variable) -> Result<&Relates<Variable>, PatternDefinitionError> {
+        debug_assert!(
+            self.context.is_variable_available(self.constraints.scope, relation_type)
+                && self.context.is_variable_available(self.constraints.scope, role_type)
+        );
+        let relates = Constraint::from(Relates::new(relation_type, role_type));
+        self.context.set_variable_category(relation_type, VariableCategory::ThingType, relates.clone())?;
+        self.context.set_variable_category(role_type, VariableCategory::RoleType, relates.clone())?;
+        let constraint = self.constraints.add_constraint(relates);
+        Ok(constraint.as_relates().unwrap())
+    }
+
+    pub fn add_plays(&mut self, player_type: Variable, role_type: Variable) -> Result<&Plays<Variable>, PatternDefinitionError> {
+        debug_assert!(
+            self.context.is_variable_available(self.constraints.scope, player_type)
+                && self.context.is_variable_available(self.constraints.scope, role_type)
+        );
+        let relates = Constraint::from(Plays::new(player_type, role_type));
+        self.context.set_variable_category(player_type, VariableCategory::ThingType, relates.clone())?;
+        self.context.set_variable_category(role_type, VariableCategory::RoleType, relates.clone())?;
+        let constraint = self.constraints.add_constraint(relates);
+        Ok(constraint.as_plays().unwrap())
+    }
+
     pub(crate) fn create_anonymous_variable(&mut self) -> Result<Variable, PatternDefinitionError> {
         self.context.create_anonymous_variable(self.constraints.scope)
     }
@@ -384,6 +420,27 @@ impl<ID: IrID> Constraint<ID> {
             _ => None,
         }
     }
+
+    pub(crate) fn as_owns(&self) -> Option<&Owns<ID>> {
+        match self {
+            Constraint::Owns(owns) => Some(owns),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn as_relates(&self) -> Option<&Relates<ID>> {
+        match self {
+            Constraint::Relates(relates) => Some(relates),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn as_plays(&self) -> Option<&Plays<ID>> {
+        match self {
+            Constraint::Plays(plays) => Some(plays),
+            _ => None,
+        }
+    }
 }
 
 impl<ID: IrID> fmt::Display for Constraint<ID> {
@@ -518,6 +575,10 @@ impl<ID: IrID> Isa<ID> {
 
     pub fn type_(&self) -> ID {
         self.type_
+    }
+
+    pub fn isa_kind(&self) -> IsaKind {
+        self.kind
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
