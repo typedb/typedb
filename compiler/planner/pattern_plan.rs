@@ -56,7 +56,7 @@ impl PatternPlan {
         let mut adjacency: HashMap<usize, HashSet<usize>> = HashMap::new();
 
         let context = block.context();
-        let type_annotations = program.get_entry_annotations();
+        let type_annotations = program.entry_annotations();
 
         for (variable, category) in context.variable_categories() {
             match category {

@@ -75,7 +75,7 @@ impl InstructionExecutor {
                     isa.clone().into_ids(positions),
                     variable_modes,
                     sort_by_position,
-                    type_annotations.constraint_annotations_of(isa.into()).unwrap().get_left_right().right_to_left(),
+                    type_annotations.constraint_annotations_of(isa.into()).unwrap().as_left_right().right_to_left(),
                     type_annotations.variable_annotations_of(thing).unwrap().clone(),
                 );
                 Ok(Self::IsaReverse(provider))
@@ -86,7 +86,7 @@ impl InstructionExecutor {
                     has.clone().into_ids(positions),
                     variable_modes,
                     sort_by_position,
-                    type_annotations.constraint_annotations_of(has.into()).unwrap().get_left_right().left_to_right(),
+                    type_annotations.constraint_annotations_of(has.into()).unwrap().as_left_right().left_to_right(),
                     type_annotations.variable_annotations_of(has_attribute).unwrap().clone(),
                     snapshot,
                     thing_manager,
@@ -99,26 +99,18 @@ impl InstructionExecutor {
                     has.clone().into_ids(positions),
                     variable_modes,
                     sort_by_position,
-                    type_annotations.constraint_annotations_of(has.into()).unwrap().get_left_right().right_to_left(),
+                    type_annotations.constraint_annotations_of(has.into()).unwrap().as_left_right().right_to_left(),
                     type_annotations.variable_annotations_of(has_owner).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
                 Ok(Self::HasReverse(executor))
             }
-            ConstraintInstruction::RolePlayer(role_player, _) => {
-                let rp_player = role_player.player();
-                let left_right_filtered = type_annotations
-                    .constraint_annotations_of(role_player.clone().into())
-                    .unwrap()
-                    .get_left_right_filtered();
+            ConstraintInstruction::RolePlayer(role_player) => {
                 let executor = RolePlayerExecutor::new(
-                    role_player.into_ids(positions),
+                    role_player.map(positions),
                     variable_modes,
                     sort_by_position,
-                    left_right_filtered.left_to_right(),
-                    left_right_filtered.filters_on_right(),
-                    type_annotations.variable_annotations_of(rp_player).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
@@ -129,9 +121,9 @@ impl InstructionExecutor {
                 let left_right_filtered = type_annotations
                     .constraint_annotations_of(role_player.clone().into())
                     .unwrap()
-                    .get_left_right_filtered();
+                    .as_left_right_filtered();
                 let executor = RolePlayerReverseExecutor::new(
-                    role_player.into_ids(positions),
+                    role_player.map(positions),
                     variable_modes,
                     sort_by_position,
                     left_right_filtered.right_to_left(),

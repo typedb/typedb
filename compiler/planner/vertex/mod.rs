@@ -146,7 +146,7 @@ impl HasPlanner {
             .sum::<u64>() as f64;
 
         let expected_unbound_size = f64::min(unbound_forward_size, unbound_backward_size);
-        let unbound_is_forward = true; //unbound_forward_size <= unbound_backward_size;
+        let unbound_is_forward = unbound_forward_size <= unbound_backward_size;
 
         Self {
             owner: variable_index[&owner],

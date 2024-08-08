@@ -60,14 +60,14 @@ pub enum ConstraintTypeAnnotations {
 }
 
 impl ConstraintTypeAnnotations {
-    pub fn get_left_right(&self) -> &LeftRightAnnotations {
+    pub fn as_left_right(&self) -> &LeftRightAnnotations {
         match self {
             ConstraintTypeAnnotations::LeftRight(annotations) => annotations,
             ConstraintTypeAnnotations::LeftRightFiltered(_) => panic!("Unexpected type."),
         }
     }
 
-    pub fn get_left_right_filtered(&self) -> &LeftRightFilteredAnnotations {
+    pub fn as_left_right_filtered(&self) -> &LeftRightFilteredAnnotations {
         match self {
             ConstraintTypeAnnotations::LeftRightFiltered(annotations) => annotations,
             ConstraintTypeAnnotations::LeftRight(_) => panic!("Unexpected type."),

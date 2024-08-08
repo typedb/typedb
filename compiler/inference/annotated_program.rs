@@ -34,7 +34,7 @@ impl AnnotatedProgram {
         &self.entry
     }
 
-    pub fn get_entry_annotations(&self) -> &TypeAnnotations {
+    pub fn entry_annotations(&self) -> &TypeAnnotations {
         &self.entry_annotations
     }
 
