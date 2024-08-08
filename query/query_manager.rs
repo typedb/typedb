@@ -14,6 +14,7 @@ use crate::{define, error::QueryError};
 pub struct QueryManager {}
 
 impl QueryManager {
+    // TODO: clean up if QueryManager remains stateless
     pub fn new() -> QueryManager {
         QueryManager {}
     }

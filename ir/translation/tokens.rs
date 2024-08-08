@@ -4,17 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use typeql::annotation::Annotation as TypeQLAnnotation;
-use typeql::annotation::CardinalityRange;
-use typeql::common::token::{
-    Kind as TypeQLKind,
-    ValueType as TypeQLValueType,
+use concept::type_::annotation::{
+    Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
+    AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
 };
-use concept::type_::annotation::{Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues};
-use encoding::graph::type_::Kind;
-use encoding::value::value_type::ValueType;
-use crate::LiteralParseError;
-use crate::translation::literal::translate_literal;
+use encoding::{graph::type_::Kind, value::value_type::ValueType};
+use typeql::{
+    annotation::{Annotation as TypeQLAnnotation, CardinalityRange},
+    common::token::{Kind as TypeQLKind, ValueType as TypeQLValueType},
+};
+
+use crate::{translation::literal::translate_literal, LiteralParseError};
 
 pub fn translate_annotation(typeql_kind: &TypeQLAnnotation) -> Result<Annotation, LiteralParseError> {
     Ok(match typeql_kind {
@@ -45,11 +45,7 @@ pub fn translate_annotation(typeql_kind: &TypeQLAnnotation) -> Result<Annotation
         }
         TypeQLAnnotation::Unique(_) => Annotation::Unique(AnnotationUnique),
         TypeQLAnnotation::Values(values) => Annotation::Values(AnnotationValues::new(
-            values
-                .values
-                .iter()
-                .map(translate_literal)
-                .collect::<Result<Vec<_>, _>>()?,
+            values.values.iter().map(translate_literal).collect::<Result<Vec<_>, _>>()?,
         )),
     })
 }

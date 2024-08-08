@@ -21,7 +21,10 @@ use crate::{
         },
     },
     program::function_signature::FunctionSignatureIndex,
-    translation::constraints::{add_function_call_binding_user, register_typeql_var, split_out_inline_expressions},
+    translation::{
+        constraints::{add_function_call_binding_user, register_typeql_var, split_out_inline_expressions},
+        literal::translate_literal,
+    },
     PatternDefinitionError,
 };
 
@@ -51,7 +54,11 @@ fn build_recursive(
             let id = build_recursive(function_index, constraints, &list_index.index, tree)?;
             Expression::ListIndex(ListIndex::new(variable, id))
         }
-        TypeQLExpression::Value(literal) => Expression::Constant(parse_literal(literal)?),
+        TypeQLExpression::Value(literal) => {
+            let value = translate_literal(literal)
+                .map_err(|source| PatternDefinitionError::LiteralParseError { literal: literal.to_string(), source })?;
+            Expression::Constant(value)
+        }
         TypeQLExpression::Operation(operation) => {
             let left_id = build_recursive(function_index, constraints, &operation.left, tree)?;
             let right_id = build_recursive(function_index, constraints, &operation.right, tree)?;
@@ -209,10 +216,4 @@ pub mod tests {
             ]
         );
     }
-}
-
-// TODO: Introduce the error wrapping trait
-fn parse_literal(literal: &Literal) -> Result<Value<'static>, PatternDefinitionError> {
-    super::literal::translate_literal(literal)
-        .map_err(|source| PatternDefinitionError::LiteralParseError { literal: literal.to_string(), source })
 }

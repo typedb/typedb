@@ -35,7 +35,7 @@ use typeql::{
         type_::{Capability, CapabilityBase},
         Struct, Type,
     },
-    type_::{Optional},
+    type_::Optional,
     Definable, ScopedLabel, TypeRef, TypeRefAny,
 };
 
@@ -59,8 +59,8 @@ macro_rules! filter_variants {
     };
 }
 pub(crate) use filter_variants;
-use ir::LiteralParseError;
-use ir::translation::tokens::translate_annotation;
+use ir::{translation::tokens::translate_annotation, LiteralParseError};
+
 use crate::util::type_ref_to_label_and_ordering;
 
 pub(crate) fn execute(
@@ -224,8 +224,8 @@ fn define_type_annotations(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for typeql_annotation in &type_declaration.annotations {
-        let annotation = translate_annotation(typeql_annotation)
-            .map_err(|source|DefineError::LiteralParseError { source })?;
+        let annotation =
+            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
         match type_.clone() {
             TypeEnum::Entity(entity) => {
                 let converted = EntityTypeAnnotation::try_from(annotation.clone())
@@ -276,7 +276,9 @@ fn define_capabilities_sub(
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
 
     for capability in &type_declaration.capabilities {
-        let CapabilityBase::Sub(sub) = &capability.base else {continue;};
+        let CapabilityBase::Sub(sub) = &capability.base else {
+            continue;
+        };
         let supertype_label = Label::parse_from(&sub.supertype_label.ident.as_str());
         let supertype = resolve_type(snapshot, type_manager, &supertype_label)
             .map_err(|source| DefineError::TypeLookup { source })?;
@@ -318,7 +320,9 @@ fn define_capabilities_value_type(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
-        let CapabilityBase::ValueType(value_type_statement) = &capability.base else {continue;};
+        let CapabilityBase::ValueType(value_type_statement) = &capability.base else {
+            continue;
+        };
         let TypeEnum::Attribute(attribute_type) = &type_ else {
             return Err(err_unsupported_capability(&label, type_.kind(), capability));
         };
@@ -339,7 +343,9 @@ fn define_capabilities_relates(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
-        let CapabilityBase::Relates(relates) = &capability.base else {continue;};
+        let CapabilityBase::Relates(relates) = &capability.base else {
+            continue;
+        };
         let TypeEnum::Relation(relation_type) = &type_ else {
             return Err(err_unsupported_capability(&label, type_.kind(), capability));
         };
@@ -373,8 +379,8 @@ fn define_capabilities_relates(
         };
         // Handle annotations
         for typeql_annotation in &capability.annotations {
-            let annotation = translate_annotation(typeql_annotation)
-                .map_err(|source| DefineError::LiteralParseError { source })?;
+            let annotation =
+                translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
             let relates_annotation = RelatesAnnotation::try_from(annotation.clone())
                 .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created
@@ -393,16 +399,22 @@ fn define_capabilities_owns(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
-        let CapabilityBase::Owns(owns) = &capability.base else {continue;};
+        let CapabilityBase::Owns(owns) = &capability.base else {
+            continue;
+        };
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&owns.owned)
             .map_err(|_| DefineError::OwnsAttributeMustBeLabelOrList { owns: owns.clone() })?;
 
         let wrapped_attribute_type =
             resolve_type(snapshot, type_manager, &attr_label).map_err(|source| DefineError::TypeLookup { source })?;
         let TypeEnum::Attribute(attribute_type) = wrapped_attribute_type else {
-            return Err(
-                err_capability_kind_mismatch(&label, &attr_label, capability, Kind::Attribute, wrapped_attribute_type.kind())
-            );
+            return Err(err_capability_kind_mismatch(
+                &label,
+                &attr_label,
+                capability,
+                Kind::Attribute,
+                wrapped_attribute_type.kind(),
+            ));
         };
         let created = match &type_ {
             TypeEnum::Entity(entity_type) => ObjectType::Entity(entity_type.clone())
@@ -416,8 +428,8 @@ fn define_capabilities_owns(
             }
         };
         for typeql_annotation in &capability.annotations {
-            let annotation = translate_annotation(typeql_annotation)
-                .map_err(|source| DefineError::LiteralParseError { source })?;
+            let annotation =
+                translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
             let owns_annotation = OwnsAnnotation::try_from(annotation.clone())
                 .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created
@@ -452,7 +464,9 @@ fn define_capabilities_plays(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     for capability in &type_declaration.capabilities {
-        let CapabilityBase::Plays(plays)  = &capability.base else {continue;};
+        let CapabilityBase::Plays(plays) = &capability.base else {
+            continue;
+        };
         let role_label = Label::build_scoped(plays.role.name.ident.as_str(), plays.role.scope.ident.as_str());
         let role_type_opt = type_manager
             .get_role_type(snapshot, &role_label)
@@ -473,8 +487,8 @@ fn define_capabilities_plays(
         };
 
         for typeql_annotation in &capability.annotations {
-            let annotation = translate_annotation(typeql_annotation)
-                .map_err(|source|DefineError::LiteralParseError { source })?;
+            let annotation =
+                translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
             let plays_annotation = PlaysAnnotation::try_from(annotation.clone())
                 .map_err(|source| DefineError::IllegalAnnotation { source })?;
             created

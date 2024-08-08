@@ -8,21 +8,16 @@
 
 use concept::{
     error::ConceptReadError,
-    type_::{
-        object_type::ObjectType,
-        type_manager::TypeManager,
-    },
+    type_::{object_type::ObjectType, type_manager::TypeManager, Ordering},
 };
-use encoding::{
-    value::label::Label,
-};
+use encoding::value::label::Label;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use typeql::{type_::{NamedType}, TypeRef, TypeRefAny};
-use typeql::type_::BuiltinValueType;
-use concept::type_::Ordering;
+use typeql::{
+    type_::{BuiltinValueType, NamedType},
+    TypeRef, TypeRefAny,
+};
 
 use crate::{define::DefineError, SymbolResolutionError};
-
 
 pub(crate) fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(Label<'static>, Ordering), ()> {
     match type_ref {
@@ -35,7 +30,6 @@ pub(crate) fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(L
         _ => Err(()),
     }
 }
-
 
 pub(crate) fn resolve_type(
     snapshot: &impl WritableSnapshot,
