@@ -177,7 +177,6 @@ fn traverse_rp_unbounded_sorted_from() {
         .unwrap()
         .clone();
 
-    // add all constraints to make type inference return correct types, though we only plan Has's
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
@@ -259,7 +258,6 @@ fn traverse_rp_unbounded_sorted_to() {
         .unwrap()
         .clone();
 
-    // add all constraints to make type inference return correct types, though we only plan Has's
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
@@ -338,7 +336,6 @@ fn traverse_rp_bounded_relation() {
         .unwrap()
         .clone();
 
-    // add all constraints to make type inference return correct types, though we only plan Has's
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     let isa_membership =
@@ -425,7 +422,6 @@ fn traverse_rp_bounded_relation_player() {
         .unwrap()
         .clone();
 
-    // add all constraints to make type inference return correct types, though we only plan Has's
     let isa_person =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
@@ -517,7 +513,6 @@ fn traverse_rp_reverse_unbounded_sorted_from() {
         .unwrap()
         .clone();
 
-    // add all constraints to make type inference return correct types, though we only plan Has's
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
@@ -596,7 +591,6 @@ fn traverse_rp_reverse_unbounded_sorted_to() {
         .unwrap()
         .clone();
 
-    // add all constraints to make type inference return correct types, though we only plan Has's
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
@@ -675,7 +669,6 @@ fn traverse_rp_reverse_bounded_player() {
         .unwrap()
         .clone();
 
-    // add all constraints to make type inference return correct types, though we only plan Has's
     let isa_person =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
@@ -762,7 +755,6 @@ fn traverse_rp_reverse_bounded_player_relation() {
         .unwrap()
         .clone();
 
-    // add all constraints to make type inference return correct types, though we only plan Has's
     let isa_person =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
