@@ -1,5 +1,9 @@
-use concept::thing::thing_manager::ThingManager;
-use storage::snapshot::WritableSnapshot;
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 use crate::planner::insert_planner::VariablePosition;
 
 #[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
@@ -27,42 +31,31 @@ pub enum ThingSource {
     Inserted(usize),
 }
 
-// We aim to generalise Insert, Delete, Update and Put using this trait.
-// ConceptSource is for injecting ExecutionConcepts.
-pub trait WriteInstruction<ConceptSource> {
-    type CheckError;
-    type InsertError;
-    type DeleteError;
-    fn check(snapshot: &impl WritableSnapshot, thing_manager: &ThingManager, concepts: &mut ConceptSource) -> Result<(), Self::CheckError>;
-    fn insert(snapshot: &impl WritableSnapshot, thing_manager: &ThingManager, concepts: &mut ConceptSource) -> Result<(), Self::InsertError>;
-    fn delete(snapshot: &impl WritableSnapshot, thing_manager: &ThingManager, concepts: &ConceptSource) -> Result<(), Self::DeleteError>;
-}
-
 #[derive(Debug)]
 pub struct IsaEntity {
-    pub type_: TypeSource
+    pub type_: TypeSource,
 }
 
 #[derive(Debug)]
 pub struct IsaAttribute {
     pub type_: TypeSource,
-    pub value: ValueSource
+    pub value: ValueSource,
 }
 
 #[derive(Debug)]
 pub struct IsaRelation {
-    pub type_: TypeSource
+    pub type_: TypeSource,
 }
 
 #[derive(Debug)]
 pub struct Has {
     pub owner: ThingSource,
-    pub attribute: ThingSource
+    pub attribute: ThingSource,
 }
 
 #[derive(Debug)]
 pub struct RolePlayer {
     pub relation: ThingSource,
     pub player: ThingSource,
-    pub role: TypeSource
+    pub role: TypeSource,
 }

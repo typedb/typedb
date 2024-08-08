@@ -27,7 +27,12 @@ use ir::pattern::{
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::inference::type_annotations::TypeAnnotations;
+use crate::{
+    inference::type_annotations::TypeAnnotations,
+    planner::write_instructions::{
+        Has, IsaAttribute, IsaEntity, IsaRelation, RolePlayer, ThingSource, TypeSource, ValueSource, VariableSource,
+    },
+};
 
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {
@@ -37,14 +42,13 @@ macro_rules! filter_variants {
 
 pub type VariablePosition = usize; // Why is that not in plan.
 
-
 #[derive(Debug)]
 pub enum InsertInstruction {
     // TODO: Just replace this with regular `Constraint`s and use a mapped-row?
     Entity(IsaEntity),
     Attribute(IsaAttribute),
     Relation(IsaRelation),
-    Has(Has), // TODO: Ordering
+    Has(Has),               // TODO: Ordering
     RolePlayer(RolePlayer), // TODO: Ordering
 }
 
@@ -77,12 +81,12 @@ pub fn build_insert_plan(
         let type_ = get_type_source(&input_variables, &type_constants.index, isa.type_())?;
         let kind = isa_kinds.items[i];
         let instruction = match kind {
-            Kind::Entity => InsertInstruction::Entity(Entity { type_ }),
+            Kind::Entity => InsertInstruction::Entity(IsaEntity { type_ }),
             Kind::Attribute => {
                 let value = get_value_source(&input_variables, &value_constants.index, isa.thing())?;
                 InsertInstruction::Attribute(IsaAttribute { type_, value })
             }
-            Kind::Relation => InsertInstruction::Relation(Relation { type_ }),
+            Kind::Relation => InsertInstruction::Relation(IsaRelation { type_ }),
             Kind::Role => Err(InsertCompilationError::IsaStatementForRoleType { isa: isa.clone() })?,
         };
         instructions.push(instruction);

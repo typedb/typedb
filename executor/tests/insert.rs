@@ -16,7 +16,7 @@ use concept::{
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
     batch::Row,
-    insert_executor::{InsertError, InsertExecutor},
+    write::insert_executor::{InsertError, InsertExecutor},
 };
 use ir::program::{function_signature::HashMapFunctionIndex, program::Program};
 use lending_iterator::LendingIterator;
@@ -99,7 +99,7 @@ fn execute_insert(
     let mut output_multiplicity = 0;
     let output = Row::new(&mut output_vec, &mut output_multiplicity);
     let mut executor = InsertExecutor::new(insert_plan);
-    executor::insert_executor::execute(
+    executor::write::insert_executor::execute(
         snapshot,
         &thing_manager,
         &mut executor,
