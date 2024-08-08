@@ -27,6 +27,7 @@ use crate::{
                 validation::{
                     get_label_or_concept_read_err, is_interface_hidden_by_overrides,
                     is_overridden_interface_object_declared_supertype_or_self, is_type_transitive_supertype_or_same,
+                    validate_capabilities_cardinality,
                     validate_declared_annotation_is_compatible_with_inherited_annotations,
                     validate_declared_capability_annotation_is_compatible_with_inherited_annotations,
                     validate_edge_annotations_narrowing_of_inherited_annotations,
@@ -41,7 +42,6 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, TypeAPI,
     },
 };
-use crate::type_::type_manager::validation::validation::validate_capabilities_cardinality;
 
 pub struct CommitTimeValidation {}
 

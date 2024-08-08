@@ -6,7 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use storage::snapshot::ReadableSnapshot;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::ConceptReadError,
@@ -18,7 +18,7 @@ use crate::{
             AnnotationRegex, AnnotationUnique, AnnotationValues, DefaultFrom,
         },
         owns::Owns,
-        type_manager::TypeManager,
+        type_manager::{type_reader::TypeReader, TypeManager},
         Capability,
     },
 };

@@ -112,7 +112,7 @@ pub async fn relation_role_unset_override(
             .get_relates_of_role_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
-        let res = relates.unset_override(&mut tx.snapshot, &tx.type_manager);
+        let res = relates.unset_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -563,7 +563,12 @@ pub async fn relation_role_unset_annotation(
         if RoleTypeAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
             res = relates.role().unset_annotation(&mut tx.snapshot, &tx.type_manager, parsed_annotation_category);
         } else if RelatesAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
-            res = relates.unset_annotation(&mut tx.snapshot, &tx.type_manager, parsed_annotation_category);
+            res = relates.unset_annotation(
+                &mut tx.snapshot,
+                &tx.type_manager,
+                &tx.thing_manager,
+                parsed_annotation_category,
+            );
         } else {
             unimplemented!("Annotation {:?} is not supported by roles and relates", parsed_annotation_category);
         }

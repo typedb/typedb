@@ -488,9 +488,14 @@ pub(crate) fn validate_edge_annotations_narrowing_of_inherited_annotations<CAP: 
             cardinality,
             false, // is_key
         )?,
-        Annotation::Key(_) => {
-            validate_cardinality_narrows_inherited_cardinality(snapshot, type_manager, edge.clone(), overridden_edge.clone(), AnnotationKey::CARDINALITY, true)?
-        }
+        Annotation::Key(_) => validate_cardinality_narrows_inherited_cardinality(
+            snapshot,
+            type_manager,
+            edge.clone(),
+            overridden_edge.clone(),
+            AnnotationKey::CARDINALITY,
+            true,
+        )?,
         Annotation::Regex(regex) => {
             validate_edge_regex_narrows_inherited_regex(snapshot, edge.clone(), Some(overridden_edge.clone()), regex)?
         }
@@ -769,14 +774,19 @@ pub fn validate_capabilities_cardinality<CAP: Capability<'static>>(
             inheriting_capabilities.iter().filter_map(|capability| cardinalities.get(capability).copied()).sum();
 
         if !root_cardinality.narrowed_correctly_by(&inheriting_cardinality) {
-            validation_errors.push(SchemaValidationError::SummarizedCardinalityOfCapabilitiesOverridingSingleCapabilityOverflowsConstraint(
-                CAP::KIND,
-                get_label_or_concept_read_err(snapshot, root_capability.object())?,
-                get_label_or_concept_read_err(snapshot, root_capability.interface())?,
-                get_opt_label_or_concept_read_err(snapshot, inheriting_capabilities.iter().next().map(|cap| cap.object()))?,
-                *root_cardinality,
-                inheriting_cardinality,
-            ));
+            validation_errors.push(
+                SchemaValidationError::SummarizedCardinalityOfCapabilitiesOverridingSingleCapabilityOverflowsConstraint(
+                    CAP::KIND,
+                    get_label_or_concept_read_err(snapshot, root_capability.object())?,
+                    get_label_or_concept_read_err(snapshot, root_capability.interface())?,
+                    get_opt_label_or_concept_read_err(
+                        snapshot,
+                        inheriting_capabilities.iter().next().map(|cap| cap.object()),
+                    )?,
+                    *root_cardinality,
+                    inheriting_cardinality,
+                ),
+            );
         }
     }
 

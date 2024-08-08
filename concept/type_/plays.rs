@@ -64,8 +64,9 @@ impl<'a> Plays<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.unset_plays_override(snapshot, self.clone().into_owned())
+        type_manager.unset_plays_override(snapshot, thing_manager, self.clone().into_owned())
     }
 
     pub fn set_annotation(
@@ -90,13 +91,14 @@ impl<'a> Plays<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let plays_annotation = PlaysAnnotation::try_getting_default(annotation_category)
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match plays_annotation {
             PlaysAnnotation::Cardinality(_) => {
-                type_manager.unset_capability_annotation_cardinality(snapshot, self.clone().into_owned())?
+                type_manager.unset_plays_annotation_cardinality(snapshot, thing_manager, self.clone().into_owned())?
             }
         }
         Ok(())

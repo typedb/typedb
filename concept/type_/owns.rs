@@ -102,8 +102,9 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.unset_owns_override(snapshot, self.clone().into_owned())
+        type_manager.unset_owns_override(snapshot, thing_manager, self.clone().into_owned())
     }
 
     pub fn set_annotation(
@@ -146,6 +147,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let owns_annotation = OwnsAnnotation::try_getting_default(annotation_category)
@@ -154,9 +156,11 @@ impl<'a> Owns<'a> {
             OwnsAnnotation::Distinct(_) => {
                 type_manager.unset_capability_annotation_distinct(snapshot, self.clone().into_owned())?
             }
-            OwnsAnnotation::Key(_) => type_manager.unset_owns_annotation_key(snapshot, self.clone().into_owned())?,
+            OwnsAnnotation::Key(_) => {
+                type_manager.unset_owns_annotation_key(snapshot, thing_manager, self.clone().into_owned())?
+            }
             OwnsAnnotation::Cardinality(_) => {
-                type_manager.unset_capability_annotation_cardinality(snapshot, self.clone().into_owned())?
+                type_manager.unset_owns_annotation_cardinality(snapshot, thing_manager, self.clone().into_owned())?
             }
             OwnsAnnotation::Unique(_) => {
                 type_manager.unset_owns_annotation_unique(snapshot, self.clone().into_owned())?
