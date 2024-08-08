@@ -760,11 +760,16 @@ pub fn validate_capabilities_cardinality<CAP: Capability<'static>>(
             }
 
             let not_stored_override = not_stored_overrides.get(&overridden_capability);
-            current_overridden_capability = if let Some(not_stored_override) = not_stored_override {
+            let next_overridden_capability = if let Some(not_stored_override) = not_stored_override {
                 not_stored_override.clone()
             } else {
                 TypeReader::get_capability_override(snapshot, overridden_capability.clone())?
             };
+
+            current_overridden_capability = match next_overridden_capability {
+                Some(next_capability) if overridden_capability == next_capability => None,
+                _ => next_overridden_capability,
+            }
         }
     }
 

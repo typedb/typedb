@@ -2403,19 +2403,26 @@ impl OperationTimeValidation {
         interface_type: CAP::InterfaceType,
         new_interface_supertype: Option<CAP::InterfaceType>,
     ) -> Result<(), SchemaValidationError> {
-        for_type_and_subtypes_transitive!(snapshot, interface_type, |type_: CAP::InterfaceType| {
-            Self::validate_interface_change_supertype_does_not_corrupt_capabilities_overrides::<CAP>(
-                snapshot,
-                type_,
-                new_interface_supertype.clone(),
-            )
-        });
+        let old_interface_supertype = TypeReader::get_supertype(snapshot, interface_type.clone())
+            .map_err(SchemaValidationError::ConceptRead)?;
+        if let Some(old_interface_supertype) = old_interface_supertype {
+            for_type_and_subtypes_transitive!(snapshot, interface_type, |type_: CAP::InterfaceType| {
+                Self::validate_interface_change_supertype_does_not_corrupt_capabilities_overrides::<CAP>(
+                    snapshot,
+                    type_,
+                    old_interface_supertype.clone(),
+                    new_interface_supertype.clone(),
+                )
+            });
+        }
+
         Ok(())
     }
 
     fn validate_interface_change_supertype_does_not_corrupt_capabilities_overrides<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         interface_type: CAP::InterfaceType,
+        old_interface_supertype: CAP::InterfaceType,
         new_interface_supertype: Option<CAP::InterfaceType>,
     ) -> Result<(), SchemaValidationError> {
         let capabilities: HashSet<CAP> =
@@ -2426,23 +2433,30 @@ impl OperationTimeValidation {
                 .map_err(SchemaValidationError::ConceptRead)?;
             match capability_override {
                 Some(capability_override) if capability_override.interface() != interface_type => {
-                    if let Some(new_interface_supertype) = &new_interface_supertype {
-                        if is_type_transitive_supertype_or_same(
-                            snapshot,
-                            new_interface_supertype.clone(),
-                            capability_override.interface(),
-                        )
-                        .map_err(SchemaValidationError::ConceptRead)?
-                        {
-                            continue;
+                    if is_type_transitive_supertype_or_same(
+                        snapshot,
+                        old_interface_supertype.clone(),
+                        capability_override.interface(),
+                    )
+                    .map_err(SchemaValidationError::ConceptRead)? {
+                        if let Some(new_interface_supertype) = &new_interface_supertype {
+                            if is_type_transitive_supertype_or_same(
+                                snapshot,
+                                new_interface_supertype.clone(),
+                                capability_override.interface(),
+                            )
+                            .map_err(SchemaValidationError::ConceptRead)?
+                            {
+                                continue;
+                            }
                         }
+                        return Err(SchemaValidationError::OverriddenCapabilityInterfaceIsNotSupertype(
+                            CAP::KIND,
+                            get_label_or_schema_err(snapshot, capability.object())?,
+                            get_label_or_schema_err(snapshot, interface_type)?,
+                            get_label_or_schema_err(snapshot, capability_override.interface())?,
+                        ));
                     }
-                    return Err(SchemaValidationError::OverriddenCapabilityInterfaceIsNotSupertype(
-                        CAP::KIND,
-                        get_label_or_schema_err(snapshot, capability.object())?,
-                        get_label_or_schema_err(snapshot, interface_type)?,
-                        get_label_or_schema_err(snapshot, capability_override.interface())?,
-                    ));
                 }
                 _ => {}
             }
