@@ -959,6 +959,18 @@ impl TypeManager {
         }
     }
 
+    pub fn get_cardinality_declared<'a, CAP: Capability<'a>>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        capability: CAP,
+    ) -> Result<Option<AnnotationCardinality>, ConceptReadError> {
+        let cardinality = Constraint::compute_cardinality(
+            capability.get_annotations_declared(snapshot, self)?.iter(),
+            None, // no default
+        );
+        Ok(cardinality)
+    }
+
     pub fn get_type_is_abstract<'a, T: KindAPI<'a>>(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1954,11 +1966,11 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_new_override(
+        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_override(
             snapshot,
             self,
             owns.clone(),
-            overridden.clone(),
+            Some(overridden.clone()),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1995,6 +2007,14 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         // TODO: Looks like we need to call for cardinality recheck of instances as well.....
         if owns.get_override(snapshot, self)?.is_some() {
+            OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_override(
+                snapshot,
+                self,
+                owns.clone(),
+                None, // unset override
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
             TypeWriter::storage_delete_type_edge_overridden(snapshot, owns);
         }
         Ok(())
@@ -2088,11 +2108,11 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_new_override(
+        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_override(
             snapshot,
             self,
             plays.clone(),
-            overridden.clone(),
+            Some(overridden.clone()),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -2130,6 +2150,14 @@ impl TypeManager {
         // TODO: Looks like we need to call for cardinality recheck of instances as well.....
 
         if plays.get_override(snapshot, self)?.is_some() {
+            OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_override(
+                snapshot,
+                self,
+                plays.clone(),
+                None, // unset override
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
             TypeWriter::storage_delete_type_edge_overridden(snapshot, plays);
         }
         Ok(())
@@ -2389,11 +2417,11 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_new_override(
+        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_override(
             snapshot,
             self,
             relates.clone(),
-            overridden.clone(),
+            Some(overridden.clone()),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -2438,17 +2466,26 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         relates: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_interface_change_supertype_does_not_corrupt_capabilities_overrides_transitive::<Plays<'static>>(
-            snapshot,
-            relates.role(),
-            None, // new_interface_supertype
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
         // TODO: Looks like we need to call for cardinality recheck of instances as well.....
 
         let role_type = relates.role();
         if role_type.get_supertype(snapshot, self)?.is_some() {
+
+            OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_override(
+                snapshot,
+                self,
+                relates.clone(),
+                None, // unset override
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+            OperationTimeValidation::validate_interface_change_supertype_does_not_corrupt_capabilities_overrides_transitive::<Plays<'static>>(
+                snapshot,
+                relates.role(),
+                None, // new_interface_supertype
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
             TypeWriter::storage_delete_type_edge_overridden(snapshot, relates);
             self.unset_supertype(snapshot, role_type)?;
         }
@@ -2574,30 +2611,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        if let Some(override_owns) = TypeReader::get_capability_override(snapshot, owns.clone())? {
-            OperationTimeValidation::validate_key_narrows_inherited_cardinality(
-                snapshot,
-                self,
-                owns.clone(),
-                override_owns,
-            )
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-        }
-
-        OperationTimeValidation::validate_overriding_capabilities_narrow_cardinality(
-            snapshot,
-            owns.clone(),
-            AnnotationKey::CARDINALITY,
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        OperationTimeValidation::validate_updated_cardinality_against_inheritance_line(
-            snapshot,
-            self,
-            owns.clone(),
-            AnnotationKey::CARDINALITY,
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        self.validate_updated_capability_cardinality(snapshot, owns.clone(), AnnotationKey::CARDINALITY, true)?;
 
         OperationTimeValidation::validate_new_annotation_compatible_with_owns_and_overriding_owns_instances(
             snapshot,
@@ -2607,6 +2621,8 @@ impl TypeManager {
             annotation.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        // TODO: Should probably call instance checks based on the card?
 
         self.set_capability_annotation(snapshot, owns, annotation)
     }
@@ -2618,6 +2634,15 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Key;
         self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+
+        let owns_override = TypeReader::get_capability_override(snapshot, owns.clone())?;
+        let updated_cardinality = if let Some(owns_override) = owns_override {
+            owns_override.get_cardinality(snapshot, self)?
+        } else {
+            owns.get_default_cardinality(snapshot, self)?
+        };
+
+        self.validate_updated_capability_cardinality(snapshot, owns.clone(), updated_cardinality, false)?;
 
         // TODO: Looks like we need to call for cardinality recheck of instances as well.....
         self.unset_capability_annotation(snapshot, owns, annotation_category)
@@ -2633,7 +2658,7 @@ impl TypeManager {
         let annotation = Annotation::Cardinality(cardinality.clone());
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
-        self.validate_set_capability_cardinality_annotation(snapshot, owns.clone(), cardinality)?;
+        self.validate_updated_capability_cardinality(snapshot, owns.clone(), cardinality, false)?;
 
         OperationTimeValidation::validate_new_annotation_compatible_with_owns_and_overriding_owns_instances(
             snapshot,
@@ -2657,7 +2682,7 @@ impl TypeManager {
         let annotation = Annotation::Cardinality(cardinality.clone());
 
         self.validate_set_capability_annotation_general(snapshot, plays.clone(), annotation.clone())?;
-        self.validate_set_capability_cardinality_annotation(snapshot, plays.clone(), cardinality)?;
+        self.validate_updated_capability_cardinality(snapshot, plays.clone(), cardinality, false)?;
 
         OperationTimeValidation::validate_new_annotation_compatible_with_plays_and_overriding_plays_instances(
             snapshot,
@@ -2681,7 +2706,7 @@ impl TypeManager {
         let annotation = Annotation::Cardinality(cardinality.clone());
 
         self.validate_set_capability_annotation_general(snapshot, relates.clone(), annotation.clone())?;
-        self.validate_set_capability_cardinality_annotation(snapshot, relates.clone(), cardinality)?;
+        self.validate_updated_capability_cardinality(snapshot, relates.clone(), cardinality, false)?;
 
         OperationTimeValidation::validate_new_annotation_compatible_with_relates_and_overriding_relates_instances(
             snapshot,
@@ -2702,6 +2727,14 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Cardinality;
         self.validate_unset_capability_annotation_general(snapshot, capability.clone(), annotation_category.clone())?;
+
+        let capability_override = TypeReader::get_capability_override(snapshot, capability.clone())?;
+        let updated_cardinality = if let Some(capability_override) = capability_override {
+            capability_override.get_cardinality(snapshot, self)?
+        } else {
+            capability.get_default_cardinality(snapshot, self)?
+        };
+        self.validate_updated_capability_cardinality(snapshot, capability.clone(), updated_cardinality, false)?;
 
         // TODO: Looks like we need to call for cardinality recheck of instances as well.....
 
@@ -3205,11 +3238,12 @@ impl TypeManager {
         Ok(())
     }
 
-    fn validate_set_capability_cardinality_annotation(
+    fn validate_updated_capability_cardinality(
         &self,
         snapshot: &mut impl WritableSnapshot,
         capability: impl Capability<'static>,
         cardinality: AnnotationCardinality,
+        is_key: bool,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_cardinality_arguments(cardinality)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -3221,6 +3255,7 @@ impl TypeManager {
                 capability.clone(),
                 override_edge,
                 cardinality,
+                is_key,
             )
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }

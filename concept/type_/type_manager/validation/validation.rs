@@ -165,33 +165,13 @@ pub(crate) fn validate_declared_capability_annotation_is_compatible_with_inherit
     Ok(())
 }
 
-pub(crate) fn validate_key_narrows_inherited_cardinality<CAP: Capability<'static>>(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    edge: CAP,
-    overridden_edge: CAP,
-) -> Result<(), SchemaValidationError> {
-    let supertype_cardinality =
-        overridden_edge.get_cardinality(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
-
-    if supertype_cardinality.narrowed_correctly_by(&AnnotationKey::CARDINALITY) {
-        Ok(())
-    } else {
-        Err(SchemaValidationError::KeyShouldNarrowInheritedCardinality(
-            get_label_or_schema_err(snapshot, edge.object())?,
-            get_label_or_schema_err(snapshot, overridden_edge.object())?,
-            get_label_or_schema_err(snapshot, edge.interface())?,
-            supertype_cardinality,
-        ))
-    }
-}
-
 pub(crate) fn validate_cardinality_narrows_inherited_cardinality<CAP: Capability<'static>>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     edge: CAP,
     overridden_edge: CAP,
     cardinality: AnnotationCardinality,
+    is_key: bool,
 ) -> Result<(), SchemaValidationError> {
     let overridden_cardinality =
         overridden_edge.get_cardinality(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
@@ -199,15 +179,26 @@ pub(crate) fn validate_cardinality_narrows_inherited_cardinality<CAP: Capability
     if overridden_cardinality.narrowed_correctly_by(&cardinality) {
         Ok(())
     } else {
-        Err(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
-            CAP::KIND,
-            get_label_or_schema_err(snapshot, edge.object())?,
-            get_label_or_schema_err(snapshot, edge.interface())?,
-            get_label_or_schema_err(snapshot, overridden_edge.object())?,
-            get_label_or_schema_err(snapshot, overridden_edge.interface())?,
-            cardinality,
-            overridden_cardinality,
-        ))
+        if is_key {
+            debug_assert!(cardinality == AnnotationKey::CARDINALITY, "Invalid use of key");
+            Err(SchemaValidationError::KeyDoesNotNarrowInheritedCardinality(
+                get_label_or_schema_err(snapshot, edge.object())?,
+                get_label_or_schema_err(snapshot, edge.interface())?,
+                get_label_or_schema_err(snapshot, overridden_edge.object())?,
+                get_label_or_schema_err(snapshot, overridden_edge.interface())?,
+                overridden_cardinality,
+            ))
+        } else {
+            Err(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
+                CAP::KIND,
+                get_label_or_schema_err(snapshot, edge.object())?,
+                get_label_or_schema_err(snapshot, edge.interface())?,
+                get_label_or_schema_err(snapshot, overridden_edge.object())?,
+                get_label_or_schema_err(snapshot, overridden_edge.interface())?,
+                cardinality,
+                overridden_cardinality,
+            ))
+        }
     }
 }
 
@@ -495,9 +486,10 @@ pub(crate) fn validate_edge_annotations_narrowing_of_inherited_annotations<CAP: 
             edge.clone(),
             overridden_edge.clone(),
             cardinality,
+            false, // is_key
         )?,
         Annotation::Key(_) => {
-            validate_key_narrows_inherited_cardinality(snapshot, type_manager, edge.clone(), overridden_edge.clone())?
+            validate_cardinality_narrows_inherited_cardinality(snapshot, type_manager, edge.clone(), overridden_edge.clone(), AnnotationKey::CARDINALITY, true)?
         }
         Annotation::Regex(regex) => {
             validate_edge_regex_narrows_inherited_regex(snapshot, edge.clone(), Some(overridden_edge.clone()), regex)?
@@ -714,7 +706,7 @@ pub fn validate_capabilities_cardinality<CAP: Capability<'static>>(
     snapshot: &impl ReadableSnapshot,
     type_: CAP::ObjectType,
     not_stored_cardinalities: &HashMap<CAP, AnnotationCardinality>,
-    not_stored_overrides: &HashMap<CAP, CAP>,
+    not_stored_overrides: &HashMap<CAP, Option<CAP>>,
     validation_errors: &mut Vec<SchemaValidationError>,
 ) -> Result<(), ConceptReadError> {
     let mut cardinality_connections: HashMap<CAP, HashSet<CAP>> = HashMap::new();
@@ -729,7 +721,7 @@ pub fn validate_capabilities_cardinality<CAP: Capability<'static>>(
 
         let not_stored_override = not_stored_overrides.get(&capability);
         let mut current_overridden_capability = if let Some(not_stored_override) = not_stored_override {
-            Some(not_stored_override.clone())
+            not_stored_override.clone()
         } else {
             TypeReader::get_capability_override(snapshot, capability.clone())?
         };
@@ -762,8 +754,12 @@ pub fn validate_capabilities_cardinality<CAP: Capability<'static>>(
                 ));
             }
 
-            current_overridden_capability =
-                TypeReader::get_capability_override(snapshot, overridden_capability.clone())?;
+            let not_stored_override = not_stored_overrides.get(&overridden_capability);
+            current_overridden_capability = if let Some(not_stored_override) = not_stored_override {
+                not_stored_override.clone()
+            } else {
+                TypeReader::get_capability_override(snapshot, overridden_capability.clone())?
+            };
         }
     }
 
@@ -777,6 +773,7 @@ pub fn validate_capabilities_cardinality<CAP: Capability<'static>>(
                 CAP::KIND,
                 get_label_or_concept_read_err(snapshot, root_capability.object())?,
                 get_label_or_concept_read_err(snapshot, root_capability.interface())?,
+                get_opt_label_or_concept_read_err(snapshot, inheriting_capabilities.iter().next().map(|cap| cap.object()))?,
                 *root_cardinality,
                 inheriting_cardinality,
             ));

@@ -57,7 +57,7 @@ use crate::{
                     validate_declared_capability_annotation_is_compatible_with_inherited_annotations,
                     validate_edge_annotations_narrowing_of_inherited_annotations,
                     validate_edge_range_narrows_inherited_range, validate_edge_regex_narrows_inherited_regex,
-                    validate_edge_values_narrows_inherited_values, validate_key_narrows_inherited_cardinality,
+                    validate_edge_values_narrows_inherited_values,
                     validate_owns_override_ordering_match, validate_role_name_uniqueness_non_transitive,
                     validate_role_type_supertype_ordering_match,
                     validate_type_annotations_narrowing_of_inherited_annotations,
@@ -1502,15 +1502,6 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_key_narrows_inherited_cardinality<CAP: Capability<'static>>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        edge: CAP,
-        overridden_edge: CAP,
-    ) -> Result<(), SchemaValidationError> {
-        validate_key_narrows_inherited_cardinality(snapshot, type_manager, edge, overridden_edge)
-    }
-
     pub(crate) fn validate_overriding_capabilities_narrow_cardinality<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
@@ -1751,8 +1742,9 @@ impl OperationTimeValidation {
         capability: CAP,
         overridden_capability: CAP,
         cardinality: AnnotationCardinality,
+        is_key: bool,
     ) -> Result<(), SchemaValidationError> {
-        validate_cardinality_narrows_inherited_cardinality(snapshot, type_manager, capability, overridden_capability, cardinality)
+        validate_cardinality_narrows_inherited_cardinality(snapshot, type_manager, capability, overridden_capability, cardinality, is_key)
     }
 
     pub(crate) fn validate_updated_cardinality_against_inheritance_line<CAP: Capability<'static>>(
@@ -1762,7 +1754,7 @@ impl OperationTimeValidation {
         cardinality: AnnotationCardinality
     ) -> Result<(), SchemaValidationError> {
         let mut validation_errors = vec![];
-        let updated_cardinalities = HashMap::from([(capability.clone(), cardinality.clone())]);
+        let updated_cardinalities = Self::get_transitively_updated_cardinalities(snapshot, type_manager, capability.clone(), cardinality).map_err(SchemaValidationError::ConceptRead)?;
         if let Some(_) = TypeReader::get_capability_override(snapshot, capability.clone()).map_err(SchemaValidationError::ConceptRead)? {
             validate_capabilities_cardinality::<CAP>(
                 type_manager,
@@ -1805,27 +1797,25 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_cardinality_of_inheritance_line_with_new_override<CAP: Capability<'static>>(
+    pub(crate) fn validate_cardinality_of_inheritance_line_with_updated_override<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         capability: CAP,
-        overridden_capability: CAP,
+        overridden_capability: Option<CAP>,
     ) -> Result<(), SchemaValidationError> {
         let mut validation_errors = vec![];
 
-        let cardinality_declared = Constraint::compute_cardinality(
-            TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone()).map_err(SchemaValidationError::ConceptRead)?.iter(),
-            None, // default
-        );
-
+        let cardinality_declared = capability.get_cardinality_declared(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
         let cardinality = if let Some(cardinality_declared) = cardinality_declared {
+            // Does not check that declared cardinality narrows updated inherited one! Should be checked in a separate validation
             cardinality_declared
-        } else {
-            // Does not check that it is narrowed by declared annotations here! Should be checked before this validation
+        } else if let Some(overridden_capability) = &overridden_capability {
             overridden_capability.get_cardinality(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?
+        } else {
+            capability.get_default_cardinality(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?
         };
 
-        let updated_cardinalities = HashMap::from([(capability.clone(), cardinality)]);
+        let updated_cardinalities = Self::get_transitively_updated_cardinalities(snapshot, type_manager, capability.clone(), cardinality).map_err(SchemaValidationError::ConceptRead)?;
         let updated_overrides = HashMap::from([(capability.clone(), overridden_capability.clone())]);
         validate_capabilities_cardinality::<CAP>(
             type_manager,
@@ -1845,8 +1835,8 @@ impl OperationTimeValidation {
         let mut checked_object_types: HashSet<CAP::ObjectType> = HashSet::new();
         let overriding_capabilities = TypeReader::get_overriding_capabilities_transitive(snapshot, capability.clone()).map_err(SchemaValidationError::ConceptRead)?;
         for overriding_capability in overriding_capabilities {
-            let already_checked = checked_object_types.insert(overriding_capability.object());
-            if already_checked {
+            let not_checked = checked_object_types.insert(overriding_capability.object());
+            if !not_checked {
                 continue;
             }
 
@@ -1865,6 +1855,43 @@ impl OperationTimeValidation {
         }
 
         Ok(())
+    }
+
+    fn get_transitively_updated_cardinalities<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        capability: CAP,
+        capability_cardinality: AnnotationCardinality,
+    ) -> Result<HashMap<CAP, AnnotationCardinality>, ConceptReadError> {
+        let mut updated_cardinalities = HashMap::from([(capability.clone(), capability_cardinality.clone())]);
+
+        // Do not care about the capability's override
+        let mut capabilities_and_overrides = VecDeque::from([(capability.clone(), capability.clone())]);
+        while let Some((current_capability, overridden)) = capabilities_and_overrides.pop_back() {
+            if !updated_cardinalities.contains_key(&current_capability) {
+                let cardinality_declared = current_capability.get_cardinality_declared(snapshot, type_manager)?;
+                let updated_cardinality = if let Some(cardinality_declared) = cardinality_declared {
+                    // Does not check that declared cardinality narrows updated inherited one! Should be checked in a separate validation
+                    cardinality_declared
+                } else {
+                    match updated_cardinalities.get(&overridden) {
+                        Some(inherited_cardinality) => inherited_cardinality.clone(),
+                        None => {
+                            debug_assert!(false, "Should not visit this capability until the overridden is recalculated");
+                            overridden.get_cardinality(snapshot, type_manager)?
+                        }
+                    }
+                };
+
+                updated_cardinalities.insert(current_capability.clone(), updated_cardinality);
+            }
+
+            TypeReader::get_overriding_capabilities(snapshot, current_capability.clone())?
+                .into_iter()
+                .for_each(|overriding_capability| capabilities_and_overrides.push_front((overriding_capability, current_capability.clone())));
+        }
+
+        Ok(updated_cardinalities)
     }
 
     pub(crate) fn validate_type_supertype_abstractness_to_set_abstract_annotation<T: KindAPI<'static>>(
@@ -3934,6 +3961,7 @@ impl OperationTimeValidation {
         Self::get_relates_or_its_overriding_relates_with_violated_new_annotation_constraints
     );
 
+    // TODO: Should probably call you for unset operations and consider unset annotations!
     changed_annotations_compatible_with_capability_and_overriding_capabilities_instances_on_override_validation!(
         validate_updated_annotations_compatible_with_owns_and_overriding_owns_instances_on_override,
         CapabilityKind::Owns,

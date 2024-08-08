@@ -323,6 +323,14 @@ pub trait Capability<'a>:
         type_manager.get_cardinality(snapshot, self.clone())
     }
 
+    fn get_cardinality_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<AnnotationCardinality>, ConceptReadError> {
+        type_manager.get_cardinality_declared(snapshot, self.clone())
+    }
+
     fn get_default_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
