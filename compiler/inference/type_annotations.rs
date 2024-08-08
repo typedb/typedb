@@ -66,6 +66,13 @@ impl ConstraintTypeAnnotations {
             ConstraintTypeAnnotations::LeftRightFiltered(_) => panic!("Unexpected type."),
         }
     }
+
+    pub fn get_left_right_filtered(&self) -> &LeftRightFilteredAnnotations {
+        match self {
+            ConstraintTypeAnnotations::LeftRightFiltered(annotations) => annotations,
+            ConstraintTypeAnnotations::LeftRight(_) => panic!("Unexpected type."),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -106,11 +113,11 @@ impl LeftRightAnnotations {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LeftRightFilteredAnnotations {
     // Filtered edges are encoded as  (left,right,filter) and (right,left,filter).
-    pub(crate) left_to_right: BTreeMap<Type, Vec<Type>>,
-    pub(crate) filters_on_right: BTreeMap<Type, HashSet<Type>>, // The key is the type of the right variable
+    pub(crate) left_to_right: Arc<BTreeMap<Type, Vec<Type>>>,
+    pub(crate) filters_on_right: Arc<BTreeMap<Type, HashSet<Type>>>, // The key is the type of the right variable
 
-    pub(crate) right_to_left: BTreeMap<Type, Vec<Type>>,
-    pub(crate) filters_on_left: BTreeMap<Type, HashSet<Type>>, // The key is the type of the left variable
+    pub(crate) right_to_left: Arc<BTreeMap<Type, Vec<Type>>>,
+    pub(crate) filters_on_left: Arc<BTreeMap<Type, HashSet<Type>>>, // The key is the type of the left variable
 }
 
 impl LeftRightFilteredAnnotations {
@@ -139,7 +146,28 @@ impl LeftRightFilteredAnnotations {
             }
             filters_on_right.insert(player, role_set.into_iter().collect());
         }
-        Self { left_to_right, filters_on_right, right_to_left, filters_on_left }
+        Self {
+            left_to_right: Arc::new(left_to_right),
+            filters_on_right: Arc::new(filters_on_right),
+            right_to_left: Arc::new(right_to_left),
+            filters_on_left: Arc::new(filters_on_left),
+        }
+    }
+
+    pub fn left_to_right(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
+        self.left_to_right.clone()
+    }
+
+    pub fn filters_on_right(&self) -> Arc<BTreeMap<Type, HashSet<Type>>> {
+        self.filters_on_right.clone()
+    }
+
+    pub fn right_to_left(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
+        self.right_to_left.clone()
+    }
+
+    pub fn filters_on_left(&self) -> Arc<BTreeMap<Type, HashSet<Type>>> {
+        self.filters_on_left.clone()
     }
 }
 

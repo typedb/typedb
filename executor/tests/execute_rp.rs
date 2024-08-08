@@ -17,7 +17,10 @@ use compiler::{
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
-    type_::{Ordering, OwnerAPI, PlayerAPI},
+    type_::{
+        annotation::AnnotationCardinality, owns::OwnsAnnotation, relates::RelatesAnnotation, Ordering, OwnerAPI,
+        PlayerAPI,
+    },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
@@ -26,11 +29,7 @@ use ir::{
     program::{block::FunctionalBlock, program::Program},
 };
 use lending_iterator::LendingIterator;
-use storage::{
-    durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
-    MVCCStorage,
-};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 
 use crate::common::{load_managers, setup_storage};
 
@@ -45,7 +44,11 @@ const AGE_LABEL: Label = Label::new_static("age");
 const NAME_LABEL: Label = Label::new_static("name");
 
 fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
-    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    const CARDINALITY_ANY: AnnotationCardinality = AnnotationCardinality::new(0, None);
+    const OWNS_CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(CARDINALITY_ANY);
+    const RELATES_CARDINALITY_ANY: RelatesAnnotation = RelatesAnnotation::Cardinality(CARDINALITY_ANY);
+
+    let mut snapshot = storage.clone().open_snapshot_write();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
@@ -55,10 +58,13 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let relates_member = membership_type
         .create_relates(&mut snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name().as_str(), Ordering::Unordered)
         .unwrap();
+    relates_member.set_annotation(&mut snapshot, &type_manager, RELATES_CARDINALITY_ANY).unwrap();
     let membership_member_type = relates_member.role();
+
     let relates_group = membership_type
         .create_relates(&mut snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name().as_str(), Ordering::Unordered)
         .unwrap();
+    relates_group.set_annotation(&mut snapshot, &type_manager, RELATES_CARDINALITY_ANY).unwrap();
     let membership_group_type = relates_group.role();
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
@@ -66,64 +72,73 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
 
-    person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+    let person_owns_age =
+        person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
+    person_owns_age.set_annotation(&mut snapshot, &type_manager, OWNS_CARDINALITY_ANY).unwrap();
+
+    let person_owns_name =
+        person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+    person_owns_name.set_annotation(&mut snapshot, &type_manager, OWNS_CARDINALITY_ANY).unwrap();
+
     person_type.set_plays(&mut snapshot, &type_manager, membership_member_type.clone()).unwrap();
     group_type.set_plays(&mut snapshot, &type_manager, membership_group_type.clone()).unwrap();
 
-    let _person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-    let _person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-    let _person_3 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
+    /*
+    insert
+         $person_1 isa person, has age 10, has age 11;
+         $person_2 isa person, has age 10;
+         $person_3 isa person, has name "Abby", has name "Bobby";
 
-    let _group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
-    let _group_2 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
+         $group_1 isa group;
+         $group_2 isa group;
 
-    let _membership_1 = thing_manager.create_relation(&mut snapshot, membership_type.clone()).unwrap();
-    let _membership_2 = thing_manager.create_relation(&mut snapshot, membership_type.clone()).unwrap();
+         $membership_1 isa membership, links(member: $person_1, group: $group_1);
+         $membership_2 isa membership, links(member: $person_3, group: $group_2);
+    */
 
-    let mut _age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(10)).unwrap();
-    let mut _age_2 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(11)).unwrap();
+    let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
+    let person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
+    let person_3 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
 
-    let mut _name_1 = thing_manager
+    let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
+    let group_2 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
+
+    let membership_1 = thing_manager.create_relation(&mut snapshot, membership_type.clone()).unwrap();
+    let membership_2 = thing_manager.create_relation(&mut snapshot, membership_type.clone()).unwrap();
+
+    let age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(10)).unwrap();
+    let age_2 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(11)).unwrap();
+
+    let name_1 = thing_manager
         .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Abby".to_string())))
         .unwrap();
-    let mut _name_2 = thing_manager
+    let name_2 = thing_manager
         .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Bobby".to_string())))
         .unwrap();
 
-    _membership_1
-        .add_player(
-            &mut snapshot,
-            &thing_manager,
-            membership_member_type.clone(),
-            _person_1.clone().into_owned_object(),
-        )
+    membership_1
+        .add_player(&mut snapshot, &thing_manager, membership_member_type.clone(), person_1.clone().into_owned_object())
         .unwrap();
-    _membership_1
-        .add_player(&mut snapshot, &thing_manager, membership_group_type.clone(), _group_1.clone().into_owned_object())
+    membership_1
+        .add_player(&mut snapshot, &thing_manager, membership_group_type.clone(), group_1.clone().into_owned_object())
         .unwrap();
-    _membership_2
-        .add_player(
-            &mut snapshot,
-            &thing_manager,
-            membership_member_type.clone(),
-            _person_3.clone().into_owned_object(),
-        )
+    membership_2
+        .add_player(&mut snapshot, &thing_manager, membership_member_type.clone(), person_3.clone().into_owned_object())
         .unwrap();
-    _membership_2
-        .add_player(&mut snapshot, &thing_manager, membership_member_type.clone(), _group_2.clone().into_owned_object())
+    membership_2
+        .add_player(&mut snapshot, &thing_manager, membership_group_type.clone(), group_2.clone().into_owned_object())
         .unwrap();
 
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, _age_1.as_reference()).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, _age_2.as_reference()).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, age_1.as_reference()).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, age_2.as_reference()).unwrap();
 
-    _person_2.set_has_unordered(&mut snapshot, &thing_manager, _age_1.as_reference()).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, age_1.as_reference()).unwrap();
 
-    _person_3.set_has_unordered(&mut snapshot, &thing_manager, _name_1.as_reference()).unwrap();
-    _person_3.set_has_unordered(&mut snapshot, &thing_manager, _name_2.as_reference()).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, name_1.as_reference()).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, name_2.as_reference()).unwrap();
 
     let finalise_result = thing_manager.finalise(&mut snapshot);
-    assert!(finalise_result.is_ok());
+    assert!(finalise_result.is_ok(), "{:?}", finalise_result.unwrap_err());
     snapshot.commit().unwrap();
 }
 
@@ -162,7 +177,6 @@ fn traverse_rp_unbounded_sorted_from() {
         .unwrap()
         .clone();
 
-    // add all constraints to make type inference return correct types, though we only plan Has's
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
@@ -180,11 +194,10 @@ fn traverse_rp_unbounded_sorted_from() {
 
     let program = Program::new(block.finish(), Vec::new());
 
-    let annotated_program = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
-    };
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -201,108 +214,607 @@ fn traverse_rp_unbounded_sorted_from() {
         ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
-    let executor = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap()
-    };
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
 
-    {
-        let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-        let (_, thing_manager) = load_managers(storage.clone());
-        let thing_manager = Arc::new(thing_manager);
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 2);
 
-        let iterator = executor.into_iterator(snapshot, thing_manager);
-
-        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
-            .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone()))
-            .collect();
-        assert_eq!(rows.len(), 7);
-
-        for row in rows {
-            let r = row.unwrap();
-            print!("{}", r);
-            println!()
-        }
+    for row in rows {
+        let r = row.unwrap();
+        print!("{}", r);
+        println!()
     }
 }
 
 #[test]
-fn traverse_has_unbounded_sorted_to_merged() {
+fn traverse_rp_unbounded_sorted_to() {
     let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
 
     // query:
     //   match
-    //    $person has $attribute;
+    //    $membership links (group: $group, member: $person), isa membership;
+    //
 
     // IR
     let mut block = FunctionalBlock::builder();
     let mut conjunction = block.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_attribute_type = conjunction.get_or_declare_variable("attr_type").unwrap();
+    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
+    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
+    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
+
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_attribute = conjunction.get_or_declare_variable("attr").unwrap();
-    let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
+    let var_group = conjunction.get_or_declare_variable("group").unwrap();
+    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+
+    let rp_membership_person = conjunction
+        .constraints_mut()
+        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .unwrap()
+        .clone();
+
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
+        .unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
+        .unwrap();
+
     let program = Program::new(block.finish(), Vec::new());
 
-    let annotated_program = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
-    };
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
-        var_attribute,
-        vec![ConstraintInstruction::Has(has_attribute.clone(), Inputs::None([]))],
-        &vec![var_person, var_attribute],
+        var_person,
+        vec![ConstraintInstruction::RolePlayer(rp_membership_person, Inputs::None([]))],
+        &[var_membership, var_person],
     ))];
+
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
     let program_plan =
         ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
 
     // Executor
-    let executor = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap()
-    };
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
 
-    {
-        let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-        let (_, thing_manager) = load_managers(storage.clone());
-        let thing_manager = Arc::new(thing_manager);
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 2);
 
-        let variable_positions = executor.entry_variable_positions().clone();
+    for row in rows {
+        let r = row.unwrap();
+        print!("{}", r);
+        println!()
+    }
+}
 
-        let iterator = executor.into_iterator(snapshot, thing_manager);
+#[test]
+fn traverse_rp_bounded_relation() {
+    let (_tmp_dir, storage) = setup_storage();
 
-        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
-            iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+    setup_database(storage.clone());
 
-        // person 1 - has age 1, has age 2, has age 3, has name 1, has name 2 => 5 answers
-        // person 2 - has age 1, has age 4, has age 5 => 3 answers
-        // person 3 - has age 4, has name 3 => 2 answers
+    // query:
+    //   match
+    //    $membership links (group: $group, member: $person), isa membership;
+    //
 
-        assert_eq!(rows.len(), 10);
+    // IR
+    let mut block = FunctionalBlock::builder();
+    let mut conjunction = block.conjunction_mut();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
+    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
+    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
 
-        for row in &rows {
-            let r = row.as_ref().unwrap();
-            print!("{}", r);
-        }
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_group = conjunction.get_or_declare_variable("group").unwrap();
+    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
-        let attribute_position = variable_positions.get(&var_attribute).unwrap();
-        let mut last_attribute = rows[0].as_ref().unwrap().get(*attribute_position);
-        for row in &rows {
-            let r = row.as_ref().unwrap();
-            let attribute = r.get(*attribute_position);
-            assert!(last_attribute <= attribute, "{} <= {} failed", &last_attribute, &attribute);
-            last_attribute = attribute;
-        }
+    let rp_membership_person = conjunction
+        .constraints_mut()
+        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .unwrap()
+        .clone();
+
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
+    let isa_membership =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap().clone();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
+        .unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
+        .unwrap();
+
+    let program = Program::new(block.finish(), Vec::new());
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+
+    // Plan
+    let steps = vec![
+        Step::Intersection(IntersectionStep::new(
+            var_membership,
+            vec![ConstraintInstruction::IsaReverse(isa_membership, Inputs::None([]))],
+            &[var_membership],
+        )),
+        Step::Intersection(IntersectionStep::new(
+            var_person,
+            vec![ConstraintInstruction::RolePlayer(rp_membership_person, Inputs::Single([var_membership]))],
+            &[var_person],
+        )),
+    ];
+
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+
+    // Executor
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 2);
+
+    for row in rows {
+        let r = row.unwrap();
+        print!("{}", r);
+        println!()
+    }
+}
+
+#[test]
+fn traverse_rp_bounded_relation_player() {
+    let (_tmp_dir, storage) = setup_storage();
+
+    setup_database(storage.clone());
+
+    // query:
+    //   match
+    //    $membership links (group: $group, member: $person), isa membership;
+    //
+
+    // IR
+    let mut block = FunctionalBlock::builder();
+    let mut conjunction = block.conjunction_mut();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
+    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
+    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
+
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_group = conjunction.get_or_declare_variable("group").unwrap();
+    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+
+    let rp_membership_person = conjunction
+        .constraints_mut()
+        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .unwrap()
+        .clone();
+
+    let isa_person =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap().clone();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
+    let isa_membership =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap().clone();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
+        .unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
+        .unwrap();
+
+    let program = Program::new(block.finish(), Vec::new());
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+
+    // Plan
+    let steps = vec![
+        Step::Intersection(IntersectionStep::new(
+            var_membership,
+            vec![ConstraintInstruction::IsaReverse(isa_membership, Inputs::None([]))],
+            &[var_membership],
+        )),
+        Step::Intersection(IntersectionStep::new(
+            var_person,
+            vec![ConstraintInstruction::IsaReverse(isa_person, Inputs::None([]))],
+            &[var_membership, var_person],
+        )),
+        Step::Intersection(IntersectionStep::new(
+            var_membership_member_type,
+            vec![ConstraintInstruction::RolePlayer(rp_membership_person, Inputs::Dual([var_membership, var_person]))],
+            &[var_membership_member_type],
+        )),
+    ];
+
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+
+    // Executor
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 2);
+
+    for row in rows {
+        let r = row.unwrap();
+        println!("{}", r);
+    }
+}
+
+#[test]
+fn traverse_rp_reverse_unbounded_sorted_from() {
+    let (_tmp_dir, storage) = setup_storage();
+
+    setup_database(storage.clone());
+
+    // query:
+    //   match
+    //    $membership links (group: $group, member: $person), isa membership;
+    //
+
+    // IR
+    let mut block = FunctionalBlock::builder();
+    let mut conjunction = block.conjunction_mut();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
+    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
+    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
+
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_group = conjunction.get_or_declare_variable("group").unwrap();
+    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+
+    let rp_membership_person = conjunction
+        .constraints_mut()
+        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .unwrap()
+        .clone();
+
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
+        .unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
+        .unwrap();
+
+    let program = Program::new(block.finish(), Vec::new());
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+
+    // Plan
+    let steps = vec![Step::Intersection(IntersectionStep::new(
+        var_person,
+        vec![ConstraintInstruction::RolePlayerReverse(rp_membership_person.clone(), Inputs::None([]))],
+        &[var_membership, var_person],
+    ))];
+
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+
+    // Executor
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 2);
+
+    for row in rows {
+        let r = row.unwrap();
+        print!("{}", r);
+        println!()
+    }
+}
+
+#[test]
+fn traverse_rp_reverse_unbounded_sorted_to() {
+    let (_tmp_dir, storage) = setup_storage();
+
+    setup_database(storage.clone());
+
+    // query:
+    //   match
+    //    $membership links (group: $group, member: $person), isa membership;
+    //
+
+    // IR
+    let mut block = FunctionalBlock::builder();
+    let mut conjunction = block.conjunction_mut();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
+    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
+    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
+
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_group = conjunction.get_or_declare_variable("group").unwrap();
+    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+
+    let rp_membership_person = conjunction
+        .constraints_mut()
+        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .unwrap()
+        .clone();
+
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
+        .unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
+        .unwrap();
+
+    let program = Program::new(block.finish(), Vec::new());
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+
+    // Plan
+    let steps = vec![Step::Intersection(IntersectionStep::new(
+        var_membership,
+        vec![ConstraintInstruction::RolePlayerReverse(rp_membership_person, Inputs::None([]))],
+        &[var_membership, var_person],
+    ))];
+
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+
+    // Executor
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 2);
+
+    for row in rows {
+        let r = row.unwrap();
+        print!("{}", r);
+        println!()
+    }
+}
+
+#[test]
+fn traverse_rp_reverse_bounded_player() {
+    let (_tmp_dir, storage) = setup_storage();
+
+    setup_database(storage.clone());
+
+    // query:
+    //   match
+    //    $membership links (group: $group, member: $person), isa membership;
+    //
+
+    // IR
+    let mut block = FunctionalBlock::builder();
+    let mut conjunction = block.conjunction_mut();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
+    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
+    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
+
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_group = conjunction.get_or_declare_variable("group").unwrap();
+    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+
+    let rp_membership_person = conjunction
+        .constraints_mut()
+        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .unwrap()
+        .clone();
+
+    let isa_person =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap().clone();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
+        .unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
+        .unwrap();
+
+    let program = Program::new(block.finish(), Vec::new());
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+
+    // Plan
+    let steps = vec![
+        Step::Intersection(IntersectionStep::new(
+            var_person,
+            vec![ConstraintInstruction::IsaReverse(isa_person, Inputs::None([]))],
+            &[var_person],
+        )),
+        Step::Intersection(IntersectionStep::new(
+            var_membership,
+            vec![ConstraintInstruction::RolePlayerReverse(rp_membership_person, Inputs::Single([var_person]))],
+            &[var_membership],
+        )),
+    ];
+
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+
+    // Executor
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 2);
+
+    for row in rows {
+        let r = row.unwrap();
+        print!("{}", r);
+        println!()
+    }
+}
+
+#[test]
+fn traverse_rp_reverse_bounded_player_relation() {
+    let (_tmp_dir, storage) = setup_storage();
+
+    setup_database(storage.clone());
+
+    // query:
+    //   match
+    //    $membership links (group: $group, member: $person), isa membership;
+    //
+
+    // IR
+    let mut block = FunctionalBlock::builder();
+    let mut conjunction = block.conjunction_mut();
+    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
+    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
+    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
+
+    let var_person = conjunction.get_or_declare_variable("person").unwrap();
+    let var_group = conjunction.get_or_declare_variable("group").unwrap();
+    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+
+    let rp_membership_person = conjunction
+        .constraints_mut()
+        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .unwrap()
+        .clone();
+
+    let isa_person =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap().clone();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
+    let isa_membership =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap().clone();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
+        .unwrap();
+    conjunction
+        .constraints_mut()
+        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
+        .unwrap();
+
+    let program = Program::new(block.finish(), Vec::new());
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+
+    // Plan
+    let steps = vec![
+        Step::Intersection(IntersectionStep::new(
+            var_person,
+            vec![ConstraintInstruction::IsaReverse(isa_person, Inputs::None([]))],
+            &[var_person],
+        )),
+        Step::Intersection(IntersectionStep::new(
+            var_membership,
+            vec![ConstraintInstruction::IsaReverse(isa_membership, Inputs::None([]))],
+            &[var_person, var_membership],
+        )),
+        Step::Intersection(IntersectionStep::new(
+            var_membership_member_type,
+            vec![ConstraintInstruction::RolePlayerReverse(
+                rp_membership_person,
+                Inputs::Dual([var_membership, var_person]),
+            )],
+            &[var_membership_member_type],
+        )),
+    ];
+
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
+    let program_plan =
+        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+
+    // Executor
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 2);
+
+    for row in rows {
+        let r = row.unwrap();
+        println!("{}", r);
     }
 }

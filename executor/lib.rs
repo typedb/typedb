@@ -4,6 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![deny(unused_must_use)]
+#![deny(elided_lifetimes_in_paths)]
+
 use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
@@ -41,8 +44,8 @@ pub(crate) struct SelectedPositions {
 }
 
 impl SelectedPositions {
-    fn new(selected_variables: &Vec<Variable>, variable_positions: &HashMap<Variable, VariablePosition>) -> Self {
-        Self { selected: selected_variables.iter().map(|pos| variable_positions[pos]).collect() }
+    fn new(selected_variables: &[Variable], variable_positions: &HashMap<Variable, VariablePosition>) -> Self {
+        Self { selected: selected_variables.iter().map(|var| variable_positions[var]).collect() }
     }
 
     fn iter_selected(&self) -> impl Iterator<Item = VariablePosition> + '_ {

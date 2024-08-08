@@ -148,7 +148,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         Self::from_vertex(vertex).unwrap()
     }
 
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+    fn vertex(&self) -> TypeVertex<'_> {
         match self {
             ObjectType::Entity(entity) => entity.vertex(),
             ObjectType::Relation(relation) => relation.vertex(),

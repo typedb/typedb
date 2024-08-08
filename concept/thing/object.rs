@@ -68,7 +68,7 @@ impl<'a> Object<'a> {
         }
     }
 
-    pub(crate) fn as_reference(&self) -> Object<'_> {
+    pub fn as_reference(&self) -> Object<'_> {
         match self {
             Object::Entity(entity) => Object::Entity(entity.as_reference()),
             Object::Relation(relation) => Object::Relation(relation.as_reference()),

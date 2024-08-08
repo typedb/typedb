@@ -22,8 +22,7 @@ use crate::{
         comparison_reverse_executor::ComparisonReverseIteratorExecutor,
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator,
-        role_player_executor::RolePlayerIteratorExecutor,
-        role_player_reverse_executor::RolePlayerReverseIteratorExecutor, InstructionExecutor::HasReverse,
+        role_player_executor::RolePlayerExecutor, role_player_reverse_executor::RolePlayerReverseExecutor,
     },
     VariablePosition,
 };
@@ -40,13 +39,13 @@ mod role_player_reverse_executor;
 pub(crate) mod tuple;
 
 pub(crate) enum InstructionExecutor {
-    Isa(IsaReverseExecutor),
+    IsaReverse(IsaReverseExecutor),
 
     Has(HasExecutor),
     HasReverse(HasReverseExecutor),
 
-    RolePlayer(RolePlayerIteratorExecutor),
-    RolePlayerReverse(RolePlayerReverseIteratorExecutor),
+    RolePlayer(RolePlayerExecutor),
+    RolePlayerReverse(RolePlayerReverseExecutor),
 
     // RolePlayerIndex(RolePlayerIndexExecutor),
     FunctionCallBinding(FunctionCallBindingIteratorExecutor),
@@ -79,7 +78,7 @@ impl InstructionExecutor {
                     type_annotations.constraint_annotations_of(isa.into()).unwrap().get_left_right().right_to_left(),
                     type_annotations.variable_annotations_of(thing).unwrap().clone(),
                 );
-                Ok(Self::Isa(provider))
+                Ok(Self::IsaReverse(provider))
             }
             ConstraintInstruction::Has(has, _) => {
                 let has_attribute = has.attribute();
@@ -107,13 +106,41 @@ impl InstructionExecutor {
                 )?;
                 Ok(Self::HasReverse(executor))
             }
-            ConstraintInstruction::RolePlayer(rp, _) => {
-                todo!()
-                // Ok(Self::RolePlayer(RolePlayerExecutor::new(rp.into_ids(variable_to_position), mode)))
+            ConstraintInstruction::RolePlayer(role_player, _) => {
+                let rp_player = role_player.player();
+                let left_right_filtered = type_annotations
+                    .constraint_annotations_of(role_player.clone().into())
+                    .unwrap()
+                    .get_left_right_filtered();
+                let executor = RolePlayerExecutor::new(
+                    role_player.into_ids(positions),
+                    variable_modes,
+                    sort_by_position,
+                    left_right_filtered.left_to_right(),
+                    left_right_filtered.filters_on_right(),
+                    type_annotations.variable_annotations_of(rp_player).unwrap().clone(),
+                    snapshot,
+                    thing_manager,
+                )?;
+                Ok(Self::RolePlayer(executor))
             }
-            ConstraintInstruction::RolePlayerReverse(rp, mode) => {
-                todo!()
-                // Ok(Self::RolePlayerReverse(RolePlayerReverseExecutor::new(rp.into_ids(variable_to_position), mode)))
+            ConstraintInstruction::RolePlayerReverse(role_player, _) => {
+                let rp_relation = role_player.relation();
+                let left_right_filtered = type_annotations
+                    .constraint_annotations_of(role_player.clone().into())
+                    .unwrap()
+                    .get_left_right_filtered();
+                let executor = RolePlayerReverseExecutor::new(
+                    role_player.into_ids(positions),
+                    variable_modes,
+                    sort_by_position,
+                    left_right_filtered.right_to_left(),
+                    left_right_filtered.filters_on_left(),
+                    type_annotations.variable_annotations_of(rp_relation).unwrap().clone(),
+                    snapshot,
+                    thing_manager,
+                )?;
+                Ok(Self::RolePlayerReverse(executor))
             }
             ConstraintInstruction::FunctionCallBinding(function_call) => {
                 todo!()
@@ -140,11 +167,11 @@ impl InstructionExecutor {
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
-            InstructionExecutor::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            InstructionExecutor::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::RolePlayer(executor) => todo!(),
-            InstructionExecutor::RolePlayerReverse(executor) => todo!(),
+            InstructionExecutor::RolePlayer(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            InstructionExecutor::RolePlayerReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::FunctionCallBinding(executor) => todo!(),
             InstructionExecutor::Comparison(executor) => todo!(),
             InstructionExecutor::ComparisonReverse(executor) => todo!(),
@@ -152,7 +179,7 @@ impl InstructionExecutor {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum VariableMode {
     Input,
     UnboundSelect,
@@ -173,7 +200,7 @@ impl VariableMode {
     }
 
     pub(crate) fn is_bound(&self) -> bool {
-        matches!(self, Self::Input)
+        self == &Self::Input
     }
 
     pub(crate) fn is_unbound(&self) -> bool {
@@ -225,7 +252,7 @@ impl VariableModes {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum BinaryIterateMode {
     // [x, y] in standard order, sorted by x, then y
     Unbound,
@@ -269,7 +296,7 @@ impl BinaryIterateMode {
     }
 
     pub(crate) fn is_inverted(&self) -> bool {
-        matches!(self, Self::UnboundInverted)
+        self == &Self::UnboundInverted
     }
 }
 

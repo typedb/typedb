@@ -6,9 +6,7 @@
 
 use crate::{
     program::{
-        block::FunctionalBlock,
-        function::Function,
-        function_signature::{FunctionIDAPI, FunctionSignatureIndex},
+        block::FunctionalBlock, function::Function, function_signature::FunctionSignatureIndex,
         FunctionDefinitionError, ProgramDefinitionError,
     },
     translation::{function::translate_function, match_::translate_match},

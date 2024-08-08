@@ -81,9 +81,7 @@ impl HasExecutor {
         debug_assert!(!variable_modes.fully_bound());
         let iterate_mode = BinaryIterateMode::new(has.clone(), false, &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
-            BinaryIterateMode::Unbound => {
-                Self::create_has_filter_owners_attributes(owner_attribute_types.clone(), attribute_types.clone())
-            }
+            BinaryIterateMode::Unbound => Self::create_has_filter_owners_attributes(owner_attribute_types.clone()),
             BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {
                 Self::create_has_filter_attributes(attribute_types.clone())
             }
@@ -94,7 +92,7 @@ impl HasExecutor {
             TuplePositions::Pair([has.owner(), has.attribute()])
         };
 
-        let owner_cache = if matches!(iterate_mode, BinaryIterateMode::UnboundInverted) {
+        let owner_cache = if iterate_mode == BinaryIterateMode::UnboundInverted {
             Some(inverted_instances_cache(
                 owner_attribute_types.keys().map(|t| t.as_object_type()),
                 snapshot,
@@ -133,7 +131,7 @@ impl HasExecutor {
                 let iterator: Filter<HasIterator, Arc<HasFilterFn>> = thing_manager
                     .get_has_from_owner_type_range_unordered(snapshot, key_range)
                     .filter::<_, HasFilterFn>(filter_fn);
-                let as_tuples: Map<Filter<HasIterator, Arc<HasFilterFn>>, HasToTupleFn, TupleResult> =
+                let as_tuples: Map<Filter<HasIterator, Arc<HasFilterFn>>, HasToTupleFn, TupleResult<'_>> =
                     iterator.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
                 Ok(TupleIterator::HasUnbounded(SortedTupleIterator::new(
                     as_tuples,
@@ -143,6 +141,7 @@ impl HasExecutor {
             }
             BinaryIterateMode::UnboundInverted => {
                 debug_assert!(self.owner_cache.is_some());
+
                 if let Some([owner]) = self.owner_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = owner
@@ -161,18 +160,18 @@ impl HasExecutor {
                         &self.variable_modes,
                     )))
                 } else {
-                    // // TODO: we could create a reusable space for these temporarily held iterators so we don't have allocate again before the merging iterator
-                    let mut iterators: Vec<Peekable<HasIterator>> =
-                        Vec::with_capacity(self.owner_cache.as_ref().unwrap().len());
-                    for iter in self.owner_cache.as_ref().unwrap().iter().map(|object| {
-                        object.get_has_types_range_unordered(
-                            snapshot,
-                            thing_manager,
-                            self.attribute_types.iter().map(|t| t.as_attribute_type()),
-                        )
-                    }) {
-                        iterators.push(Peekable::new(iter?))
-                    }
+                    // TODO: we could create a reusable space for these temporarily held iterators
+                    //       so we don't have allocate again before the merging iterator
+                    let owners = self.owner_cache.as_ref().unwrap().iter();
+                    let iterators = owners
+                        .map(|object| {
+                            Ok(Peekable::new(object.get_has_types_range_unordered(
+                                snapshot,
+                                thing_manager,
+                                self.attribute_types.iter().map(|ty| ty.as_attribute_type()),
+                            )?))
+                        })
+                        .collect::<Result<Vec<_>, _>>()?;
 
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
                     let merged: KMergeBy<HasIterator, HasOrderingFn> =
@@ -215,39 +214,30 @@ impl HasExecutor {
         }
     }
 
-    fn create_has_filter_owners_attributes(
-        owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
-        attribute_types: Arc<HashSet<Type>>,
-    ) -> Arc<HasFilterFn> {
-        Arc::new({
-            move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
-                Ok((has, _)) => {
-                    owner_attribute_types.contains_key(&Type::from(has.owner().type_()))
-                        && attribute_types.contains(&Type::Attribute(has.attribute().type_()))
-                }
-                Err(_) => true,
-            }
-        }) as Arc<HasFilterFn>
+    fn create_has_filter_owners_attributes(owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<HasFilterFn> {
+        Arc::new(move |result| match result {
+            Ok((has, _)) => match owner_attribute_types.get(&Type::from(has.owner().type_())) {
+                Some(attribute_types) => attribute_types.contains(&Type::Attribute(has.attribute().type_())),
+                None => false,
+            },
+            Err(_) => true,
+        })
     }
 
     fn create_has_filter_attributes(attribute_types: Arc<HashSet<Type>>) -> Arc<HasFilterFn> {
-        Arc::new({
-            move |result: &Result<(Has<'_>, u64), ConceptReadError>| match result {
-                Ok((has, _)) => attribute_types.contains(&Type::Attribute(has.attribute().type_())),
-                Err(_) => true,
-            }
-        }) as Arc<HasFilterFn>
+        Arc::new(move |result| match result {
+            Ok((has, _)) => attribute_types.contains(&Type::Attribute(has.attribute().type_())),
+            Err(_) => true,
+        })
     }
 
-    fn compare_has_by_attribute_then_owner<'a, 'b>(
-        pair: (&'a Result<(Has<'a>, u64), ConceptReadError>, &'b Result<(Has<'b>, u64), ConceptReadError>),
+    fn compare_has_by_attribute_then_owner(
+        pair: (&Result<(Has<'_>, u64), ConceptReadError>, &Result<(Has<'_>, u64), ConceptReadError>),
     ) -> Ordering {
-        let (result_1, result_2) = pair;
-        match (result_1, result_2) {
-            (Ok((has_1, _)), Ok((has_2, _))) => {
-                has_1.attribute().cmp(&has_2.attribute()).then(has_1.owner().cmp(&has_2.owner()))
-            }
-            _ => Ordering::Equal,
+        if let (Ok((has_1, _)), Ok((has_2, _))) = pair {
+            (has_1.attribute(), has_2.owner()).cmp(&(has_2.attribute(), has_2.owner()))
+        } else {
+            Ordering::Equal
         }
     }
 }

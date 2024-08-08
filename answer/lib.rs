@@ -45,6 +45,13 @@ impl Type {
         }
     }
 
+    pub fn as_relation_type(&self) -> RelationType<'static> {
+        match self {
+            Type::Relation(relation) => relation.clone().into_owned(),
+            _ => panic!("Type is not an Relation type."),
+        }
+    }
+
     pub fn as_attribute_type(&self) -> AttributeType<'static> {
         match self {
             Type::Attribute(attribute) => attribute.clone().into_owned(),
@@ -135,6 +142,21 @@ impl<'a> Thing<'a> {
             Thing::Entity(entity) => Type::Entity(entity.type_()),
             Thing::Relation(relation) => Type::Relation(relation.type_()),
             Thing::Attribute(attribute) => Type::Attribute(attribute.type_()),
+        }
+    }
+
+    pub fn as_object(&self) -> Object<'_> {
+        match self {
+            Thing::Entity(entity) => Object::Entity(entity.as_reference()),
+            Thing::Relation(relation) => Object::Relation(relation.as_reference()),
+            _ => panic!("Thing is not an Attribute."),
+        }
+    }
+
+    pub fn as_relation(&self) -> Relation<'_> {
+        match self {
+            Thing::Relation(relation) => relation.as_reference(),
+            _ => panic!("Thing is not an Attribute."),
         }
     }
 

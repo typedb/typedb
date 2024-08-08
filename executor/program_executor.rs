@@ -29,11 +29,11 @@ impl ProgramExecutor {
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         let ProgramPlan { entry: entry_plan, entry_annotations, functions: function_plans } = program_plan;
-        let entry = PatternExecutor::new(entry_plan, &entry_annotations, snapshot, thing_manager)?;
+        let entry = PatternExecutor::new(entry_plan, entry_annotations, snapshot, thing_manager)?;
 
         // TODO: functions
 
-        Ok(Self { entry: entry, functions: HashMap::new() })
+        Ok(Self { entry, functions: HashMap::new() })
     }
 
     pub fn entry_variable_positions(&self) -> &HashMap<Variable, VariablePosition> {

@@ -13,12 +13,12 @@ use ir::{
         constraint::{Constraint, ExpressionBinding},
         variable_category::VariableCategory,
     },
-    program::block::{BlockContext, FunctionalBlock},
+    program::block::BlockContext,
 };
 use itertools::Itertools;
 
 use crate::{
-    inference::type_annotations::TypeAnnotations,
+    inference::annotated_program::AnnotatedProgram,
     instruction::constraint::instructions::{ConstraintInstruction, Inputs},
     planner::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost},
 };
@@ -44,7 +44,8 @@ impl PatternPlan {
         Self { steps, context }
     }
 
-    pub fn from_block(block: &FunctionalBlock, type_annotations: &TypeAnnotations, statistics: &Statistics) -> Self {
+    pub fn from_block(program: &AnnotatedProgram, statistics: &Statistics) -> Self {
+        let block = &program.entry;
         assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
         let conjunction = block.conjunction();
         assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
@@ -54,7 +55,10 @@ impl PatternPlan {
         let mut elements = Vec::new();
         let mut adjacency: HashMap<usize, HashSet<usize>> = HashMap::new();
 
-        for (variable, category) in block.context().variable_categories() {
+        let context = block.context();
+        let type_annotations = program.get_entry_annotations();
+
+        for (variable, category) in context.variable_categories() {
             match category {
                 VariableCategory::Type | VariableCategory::ThingType | VariableCategory::RoleType => (), // ignore for now
                 VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
@@ -155,7 +159,7 @@ impl PatternPlan {
             }
         }
         steps.reverse();
-        Self { steps, context: block.context().clone() }
+        Self { steps, context: context.clone() }
     }
 
     pub fn steps(&self) -> &[Step] {

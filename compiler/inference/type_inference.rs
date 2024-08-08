@@ -231,16 +231,16 @@ pub mod tests {
         let type_annotations = TypeAnnotations::build(tig);
 
         let lra1 = LeftRightFilteredAnnotations {
-            left_to_right: BTreeMap::from([(type_rel_0.clone(), vec![type_player_0.clone()])]),
-            filters_on_right: BTreeMap::from([(type_player_0.clone(), HashSet::from([type_role_0.clone()]))]),
-            right_to_left: BTreeMap::from([(type_player_0.clone(), vec![type_rel_0.clone()])]),
-            filters_on_left: BTreeMap::from([(type_rel_0.clone(), HashSet::from([type_role_0.clone()]))]),
+            left_to_right: Arc::new(BTreeMap::from([(type_rel_0.clone(), vec![type_player_0.clone()])])),
+            filters_on_right: Arc::new(BTreeMap::from([(type_player_0.clone(), HashSet::from([type_role_0.clone()]))])),
+            right_to_left: Arc::new(BTreeMap::from([(type_player_0.clone(), vec![type_rel_0.clone()])])),
+            filters_on_left: Arc::new(BTreeMap::from([(type_rel_0.clone(), HashSet::from([type_role_0.clone()]))])),
         };
         let lra2 = LeftRightFilteredAnnotations {
-            left_to_right: BTreeMap::from([(type_rel_1.clone(), vec![type_player_1.clone()])]),
-            filters_on_right: BTreeMap::from([(type_player_1.clone(), HashSet::from([type_role_1.clone()]))]),
-            right_to_left: BTreeMap::from([(type_player_1.clone(), vec![type_rel_1.clone()])]),
-            filters_on_left: BTreeMap::from([(type_rel_1.clone(), HashSet::from([type_role_1.clone()]))]),
+            left_to_right: Arc::new(BTreeMap::from([(type_rel_1.clone(), vec![type_player_1.clone()])])),
+            filters_on_right: Arc::new(BTreeMap::from([(type_player_1.clone(), HashSet::from([type_role_1.clone()]))])),
+            right_to_left: Arc::new(BTreeMap::from([(type_player_1.clone(), vec![type_rel_1.clone()])])),
+            filters_on_left: Arc::new(BTreeMap::from([(type_rel_1.clone(), HashSet::from([type_role_1.clone()]))])),
         };
         let expected_annotations = TypeAnnotations::new(
             HashMap::from([

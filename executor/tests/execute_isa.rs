@@ -5,30 +5,27 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
-use compiler::inference::annotated_functions::AnnotatedCommittedFunctions;
-use compiler::inference::type_inference::infer_types;
-use compiler::instruction::constraint::instructions::{ConstraintInstruction, Inputs};
 
-
+use compiler::{
+    inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
+    instruction::constraint::instructions::{ConstraintInstruction, Inputs},
+    planner::{
+        pattern_plan::{IntersectionStep, PatternPlan, Step},
+        program_plan::ProgramPlan,
+    },
+};
 use concept::error::ConceptReadError;
 use encoding::value::label::Label;
+use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
 use ir::{
     pattern::constraint::IsaKind,
-    program::{
-        block::FunctionalBlock,
-        program::{Program},
-    },
+    program::{block::FunctionalBlock, program::Program},
 };
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
-};
-use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
-use compiler::planner::{
-    pattern_plan::{IntersectionStep, PatternPlan, Step},
-    program_plan::ProgramPlan,
 };
 
 use crate::common::{load_managers, setup_storage};

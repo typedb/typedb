@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, fmt::Display, sync::Arc};
+use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use compiler::{
@@ -54,9 +54,10 @@ impl PatternExecutor {
                 debug_assert_eq!(previous, Option::None);
             }
             let executor =
-                StepExecutor::new(step, &context, &variable_positions, type_annotations, snapshot, thing_manager)?;
+                StepExecutor::new(step, context, &variable_positions, type_annotations, snapshot, thing_manager)?;
             step_executors.push(executor)
         }
+
         let mut variable_positions_index = vec![Variable::new(0); variable_positions.len()];
         for (variable, position) in &variable_positions {
             variable_positions_index[position.as_usize()] = *variable
@@ -85,8 +86,7 @@ impl PatternExecutor {
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
     ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
-        AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager))
-            .flat_map(|batch| BatchRowIterator::new(batch))
+        AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager)).flat_map(BatchRowIterator::new)
     }
 
     fn compute_next_batch(
@@ -345,9 +345,7 @@ impl IntersectionExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
-        debug_assert!(
-            self.output.is_none() && (self.input.is_none() || !self.input.as_mut().unwrap().peek().is_some())
-        );
+        debug_assert!(self.output.is_none() && (self.input.is_none() || self.input.as_mut().unwrap().peek().is_none()));
         self.input = Some(Peekable::new(BatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
         self.may_create_intersection_iterators(snapshot, thing_manager)?;
@@ -536,12 +534,7 @@ impl IntersectionExecutor {
     fn all_iterators_intersect(&mut self) -> bool {
         let (first, rest) = self.iterators.split_at_mut(1);
         let peek_0 = first[0].peek_first_unbound_value().unwrap().unwrap();
-        for iter in rest {
-            if iter.peek_first_unbound_value().unwrap().unwrap() != peek_0 {
-                return false;
-            }
-        }
-        return true;
+        rest.iter_mut().all(|iter| iter.peek_first_unbound_value().unwrap().unwrap() == peek_0)
     }
 
     fn record_intersection(&mut self) -> Result<(), ConceptReadError> {
@@ -706,7 +699,7 @@ impl CartesianIterator {
         Ok(reopened)
     }
 
-    fn write_into(&mut self, row: &mut Row) {
+    fn write_into(&mut self, row: &mut Row<'_>) {
         for &executor_index in &self.cartesian_executor_indices {
             let iterator = self.iterators[executor_index].as_mut().unwrap();
             iterator.write_values(row)

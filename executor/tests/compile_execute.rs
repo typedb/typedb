@@ -22,11 +22,7 @@ use ir::{
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use storage::{
-    durability_client::WALClient,
-    sequence_number::SequenceNumber,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
-};
+use storage::{sequence_number::SequenceNumber, snapshot::CommittableSnapshot};
 
 use crate::common::{load_managers, setup_storage};
 
@@ -39,25 +35,26 @@ const NAME_LABEL: Label = Label::new_static("name");
 #[test]
 fn test_planning_traversal() {
     let (_tmp_dir, storage) = setup_storage();
-    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    let mut snapshot = storage.clone().open_snapshot_write();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
+    const CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None));
+
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
+
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
     age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
-    const CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None));
-    person_type
-        .set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered)
-        .unwrap()
-        .set_annotation(&mut snapshot, &type_manager, CARDINALITY_ANY)
-        .unwrap();
-    person_type
-        .set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered)
-        .unwrap()
-        .set_annotation(&mut snapshot, &type_manager, CARDINALITY_ANY)
-        .unwrap();
+
+    let person_owns_age =
+        person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
+    person_owns_age.set_annotation(&mut snapshot, &type_manager, CARDINALITY_ANY).unwrap();
+
+    let person_owns_name =
+        person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+    person_owns_name.set_annotation(&mut snapshot, &type_manager, CARDINALITY_ANY).unwrap();
 
     let person = [
         thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
@@ -74,14 +71,12 @@ fn test_planning_traversal() {
     ];
 
     let name = [
+        thing_manager.create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("John"))).unwrap(),
         thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("John".to_string())))
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("Alice")))
             .unwrap(),
         thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Alice".to_string())))
-            .unwrap(),
-        thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Leila".to_string())))
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("Leila")))
             .unwrap(),
     ];
 
@@ -116,19 +111,18 @@ fn test_planning_traversal() {
     let block = builder.finish();
 
     // Executor
-    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
     let program = Program::new(block, Vec::new());
     let annotated_program =
         infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
-    let pattern_plan =
-        PatternPlan::from_block(annotated_program.get_entry(), annotated_program.get_entry_annotations(), &statistics);
+    let pattern_plan = PatternPlan::from_block(&annotated_program, &statistics);
     let program_plan =
         ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     {
-        let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
+        let snapshot = Arc::new(storage.clone().open_snapshot_read());
         let (_, thing_manager) = load_managers(storage.clone());
         let thing_manager = Arc::new(thing_manager);
 

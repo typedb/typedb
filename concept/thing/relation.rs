@@ -299,7 +299,7 @@ impl<'a> Relation<'a> {
         Relation::new(ObjectVertex::new(Bytes::Array(bytes)))
     }
 
-    pub(crate) fn as_reference(&self) -> Relation<'_> {
+    pub fn as_reference(&self) -> Relation<'_> {
         Relation { vertex: self.vertex.as_reference() }
     }
 
@@ -469,6 +469,10 @@ impl<'a> RolePlayer<'a> {
         self.player.as_reference()
     }
 
+    pub fn into_player(self) -> Object<'a> {
+        self.player
+    }
+
     pub fn role_type(&self) -> RoleType<'static> {
         self.role_type.clone()
     }
@@ -503,13 +507,31 @@ fn storage_key_to_relation_role<'a>(
 ) -> (Relation<'a>, RoleType<'static>, u64) {
     let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
     let role_type = RoleType::build_from_type_id(edge.role_id());
-    (Relation::new(edge.into_to()), role_type, decode_value_u64(value.as_reference()))
+    (Relation::new(edge.into_from()), role_type, decode_value_u64(value.as_reference()))
 }
 
 edge_iterator!(
     RelationRoleIterator;
     'a -> (Relation<'a>, RoleType<'static>, u64);
     storage_key_to_relation_role
+);
+
+fn storage_key_to_relation_role_player<'a>(
+    storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
+    value: Bytes<'a, BUFFER_VALUE_INLINE>,
+) -> (Relation<'a>, RolePlayer<'a>, u64) {
+    let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
+    let relation = Relation::new(edge.relation().into_owned());
+    let role_type = RoleType::build_from_type_id(edge.role_id());
+    let player = Object::new(edge.into_player());
+    let role_player = RolePlayer { player, role_type };
+    (relation, role_player, decode_value_u64(value.as_reference()))
+}
+
+edge_iterator!(
+    RelationRolePlayerIterator;
+    'a -> (Relation<'a>, RolePlayer<'a>, u64);
+    storage_key_to_relation_role_player
 );
 
 fn storage_key_to_indexed_players<'a>(

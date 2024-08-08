@@ -30,6 +30,16 @@ use crate::{
             IsaUnboundedSortedThingAttributeSingle, IsaUnboundedSortedThingEntitySingle,
             IsaUnboundedSortedThingRelationSingle,
         },
+        role_player_executor::{
+            RolePlayerBoundedRelationPlayer, RolePlayerBoundedRelationSortedPlayer,
+            RolePlayerUnboundedSortedPlayerMerged, RolePlayerUnboundedSortedPlayerSingle,
+            RolePlayerUnboundedSortedRelation,
+        },
+        role_player_reverse_executor::{
+            RolePlayerReverseBoundedPlayerRelation, RolePlayerReverseBoundedPlayerSortedRelation,
+            RolePlayerReverseUnboundedSortedPlayer, RolePlayerReverseUnboundedSortedRelationMerged,
+            RolePlayerReverseUnboundedSortedRelationSingle,
+        },
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
         VariableMode, VariableModes,
     },
@@ -39,6 +49,43 @@ use crate::{
 //       if the deduplicated answer leads to an answer, we should not re-emit it again (we will rediscover the same answers)
 //       if the deduplicated answer fails to lead to an answer, we should not re-emit it again as it will fail again
 
+macro_rules! dispatch_tuple_iterator {
+    { $(#[$meta:meta])* $vis:vis enum $ident:ident $variants:tt impl $impl:tt } => {
+        dispatch_tuple_iterator! { @enum $(#[$meta])* $vis $ident $variants }
+        dispatch_tuple_iterator! { @impl $ident $variants $impl }
+    };
+    { @enum $(#[$meta:meta])* $vis:vis $ident:ident { $($variant:ident ( $inner:ty ) ),+ $(,)? } } => {
+        $(#[$meta])*
+        $vis enum $ident {
+            $($variant ( $inner ) ),+
+        }
+    };
+    { @impl $ident:ident $variants:tt {
+        $($fn_vis:vis fn $fn:ident $args:tt $(-> $ret:ty)?; )*
+    } } => {
+        impl $ident {$(
+            dispatch_tuple_iterator! { @impl_one $variants $fn_vis $fn $args $(-> $ret)? }
+        )*}
+    };
+    { @impl_one $variants:tt $fn_vis:vis $fn:ident(&self $(, $arg:ident : $argty:ty)* $(,)?) $(-> $ret:ty)? } => {
+        $fn_vis fn $fn(&self $(, $arg: $argty)*) $(-> $ret)? {
+             dispatch_tuple_iterator! { @dispatch self $variants $fn ($($arg),*) }
+        }
+    };
+    { @impl_one $variants:tt $fn_vis:vis $fn:ident(&mut self $(, $arg:ident : $argty:ty)* $(,)?) $(-> $ret:ty)? } => {
+        $fn_vis fn $fn(&mut self $(, $arg: $argty)*) $(-> $ret)? {
+             dispatch_tuple_iterator! { @dispatch self $variants $fn ($($arg),*) }
+        }
+    };
+    { @dispatch $self:ident { $($variant:ident ( $inner:ty ) ),+ $(,)? } $fn:ident $args:tt } => {
+        match $self {$(
+            Self::$variant(iter) => iter.$fn $args,
+        )+}
+    };
+}
+
+dispatch_tuple_iterator! {
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum TupleIterator {
     IsaEntityInvertedSingle(SortedTupleIterator<IsaUnboundedSortedThingEntitySingle>),
     IsaRelationInvertedSingle(SortedTupleIterator<IsaUnboundedSortedThingRelationSingle>),
@@ -53,162 +100,42 @@ pub(crate) enum TupleIterator {
     HasReverseUnboundedInvertedSingle(SortedTupleIterator<HasReverseUnboundedSortedOwnerSingle>),
     HasReverseUnboundedInvertedMerged(SortedTupleIterator<HasReverseUnboundedSortedOwnerMerged>),
     HasReverseBounded(SortedTupleIterator<HasReverseBoundedSortedOwner>),
+
+    RolePlayerUnbounded(SortedTupleIterator<RolePlayerUnboundedSortedRelation>),
+    RolePlayerUnboundedInvertedSingle(SortedTupleIterator<RolePlayerUnboundedSortedPlayerSingle>),
+    RolePlayerUnboundedInvertedMerged(SortedTupleIterator<RolePlayerUnboundedSortedPlayerMerged>),
+    RolePlayerBoundedRelation(SortedTupleIterator<RolePlayerBoundedRelationSortedPlayer>),
+    RolePlayerBoundedRelationPlayer(SortedTupleIterator<RolePlayerBoundedRelationPlayer>),
+
+    RolePlayerReverseUnbounded(SortedTupleIterator<RolePlayerReverseUnboundedSortedPlayer>),
+    RolePlayerReverseUnboundedInvertedSingle(SortedTupleIterator<RolePlayerReverseUnboundedSortedRelationSingle>),
+    RolePlayerReverseUnboundedInvertedMerged(SortedTupleIterator<RolePlayerReverseUnboundedSortedRelationMerged>),
+    RolePlayerReverseBoundedPlayer(SortedTupleIterator<RolePlayerReverseBoundedPlayerSortedRelation>),
+    RolePlayerReverseBoundedPlayerRelation(SortedTupleIterator<RolePlayerReverseBoundedPlayerRelation>),
 }
 
-macro_rules! dispatch_tuple_iterator {
-    { $self:ident, [$( $name:ident, )*], iter.$method_name:ident $args:tt }=> {
-        match $self {
-            $(
-            Self::$name(iter) => iter.$method_name $args,
-            )*
-        }
-    }
+impl {
+    pub(crate) fn write_values(&mut self, row: &mut Row<'_>);
+    pub(crate) fn peek(&mut self) -> Option<&Result<Tuple<'_>, ConceptReadError>>;
+    pub(crate) fn advance_past(&mut self) -> Result<usize, ConceptReadError> ;
+    fn skip_until_value(
+        &mut self,
+        index: TupleIndex,
+        value: &VariableValue<'_>,
+    ) -> Result<Option<Ordering>, ConceptReadError> ;
+    pub(crate) fn advance_single(&mut self) -> Result<(), ConceptReadError> ;
+    pub(crate) fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, ConceptReadError>> ;
+    pub(crate) fn first_unbound_index(&self) -> TupleIndex ;
+}
 }
 
 impl TupleIterator {
-    pub(crate) fn write_values(&mut self, row: &mut Row<'_>) {
-        dispatch_tuple_iterator!(
-            self,
-            [
-                IsaEntityInvertedSingle,
-                IsaRelationInvertedSingle,
-                IsaAttributeInvertedSingle,
-                HasUnbounded,
-                HasUnboundedInvertedSingle,
-                HasUnboundedInvertedMerged,
-                HasBounded,
-                HasReverseUnbounded,
-                HasReverseUnboundedInvertedSingle,
-                HasReverseUnboundedInvertedMerged,
-                HasReverseBounded,
-            ],
-            iter.write_values(row)
-        )
-    }
-
-    pub(crate) fn peek(&mut self) -> Option<Result<&Tuple<'_>, ConceptReadError>> {
-        let value = dispatch_tuple_iterator!(
-            self,
-            [
-                IsaEntityInvertedSingle,
-                IsaRelationInvertedSingle,
-                IsaAttributeInvertedSingle,
-                HasUnbounded,
-                HasUnboundedInvertedSingle,
-                HasUnboundedInvertedMerged,
-                HasBounded,
-                HasReverseUnbounded,
-                HasReverseUnboundedInvertedSingle,
-                HasReverseUnboundedInvertedMerged,
-                HasReverseBounded,
-            ],
-            iter.peek()
-        );
-        value.map(|result| result.as_ref().map_err(|err| err.clone()))
-    }
-
-    pub(crate) fn advance_past(&mut self) -> Result<usize, ConceptReadError> {
-        dispatch_tuple_iterator!(
-            self,
-            [
-                IsaEntityInvertedSingle,
-                IsaRelationInvertedSingle,
-                IsaAttributeInvertedSingle,
-                HasUnbounded,
-                HasUnboundedInvertedSingle,
-                HasUnboundedInvertedMerged,
-                HasBounded,
-                HasReverseUnbounded,
-                HasReverseUnboundedInvertedSingle,
-                HasReverseUnboundedInvertedMerged,
-                HasReverseBounded,
-            ],
-            iter.advance_past()
-        )
-    }
-
     pub(crate) fn advance_until_index_is(
         &mut self,
         index: TupleIndex,
         value: &VariableValue<'_>,
     ) -> Result<Option<Ordering>, ConceptReadError> {
-        dispatch_tuple_iterator!(
-            self,
-            [
-                IsaEntityInvertedSingle,
-                IsaRelationInvertedSingle,
-                IsaAttributeInvertedSingle,
-                HasUnbounded,
-                HasUnboundedInvertedSingle,
-                HasUnboundedInvertedMerged,
-                HasBounded,
-                HasReverseUnbounded,
-                HasReverseUnboundedInvertedSingle,
-                HasReverseUnboundedInvertedMerged,
-                HasReverseBounded,
-            ],
-            iter.skip_until_value(index, value)
-        )
-    }
-
-    pub(crate) fn advance_single(&mut self) -> Result<(), ConceptReadError> {
-        dispatch_tuple_iterator!(
-            self,
-            [
-                IsaEntityInvertedSingle,
-                IsaRelationInvertedSingle,
-                IsaAttributeInvertedSingle,
-                HasUnbounded,
-                HasUnboundedInvertedSingle,
-                HasUnboundedInvertedMerged,
-                HasBounded,
-                HasReverseUnbounded,
-                HasReverseUnboundedInvertedSingle,
-                HasReverseUnboundedInvertedMerged,
-                HasReverseBounded,
-            ],
-            iter.advance_single()
-        )
-    }
-
-    pub(crate) fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, ConceptReadError>> {
-        dispatch_tuple_iterator!(
-            self,
-            [
-                IsaEntityInvertedSingle,
-                IsaRelationInvertedSingle,
-                IsaAttributeInvertedSingle,
-                HasUnbounded,
-                HasUnboundedInvertedSingle,
-                HasUnboundedInvertedMerged,
-                HasBounded,
-                HasReverseUnbounded,
-                HasReverseUnboundedInvertedSingle,
-                HasReverseUnboundedInvertedMerged,
-                HasReverseBounded,
-            ],
-            iter.peek_first_unbound_value()
-        )
-    }
-
-    pub(crate) fn first_unbound_index(&self) -> TupleIndex {
-        dispatch_tuple_iterator!(
-            self,
-            [
-                IsaEntityInvertedSingle,
-                IsaRelationInvertedSingle,
-                IsaAttributeInvertedSingle,
-                HasUnbounded,
-                HasUnboundedInvertedSingle,
-                HasUnboundedInvertedMerged,
-                HasBounded,
-                HasReverseUnbounded,
-                HasReverseUnboundedInvertedSingle,
-                HasReverseUnboundedInvertedMerged,
-                HasReverseBounded,
-            ],
-            iter.first_unbound_index()
-        )
+        self.skip_until_value(index, value)
     }
 }
 
