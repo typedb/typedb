@@ -48,12 +48,12 @@ use crate::{
             validation::{
                 validation::{
                     capability_get_annotation_by_category, capability_get_declared_annotation_by_category,
-                    edge_get_owner_of_annotation_category, get_label_or_concept_read_err, get_label_or_schema_err,
-                    get_opt_label_or_schema_err, is_interface_hidden_by_overrides,
+                    capability_get_owner_of_annotation_category, get_label_or_concept_read_err,
+                    get_label_or_schema_err, get_opt_label_or_schema_err, is_interface_hidden_by_overrides,
                     is_ordering_compatible_with_distinct_annotation, is_type_transitive_supertype_or_same,
                     type_get_annotation_by_category, type_get_declared_annotation_by_category,
-                    type_get_source_of_annotation_category, type_has_annotation_category,
-                    validate_capabilities_cardinality, validate_cardinality_narrows_inherited_cardinality,
+                    type_get_source_of_annotation_category, validate_capabilities_cardinality,
+                    validate_cardinality_narrows_inherited_cardinality,
                     validate_declared_annotation_is_compatible_with_inherited_annotations,
                     validate_declared_capability_annotation_is_compatible_with_inherited_annotations,
                     validate_edge_annotations_narrowing_of_inherited_annotations,
@@ -113,7 +113,9 @@ macro_rules! for_capability_and_overriding_capabilities_transitive {
 
 macro_rules! with_annotation_constraint_if_exists {
     ($snapshot:ident, $type_:ident, $constraint_name:ident, $get_func:path, |$constraint:ident| $expr:expr) => {
-        if let Some(annotation) = $get_func($snapshot, $type_.clone(), AnnotationCategory::$constraint_name)? {
+        if let Some(annotation) = $get_func($snapshot, $type_.clone(), AnnotationCategory::$constraint_name)
+            .map_err(SchemaValidationError::ConceptRead)?
+        {
             match &annotation {
                 Annotation::$constraint_name($constraint) => $expr,
                 _ => unreachable!("Should not reach it for {}-related function", stringify!($constraint_name)),
@@ -1292,11 +1294,11 @@ impl OperationTimeValidation {
         value_type: Option<ValueType>,
         abstract_set: Option<bool>,
     ) -> Result<(), SchemaValidationError> {
-        let is_abstract = abstract_set.unwrap_or(type_has_annotation_category(
-            snapshot,
-            attribute_type.clone(),
-            AnnotationCategory::Abstract,
-        )?);
+        let is_abstract = abstract_set.unwrap_or(
+            type_get_annotation_by_category(snapshot, attribute_type.clone(), AnnotationCategory::Abstract)
+                .map_err(SchemaValidationError::ConceptRead)?
+                .is_some(),
+        );
 
         match &value_type {
             Some(_) => Ok(()),
@@ -2028,7 +2030,9 @@ impl OperationTimeValidation {
             TypeReader::get_type_ordering(snapshot, role.clone()).map_err(SchemaValidationError::ConceptRead)?,
         );
         let distinct_set = distinct_set.unwrap_or(
-            capability_get_annotation_by_category(snapshot, relates, AnnotationCategory::Distinct)?.is_some(),
+            capability_get_annotation_by_category(snapshot, relates, AnnotationCategory::Distinct)
+                .map_err(SchemaValidationError::ConceptRead)?
+                .is_some(),
         );
 
         if is_ordering_compatible_with_distinct_annotation(ordering, distinct_set) {
@@ -2048,8 +2052,11 @@ impl OperationTimeValidation {
         let ordering = ordering.unwrap_or(
             TypeReader::get_type_edge_ordering(snapshot, owns.clone()).map_err(SchemaValidationError::ConceptRead)?,
         );
-        let distinct_set = distinct_set
-            .unwrap_or(capability_get_annotation_by_category(snapshot, owns, AnnotationCategory::Distinct)?.is_some());
+        let distinct_set = distinct_set.unwrap_or(
+            capability_get_annotation_by_category(snapshot, owns, AnnotationCategory::Distinct)
+                .map_err(SchemaValidationError::ConceptRead)?
+                .is_some(),
+        );
 
         if is_ordering_compatible_with_distinct_annotation(ordering, distinct_set) {
             Ok(())
@@ -2472,17 +2479,20 @@ impl OperationTimeValidation {
         new_supertype: RelationType<'static>,
     ) -> Result<(), SchemaValidationError> {
         let old_annotation =
-            type_get_annotation_by_category(snapshot, relation_type.clone(), AnnotationCategory::Cascade)?;
+            type_get_annotation_by_category(snapshot, relation_type.clone(), AnnotationCategory::Cascade)
+                .map_err(SchemaValidationError::ConceptRead)?;
         match old_annotation {
             None => {
                 let new_supertype_annotation =
-                    type_get_annotation_by_category(snapshot, new_supertype.clone(), AnnotationCategory::Cascade)?;
+                    type_get_annotation_by_category(snapshot, new_supertype.clone(), AnnotationCategory::Cascade)
+                        .map_err(SchemaValidationError::ConceptRead)?;
                 match new_supertype_annotation {
                     None => Ok(()),
                     Some(_) => {
                         for_type_and_subtypes_transitive!(snapshot, relation_type, |type_: RelationType<'static>| {
                             let type_annotation =
-                                type_get_annotation_by_category(snapshot, type_.clone(), AnnotationCategory::Cascade)?;
+                                type_get_annotation_by_category(snapshot, type_.clone(), AnnotationCategory::Cascade)
+                                    .map_err(SchemaValidationError::ConceptRead)?;
                             if type_annotation.is_none() {
                                 let type_has_instances =
                                     Self::has_instances_of_type(snapshot, thing_manager, type_.clone())
@@ -2512,11 +2522,13 @@ impl OperationTimeValidation {
         new_supertype: Option<AttributeType<'static>>,
     ) -> Result<(), SchemaValidationError> {
         let subtype_annotations_source =
-            type_get_source_of_annotation_category(snapshot, attribute_type.clone(), AnnotationCategory::Independent)?;
+            type_get_source_of_annotation_category(snapshot, attribute_type.clone(), AnnotationCategory::Independent)
+                .map_err(SchemaValidationError::ConceptRead)?;
         let supertype_annotation = match &new_supertype {
             None => None,
             Some(new_supertype) => {
-                type_get_annotation_by_category(snapshot, new_supertype.clone(), AnnotationCategory::Independent)?
+                type_get_annotation_by_category(snapshot, new_supertype.clone(), AnnotationCategory::Independent)
+                    .map_err(SchemaValidationError::ConceptRead)?
             }
         };
 
@@ -2529,7 +2541,8 @@ impl OperationTimeValidation {
                             snapshot,
                             type_.clone(),
                             AnnotationCategory::Independent,
-                        )?;
+                        )
+                        .map_err(SchemaValidationError::ConceptRead)?;
                         match annotation_source {
                             None => {
                                 debug_assert!(
@@ -2621,7 +2634,8 @@ impl OperationTimeValidation {
         type_: T,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError> {
-        let annotation_source = type_get_source_of_annotation_category(snapshot, type_.clone(), annotation_category)?;
+        let annotation_source = type_get_source_of_annotation_category(snapshot, type_.clone(), annotation_category)
+            .map_err(SchemaValidationError::ConceptRead)?;
         match annotation_source {
             Some(source) => {
                 if type_ == source {
@@ -2642,7 +2656,8 @@ impl OperationTimeValidation {
         edge: CAP,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError> {
-        let annotation_owner = edge_get_owner_of_annotation_category(snapshot, edge.clone(), annotation_category)?;
+        let annotation_owner = capability_get_owner_of_annotation_category(snapshot, edge.clone(), annotation_category)
+            .map_err(SchemaValidationError::ConceptRead)?;
         match annotation_owner {
             Some(owner) => {
                 if edge == owner {
@@ -3614,14 +3629,7 @@ impl OperationTimeValidation {
                 let role_type = RoleType::new(type_.vertex().into_owned());
                 let relation_type =
                     TypeReader::get_role_type_relates_declared(snapshot, role_type.clone().into_owned())?.relation();
-                let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.into_owned());
-                while let Some(relation) = relation_iterator.next() {
-                    let mut role_player_iterator = thing_manager.get_role_players(snapshot, relation?);
-                    if let Some(relation) = role_player_iterator.next() {
-                        return relation.map(|_| true);
-                    }
-                }
-                Ok(false)
+                Self::has_instances_of_relates(snapshot, thing_manager, relation_type, role_type)
             }
         }
     }

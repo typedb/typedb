@@ -11,5 +11,5 @@ async fn test() {
     // Bazel specific path: when running the test in bazel, the external data from
     // @vaticle_typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
-    assert!(Context::test("../vaticle_typedb_behaviour/concept/validation/function.feature", true).await);
+    assert!(Context::test("../vaticle_typedb_behaviour/concept/migration/migration.feature", true).await);
 }

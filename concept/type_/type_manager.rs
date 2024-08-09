@@ -50,7 +50,9 @@ use crate::{
         relates::{Relates, RelatesAnnotation},
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
-        type_manager::{type_reader::TypeReader, validation::SchemaValidationError},
+        type_manager::{
+            type_reader::TypeReader, validation::validation::capability_get_declared_annotation_by_category,
+        },
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
@@ -2680,18 +2682,20 @@ impl TypeManager {
 
         self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
 
-        let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, owns.clone(), None)?;
+        if capability_get_declared_annotation_by_category(snapshot, owns.clone(), annotation_category)?.is_some() {
+            let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, owns.clone(), None)?;
 
-        self.validate_updated_capability_cardinality(snapshot, owns.clone(), updated_cardinality, false)?;
+            self.validate_updated_capability_cardinality(snapshot, owns.clone(), updated_cardinality, false)?;
 
-        OperationTimeValidation::validate_new_annotation_compatible_with_owns_and_overriding_owns_instances(
-            snapshot,
-            self,
-            thing_manager,
-            owns.clone(),
-            Annotation::Cardinality(updated_cardinality),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            OperationTimeValidation::validate_new_annotation_compatible_with_owns_and_overriding_owns_instances(
+                snapshot,
+                self,
+                thing_manager,
+                owns.clone(),
+                Annotation::Cardinality(updated_cardinality),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
@@ -2730,18 +2734,22 @@ impl TypeManager {
 
         self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
 
-        let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, owns.clone(), None)?;
+        if capability_get_declared_annotation_by_category(snapshot, owns.clone(), annotation_category)?.is_some() {
+            let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, owns.clone(), None)?;
 
-        self.validate_updated_capability_cardinality(snapshot, owns.clone(), updated_cardinality, false)?;
+            if updated_cardinality != owns.get_cardinality(snapshot, self)? {
+                self.validate_updated_capability_cardinality(snapshot, owns.clone(), updated_cardinality, false)?;
 
-        OperationTimeValidation::validate_new_annotation_compatible_with_owns_and_overriding_owns_instances(
-            snapshot,
-            self,
-            thing_manager,
-            owns.clone(),
-            Annotation::Cardinality(updated_cardinality),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+                OperationTimeValidation::validate_new_annotation_compatible_with_owns_and_overriding_owns_instances(
+                    snapshot,
+                    self,
+                    thing_manager,
+                    owns.clone(),
+                    Annotation::Cardinality(updated_cardinality),
+                )
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            }
+        }
 
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
@@ -2780,18 +2788,20 @@ impl TypeManager {
 
         self.validate_unset_capability_annotation_general(snapshot, plays.clone(), annotation_category.clone())?;
 
-        let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, plays.clone(), None)?;
+        if capability_get_declared_annotation_by_category(snapshot, plays.clone(), annotation_category)?.is_some() {
+            let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, plays.clone(), None)?;
 
-        self.validate_updated_capability_cardinality(snapshot, plays.clone(), updated_cardinality, false)?;
+            self.validate_updated_capability_cardinality(snapshot, plays.clone(), updated_cardinality, false)?;
 
-        OperationTimeValidation::validate_new_annotation_compatible_with_plays_and_overriding_plays_instances(
-            snapshot,
-            self,
-            thing_manager,
-            plays.clone(),
-            Annotation::Cardinality(updated_cardinality),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            OperationTimeValidation::validate_new_annotation_compatible_with_plays_and_overriding_plays_instances(
+                snapshot,
+                self,
+                thing_manager,
+                plays.clone(),
+                Annotation::Cardinality(updated_cardinality),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         self.unset_capability_annotation(snapshot, plays, annotation_category)
     }
@@ -2830,18 +2840,20 @@ impl TypeManager {
 
         self.validate_unset_capability_annotation_general(snapshot, relates.clone(), annotation_category.clone())?;
 
-        let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, relates.clone(), None)?;
+        if capability_get_declared_annotation_by_category(snapshot, relates.clone(), annotation_category)?.is_some() {
+            let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, relates.clone(), None)?;
 
-        self.validate_updated_capability_cardinality(snapshot, relates.clone(), updated_cardinality, false)?;
+            self.validate_updated_capability_cardinality(snapshot, relates.clone(), updated_cardinality, false)?;
 
-        OperationTimeValidation::validate_new_annotation_compatible_with_relates_and_overriding_relates_instances(
-            snapshot,
-            self,
-            thing_manager,
-            relates.clone(),
-            Annotation::Cardinality(updated_cardinality),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            OperationTimeValidation::validate_new_annotation_compatible_with_relates_and_overriding_relates_instances(
+                snapshot,
+                self,
+                thing_manager,
+                relates.clone(),
+                Annotation::Cardinality(updated_cardinality),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         self.unset_capability_annotation(snapshot, relates, annotation_category)
     }

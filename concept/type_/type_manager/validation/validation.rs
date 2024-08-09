@@ -217,7 +217,8 @@ pub(crate) fn validate_type_regex_narrows_inherited_regex<T: KindAPI<'static>>(
 
     if let Some(supertype) = supertype {
         if let Some(supertype_annotation) =
-            type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Regex)?
+            type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Regex)
+                .map_err(SchemaValidationError::ConceptRead)?
         {
             match supertype_annotation {
                 Annotation::Regex(supertype_regex) => {
@@ -255,7 +256,8 @@ pub(crate) fn validate_edge_regex_narrows_inherited_regex<CAP: Capability<'stati
 
     if let Some(override_owns) = overridden_owns {
         if let Some(supertype_annotation) =
-            capability_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Regex)?
+            capability_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Regex)
+                .map_err(SchemaValidationError::ConceptRead)?
         {
             match supertype_annotation {
                 Annotation::Regex(supertype_regex) => {
@@ -295,7 +297,8 @@ pub(crate) fn validate_type_range_narrows_inherited_range<T: KindAPI<'static>>(
 
     if let Some(supertype) = supertype {
         if let Some(supertype_annotation) =
-            type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Range)?
+            type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Range)
+                .map_err(SchemaValidationError::ConceptRead)?
         {
             match supertype_annotation {
                 Annotation::Range(supertype_range) => {
@@ -334,7 +337,8 @@ pub(crate) fn validate_edge_range_narrows_inherited_range<CAP: Capability<'stati
 
     if let Some(override_owns) = overridden_owns {
         if let Some(supertype_annotation) =
-            capability_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Range)?
+            capability_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Range)
+                .map_err(SchemaValidationError::ConceptRead)?
         {
             match supertype_annotation {
                 Annotation::Range(supertype_range) => {
@@ -374,7 +378,8 @@ pub(crate) fn validate_type_values_narrows_inherited_values<T: KindAPI<'static>>
 
     if let Some(supertype) = supertype {
         if let Some(supertype_annotation) =
-            type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Values)?
+            type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Values)
+                .map_err(SchemaValidationError::ConceptRead)?
         {
             match supertype_annotation {
                 Annotation::Values(supertype_values) => {
@@ -412,7 +417,8 @@ pub(crate) fn validate_edge_values_narrows_inherited_values<CAP: Capability<'sta
 
     if let Some(override_owns) = overridden_owns {
         if let Some(supertype_annotation) =
-            capability_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Values)?
+            capability_get_annotation_by_category(snapshot, override_owns.clone(), AnnotationCategory::Values)
+                .map_err(SchemaValidationError::ConceptRead)?
         {
             match supertype_annotation {
                 Annotation::Values(supertype_values) => {
@@ -608,26 +614,12 @@ pub(crate) fn type_has_declared_annotation<T: KindAPI<'static>>(
     Ok(has)
 }
 
-pub(crate) fn type_has_annotation_category<T: KindAPI<'static>>(
-    snapshot: &impl ReadableSnapshot,
-    type_: T,
-    annotation_category: AnnotationCategory,
-) -> Result<bool, SchemaValidationError> {
-    let has = TypeReader::get_type_annotations(snapshot, type_.clone())
-        .map_err(SchemaValidationError::ConceptRead)?
-        .keys()
-        .map(|annotation| annotation.clone().into().category())
-        .any(|found_category| found_category == annotation_category);
-    Ok(has)
-}
-
 pub(crate) fn type_get_annotation_by_category(
     snapshot: &impl ReadableSnapshot,
     type_: impl KindAPI<'static>,
     annotation_category: AnnotationCategory,
-) -> Result<Option<Annotation>, SchemaValidationError> {
-    let annotation = TypeReader::get_type_annotations(snapshot, type_.clone())
-        .map_err(SchemaValidationError::ConceptRead)?
+) -> Result<Option<Annotation>, ConceptReadError> {
+    let annotation = TypeReader::get_type_annotations(snapshot, type_.clone())?
         .into_keys()
         .find(|found_annotation| found_annotation.clone().into().category() == annotation_category);
     Ok(annotation.map(|val| val.clone().into()))
@@ -637,9 +629,8 @@ pub(crate) fn type_get_declared_annotation_by_category(
     snapshot: &impl ReadableSnapshot,
     type_: impl KindAPI<'static>,
     annotation_category: AnnotationCategory,
-) -> Result<Option<Annotation>, SchemaValidationError> {
-    let annotation = TypeReader::get_type_annotations_declared(snapshot, type_.clone())
-        .map_err(SchemaValidationError::ConceptRead)?
+) -> Result<Option<Annotation>, ConceptReadError> {
+    let annotation = TypeReader::get_type_annotations_declared(snapshot, type_.clone())?
         .into_iter()
         .find(|found_annotation| found_annotation.clone().into().category() == annotation_category);
     Ok(annotation.map(|val| val.clone().into()))
@@ -649,9 +640,8 @@ pub(crate) fn capability_get_annotation_by_category<CAP: Capability<'static>>(
     snapshot: &impl ReadableSnapshot,
     edge: CAP,
     annotation_category: AnnotationCategory,
-) -> Result<Option<Annotation>, SchemaValidationError> {
-    let annotation = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
-        .map_err(SchemaValidationError::ConceptRead)?
+) -> Result<Option<Annotation>, ConceptReadError> {
+    let annotation = TypeReader::get_type_edge_annotations(snapshot, edge.clone())?
         .into_keys()
         .find(|found_annotation| found_annotation.clone().into().category() == annotation_category);
     Ok(annotation.map(|val| val.clone().into()))
@@ -661,9 +651,8 @@ pub(crate) fn capability_get_declared_annotation_by_category<CAP: Capability<'st
     snapshot: &impl ReadableSnapshot,
     capability: CAP,
     annotation_category: AnnotationCategory,
-) -> Result<Option<Annotation>, SchemaValidationError> {
-    let annotation = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())
-        .map_err(SchemaValidationError::ConceptRead)?
+) -> Result<Option<Annotation>, ConceptReadError> {
+    let annotation = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())?
         .into_iter()
         .find(|found_annotation| found_annotation.clone().into().category() == annotation_category);
     Ok(annotation.map(|val| val.clone().into()))
@@ -673,9 +662,8 @@ pub(crate) fn type_get_source_of_annotation_category<T: KindAPI<'static>>(
     snapshot: &impl ReadableSnapshot,
     type_: T,
     annotation_category: AnnotationCategory,
-) -> Result<Option<T>, SchemaValidationError> {
-    let annotations =
-        TypeReader::get_type_annotations(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
+) -> Result<Option<T>, ConceptReadError> {
+    let annotations = TypeReader::get_type_annotations(snapshot, type_.clone())?;
     let found_annotation = annotations
         .iter()
         .map(|(existing_annotation, source)| (existing_annotation.clone().into().category(), source))
@@ -683,13 +671,12 @@ pub(crate) fn type_get_source_of_annotation_category<T: KindAPI<'static>>(
     Ok(found_annotation.map(|(_, source)| source.clone()))
 }
 
-pub(crate) fn edge_get_owner_of_annotation_category<CAP: Capability<'static>>(
+pub(crate) fn capability_get_owner_of_annotation_category<CAP: Capability<'static>>(
     snapshot: &impl ReadableSnapshot,
     edge: CAP,
     annotation_category: AnnotationCategory,
-) -> Result<Option<CAP>, SchemaValidationError> {
-    let annotations =
-        TypeReader::get_type_edge_annotations(snapshot, edge.clone()).map_err(SchemaValidationError::ConceptRead)?;
+) -> Result<Option<CAP>, ConceptReadError> {
+    let annotations = TypeReader::get_type_edge_annotations(snapshot, edge.clone())?;
     let found_annotation = annotations
         .iter()
         .map(|(existing_annotation, source)| (existing_annotation.clone().into().category(), source))

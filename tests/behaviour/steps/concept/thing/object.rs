@@ -24,6 +24,7 @@ use crate::{
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
+use crate::params::IsEmptyOrNot;
 
 fn object_create_instance_impl(
     context: &mut Context,
@@ -195,18 +196,18 @@ async fn object_get_instance_with_value(
     context.objects.insert(var.name, owner.map(|owner| ObjectWithKey::new_with_key(owner, key)));
 }
 
-// TODO: is_empty_or_not
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label}\({type_label}\) get instances is empty")]
+#[step(expr = r"{object_root_label}\({type_label}\) get instances {is_empty_or_not}")]
 async fn object_instances_is_empty(
     context: &mut Context,
     object_root: params::ObjectRootLabel,
     type_label: params::Label,
+    is_empty_or_not: IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
         let object_type = tx.type_manager.get_object_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
         object_root.assert(&object_type);
-        assert_matches!(tx.thing_manager.get_objects_in(&tx.snapshot, object_type).next(), None);
+        is_empty_or_not.check(tx.thing_manager.get_objects_in(&tx.snapshot, object_type).next().is_none());
     });
 }
 

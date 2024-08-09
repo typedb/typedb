@@ -28,7 +28,7 @@ use crate::{
 pub mod annotation_compatibility;
 pub mod commit_time_validation;
 pub mod operation_time_validation;
-mod validation;
+pub(crate) mod validation;
 
 #[derive(Debug, Clone)]
 pub enum SchemaValidationError {
