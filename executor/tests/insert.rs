@@ -84,10 +84,10 @@ fn execute_insert(
         Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
     )
     .unwrap();
-    let insert_plan = compiler::planner::insert_planner::build_insert_plan(
+    let insert_plan = compiler::write::insert::build_insert_plan(
+        annotated_program.get_entry().conjunction().constraints(),
         &HashMap::new(),
         annotated_program.get_entry_annotations(),
-        annotated_program.get_entry().conjunction().constraints(),
     )
     .unwrap();
 
@@ -98,13 +98,13 @@ fn execute_insert(
     let mut output_vec = (0..insert_plan.n_created_concepts).map(|_| VariableValue::Empty).collect::<Vec<_>>();
     let mut output_multiplicity = 0;
     let output = Row::new(&mut output_vec, &mut output_multiplicity);
-    let mut executor = InsertExecutor::new(insert_plan);
-    executor::write::insert_executor::execute(
+    executor::write::insert_executor::execute_insert(
         snapshot,
         &thing_manager,
-        &mut executor,
+        &insert_plan,
         &Row::new(vec![].as_mut_slice(), &mut 1),
         output,
+        &mut Vec::new(),
     )?;
     Ok(output_vec)
 }

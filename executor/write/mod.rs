@@ -4,5 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod common;
 pub mod insert_executor;
 pub(crate) mod write_instruction;

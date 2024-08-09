@@ -8,14 +8,16 @@ use std::{
     fmt::{Debug, Display, Formatter},
 };
 
-use answer::variable_value::VariableValue;
-use compiler::planner::insert_planner::{InsertInstruction, InsertPlan};
+use compiler::write::insert::{InsertInstruction, InsertPlan};
 use concept::{error::ConceptWriteError, thing::thing_manager::ThingManager};
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
     batch::Row,
-    write::write_instruction::{WriteExecutionContext, WriteInstruction},
+    write::{
+        common::populate_output_row,
+        write_instruction::{AsDeleteInstruction, AsInsertInstruction},
+    },
     VariablePosition,
 };
 
@@ -32,33 +34,66 @@ impl InsertExecutor {
     }
 }
 
-pub fn execute<'input, 'output>(
+pub fn execute_insert<'input, 'output>(
     // TODO: pub(crate)
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
-    insert: &mut InsertExecutor,
+    plan: &InsertPlan,
     input: &Row<'input>,
     output: Row<'output>,
+    reused_created_things: &mut Vec<answer::Thing<'static>>,
 ) -> Result<Row<'output>, InsertError> {
     debug_assert!(input.multiplicity() == 1); // Else, we have to return a set of rows.
-
-    let InsertExecutor { plan, reused_created_things } = insert;
-    let InsertPlan { type_constants, value_constants, output_row: output_row_plan, .. } = plan;
-
-    let mut context = WriteExecutionContext::new(input, type_constants, value_constants, reused_created_things);
     for instruction in &plan.instructions {
-        match instruction {
-            InsertInstruction::Entity(isa_entity) => isa_entity.insert(snapshot, thing_manager, &mut context)?,
-            InsertInstruction::Attribute(isa_attr) => isa_attr.insert(snapshot, thing_manager, &mut context)?,
-            InsertInstruction::Relation(isa_relation) => isa_relation.insert(snapshot, thing_manager, &mut context)?,
-            InsertInstruction::Has(has) => has.insert(snapshot, thing_manager, &mut context)?,
-            InsertInstruction::RolePlayer(role_player) => role_player.insert(snapshot, thing_manager, &mut context)?,
+        let inserted = match instruction {
+            InsertInstruction::PutEntity(isa_entity) => {
+                isa_entity.insert(snapshot, thing_manager, &input, reused_created_things)?
+            }
+            InsertInstruction::PutAttribute(isa_attr) => {
+                isa_attr.insert(snapshot, thing_manager, &input, reused_created_things)?
+            }
+            InsertInstruction::PutRelation(isa_relation) => {
+                isa_relation.insert(snapshot, thing_manager, &input, reused_created_things)?
+            }
+            InsertInstruction::Has(has) => has.insert(snapshot, thing_manager, &input, reused_created_things)?,
+            InsertInstruction::RolePlayer(role_player) => {
+                role_player.insert(snapshot, thing_manager, &input, reused_created_things)?
+            }
+        };
+        if let Some(thing) = inserted {
+            reused_created_things.push(thing);
         }
     }
     let mut output = output;
-    context.populate_output_row(output_row_plan, &mut output);
+    populate_output_row(&plan.output_row_plan, input, reused_created_things.as_slice(), &mut output);
     Ok(output) // TODO: Create output row
 }
+
+// pub fn execute_delete<'input, 'output>(
+//     // TODO: pub(crate)
+//     snapshot: &mut impl WritableSnapshot,
+//     thing_manager: &ThingManager,
+//     plan: &mut DeletePlan,
+//     input: &Row<'input>,
+//     output: Row<'output>,
+// ) -> Result<Row<'output>, InsertError> {
+//     debug_assert!(input.multiplicity() == 1); // Else, we have to return a set of rows.
+//
+//
+//     let mut context = WriteExecutionContext::new(input);
+//     for instruction in &plan.instructions {
+//         match instruction {
+//             InsertInstruction::Entity(isa_entity) => isa_entity.delete(snapshot, thing_manager, &mut context)?,
+//             InsertInstruction::Attribute(isa_attr) => isa_attr.delete(snapshot, thing_manager, &mut context)?,
+//             InsertInstruction::Relation(isa_relation) => isa_relation.delete(snapshot, thing_manager, &mut context)?,
+//             InsertInstruction::Has(has) => has.delete(snapshot, thing_manager, &mut context)?,
+//             InsertInstruction::RolePlayer(role_player) => role_player.delete(snapshot, thing_manager, &mut context)?,
+//         }
+//     }
+//     let mut output = output;
+//     populate_output_row(output_row_plan, input, [].as_slice(), &mut output);
+//     Ok(output) // TODO: Create output row
+// }
 
 #[derive(Debug, Clone)]
 pub enum InsertError {

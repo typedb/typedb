@@ -4,47 +4,63 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::planner::insert_planner::VariablePosition;
+use encoding::value::value::Value;
 
-#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum VariableSource {
     TypeSource(TypeSource),
     ValueSource(ValueSource),
     ThingSource(ThingSource),
 }
 
-#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
+type VariablePosition = u32;
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum TypeSource {
-    Input(VariablePosition),
-    TypeConstant(usize),
+    InputVariable(VariablePosition),
+    TypeConstant(answer::Type),
 }
 
-#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum ValueSource {
-    Input(VariablePosition),
-    ValueConstant(usize),
+    InputVariable(VariablePosition),
+    ValueConstant(Value<'static>),
 }
 
-#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum ThingSource {
-    Input(VariablePosition),
-    Inserted(usize),
+    InputVariable(VariablePosition),
+    InsertedVariable(usize),
 }
 
 #[derive(Debug)]
-pub struct IsaEntity {
+pub struct PutEntity {
     pub type_: TypeSource,
 }
 
 #[derive(Debug)]
-pub struct IsaAttribute {
+pub struct PutAttribute {
     pub type_: TypeSource,
     pub value: ValueSource,
 }
 
 #[derive(Debug)]
-pub struct IsaRelation {
+pub struct PutRelation {
     pub type_: TypeSource,
+}
+
+#[derive(Debug)]
+pub struct DeleteEntity {
+    pub entity: ThingSource,
+}
+
+#[derive(Debug)]
+pub struct DeleteAttribute {
+    pub attribute: ThingSource,
+}
+
+#[derive(Debug)]
+pub struct Relation {
+    pub relation: ThingSource,
 }
 
 #[derive(Debug)]
