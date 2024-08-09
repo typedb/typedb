@@ -201,6 +201,7 @@ impl Database<WALClient> {
     }
 
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
+        drop(self._statistics_updater);
         let path = self.path;
         fs::remove_dir_all(path).map_err(|err| DatabaseDeleteError::DirectoryDelete { source: err })?;
         Ok(())

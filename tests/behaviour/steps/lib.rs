@@ -31,6 +31,7 @@ mod assert;
 mod concept;
 mod connection;
 mod params;
+mod query;
 mod transaction_context;
 mod util;
 

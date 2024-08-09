@@ -168,8 +168,9 @@ pub enum PlaysAnnotation {
     Cardinality(AnnotationCardinality),
 }
 
-impl From<Annotation> for Result<PlaysAnnotation, AnnotationError> {
-    fn from(annotation: Annotation) -> Result<PlaysAnnotation, AnnotationError> {
+impl TryFrom<Annotation> for PlaysAnnotation {
+    type Error = AnnotationError;
+    fn try_from(annotation: Annotation) -> Result<PlaysAnnotation, AnnotationError> {
         match annotation {
             Annotation::Cardinality(annotation) => Ok(PlaysAnnotation::Cardinality(annotation)),
 
@@ -182,16 +183,6 @@ impl From<Annotation> for Result<PlaysAnnotation, AnnotationError> {
             | Annotation::Cascade(_)
             | Annotation::Range(_)
             | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-        }
-    }
-}
-
-impl From<Annotation> for PlaysAnnotation {
-    fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<PlaysAnnotation, AnnotationError> = annotation.into();
-        match into_annotation {
-            Ok(into_annotation) => into_annotation,
-            Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),
         }
     }
 }

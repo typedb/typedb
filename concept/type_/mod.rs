@@ -30,7 +30,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::ThingAPI,
     type_::{
-        annotation::{Annotation, AnnotationCardinality},
+        annotation::{Annotation, AnnotationCardinality, AnnotationError},
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::Owns,
@@ -79,7 +79,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
 }
 
 pub trait KindAPI<'a>: TypeAPI<'a> {
-    type AnnotationType: Hash + Eq + Clone + From<Annotation> + Into<Annotation>;
+    type AnnotationType: Hash + Eq + Clone + TryFrom<Annotation, Error = AnnotationError> + Into<Annotation>;
     const ROOT_KIND: Kind;
 
     fn get_annotations_declared<'this>(
@@ -252,7 +252,7 @@ impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
 pub trait Capability<'a>:
     TypeEdgeEncoding<'a, From = Self::ObjectType, To = Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
 {
-    type AnnotationType: Hash + Eq + Clone + From<Annotation> + Into<Annotation>;
+    type AnnotationType: Hash + Eq + Clone + TryFrom<Annotation, Error = AnnotationError> + Into<Annotation>;
     type ObjectType: TypeAPI<'a>;
     type InterfaceType: KindAPI<'a>;
     const KIND: CapabilityKind;

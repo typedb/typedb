@@ -12,7 +12,7 @@ pub mod property;
 pub mod vertex;
 pub mod vertex_generator;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Kind {
     Entity,
     Attribute,

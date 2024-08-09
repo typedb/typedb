@@ -36,16 +36,11 @@ impl StructDefinition {
         StructDefinition { name, fields: HashMap::new(), field_names: HashMap::new() }
     }
 
-    pub fn add_field(
-        &mut self,
-        field_name: String,
-        value_type: ValueType,
-        optional: bool,
-    ) -> Result<(), EncodingError> {
+    pub fn add_field(&mut self, field_name: &str, value_type: ValueType, optional: bool) -> Result<(), EncodingError> {
         if self.fields.len() > StructFieldIDUInt::MAX as usize {
             Err(EncodingError::StructAlreadyHasMaximumNumberOfFields { struct_name: self.name.clone() })
         } else {
-            match self.field_names.entry(field_name) {
+            match self.field_names.entry(field_name.to_string()) {
                 Entry::Vacant(entry) => {
                     let index = (0..self.fields.len() as StructFieldIDUInt)
                         .find(|idx| !self.fields.contains_key(idx))

@@ -7,7 +7,13 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::{definition::definition_key::DefinitionKey, thing::edge::ThingEdgeRolePlayer, type_::CapabilityKind},
+    graph::{
+        definition::definition_key::DefinitionKey,
+        thing::{edge::ThingEdgeRolePlayer, vertex_object::ObjectVertex, ThingVertex},
+        type_::{CapabilityKind, Kind},
+        Typed,
+    },
+    layout::prefix::Prefix,
     value::{label::Label, value_type::ValueType},
 };
 use itertools::Itertools;
@@ -144,19 +150,21 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         new_label: &Label<'static>,
     ) -> Result<(), SchemaValidationError> {
-        let attribute_clash = TypeReader::get_labelled_type::<AttributeType<'static>>(snapshot, new_label)
+        if TypeReader::get_labelled_type::<AttributeType<'static>>(snapshot, new_label)
             .map_err(SchemaValidationError::ConceptRead)?
-            .is_some();
-        let relation_clash = TypeReader::get_labelled_type::<RelationType<'static>>(snapshot, new_label)
+            .is_some()
+        {
+            Err(SchemaValidationError::LabelShouldBeUnique { label: new_label.clone(), existing_kind: Kind::Attribute })
+        } else if TypeReader::get_labelled_type::<RelationType<'static>>(snapshot, new_label)
             .map_err(SchemaValidationError::ConceptRead)?
-            .is_some();
-        let entity_clash = TypeReader::get_labelled_type::<EntityType<'static>>(snapshot, new_label)
+            .is_some()
+        {
+            Err(SchemaValidationError::LabelShouldBeUnique { label: new_label.clone(), existing_kind: Kind::Relation })
+        } else if TypeReader::get_labelled_type::<EntityType<'static>>(snapshot, new_label)
             .map_err(SchemaValidationError::ConceptRead)?
-            .is_some();
-        // TODO: Check struct clash?
-
-        if attribute_clash || relation_clash || entity_clash {
-            Err(SchemaValidationError::LabelShouldBeUnique(new_label.clone()))
+            .is_some()
+        {
+            Err(SchemaValidationError::LabelShouldBeUnique { label: new_label.clone(), existing_kind: Kind::Entity })
         } else {
             Ok(())
         }

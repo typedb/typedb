@@ -227,12 +227,12 @@ impl OwnsCache {
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, owns.clone())
                     .unwrap()
                     .into_iter()
-                    .map(OwnsAnnotation::from)
+                    .map(|annotation| OwnsAnnotation::try_from(annotation).unwrap())
                     .collect(),
                 annotations: TypeReader::get_type_edge_annotations(snapshot, owns.clone())
                     .unwrap()
                     .into_iter()
-                    .map(|(annotation, owns)| (OwnsAnnotation::from(annotation), owns))
+                    .map(|(annotation, owns)| (OwnsAnnotation::try_from(annotation).unwrap(), owns))
                     .collect(),
             };
             map.insert(owns.clone(), cache);
@@ -259,12 +259,12 @@ impl PlaysCache {
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, plays.clone())
                     .unwrap()
                     .into_iter()
-                    .map(PlaysAnnotation::from)
+                    .map(|annotation| PlaysAnnotation::try_from(annotation).unwrap())
                     .collect(),
                 annotations: TypeReader::get_type_edge_annotations(snapshot, plays.clone())
                     .unwrap()
                     .into_iter()
-                    .map(|(annotation, plays)| (PlaysAnnotation::from(annotation), plays))
+                    .map(|(annotation, plays)| (PlaysAnnotation::try_from(annotation).unwrap(), plays))
                     .collect(),
             };
             map.insert(plays.clone(), cache);
@@ -291,12 +291,12 @@ impl RelatesCache {
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, relates.clone())
                     .unwrap()
                     .into_iter()
-                    .map(RelatesAnnotation::from)
+                    .map(|annotation| RelatesAnnotation::try_from(annotation).unwrap())
                     .collect(),
                 annotations: TypeReader::get_type_edge_annotations(snapshot, relates.clone())
                     .unwrap()
                     .into_iter()
-                    .map(|(annotation, relates)| (RelatesAnnotation::from(annotation), relates))
+                    .map(|(annotation, relates)| (RelatesAnnotation::try_from(annotation).unwrap(), relates))
                     .collect(),
             };
             map.insert(relates.clone(), cache);

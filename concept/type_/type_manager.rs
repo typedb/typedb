@@ -782,7 +782,7 @@ impl TypeManager {
         } else {
             let annotations = TypeReader::get_type_edge_annotations_declared(snapshot, owns)?
                 .into_iter()
-                .map(OwnsAnnotation::from)
+                .map(|annotation| OwnsAnnotation::try_from(annotation).unwrap())
                 .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
@@ -798,7 +798,7 @@ impl TypeManager {
         } else {
             let annotations = TypeReader::get_type_edge_annotations(snapshot, owns)?
                 .into_iter()
-                .map(|(annotation, owns)| (OwnsAnnotation::from(annotation), owns))
+                .map(|(annotation, owns)| (OwnsAnnotation::try_from(annotation).unwrap(), owns))
                 .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
@@ -814,7 +814,7 @@ impl TypeManager {
         } else {
             let annotations = TypeReader::get_type_edge_annotations_declared(snapshot, plays)?
                 .into_iter()
-                .map(PlaysAnnotation::from)
+                .map(|annotation| PlaysAnnotation::try_from(annotation).unwrap())
                 .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
@@ -830,7 +830,7 @@ impl TypeManager {
         } else {
             let annotations = TypeReader::get_type_edge_annotations(snapshot, plays)?
                 .into_iter()
-                .map(|(annotation, plays)| (PlaysAnnotation::from(annotation), plays))
+                .map(|(annotation, plays)| (PlaysAnnotation::try_from(annotation).unwrap(), plays))
                 .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
@@ -846,7 +846,7 @@ impl TypeManager {
         } else {
             let annotations = TypeReader::get_type_edge_annotations_declared(snapshot, relates)?
                 .into_iter()
-                .map(RelatesAnnotation::from)
+                .map(|annotation| RelatesAnnotation::try_from(annotation).unwrap())
                 .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
@@ -862,7 +862,7 @@ impl TypeManager {
         } else {
             let annotations = TypeReader::get_type_edge_annotations(snapshot, relates)?
                 .into_iter()
-                .map(|(annotation, relates)| (RelatesAnnotation::from(annotation), relates))
+                .map(|(annotation, relates)| (RelatesAnnotation::try_from(annotation).unwrap(), relates))
                 .collect();
             Ok(MaybeOwns::Owned(annotations))
         }
@@ -948,7 +948,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         definition_key: DefinitionKey<'static>,
-        field_name: String,
+        field_name: &str,
         value_type: ValueType,
         is_optional: bool,
     ) -> Result<(), ConceptWriteError> {
@@ -991,17 +991,23 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
     ) -> Result<EntityType<'static>, ConceptWriteError> {
-        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        if let Some(entity_type) =
+            self.get_entity_type(snapshot, &label).map_err(|source| ConceptWriteError::ConceptRead { source })?
+        {
+            Ok(entity_type)
+        } else {
+            OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let type_vertex = self
-            .vertex_generator
-            .create_entity_type(snapshot)
-            .map_err(|err| ConceptWriteError::Encoding { source: err })?;
-        let entity = EntityType::new(type_vertex);
+            let type_vertex = self
+                .vertex_generator
+                .create_entity_type(snapshot)
+                .map_err(|err| ConceptWriteError::Encoding { source: err })?;
+            let entity = EntityType::new(type_vertex);
 
-        TypeWriter::storage_put_label(snapshot, entity.clone(), label);
-        Ok(entity)
+            TypeWriter::storage_put_label(snapshot, entity.clone(), label);
+            Ok(entity)
+        }
     }
 
     pub fn create_relation_type(
@@ -1009,17 +1015,23 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
     ) -> Result<RelationType<'static>, ConceptWriteError> {
-        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        if let Some(relation_type) =
+            self.get_relation_type(snapshot, &label).map_err(|source| ConceptWriteError::ConceptRead { source })?
+        {
+            Ok(relation_type)
+        } else {
+            OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let type_vertex = self
-            .vertex_generator
-            .create_relation_type(snapshot)
-            .map_err(|err| ConceptWriteError::Encoding { source: err })?;
-        let relation = RelationType::new(type_vertex);
+            let type_vertex = self
+                .vertex_generator
+                .create_relation_type(snapshot)
+                .map_err(|err| ConceptWriteError::Encoding { source: err })?;
+            let relation = RelationType::new(type_vertex);
 
-        TypeWriter::storage_put_label(snapshot, relation.clone(), label);
-        Ok(relation)
+            TypeWriter::storage_put_label(snapshot, relation.clone(), label);
+            Ok(relation)
+        }
     }
 
     pub(crate) fn create_role_type(
@@ -1066,17 +1078,23 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
     ) -> Result<AttributeType<'static>, ConceptWriteError> {
-        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        if let Some(attribute_type) =
+            self.get_attribute_type(snapshot, &label).map_err(|source| ConceptWriteError::ConceptRead { source })?
+        {
+            Ok(attribute_type)
+        } else {
+            OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let type_vertex = self
-            .vertex_generator
-            .create_attribute_type(snapshot)
-            .map_err(|err| ConceptWriteError::Encoding { source: err })?;
-        let attribute_type = AttributeType::new(type_vertex);
+            let type_vertex = self
+                .vertex_generator
+                .create_attribute_type(snapshot)
+                .map_err(|err| ConceptWriteError::Encoding { source: err })?;
+            let attribute_type = AttributeType::new(type_vertex);
 
-        TypeWriter::storage_put_label(snapshot, attribute_type.clone(), label);
-        Ok(attribute_type)
+            TypeWriter::storage_put_label(snapshot, attribute_type.clone(), label);
+            Ok(attribute_type)
+        }
     }
 
     pub(crate) fn delete_entity_type(

@@ -11,10 +11,15 @@ use typeql::{query::SchemaQuery, Query};
 
 use crate::{define, error::QueryError};
 
-struct QueryManager {}
+pub struct QueryManager {}
 
 impl QueryManager {
-    fn execute(
+    // TODO: clean up if QueryManager remains stateless
+    pub fn new() -> QueryManager {
+        QueryManager {}
+    }
+
+    pub fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,

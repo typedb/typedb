@@ -296,8 +296,9 @@ pub enum RoleTypeAnnotation {
     Abstract(AnnotationAbstract),
 }
 
-impl From<Annotation> for Result<RoleTypeAnnotation, AnnotationError> {
-    fn from(annotation: Annotation) -> Result<RoleTypeAnnotation, AnnotationError> {
+impl TryFrom<Annotation> for RoleTypeAnnotation {
+    type Error = AnnotationError;
+    fn try_from(annotation: Annotation) -> Result<RoleTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(RoleTypeAnnotation::Abstract(annotation)),
 
@@ -310,16 +311,6 @@ impl From<Annotation> for Result<RoleTypeAnnotation, AnnotationError> {
             | Annotation::Cascade(_)
             | Annotation::Range(_)
             | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-        }
-    }
-}
-
-impl From<Annotation> for RoleTypeAnnotation {
-    fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<RoleTypeAnnotation, AnnotationError> = annotation.into();
-        match into_annotation {
-            Ok(into_annotation) => into_annotation,
-            Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),
         }
     }
 }

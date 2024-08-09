@@ -475,10 +475,14 @@ pub async fn relation_role_set_annotation(
         let res;
         match parsed_annotation {
             annotation::Annotation::Abstract(_) => {
-                res = relates.role().set_annotation(&mut tx.snapshot, &tx.type_manager, parsed_annotation.into());
+                res = relates.role().set_annotation(
+                    &mut tx.snapshot,
+                    &tx.type_manager,
+                    parsed_annotation.try_into().unwrap(),
+                );
             }
             annotation::Annotation::Distinct(_) | annotation::Annotation::Cardinality(_) => {
-                res = relates.set_annotation(&mut tx.snapshot, &tx.type_manager, parsed_annotation.into());
+                res = relates.set_annotation(&mut tx.snapshot, &tx.type_manager, parsed_annotation.try_into().unwrap());
             }
             _ => {
                 unimplemented!("Annotation {:?} is not supported by roles and relates", parsed_annotation);
@@ -543,12 +547,12 @@ pub async fn relation_role_annotations_contain(
                 .role()
                 .get_annotations(&tx.snapshot, &tx.type_manager)
                 .unwrap()
-                .contains_key(&parsed_annotation.into());
+                .contains_key(&parsed_annotation.try_into().unwrap());
         } else if RelatesAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
             actual_contains = relates
                 .get_annotations(&tx.snapshot, &tx.type_manager)
                 .unwrap()
-                .contains_key(&parsed_annotation.into());
+                .contains_key(&parsed_annotation.try_into().unwrap());
         } else {
             unimplemented!("Annotation {:?} is not supported by roles and relates", parsed_annotation_category);
         }
@@ -630,12 +634,12 @@ pub async fn relation_role_declared_annotations_contain(
                 .role()
                 .get_annotations_declared(&tx.snapshot, &tx.type_manager)
                 .unwrap()
-                .contains(&parsed_annotation.into());
+                .contains(&parsed_annotation.try_into().unwrap());
         } else if RelatesAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
             actual_contains = relates
                 .get_annotations_declared(&tx.snapshot, &tx.type_manager)
                 .unwrap()
-                .contains(&parsed_annotation.into());
+                .contains(&parsed_annotation.try_into().unwrap());
         } else {
             unimplemented!("Annotation {:?} is not supported by roles and relates", parsed_annotation_category);
         }

@@ -223,7 +223,8 @@ pub async fn get_plays_set_annotation(
     with_schema_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
-        let res = plays.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(None).into());
+        let res =
+            plays.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(None).try_into().unwrap());
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -268,7 +269,7 @@ pub async fn get_plays_annotations_contains(
         let actual_contains = plays
             .get_annotations(&tx.snapshot, &tx.type_manager)
             .unwrap()
-            .contains_key(&annotation.into_typedb(None).into());
+            .contains_key(&annotation.into_typedb(None).try_into().unwrap());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -320,7 +321,7 @@ pub async fn get_plays_declared_annotations_contains(
         let actual_contains = plays
             .get_annotations_declared(&tx.snapshot, &tx.type_manager)
             .unwrap()
-            .contains(&annotation.into_typedb(None).into());
+            .contains(&annotation.into_typedb(None).try_into().unwrap());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }

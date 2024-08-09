@@ -389,8 +389,9 @@ pub enum RelationTypeAnnotation {
     Cascade(AnnotationCascade),
 }
 
-impl From<Annotation> for Result<RelationTypeAnnotation, AnnotationError> {
-    fn from(annotation: Annotation) -> Result<RelationTypeAnnotation, AnnotationError> {
+impl TryFrom<Annotation> for RelationTypeAnnotation {
+    type Error = AnnotationError;
+    fn try_from(annotation: Annotation) -> Result<RelationTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(RelationTypeAnnotation::Abstract(annotation)),
             Annotation::Cascade(annotation) => Ok(RelationTypeAnnotation::Cascade(annotation)),
@@ -405,16 +406,6 @@ impl From<Annotation> for Result<RelationTypeAnnotation, AnnotationError> {
             | Annotation::Values(_) => {
                 Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
             }
-        }
-    }
-}
-
-impl From<Annotation> for RelationTypeAnnotation {
-    fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<RelationTypeAnnotation, AnnotationError> = annotation.into();
-        match into_annotation {
-            Ok(into_annotation) => into_annotation,
-            Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),
         }
     }
 }

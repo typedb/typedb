@@ -4,7 +4,6 @@
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
-# TODO: Add test_ prefix to target names
 
 rust_test(
     name = "test_expressions",
@@ -15,6 +14,17 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["@vaticle_typedb_behaviour//query/language:expression.feature"],
+)
+
+rust_test(
+    name = "test_define",
+    srcs = ["define.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@vaticle_typedb_behaviour//query/language:define.feature"],
+    crate_features = ["bazel"],
 )
 
 checkstyle_test(
