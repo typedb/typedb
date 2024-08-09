@@ -396,8 +396,8 @@ pub(crate) struct Value {
 
 impl Value {
     const DATETIME_FORMATS: [&'static str; 8] = [
-        "%Y-%m-%dT%H:%M:%S%.3f",
-        "%Y-%m-%d %H:%M:%S%.3f",
+        "%Y-%m-%dT%H:%M:%S%.9f",
+        "%Y-%m-%d %H:%M:%S%.9f",
         "%Y-%m-%dT%H:%M:%S",
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%dT%H:%M",
