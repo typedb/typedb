@@ -480,7 +480,7 @@ pub async fn get_owns_set_ordering(
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let res = owns.set_ordering(&mut tx.snapshot, &tx.type_manager, ordering.into_typedb());
+        let res = owns.set_ordering(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, ordering.into_typedb());
         may_error.check_concept_write_without_read_errors(&res);
     });
 }

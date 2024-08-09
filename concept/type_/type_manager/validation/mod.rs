@@ -199,6 +199,8 @@ pub enum SchemaValidationError {
         Label<'static>,
     ),
     CannotDeleteTypeWithExistingInstances(Label<'static>),
+    CannotSetRoleOrderingWithExistingInstances(Label<'static>),
+    CannotSetOwnsOrderingWithExistingInstances(Label<'static>, Label<'static>),
     CannotUnsetValueTypeWithExistingInstances(Label<'static>),
     CannotChangeValueTypeWithExistingInstances(Label<'static>),
     CannotSetAbstractToTypeWithExistingInstances(Label<'static>),
@@ -346,6 +348,8 @@ impl Error for SchemaValidationError {
                 None
             }
             Self::CannotDeleteTypeWithExistingInstances(_) => None,
+            Self::CannotSetRoleOrderingWithExistingInstances(_) => None,
+            Self::CannotSetOwnsOrderingWithExistingInstances(_, _) => None,
             Self::CannotUnsetValueTypeWithExistingInstances(_) => None,
             Self::CannotChangeValueTypeWithExistingInstances(_) => None,
             Self::CannotSetAbstractToTypeWithExistingInstances(_) => None,

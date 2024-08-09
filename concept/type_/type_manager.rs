@@ -2197,6 +2197,7 @@ impl TypeManager {
     pub(crate) fn set_owns_ordering(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         owns: Owns<'static>,
         ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
@@ -2224,6 +2225,9 @@ impl TypeManager {
         // OperationTimeValidation::validate_overriding_owns_ordering_match(snapshot, owns.clone(), Some(ordering))
         //     .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_no_owns_instances_to_set_ordering(snapshot, thing_manager, owns.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         TypeWriter::storage_set_owns_ordering(snapshot, owns, ordering);
         Ok(())
     }
@@ -2231,6 +2235,7 @@ impl TypeManager {
     pub(crate) fn set_role_ordering(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         role_type: RoleType<'static>,
         ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
@@ -2253,6 +2258,9 @@ impl TypeManager {
             )
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
+
+        OperationTimeValidation::validate_no_role_instances_to_set_ordering(snapshot, thing_manager, relates.role())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_put_type_vertex_property(snapshot, role_type, Some(ordering));
         Ok(())

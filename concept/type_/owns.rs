@@ -190,9 +190,10 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_owns_ordering(snapshot, self.clone().into_owned(), ordering)
+        type_manager.set_owns_ordering(snapshot, thing_manager, self.clone().into_owned(), ordering)
     }
 
     fn into_owned(self) -> Owns<'static> {

@@ -2403,8 +2403,8 @@ impl OperationTimeValidation {
         interface_type: CAP::InterfaceType,
         new_interface_supertype: Option<CAP::InterfaceType>,
     ) -> Result<(), SchemaValidationError> {
-        let old_interface_supertype = TypeReader::get_supertype(snapshot, interface_type.clone())
-            .map_err(SchemaValidationError::ConceptRead)?;
+        let old_interface_supertype =
+            TypeReader::get_supertype(snapshot, interface_type.clone()).map_err(SchemaValidationError::ConceptRead)?;
         if let Some(old_interface_supertype) = old_interface_supertype {
             for_type_and_subtypes_transitive!(snapshot, interface_type, |type_: CAP::InterfaceType| {
                 Self::validate_interface_change_supertype_does_not_corrupt_capabilities_overrides::<CAP>(
@@ -2438,7 +2438,8 @@ impl OperationTimeValidation {
                         old_interface_supertype.clone(),
                         capability_override.interface(),
                     )
-                    .map_err(SchemaValidationError::ConceptRead)? {
+                    .map_err(SchemaValidationError::ConceptRead)?
+                    {
                         if let Some(new_interface_supertype) = &new_interface_supertype {
                             if is_type_transitive_supertype_or_same(
                                 snapshot,
@@ -3544,6 +3545,41 @@ impl OperationTimeValidation {
         }
     }
 
+    pub(crate) fn validate_no_role_instances_to_set_ordering(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        role_type: RoleType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let has_instances = Self::has_instances_of_type(snapshot, thing_manager, role_type.clone())
+            .map_err(SchemaValidationError::ConceptRead)?;
+
+        if has_instances {
+            Err(SchemaValidationError::CannotSetRoleOrderingWithExistingInstances(get_label_or_schema_err(
+                snapshot, role_type,
+            )?))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub(crate) fn validate_no_owns_instances_to_set_ordering(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        owns: Owns<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let has_instances = Self::has_instances_of_owns(snapshot, thing_manager, owns.owner(), owns.attribute())
+            .map_err(SchemaValidationError::ConceptRead)?;
+
+        if has_instances {
+            Err(SchemaValidationError::CannotSetOwnsOrderingWithExistingInstances(
+                get_label_or_schema_err(snapshot, owns.owner())?,
+                get_label_or_schema_err(snapshot, owns.attribute())?,
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
     fn has_instances_of_type<'a, T: KindAPI<'a>>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
@@ -3842,7 +3878,6 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    // TODO: Think what if we have redundant declarations without overrides? We don't need to validate them. Be more careful. Check the logic from annotations validation.
     type_or_subtype_without_declared_capability_instances_existence_validation!(
         type_or_subtype_without_declared_capability_that_has_instances_of_owns,
         Owns,

@@ -787,7 +787,8 @@ pub async fn relation_role_set_ordering(
             .unwrap()
             .unwrap()
             .role();
-        let res = role.set_ordering(&mut tx.snapshot, &tx.type_manager, ordering.into_typedb().into());
+        let res =
+            role.set_ordering(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, ordering.into_typedb().into());
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
