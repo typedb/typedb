@@ -34,29 +34,17 @@ impl<'a> Tuple<'a> {
             Tuple::Pair(values) => values,
             Tuple::Triple(values) => values,
             Tuple::Quintuple(values) => values,
-            Tuple::Arbitrary() => {
-                todo!()
-            }
+            Tuple::Arbitrary() => todo!(),
         }
     }
 
     pub(crate) fn into_owned(self) -> Tuple<'static> {
         match self {
-            Tuple::Single([value]) => Tuple::Single([value.into_owned()]),
-            Tuple::Pair([value_1, value_2]) => Tuple::Pair([value_1.into_owned(), value_2.into_owned()]),
-            Tuple::Triple([value_1, value_2, value_3]) => {
-                Tuple::Triple([value_1.into_owned(), value_2.into_owned(), value_3.into_owned()])
-            }
-            Tuple::Quintuple([value_1, value_2, value_3, value_4, value_5]) => Tuple::Quintuple([
-                value_1.into_owned(),
-                value_2.into_owned(),
-                value_3.into_owned(),
-                value_4.into_owned(),
-                value_5.into_owned(),
-            ]),
-            Tuple::Arbitrary() => {
-                todo!()
-            }
+            Tuple::Single(values) => Tuple::Single(values.map(VariableValue::into_owned)),
+            Tuple::Pair(values) => Tuple::Pair(values.map(VariableValue::into_owned)),
+            Tuple::Triple(values) => Tuple::Triple(values.map(VariableValue::into_owned)),
+            Tuple::Quintuple(values) => Tuple::Quintuple(values.map(VariableValue::into_owned)),
+            Tuple::Arbitrary() => todo!(),
         }
     }
 }
@@ -92,19 +80,27 @@ impl TuplePositions {
     pub(crate) fn as_triple(&self) -> &[VariablePosition; 3] {
         match self {
             Self::Triple(positions) => positions,
-            _ => unreachable!("Cannot read tuple as Single."),
+            _ => unreachable!("Cannot read tuple as Triple."),
         }
     }
 
     pub(crate) fn as_quintuple(&self) -> &[VariablePosition; 5] {
         match self {
             Self::Quintuple(positions) => positions,
-            _ => unreachable!("Cannot read tuple as Single."),
+            _ => unreachable!("Cannot read tuple as Quintuple."),
         }
     }
 
     pub(crate) fn as_arbitrary(&self) {
         todo!()
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &VariablePosition> {
+        self.positions().iter()
+    }
+
+    pub(crate) fn len(&self) -> usize {
+        self.positions().len()
     }
 
     pub(crate) fn positions(&self) -> &[VariablePosition] {
@@ -124,7 +120,7 @@ pub(crate) type TupleIndex = u16;
 
 pub(crate) type TupleResult<'a> = Result<Tuple<'a>, ConceptReadError>;
 
-pub(crate) fn isa_entity_to_tuple_thing_type<'a>(result: Result<Entity<'a>, ConceptReadError>) -> TupleResult<'a> {
+pub(crate) fn isa_entity_to_tuple_thing_type(result: Result<Entity<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
         Ok(entity) => {
             let type_ = entity.type_();
@@ -133,7 +129,7 @@ pub(crate) fn isa_entity_to_tuple_thing_type<'a>(result: Result<Entity<'a>, Conc
         Err(err) => Err(err),
     }
 }
-pub(crate) fn isa_relation_to_tuple_thing_type<'a>(result: Result<Relation<'a>, ConceptReadError>) -> TupleResult<'a> {
+pub(crate) fn isa_relation_to_tuple_thing_type(result: Result<Relation<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
         Ok(relation) => {
             let type_ = relation.type_();
@@ -143,9 +139,7 @@ pub(crate) fn isa_relation_to_tuple_thing_type<'a>(result: Result<Relation<'a>, 
     }
 }
 
-pub(crate) fn isa_attribute_to_tuple_thing_type<'a>(
-    result: Result<Attribute<'a>, ConceptReadError>,
-) -> TupleResult<'a> {
+pub(crate) fn isa_attribute_to_tuple_thing_type(result: Result<Attribute<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
         Ok(attribute) => {
             let type_ = attribute.type_();
@@ -156,13 +150,13 @@ pub(crate) fn isa_attribute_to_tuple_thing_type<'a>(
 }
 pub(crate) type HasToTupleFn = for<'a> fn(Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a>;
 
-pub(crate) fn has_to_tuple_owner_attribute<'a>(result: Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a> {
+pub(crate) fn has_to_tuple_owner_attribute(result: Result<(Has<'_>, u64), ConceptReadError>) -> TupleResult<'_> {
     let (has, count) = result?;
     let (owner, attribute) = has.into_owner_attribute();
     Ok(Tuple::Pair([VariableValue::Thing(owner.into()), VariableValue::Thing(attribute.into())]))
 }
 
-pub(crate) fn has_to_tuple_attribute_owner<'a>(result: Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a> {
+pub(crate) fn has_to_tuple_attribute_owner(result: Result<(Has<'_>, u64), ConceptReadError>) -> TupleResult<'_> {
     let (has, count) = result?;
     let (owner, attribute) = has.into_owner_attribute();
     Ok(Tuple::Pair([VariableValue::Thing(attribute.into()), VariableValue::Thing(owner.into())]))

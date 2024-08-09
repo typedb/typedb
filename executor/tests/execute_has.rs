@@ -208,7 +208,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
                 ConstraintInstruction::Has(has_name_1, Inputs::Single([var_person_1])),
                 ConstraintInstruction::HasReverse(has_name_2, Inputs::None([])),
             ],
-            &[var_person_2, var_name],
+            &[var_person_1, var_person_2, var_name],
         )),
     ];
     // TODO: incorporate the filter
@@ -222,13 +222,13 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
-    assert_eq!(rows.len(), 3); // $person-1 is $person-2, one per name
 
-    for row in rows {
-        let r = row.unwrap();
+    for row in &rows {
+        let r = row.as_ref().unwrap();
         assert_eq!(r.get_multiplicity(), 1);
         print!("{}", r);
     }
+    assert_eq!(rows.len(), 3); // $person-1 is $person-2, one per name
 }
 
 #[test]

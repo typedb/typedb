@@ -28,24 +28,21 @@ use lending_iterator::{
 };
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
-use super::{
-    iterator::TupleIterator,
-    tuple::{relation_role_player_to_tuple_relation_player_role, TupleResult},
-};
 use crate::{
     batch::ImmutableRow,
     instruction::{
-        iterator::{inverted_instances_cache, SortedTupleIterator},
+        iterator::{inverted_instances_cache, SortedTupleIterator, TupleIterator},
         tuple::{
-            relation_role_player_to_tuple_player_relation_role, RelationRolePlayerToTupleFn, Tuple, TuplePositions,
+            relation_role_player_to_tuple_player_relation_role, relation_role_player_to_tuple_relation_player_role,
+            RelationRolePlayerToTupleFn, Tuple, TuplePositions, TupleResult,
         },
-        VariableModes,
+        VariableMode, VariableModes,
     },
     VariablePosition,
 };
 
 pub(crate) struct RolePlayerExecutor {
-    role_player: RolePlayerInstruction<VariablePosition>,
+    role_player: ir::pattern::constraint::RolePlayer<VariablePosition>,
 
     iterate_mode: TernaryIterateMode,
     variable_modes: VariableModes,
@@ -109,33 +106,25 @@ pub(crate) enum TernaryIterateMode {
 
 impl TernaryIterateMode {
     pub(crate) fn new(
-        role_player: ir::pattern::constraint::RolePlayer<VariablePosition>,
-        in_reverse_direction: bool,
+        from_var: VariablePosition,
+        to_var: VariablePosition,
         var_modes: &VariableModes,
         sort_by: Option<VariablePosition>,
     ) -> TernaryIterateMode {
-        debug_assert!(!var_modes.fully_bound());
-        let is_relation_bound = var_modes.get(role_player.relation()).is_some_and(|mode| mode.is_bound());
-        let is_player_bound = var_modes.get(role_player.player()).is_some_and(|mode| mode.is_bound());
-
-        let is_from_bound = !in_reverse_direction && is_relation_bound || in_reverse_direction && is_player_bound;
-        let is_to_bound = !in_reverse_direction && is_player_bound || in_reverse_direction && is_relation_bound;
-        let from_variable = if in_reverse_direction { role_player.player() } else { role_player.relation() };
+        debug_assert!(var_modes.len() == 3);
+        debug_assert!(!var_modes.all_inputs());
+        let is_from_bound = var_modes.get(from_var) == Some(&VariableMode::Input);
+        let is_to_bound = var_modes.get(to_var) == Some(&VariableMode::Input);
 
         if is_to_bound {
             assert!(is_from_bound);
-            TernaryIterateMode::BoundFromBoundTo
+            Self::BoundFromBoundTo
         } else if is_from_bound {
-            TernaryIterateMode::BoundFrom
-        } else if let Some(sort_variable) = sort_by {
-            if from_variable == sort_variable {
-                TernaryIterateMode::Unbound
-            } else {
-                TernaryIterateMode::UnboundInverted
-            }
+            Self::BoundFrom
+        } else if sort_by == Some(to_var) {
+            Self::UnboundInverted
         } else {
-            // arbitrarily pick from sorted
-            TernaryIterateMode::Unbound
+            Self::Unbound
         }
     }
 }
@@ -148,19 +137,20 @@ impl RolePlayerExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
-        debug_assert!(!variable_modes.fully_bound());
+        debug_assert!(!variable_modes.all_inputs());
         let relation_player_types = role_player.edge_types();
         debug_assert!(!relation_player_types.is_empty());
         let player_types = role_player.end_types();
         let player_role_types = role_player.filter_types();
-        let rp = &role_player.constraint.clone();
-        let iterate_mode = TernaryIterateMode::new(rp.clone(), false, &variable_modes, sort_by);
+        let role_player = role_player.constraint;
+        let iterate_mode =
+            TernaryIterateMode::new(role_player.relation(), role_player.player(), &variable_modes, sort_by);
         let filter_fn =
-            Self::create_role_player_filter_relations_players_roles(relation_player_types.clone(), player_role_types);
+            create_role_player_filter_relations_players_roles(relation_player_types.clone(), player_role_types);
         let output_tuple_positions = if iterate_mode == TernaryIterateMode::UnboundInverted {
-            TuplePositions::Triple([rp.player(), rp.relation(), rp.role_type()])
+            TuplePositions::Triple([role_player.player(), role_player.relation(), role_player.role_type()])
         } else {
-            TuplePositions::Triple([rp.relation(), rp.player(), rp.role_type()])
+            TuplePositions::Triple([role_player.relation(), role_player.player(), role_player.role_type()])
         };
 
         let relation_cache = if iterate_mode == TernaryIterateMode::UnboundInverted {
@@ -210,9 +200,9 @@ impl RolePlayerExecutor {
                     &self.variable_modes,
                 )))
             }
+
             TernaryIterateMode::UnboundInverted => {
                 debug_assert!(self.relation_cache.is_some());
-
                 let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
                 let player_type_range =
                     KeyRange::new_inclusive(min_player_type.as_object_type(), max_player_type.as_object_type());
@@ -252,7 +242,7 @@ impl RolePlayerExecutor {
 
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
                     let merged: KMergeBy<RelationRolePlayerIterator, RelationRolePlayerOrderingFn> =
-                        KMergeBy::new(iterators, Self::compare_by_player_then_relation);
+                        KMergeBy::new(iterators, compare_by_player_then_relation);
                     let filtered: Filter<
                         KMergeBy<RelationRolePlayerIterator, RelationRolePlayerOrderingFn>,
                         Arc<RolePlayerFilterFn>,
@@ -268,12 +258,12 @@ impl RolePlayerExecutor {
             }
 
             TernaryIterateMode::BoundFrom => {
-                debug_assert!(row.width() > self.role_player.constraint.relation().as_usize());
+                debug_assert!(row.width() > self.role_player.relation().as_usize());
                 let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
                 let player_type_range =
                     KeyRange::new_inclusive(min_player_type.as_object_type(), max_player_type.as_object_type());
 
-                let iterator = match row.get(self.role_player.constraint.relation()) {
+                let iterator = match row.get(self.role_player.relation()) {
                     VariableValue::Thing(Thing::Relation(relation)) => thing_manager
                         .get_relation_role_players_by_relation_and_player_type_range(
                             snapshot,
@@ -284,23 +274,24 @@ impl RolePlayerExecutor {
                 };
                 let filtered = iterator.filter::<_, RolePlayerFilterFn>(self.filter_fn.clone());
                 let as_tuples: RolePlayerBoundedRelationSortedPlayer =
-                    filtered.map::<Result<Tuple<'_>, _>, _>(relation_role_player_to_tuple_relation_player_role);
+                    filtered.map(relation_role_player_to_tuple_relation_player_role);
                 Ok(TupleIterator::RolePlayerBoundedRelation(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
             }
+
             TernaryIterateMode::BoundFromBoundTo => {
-                debug_assert!(row.width() > self.role_player.constraint.relation().as_usize());
-                debug_assert!(row.width() > self.role_player.constraint.player().as_usize());
-                let relation = row.get(self.role_player.constraint.relation()).as_thing().as_relation();
-                let player = row.get(self.role_player.constraint.player()).as_thing().as_object();
+                debug_assert!(row.width() > self.role_player.relation().as_usize());
+                debug_assert!(row.width() > self.role_player.player().as_usize());
+                let relation = row.get(self.role_player.relation()).as_thing().as_relation();
+                let player = row.get(self.role_player.player()).as_thing().as_object();
                 let iterator =
                     thing_manager.get_relation_role_players_by_relation_and_player(snapshot, relation, player);
                 let filtered = iterator.filter::<_, RolePlayerFilterFn>(self.filter_fn.clone());
                 let as_tuples: RolePlayerBoundedRelationSortedPlayer =
-                    filtered.map::<Result<Tuple<'_>, _>, _>(relation_role_player_to_tuple_relation_player_role);
+                    filtered.map(relation_role_player_to_tuple_relation_player_role);
                 Ok(TupleIterator::RolePlayerBoundedRelationPlayer(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -309,36 +300,36 @@ impl RolePlayerExecutor {
             }
         }
     }
+}
 
-    fn create_role_player_filter_relations_players_roles(
-        relation_to_player: Arc<BTreeMap<Type, Vec<Type>>>,
-        player_to_role: Arc<BTreeMap<Type, HashSet<Type>>>,
-    ) -> Arc<RolePlayerFilterFn> {
-        Arc::new(move |result| {
-            let Ok((rel, rp, _)) = result else {
-                return true;
-            };
-            let Some(player_types) = relation_to_player.get(&Type::from(rel.type_())) else {
-                return false;
-            };
-            let player_type = Type::from(rp.player().type_());
-            let role_type = Type::from(rp.role_type());
-            player_types.contains(&player_type)
-                && player_to_role.get(&player_type).is_some_and(|role_types| role_types.contains(&role_type))
-        })
-    }
+fn create_role_player_filter_relations_players_roles(
+    relation_to_player: Arc<BTreeMap<Type, Vec<Type>>>,
+    player_to_role: Arc<BTreeMap<Type, HashSet<Type>>>,
+) -> Arc<RolePlayerFilterFn> {
+    Arc::new(move |result| {
+        let Ok((rel, rp, _)) = result else {
+            return true;
+        };
+        let Some(player_types) = relation_to_player.get(&Type::from(rel.type_())) else {
+            return false;
+        };
+        let player_type = Type::from(rp.player().type_());
+        let role_type = Type::from(rp.role_type());
+        player_types.contains(&player_type)
+            && player_to_role.get(&player_type).is_some_and(|role_types| role_types.contains(&role_type))
+    })
+}
 
-    fn compare_by_player_then_relation(
-        pair: (
-            &Result<(Relation<'_>, RolePlayer<'_>, u64), ConceptReadError>,
-            &Result<(Relation<'_>, RolePlayer<'_>, u64), ConceptReadError>,
-        ),
-    ) -> Ordering {
-        if let (Ok((rel_1, rp_1, _)), Ok((rel_2, rp_2, _))) = pair {
-            (rp_1.player(), rel_1).cmp(&(rp_2.player(), rel_2))
-        } else {
-            Ordering::Equal
-        }
+fn compare_by_player_then_relation(
+    pair: (
+        &Result<(Relation<'_>, RolePlayer<'_>, u64), ConceptReadError>,
+        &Result<(Relation<'_>, RolePlayer<'_>, u64), ConceptReadError>,
+    ),
+) -> Ordering {
+    if let (Ok((rel_1, rp_1, _)), Ok((rel_2, rp_2, _))) = pair {
+        (rp_1.player(), rel_1).cmp(&(rp_2.player(), rel_2))
+    } else {
+        Ordering::Equal
     }
 }
 

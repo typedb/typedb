@@ -78,8 +78,8 @@ impl HasExecutor {
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(owner_attribute_types.len() > 0);
-        debug_assert!(!variable_modes.fully_bound());
-        let iterate_mode = BinaryIterateMode::new(has.clone(), false, &variable_modes, sort_by);
+        debug_assert!(!variable_modes.all_inputs());
+        let iterate_mode = BinaryIterateMode::new(has.owner(), has.attribute(), &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
             BinaryIterateMode::Unbound => Self::create_has_filter_owners_attributes(owner_attribute_types.clone()),
             BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {

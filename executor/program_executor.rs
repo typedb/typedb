@@ -23,9 +23,9 @@ pub struct ProgramExecutor {
 }
 
 impl ProgramExecutor {
-    pub fn new<Snapshot: ReadableSnapshot>(
+    pub fn new(
         program_plan: &ProgramPlan,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         let ProgramPlan { entry: entry_plan, entry_annotations, functions: function_plans } = program_plan;
@@ -40,9 +40,9 @@ impl ProgramExecutor {
         self.entry.variable_positions()
     }
 
-    pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
+    pub fn into_iterator(
         self,
-        snapshot: Arc<Snapshot>,
+        snapshot: Arc<impl ReadableSnapshot + 'static>,
         thing_manager: Arc<ThingManager>,
     ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         self.entry.into_iterator(snapshot, thing_manager)

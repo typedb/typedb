@@ -55,13 +55,13 @@ pub(crate) enum InstructionExecutor {
 }
 
 impl InstructionExecutor {
-    pub(crate) fn new<Snapshot: ReadableSnapshot>(
+    pub(crate) fn new(
         instruction: ConstraintInstruction,
         selected: &Vec<Variable>,
         named: &HashMap<Variable, String>,
         positions: &HashMap<Variable, VariablePosition>,
         type_annotations: &TypeAnnotations,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         sort_by: Option<Variable>,
     ) -> Result<Self, ConceptReadError> {
@@ -116,19 +116,11 @@ impl InstructionExecutor {
                 )?;
                 Ok(Self::RolePlayer(executor))
             }
-            ConstraintInstruction::RolePlayerReverse(role_player, _) => {
-                let rp_relation = role_player.relation();
-                let left_right_filtered = type_annotations
-                    .constraint_annotations_of(role_player.clone().into())
-                    .unwrap()
-                    .as_left_right_filtered();
+            ConstraintInstruction::RolePlayerReverse(role_player_reverse) => {
                 let executor = RolePlayerReverseExecutor::new(
-                    role_player.map(positions),
+                    role_player_reverse.map(positions),
                     variable_modes,
                     sort_by_position,
-                    left_right_filtered.right_to_left(),
-                    left_right_filtered.filters_on_left(),
-                    type_annotations.variable_annotations_of(rp_relation).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
@@ -152,9 +144,9 @@ impl InstructionExecutor {
         }
     }
 
-    pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
+    pub(crate) fn get_iterator(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
@@ -174,29 +166,22 @@ impl InstructionExecutor {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum VariableMode {
     Input,
-    UnboundSelect,
-    UnboundCount,
-    UnboundCheck,
+    Output,
+    Count,
+    Check,
 }
 
-impl VariableMode {}
-
 impl VariableMode {
-    pub(crate) const fn new(is_bound: bool, is_selected: bool, is_named: bool) -> VariableMode {
-        match (is_bound, is_selected, is_named) {
-            (true, _, _) => Self::Input,
-            (false, true, _) => Self::UnboundSelect,
-            (false, false, true) => Self::UnboundCount,
-            (false, false, false) => Self::UnboundCheck,
+    pub(crate) const fn new(is_input: bool, is_selected: bool, is_named: bool) -> VariableMode {
+        if is_input {
+            Self::Input
+        } else if is_selected {
+            Self::Output
+        } else if is_named {
+            Self::Count
+        } else {
+            Self::Check
         }
-    }
-
-    pub(crate) fn is_bound(&self) -> bool {
-        self == &Self::Input
-    }
-
-    pub(crate) fn is_unbound(&self) -> bool {
-        !self.is_bound()
     }
 }
 
@@ -235,12 +220,16 @@ impl VariableModes {
         self.modes.get(&variable_position)
     }
 
-    pub(crate) fn fully_bound(&self) -> bool {
-        self.modes.values().all(|mode| mode.is_bound())
+    pub(crate) fn all_inputs(&self) -> bool {
+        self.modes.values().all(|mode| mode == &VariableMode::Input)
     }
 
-    pub(crate) fn fully_unbound(&self) -> bool {
-        self.modes.values().all(|mode| mode.is_unbound())
+    pub(crate) fn none_inputs(&self) -> bool {
+        self.modes.values().all(|mode| mode != &VariableMode::Input)
+    }
+
+    fn len(&self) -> usize {
+        self.modes.len()
     }
 }
 
@@ -256,34 +245,23 @@ pub(crate) enum BinaryIterateMode {
 
 impl BinaryIterateMode {
     pub(crate) fn new(
-        constraint: impl Into<Constraint<VariablePosition>>,
-        in_reverse_direction: bool,
+        from_var: VariablePosition,
+        to_var: VariablePosition,
         var_modes: &VariableModes,
         sort_by: Option<VariablePosition>,
     ) -> BinaryIterateMode {
-        let constraint = constraint.into();
-        debug_assert!(constraint.ids_count() == 2);
-        debug_assert!(!var_modes.fully_bound());
+        debug_assert!(var_modes.len() == 2);
+        debug_assert!(!var_modes.all_inputs());
 
-        let default_sort_variable_for_direction =
-            if in_reverse_direction { constraint.right_id() } else { constraint.left_id() };
+        let is_from_bound = var_modes.get(from_var) == Some(&VariableMode::Input);
+        debug_assert!(var_modes.get(to_var) != Some(&VariableMode::Input));
 
-        if var_modes.fully_unbound() {
-            match sort_by {
-                None => {
-                    // arbitrarily pick from sorted
-                    BinaryIterateMode::Unbound
-                }
-                Some(variable) => {
-                    if default_sort_variable_for_direction == variable {
-                        BinaryIterateMode::Unbound
-                    } else {
-                        BinaryIterateMode::UnboundInverted
-                    }
-                }
-            }
+        if is_from_bound {
+            Self::BoundFrom
+        } else if sort_by == Some(to_var) {
+            Self::UnboundInverted
         } else {
-            BinaryIterateMode::BoundFrom
+            Self::Unbound
         }
     }
 

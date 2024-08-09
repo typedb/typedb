@@ -81,9 +81,9 @@ impl PatternExecutor {
         &self.variable_positions_index
     }
 
-    pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
+    pub fn into_iterator(
         self,
-        snapshot: Arc<Snapshot>,
+        snapshot: Arc<impl ReadableSnapshot + 'static>,
         thing_manager: Arc<ThingManager>,
     ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager)).flat_map(BatchRowIterator::new)
@@ -319,7 +319,7 @@ impl IntersectionExecutor {
                     Some(sort_variable),
                 )
             })
-            .collect::<Result<Vec<_>, ConceptReadError>>()?;
+            .try_collect()?;
 
         Ok(Self {
             instruction_executors: executors,

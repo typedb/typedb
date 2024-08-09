@@ -8,7 +8,9 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::{
     inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
-    instruction::constraint::instructions::{ConstraintInstruction, Inputs, RolePlayerInstruction},
+    instruction::constraint::instructions::{
+        ConstraintInstruction, Inputs, RolePlayerInstruction, RolePlayerReverseInstruction,
+    },
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
@@ -554,7 +556,11 @@ fn traverse_rp_reverse_unbounded_sorted_from() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![ConstraintInstruction::RolePlayerReverse(rp_membership_person.clone(), Inputs::None([]))],
+        vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
+            rp_membership_person.clone(),
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_membership, var_person],
     ))];
 
@@ -631,7 +637,11 @@ fn traverse_rp_reverse_unbounded_sorted_to() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_membership,
-        vec![ConstraintInstruction::RolePlayerReverse(rp_membership_person, Inputs::None([]))],
+        vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
+            rp_membership_person,
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_membership, var_person],
     ))];
 
@@ -715,7 +725,11 @@ fn traverse_rp_reverse_bounded_player() {
         )),
         Step::Intersection(IntersectionStep::new(
             var_membership,
-            vec![ConstraintInstruction::RolePlayerReverse(rp_membership_person, Inputs::Single([var_person]))],
+            vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
+                rp_membership_person,
+                Inputs::Single([var_person]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_membership],
         )),
     ];
@@ -806,10 +820,11 @@ fn traverse_rp_reverse_bounded_player_relation() {
         )),
         Step::Intersection(IntersectionStep::new(
             var_membership_member_type,
-            vec![ConstraintInstruction::RolePlayerReverse(
+            vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
                 rp_membership_person,
                 Inputs::Dual([var_membership, var_person]),
-            )],
+                annotated_program.entry_annotations(),
+            ))],
             &[var_membership_member_type],
         )),
     ];
