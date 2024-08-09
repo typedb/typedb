@@ -19,7 +19,7 @@ use itertools::Itertools;
 
 use crate::{
     inference::annotated_program::AnnotatedProgram,
-    instruction::constraint::instructions::{ConstraintInstruction, HasInstruction, Inputs},
+    instruction::constraint::instructions::{ConstraintInstruction, HasInstruction, Inputs, IsaReverseInstruction},
     planner::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost},
 };
 
@@ -115,7 +115,11 @@ impl PatternPlan {
                     let isa = &variable_isa[&var];
                     steps.push(Step::Intersection(IntersectionStep::new(
                         var,
-                        vec![ConstraintInstruction::IsaReverse(isa.clone(), Inputs::None([]))],
+                        vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                            isa.clone(),
+                            Inputs::None([]),
+                            type_annotations,
+                        ))],
                         &[var],
                     )));
                 }

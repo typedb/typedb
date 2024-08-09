@@ -27,7 +27,7 @@ pub enum ConstraintInstruction {
     // thing -> type
     Isa(Isa<Variable>, Inputs<Variable>),
     // type -> thing
-    IsaReverse(Isa<Variable>, Inputs<Variable>),
+    IsaReverse(IsaReverseInstruction<Variable>),
 
     // owner -> attribute
     Has(HasInstruction<Variable>),
@@ -68,7 +68,7 @@ impl ConstraintInstruction {
     pub(crate) fn input_variables_foreach(&self, mut apply: impl FnMut(Variable)) {
         match self {
             | ConstraintInstruction::Isa(_, inputs)
-            | ConstraintInstruction::IsaReverse(_, inputs)
+            | ConstraintInstruction::IsaReverse(IsaReverseInstruction { inputs, .. })
             | ConstraintInstruction::Has(HasInstruction { inputs, .. })
             | ConstraintInstruction::HasReverse(HasReverseInstruction { inputs, .. })
             | ConstraintInstruction::RolePlayer(RolePlayerInstruction { inputs, .. })
@@ -85,7 +85,8 @@ impl ConstraintInstruction {
 
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(Variable)) {
         match self {
-            ConstraintInstruction::Isa(isa, inputs) | ConstraintInstruction::IsaReverse(isa, inputs) => isa
+            ConstraintInstruction::Isa(isa, inputs)
+            | ConstraintInstruction::IsaReverse(IsaReverseInstruction { constraint: isa, inputs, .. }) => isa
                 .ids_foreach(|var, _| {
                     if !inputs.iter().contains(&var) {
                         apply(var)
@@ -123,7 +124,7 @@ impl ConstraintInstruction {
 impl InstructionAPI for ConstraintInstruction {
     fn constraint(&self) -> Constraint<Variable> {
         match self {
-            Self::Isa(isa, _) | Self::IsaReverse(isa, _) => isa.clone().into(),
+            Self::Isa(isa, _) | Self::IsaReverse(IsaReverseInstruction { constraint: isa, .. }) => isa.clone().into(),
             Self::Has(HasInstruction { constraint: has, .. })
             | Self::HasReverse(HasReverseInstruction { constraint: has, .. }) => has.clone().into(),
             Self::RolePlayer(RolePlayerInstruction { constraint: rp, .. })
@@ -134,6 +135,33 @@ impl InstructionAPI for ConstraintInstruction {
             }
             Self::ExpressionBinding(binding) => binding.clone().into(),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IsaReverseInstruction<ID> {
+    pub constraint: Isa<ID>,
+    pub inputs: Inputs<ID>,
+    type_annotations: Arc<HashSet<Type>>,
+}
+
+impl IsaReverseInstruction<Variable> {
+    pub fn new(constraint: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let type_annotations = type_annotations.variable_annotations_of(constraint.thing()).unwrap().clone();
+        Self { constraint, inputs, type_annotations }
+    }
+}
+
+impl<ID> IsaReverseInstruction<ID> {
+    pub fn types(&self) -> Arc<HashSet<Type>> {
+        self.type_annotations.clone()
+    }
+}
+
+impl<ID: IrID> IsaReverseInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsaReverseInstruction<T> {
+        let Self { constraint, inputs, type_annotations } = self;
+        IsaReverseInstruction { constraint: constraint.map(mapping), inputs: inputs.map(mapping), type_annotations }
     }
 }
 

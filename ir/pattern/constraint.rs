@@ -486,7 +486,7 @@ impl<ID: IrID> fmt::Display for Sub<ID> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Isa<ID: IrID> {
+pub struct Isa<ID> {
     kind: IsaKind,
     thing: ID,
     type_: ID,
@@ -517,7 +517,7 @@ impl<ID: IrID> Isa<ID> {
         function(self.type_, ConstraintIDSide::Right);
     }
 
-    pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> Isa<T> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Isa<T> {
         Isa::new(self.kind, *mapping.get(&self.thing).unwrap(), *mapping.get(&self.type_).unwrap())
     }
 }

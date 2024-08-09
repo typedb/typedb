@@ -9,7 +9,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 use compiler::{
     inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
     instruction::constraint::instructions::{
-        ConstraintInstruction, Inputs, RolePlayerInstruction, RolePlayerReverseInstruction,
+        ConstraintInstruction, Inputs, IsaReverseInstruction, RolePlayerInstruction, RolePlayerReverseInstruction,
     },
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
@@ -375,7 +375,11 @@ fn traverse_rp_bounded_relation() {
     let steps = vec![
         Step::Intersection(IntersectionStep::new(
             var_membership,
-            vec![ConstraintInstruction::IsaReverse(isa_membership, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_membership,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_membership],
         )),
         Step::Intersection(IntersectionStep::new(
@@ -465,12 +469,20 @@ fn traverse_rp_bounded_relation_player() {
     let steps = vec![
         Step::Intersection(IntersectionStep::new(
             var_membership,
-            vec![ConstraintInstruction::IsaReverse(isa_membership, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_membership,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_membership],
         )),
         Step::Intersection(IntersectionStep::new(
             var_person,
-            vec![ConstraintInstruction::IsaReverse(isa_person, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_person,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_membership, var_person],
         )),
         Step::Intersection(IntersectionStep::new(
@@ -720,7 +732,11 @@ fn traverse_rp_reverse_bounded_player() {
     let steps = vec![
         Step::Intersection(IntersectionStep::new(
             var_person,
-            vec![ConstraintInstruction::IsaReverse(isa_person, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_person,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_person],
         )),
         Step::Intersection(IntersectionStep::new(
@@ -810,12 +826,20 @@ fn traverse_rp_reverse_bounded_player_relation() {
     let steps = vec![
         Step::Intersection(IntersectionStep::new(
             var_person,
-            vec![ConstraintInstruction::IsaReverse(isa_person, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_person,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_person],
         )),
         Step::Intersection(IntersectionStep::new(
             var_membership,
-            vec![ConstraintInstruction::IsaReverse(isa_membership, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_membership,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_person, var_membership],
         )),
         Step::Intersection(IntersectionStep::new(

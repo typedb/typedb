@@ -7,8 +7,10 @@
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::{
-    inference::{annotated_functions::AnnotatedCommittedFunctions, annotated_program, type_inference::infer_types},
-    instruction::constraint::instructions::{ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs},
+    inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
+    instruction::constraint::instructions::{
+        ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs, IsaReverseInstruction,
+    },
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
@@ -203,7 +205,11 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let steps = vec![
         Step::Intersection(IntersectionStep::new(
             var_person_1,
-            vec![ConstraintInstruction::IsaReverse(isa_person_1, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_person_1,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_person_1],
         )),
         Step::Intersection(IntersectionStep::new(

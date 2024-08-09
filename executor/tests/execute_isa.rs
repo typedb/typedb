@@ -8,7 +8,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use compiler::{
     inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
-    instruction::constraint::instructions::{ConstraintInstruction, Inputs},
+    instruction::constraint::instructions::{ConstraintInstruction, Inputs, IsaReverseInstruction},
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
@@ -79,16 +79,19 @@ fn traverse_isa_unbounded_sorted_thing() {
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
     let program = Program::new(block.finish(), Vec::new());
 
-    let annotated_program = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap()
-    };
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_dog,
-        vec![ConstraintInstruction::IsaReverse(isa.clone(), Inputs::None([]))],
+        vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+            isa,
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_dog, var_dog_type],
     ))];
 
@@ -96,27 +99,18 @@ fn traverse_isa_unbounded_sorted_thing() {
     let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
-    let executor = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap()
-    };
+    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    {
-        let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-        let (_, thing_manager) = load_managers(storage.clone());
-        let thing_manager = Arc::new(thing_manager);
+    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
 
-        let iterator = executor.into_iterator(snapshot, thing_manager);
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 3);
 
-        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
-            iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
-        assert_eq!(rows.len(), 3);
-
-        for row in rows {
-            let row = row.unwrap();
-            assert_eq!(row.get_multiplicity(), 1);
-            print!("{}", row);
-        }
+    for row in rows {
+        let row = row.unwrap();
+        assert_eq!(row.get_multiplicity(), 1);
+        print!("{}", row);
     }
 }

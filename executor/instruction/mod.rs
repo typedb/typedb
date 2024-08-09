@@ -68,16 +68,9 @@ impl InstructionExecutor {
         let sort_by_position = sort_by.map(|var| *positions.get(&var).unwrap());
         match instruction {
             ConstraintInstruction::Isa(isa, _) => todo!(),
-            ConstraintInstruction::IsaReverse(isa, _) => {
-                let thing = isa.thing();
-                let provider = IsaReverseExecutor::new(
-                    isa.clone().into_ids(positions),
-                    variable_modes,
-                    sort_by_position,
-                    type_annotations.constraint_annotations_of(isa.into()).unwrap().as_left_right().right_to_left(),
-                    type_annotations.variable_annotations_of(thing).unwrap().clone(),
-                );
-                Ok(Self::IsaReverse(provider))
+            ConstraintInstruction::IsaReverse(isa_reverse) => {
+                let executor = IsaReverseExecutor::new(isa_reverse.map(positions), variable_modes, sort_by_position);
+                Ok(Self::IsaReverse(executor))
             }
             ConstraintInstruction::Has(has) => {
                 let executor =
