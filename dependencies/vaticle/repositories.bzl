@@ -40,6 +40,13 @@ def vaticle_typedb_protocol():
     )
 
 def vaticle_typedb_behaviour():
+    # TODO right before merge: Set new commit for updated bdds
+#    native.local_repository(
+#        name = "vaticle_typedb_behaviour",
+##        remote = "https://github.com/typedb/typedb-behaviour",
+##        commit = "ba6f933ddd26b77b6754f5e955c5eaee15dbf523", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
+#        path = "../typedb-behaviour",
+#    )
     git_repository(
         name = "vaticle_typedb_behaviour",
         remote = "https://github.com/typedb/typedb-behaviour",
