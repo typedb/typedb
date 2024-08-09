@@ -19,7 +19,7 @@ use itertools::Itertools;
 
 use crate::{
     inference::annotated_program::AnnotatedProgram,
-    instruction::constraint::instructions::{ConstraintInstruction, Inputs},
+    instruction::constraint::instructions::{ConstraintInstruction, HasInstruction, Inputs},
     planner::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost},
 };
 
@@ -132,7 +132,11 @@ impl PatternPlan {
                         let intersection_step = if bound_variables.is_empty() {
                             IntersectionStep::new(
                                 has.owner(),
-                                vec![ConstraintInstruction::Has(has.clone(), Inputs::None([]))],
+                                vec![ConstraintInstruction::Has(HasInstruction::new(
+                                    has.clone(),
+                                    Inputs::None([]),
+                                    program.entry_annotations(),
+                                ))],
                                 &[has.owner(), has.attribute()],
                             )
                         } else if bound_variables.len() == 2 {
@@ -140,13 +144,21 @@ impl PatternPlan {
                         } else if bound_variables.contains(&has.owner()) {
                             IntersectionStep::new(
                                 has.attribute(),
-                                vec![ConstraintInstruction::Has(has.clone(), Inputs::Single([has.owner()]))],
+                                vec![ConstraintInstruction::Has(HasInstruction::new(
+                                    has.clone(),
+                                    Inputs::Single([has.owner()]),
+                                    program.entry_annotations(),
+                                ))],
                                 &[has.attribute()],
                             )
                         } else {
                             IntersectionStep::new(
                                 has.owner(),
-                                vec![ConstraintInstruction::HasReverse(has.clone(), Inputs::Single([has.attribute()]))],
+                                vec![ConstraintInstruction::Has(HasInstruction::new(
+                                    has.clone(),
+                                    Inputs::Single([has.attribute()]),
+                                    program.entry_annotations(),
+                                ))],
                                 &[has.owner()],
                             )
                         };

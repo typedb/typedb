@@ -36,7 +36,7 @@ use crate::{
             relation_role_player_to_tuple_player_relation_role, relation_role_player_to_tuple_relation_player_role,
             RelationRolePlayerToTupleFn, Tuple, TuplePositions, TupleResult,
         },
-        VariableMode, VariableModes,
+        TernaryIterateMode, VariableModes,
     },
     VariablePosition,
 };
@@ -91,43 +91,6 @@ pub(crate) type RelationRolePlayerOrderingFn = for<'a, 'b> fn(
         &'b Result<(Relation<'b>, RolePlayer<'b>, u64), ConceptReadError>,
     ),
 ) -> Ordering;
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(crate) enum TernaryIterateMode {
-    // [x, y, z] = standard sort order
-    Unbound,
-    // [y, x, z] sort order
-    UnboundInverted,
-    // [X, y, z] sort order
-    BoundFrom,
-    // [X, Y, z]
-    BoundFromBoundTo,
-}
-
-impl TernaryIterateMode {
-    pub(crate) fn new(
-        from_var: VariablePosition,
-        to_var: VariablePosition,
-        var_modes: &VariableModes,
-        sort_by: Option<VariablePosition>,
-    ) -> TernaryIterateMode {
-        debug_assert!(var_modes.len() == 3);
-        debug_assert!(!var_modes.all_inputs());
-        let is_from_bound = var_modes.get(from_var) == Some(&VariableMode::Input);
-        let is_to_bound = var_modes.get(to_var) == Some(&VariableMode::Input);
-
-        if is_to_bound {
-            assert!(is_from_bound);
-            Self::BoundFromBoundTo
-        } else if is_from_bound {
-            Self::BoundFrom
-        } else if sort_by == Some(to_var) {
-            Self::UnboundInverted
-        } else {
-            Self::Unbound
-        }
-    }
-}
 
 impl RolePlayerExecutor {
     pub(crate) fn new(

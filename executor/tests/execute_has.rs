@@ -7,8 +7,8 @@
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::{
-    inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
-    instruction::constraint::instructions::{ConstraintInstruction, Inputs},
+    inference::{annotated_functions::AnnotatedCommittedFunctions, annotated_program, type_inference::infer_types},
+    instruction::constraint::instructions::{ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs},
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
@@ -132,7 +132,11 @@ fn traverse_has_unbounded_sorted_from() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![ConstraintInstruction::Has(has_age, Inputs::None([]))],
+        vec![ConstraintInstruction::Has(HasInstruction::new(
+            has_age,
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_person, var_age],
     ))];
     // TODO: incorporate the filter
@@ -205,8 +209,16 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
         Step::Intersection(IntersectionStep::new(
             var_name,
             vec![
-                ConstraintInstruction::Has(has_name_1, Inputs::Single([var_person_1])),
-                ConstraintInstruction::HasReverse(has_name_2, Inputs::None([])),
+                ConstraintInstruction::Has(HasInstruction::new(
+                    has_name_1,
+                    Inputs::Single([var_person_1]),
+                    annotated_program.entry_annotations(),
+                )),
+                ConstraintInstruction::HasReverse(HasReverseInstruction::new(
+                    has_name_2,
+                    Inputs::None([]),
+                    annotated_program.entry_annotations(),
+                )),
             ],
             &[var_person_1, var_person_2, var_name],
         )),
@@ -222,13 +234,13 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 3); // $person-1 is $person-2, one per name
 
-    for row in &rows {
-        let r = row.as_ref().unwrap();
+    for row in rows {
+        let r = row.unwrap();
         assert_eq!(r.get_multiplicity(), 1);
         print!("{}", r);
     }
-    assert_eq!(rows.len(), 3); // $person-1 is $person-2, one per name
 }
 
 #[test]
@@ -275,8 +287,16 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![
-            ConstraintInstruction::Has(has_age, Inputs::None([])),
-            ConstraintInstruction::Has(has_name, Inputs::None([])),
+            ConstraintInstruction::Has(HasInstruction::new(
+                has_age,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            )),
+            ConstraintInstruction::Has(HasInstruction::new(
+                has_name,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            )),
         ],
         &[var_person, var_name, var_age],
     ))];
@@ -329,7 +349,11 @@ fn traverse_has_unbounded_sorted_to_merged() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_attribute,
-        vec![ConstraintInstruction::Has(has_attribute.clone(), Inputs::None([]))],
+        vec![ConstraintInstruction::Has(HasInstruction::new(
+            has_attribute,
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_person, var_attribute],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
@@ -404,7 +428,11 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_age,
-        vec![ConstraintInstruction::HasReverse(has_age.clone(), Inputs::None([]))],
+        vec![ConstraintInstruction::HasReverse(HasReverseInstruction::new(
+            has_age,
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_person, var_age],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());

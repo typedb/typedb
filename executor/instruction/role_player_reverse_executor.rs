@@ -33,12 +33,11 @@ use crate::{
     batch::ImmutableRow,
     instruction::{
         iterator::{inverted_instances_cache, SortedTupleIterator, TupleIterator},
-        role_player_executor::TernaryIterateMode,
         tuple::{
             relation_role_player_to_tuple_player_relation_role, relation_role_player_to_tuple_relation_player_role,
             RelationRolePlayerToTupleFn, TuplePositions, TupleResult,
         },
-        VariableModes,
+        TernaryIterateMode, VariableModes,
     },
     VariablePosition,
 };

@@ -599,7 +599,7 @@ impl<ID: IrID> fmt::Display for RolePlayer<ID> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Has<ID: IrID> {
+pub struct Has<ID> {
     owner: ID,
     attribute: ID,
 }
@@ -629,7 +629,7 @@ impl<ID: IrID> Has<ID> {
         function(self.attribute, ConstraintIDSide::Right);
     }
 
-    pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> Has<T> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Has<T> {
         Has::new(*mapping.get(&self.owner).unwrap(), *mapping.get(&self.attribute).unwrap())
     }
 }

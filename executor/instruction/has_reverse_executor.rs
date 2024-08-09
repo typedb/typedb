@@ -11,6 +11,7 @@ use std::{
 };
 
 use answer::Type;
+use compiler::instruction::constraint::instructions::HasReverseInstruction;
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
@@ -59,16 +60,17 @@ pub(crate) type HasReverseBoundedSortedOwner =
 
 impl HasReverseExecutor {
     pub(crate) fn new(
-        has: ir::pattern::constraint::Has<VariablePosition>,
+        has_reverse: HasReverseInstruction<VariablePosition>,
         variable_modes: VariableModes,
         sort_by: Option<VariablePosition>,
-        attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
-        owner_types: Arc<HashSet<Type>>,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
-        debug_assert!(attribute_owner_types.len() > 0);
         debug_assert!(!variable_modes.all_inputs());
+        let attribute_owner_types = has_reverse.edge_types();
+        debug_assert!(!attribute_owner_types.is_empty());
+        let owner_types = has_reverse.end_types();
+        let has = has_reverse.constraint;
         let iterate_mode = BinaryIterateMode::new(has.attribute(), has.owner(), &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
             BinaryIterateMode::Unbound => Self::create_has_filter_attributes_owners(attribute_owner_types.clone()),

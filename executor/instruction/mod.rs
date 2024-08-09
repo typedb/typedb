@@ -12,7 +12,6 @@ use compiler::{
     planner::pattern_plan::InstructionAPI,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::pattern::constraint::Constraint;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -80,27 +79,21 @@ impl InstructionExecutor {
                 );
                 Ok(Self::IsaReverse(provider))
             }
-            ConstraintInstruction::Has(has, _) => {
-                let has_attribute = has.attribute();
+            ConstraintInstruction::Has(has) => {
                 let executor = HasExecutor::new(
-                    has.clone().into_ids(positions),
+                    has.map(positions),
                     variable_modes,
                     sort_by_position,
-                    type_annotations.constraint_annotations_of(has.into()).unwrap().as_left_right().left_to_right(),
-                    type_annotations.variable_annotations_of(has_attribute).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
                 Ok(Self::Has(executor))
             }
-            ConstraintInstruction::HasReverse(has, _) => {
-                let has_owner = has.owner();
+            ConstraintInstruction::HasReverse(has_reverse) => {
                 let executor = HasReverseExecutor::new(
-                    has.clone().into_ids(positions),
+                    has_reverse.map(positions),
                     variable_modes,
                     sort_by_position,
-                    type_annotations.constraint_annotations_of(has.into()).unwrap().as_left_right().right_to_left(),
-                    type_annotations.variable_annotations_of(has_owner).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
@@ -267,6 +260,43 @@ impl BinaryIterateMode {
 
     pub(crate) fn is_inverted(&self) -> bool {
         self == &Self::UnboundInverted
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub(crate) enum TernaryIterateMode {
+    // [x, y, z] = standard sort order
+    Unbound,
+    // [y, x, z] sort order
+    UnboundInverted,
+    // [X, y, z] sort order
+    BoundFrom,
+    // [X, Y, z]
+    BoundFromBoundTo,
+}
+
+impl TernaryIterateMode {
+    pub(crate) fn new(
+        from_var: VariablePosition,
+        to_var: VariablePosition,
+        var_modes: &VariableModes,
+        sort_by: Option<VariablePosition>,
+    ) -> TernaryIterateMode {
+        debug_assert!(var_modes.len() == 3);
+        debug_assert!(!var_modes.all_inputs());
+        let is_from_bound = var_modes.get(from_var) == Some(&VariableMode::Input);
+        let is_to_bound = var_modes.get(to_var) == Some(&VariableMode::Input);
+
+        if is_to_bound {
+            assert!(is_from_bound);
+            Self::BoundFromBoundTo
+        } else if is_from_bound {
+            Self::BoundFrom
+        } else if sort_by == Some(to_var) {
+            Self::UnboundInverted
+        } else {
+            Self::Unbound
+        }
     }
 }
 
