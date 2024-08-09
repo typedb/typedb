@@ -39,6 +39,7 @@ checkstyle_test(
         "concept/thing/*",
         "concept/type_/*",
         "connection/*",
+        "query/*"
     ]),
     exclude = glob([
         "Cargo.*",
