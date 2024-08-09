@@ -51,6 +51,7 @@ checkstyle_test(
     include = glob([
         "*",
         "thing/*",
+        "thing/thing_manager/**/*",
         "type_/*",
         "type_/type_manager/**/*",
     ]),
