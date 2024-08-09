@@ -80,13 +80,8 @@ impl InstructionExecutor {
                 Ok(Self::IsaReverse(provider))
             }
             ConstraintInstruction::Has(has) => {
-                let executor = HasExecutor::new(
-                    has.map(positions),
-                    variable_modes,
-                    sort_by_position,
-                    snapshot,
-                    thing_manager,
-                )?;
+                let executor =
+                    HasExecutor::new(has.map(positions), variable_modes, sort_by_position, snapshot, thing_manager)?;
                 Ok(Self::Has(executor))
             }
             ConstraintInstruction::HasReverse(has_reverse) => {

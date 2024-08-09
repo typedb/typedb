@@ -99,13 +99,15 @@ impl ConstraintInstruction {
                     }
                 }),
             ConstraintInstruction::RolePlayer(RolePlayerInstruction { constraint: role_player, inputs, .. })
-            | ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction { constraint: role_player, inputs, .. }) => {
-                role_player.ids_foreach(|var, _| {
-                    if !inputs.iter().contains(&var) {
-                        apply(var)
-                    }
-                })
-            }
+            | ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction {
+                constraint: role_player,
+                inputs,
+                ..
+            }) => role_player.ids_foreach(|var, _| {
+                if !inputs.iter().contains(&var) {
+                    apply(var)
+                }
+            }),
             ConstraintInstruction::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
             ConstraintInstruction::ComparisonGenerator(comparison) => apply(comparison.lhs()),
             ConstraintInstruction::ComparisonGeneratorReverse(comparison) => apply(comparison.rhs()),
