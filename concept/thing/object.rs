@@ -212,7 +212,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Vec<Attribute<'_>>, ConceptReadError> {
+    ) -> Result<Vec<Attribute<'static>>, ConceptReadError> {
         thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)
     }
 

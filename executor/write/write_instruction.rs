@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use answer::Thing;
+use compiler::write::{ThingSource, TypeSource, ValueSource};
 use compiler::write::write_instructions::{
-    Has, PutAttribute, PutEntity, PutRelation, RolePlayer, ThingSource, TypeSource, ValueSource, VariableSource,
+    Has, PutAttribute, PutEntity, PutRelation, RolePlayer
 };
 use concept::thing::{object::ObjectAPI, thing_manager::ThingManager};
 use encoding::value::value::Value;
@@ -37,7 +38,7 @@ fn get_thing<'a>(
 ) -> &'a answer::Thing<'static> {
     match source {
         ThingSource::InputVariable(position) => input.get(VariablePosition::new(*position)).as_thing(),
-        ThingSource::InsertedVariable(offset) => inserted_concepts.get(*offset).unwrap(),
+        ThingSource::InsertedThing(offset) => inserted_concepts.get(*offset).unwrap(),
     }
 }
 
@@ -137,7 +138,7 @@ impl AsInsertInstruction for PutEntity {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         input: &Row<'_>,
-        inserted_concepts: &Vec<answer::Thing<'static>>,
+        _inserted_concepts: &Vec<answer::Thing<'static>>,
     ) -> Result<Option<Thing<'static>>, InsertError> {
         let entity_type = try_unwrap_as!(answer::Type::Entity: get_type(input, &self.type_)).unwrap();
         let inserted = thing_manager
@@ -153,7 +154,7 @@ impl AsInsertInstruction for PutAttribute {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         input: &Row<'_>,
-        inserted_concepts: &Vec<answer::Thing<'static>>,
+        _inserted_concepts: &Vec<answer::Thing<'static>>,
     ) -> Result<Option<Thing<'static>>, InsertError> {
         let attribute_type = try_unwrap_as!(answer::Type::Attribute: get_type(input, &self.type_)).unwrap();
         let inserted = thing_manager
@@ -169,7 +170,7 @@ impl AsInsertInstruction for PutRelation {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         input: &Row<'_>,
-        inserted_concepts: &Vec<answer::Thing<'static>>,
+        _inserted_concepts: &Vec<answer::Thing<'static>>,
     ) -> Result<Option<Thing<'static>>, InsertError> {
         let relation_type = try_unwrap_as!(answer::Type::Relation: get_type(input, &self.type_)).unwrap();
         let inserted = thing_manager

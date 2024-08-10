@@ -5,6 +5,7 @@
 */
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use answer::variable::Variable;
 
 use answer::variable_value::VariableValue;
 use compiler::inference::annotated_functions::AnnotatedCommittedFunctions;
@@ -13,6 +14,7 @@ use concept::{
     thing::{object::Object, relation::Relation, thing_manager::ThingManager},
     type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
+use concept::thing::object::ObjectAPI;
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
     batch::Row,
@@ -73,10 +75,15 @@ fn execute_insert(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     query_str: &str,
-) -> Result<Vec<VariableValue<'static>>, InsertError> {
+    input_row_var_names: &Vec<&str>,
+    input_rows: Vec<Vec<VariableValue<'static>>>
+) -> Result<Vec<Vec<VariableValue<'static>>>, InsertError> {
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
     let block =
         ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
+    let input_row_format = input_row_var_names.iter().enumerate().map(|(i, v)| {
+        (block.context().get_variable_named(v, block.scope_id()).unwrap().clone(), i)
+    }).collect::<HashMap<_,_>>();
     let annotated_program = compiler::inference::type_inference::infer_types(
         Program::new(block, vec![]),
         snapshot,
@@ -86,7 +93,7 @@ fn execute_insert(
     .unwrap();
     let insert_plan = compiler::write::insert::build_insert_plan(
         annotated_program.get_entry().conjunction().constraints(),
-        &HashMap::new(),
+        &input_row_format,
         annotated_program.get_entry_annotations(),
     )
     .unwrap();
@@ -95,18 +102,41 @@ fn execute_insert(
     insert_plan.debug_info.iter().for_each(|(k, v)| {
         println!("{:?} -> {:?}", k, annotated_program.get_entry().context().get_variables_named().get(v))
     });
-    let mut output_vec = (0..insert_plan.n_created_concepts).map(|_| VariableValue::Empty).collect::<Vec<_>>();
-    let mut output_multiplicity = 0;
-    let output = Row::new(&mut output_vec, &mut output_multiplicity);
-    executor::write::insert_executor::execute_insert(
+
+    let mut output_rows = Vec::with_capacity(input_rows.len());
+    for mut input_row in input_rows {
+        let mut output_vec = (0..insert_plan.n_created_concepts + input_row_format.len()).map(|_| VariableValue::Empty).collect::<Vec<_>>();
+        let mut output_multiplicity = 0;
+        let output = Row::new(&mut output_vec, &mut output_multiplicity);
+        let output = executor::write::insert_executor::execute_insert(
+            snapshot,
+            &thing_manager,
+            &insert_plan,
+            &Row::new(input_row.as_mut_slice(), &mut 1),
+            output,
+            &mut Vec::new(),
+        )?;
+        output_rows.push(output_vec);
+    }
+    println!("{:?}", &insert_plan.output_row_plan);
+    Ok(output_rows)
+}
+
+fn execute_delete() {
+    let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_delete();
+    let block =
+        ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
+    let input_row_format = input_row_var_names.iter().enumerate().map(|(i, v)| {
+        (block.context().get_variable_named(v, block.scope_id()).unwrap().clone(), i)
+    }).collect::<HashMap<_,_>>();
+    let annotated_program = compiler::inference::type_inference::infer_types(
+        Program::new(block, vec![]),
         snapshot,
-        &thing_manager,
-        &insert_plan,
-        &Row::new(vec![].as_mut_slice(), &mut 1),
-        output,
-        &mut Vec::new(),
-    )?;
-    Ok(output_vec)
+        &type_manager,
+        Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
+    )
+        .unwrap();
+
 }
 
 #[test]
@@ -115,16 +145,16 @@ fn has() {
     let (type_manager, thing_manager) = load_managers(storage.clone());
     setup_schema(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_write();
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person, has age 10;").unwrap();
+    execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person, has age 10;", &vec![], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
 
     {
         let snapshot = storage.clone().open_snapshot_read();
         let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
-        let attr_name_john =
+        let attr_age_10 =
             thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
-        assert_eq!(1, attr_name_john.get_owners(&snapshot, &thing_manager).count());
+        assert_eq!(1, attr_age_10.get_owners(&snapshot, &thing_manager).count());
         snapshot.close_resources()
     }
 }
@@ -141,7 +171,10 @@ fn relation() {
          $p isa person; $g isa group;
          (member: $p, group: $g) isa membership;
     ";
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str).unwrap();
+    execute_insert(
+        &mut snapshot, &type_manager, &thing_manager, query_str,
+        &vec![], vec![vec![]]
+    ).unwrap();
     snapshot.commit().unwrap();
     // read back
     {
@@ -194,7 +227,10 @@ fn relation_with_inferred_roles() {
          $p isa person; $g isa group;
          ($p, $g) isa membership;
     ";
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str).unwrap();
+    execute_insert(
+        &mut snapshot, &type_manager, &thing_manager,
+        query_str, &vec![], vec![vec![]]
+    ).unwrap();
     snapshot.commit().unwrap();
     // read back
     {
@@ -233,4 +269,65 @@ fn relation_with_inferred_roles() {
         }));
         snapshot.close_resources();
     }
+}
+
+#[test]
+fn test_has_with_input_rows() {
+    let (_tmp_dir, storage) = setup_storage();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    setup_schema(storage.clone());
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let p10 = execute_insert(
+        &mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &vec![], vec![vec![]]
+    ).unwrap()[0][0].clone();
+    let a10 = execute_insert(
+        &mut snapshot, &type_manager, &thing_manager,
+        "insert $p has age 10;",
+        &vec!["p"], vec![vec![p10.clone()]]
+    ).unwrap()[0][1].clone();
+    snapshot.commit().unwrap();
+
+    {
+        let snapshot = storage.clone().open_snapshot_read();
+        let age_type = type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
+        let age_of_p10 = p10.as_thing().as_object().get_has_type_unordered(&snapshot, &thing_manager, age_type.clone()).unwrap()
+            .map_static(|result| result.unwrap().0.clone().into_owned()).collect::<Vec<_>>();
+        assert_eq!(a10.as_thing().as_attribute(), age_of_p10[0]);
+        let owner_of_a10 = a10.as_thing().as_attribute().get_owners(&snapshot, &thing_manager).map_static(|result| {
+            result.unwrap().0.clone().into_owned()
+        }).collect::<Vec<_>>();
+        assert_eq!(p10.as_thing().as_object(), owner_of_a10[0]);
+        snapshot.close_resources();
+    };
+}
+
+
+#[test]
+fn delete_has() {
+    let (_tmp_dir, storage) = setup_storage();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    setup_schema(storage.clone());
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let p10 = execute_insert(
+        &mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &vec![], vec![vec![]]
+    ).unwrap()[0][0].clone();
+    let a10 = execute_insert(
+        &mut snapshot, &type_manager, &thing_manager,
+        "insert $p has age 10;",
+        &vec!["p"], vec![vec![p10.clone()]]
+    ).unwrap()[0][1].clone();
+    snapshot.commit().unwrap();
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    assert_eq!(1, p10.as_thing().as_object().get_has_unordered(&snapshot, &thing_manager).count());
+    execute_delete(
+        &mut snapshot, &type_manager, &thing_manager,
+        "delete $p has $a;",
+        &vec!["p", "a"], vec![vec![p10.clone(), a10.clone()]]
+    ).unwrap();
+    snapshot.commit().unwrap();
+
+    let snapshot = storage.clone().open_snapshot_read();
+    assert_eq!(1, p10.as_thing().as_object().get_has_unordered(&snapshot, &thing_manager).count());
+    snapshot.close_resources()
 }

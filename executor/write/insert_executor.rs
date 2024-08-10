@@ -16,9 +16,8 @@ use crate::{
     batch::Row,
     write::{
         common::populate_output_row,
-        write_instruction::{AsDeleteInstruction, AsInsertInstruction},
+        write_instruction::{AsInsertInstruction},
     },
-    VariablePosition,
 };
 
 pub struct InsertExecutor {

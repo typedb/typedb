@@ -11,9 +11,8 @@ use std::{
     collections::{BTreeSet, HashMap, HashSet},
     error::Error,
     fmt::{Display, Formatter},
-    marker::PhantomData,
-    sync::Arc,
 };
+use itertools::Itertools;
 
 use answer::{variable::Variable, Type};
 use encoding::{graph::type_::Kind, value::value::Value};
@@ -21,15 +20,16 @@ use ir::pattern::{
     constraint::{Constraint, Isa},
     expression::Expression,
 };
-use itertools::Itertools;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     inference::type_annotations::TypeAnnotations,
+    write::{ValueSource, VariableSource},
     write::write_instructions::{
-        Has, PutAttribute, PutEntity, PutRelation, RolePlayer, ThingSource, TypeSource, ValueSource, VariableSource,
+        Has, PutAttribute, PutEntity, PutRelation, RolePlayer,
     },
 };
+use crate::write::{determine_unique_kind, get_thing_source, TypeSource};
 
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {
@@ -54,16 +54,32 @@ pub struct InsertPlan {
     pub debug_info: HashMap<VariableSource, Variable>,
 }
 
+/*
+* Assumptions:
+*   - Any labels have been assigned to a type variable and added as a type-annotation, though we should have a more explicit mechanism for this.
+*   - Validation has already been done - An input row will not violate schema on insertion.
+*/
+
 pub fn build_insert_plan(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, usize>,
     type_annotations: &TypeAnnotations,
-) -> Result<InsertPlan, InsertCompilationError> {
+) -> Result<InsertPlan, WriteCompilationError> {
     let mut instructions = Vec::new();
     let inserted_concepts = add_inserted_concepts(constraints, input_variables, type_annotations, &mut instructions)?;
     add_has(constraints, input_variables, &inserted_concepts, &mut instructions)?;
     add_role_players(constraints, type_annotations, input_variables, &inserted_concepts, &mut instructions)?;
-    let output_row_plan = Vec::new(); // TODO
+
+    let mut output_row_plan = Vec::with_capacity(input_variables.len() + inserted_concepts.len()); // TODO
+    input_variables.iter().map(|(v,i)| (i,v)).sorted().for_each(|(i,v)| {
+        debug_assert!(*i == output_row_plan.len());
+        output_row_plan.push(VariableSource::InputVariable(*i as u32));
+    });
+    inserted_concepts.iter().map(|(v,i)| (i,v)).sorted().for_each(|(i,v)| {
+        debug_assert!(*i + input_variables.len() == output_row_plan.len());
+        output_row_plan.push(VariableSource::InsertedThing(*i));
+    });
+
     let debug_info = HashMap::new(); // TODO
     Ok(InsertPlan { instructions, n_created_concepts: inserted_concepts.len(), output_row_plan, debug_info })
 }
@@ -73,7 +89,7 @@ fn add_inserted_concepts(
     input_variables: &HashMap<Variable, usize>,
     type_annotations: &TypeAnnotations,
     instructions: &mut Vec<InsertInstruction>,
-) -> Result<HashMap<Variable, usize>, InsertCompilationError> {
+) -> Result<HashMap<Variable, usize>, WriteCompilationError> {
     let type_bindings = collect_type_bindings(constraints, type_annotations)?;
     let value_bindings = collect_value_bindings(constraints)?;
     let mut inserted_concepts = HashMap::new();
@@ -83,36 +99,32 @@ fn add_inserted_concepts(
             (None, Some(type_)) => TypeSource::TypeConstant(type_.clone()),
             (Some(_), Some(_)) => unreachable!("Explicit label constraints are banned in insert"),
             (None, None) => {
-                Err(InsertCompilationError::CouldNotDetermineTypeOfInsertedVariable { variable: isa.thing() })?
+                Err(WriteCompilationError::CouldNotDetermineTypeOfInsertedVariable { variable: isa.thing() })?
             }
         };
         let annotations = type_annotations.variable_annotations_of(isa.type_()).unwrap();
         let kind = determine_unique_kind(annotations)
-            .map_err(|_| InsertCompilationError::IsaTypeHasMultipleKinds { isa: isa.clone() })?;
+            .map_err(|_| WriteCompilationError::IsaTypeHasMultipleKinds { isa: isa.clone() })?;
 
         let instruction = match kind {
             Kind::Entity => InsertInstruction::PutEntity(PutEntity { type_ }),
             Kind::Relation => InsertInstruction::PutRelation(PutRelation { type_ }),
             Kind::Attribute => {
                 let value_variable = resolve_value_variable_for_inserted_attribute(constraints, isa.thing())?;
-                let value = match (value_bindings.get(&value_variable), input_variables.get(&value_variable)) {
-                    (Some(constant), None) => ValueSource::ValueConstant(constant.clone().into_owned()),
-                    (None, Some(input)) => ValueSource::InputVariable(*input as u32),
-                    (Some(_), Some(_)) => {
-                        return Err(InsertCompilationError::MultipleSourcesForValueVariable {
-                            variable: value_variable,
-                        })?;
-                    }
-                    (None, None) => {
-                        return Err(InsertCompilationError::CouldNotDetermineValueOfInsertedAttribute {
-                            variable: value_variable,
-                        })?;
-                    }
+                let value = if let Some(constant) = value_bindings.get(&value_variable) {
+                    debug_assert!(!input_variables.contains_key(&value_variable));
+                    ValueSource::ValueConstant(constant.clone().into_owned())
+                } else if let Some(position) = input_variables.get(&value_variable) {
+                    ValueSource::InputVariable(*position as u32)
+                } else {
+                    return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute {
+                        variable: value_variable,
+                    })?;
                 };
                 InsertInstruction::PutAttribute(PutAttribute { type_, value })
             }
             Kind::Role => {
-                return Err(InsertCompilationError::IsaStatementForRoleType { isa: isa.clone() })?;
+                return Err(WriteCompilationError::IsaStatementForRoleType { isa: isa.clone() })?;
             }
         };
         inserted_concepts.insert(isa.thing(), inserted_concepts.len());
@@ -127,7 +139,7 @@ fn add_has(
     input_variables: &HashMap<Variable, usize>,
     inserted_concepts: &HashMap<Variable, usize>,
     instructions: &mut Vec<InsertInstruction>,
-) -> Result<(), InsertCompilationError> {
+) -> Result<(), WriteCompilationError> {
     filter_variants!(Constraint::Has: constraints).try_for_each(|has| {
         let owner = get_thing_source(input_variables, inserted_concepts, has.owner())?;
         let attribute = get_thing_source(input_variables, inserted_concepts, has.attribute())?;
@@ -142,7 +154,7 @@ fn add_role_players(
     input_variables: &HashMap<Variable, usize>,
     inserted_concepts: &HashMap<Variable, usize>,
     instructions: &mut Vec<InsertInstruction>,
-) -> Result<(), InsertCompilationError> {
+) -> Result<(), WriteCompilationError> {
     let named_role_types = collect_role_type_bindings(constraints, type_annotations)?;
     filter_variants!(Constraint::RolePlayer: constraints).try_for_each(|role_player| {
         let relation = get_thing_source(input_variables, inserted_concepts, role_player.relation())?;
@@ -157,7 +169,7 @@ fn add_role_players(
                 if annotations.len() == 1 {
                     TypeSource::TypeConstant(annotations.iter().find(|_| true).unwrap().clone())
                 } else {
-                    return Err(InsertCompilationError::CouldNotDetermineRoleType { variable: role_variable.clone() })?;
+                    return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType { variable: role_variable.clone() })?;
                 }
             }
             (Some(_), Some(_)) => unreachable!(),
@@ -171,7 +183,7 @@ fn add_role_players(
 fn resolve_value_variable_for_inserted_attribute(
     constraints: &[Constraint<Variable>],
     variable: Variable,
-) -> Result<Variable, InsertCompilationError> {
+) -> Result<Variable, WriteCompilationError> {
     // Find the comparison linking thing to value
     let comparisons = filter_variants!(Constraint::Comparison: constraints)
         .filter_map(|cmp| {
@@ -184,45 +196,24 @@ fn resolve_value_variable_for_inserted_attribute(
             }
         })
         .collect::<Vec<_>>();
-    match comparisons.len() {
-        0 => Err(InsertCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable }),
-        1 => Ok(comparisons[0]),
-        _ => Err(InsertCompilationError::MultipleValueConstraints { variable }),
-    }
-}
-
-fn get_thing_source(
-    input_variables: &HashMap<Variable, usize>,
-    inserted_concepts: &HashMap<Variable, usize>,
-    variable: Variable,
-) -> Result<ThingSource, InsertCompilationError> {
-    match (input_variables.get(&variable), inserted_concepts.get(&variable)) {
-        (Some(input), None) => Ok(ThingSource::InputVariable(*input as u32)),
-        (None, Some(inserted)) => Ok(ThingSource::InsertedVariable(*inserted)),
-        (Some(_), Some(_)) => Err(InsertCompilationError::VariableIsBothInsertedAndInput { variable }), // TODO: I think this is unreachable
-        (None, None) => Err(InsertCompilationError::CouldNotDetermineThingVariableSource { variable }),
-    }
-}
-
-fn determine_unique_kind(annotations: &HashSet<Type>) -> Result<Kind, ()> {
-    let kinds = annotations.iter().map(|annotation| annotation.kind().clone()).collect::<BTreeSet<_>>();
-    match kinds.len() {
-        1 => Ok(*kinds.first().unwrap()),
-        _ => Err(()),
+    if comparisons.len() == 1 {
+        Ok(comparisons[0])
+    } else {
+        debug_assert!(comparisons.len() == 0);
+        Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable })
     }
 }
 
 fn collect_value_bindings(
     constraints: &[Constraint<Variable>],
-) -> Result<HashMap<Variable, Value<'static>>, InsertCompilationError> {
+) -> Result<HashMap<Variable, Value<'static>>, WriteCompilationError> {
     let mut value_sources = HashMap::new();
     filter_variants!(Constraint::ExpressionBinding : constraints).try_for_each(|expr| {
         let Expression::Constant(constant) = expr.expression().get_root() else {
-            return Err(InsertCompilationError::CompoundExpressionsNotAllowedInInsert { assigned: expr.left() });
+            unreachable!("The grammar does not allow compound expressions")
         };
-        if value_sources.insert(expr.left(), constant.clone().into_owned()).is_some() {
-            return Err(InsertCompilationError::MultipleValueConstraints { variable: expr.left() });
-        }
+        debug_assert!(!value_sources.contains_key(&expr.left()));
+        value_sources.insert(expr.left(), constant.clone().into_owned());
         Ok(())
     })?;
     Ok(value_sources)
@@ -231,7 +222,7 @@ fn collect_value_bindings(
 fn collect_type_bindings(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
-) -> Result<HashMap<Variable, answer::Type>, InsertCompilationError> {
+) -> Result<HashMap<Variable, answer::Type>, WriteCompilationError> {
     let mut type_bindings: HashMap<Variable, answer::Type> = HashMap::new();
     filter_variants!(Constraint::Label : constraints).for_each(|label| {
         let annotations = type_annotations.variable_annotations_of(label.left()).unwrap();
@@ -243,17 +234,17 @@ fn collect_type_bindings(
     Ok(type_bindings)
 }
 
-fn collect_role_type_bindings(
+pub(crate) fn collect_role_type_bindings(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
-) -> Result<HashMap<Variable, answer::Type>, InsertCompilationError> {
+) -> Result<HashMap<Variable, answer::Type>, WriteCompilationError> {
     let mut type_bindings: HashMap<Variable, answer::Type> = HashMap::new();
     filter_variants!(Constraint::RoleName : constraints).try_for_each(|role_name| {
         let annotations = type_annotations.variable_annotations_of(role_name.left()).unwrap();
         let type_ = if annotations.len() == 1 {
             annotations.iter().find(|_| true).unwrap()
         } else {
-            return Err(InsertCompilationError::CouldNotUniquelyResolveRoleType { variable: role_name.left() });
+            return Err(WriteCompilationError::CouldNotUniquelyResolveRoleTypeFromName { variable: role_name.left() });
         };
         debug_assert!(!type_bindings.contains_key(&role_name.left()));
         type_bindings.insert(role_name.left(), type_.clone());
@@ -263,49 +254,24 @@ fn collect_role_type_bindings(
 }
 
 #[derive(Debug, Clone)]
-pub enum InsertCompilationError {
-    MultipleValueConstraints { variable: Variable },
-    //     IsaConstraintForBoundVariable { variable: Variable },
-    //     MultipleIsaConstraintsForVariable { variable: Variable },
+pub enum WriteCompilationError {
+    VariableIsBothInsertedAndInput { variable: Variable },
     IsaStatementForRoleType { isa: Isa<Variable> },
-    //     IsaTypeHadNoAnnotations { isa: Isa<Variable> },
     IsaTypeHasMultipleKinds { isa: Isa<Variable> },
     CouldNotDetermineTypeOfInsertedVariable { variable: Variable },
-    //     CouldNotDetermineTypeVariableSource { variable: Variable },
     CouldNotDetermineValueOfInsertedAttribute { variable: Variable },
     CouldNotDetermineThingVariableSource { variable: Variable },
-    //     MultipleTypeConstraintsForVariable { variable: Variable },
-    //     CompoundExpressionsNotAllowed { variable: Variable },
-    //     TODO__IllegalComparison { comparison: Comparison<Variable> },
-    //     MultipleValuesForInsertableAttributeVariable { variable: Variable },
-    //     TODO__IllegalState { msg: &'static str },
-    //     InternalRoleNameHadMultipleCandidates { role_name: RoleName<Variable> },
-    //     RoleTypeCouldNotBeUniquelyDetermined { variable: Variable },
-    //     IllegalConstraint { constraint: Constraint<Variable> },
-    CompoundExpressionsNotAllowedInInsert { assigned: Variable },
-    MultipleSourcesForValueVariable { variable: Variable },
-    VariableIsBothInsertedAndInput { variable: Variable },
-    CouldNotUniquelyResolveRoleType { variable: Variable },
-    CouldNotDetermineRoleType { variable: Variable },
+    CouldNotUniquelyResolveRoleTypeFromName { variable: Variable },
+    CouldNotUniquelyDetermineRoleType { variable: Variable },
+
+    IllegalRoleDelete { variable: Variable },
+    DeleteHasMultipleKinds { variable: Variable },
 }
 
-impl Display for InsertCompilationError {
+impl Display for WriteCompilationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }
 
-impl Error for InsertCompilationError {}
-
-#[derive(Debug, Clone)]
-pub enum DeleteCompilationError {
-    IllegalConstraint { constraint: Constraint<Variable> },
-}
-
-impl Display for DeleteCompilationError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for DeleteCompilationError {}
+impl Error for WriteCompilationError {}

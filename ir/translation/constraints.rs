@@ -37,12 +37,13 @@ pub(super) fn add_statement(
             add_typeql_binding(function_index, constraints, assigned, &assignment.rhs, false)?
         }
         typeql::Statement::Thing(thing) => add_thing_statement(function_index, constraints, thing)?,
-        typeql::Statement::AttributeValue(_) => todo!(),
+        typeql::Statement::AttributeValue(attribute_value) => todo!(),
         typeql::Statement::AttributeComparison(_) => todo!(),
         typeql::Statement::Type(type_) => add_type_statement(constraints, type_)?,
     }
     Ok(())
 }
+
 
 fn add_thing_statement(
     function_index: &impl FunctionSignatureIndex,

@@ -5,7 +5,7 @@
  */
 
 use answer::variable_value::VariableValue;
-use compiler::write::write_instructions::{ThingSource, TypeSource, ValueSource, VariableSource};
+use compiler::write::{ThingSource, TypeSource, ValueSource, VariableSource};
 use encoding::value::value::Value;
 
 use crate::{batch::Row, VariablePosition};
@@ -24,7 +24,7 @@ fn get_thing<'a>(
 ) -> &'a answer::Thing<'static> {
     match source {
         ThingSource::InputVariable(position) => input.get(VariablePosition::new(*position)).as_thing(),
-        ThingSource::InsertedVariable(offset) => freshly_inserted.get(*offset).unwrap(),
+        ThingSource::InsertedThing(offset) => freshly_inserted.get(*offset).unwrap(),
     }
 }
 
@@ -43,9 +43,8 @@ pub fn populate_output_row<'input, 'output>(
 ) {
     for (i, source) in output_row_plan.iter().enumerate() {
         let value = match source {
-            VariableSource::TypeSource(s) => VariableValue::Type(get_type(input, s).clone()),
-            VariableSource::ValueSource(s) => VariableValue::Value(get_value(input, s).clone()),
-            VariableSource::ThingSource(s) => VariableValue::Thing(get_thing(input, freshly_inserted, s).clone()),
+            VariableSource::InputVariable(s) => input.get(VariablePosition::new(*s)).clone(),
+            VariableSource::InsertedThing(s) => VariableValue::Thing(freshly_inserted.get(*s).unwrap().clone()),
         };
         output.set(VariablePosition::new(i as u32), value)
     }

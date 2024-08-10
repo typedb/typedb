@@ -5,32 +5,7 @@
  */
 
 use encoding::value::value::Value;
-
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum VariableSource {
-    TypeSource(TypeSource),
-    ValueSource(ValueSource),
-    ThingSource(ThingSource),
-}
-
-type VariablePosition = u32;
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum TypeSource {
-    InputVariable(VariablePosition),
-    TypeConstant(answer::Type),
-}
-
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum ValueSource {
-    InputVariable(VariablePosition),
-    ValueConstant(Value<'static>),
-}
-
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum ThingSource {
-    InputVariable(VariablePosition),
-    InsertedVariable(usize),
-}
+use crate::write::{ThingSource, TypeSource, ValueSource};
 
 #[derive(Debug)]
 pub struct PutEntity {
@@ -59,7 +34,7 @@ pub struct DeleteAttribute {
 }
 
 #[derive(Debug)]
-pub struct Relation {
+pub struct DeleteRelation {
     pub relation: ThingSource,
 }
 
