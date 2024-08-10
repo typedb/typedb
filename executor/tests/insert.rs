@@ -80,7 +80,7 @@ fn execute_insert(
 ) -> Result<Vec<Vec<VariableValue<'static>>>, InsertError> {
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
     let block =
-        ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
+        ir::translation::insert::translate_insert(&typeql_insert).unwrap().finish();
     let input_row_format = input_row_var_names.iter().enumerate().map(|(i, v)| {
         (block.context().get_variable_named(v, block.scope_id()).unwrap().clone(), i)
     }).collect::<HashMap<_,_>>();
@@ -121,23 +121,23 @@ fn execute_insert(
     println!("{:?}", &insert_plan.output_row_plan);
     Ok(output_rows)
 }
-
-fn execute_delete() {
-    let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_delete();
-    let block =
-        ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
-    let input_row_format = input_row_var_names.iter().enumerate().map(|(i, v)| {
-        (block.context().get_variable_named(v, block.scope_id()).unwrap().clone(), i)
-    }).collect::<HashMap<_,_>>();
-    let annotated_program = compiler::inference::type_inference::infer_types(
-        Program::new(block, vec![]),
-        snapshot,
-        &type_manager,
-        Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
-    )
-        .unwrap();
-
-}
+//
+// fn execute_delete() {
+//     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_delete();
+//     let block =
+//         ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
+//     let input_row_format = input_row_var_names.iter().enumerate().map(|(i, v)| {
+//         (block.context().get_variable_named(v, block.scope_id()).unwrap().clone(), i)
+//     }).collect::<HashMap<_,_>>();
+//     let annotated_program = compiler::inference::type_inference::infer_types(
+//         Program::new(block, vec![]),
+//         snapshot,
+//         &type_manager,
+//         Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
+//     )
+//         .unwrap();
+//
+// }
 
 #[test]
 fn has() {
@@ -301,33 +301,33 @@ fn test_has_with_input_rows() {
     };
 }
 
-
-#[test]
-fn delete_has() {
-    let (_tmp_dir, storage) = setup_storage();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
-    setup_schema(storage.clone());
-    let mut snapshot = storage.clone().open_snapshot_write();
-    let p10 = execute_insert(
-        &mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &vec![], vec![vec![]]
-    ).unwrap()[0][0].clone();
-    let a10 = execute_insert(
-        &mut snapshot, &type_manager, &thing_manager,
-        "insert $p has age 10;",
-        &vec!["p"], vec![vec![p10.clone()]]
-    ).unwrap()[0][1].clone();
-    snapshot.commit().unwrap();
-
-    let mut snapshot = storage.clone().open_snapshot_write();
-    assert_eq!(1, p10.as_thing().as_object().get_has_unordered(&snapshot, &thing_manager).count());
-    execute_delete(
-        &mut snapshot, &type_manager, &thing_manager,
-        "delete $p has $a;",
-        &vec!["p", "a"], vec![vec![p10.clone(), a10.clone()]]
-    ).unwrap();
-    snapshot.commit().unwrap();
-
-    let snapshot = storage.clone().open_snapshot_read();
-    assert_eq!(1, p10.as_thing().as_object().get_has_unordered(&snapshot, &thing_manager).count());
-    snapshot.close_resources()
-}
+//
+// #[test]
+// fn delete_has() {
+//     let (_tmp_dir, storage) = setup_storage();
+//     let (type_manager, thing_manager) = load_managers(storage.clone());
+//     setup_schema(storage.clone());
+//     let mut snapshot = storage.clone().open_snapshot_write();
+//     let p10 = execute_insert(
+//         &mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &vec![], vec![vec![]]
+//     ).unwrap()[0][0].clone();
+//     let a10 = execute_insert(
+//         &mut snapshot, &type_manager, &thing_manager,
+//         "insert $p has age 10;",
+//         &vec!["p"], vec![vec![p10.clone()]]
+//     ).unwrap()[0][1].clone();
+//     snapshot.commit().unwrap();
+//
+//     let mut snapshot = storage.clone().open_snapshot_write();
+//     assert_eq!(1, p10.as_thing().as_object().get_has_unordered(&snapshot, &thing_manager).count());
+//     execute_delete(
+//         &mut snapshot, &type_manager, &thing_manager,
+//         "delete $p has $a;",
+//         &vec!["p", "a"], vec![vec![p10.clone(), a10.clone()]]
+//     ).unwrap();
+//     snapshot.commit().unwrap();
+//
+//     let snapshot = storage.clone().open_snapshot_read();
+//     assert_eq!(1, p10.as_thing().as_object().get_has_unordered(&snapshot, &thing_manager).count());
+//     snapshot.close_resources()
+// }

@@ -24,22 +24,22 @@ pub fn translate_insert(
     }
     Ok(builder)
 }
-
-pub fn translate_delete(
-    delete: &typeql::query::stage::Delete,
-) -> Result<FunctionalBlockBuilder, PatternDefinitionError> {
-    let mut builder = FunctionalBlock::builder();
-    let function_index = HashMapFunctionIndex::empty();
-    for deletable in &delete.deletables {
-        match deletable.kind {
-            DeletableKind::Has { attribute: Variable, owner: Variable } => {
-                add_
-            },
-            DeletableKind::Links { players: Relation, relation: Variable } => {},
-            DeletableKind::Concept { variable: Variable } => {}
-        }
-        add_statement(&function_index, &mut builder.conjunction_mut().constraints_mut(), statement)?;
-    }
-    for in &delete.
-    Ok(builder)
-}
+//
+// pub fn translate_delete(
+//     delete: &typeql::query::stage::Delete,
+// ) -> Result<FunctionalBlockBuilder, PatternDefinitionError> {
+//     let mut builder = FunctionalBlock::builder();
+//     let function_index = HashMapFunctionIndex::empty();
+//     for deletable in &delete.deletables {
+//         match deletable.kind {
+//             DeletableKind::Has { attribute: Variable, owner: Variable } => {
+//                 add_
+//             },
+//             DeletableKind::Links { players: Relation, relation: Variable } => {},
+//             DeletableKind::Concept { variable: Variable } => {}
+//         }
+//         add_statement(&function_index, &mut builder.conjunction_mut().constraints_mut(), statement)?;
+//     }
+//     for in &delete.
+//     Ok(builder)
+// }

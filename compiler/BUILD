@@ -17,6 +17,7 @@ rust_library(
         "instruction/expressions/**/*.rs",
         "planner/**/*.rs",
         "optimisation/**/*.rs",
+        "write/*.rs",
     ]),
     deps = [
         "//answer",

@@ -165,7 +165,7 @@ impl<'a> Thing<'a> {
         }
     }
 
-    pub fn as_object(&self) -> Object<'a> {
+    pub fn as_object(&self) -> Object<'_> {
         match self {
                 Thing::Entity(entity) => Object::Entity(entity.as_reference()),
             Thing::Relation(relation) => Object::Relation(relation.as_reference()),
