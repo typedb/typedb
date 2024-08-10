@@ -54,9 +54,9 @@ rust_test(
 )
 
 rust_test(
-    name = "test_insert",
-    crate_root = "insert.rs",
-    srcs = ["insert.rs", "common.rs"],
+    name = "test_writes",
+    crate_root = "writes",
+    srcs = ["writes.rs", "common.rs"],
     deps = deps + [
         "//query:query",
     ],

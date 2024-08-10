@@ -12,7 +12,6 @@ use std::{
     error::Error,
     fmt::{Display, Formatter},
 };
-use itertools::Itertools;
 
 use answer::{variable::Variable, Type};
 use encoding::{graph::type_::Kind, value::value::Value};
@@ -20,16 +19,17 @@ use ir::pattern::{
     constraint::{Constraint, Isa},
     expression::Expression,
 };
+use itertools::Itertools;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     inference::type_annotations::TypeAnnotations,
-    write::{ValueSource, VariableSource},
-    write::write_instructions::{
-        Has, PutAttribute, PutEntity, PutRelation, RolePlayer,
+    write::{
+        determine_unique_kind, get_thing_source,
+        write_instructions::{Has, PutAttribute, PutEntity, PutRelation, RolePlayer},
+        TypeSource, ValueSource, VariableSource,
     },
 };
-use crate::write::{determine_unique_kind, get_thing_source, TypeSource};
 
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {
@@ -71,11 +71,11 @@ pub fn build_insert_plan(
     add_role_players(constraints, type_annotations, input_variables, &inserted_concepts, &mut instructions)?;
 
     let mut output_row_plan = Vec::with_capacity(input_variables.len() + inserted_concepts.len()); // TODO
-    input_variables.iter().map(|(v,i)| (i,v)).sorted().for_each(|(i,v)| {
+    input_variables.iter().map(|(v, i)| (i, v)).sorted().for_each(|(i, v)| {
         debug_assert!(*i == output_row_plan.len());
         output_row_plan.push(VariableSource::InputVariable(*i as u32));
     });
-    inserted_concepts.iter().map(|(v,i)| (i,v)).sorted().for_each(|(i,v)| {
+    inserted_concepts.iter().map(|(v, i)| (i, v)).sorted().for_each(|(i, v)| {
         debug_assert!(*i + input_variables.len() == output_row_plan.len());
         output_row_plan.push(VariableSource::InsertedThing(*i));
     });
@@ -169,7 +169,9 @@ fn add_role_players(
                 if annotations.len() == 1 {
                     TypeSource::TypeConstant(annotations.iter().find(|_| true).unwrap().clone())
                 } else {
-                    return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType { variable: role_variable.clone() })?;
+                    return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType {
+                        variable: role_variable.clone(),
+                    })?;
                 }
             }
             (Some(_), Some(_)) => unreachable!(),

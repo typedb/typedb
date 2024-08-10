@@ -33,7 +33,7 @@ fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPl
     with_write_tx!(context, |tx| {
         let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
         let block =
-            ir::translation::insert::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
+            ir::translation::writes::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
         let annotated_program = compiler::inference::type_inference::infer_types(
             Program::new(block, vec![]),
             &tx.snapshot,

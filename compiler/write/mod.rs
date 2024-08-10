@@ -5,13 +5,13 @@
  */
 
 use std::collections::{BTreeSet, HashMap, HashSet};
-use answer::Type;
-use answer::variable::Variable;
-use encoding::graph::type_::Kind;
-use encoding::value::value::Value;
+
+use answer::{variable::Variable, Type};
+use encoding::{graph::type_::Kind, value::value::Value};
+
 use crate::write::insert::WriteCompilationError;
 
-mod delete;
+pub mod delete;
 pub mod insert;
 pub mod write_instructions;
 
@@ -54,6 +54,7 @@ fn get_thing_source(
 }
 
 pub(crate) fn determine_unique_kind(annotations: &HashSet<Type>) -> Result<Kind, ()> {
+    // TODO: Maybe we don't care and want a run-time switch?
     let kinds = annotations.iter().map(|annotation| annotation.kind().clone()).collect::<BTreeSet<_>>();
     match kinds.len() {
         1 => Ok(*kinds.first().unwrap()),

@@ -8,7 +8,10 @@ use std::{
     fmt::{Debug, Display, Formatter},
 };
 
-use compiler::write::insert::{InsertInstruction, InsertPlan};
+use compiler::write::{
+    delete::{DeleteInstruction, DeletePlan},
+    insert::{InsertInstruction, InsertPlan},
+};
 use concept::{error::ConceptWriteError, thing::thing_manager::ThingManager};
 use storage::snapshot::WritableSnapshot;
 
@@ -16,7 +19,7 @@ use crate::{
     batch::Row,
     write::{
         common::populate_output_row,
-        write_instruction::{AsInsertInstruction},
+        write_instruction::{AsDeleteInstruction, AsInsertInstruction},
     },
 };
 
@@ -41,7 +44,7 @@ pub fn execute_insert<'input, 'output>(
     input: &Row<'input>,
     output: Row<'output>,
     reused_created_things: &mut Vec<answer::Thing<'static>>,
-) -> Result<Row<'output>, InsertError> {
+) -> Result<Row<'output>, WriteError> {
     debug_assert!(input.multiplicity() == 1); // Else, we have to return a set of rows.
     for instruction in &plan.instructions {
         let inserted = match instruction {
@@ -68,44 +71,42 @@ pub fn execute_insert<'input, 'output>(
     Ok(output) // TODO: Create output row
 }
 
-// pub fn execute_delete<'input, 'output>(
-//     // TODO: pub(crate)
-//     snapshot: &mut impl WritableSnapshot,
-//     thing_manager: &ThingManager,
-//     plan: &mut DeletePlan,
-//     input: &Row<'input>,
-//     output: Row<'output>,
-// ) -> Result<Row<'output>, InsertError> {
-//     debug_assert!(input.multiplicity() == 1); // Else, we have to return a set of rows.
-//
-//
-//     let mut context = WriteExecutionContext::new(input);
-//     for instruction in &plan.instructions {
-//         match instruction {
-//             InsertInstruction::Entity(isa_entity) => isa_entity.delete(snapshot, thing_manager, &mut context)?,
-//             InsertInstruction::Attribute(isa_attr) => isa_attr.delete(snapshot, thing_manager, &mut context)?,
-//             InsertInstruction::Relation(isa_relation) => isa_relation.delete(snapshot, thing_manager, &mut context)?,
-//             InsertInstruction::Has(has) => has.delete(snapshot, thing_manager, &mut context)?,
-//             InsertInstruction::RolePlayer(role_player) => role_player.delete(snapshot, thing_manager, &mut context)?,
-//         }
-//     }
-//     let mut output = output;
-//     populate_output_row(output_row_plan, input, [].as_slice(), &mut output);
-//     Ok(output) // TODO: Create output row
-// }
+pub fn execute_delete<'input, 'output>(
+    // TODO: pub(crate)
+    snapshot: &mut impl WritableSnapshot,
+    thing_manager: &ThingManager,
+    plan: &DeletePlan,
+    input: &Row<'input>,
+    output: Row<'output>,
+) -> Result<Row<'output>, WriteError> {
+    debug_assert!(input.multiplicity() == 1); // Else, we have to return a set of rows.
+
+    for instruction in &plan.instructions {
+        match instruction {
+            DeleteInstruction::Entity(isa_entity) => isa_entity.delete(snapshot, thing_manager, input)?,
+            DeleteInstruction::Attribute(isa_attr) => isa_attr.delete(snapshot, thing_manager, input)?,
+            DeleteInstruction::Relation(isa_relation) => isa_relation.delete(snapshot, thing_manager, input)?,
+            DeleteInstruction::Has(has) => has.delete(snapshot, thing_manager, input)?,
+            DeleteInstruction::RolePlayer(role_player) => role_player.delete(snapshot, thing_manager, input)?,
+        }
+    }
+    let mut output = output;
+    populate_output_row(&plan.output_row_plan, input, [].as_slice(), &mut output);
+    Ok(output) // TODO: Create output row
+}
 
 #[derive(Debug, Clone)]
-pub enum InsertError {
+pub enum WriteError {
     ConceptWrite { source: ConceptWriteError },
 }
 
-impl Display for InsertError {
+impl Display for WriteError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }
 
-impl Error for InsertError {
+impl Error for WriteError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ConceptWrite { source, .. } => Some(source),

@@ -44,7 +44,6 @@ pub(super) fn add_statement(
     Ok(())
 }
 
-
 fn add_thing_statement(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
@@ -209,7 +208,7 @@ fn add_typeql_has(
     Ok(())
 }
 
-fn add_typeql_relation(
+pub(super) fn add_typeql_relation(
     constraints: &mut ConstraintsBuilder<'_>,
     relation: Variable,
     roleplayers: &typeql::statement::thing::Relation,
