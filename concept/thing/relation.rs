@@ -45,6 +45,7 @@ use crate::{
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
+use crate::type_::OwnerAPI;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Relation<'a> {
@@ -386,17 +387,19 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
             thing_manager.unset_has(snapshot, &self, attr);
         }
 
-        // TODO
-        /*
-        for attr in self
-            .get_has_ordered(snapshot, thing_manager)
-            .collect_cloned_vec(|(key, _value)| key.into_owned())
+        for owns in self
+            .type_()
+            .get_owns(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+            .iter()
         {
-            // TODO huh?
-            thing_manager.unset_has_ordered(snapshot, &self, attr.type_());
+            let ordering = owns
+                .get_ordering(snapshot, thing_manager.type_manager())
+                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            if matches!(ordering, Ordering::Ordered) {
+                thing_manager.unset_has_ordered(snapshot, &self, owns.attribute());
+            }
         }
-        */
 
         for (relation, role) in self
             .get_relations_roles(snapshot, thing_manager)

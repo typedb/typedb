@@ -10,7 +10,7 @@ use concept::{
         attribute::Attribute,
         object::{Object, ObjectAPI},
     },
-    type_::{attribute_type::AttributeType, Capability, OwnerAPI},
+    type_::{attribute_type::AttributeType, Capability, OwnerAPI, TypeAPI,},
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
@@ -184,6 +184,12 @@ async fn object_get_has_is_empty(
             })
             .collect::<Vec<_>>()
     });
+    with_read_tx!(context, |tx| {
+            for actual in &actuals {
+        println!("HAS: {:?}", actual.type_().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str());
+    }
+    });
+
     is_empty_or_not.check(actuals.is_empty());
 }
 

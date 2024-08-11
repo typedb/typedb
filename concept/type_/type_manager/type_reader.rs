@@ -294,17 +294,20 @@ impl TypeReader {
     pub(crate) fn get_capabilities<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         object_type: CAP::ObjectType,
-    ) -> Result<HashMap<CAP::InterfaceType, CAP>, ConceptReadError> {
-        let mut transitive_capabilities: HashMap<CAP::InterfaceType, CAP> = HashMap::new();
+    ) -> Result<HashSet<CAP>, ConceptReadError> {
+        let mut transitive_capabilities: HashSet<CAP> = HashSet::new();
         let mut overridden_interfaces: HashSet<CAP::InterfaceType> = HashSet::new();
+        let mut saved_interfaces: HashSet<CAP::InterfaceType> = HashSet::new();
         let mut current_type = Some(object_type);
         while current_type.is_some() {
             let declared_capabilities =
                 Self::get_capabilities_declared::<CAP>(snapshot, current_type.as_ref().unwrap().clone())?;
             for capability in declared_capabilities.into_iter() {
                 let interface = capability.interface();
-                if !overridden_interfaces.contains(&interface) && !transitive_capabilities.contains_key(&interface) {
-                    transitive_capabilities.insert(interface, capability.clone());
+                // If interface capability is redeclared by a subtype, we don't inherit the original one.
+                if !overridden_interfaces.contains(&interface) && !saved_interfaces.contains(&interface) {
+                    transitive_capabilities.insert(capability.clone());
+                    saved_interfaces.insert(interface);
                 }
                 if let Some(overridden) = Self::get_capability_override(snapshot, capability.clone())? {
                     overridden_interfaces.add(overridden.interface());

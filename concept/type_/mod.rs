@@ -162,7 +162,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError>;
 
     fn get_owns_overrides<'m>(
         &self,
@@ -170,12 +170,32 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError>;
 
+    fn get_owns_attribute_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+        Ok(self.get_owns_declared(snapshot, type_manager)?.iter().find(|owns| owns.attribute() == attribute_type).cloned())
+    }
+
+    fn has_owns_attribute_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_owns_attribute_declared(snapshot, type_manager, attribute_type)?.is_some())
+    }
+
     fn get_owns_attribute(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError>;
+    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+        Ok(self.get_owns(snapshot, type_manager)?.iter().find(|owns| owns.attribute() == attribute_type).cloned())
+    }
 
     fn has_owns_attribute(
         &self,
@@ -184,24 +204,6 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         attribute_type: AttributeType<'static>,
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_owns_attribute(snapshot, type_manager, attribute_type)?.is_some())
-    }
-
-    fn get_owns_attribute_transitive(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        Ok(self.get_owns(snapshot, type_manager)?.get(&attribute_type).cloned())
-    }
-
-    fn has_owns_attribute_transitive(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<bool, ConceptReadError> {
-        Ok(self.get_owns_attribute_transitive(snapshot, type_manager, attribute_type)?.is_some())
     }
 }
 
@@ -227,12 +229,38 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
 
+    fn get_plays<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
+
+    fn get_plays_role_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+        Ok(self.get_plays_declared(snapshot, type_manager)?.iter().find(|plays| plays.role() == role_type).cloned())
+    }
+
+    fn has_plays_role_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_plays_role_declared(snapshot, type_manager, role_type)?.is_some())
+    }
+
     fn get_plays_role(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<Option<Plays<'static>>, ConceptReadError>;
+    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+        Ok(self.get_plays(snapshot, type_manager)?.iter().find(|plays| plays.role() == role_type).cloned())
+    }
 
     fn has_plays_role(
         &self,
@@ -242,12 +270,6 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_plays_role(snapshot, type_manager, role_type)?.is_some())
     }
-
-    fn get_plays<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]

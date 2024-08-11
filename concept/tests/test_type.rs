@@ -150,7 +150,7 @@ fn entity_usage() {
         let height_type = type_manager.create_attribute_type(&mut snapshot, &height_label).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, height_type.clone(), Ordering::Unordered).unwrap();
 
-        match child_type.get_owns_attribute_transitive(&snapshot, &type_manager, height_type.clone()).unwrap() {
+        match child_type.get_owns_attribute(&snapshot, &type_manager, height_type.clone()).unwrap() {
             None => panic!("child should inherit ownership of height"),
             Some(child_owns_height) => {
                 assert_eq!(height_type, child_owns_height.attribute());
@@ -213,7 +213,7 @@ fn entity_usage() {
 
         // --- owns inheritance ---
         let height_type = type_manager.get_attribute_type(&snapshot, &Label::new_static("height")).unwrap().unwrap();
-        match child_type.get_owns_attribute_transitive(&snapshot, &type_manager, height_type.clone()).unwrap() {
+        match child_type.get_owns_attribute(&snapshot, &type_manager, height_type.clone()).unwrap() {
             None => panic!("child should inherit ownership of height"),
             Some(child_owns_height) => {
                 assert_eq!(height_type, child_owns_height.attribute());

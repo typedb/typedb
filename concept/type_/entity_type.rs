@@ -279,7 +279,7 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_owns(snapshot, self.clone().into_owned())
     }
 
@@ -289,15 +289,6 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_owns_overrides(snapshot, self.clone().into_owned())
-    }
-
-    fn get_owns_attribute(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        Ok(self.get_owns(snapshot, type_manager)?.get(&attribute_type).cloned())
     }
 }
 
@@ -333,17 +324,8 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_plays(snapshot, self.clone().into_owned())
-    }
-
-    fn get_plays_role(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-        Ok(self.get_plays(snapshot, type_manager)?.get(&role_type).cloned())
     }
 }
 

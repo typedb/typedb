@@ -272,7 +272,7 @@ impl<'a> RelationType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {
         type_manager.get_relation_type_relates(snapshot, self.clone().into_owned())
     }
 
@@ -296,10 +296,10 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager,
         role_name: &str,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        for (role_type, relates) in
+        for relates in
             type_manager.get_relation_type_relates(snapshot, self.clone().into_owned())?.into_iter()
         {
-            let role_label = role_type.get_label(snapshot, type_manager)?;
+            let role_label = relates.role().get_label(snapshot, type_manager)?;
             if role_label.name.as_str() == role_name {
                 return Ok(Some(relates.to_owned()));
             }
@@ -364,7 +364,7 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
         type_manager.get_relation_type_owns(snapshot, self.clone().into_owned())
     }
 
@@ -374,15 +374,6 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError> {
         type_manager.get_relation_type_owns_overrides(snapshot, self.clone().into_owned())
-    }
-
-    fn get_owns_attribute(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        Ok(self.get_owns(snapshot, type_manager)?.get(&attribute_type).cloned())
     }
 }
 
@@ -418,17 +409,8 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
         type_manager.get_relation_type_plays(snapshot, self.clone().into_owned())
-    }
-
-    fn get_plays_role(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-        Ok(self.get_plays(snapshot, type_manager)?.get(&role_type).cloned())
     }
 }
 

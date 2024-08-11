@@ -296,7 +296,7 @@ impl TypeManager {
         role_name: &str,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
         // TODO: Efficiency. We could build an index in TypeCache.
-        Ok(self.get_relation_type_relates(snapshot, relation)?.iter().find_map(|(_role, relates)| {
+        Ok(self.get_relation_type_relates(snapshot, relation)?.iter().find_map(|relates| {
             if self.get_role_type_label(snapshot, relates.role()).unwrap().name.as_str() == role_name {
                 Some(relates.clone())
             } else {
@@ -516,7 +516,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
@@ -582,7 +582,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
         } else {
@@ -595,7 +595,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
         } else {
@@ -644,7 +644,7 @@ impl TypeManager {
         // TODO: it would be good if this doesn't require recomputation
         let mut max_card = 0;
         let relates = relation_type.get_relates(snapshot, self)?;
-        for (_, relates) in relates.iter() {
+        for relates in relates.iter() {
             let card = relates.get_cardinality(snapshot, self)?;
             match card.end() {
                 None => return Ok(false),
@@ -671,7 +671,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(entity_type)))
         } else {
@@ -713,7 +713,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(relation_type)))
         } else {

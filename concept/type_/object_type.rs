@@ -110,20 +110,11 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         with_object_type!(self, |object| { object.get_owns_declared(snapshot, type_manager) })
     }
 
-    fn get_owns_attribute(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        with_object_type!(self, |object| { object.get_owns_attribute(snapshot, type_manager, attribute_type) })
-    }
-
     fn get_owns<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| { object.get_owns(snapshot, type_manager) })
     }
 
@@ -268,20 +259,11 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         with_object_type!(self, |object| { object.get_plays_declared(snapshot, type_manager) })
     }
 
-    fn get_plays_role(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-        with_object_type!(self, |object| { object.get_plays_role(snapshot, type_manager, role_type) })
-    }
-
     fn get_plays<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| { object.get_plays(snapshot, type_manager) })
     }
 }

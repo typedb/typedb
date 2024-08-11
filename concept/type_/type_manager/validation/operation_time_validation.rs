@@ -181,7 +181,7 @@ macro_rules! cannot_unset_capability_with_existing_instances_validation {
                 let supertype_capabilities =
                     TypeReader::get_capabilities::<$capability_type<'static>>(snapshot, supertype)
                         .map_err(SchemaValidationError::ConceptRead)?;
-                if supertype_capabilities.contains_key(&interface_type) {
+                if supertype_capabilities.iter().any(|capability| &capability.interface() == &interface_type) {
                     return Ok(());
                 }
             }
@@ -1108,27 +1108,25 @@ impl OperationTimeValidation {
         object_subtype: CAP::ObjectType,
         object_supertype: Option<CAP::ObjectType>,
     ) -> Result<(), SchemaValidationError> {
-        let supertype_capability_with_interface_types: HashMap<CAP::InterfaceType, CAP> = match &object_supertype {
-            None => HashMap::new(),
-            Some(object_supertype) => TypeReader::get_capabilities(snapshot, object_supertype.clone())
+        let supertype_capabilities = match &object_supertype {
+            None => HashSet::new(),
+            Some(object_supertype) => TypeReader::get_capabilities::<CAP>(snapshot, object_supertype.clone())
                 .map_err(SchemaValidationError::ConceptRead)?,
         };
 
-        let subtype_capabilities_declared: HashSet<CAP> =
-            TypeReader::get_capabilities_declared(snapshot, object_subtype.clone())
-                .map_err(SchemaValidationError::ConceptRead)?;
-        let subtype_capabilities: HashMap<CAP::InterfaceType, CAP> =
-            TypeReader::get_capabilities(snapshot, object_subtype.clone())
-                .map_err(SchemaValidationError::ConceptRead)?;
+        let subtype_capabilities_declared = TypeReader::get_capabilities_declared::<CAP>(snapshot, object_subtype.clone())
+            .map_err(SchemaValidationError::ConceptRead)?;
+        let subtype_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, object_subtype.clone())
+            .map_err(SchemaValidationError::ConceptRead)?;
 
         for subtype_capability in &subtype_capabilities_declared {
             if let Some(old_capability_override) =
                 TypeReader::get_capability_override(snapshot, subtype_capability.clone())
                     .map_err(SchemaValidationError::ConceptRead)?
             {
-                if !supertype_capability_with_interface_types
+                if !supertype_capabilities
                     .iter()
-                    .any(|(_, supertype_capability)| supertype_capability == &old_capability_override)
+                    .any(|supertype_capability| supertype_capability == &old_capability_override)
                 {
                     // Ordering and annotations don't need to be rechecked as it's the same edge
                     return Err(SchemaValidationError::CannotChangeSupertypeAsCapabilityOverrideIsImplicitlyLost(
@@ -1156,13 +1154,13 @@ impl OperationTimeValidation {
                     TypeReader::get_capability_override(snapshot, subsubtype_capability.clone())
                         .map_err(SchemaValidationError::ConceptRead)?
                 {
-                    let is_in_subtype = subtype_capabilities.values().contains(&old_capability_override);
+                    let is_in_subtype = subtype_capabilities.contains(&old_capability_override);
                     let is_in_subtype_declared = subtype_capabilities_declared.contains(&old_capability_override);
                     let is_lost = is_in_subtype && !is_in_subtype_declared;
                     if is_lost {
-                        if !supertype_capability_with_interface_types
+                        if !supertype_capabilities
                             .iter()
-                            .any(|(_, supertype_capability)| supertype_capability == &old_capability_override)
+                            .any(|supertype_capability| supertype_capability == &old_capability_override)
                         {
                             // Ordering and annotations don't need to be rechecked as it's the same edge
                             return Err(
@@ -2205,7 +2203,7 @@ impl OperationTimeValidation {
         if let Some(super_relation) = super_relation {
             let is_inherited = TypeReader::get_capabilities::<Relates<'_>>(snapshot, super_relation)
                 .map_err(SchemaValidationError::ConceptRead)?
-                .contains_key(&role_type);
+                .iter().any(|relates| &relates.role() == &role_type);
             if is_inherited {
                 Ok(())
             } else {
@@ -2219,7 +2217,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_owns_is_inherited(
         snapshot: &impl ReadableSnapshot,
         owner: ObjectType<'static>,
-        attribute: AttributeType<'static>,
+        attribute_type: AttributeType<'static>,
     ) -> Result<(), SchemaValidationError> {
         let is_inherited = with_object_type!(owner, |owner| {
             let super_owner =
@@ -2227,15 +2225,15 @@ impl OperationTimeValidation {
             if super_owner.is_none() {
                 return Ok(());
             }
-            let owns_transitive: HashMap<AttributeType<'static>, Owns<'static>> =
-                TypeReader::get_capabilities(snapshot, super_owner.unwrap().clone().into_owned_object_type())
+            let owns_transitive =
+                TypeReader::get_capabilities::<Owns<'static>>(snapshot, super_owner.unwrap().clone().into_owned_object_type())
                     .map_err(SchemaValidationError::ConceptRead)?;
-            owns_transitive.contains_key(&attribute)
+            owns_transitive.iter().any(|owns| &owns.attribute() == &attribute_type)
         });
         if is_inherited {
             Ok(())
         } else {
-            Err(SchemaValidationError::OwnsNotInherited(owner, attribute))
+            Err(SchemaValidationError::OwnsNotInherited(owner, attribute_type))
         }
     }
 
@@ -2287,10 +2285,10 @@ impl OperationTimeValidation {
             if super_player.is_none() {
                 return Ok(());
             }
-            let plays_transitive: HashMap<RoleType<'static>, Plays<'static>> =
-                TypeReader::get_capabilities(snapshot, super_player.unwrap().clone().into_owned_object_type())
+            let plays_transitive =
+                TypeReader::get_capabilities::<Plays<'static>>(snapshot, super_player.unwrap().clone().into_owned_object_type())
                     .map_err(SchemaValidationError::ConceptRead)?;
-            plays_transitive.contains_key(&role_type)
+            plays_transitive.iter().any(|plays| &plays.role() == &role_type)
         });
         if is_inherited {
             Ok(())
@@ -2580,21 +2578,19 @@ impl OperationTimeValidation {
         owner: ObjectType<'static>,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        let all_owns: HashMap<AttributeType<'static>, Owns<'static>> =
-            TypeReader::get_capabilities(snapshot, owner.clone().into_owned_object_type())
+        let all_owns =
+            TypeReader::get_capabilities::<Owns<'static>>(snapshot, owner.clone().into_owned_object_type())
                 .map_err(SchemaValidationError::ConceptRead)?;
-        let found_owns =
-            all_owns.iter().find(|(existing_owns_attribute_type, _)| **existing_owns_attribute_type == attribute_type);
+        let found_owns = all_owns.iter().find(|owns| owns.attribute() == attribute_type);
 
         match found_owns {
-            Some((_, owns)) => {
+            Some(owns) => {
                 if owner == owns.owner() {
                     Ok(())
                 } else {
-                    let owns_owner = owns.owner();
                     Err(SchemaValidationError::CannotUnsetInheritedOwns(
                         get_label_or_schema_err(snapshot, attribute_type)?,
-                        get_label_or_schema_err(snapshot, owns_owner)?,
+                        get_label_or_schema_err(snapshot, owns.owner())?,
                     ))
                 }
             }
@@ -2607,21 +2603,19 @@ impl OperationTimeValidation {
         player: ObjectType<'static>,
         role_type: RoleType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        let all_plays: HashMap<RoleType<'static>, Plays<'static>> =
-            TypeReader::get_capabilities(snapshot, player.clone().into_owned_object_type())
+        let all_plays =
+            TypeReader::get_capabilities::<Plays<'static>>(snapshot, player.clone().into_owned_object_type())
                 .map_err(SchemaValidationError::ConceptRead)?;
-        let found_plays =
-            all_plays.iter().find(|(existing_plays_role_type, _)| **existing_plays_role_type == role_type);
+        let found_plays = all_plays.iter().find(|plays| plays.role() == role_type);
 
         match found_plays {
-            Some((_, plays)) => {
+            Some(plays) => {
                 if player == plays.player() {
                     Ok(())
                 } else {
-                    let plays_player = plays.player();
                     Err(SchemaValidationError::CannotUnsetInheritedPlays(
                         get_label_or_schema_err(snapshot, role_type)?,
-                        get_label_or_schema_err(snapshot, plays_player)?,
+                        get_label_or_schema_err(snapshot, plays.player())?,
                     ))
                 }
             }
@@ -3705,8 +3699,8 @@ impl OperationTimeValidation {
         type_: CAP::ObjectType,
         new_supertype: Option<CAP::ObjectType>,
     ) -> Result<HashSet<CAP>, SchemaValidationError> {
-        let new_inherited_capabilities: HashMap<CAP::InterfaceType, CAP> = match new_supertype {
-            None => HashMap::new(),
+        let new_inherited_capabilities = match new_supertype {
+            None => HashSet::new(),
             Some(new_supertype) => TypeReader::get_capabilities::<CAP>(snapshot, new_supertype.clone())
                 .map_err(SchemaValidationError::ConceptRead)?,
         };
@@ -3714,10 +3708,10 @@ impl OperationTimeValidation {
         let current_capabilities =
             TypeReader::get_capabilities::<CAP>(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
         let current_inherited_capabilities =
-            current_capabilities.values().filter(|capability| capability.object() != type_);
+            current_capabilities.iter().filter(|capability| capability.object() != type_);
 
         Ok(current_inherited_capabilities
-            .filter(|capability| !new_inherited_capabilities.contains_key(&capability.interface()))
+            .filter(|capability| !new_inherited_capabilities.iter().any(|inherited_capability| inherited_capability.interface() == capability.interface()))
             .map(|capability| capability.clone())
             .collect())
     }
@@ -3735,12 +3729,12 @@ impl OperationTimeValidation {
 
         let old_capabilities =
             TypeReader::get_capabilities::<CAP>(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
-        let old_inherited_capabilities = old_capabilities.values().filter(|capability| capability.object() != type_);
+        let old_inherited_capabilities = old_capabilities.iter().filter(|capability| capability.object() != type_);
 
         let mut updated_annotations_from_inheritance = HashMap::new();
 
         for old_capability in old_inherited_capabilities {
-            if let Some(new_capability) = new_inherited_capabilities.get(&old_capability.interface()) {
+            if let Some(new_capability) = new_inherited_capabilities.iter().find(|cap| cap.interface() == old_capability.interface()) {
                 let old_annotations = TypeReader::get_type_edge_annotations(snapshot, old_capability.clone())
                     .map_err(SchemaValidationError::ConceptRead)?;
                 let new_annotations = TypeReader::get_type_edge_annotations(snapshot, new_capability.clone())

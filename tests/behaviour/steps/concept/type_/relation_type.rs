@@ -128,7 +128,7 @@ pub async fn relation_roles_contain(context: &mut Context, type_label: Label, co
             .get_relates(&tx.snapshot, &tx.type_manager)
             .unwrap()
             .iter()
-            .map(|(_label, relates)| {
+            .map(|relates| {
                 relates.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
             .collect_vec();
@@ -146,7 +146,7 @@ pub async fn relation_roles_is_empty(context: &mut Context, type_label: Label, i
             .get_relates(&tx.snapshot, &tx.type_manager)
             .unwrap()
             .iter()
-            .map(|(_label, relates)| {
+            .map(|relates| {
                 relates.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
             .collect_vec();

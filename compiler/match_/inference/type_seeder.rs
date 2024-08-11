@@ -641,7 +641,7 @@ impl BinaryConstraint for Has<Variable> {
         owner
             .get_owns(seeder.snapshot, seeder.type_manager)?
             .iter()
-            .map(|(attribute, _)| TypeAnnotation::Attribute(attribute.clone()))
+            .map(|owns| TypeAnnotation::Attribute(owns.attribute()))
             .for_each(|type_| {
                 collector.insert(type_);
             });
@@ -1138,7 +1138,7 @@ impl BinaryConstraint for Plays<Variable> {
         player
             .get_plays(seeder.snapshot, seeder.type_manager)?
             .iter()
-            .map(|(role_type, _)| TypeAnnotation::RoleType(role_type.clone()))
+            .map(|plays| TypeAnnotation::RoleType(plays.role()))
             .for_each(|type_| {
                 collector.insert(type_);
             });
@@ -1249,7 +1249,7 @@ impl BinaryConstraint for Relates<Variable> {
         relation
             .get_relates(seeder.snapshot, seeder.type_manager)?
             .iter()
-            .map(|(role_type, _)| TypeAnnotation::RoleType(role_type.clone()))
+            .map(|relates| TypeAnnotation::RoleType(relates.role()))
             .for_each(|type_| {
                 collector.insert(type_);
             });

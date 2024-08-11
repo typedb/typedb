@@ -60,7 +60,8 @@ impl OperationTimeValidation {
         let has_plays = object_type
             .get_plays(snapshot, &thing_manager.type_manager)
             .map_err(DataValidationError::ConceptRead)?
-            .contains_key(&role_type.clone());
+            .into_iter()
+            .any(|plays| &plays.role() == &role_type.clone());
         if has_plays {
             Ok(())
         } else {
@@ -80,7 +81,8 @@ impl OperationTimeValidation {
         let has_owns = object_type
             .get_owns(snapshot, &thing_manager.type_manager)
             .map_err(DataValidationError::ConceptRead)?
-            .contains_key(&attribute_type.clone());
+            .into_iter()
+            .any(|owns| &owns.attribute() == &attribute_type.clone());
         if has_owns {
             Ok(())
         } else {

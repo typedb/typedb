@@ -44,7 +44,7 @@ pub(crate) struct EntityTypeCache {
 pub(crate) struct RelationTypeCache {
     pub(super) common_type_cache: CommonTypeCache<RelationType<'static>>,
     pub(super) relates_declared: HashSet<Relates<'static>>,
-    pub(super) relates: HashMap<RoleType<'static>, Relates<'static>>,
+    pub(super) relates: HashSet<Relates<'static>>,
     pub(super) object_cache: ObjectCache,
 }
 
@@ -105,10 +105,10 @@ pub(crate) struct CommonTypeCache<T: KindAPI<'static>> {
 #[derive(Debug)]
 pub struct ObjectCache {
     pub(super) owns_declared: HashSet<Owns<'static>>,
-    pub(super) owns: HashMap<AttributeType<'static>, Owns<'static>>,
+    pub(super) owns: HashSet<Owns<'static>>,
     pub(super) owns_overrides: HashMap<Owns<'static>, Owns<'static>>,
     pub(super) plays_declared: HashSet<Plays<'static>>,
-    pub(super) plays: HashMap<RoleType<'static>, Plays<'static>>,
+    pub(super) plays: HashSet<Plays<'static>>,
     pub(super) plays_overrides: HashMap<Plays<'static>, Plays<'static>>,
 }
 

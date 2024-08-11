@@ -306,7 +306,7 @@ impl TypeCache {
     pub(crate) fn get_owns<'a, 'this, T, CACHE>(
         &'this self,
         type_: T,
-    ) -> &HashMap<AttributeType<'static>, Owns<'static>>
+    ) -> &HashSet<Owns<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
@@ -350,7 +350,7 @@ impl TypeCache {
     pub(crate) fn get_relation_type_relates(
         &self,
         relation_type: RelationType<'_>,
-    ) -> &HashMap<RoleType<'static>, Relates<'static>> {
+    ) -> &HashSet<Relates<'static>> {
         &RelationType::get_cache(self, relation_type).relates
     }
 
@@ -394,7 +394,7 @@ impl TypeCache {
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(
         &'this self,
         type_: T,
-    ) -> &'this HashMap<RoleType<'static>, Plays<'static>>
+    ) -> &'this HashSet<Plays<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,

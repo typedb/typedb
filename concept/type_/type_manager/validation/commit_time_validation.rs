@@ -378,7 +378,8 @@ impl CommitTimeValidation {
             return Ok(());
         }
 
-        for interface_type in TypeReader::get_capabilities::<CAP>(snapshot, type_.clone())?.keys() {
+        for capability in TypeReader::get_capabilities::<CAP>(snapshot, type_.clone())? {
+            let interface_type = capability.interface();
             if interface_type.is_abstract(snapshot, type_manager)? {
                 validation_errors.push(SchemaValidationError::NonAbstractTypeCannotHaveAbstractInterfaceCapability(
                     CAP::KIND,
@@ -410,8 +411,8 @@ impl CommitTimeValidation {
                 )),
                 Some(supertype) => {
                     let contains = TypeReader::get_capabilities::<Relates<'static>>(snapshot, supertype.clone())?
-                        .keys()
-                        .contains(&role_type_overridden);
+                        .into_iter()
+                        .any(|relates| &relates.interface() == &role_type_overridden);
 
                     if !contains {
                         validation_errors.push(SchemaValidationError::RelatesOverrideIsNotInherited(
@@ -461,8 +462,8 @@ impl CommitTimeValidation {
                 )),
                 Some(supertype) => {
                     let contains = TypeReader::get_capabilities::<Owns<'static>>(snapshot, supertype.clone())?
-                        .keys()
-                        .contains(&attribute_type_overridden);
+                        .into_iter()
+                        .any(|owns| &owns.attribute() == &attribute_type_overridden);
 
                     if !contains {
                         validation_errors.push(SchemaValidationError::OwnsOverrideIsNotInherited(
@@ -510,8 +511,8 @@ impl CommitTimeValidation {
                 )),
                 Some(supertype) => {
                     let contains = TypeReader::get_capabilities::<Plays<'static>>(snapshot, supertype.clone())?
-                        .keys()
-                        .contains(&role_type_overridden);
+                        .into_iter()
+                        .any(|plays| &plays.role() == &role_type_overridden);
 
                     if !contains {
                         validation_errors.push(SchemaValidationError::PlaysOverrideIsNotInherited(
@@ -570,7 +571,7 @@ impl CommitTimeValidation {
             let supertype_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, supertype.clone())?;
 
             let interface_type = capability.interface();
-            if let Some(supertype_capability) = supertype_capabilities.get(&interface_type) {
+            if let Some(supertype_capability) = supertype_capabilities.iter().find(|cap| &cap.interface() == &interface_type) {
                 let supertype_capability_object = supertype_capability.object();
 
                 let capability_override = TypeReader::get_capability_override(snapshot, capability.clone())?;

@@ -68,7 +68,7 @@ pub async fn get_plays_contain(
             .get_plays(&tx.snapshot, &tx.type_manager)
             .unwrap()
             .iter()
-            .map(|(_role, plays)| {
+            .map(|plays| {
                 plays.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
             .collect_vec();

@@ -120,20 +120,18 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError> {
-        let has = self
+        for attr in self
             .get_has_unordered(snapshot, thing_manager)
             .map_static(|res| res.map(|(k, _)| k.into_owned()))
             .try_collect::<Vec<_>, _>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let mut has_attr_type_deleted = HashSet::new();
-        for attr in has {
-            has_attr_type_deleted.add(attr.type_());
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+        {
             thing_manager.unset_has(snapshot, &self, attr);
         }
 
         for owns in self
             .type_()
-            .get_owns_declared(snapshot, thing_manager.type_manager())
+            .get_owns(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
             .iter()
         {
@@ -145,12 +143,11 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
             }
         }
 
-        let relations_roles = self
+        for (relation, role) in self
             .get_relations_roles(snapshot, thing_manager)
             .map_static(|res| res.map(|(relation, role, _count)| (relation.into_owned(), role.into_owned())))
-            .try_collect::<Vec<_>, _>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        for (relation, role) in relations_roles {
+            .try_collect::<Vec<_>, _>()?
+        {
             thing_manager.unset_links(snapshot, relation, self.as_reference(), role)?;
         }
 
