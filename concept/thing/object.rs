@@ -384,7 +384,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
         let owns = self
-            .get_type_owns(snapshot, thing_manager.type_manager(), attribute_type)
+            .get_type_owns(snapshot, thing_manager.type_manager(), attribute_type.clone())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         let ordering = owns
             .get_ordering(snapshot, thing_manager.type_manager())
@@ -392,8 +392,13 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         match ordering {
             Ordering::Unordered => Err(ConceptWriteError::UnsetHasOrderedOwnsUnordered {}),
             Ordering::Ordered => {
-                // TODO: 1. get owned list 2. Delete each ownership has 3. delete owned list
-                todo!()
+                for attribute in self.get_has_type_ordered(snapshot, thing_manager, attribute_type.clone())
+                    .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+                {
+                    thing_manager.unset_has(snapshot, self, attribute);
+                }
+                thing_manager.unset_has_ordered(snapshot, self, attribute_type);
+                Ok(())
             }
         }
     }

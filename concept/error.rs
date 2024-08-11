@@ -122,6 +122,8 @@ pub enum ConceptWriteError {
     UnsetHasOrderedOwnsUnordered {},
     UnsetHasUnorderedOwnsOrdered {},
 
+    SetPlayersOrderedRoleUnordered {},
+
     Annotation {
         source: AnnotationError,
     },
@@ -154,6 +156,7 @@ impl Error for ConceptWriteError {
             Self::AddPlayerOnDeleted { .. } => None,
             Self::CardinalityViolation { .. } => None,
             Self::SetHasOrderedOwnsUnordered { .. } => None,
+            Self::SetPlayersOrderedRoleUnordered { .. } => None,
             Self::SetHasUnorderedOwnsOrdered { .. } => None,
             Self::UnsetHasOrderedOwnsUnordered { .. } => None,
             Self::UnsetHasUnorderedOwnsOrdered { .. } => None,

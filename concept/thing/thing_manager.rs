@@ -1525,7 +1525,7 @@ impl ThingManager {
             debug_assert_eq!(&count, &reverse_count, "canonical and reverse links edge count mismatch!");
         }
 
-        debug_assert!(*count.as_ref().unwrap() > decrement_count);
+        debug_assert!(*count.as_ref().unwrap() >= decrement_count);
         self.set_links_count(snapshot, relation, player, role_type, count.unwrap() - decrement_count)
     }
 
