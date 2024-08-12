@@ -81,7 +81,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RelationType<'static>, Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {
         type_manager.get_relations_for_role_type(snapshot, self.clone().into_owned())
     }
 

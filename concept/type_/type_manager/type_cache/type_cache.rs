@@ -333,7 +333,7 @@ impl TypeCache {
     pub(crate) fn get_role_type_relates(
         &self,
         role_type: RoleType<'_>,
-    ) -> &HashMap<RelationType<'static>, Relates<'static>> {
+    ) -> &HashSet<Relates<'static>> {
         &RoleType::get_cache(self, role_type).relates
     }
 

@@ -585,7 +585,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<RelationType<'static>, Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_role_type_relates(role_type.clone())))
         } else {

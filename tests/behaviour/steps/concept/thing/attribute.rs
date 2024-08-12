@@ -152,6 +152,13 @@ async fn attribute_is_deleted(context: &mut Context, var: params::Var, is_delete
 }
 
 #[apply(generic_step)]
+#[step(expr = r"attribute {var} is none: {boolean}")]
+async fn attribute_is_none(context: &mut Context, var: params::Var, is_none: params::Boolean) {
+    let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut();
+    check_boolean!(is_none, attribute.is_none());
+}
+
+#[apply(generic_step)]
 #[step(expr = r"delete attributes of type: {type_label}")]
 async fn delete_attributes_of_type(context: &mut Context, type_label: params::Label) {
     with_write_tx!(context, |tx| {

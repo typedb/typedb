@@ -53,7 +53,7 @@ pub(crate) struct RoleTypeCache {
     pub(super) common_type_cache: CommonTypeCache<RoleType<'static>>,
     pub(super) ordering: Ordering,
     pub(super) relates_declared: Relates<'static>,
-    pub(super) relates: HashMap<RelationType<'static>, Relates<'static>>,
+    pub(super) relates: HashSet<Relates<'static>>,
     pub(super) plays_declared: HashSet<Plays<'static>>,
     pub(super) plays: HashMap<ObjectType<'static>, Plays<'static>>,
 }

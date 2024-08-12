@@ -481,7 +481,7 @@ impl TypeReader {
     pub(crate) fn get_role_type_relates(
         snapshot: &impl ReadableSnapshot,
         role: RoleType<'static>,
-    ) -> Result<HashMap<RelationType<'static>, Relates<'static>>, ConceptReadError> {
+    ) -> Result<HashSet<Relates<'static>>, ConceptReadError> {
         let relates_immediate = Self::get_role_type_relates_declared(snapshot, role.clone())?;
 
         let mut role_overriders: HashSet<RelationType<'static>> = HashSet::new();
@@ -489,12 +489,12 @@ impl TypeReader {
             role_overriders.insert(Self::get_role_type_relates_declared(snapshot, subrole)?.relation());
         }
 
-        let mut relates_transitive: HashMap<RelationType<'static>, Relates<'static>> = HashMap::new();
-        relates_transitive.insert(relates_immediate.relation(), relates_immediate.clone());
+        let mut relates_transitive: HashSet<Relates<'static>> = HashSet::new();
+        relates_transitive.insert(relates_immediate.clone());
         let mut stack = TypeReader::get_subtypes(snapshot, relates_immediate.relation())?;
         while let Some(subtype) = stack.pop() {
             if !role_overriders.contains(&subtype) {
-                relates_transitive.insert(subtype.clone(), Relates::new(subtype.clone(), role.clone()));
+                relates_transitive.insert(Relates::new(subtype.clone(), role.clone()));
                 stack.append(&mut TypeReader::get_subtypes(snapshot, subtype)?);
             }
         }

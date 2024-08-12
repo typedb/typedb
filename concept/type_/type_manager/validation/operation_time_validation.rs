@@ -2931,16 +2931,19 @@ impl OperationTimeValidation {
         let is_abstract = Constraint::compute_abstract(annotations);
         debug_assert!(is_abstract.is_some(), "At least one constraint should exist otherwise we don't need to iterate");
 
-        let relation_type =
-            TypeReader::get_role_type_relates_declared(snapshot, role_type.clone().into_owned())?.relation();
-        let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.into_owned());
-        while let Some(relation) = relation_iterator.next() {
-            let mut role_player_iterator = thing_manager.get_role_players(snapshot, relation?);
-            while let Some(role_player) = role_player_iterator.next() {
-                role_player?;
+        let role_type = role_type.clone().into_owned();
+        let all_relates = TypeReader::get_role_type_relates(snapshot, role_type.clone())?;
+        for relates in all_relates {
+            let relation_type = relates.relation();
+            let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.into_owned());
+            while let Some(relation) = relation_iterator.next() {
+                let mut role_player_iterator = thing_manager.get_role_players_role(snapshot, relation?, role_type.clone());
+                while let Some(role_player) = role_player_iterator.next() {
+                    role_player?;
 
-                if is_abstract.is_some() {
-                    return Ok(Some(AnnotationCategory::Abstract));
+                    if is_abstract.is_some() {
+                        return Ok(Some(AnnotationCategory::Abstract));
+                    }
                 }
             }
         }

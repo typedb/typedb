@@ -1271,7 +1271,7 @@ impl BinaryConstraint for Relates<Variable> {
         role_type
             .get_relations(seeder.snapshot, seeder.type_manager)?
             .iter()
-            .map(|(relation, _)| TypeAnnotation::Relation(relation.clone()))
+            .map(|relates| TypeAnnotation::Relation(relates.relation()))
             .for_each(|type_| {
                 collector.insert(type_);
             });
