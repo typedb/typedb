@@ -247,52 +247,21 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         )
         .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
-        let owns = self
-            .get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        match owns
-            .get_ordering(snapshot, thing_manager.type_manager())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-        {
+        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())?;
+        match owns.get_ordering(snapshot, thing_manager.type_manager())? {
             Ordering::Unordered => (),
             Ordering::Ordered => return Err(ConceptWriteError::SetHasUnorderedOwnsOrdered {}),
         }
 
-        if owns.is_unique(snapshot, thing_manager.type_manager())?
-            && attribute.get_owners_by_type(snapshot, thing_manager, self.type_()).count() > 0
-        {
-            if owns.is_key(snapshot, thing_manager.type_manager())? {
-                return Err(ConceptWriteError::KeyTaken {
-                    owner: self.clone().into_owned_object(),
-                    key_type: attribute.type_(),
-                    value: attribute.get_value(snapshot, thing_manager)?.into_owned(),
-                    owner_type: self.type_().into_owned_object_type(),
-                });
-            } else {
-                return Err(ConceptWriteError::UniqueValueTaken {
-                    owner: self.clone().into_owned_object(),
-                    key_type: attribute.type_(),
-                    value: attribute.get_value(snapshot, thing_manager)?.into_owned(),
-                    owner_type: self.type_().into_owned_object_type(),
-                });
-            }
-        }
+        OperationTimeValidation::validate_has_unique_constraint(
+            snapshot,
+            thing_manager,
+            owns.into_owned(),
+            attribute.get_value(snapshot, thing_manager)?.into_owned(),
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
-        let cardinality = owns.get_cardinality(snapshot, thing_manager.type_manager())?;
-        let count = self
-            .get_has_type_unordered(snapshot, thing_manager, owns.attribute())
-            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
-            .count();
-        if !cardinality.value_valid(count as u64 + 1) {
-            return Err(ConceptWriteError::CardinalityViolation {
-                owner: self.clone().into_owned_object(),
-                attribute_type: owns.attribute(),
-                cardinality,
-            });
-        }
-
-        thing_manager.set_has_unordered(snapshot, self, attribute.as_reference());
-        Ok(())
+        thing_manager.set_has_unordered(snapshot, self, attribute.as_reference())
     }
 
     fn unset_has_unordered(
@@ -301,13 +270,8 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         thing_manager: &ThingManager,
         attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
-        let owns = self
-            .get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        match owns
-            .get_ordering(snapshot, thing_manager.type_manager())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-        {
+        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())?;
+        match owns.get_ordering(snapshot, thing_manager.type_manager())? {
             Ordering::Unordered => (),
             Ordering::Ordered => return Err(ConceptWriteError::UnsetHasUnorderedOwnsOrdered {}),
         }
@@ -334,13 +298,8 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         )
         .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
-        let owns = self
-            .get_type_owns(snapshot, thing_manager.type_manager(), attribute_type.clone())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        match owns
-            .get_ordering(snapshot, thing_manager.type_manager())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-        {
+        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute_type.clone())?;
+        match owns.get_ordering(snapshot, thing_manager.type_manager())? {
             Ordering::Unordered => return Err(ConceptWriteError::SetHasOrderedOwnsUnordered {}),
             Ordering::Ordered => (),
         }
@@ -351,9 +310,8 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         }
 
         // 1. get owned list
-        let old_attributes = thing_manager
-            .get_has_from_thing_to_type_ordered(snapshot, self, attribute_type.clone())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        let old_attributes =
+            thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type.clone())?;
 
         let mut old_counts = BTreeMap::<_, u64>::new();
         for attr in &old_attributes {
@@ -368,13 +326,12 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         }
         for (attr, count) in new_counts {
             if old_counts.get(&attr) != Some(&count) {
-                thing_manager.set_has_count(snapshot, self, attr.as_reference(), count);
+                thing_manager.set_has_count(snapshot, self, attr.as_reference(), count)?;
             }
         }
 
         // 3. Overwrite owned list
-        thing_manager.set_has_ordered(snapshot, self, attribute_type, new_attributes)?;
-        Ok(())
+        thing_manager.set_has_ordered(snapshot, self, attribute_type, new_attributes)
     }
 
     fn unset_has_ordered(
@@ -383,18 +340,12 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        let owns = self
-            .get_type_owns(snapshot, thing_manager.type_manager(), attribute_type.clone())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let ordering = owns
-            .get_ordering(snapshot, thing_manager.type_manager())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute_type.clone())?;
+        let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
         match ordering {
             Ordering::Unordered => Err(ConceptWriteError::UnsetHasOrderedOwnsUnordered {}),
             Ordering::Ordered => {
-                for attribute in self.get_has_type_ordered(snapshot, thing_manager, attribute_type.clone())
-                    .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-                {
+                for attribute in self.get_has_type_ordered(snapshot, thing_manager, attribute_type.clone())? {
                     thing_manager.unset_has(snapshot, self, attribute);
                 }
                 thing_manager.unset_has_ordered(snapshot, self, attribute_type);

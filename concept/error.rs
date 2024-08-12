@@ -15,7 +15,7 @@ use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 use crate::{
     thing::{object::Object, relation::Relation, thing_manager::validation::DataValidationError},
     type_::{
-        annotation::{AnnotationCardinality, AnnotationError, AnnotationRegex},
+        annotation::{Annotation, AnnotationCardinality, AnnotationError, AnnotationRegex},
         attribute_type::AttributeType,
         object_type::ObjectType,
         role_type::RoleType,
@@ -78,10 +78,6 @@ pub enum ConceptWriteError {
         cardinality: AnnotationCardinality,
         actual_cardinality: u64,
     },
-    StringAttributeRegex {
-        regex: AnnotationRegex,
-        value: String,
-    },
 
     MultipleKeys {
         owner: Object<'static>,
@@ -90,18 +86,6 @@ pub enum ConceptWriteError {
     KeyMissing {
         owner: Object<'static>,
         key_type: AttributeType<'static>,
-    },
-    KeyTaken {
-        owner: Object<'static>,
-        key_type: AttributeType<'static>,
-        value: Value<'static>,
-        owner_type: ObjectType<'static>,
-    },
-    UniqueValueTaken {
-        owner: Object<'static>,
-        key_type: AttributeType<'static>,
-        value: Value<'static>,
-        owner_type: ObjectType<'static>,
     },
 
     SetHasOnDeleted {
@@ -147,10 +131,7 @@ impl Error for ConceptWriteError {
             Self::ValueTypeMismatch { .. } => None,
             Self::RelationRoleCardinality { .. } => None,
             Self::RootModification { .. } => None,
-            Self::StringAttributeRegex { .. } => None,
             Self::KeyMissing { .. } => None,
-            Self::KeyTaken { .. } => None,
-            Self::UniqueValueTaken { .. } => None,
             Self::SetHasOnDeleted { .. } => None,
             Self::MultipleKeys { .. } => None,
             Self::AddPlayerOnDeleted { .. } => None,
@@ -175,7 +156,7 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::CorruptMissingMandatoryCardinality => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryProperty => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryRelatesForRole => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptAttributeValueDoesntMatchAttributeTypeValueType(_) => {
+            ConceptReadError::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(_, _, _) => {
                 Self::ConceptRead { source: error }
             }
             ConceptReadError::CannotGetOwnsDoesntExist(_, _) => Self::ConceptRead { source: error },
@@ -193,7 +174,7 @@ pub enum ConceptReadError {
     CorruptMissingMandatoryCardinality,
     CorruptMissingMandatoryProperty,
     CorruptMissingMandatoryRelatesForRole,
-    CorruptAttributeValueDoesntMatchAttributeTypeValueType(Label<'static>),
+    CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(Label<'static>, ValueType, Annotation),
     CannotGetOwnsDoesntExist(Label<'static>, Label<'static>),
     Annotation { source: AnnotationError },
 }
@@ -213,7 +194,7 @@ impl Error for ConceptReadError {
             Self::CorruptMissingLabelOfType => None,
             Self::CorruptMissingMandatoryCardinality => None,
             Self::CorruptMissingMandatoryProperty => None,
-            Self::CorruptAttributeValueDoesntMatchAttributeTypeValueType(_) => None,
+            Self::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(_, _, _) => None,
             Self::CorruptMissingMandatoryRelatesForRole => None,
             Self::CannotGetOwnsDoesntExist(_, _) => None,
             Self::Annotation { .. } => None,

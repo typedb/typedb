@@ -211,6 +211,14 @@ impl<'a> RelationType<'a> {
         type_manager.unset_relation_type_supertype(snapshot, thing_manager, self.clone().into_owned())
     }
 
+    pub(crate) fn is_cascade(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, ConceptReadError> {
+        type_manager.get_relation_type_is_cascade(snapshot, self.clone())
+    }
+
     pub fn set_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -296,9 +304,7 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager,
         role_name: &str,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        for relates in
-            type_manager.get_relation_type_relates(snapshot, self.clone().into_owned())?.into_iter()
-        {
+        for relates in type_manager.get_relation_type_relates(snapshot, self.clone().into_owned())?.into_iter() {
             let role_label = relates.role().get_label(snapshot, type_manager)?;
             if role_label.name.as_str() == role_name {
                 return Ok(Some(relates.to_owned()));

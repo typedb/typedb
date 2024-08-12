@@ -10,7 +10,7 @@ use concept::{
         attribute::Attribute,
         object::{Object, ObjectAPI},
     },
-    type_::{attribute_type::AttributeType, Capability, OwnerAPI, TypeAPI,},
+    type_::{attribute_type::AttributeType, Capability, OwnerAPI, TypeAPI},
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
@@ -18,10 +18,10 @@ use macro_rules_attribute::apply;
 
 use crate::{
     generic_step, params,
+    params::IsEmptyOrNot,
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
-use crate::params::IsEmptyOrNot;
 
 pub(super) fn object_set_has_impl(
     context: &mut Context,
@@ -63,7 +63,8 @@ fn object_unset_has_ordered_impl(
     attribute_type_label: params::Label,
 ) -> Result<(), ConceptWriteError> {
     with_write_tx!(context, |tx| {
-        let attribute_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
         object.unset_has_ordered(&mut tx.snapshot, &tx.thing_manager, attribute_type)
     })
 }
@@ -185,9 +186,12 @@ async fn object_get_has_is_empty(
             .collect::<Vec<_>>()
     });
     with_read_tx!(context, |tx| {
-            for actual in &actuals {
-        println!("HAS: {:?}", actual.type_().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str());
-    }
+        for actual in &actuals {
+            println!(
+                "HAS: {:?}",
+                actual.type_().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str()
+            );
+        }
     });
 
     is_empty_or_not.check(actuals.is_empty());

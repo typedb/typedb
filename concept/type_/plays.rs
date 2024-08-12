@@ -50,6 +50,14 @@ impl<'a> Plays<'a> {
         type_manager.get_plays_override(snapshot, self.clone().into_owned())
     }
 
+    pub fn get_overriding<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_overriding(snapshot, self.clone().into_owned())
+    }
+
     pub fn set_override(
         &self,
         snapshot: &mut impl WritableSnapshot,

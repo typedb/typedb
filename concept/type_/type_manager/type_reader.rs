@@ -363,8 +363,8 @@ impl TypeReader {
     pub(crate) fn get_overriding_capabilities<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
-    ) -> Result<Vec<CAP>, ConceptReadError> {
-        let mut overriding_capabilities: Vec<CAP> = Vec::new();
+    ) -> Result<HashSet<CAP>, ConceptReadError> {
+        let mut overriding_capabilities: HashSet<CAP> = HashSet::new();
         let mut object_types: VecDeque<CAP::ObjectType> = VecDeque::from([capability.object()]);
 
         while let Some(current_object_type) = object_types.pop_back() {
@@ -372,10 +372,11 @@ impl TypeReader {
                 Self::get_object_capabilities_overrides_declared::<CAP>(snapshot, current_object_type.clone())?;
 
             let old_len = overriding_capabilities.len();
-            capability_to_overridden
-                .into_iter()
-                .filter(|(_, overridden)| overridden == &capability)
-                .for_each(|(overriding, _)| overriding_capabilities.push(overriding));
+            capability_to_overridden.into_iter().filter(|(_, overridden)| overridden == &capability).for_each(
+                |(overriding, _)| {
+                    overriding_capabilities.insert(overriding);
+                },
+            );
 
             let capability_overridden_for_type = old_len < overriding_capabilities.len();
             if !capability_overridden_for_type {

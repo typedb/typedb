@@ -248,9 +248,33 @@ impl<'a> AttributeType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        Ok(self
-            .get_annotations(snapshot, type_manager)?
-            .contains_key(&AttributeTypeAnnotation::Independent(AnnotationIndependent)))
+        type_manager.get_attribute_type_is_independent(snapshot, self.clone())
+    }
+
+    // TODO: Might call it "get_regex", "get_range", "get_values", but "get_values" sounds like
+    // we return all the values of instances of this type...
+    pub fn get_regex_constraint(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<AnnotationRegex>, ConceptReadError> {
+        type_manager.get_attribute_type_regex(snapshot, self.clone())
+    }
+
+    pub fn get_range_constraint(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<AnnotationRange>, ConceptReadError> {
+        type_manager.get_attribute_type_range(snapshot, self.clone())
+    }
+
+    pub fn get_values_constraint(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<AnnotationValues>, ConceptReadError> {
+        type_manager.get_attribute_type_values(snapshot, self.clone())
     }
 
     pub fn set_annotation(

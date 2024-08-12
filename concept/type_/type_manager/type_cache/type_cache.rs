@@ -303,10 +303,7 @@ impl TypeCache {
         &T::get_cache(self, type_).object_cache().owns_declared
     }
 
-    pub(crate) fn get_owns<'a, 'this, T, CACHE>(
-        &'this self,
-        type_: T,
-    ) -> &HashSet<Owns<'static>>
+    pub(crate) fn get_owns<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
@@ -347,10 +344,7 @@ impl TypeCache {
         &RelationType::get_cache(self, relation_type).relates_declared
     }
 
-    pub(crate) fn get_relation_type_relates(
-        &self,
-        relation_type: RelationType<'_>,
-    ) -> &HashSet<Relates<'static>> {
+    pub(crate) fn get_relation_type_relates(&self, relation_type: RelationType<'_>) -> &HashSet<Relates<'static>> {
         &RelationType::get_cache(self, relation_type).relates
     }
 
@@ -370,6 +364,9 @@ impl TypeCache {
 
     pub(crate) fn get_relates_override<'c>(&'c self, relates: Relates<'c>) -> &'c Option<Relates<'static>> {
         &self.relates.get(&relates).unwrap().overrides
+    }
+    pub(crate) fn get_relates_overriding<'c>(&'c self, relates: Relates<'c>) -> &'c HashSet<Relates<'static>> {
+        &self.relates.get(&relates).unwrap().overriding
     }
 
     pub(crate) fn get_plays_for_role_type_declared(&self, role_type: RoleType<'_>) -> &HashSet<Plays<'static>> {
@@ -391,10 +388,7 @@ impl TypeCache {
         &T::get_cache(self, type_).object_cache().plays_declared
     }
 
-    pub(crate) fn get_plays<'a, 'this, T, CACHE>(
-        &'this self,
-        type_: T,
-    ) -> &'this HashSet<Plays<'static>>
+    pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this HashSet<Plays<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
@@ -415,6 +409,9 @@ impl TypeCache {
 
     pub(crate) fn get_plays_override<'c>(&'c self, plays: Plays<'c>) -> &'c Option<Plays<'static>> {
         &self.plays.get(&plays).unwrap().overrides
+    }
+    pub(crate) fn get_plays_overriding<'c>(&'c self, plays: Plays<'c>) -> &'c HashSet<Plays<'static>> {
+        &self.plays.get(&plays).unwrap().overriding
     }
 
     pub(crate) fn get_plays_annotations_declared<'c>(&'c self, plays: Plays<'c>) -> &'c HashSet<PlaysAnnotation> {
@@ -456,6 +453,9 @@ impl TypeCache {
 
     pub(crate) fn get_owns_override<'c>(&'c self, owns: Owns<'c>) -> &'c Option<Owns<'static>> {
         &self.owns.get(&owns).unwrap().overrides
+    }
+    pub(crate) fn get_owns_overriding<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<Owns<'static>> {
+        &self.owns.get(&owns).unwrap().overriding
     }
 
     pub(crate) fn get_struct_definition_key(&self, label: &str) -> Option<DefinitionKey<'static>> {

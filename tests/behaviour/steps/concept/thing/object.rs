@@ -19,12 +19,11 @@ use crate::{
         has::object_set_has_impl,
     },
     generic_step, params,
-    params::check_boolean,
+    params::{check_boolean, IsEmptyOrNot},
     thing_util::ObjectWithKey,
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
-use crate::params::IsEmptyOrNot;
 
 fn object_create_instance_impl(
     context: &mut Context,

@@ -176,7 +176,11 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        Ok(self.get_owns_declared(snapshot, type_manager)?.iter().find(|owns| owns.attribute() == attribute_type).cloned())
+        Ok(self
+            .get_owns_declared(snapshot, type_manager)?
+            .iter()
+            .find(|owns| owns.attribute() == attribute_type)
+            .cloned())
     }
 
     fn has_owns_attribute_declared(

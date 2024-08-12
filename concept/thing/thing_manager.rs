@@ -1054,12 +1054,43 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType<'static>,
-        value: Value<'_>,
+        value: Value<'static>,
     ) -> Result<Attribute<'a>, ConceptWriteError> {
         OperationTimeValidation::validate_type_instance_is_not_abstract(snapshot, self, attribute_type.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        // TODO: Compare value.value_type and attribute_type value type
+        // TODO: Transform to validation!
+        let type_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
+        if Some(value.value_type()) != type_value_type {
+            return Err(ConceptWriteError::ValueTypeMismatch {
+                expected: type_value_type,
+                provided: value.value_type(),
+            });
+        }
+
+        OperationTimeValidation::validate_attribute_regex_constraint(
+            snapshot,
+            self,
+            attribute_type.clone(),
+            value.clone(),
+        )
+        .map_err(|source| ConceptWriteError::DataValidation { source })?;
+
+        OperationTimeValidation::validate_attribute_range_constraint(
+            snapshot,
+            self,
+            attribute_type.clone(),
+            value.clone(),
+        )
+        .map_err(|source| ConceptWriteError::DataValidation { source })?;
+
+        OperationTimeValidation::validate_attribute_values_constraint(
+            snapshot,
+            self,
+            attribute_type.clone(),
+            value.clone(),
+        )
+        .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         self.put_attribute(snapshot, attribute_type, value)
     }
@@ -1138,24 +1169,6 @@ impl ThingManager {
                     )
                 }
                 Value::String(string) => {
-                    let annotations =
-                        self.type_manager.get_attribute_type_annotations(snapshot, attribute_type.clone())?;
-                    for (annotation, _) in annotations.iter() {
-                        match annotation {
-                            AttributeTypeAnnotation::Abstract(_) => todo!("create abstract attribute"),
-                            AttributeTypeAnnotation::Independent(_) => (),
-                            AttributeTypeAnnotation::Regex(regex) => {
-                                if !regex.value_valid(&string) {
-                                    return Err(ConceptWriteError::StringAttributeRegex {
-                                        regex: regex.to_owned(),
-                                        value: string.into_owned(),
-                                    });
-                                }
-                            }
-                            AttributeTypeAnnotation::Range(_) => todo!("create attribute with range"),
-                            AttributeTypeAnnotation::Values(_) => todo!("create attribute with values"),
-                        }
-                    }
                     let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
                     self.vertex_generator
                         .create_attribute_string(attribute_type.vertex().type_id_(), encoded_string, snapshot)
@@ -1255,7 +1268,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute: Attribute<'_>,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         self.set_has_count(snapshot, owner, attribute, 1)
     }
 
@@ -1265,7 +1278,7 @@ impl ThingManager {
         owner: &impl ObjectAPI<'a>,
         mut attribute: Attribute<'_>,
         count: u64,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         let attribute_type = attribute.type_();
         let value = match attribute.get_value(snapshot, self) {
             Ok(value) => value,
@@ -1275,14 +1288,39 @@ impl ThingManager {
             // going through one of the above code paths, so `get_value()` better succeed.
             Err(error) => panic!("Error encountered when attempting to insert ownership for an attribute: {error:?}"),
         };
+
+        let type_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
+        if Some(value.value_type()) != type_value_type {
+            return Err(ConceptWriteError::ValueTypeMismatch {
+                expected: type_value_type,
+                provided: value.value_type(),
+            });
+        }
+
+        let owns = owner.get_type_owns(snapshot, self.type_manager(), attribute_type.clone())?.into_owned();
+
+        // TODO: Decide where to put OperationTimeValidation: to concept api or to thing_manager...
+
+        let value = value.into_owned();
+
+        OperationTimeValidation::validate_has_regex_constraint(snapshot, self, owns.clone(), value.clone())
+            .map_err(|source| ConceptWriteError::DataValidation { source })?;
+
+        OperationTimeValidation::validate_has_range_constraint(snapshot, self, owns.clone(), value.clone())
+            .map_err(|source| ConceptWriteError::DataValidation { source })?;
+
+        OperationTimeValidation::validate_has_values_constraint(snapshot, self, owns.clone(), value.clone())
+            .map_err(|source| ConceptWriteError::DataValidation { source })?;
+
         // TODO: handle duplicates
         // note: we always re-put the attribute. TODO: optimise knowing when the attribute pre-exists.
-        self.put_attribute(snapshot, attribute_type, value).unwrap();
+        self.put_attribute(snapshot, attribute_type, value)?;
         owner.set_modified(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
         let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.vertex());
         snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+        Ok(())
     }
 
     pub(crate) fn unset_has<'a>(

@@ -571,7 +571,9 @@ impl CommitTimeValidation {
             let supertype_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, supertype.clone())?;
 
             let interface_type = capability.interface();
-            if let Some(supertype_capability) = supertype_capabilities.iter().find(|cap| &cap.interface() == &interface_type) {
+            if let Some(supertype_capability) =
+                supertype_capabilities.iter().find(|cap| &cap.interface() == &interface_type)
+            {
                 let supertype_capability_object = supertype_capability.object();
 
                 let capability_override = TypeReader::get_capability_override(snapshot, capability.clone())?;

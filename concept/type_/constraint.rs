@@ -50,9 +50,22 @@ pub enum ConstraintValidationMode {
 
 impl Constraint {
     compute_constraint_one_to_one_annotation!(compute_abstract, Annotation::Abstract, AnnotationAbstract);
-    compute_constraint_one_to_one_annotation!(compute_distinct, Annotation::Distinct, AnnotationDistinct);
     compute_constraint_one_to_one_annotation!(compute_independent, Annotation::Independent, AnnotationIndependent);
     compute_constraint_one_to_one_annotation!(compute_key, Annotation::Key, AnnotationKey);
+
+    pub fn compute_distinct<'a, A: Into<Annotation> + Clone + 'a>(
+        annotations: impl IntoIterator<Item = &'a A>,
+        default: Option<AnnotationDistinct>,
+    ) -> Option<AnnotationDistinct> {
+        let distinct = annotations
+            .into_iter()
+            .filter_map(|annotation| match annotation.clone().into() {
+                Annotation::Distinct(distinct) => Some(distinct),
+                _ => None,
+            })
+            .next();
+        return if distinct.is_some() { distinct } else { default };
+    }
 
     pub fn compute_unique<'a, A: Into<Annotation> + Clone + 'a>(
         annotations: impl IntoIterator<Item = &'a A>,

@@ -16,7 +16,7 @@ use encoding::{
         thing::{edge::ThingEdgeLinks, ThingVertex},
         type_::{CapabilityKind, Kind},
     },
-    value::{label::Label, value::Value, value_type::ValueType},
+    value::{label::Label, value::Value, value_type::ValueType, ValueEncodable},
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
@@ -941,7 +941,7 @@ impl OperationTimeValidation {
         let overriding_capabilities = TypeReader::get_overriding_capabilities(snapshot, capability.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
 
-        match overriding_capabilities.first() {
+        match overriding_capabilities.iter().next() {
             Some(overriding_capability) => {
                 Err(SchemaValidationError::CannotUnsetCapabilityWithExistingOverridingCapabilities(
                     CAP::KIND,
@@ -1114,8 +1114,9 @@ impl OperationTimeValidation {
                 .map_err(SchemaValidationError::ConceptRead)?,
         };
 
-        let subtype_capabilities_declared = TypeReader::get_capabilities_declared::<CAP>(snapshot, object_subtype.clone())
-            .map_err(SchemaValidationError::ConceptRead)?;
+        let subtype_capabilities_declared =
+            TypeReader::get_capabilities_declared::<CAP>(snapshot, object_subtype.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
         let subtype_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, object_subtype.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
 
@@ -2203,7 +2204,8 @@ impl OperationTimeValidation {
         if let Some(super_relation) = super_relation {
             let is_inherited = TypeReader::get_capabilities::<Relates<'_>>(snapshot, super_relation)
                 .map_err(SchemaValidationError::ConceptRead)?
-                .iter().any(|relates| &relates.role() == &role_type);
+                .iter()
+                .any(|relates| &relates.role() == &role_type);
             if is_inherited {
                 Ok(())
             } else {
@@ -2225,9 +2227,11 @@ impl OperationTimeValidation {
             if super_owner.is_none() {
                 return Ok(());
             }
-            let owns_transitive =
-                TypeReader::get_capabilities::<Owns<'static>>(snapshot, super_owner.unwrap().clone().into_owned_object_type())
-                    .map_err(SchemaValidationError::ConceptRead)?;
+            let owns_transitive = TypeReader::get_capabilities::<Owns<'static>>(
+                snapshot,
+                super_owner.unwrap().clone().into_owned_object_type(),
+            )
+            .map_err(SchemaValidationError::ConceptRead)?;
             owns_transitive.iter().any(|owns| &owns.attribute() == &attribute_type)
         });
         if is_inherited {
@@ -2285,9 +2289,11 @@ impl OperationTimeValidation {
             if super_player.is_none() {
                 return Ok(());
             }
-            let plays_transitive =
-                TypeReader::get_capabilities::<Plays<'static>>(snapshot, super_player.unwrap().clone().into_owned_object_type())
-                    .map_err(SchemaValidationError::ConceptRead)?;
+            let plays_transitive = TypeReader::get_capabilities::<Plays<'static>>(
+                snapshot,
+                super_player.unwrap().clone().into_owned_object_type(),
+            )
+            .map_err(SchemaValidationError::ConceptRead)?;
             plays_transitive.iter().any(|plays| &plays.role() == &role_type)
         });
         if is_inherited {
@@ -2578,9 +2584,8 @@ impl OperationTimeValidation {
         owner: ObjectType<'static>,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        let all_owns =
-            TypeReader::get_capabilities::<Owns<'static>>(snapshot, owner.clone().into_owned_object_type())
-                .map_err(SchemaValidationError::ConceptRead)?;
+        let all_owns = TypeReader::get_capabilities::<Owns<'static>>(snapshot, owner.clone().into_owned_object_type())
+            .map_err(SchemaValidationError::ConceptRead)?;
         let found_owns = all_owns.iter().find(|owns| owns.attribute() == attribute_type);
 
         match found_owns {
@@ -2888,8 +2893,10 @@ impl OperationTimeValidation {
                         }
                     }
                     _ => {
-                        return Err(ConceptReadError::CorruptAttributeValueDoesntMatchAttributeTypeValueType(
+                        return Err(ConceptReadError::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(
                             get_label_or_concept_read_err(snapshot, attribute_type)?,
+                            value.value_type(),
+                            Annotation::Regex(regex.clone()),
                         ))
                     }
                 }
@@ -2952,7 +2959,7 @@ impl OperationTimeValidation {
             return Ok(None);
         }
 
-        let distinct = Constraint::compute_distinct(annotations);
+        let distinct = Constraint::compute_distinct(annotations, None);
         let is_key = Constraint::compute_key(annotations).is_some();
         let unique = Constraint::compute_unique(annotations);
         let cardinality = Constraint::compute_cardinality(annotations, None);
@@ -3012,9 +3019,13 @@ impl OperationTimeValidation {
                                 }
                             }
                             _ => {
-                                return Err(ConceptReadError::CorruptAttributeValueDoesntMatchAttributeTypeValueType(
-                                    get_label_or_concept_read_err(snapshot, attribute_type)?,
-                                ))
+                                return Err(
+                                    ConceptReadError::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(
+                                        get_label_or_concept_read_err(snapshot, attribute_type)?,
+                                        value.value_type(),
+                                        Annotation::Regex(regex.clone()),
+                                    ),
+                                );
                             }
                         }
                     }
@@ -3100,7 +3111,7 @@ impl OperationTimeValidation {
             return Ok(None);
         }
 
-        let distinct = Constraint::compute_distinct(annotations);
+        let distinct = Constraint::compute_distinct(annotations, None);
         let cardinality = Constraint::compute_cardinality(annotations, None);
         debug_assert!(
             cardinality.is_some() || distinct.is_some(),
@@ -3711,7 +3722,11 @@ impl OperationTimeValidation {
             current_capabilities.iter().filter(|capability| capability.object() != type_);
 
         Ok(current_inherited_capabilities
-            .filter(|capability| !new_inherited_capabilities.iter().any(|inherited_capability| inherited_capability.interface() == capability.interface()))
+            .filter(|capability| {
+                !new_inherited_capabilities
+                    .iter()
+                    .any(|inherited_capability| inherited_capability.interface() == capability.interface())
+            })
             .map(|capability| capability.clone())
             .collect())
     }
@@ -3734,7 +3749,9 @@ impl OperationTimeValidation {
         let mut updated_annotations_from_inheritance = HashMap::new();
 
         for old_capability in old_inherited_capabilities {
-            if let Some(new_capability) = new_inherited_capabilities.iter().find(|cap| cap.interface() == old_capability.interface()) {
+            if let Some(new_capability) =
+                new_inherited_capabilities.iter().find(|cap| cap.interface() == old_capability.interface())
+            {
                 let old_annotations = TypeReader::get_type_edge_annotations(snapshot, old_capability.clone())
                     .map_err(SchemaValidationError::ConceptRead)?;
                 let new_annotations = TypeReader::get_type_edge_annotations(snapshot, new_capability.clone())

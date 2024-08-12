@@ -45,6 +45,14 @@ impl<'a> Relates<'a> {
         self.role.clone()
     }
 
+    pub fn is_distinct(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, ConceptReadError> {
+        type_manager.get_relates_is_distinct(snapshot, self.clone())
+    }
+
     pub fn set_override(
         &self,
         snapshot: &mut impl WritableSnapshot,

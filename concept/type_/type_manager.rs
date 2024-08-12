@@ -280,6 +280,35 @@ macro_rules! storage_delete_annotation {
     };
 }
 
+macro_rules! get_has_constraint {
+    ($(
+        fn $method_name:ident<'a>() -> $type_:ty = $constraint_method:path;
+    )*) => {
+        $(
+            pub(crate) fn $method_name<'a>(
+                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            ) -> Result<bool, ConceptReadError> {
+                let constraint = $constraint_method(type_.get_annotations(snapshot, self)?.keys());
+                Ok(constraint.is_some())
+            }
+        )*
+    }
+}
+
+macro_rules! get_constraint {
+    ($(
+        fn $method_name:ident<'a>() -> $type_:ty = $constraint_type:ident | $constraint_method:path;
+    )*) => {
+        $(
+            pub(crate) fn $method_name<'a>(
+                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            ) -> Result<Option<$constraint_type>, ConceptReadError> {
+                Ok($constraint_method(type_.get_annotations(snapshot, self)?.keys()))
+            }
+        )*
+    }
+}
+
 impl TypeManager {
     pub fn new(
         definition_key_generator: Arc<DefinitionKeyGenerator>,
@@ -751,6 +780,18 @@ impl TypeManager {
         }
     }
 
+    pub(crate) fn get_plays_overriding(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        plays: Plays<'static>,
+    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_plays_overriding(plays)))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_overriding_capabilities(snapshot, plays)?))
+        }
+    }
+
     pub(crate) fn get_attribute_type_value_type(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -789,7 +830,7 @@ impl TypeManager {
         fn get_attribute_type_annotations() -> AttributeType = get_type_annotations | get_annotations | AttributeTypeAnnotation;
     }
 
-    pub(crate) fn get_owns_overridden(
+    pub(crate) fn get_owns_override(
         &self,
         snapshot: &impl ReadableSnapshot,
         owns: Owns<'static>,
@@ -798,6 +839,18 @@ impl TypeManager {
             Ok(MaybeOwns::Borrowed(cache.get_owns_override(owns)))
         } else {
             Ok(MaybeOwns::Owned(TypeReader::get_capability_override(snapshot, owns)?))
+        }
+    }
+
+    pub(crate) fn get_owns_overriding(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        owns: Owns<'static>,
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_owns_overriding(owns)))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_overriding_capabilities(snapshot, owns)?))
         }
     }
 
@@ -838,7 +891,7 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relates_overridden(
+    pub(crate) fn get_relates_override(
         &self,
         snapshot: &impl ReadableSnapshot,
         relates: Relates<'static>,
@@ -847,6 +900,18 @@ impl TypeManager {
             Ok(MaybeOwns::Borrowed(cache.get_relates_override(relates)))
         } else {
             Ok(MaybeOwns::Owned(TypeReader::get_capability_override(snapshot, relates)?))
+        }
+    }
+
+    pub(crate) fn get_relates_overriding(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relates: Relates<'static>,
+    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_relates_overriding(relates)))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_overriding_capabilities(snapshot, relates)?))
         }
     }
 
@@ -991,13 +1056,65 @@ impl TypeManager {
         }
     }
 
-    pub fn get_type_is_abstract<'a, T: KindAPI<'a>>(
+    pub fn get_owns_is_distinct<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        owns: Owns<'a>,
+    ) -> Result<bool, ConceptReadError> {
+        let default = match owns.get_ordering(snapshot, self)? {
+            Ordering::Ordered => None,
+            Ordering::Unordered => Some(AnnotationDistinct),
+        };
+
+        Ok(Constraint::compute_distinct(owns.get_annotations(snapshot, self)?.keys(), default).is_some())
+    }
+
+    pub fn get_relates_is_distinct<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relates: Relates<'a>,
+    ) -> Result<bool, ConceptReadError> {
+        let default = match relates.role().get_ordering(snapshot, self)? {
+            Ordering::Ordered => None,
+            Ordering::Unordered => Some(AnnotationDistinct),
+        };
+
+        Ok(Constraint::compute_distinct(relates.get_annotations(snapshot, self)?.keys(), default).is_some())
+    }
+
+    get_has_constraint! {
+        fn get_type_is_abstract<'a>() -> impl KindAPI<'a> = Constraint::compute_abstract;
+        fn get_owns_is_unique<'a>() -> Owns<'a> = Constraint::compute_unique;
+        fn get_owns_is_key<'a>() -> Owns<'a> = Constraint::compute_key;
+        fn get_attribute_type_is_independent<'a>() -> AttributeType<'a> = Constraint::compute_independent;
+        fn get_relation_type_is_cascade<'a>() -> RelationType<'a> = Constraint::compute_cascade;
+    }
+
+    get_constraint! {
+        fn get_owns_regex<'a>() -> Owns<'a> = AnnotationRegex | Constraint::compute_regex;
+        fn get_owns_range<'a>() -> Owns<'a> = AnnotationRange | Constraint::compute_range;
+        fn get_owns_values<'a>() -> Owns<'a> = AnnotationValues | Constraint::compute_values;
+        fn get_attribute_type_regex<'a>() -> AttributeType<'a> = AnnotationRegex | Constraint::compute_regex;
+        fn get_attribute_type_range<'a>() -> AttributeType<'a> = AnnotationRange | Constraint::compute_range;
+        fn get_attribute_type_values<'a>() -> AttributeType<'a> = AnnotationValues | Constraint::compute_values;
+    }
+
+    pub(crate) fn get_type_annotation_source<T: KindAPI<'static>>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_: T,
-    ) -> Result<bool, ConceptReadError> {
-        let is_abstract = Constraint::compute_abstract(type_.get_annotations(snapshot, self)?.keys());
-        Ok(is_abstract.is_some())
+        annotation: T::AnnotationType,
+    ) -> Result<Option<T>, ConceptReadError> {
+        Ok(type_.get_annotations(snapshot, self)?.get(&annotation).cloned())
+    }
+
+    pub(crate) fn get_capability_annotation_source<CAP: Capability<'static>>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        capability: CAP,
+        annotation: CAP::AnnotationType,
+    ) -> Result<Option<CAP>, ConceptReadError> {
+        Ok(capability.get_annotations(snapshot, self)?.get(&annotation).cloned())
     }
 
     pub(crate) fn get_independent_attribute_types(
@@ -3458,12 +3575,12 @@ impl TypeManager {
     fn validate_unset_capability_annotation_general(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        edge: impl Capability<'static>,
+        capability: impl Capability<'static>,
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_unset_edge_annotation_is_not_inherited(
             snapshot,
-            edge.clone(),
+            capability.clone(),
             annotation_category,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;

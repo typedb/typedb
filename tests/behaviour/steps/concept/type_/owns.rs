@@ -93,9 +93,8 @@ pub async fn get_owns_set_override(
                 .get_attribute_type(&tx.snapshot, &overridden_type_label.into_typedb())
                 .unwrap()
                 .unwrap();
-            let overridden_owns_opt = owner_supertype
-                .get_owns_attribute(&tx.snapshot, &tx.type_manager, overridden_attr_type)
-                .unwrap();
+            let overridden_owns_opt =
+                owner_supertype.get_owns_attribute(&tx.snapshot, &tx.type_manager, overridden_attr_type).unwrap();
 
             if let Some(overridden_owns) = overridden_owns_opt {
                 let res = owns.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_owns);
@@ -198,8 +197,7 @@ pub async fn get_owns_annotations_contains(
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns =
-            object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
         let actual_contains = owns
             .get_annotations(&tx.snapshot, &tx.type_manager)
@@ -225,8 +223,7 @@ pub async fn get_owns_annotations_categories_contains(
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns =
-            object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let actual_contains = owns
             .get_annotations(&tx.snapshot, &tx.type_manager)
             .unwrap()
@@ -255,8 +252,7 @@ pub async fn get_owns_declared_annotations_contains(
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns =
-            object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
         let actual_contains = owns
             .get_annotations_declared(&tx.snapshot, &tx.type_manager)
@@ -279,8 +275,7 @@ pub async fn get_owns_annotations_is_empty(
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns =
-            object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
 
         let actual_is_empty = owns.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
@@ -300,8 +295,7 @@ pub async fn get_owns_declared_annotations_is_empty(
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns =
-            object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
 
         let actual_is_empty = owns.get_annotations_declared(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
@@ -321,8 +315,7 @@ pub async fn get_owns_cardinality(
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns =
-            object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
         let actual_cardinality = owns.get_cardinality(&tx.snapshot, &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
@@ -408,8 +401,7 @@ pub async fn get_owns_overridden_exists(
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns =
-            object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let overridden_owns_opt = owns.get_override(&tx.snapshot, &tx.type_manager).unwrap();
         exists.check(
             &overridden_owns_opt,

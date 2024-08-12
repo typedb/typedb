@@ -51,8 +51,7 @@ impl<'a> Owns<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains_key(&OwnsAnnotation::Key(AnnotationKey)))
+        type_manager.get_owns_is_key(snapshot, self.clone())
     }
 
     pub fn is_unique(
@@ -60,9 +59,7 @@ impl<'a> Owns<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains_key(&OwnsAnnotation::Unique(AnnotationUnique))
-            || annotations.contains_key(&OwnsAnnotation::Key(AnnotationKey)))
+        type_manager.get_owns_is_unique(snapshot, self.clone())
     }
 
     pub fn is_distinct(
@@ -70,13 +67,33 @@ impl<'a> Owns<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        match self.get_ordering(snapshot, type_manager)? {
-            Ordering::Ordered => {
-                let annotations = self.get_annotations(snapshot, type_manager)?;
-                Ok(annotations.contains_key(&OwnsAnnotation::Distinct(AnnotationDistinct)))
-            }
-            Ordering::Unordered => Ok(true),
-        }
+        type_manager.get_owns_is_distinct(snapshot, self.clone())
+    }
+
+    // TODO: Might call it "get_regex", "get_range", "get_values", but "get_values" sounds like
+    // we return all the values of instances of this type...
+    pub fn get_regex_constraint(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<AnnotationRegex>, ConceptReadError> {
+        type_manager.get_owns_regex(snapshot, self.clone())
+    }
+
+    pub fn get_range_constraint(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<AnnotationRange>, ConceptReadError> {
+        type_manager.get_owns_range(snapshot, self.clone())
+    }
+
+    pub fn get_values_constraint(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<AnnotationValues>, ConceptReadError> {
+        type_manager.get_owns_values(snapshot, self.clone())
     }
 
     // TODO: Should it be 'this or just 'tm on type_manager?
@@ -85,7 +102,15 @@ impl<'a> Owns<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, Option<Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_overridden(snapshot, self.clone().into_owned())
+        type_manager.get_owns_override(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_overriding<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_overriding(snapshot, self.clone().into_owned())
     }
 
     pub fn set_override(
@@ -196,7 +221,7 @@ impl<'a> Owns<'a> {
         type_manager.set_owns_ordering(snapshot, thing_manager, self.clone().into_owned(), ordering)
     }
 
-    fn into_owned(self) -> Owns<'static> {
+    pub(crate) fn into_owned(self) -> Owns<'static> {
         Owns { owner: ObjectType::new(self.owner.vertex().into_owned()), attribute: self.attribute.into_owned() }
     }
 }
