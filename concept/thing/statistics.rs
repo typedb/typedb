@@ -70,6 +70,10 @@ pub struct Statistics {
     pub attribute_owner_counts: HashMap<AttributeType<'static>, HashMap<ObjectType<'static>, u64>>,
     pub role_player_counts: HashMap<ObjectType<'static>, HashMap<RoleType<'static>, u64>>,
     pub relation_role_counts: HashMap<RelationType<'static>, HashMap<RoleType<'static>, u64>>,
+    pub relation_role_player_counts:
+        HashMap<RelationType<'static>, HashMap<RoleType<'static>, HashMap<ObjectType<'static>, u64>>>,
+    pub role_player_relation_counts:
+        HashMap<ObjectType<'static>, HashMap<RoleType<'static>, HashMap<RelationType<'static>, u64>>>,
 
     // TODO: adding role types is possible, but won't help with filtering before reading storage since roles are not in the prefix
     pub player_index_counts: HashMap<ObjectType<'static>, HashMap<ObjectType<'static>, u64>>,
@@ -97,6 +101,8 @@ impl Statistics {
             attribute_owner_counts: HashMap::new(),
             role_player_counts: HashMap::new(),
             relation_role_counts: HashMap::new(),
+            relation_role_player_counts: HashMap::new(),
+            role_player_relation_counts: HashMap::new(),
             player_index_counts: HashMap::new(),
         }
     }
@@ -308,11 +314,29 @@ impl Statistics {
         *role_count = role_count.checked_add_signed(delta).unwrap();
         self.total_role_count = self.total_role_count.checked_add_signed(delta).unwrap();
         let role_player_count =
-            self.role_player_counts.entry(player_type).or_default().entry(role_type.clone()).or_default();
+            self.role_player_counts.entry(player_type.clone()).or_default().entry(role_type.clone()).or_default();
         *role_player_count = role_player_count.checked_add_signed(delta).unwrap();
         let relation_role_count =
-            self.relation_role_counts.entry(relation_type).or_default().entry(role_type).or_default();
+            self.relation_role_counts.entry(relation_type.clone()).or_default().entry(role_type.clone()).or_default();
         *relation_role_count = relation_role_count.checked_add_signed(delta).unwrap();
+        let relation_role_player_count = self
+            .relation_role_player_counts
+            .entry(relation_type.clone())
+            .or_default()
+            .entry(role_type.clone())
+            .or_default()
+            .entry(player_type.clone())
+            .or_default();
+        *relation_role_player_count = relation_role_player_count.checked_add_signed(delta).unwrap();
+        let role_player_relation_count = self
+            .role_player_relation_counts
+            .entry(player_type)
+            .or_default()
+            .entry(role_type)
+            .or_default()
+            .entry(relation_type)
+            .or_default();
+        *role_player_relation_count = role_player_relation_count.checked_add_signed(delta).unwrap();
     }
 
     fn update_indexed_player(
@@ -580,11 +604,13 @@ mod serialise {
         AttributeOwnerCounts,
         RolePlayerCounts,
         RelationRoleCounts,
+        RelationRolePlayerCounts,
+        RolePlayerRelationCounts,
         PlayerIndexCounts,
     }
 
     impl Field {
-        const NAMES: [&'static str; 17] = [
+        const NAMES: [&'static str; 19] = [
             Self::StatisticsVersion.name(),
             Self::OpenSequenceNumber.name(),
             Self::TotalThingCount.name(),
@@ -601,6 +627,8 @@ mod serialise {
             Self::AttributeOwnerCounts.name(),
             Self::RolePlayerCounts.name(),
             Self::RelationRoleCounts.name(),
+            Self::RelationRolePlayerCounts.name(),
+            Self::RolePlayerRelationCounts.name(),
             Self::PlayerIndexCounts.name(),
         ];
 
@@ -622,6 +650,8 @@ mod serialise {
                 Field::AttributeOwnerCounts => "AttributeOwnerCounts",
                 Field::RolePlayerCounts => "RolePlayerCounts",
                 Field::RelationRoleCounts => "RelationRoleCounts",
+                Field::RelationRolePlayerCounts => "RelationRolePlayerCounts",
+                Field::RolePlayerRelationCounts => "RolePlayerRelationCounts",
                 Field::PlayerIndexCounts => "PlayerIndexCounts",
             }
         }
@@ -644,6 +674,8 @@ mod serialise {
                 "AttributeOwnerCounts" => Some(Field::AttributeOwnerCounts),
                 "RolePlayerCounts" => Some(Field::RolePlayerCounts),
                 "RelationRoleCounts" => Some(Field::RelationRoleCounts),
+                "RelationRolePlayerCounts" => Some(Field::RelationRolePlayerCounts),
+                "RolePlayerRelationCounts" => Some(Field::RolePlayerRelationCounts),
                 "PlayerIndexCounts" => Some(Field::PlayerIndexCounts),
                 _ => None,
             }
@@ -671,25 +703,38 @@ mod serialise {
             state.serialize_field(Field::AttributeCounts.name(), &to_serialisable_map(&self.attribute_counts))?;
             state.serialize_field(Field::RoleCounts.name(), &to_serialisable_map(&self.role_counts))?;
 
-            let has_attribute_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                to_serialisable_map_map(&self.has_attribute_counts);
-            state.serialize_field(Field::HasAttributeCounts.name(), &has_attribute_counts)?;
+            state.serialize_field(
+                Field::HasAttributeCounts.name(),
+                &to_serialisable_map_map(&self.has_attribute_counts),
+            )?;
 
-            let attribute_owner_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                to_serialisable_map_map(&self.attribute_owner_counts);
-            state.serialize_field(Field::AttributeOwnerCounts.name(), &attribute_owner_counts)?;
+            state.serialize_field(
+                Field::AttributeOwnerCounts.name(),
+                &to_serialisable_map_map(&self.attribute_owner_counts),
+            )?;
 
-            let role_player_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                to_serialisable_map_map(&self.role_player_counts);
-            state.serialize_field(Field::RolePlayerCounts.name(), &role_player_counts)?;
+            state
+                .serialize_field(Field::RolePlayerCounts.name(), &to_serialisable_map_map(&self.role_player_counts))?;
 
-            let relation_role_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                to_serialisable_map_map(&self.relation_role_counts);
-            state.serialize_field(Field::RelationRoleCounts.name(), &relation_role_counts)?;
+            state.serialize_field(
+                Field::RelationRoleCounts.name(),
+                &to_serialisable_map_map(&self.relation_role_counts),
+            )?;
 
-            let player_index_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                to_serialisable_map_map(&self.player_index_counts);
-            state.serialize_field(Field::PlayerIndexCounts.name(), &player_index_counts)?;
+            state.serialize_field(
+                Field::RelationRolePlayerCounts.name(),
+                &to_serialisable_map_map_map(&self.relation_role_player_counts),
+            )?;
+
+            state.serialize_field(
+                Field::RolePlayerRelationCounts.name(),
+                &to_serialisable_map_map_map(&self.role_player_relation_counts),
+            )?;
+
+            state.serialize_field(
+                Field::PlayerIndexCounts.name(),
+                &to_serialisable_map_map(&self.player_index_counts),
+            )?;
 
             state.end()
         }
@@ -699,6 +744,16 @@ mod serialise {
         map: &HashMap<Type1, HashMap<Type2, u64>>,
     ) -> HashMap<SerialisableType, HashMap<SerialisableType, u64>> {
         map.iter().map(|(type_, value)| (type_.clone().into(), to_serialisable_map(value))).collect()
+    }
+
+    fn to_serialisable_map_map_map<
+        Type1: Into<SerialisableType> + Clone,
+        Type2: Into<SerialisableType> + Clone,
+        Type3: Into<SerialisableType> + Clone,
+    >(
+        map: &HashMap<Type1, HashMap<Type2, HashMap<Type3, u64>>>,
+    ) -> HashMap<SerialisableType, HashMap<SerialisableType, HashMap<SerialisableType, u64>>> {
+        map.iter().map(|(type_, value)| (type_.clone().into(), to_serialisable_map_map(value))).collect()
     }
 
     fn to_serialisable_map<Type_: Into<SerialisableType> + Clone>(
@@ -818,8 +873,38 @@ mod serialise {
                         .into_iter()
                         .map(|(type_1, map)| (type_1.into_relation_type(), into_role_map(map)))
                         .collect();
+                    let encoded_relation_role_player_counts: HashMap<
+                        SerialisableType,
+                        HashMap<SerialisableType, HashMap<SerialisableType, u64>>,
+                    > = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(16, &self))?;
+                    let relation_role_player_counts = encoded_relation_role_player_counts
+                        .into_iter()
+                        .map(|(type_1, map)| {
+                            (
+                                type_1.into_relation_type(),
+                                map.into_iter()
+                                    .map(|(type_1, map)| (type_1.into_role_type(), into_object_map(map)))
+                                    .collect(),
+                            )
+                        })
+                        .collect();
+                    let encoded_role_player_relation_counts: HashMap<
+                        SerialisableType,
+                        HashMap<SerialisableType, HashMap<SerialisableType, u64>>,
+                    > = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(17, &self))?;
+                    let role_player_relation_counts = encoded_role_player_relation_counts
+                        .into_iter()
+                        .map(|(type_1, map)| {
+                            (
+                                type_1.into_object_type(),
+                                map.into_iter()
+                                    .map(|(type_1, map)| (type_1.into_role_type(), into_relation_map(map)))
+                                    .collect(),
+                            )
+                        })
+                        .collect();
                     let encoded_player_index_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(16, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(18, &self))?;
                     let player_index_counts = encoded_player_index_counts
                         .into_iter()
                         .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
@@ -841,6 +926,8 @@ mod serialise {
                         attribute_owner_counts,
                         role_player_counts,
                         relation_role_counts,
+                        relation_role_player_counts,
+                        role_player_relation_counts,
                         player_index_counts,
                     })
                 }
@@ -865,6 +952,8 @@ mod serialise {
                     let mut attribute_owner_counts = None;
                     let mut role_player_counts = None;
                     let mut relation_role_counts = None;
+                    let mut relation_role_player_counts = None;
+                    let mut role_player_relation_counts = None;
                     let mut player_index_counts = None;
                     while let Some(key) = map.next_key()? {
                         match key {
@@ -992,6 +1081,54 @@ mod serialise {
                                         .collect(),
                                 );
                             }
+                            Field::RelationRolePlayerCounts => {
+                                if relation_role_counts.is_some() {
+                                    return Err(de::Error::duplicate_field(Field::RelationRolePlayerCounts.name()));
+                                }
+                                let encoded: HashMap<
+                                    SerialisableType,
+                                    HashMap<SerialisableType, HashMap<SerialisableType, u64>>,
+                                > = map.next_value()?;
+                                relation_role_player_counts = Some(
+                                    encoded
+                                        .into_iter()
+                                        .map(|(type_1, map)| {
+                                            (
+                                                type_1.into_relation_type(),
+                                                map.into_iter()
+                                                    .map(|(type_1, map)| {
+                                                        (type_1.into_role_type(), into_object_map(map))
+                                                    })
+                                                    .collect(),
+                                            )
+                                        })
+                                        .collect(),
+                                );
+                            }
+                            Field::RolePlayerRelationCounts => {
+                                if relation_role_counts.is_some() {
+                                    return Err(de::Error::duplicate_field(Field::RolePlayerRelationCounts.name()));
+                                }
+                                let encoded: HashMap<
+                                    SerialisableType,
+                                    HashMap<SerialisableType, HashMap<SerialisableType, u64>>,
+                                > = map.next_value()?;
+                                role_player_relation_counts = Some(
+                                    encoded
+                                        .into_iter()
+                                        .map(|(type_1, map)| {
+                                            (
+                                                type_1.into_object_type(),
+                                                map.into_iter()
+                                                    .map(|(type_1, map)| {
+                                                        (type_1.into_role_type(), into_relation_map(map))
+                                                    })
+                                                    .collect(),
+                                            )
+                                        })
+                                        .collect(),
+                                );
+                            }
                             Field::PlayerIndexCounts => {
                                 if player_index_counts.is_some() {
                                     return Err(de::Error::duplicate_field(Field::PlayerIndexCounts.name()));
@@ -1040,6 +1177,10 @@ mod serialise {
                             .ok_or_else(|| de::Error::missing_field(Field::RolePlayerCounts.name()))?,
                         relation_role_counts: relation_role_counts
                             .ok_or_else(|| de::Error::missing_field(Field::RelationRoleCounts.name()))?,
+                        relation_role_player_counts: relation_role_player_counts
+                            .ok_or_else(|| de::Error::missing_field(Field::RelationRolePlayerCounts.name()))?,
+                        role_player_relation_counts: role_player_relation_counts
+                            .ok_or_else(|| de::Error::missing_field(Field::RolePlayerRelationCounts.name()))?,
                         player_index_counts: player_index_counts
                             .ok_or_else(|| de::Error::missing_field(Field::PlayerIndexCounts.name()))?,
                     })

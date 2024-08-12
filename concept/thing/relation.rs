@@ -488,7 +488,7 @@ fn storage_key_to_role_player<'a>(
 ) -> (RolePlayer<'a>, u64) {
     let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
     let role_type = RoleType::build_from_type_id(edge.role_id());
-    (RolePlayer { player: Object::new(edge.into_to()), role_type }, decode_value_u64(value.as_reference()))
+    (RolePlayer { player: Object::new(edge.into_player()), role_type }, decode_value_u64(value.as_reference()))
 }
 
 impl Hkt for RolePlayer<'static> {
@@ -507,7 +507,7 @@ fn storage_key_to_relation_role<'a>(
 ) -> (Relation<'a>, RoleType<'static>, u64) {
     let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
     let role_type = RoleType::build_from_type_id(edge.role_id());
-    (Relation::new(edge.into_from()), role_type, decode_value_u64(value.as_reference()))
+    (Relation::new(edge.into_relation()), role_type, decode_value_u64(value.as_reference()))
 }
 
 edge_iterator!(
