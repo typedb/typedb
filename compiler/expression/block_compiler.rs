@@ -22,10 +22,10 @@ use crate::{
     expression::{
         compiled_expression::{CompiledExpression, ExpressionValueType},
         expression_compiler::ExpressionCompilationContext,
+        ExpressionCompileError,
     },
-    inference::{type_annotations::TypeAnnotations},
+    inference::type_annotations::TypeAnnotations,
 };
-use crate::expression::ExpressionCompileError;
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block FunctionalBlock,
@@ -70,7 +70,9 @@ fn index_expressions<'block>(
     for constraint in conjunction.constraints() {
         if let Some(expression_binding) = constraint.as_expression_binding() {
             if index.contains_key(&expression_binding.left()) {
-                Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable { assign_variable: expression_binding.left() })?;
+                Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable {
+                    assign_variable: expression_binding.left(),
+                })?;
             }
             index.insert(expression_binding.left(), expression_binding.expression());
         }

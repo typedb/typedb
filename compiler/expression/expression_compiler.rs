@@ -9,12 +9,15 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use encoding::value::{value::Value, value_type::ValueTypeCategory, ValueEncodable};
 use ir::pattern::expression::{
-    BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex,
-    ListIndexRange, Operation, Operator,
+    BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation,
+    Operator,
 };
 
 use crate::{
-    expression::compiled_expression::{CompiledExpression, ExpressionValueType},
+    expression::{
+        compiled_expression::{CompiledExpression, ExpressionValueType},
+        ExpressionCompileError,
+    },
     instruction::expression::{
         list_operations,
         load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
@@ -24,7 +27,6 @@ use crate::{
         CompilableExpression, ExpressionInstruction,
     },
 };
-use crate::expression::ExpressionCompileError;
 
 pub struct ExpressionCompilationContext<'this> {
     expression_tree: &'this ExpressionTree<Variable>,
@@ -97,10 +99,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         Ok(())
     }
 
-    fn compile_list_constructor(
-        &mut self,
-        list_constructor: &ListConstructor,
-    ) -> Result<(), ExpressionCompileError> {
+    fn compile_list_constructor(&mut self, list_constructor: &ListConstructor) -> Result<(), ExpressionCompileError> {
         for expression_id in list_constructor.item_expression_ids().iter().rev() {
             self.compile_recursive(self.expression_tree.get(*expression_id))?;
         }
@@ -186,11 +185,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         }
     }
 
-    fn compile_op_boolean(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompileError> {
+    fn compile_op_boolean(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
@@ -200,11 +195,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         })
     }
 
-    fn compile_op_long(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompileError> {
+    fn compile_op_long(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
         match right_category {
@@ -225,11 +216,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         Ok(())
     }
 
-    fn compile_op_double(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompileError> {
+    fn compile_op_double(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
         match right_category {
@@ -250,11 +237,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         Ok(())
     }
 
-    fn compile_op_decimal(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompileError> {
+    fn compile_op_decimal(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
@@ -264,11 +247,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         })
     }
 
-    fn compile_op_string(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompileError> {
+    fn compile_op_string(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
@@ -278,11 +257,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         })
     }
 
-    fn compile_op_date(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompileError> {
+    fn compile_op_date(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
@@ -334,11 +309,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         })
     }
 
-    fn compile_op_struct(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-    ) -> Result<(), ExpressionCompileError> {
+    fn compile_op_struct(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.clone();
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {

@@ -14,12 +14,11 @@ use std::{marker::PhantomData, ops::Rem};
 
 use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 
-use crate::instruction::expression::{
-    op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
-};
 use crate::{
-    expression::ExpressionCompileError,
-    expression::expression_compiler::ExpressionCompilationContext
+    expression::{expression_compiler::ExpressionCompilationContext, ExpressionCompileError},
+    instruction::expression::{
+        op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
+    },
 };
 
 pub trait BinaryExpression<T1: DBValue, T2: DBValue, R: DBValue> {

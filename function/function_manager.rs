@@ -7,12 +7,9 @@
 use std::{iter::zip, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
-use compiler::inference::{
-    annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types_for_functions,
-};
+use compiler::inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types_for_functions};
 use concept::type_::type_manager::TypeManager;
 use encoding::{
-    AsBytes,
     graph::{
         definition::{
             definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator,
@@ -20,18 +17,16 @@ use encoding::{
         },
         type_::index::{NameToFunctionDefinitionIndex, NameToStructDefinitionIndex},
     },
-    Keyable, value::string_bytes::StringBytes,
+    value::string_bytes::StringBytes,
+    AsBytes, Keyable,
 };
 use ir::{
     program::{
-        function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex}
-        ,
-        FunctionReadError,
+        function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
+        FunctionDefinitionError, FunctionReadError,
     },
-    translation::function::build_signature,
+    translation::function::{build_signature, translate_function},
 };
-use ir::program::FunctionDefinitionError;
-use ir::translation::function::translate_function;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{
@@ -39,11 +34,7 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
-use crate::{
-    function::{SchemaFunction},
-    function_cache::FunctionCache,
-    FunctionError,
-};
+use crate::{function::SchemaFunction, function_cache::FunctionCache, FunctionError};
 
 /// Analogy to TypeManager, but specialised just for Functions
 pub struct FunctionManager {
@@ -62,7 +53,7 @@ impl FunctionManager {
     pub fn get_annotated_functions(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager
+        type_manager: &TypeManager,
     ) -> Result<Arc<IndexedAnnotatedFunctions>, FunctionError> {
         match self.function_cache.as_ref() {
             None => {
@@ -73,13 +64,9 @@ impl FunctionManager {
         }
     }
 
-    pub fn finalise(
-        self,
-        snapshot: &impl WritableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<(), FunctionError> {
-        let functions = FunctionReader::get_functions_all(snapshot)
-            .map_err(|source| FunctionError::FunctionRead { source })?;
+    pub fn finalise(self, snapshot: &impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), FunctionError> {
+        let functions =
+            FunctionReader::get_functions_all(snapshot).map_err(|source| FunctionError::FunctionRead { source })?;
         // TODO: Optimise: We recompile & redo type-inference on all functions here.
         // Prepare ir
         let function_index =
@@ -114,11 +101,11 @@ impl FunctionManager {
             }
         }
 
-        let buffered = HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
+        let buffered =
+            HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let function_index = ReadThroughFunctionSignatureIndex::new(snapshot, self, buffered);
         // Translate to ensure the function calls are valid references. Type-inference is done at commit-time.
         Self::translate_functions(&function_index, &functions)?;
-
 
         for (function, definition) in zip(functions.iter(), definitions.iter()) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
@@ -134,7 +121,7 @@ impl FunctionManager {
 
     pub(crate) fn translate_functions(
         function_index: &impl FunctionSignatureIndex,
-        functions: &Vec<SchemaFunction>
+        functions: &Vec<SchemaFunction>,
     ) -> Result<Vec<ir::program::function::Function>, FunctionError> {
         functions
             .iter()
@@ -257,7 +244,6 @@ pub mod tests {
     use concept::type_::type_manager::TypeManager;
     use durability::wal::WAL;
     use encoding::{
-        EncodingKeyspace,
         graph::{
             definition::{
                 definition_key::{DefinitionID, DefinitionKey},
@@ -266,17 +252,20 @@ pub mod tests {
             type_::vertex_generator::TypeVertexGenerator,
         },
         layout::prefix::Prefix,
+        EncodingKeyspace,
     };
     use ir::{
         pattern::variable_category::{VariableCategory, VariableOptionality},
-        program::function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
+        program::function_signature::{
+            FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
+        },
     };
-    use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
+    use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
     use test_utils::{create_tmp_dir, init_logging};
 
     use crate::{
         function_cache::FunctionCache,
-        function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, tests::test_schema::setup_types},
+        function_manager::{tests::test_schema::setup_types, FunctionManager, ReadThroughFunctionSignatureIndex},
     };
 
     fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
@@ -343,8 +332,11 @@ pub mod tests {
                 expected_name,
                 function_manager.get_function(&snapshot, expected_function_id.clone()).unwrap().name().as_str()
             );
-            let index =
-                ReadThroughFunctionSignatureIndex::new(&snapshot, &function_manager, HashMapFunctionSignatureIndex::empty());
+            let index = ReadThroughFunctionSignatureIndex::new(
+                &snapshot,
+                &function_manager,
+                HashMapFunctionSignatureIndex::empty(),
+            );
             assert!(matches!(index.get_function_signature("unresolved"), Ok(None)));
             let looked_up = index.get_function_signature("cat_names").unwrap().unwrap();
             assert_eq!(expected_signature.function_id(), looked_up.function_id());
@@ -355,8 +347,11 @@ pub mod tests {
             let cache = Arc::new(FunctionCache::new(storage.clone(), &type_manager, sequence_number).unwrap());
             let snapshot = storage.clone().open_snapshot_read();
             let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), Some(cache.clone()));
-            let index =
-                ReadThroughFunctionSignatureIndex::new(&snapshot, &function_manager, HashMapFunctionSignatureIndex::empty());
+            let index = ReadThroughFunctionSignatureIndex::new(
+                &snapshot,
+                &function_manager,
+                HashMapFunctionSignatureIndex::empty(),
+            );
             assert!(matches!(index.get_function_signature("unresolved"), Ok(None)));
             let looked_up = index.get_function_signature("cat_names").unwrap().unwrap();
             assert_eq!(expected_signature.function_id(), looked_up.function_id());
@@ -373,7 +368,7 @@ pub mod tests {
         use answer::Type as TypeAnnotation;
         use concept::type_::{
             annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation,
-            Ordering, OwnerAPI, type_manager::TypeManager,
+            type_manager::TypeManager, Ordering, OwnerAPI,
         };
         use encoding::value::{label::Label, value_type::ValueType};
         use storage::{

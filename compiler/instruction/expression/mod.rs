@@ -15,10 +15,9 @@ use load_cast::ImplicitCast;
 use unary::UnaryExpression;
 
 use crate::{
-    expression::expression_compiler::ExpressionCompilationContext,
+    expression::{expression_compiler::ExpressionCompilationContext, ExpressionCompileError},
     instruction::expression::op_codes::ExpressionOpCode,
 };
-use crate::expression::ExpressionCompileError;
 
 pub mod binary;
 pub mod list_operations;

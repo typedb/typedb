@@ -52,7 +52,8 @@ impl<D: DurabilityClient> TransactionRead<D> {
             Some(schema.type_cache.clone()),
         )); // TODO pass cache
         let thing_manager = Arc::new(ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone()));
-        let function_manager = FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
+        let function_manager =
+            FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
 
         drop(schema);
 
@@ -98,11 +99,19 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             Some(schema.type_cache.clone()),
         ));
         let thing_manager = Arc::new(ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone()));
-        let function_manager = FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
+        let function_manager =
+            FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
 
         drop(schema);
 
-        Self { snapshot, type_manager, thing_manager, function_manager, _schema_txn_guard: schema_txn_guard, _database: database }
+        Self {
+            snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            _schema_txn_guard: schema_txn_guard,
+            _database: database,
+        }
     }
 
     pub fn commit(mut self) -> Result<(), Vec<ConceptWriteError>> {

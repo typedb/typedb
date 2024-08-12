@@ -4,23 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::error::Error;
-use std::fmt;
-use crate::expression::ExpressionCompileError;
-use crate::inference::TypeInferenceError;
+use std::{error::Error, fmt};
 
+use crate::{expression::ExpressionCompileError, inference::TypeInferenceError};
+
+pub mod compiler;
 pub mod expression;
 pub mod inference;
 pub mod instruction;
 mod optimisation;
 pub mod planner;
 pub mod write;
-pub mod compiler;
 
 #[derive(Debug)]
 pub enum CompileError {
     ProgramTypeInference { source: TypeInferenceError },
-    ExpressionCompile { source: ExpressionCompileError }
+    ExpressionCompile { source: ExpressionCompileError },
 }
 
 impl fmt::Display for CompileError {

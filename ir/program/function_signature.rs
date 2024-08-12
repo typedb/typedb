@@ -6,9 +6,8 @@
 
 use std::{
     collections::HashMap,
-    fmt::{Display, Formatter},
+    fmt::{Debug, Display, Formatter},
 };
-use std::fmt::Debug;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 use primitive::maybe_owns::MaybeOwns;

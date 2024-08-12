@@ -4,19 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-};
+use std::collections::{BTreeMap, BTreeSet};
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
-use ir::program::{function::Function};
-use ir::program::block::FunctionalBlock;
+use ir::program::{block::FunctionalBlock, function::Function};
 use storage::snapshot::ReadableSnapshot;
 
 use super::pattern_type_inference::infer_types_for_block;
 use crate::inference::{
-    annotated_functions::{IndexedAnnotatedFunctions, AnnotatedUnindexedFunctions},
+    annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
     type_annotations::{FunctionAnnotations, TypeAnnotations},
     TypeInferenceError,
 };
@@ -31,7 +28,8 @@ pub fn infer_types<Snapshot: ReadableSnapshot>(
     annotated_schema_functions: &IndexedAnnotatedFunctions,
 ) -> Result<(TypeAnnotations, AnnotatedUnindexedFunctions), TypeInferenceError> {
     let preamble_functions = infer_types_for_functions(functions, snapshot, type_manager, &annotated_schema_functions)?;
-    let root_tig = infer_types_for_block(snapshot, &entry, type_manager, &annotated_schema_functions, Some(&preamble_functions))?;
+    let root_tig =
+        infer_types_for_block(snapshot, &entry, type_manager, &annotated_schema_functions, Some(&preamble_functions))?;
     Ok((TypeAnnotations::build(root_tig), preamble_functions))
 }
 
@@ -46,18 +44,22 @@ pub fn infer_types_for_functions(
         .iter()
         .map(|function| infer_types_for_function(function, snapshot, type_manager, indexed_annotated_functions, None))
         .collect();
-    let preliminary_annotations = AnnotatedUnindexedFunctions::new(
-        functions.into_boxed_slice(),
-        preliminary_annotations_res?.into_boxed_slice(),
-    );
+    let preliminary_annotations =
+        AnnotatedUnindexedFunctions::new(functions.into_boxed_slice(), preliminary_annotations_res?.into_boxed_slice());
 
     // In the second round, finer annotations are available at the function calls so the annotations in function bodies can be refined.
     let annotations_res = preliminary_annotations
         .iter_functions()
         .map(|function| {
-            infer_types_for_function(function, snapshot, type_manager, indexed_annotated_functions, Some(&preliminary_annotations))
+            infer_types_for_function(
+                function,
+                snapshot,
+                type_manager,
+                indexed_annotated_functions,
+                Some(&preliminary_annotations),
+            )
         })
-        .collect::<Result<Vec<FunctionAnnotations>,TypeInferenceError>>()?;
+        .collect::<Result<Vec<FunctionAnnotations>, TypeInferenceError>>()?;
 
     // TODO: ^Optimise. There's no reason to do all of type inference again. We can re-use the tigs, and restart at the source of any SCC.
     // TODO: We don't propagate annotations until convergence, so we don't always detect unsatisfiable queries
@@ -75,7 +77,8 @@ pub fn infer_types_for_function(
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<FunctionAnnotations, TypeInferenceError> {
-    let root_tig = infer_types_for_block(snapshot, function.block(), type_manager, indexed_annotated_functions, local_functions)?;
+    let root_tig =
+        infer_types_for_block(snapshot, function.block(), type_manager, indexed_annotated_functions, local_functions)?;
     let body_annotations = TypeAnnotations::build(root_tig);
     let return_annotations = function.return_operation().output_annotations(body_annotations.variable_annotations());
     Ok(FunctionAnnotations { return_annotations, block_annotations: body_annotations })
@@ -337,16 +340,11 @@ pub mod tests {
             // With schema cache
             let (entry, f_ir) = with_local_cache;
             let var_animal = entry.context().get_variable("animal").unwrap();
-            let annotations_with_local_cache = infer_types(
-                Program::new(entry, vec![f_ir]),
-                &snapshot,
-                &type_manager,
-                Arc::new(IndexedAnnotatedFunctions::empty()),
-            )
-            .unwrap();
+            let (entry_annotations, annotated_functions) =
+                infer_types(&entry, vec![f_ir], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
             assert_eq!(
-                *annotations_with_local_cache.entry_annotations.variable_annotations(),
-                HashMap::from([(var_animal, Arc::new(HashSet::from([type_cat.clone()])))]),
+                entry_annotations.variable_annotations(),
+                &HashMap::from([(var_animal, Arc::new(HashSet::from([type_cat.clone()])))]),
             );
         }
 
@@ -355,12 +353,11 @@ pub mod tests {
             let (entry, f_ir) = with_schema_cache;
             let var_animal = entry.context().get_variable("animal").unwrap();
             let f_id = FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0)));
-            let schema_cache =
-                IndexedAnnotatedFunctions::new(Box::new([Some(f_ir)]), Box::new([Some(f_annotations)]));
-            let annotations_with_schema_cache =
-                infer_types(Program::new(entry, vec![]), &snapshot, &type_manager, Arc::new(schema_cache)).unwrap();
+            let schema_cache = IndexedAnnotatedFunctions::new(Box::new([Some(f_ir)]), Box::new([Some(f_annotations)]));
+            let (entry_annotations, annotated_functions) =
+                infer_types(&entry, vec![], &snapshot, &type_manager, &schema_cache).unwrap();
             assert_eq!(
-                *annotations_with_schema_cache.1.variable_annotations(),
+                *entry_annotations.variable_annotations(),
                 HashMap::from([(var_animal, Arc::new(HashSet::from([type_cat.clone()])))]),
             );
         }

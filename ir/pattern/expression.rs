@@ -13,8 +13,10 @@ use std::{
 use answer::variable::Variable;
 use encoding::value::value::Value;
 
-use crate::{pattern::IrID, PatternDefinitionError};
-use crate::pattern::variable_category::VariableCategory;
+use crate::{
+    pattern::{variable_category::VariableCategory, IrID},
+    PatternDefinitionError,
+};
 
 enum ExpectedArgumentType {
     Single,

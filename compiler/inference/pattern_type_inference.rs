@@ -19,7 +19,7 @@ use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::inference::{
-    annotated_functions::{IndexedAnnotatedFunctions, AnnotatedUnindexedFunctions},
+    annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
     type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
     type_seeder::TypeSeeder,
     TypeInferenceError,

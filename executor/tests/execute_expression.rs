@@ -7,12 +7,10 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::{
-    expression::{
-        compiled_expression::{CompiledExpression, ExpressionValueType},
-        expression_compiler::ExpressionCompilationContext,
-    },
-    inference::ExpressionCompileError,
+use compiler::expression::{
+    compiled_expression::{CompiledExpression, ExpressionValueType},
+    expression_compiler::ExpressionCompilationContext,
+    ExpressionCompileError,
 };
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
 use executor::expression_executor::{ExpressionExecutor, ExpressionValue};

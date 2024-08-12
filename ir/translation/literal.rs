@@ -180,11 +180,7 @@ pub mod tests {
             typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap()
         {
             let block = translate_match(&HashMapFunctionSignatureIndex::empty(), &match_)?.finish();
-            let x = &block.conjunction().constraints()[0]
-                .as_expression_binding()
-                .unwrap()
-                .expression()
-                .get_root();
+            let x = &block.conjunction().constraints()[0].as_expression_binding().unwrap().expression().get_root();
             match x {
                 Expression::Constant(constant) => Ok(constant.clone()),
                 _ => unreachable!(),

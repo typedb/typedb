@@ -6,13 +6,11 @@
 
 use std::{error::Error, fmt};
 
-use typeql::query::stage::Match;
-
-use compiler::inference::TypeInferenceError;
+use compiler::{inference::TypeInferenceError, CompileError};
 use concept::error::ConceptReadError;
 use function::FunctionError;
-use ir::PatternDefinitionError;
-use ir::program::FunctionDefinitionError;
+use ir::{program::FunctionDefinitionError, PatternDefinitionError};
+use typeql::query::stage::Match;
 
 use crate::define::DefineError;
 
@@ -25,6 +23,7 @@ pub enum QueryError {
     Function { source: FunctionError },
     PipelineFunctionDefinition { source: FunctionDefinitionError },
     MatchWithFunctionsTypeInferenceFailure { clause: Match, source: TypeInferenceError },
+    CompileError { source: CompileError },
 }
 
 impl fmt::Display for QueryError {
@@ -43,6 +42,7 @@ impl Error for QueryError {
             Self::Function { source, .. } => Some(source),
             Self::PipelineFunctionDefinition { source, .. } => Some(source),
             Self::MatchWithFunctionsTypeInferenceFailure { source, .. } => Some(source),
+            Self::CompileError { source } => Some(source),
         }
     }
 }

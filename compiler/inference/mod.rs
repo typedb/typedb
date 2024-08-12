@@ -44,7 +44,8 @@ use std::{
 
 use answer::variable::Variable;
 use concept::error::ConceptReadError;
-use ir::pattern::{variable_category::VariableCategory};
+use ir::pattern::variable_category::VariableCategory;
+
 use crate::expression::ExpressionCompileError;
 
 pub mod annotated_functions;

@@ -13,12 +13,17 @@ use compiler::inference::{
 };
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::program::{function::Function, function_signature::{FunctionIDAPI, FunctionSignature, HashMapFunctionSignatureIndex}};
-use storage::{MVCCStorage, sequence_number::SequenceNumber};
-use storage::snapshot::ReadableSnapshot;
+use ir::program::{
+    function::Function,
+    function_signature::{FunctionIDAPI, FunctionSignature, HashMapFunctionSignatureIndex},
+};
+use storage::{sequence_number::SequenceNumber, snapshot::ReadableSnapshot, MVCCStorage};
 
-use crate::{function::SchemaFunction, function_manager::FunctionReader, FunctionError};
-use crate::function_manager::FunctionManager;
+use crate::{
+    function::SchemaFunction,
+    function_manager::{FunctionManager, FunctionReader},
+    FunctionError,
+};
 
 #[derive(Debug)]
 pub struct FunctionCache {
@@ -37,27 +42,27 @@ impl FunctionCache {
             .open_snapshot_read_at(open_sequence_number)
             .map_err(|error| FunctionError::SnapshotOpen { source: error })?;
 
-
-        let (function_index, indexed_schema_functions, indexed_annotated_functions) = Self::build_indexed_annotated_schema_functions(
-            &snapshot, type_manager
-        )?;
+        let (function_index, indexed_schema_functions, indexed_annotated_functions) =
+            Self::build_indexed_annotated_schema_functions(&snapshot, type_manager)?;
 
         Ok(Self {
             indexed_schema_functions,
             indexed_annotated_functions: Arc::new(indexed_annotated_functions),
-            index: function_index.into_map()
+            index: function_index.into_map(),
         })
     }
 
     pub(crate) fn build_indexed_annotated_schema_functions(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<(HashMapFunctionSignatureIndex, Box<[Option<SchemaFunction>]>, IndexedAnnotatedFunctions), FunctionError> {
-        let schema_functions = FunctionReader::get_functions_all(snapshot)
-            .map_err(|source| FunctionError::FunctionRead { source })?;
+    ) -> Result<(HashMapFunctionSignatureIndex, Box<[Option<SchemaFunction>]>, IndexedAnnotatedFunctions), FunctionError>
+    {
+        let schema_functions =
+            FunctionReader::get_functions_all(snapshot).map_err(|source| FunctionError::FunctionRead { source })?;
         // Prepare ir
-        let function_index =
-            HashMapFunctionSignatureIndex::build(schema_functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
+        let function_index = HashMapFunctionSignatureIndex::build(
+            schema_functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)),
+        );
         let ir = FunctionManager::translate_functions(&function_index, &schema_functions)?;
 
         // Run type-inference
@@ -76,8 +81,10 @@ impl FunctionCache {
             (0..required_cache_count).map(|_| None).collect::<Box<[Option<FunctionAnnotations>]>>();
 
         let (boxed_translated, boxed_annotations) = unindexed_cache.into_parts();
-        let zipped =
-            zip(schema_functions.into_iter(), zip(boxed_translated.into_vec().into_iter(), boxed_annotations.into_vec().into_iter()));
+        let zipped = zip(
+            schema_functions.into_iter(),
+            zip(boxed_translated.into_vec().into_iter(), boxed_annotations.into_vec().into_iter()),
+        );
         for (schema_function, (translated_function, annotations)) in zipped {
             let cache_index = schema_function.function_id.as_usize();
             schema_functions_index[cache_index] = Some(schema_function);
@@ -87,7 +94,7 @@ impl FunctionCache {
         Ok((
             function_index,
             schema_functions_index,
-            IndexedAnnotatedFunctions::new(translated_schema_functions_index, annotated_schema_functions_index)
+            IndexedAnnotatedFunctions::new(translated_schema_functions_index, annotated_schema_functions_index),
         ))
     }
 

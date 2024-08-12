@@ -5,18 +5,19 @@
  */
 
 use std::collections::HashMap;
+
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-
-use encoding::graph::definition::definition_key::DefinitionKey;
-use encoding::value::value_type::{ValueType, ValueTypeCategory};
+use encoding::{
+    graph::definition::definition_key::DefinitionKey,
+    value::value_type::{ValueType, ValueTypeCategory},
+};
 
 use crate::{
-    inference::type_annotations::TypeAnnotations,
+    expression::compiled_expression::{CompiledExpression, ExpressionValueType},
+    inference::{annotated_program::AnnotatedProgram, type_annotations::TypeAnnotations},
     planner::{function_plan::FunctionPlan, pattern_plan::PatternPlan},
 };
-use crate::expression::compiled_expression::{CompiledExpression, ExpressionValueType};
-use crate::inference::annotated_program::AnnotatedProgram;
 
 pub struct ProgramPlan {
     // TODO: krishnan: Revert pub
@@ -47,14 +48,10 @@ impl ProgramPlan {
         }
     }
 
-    pub fn from_program(
-        program: AnnotatedProgram,
-        statistics: &Statistics,
-    ) -> Self {
-        let AnnotatedProgram { entry, entry_annotations, entry_expressions, schema_functions, preamble_functions } = program;
-        let entry_plan = PatternPlan::from_block(
-            &entry, &entry_annotations, &entry_expressions, &statistics,
-        );
+    pub fn from_program(program: AnnotatedProgram, statistics: &Statistics) -> Self {
+        let AnnotatedProgram { entry, entry_annotations, entry_expressions, schema_functions, preamble_functions } =
+            program;
+        let entry_plan = PatternPlan::from_block(&entry, &entry_annotations, &entry_expressions, &statistics);
         // TODO: plan all premable functions and merge with schema functions
         Self::new(entry_plan, entry_annotations, entry_expressions, HashMap::new())
     }

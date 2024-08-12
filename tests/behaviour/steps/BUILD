@@ -28,6 +28,8 @@ rust_library(
         "//util/test:test_utils",
         "@vaticle_typeql//rust:typeql",
 
+        "@vaticle_typeql//rust:typeql",
+
         "@crates//:chrono",
         "@crates//:chrono-tz",
         "@crates//:cucumber",

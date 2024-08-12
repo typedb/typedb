@@ -8,10 +8,12 @@ use std::marker::PhantomData;
 
 use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 
-use crate::instruction::expression::{
-    op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
+use crate::{
+    expression::{expression_compiler::ExpressionCompilationContext, ExpressionCompileError},
+    instruction::expression::{
+        op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
+    },
 };
-use crate::{expression::expression_compiler::ExpressionCompilationContext, expression::ExpressionCompileError};
 
 pub trait UnaryExpression<T1: DBValue, R: DBValue> {
     const OP_CODE: ExpressionOpCode;

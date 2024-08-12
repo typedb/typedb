@@ -8,11 +8,21 @@
 
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, type_manager::TypeManager, Ordering},
+    type_::{
+        annotation::{
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
+            AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
+        },
+        object_type::ObjectType,
+        type_manager::TypeManager,
+        Ordering,
+    },
 };
 use encoding::value::label::Label;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
+    annotation::{Annotation as TypeQLAnnotation, CardinalityRange},
+    common::token::{Kind as TypeQLKind, ValueType},
     type_::{BuiltinValueType, NamedType},
     TypeRef, TypeRefAny,
 };

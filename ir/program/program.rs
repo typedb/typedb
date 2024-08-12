@@ -60,10 +60,9 @@ pub mod tests {
             program::Program,
             ProgramDefinitionError,
         },
+        translation::{function::translate_function, match_::translate_match},
         PatternDefinitionError,
     };
-    use crate::translation::function::translate_function;
-    use crate::translation::match_::translate_match;
 
     #[test]
     fn from_typeql() {
@@ -85,12 +84,10 @@ pub mod tests {
         let typeql_function = preambles.into_iter().map(|preamble| preamble.function).find(|_| true).unwrap();
         let function_id = FunctionID::Preamble(0);
         let should_be_unresolved_error = translate_match(&HashMapFunctionSignatureIndex::empty(), &typeql_match);
-        assert!(matches!(
-            should_be_unresolved_error,
-            Err(PatternDefinitionError::UnresolvedFunction { .. })
-        ));
+        assert!(matches!(should_be_unresolved_error, Err(PatternDefinitionError::UnresolvedFunction { .. })));
 
-        let function_index = HashMapFunctionSignatureIndex::build([(FunctionID::Preamble(0), &typeql_function)].into_iter());
+        let function_index =
+            HashMapFunctionSignatureIndex::build([(FunctionID::Preamble(0), &typeql_function)].into_iter());
         let function = translate_function(&function_index, &typeql_function).unwrap();
         let entry = translate_match(&function_index, &typeql_match).unwrap().finish();
         let program = Program::new(entry, vec![function]);
