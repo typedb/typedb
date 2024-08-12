@@ -12,7 +12,6 @@ use compiler::{
     planner::pattern_plan::InstructionAPI,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::pattern::constraint::Constraint;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -55,13 +54,13 @@ pub(crate) enum InstructionExecutor {
 }
 
 impl InstructionExecutor {
-    pub(crate) fn new<Snapshot: ReadableSnapshot>(
+    pub(crate) fn new(
         instruction: ConstraintInstruction,
         selected: &Vec<Variable>,
         named: &HashMap<Variable, String>,
         positions: &HashMap<Variable, VariablePosition>,
         type_annotations: &TypeAnnotations,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         sort_by: Option<Variable>,
     ) -> Result<Self, ConceptReadError> {
@@ -69,74 +68,40 @@ impl InstructionExecutor {
         let sort_by_position = sort_by.map(|var| *positions.get(&var).unwrap());
         match instruction {
             ConstraintInstruction::Isa(isa, _) => todo!(),
-            ConstraintInstruction::IsaReverse(isa, _) => {
-                let thing = isa.thing();
-                let provider = IsaReverseExecutor::new(
-                    isa.clone().into_ids(positions),
-                    variable_modes,
-                    sort_by_position,
-                    type_annotations.constraint_annotations_of(isa.into()).unwrap().get_left_right().right_to_left(),
-                    type_annotations.variable_annotations_of(thing).unwrap().clone(),
-                );
-                Ok(Self::IsaReverse(provider))
+            ConstraintInstruction::IsaReverse(isa_reverse) => {
+                let executor = IsaReverseExecutor::new(isa_reverse.map(positions), variable_modes, sort_by_position);
+                Ok(Self::IsaReverse(executor))
             }
-            ConstraintInstruction::Has(has, _) => {
-                let has_attribute = has.attribute();
-                let executor = HasExecutor::new(
-                    has.clone().into_ids(positions),
-                    variable_modes,
-                    sort_by_position,
-                    type_annotations.constraint_annotations_of(has.into()).unwrap().get_left_right().left_to_right(),
-                    type_annotations.variable_annotations_of(has_attribute).unwrap().clone(),
-                    snapshot,
-                    thing_manager,
-                )?;
+            ConstraintInstruction::Has(has) => {
+                let executor =
+                    HasExecutor::new(has.map(positions), variable_modes, sort_by_position, snapshot, thing_manager)?;
                 Ok(Self::Has(executor))
             }
-            ConstraintInstruction::HasReverse(has, _) => {
-                let has_owner = has.owner();
+            ConstraintInstruction::HasReverse(has_reverse) => {
                 let executor = HasReverseExecutor::new(
-                    has.clone().into_ids(positions),
+                    has_reverse.map(positions),
                     variable_modes,
                     sort_by_position,
-                    type_annotations.constraint_annotations_of(has.into()).unwrap().get_left_right().right_to_left(),
-                    type_annotations.variable_annotations_of(has_owner).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
                 Ok(Self::HasReverse(executor))
             }
-            ConstraintInstruction::RolePlayer(role_player, _) => {
-                let rp_player = role_player.player();
-                let left_right_filtered = type_annotations
-                    .constraint_annotations_of(role_player.clone().into())
-                    .unwrap()
-                    .get_left_right_filtered();
+            ConstraintInstruction::RolePlayer(role_player) => {
                 let executor = RolePlayerExecutor::new(
-                    role_player.into_ids(positions),
+                    role_player.map(positions),
                     variable_modes,
                     sort_by_position,
-                    left_right_filtered.left_to_right(),
-                    left_right_filtered.filters_on_right(),
-                    type_annotations.variable_annotations_of(rp_player).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
                 Ok(Self::RolePlayer(executor))
             }
-            ConstraintInstruction::RolePlayerReverse(role_player, _) => {
-                let rp_relation = role_player.relation();
-                let left_right_filtered = type_annotations
-                    .constraint_annotations_of(role_player.clone().into())
-                    .unwrap()
-                    .get_left_right_filtered();
+            ConstraintInstruction::RolePlayerReverse(role_player_reverse) => {
                 let executor = RolePlayerReverseExecutor::new(
-                    role_player.into_ids(positions),
+                    role_player_reverse.map(positions),
                     variable_modes,
                     sort_by_position,
-                    left_right_filtered.right_to_left(),
-                    left_right_filtered.filters_on_left(),
-                    type_annotations.variable_annotations_of(rp_relation).unwrap().clone(),
                     snapshot,
                     thing_manager,
                 )?;
@@ -160,9 +125,9 @@ impl InstructionExecutor {
         }
     }
 
-    pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
+    pub(crate) fn get_iterator(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
@@ -182,29 +147,22 @@ impl InstructionExecutor {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum VariableMode {
     Input,
-    UnboundSelect,
-    UnboundCount,
-    UnboundCheck,
+    Output,
+    Count,
+    Check,
 }
 
-impl VariableMode {}
-
 impl VariableMode {
-    pub(crate) const fn new(is_bound: bool, is_selected: bool, is_named: bool) -> VariableMode {
-        match (is_bound, is_selected, is_named) {
-            (true, _, _) => Self::Input,
-            (false, true, _) => Self::UnboundSelect,
-            (false, false, true) => Self::UnboundCount,
-            (false, false, false) => Self::UnboundCheck,
+    pub(crate) const fn new(is_input: bool, is_selected: bool, is_named: bool) -> VariableMode {
+        if is_input {
+            Self::Input
+        } else if is_selected {
+            Self::Output
+        } else if is_named {
+            Self::Count
+        } else {
+            Self::Check
         }
-    }
-
-    pub(crate) fn is_bound(&self) -> bool {
-        self == &Self::Input
-    }
-
-    pub(crate) fn is_unbound(&self) -> bool {
-        !self.is_bound()
     }
 }
 
@@ -243,12 +201,16 @@ impl VariableModes {
         self.modes.get(&variable_position)
     }
 
-    pub(crate) fn fully_bound(&self) -> bool {
-        self.modes.values().all(|mode| mode.is_bound())
+    pub(crate) fn all_inputs(&self) -> bool {
+        self.modes.values().all(|mode| mode == &VariableMode::Input)
     }
 
-    pub(crate) fn fully_unbound(&self) -> bool {
-        self.modes.values().all(|mode| mode.is_unbound())
+    pub(crate) fn none_inputs(&self) -> bool {
+        self.modes.values().all(|mode| mode != &VariableMode::Input)
+    }
+
+    fn len(&self) -> usize {
+        self.modes.len()
     }
 }
 
@@ -264,39 +226,65 @@ pub(crate) enum BinaryIterateMode {
 
 impl BinaryIterateMode {
     pub(crate) fn new(
-        constraint: impl Into<Constraint<VariablePosition>>,
-        in_reverse_direction: bool,
+        from_var: VariablePosition,
+        to_var: VariablePosition,
         var_modes: &VariableModes,
         sort_by: Option<VariablePosition>,
     ) -> BinaryIterateMode {
-        let constraint = constraint.into();
-        debug_assert!(constraint.ids_count() == 2);
-        debug_assert!(!var_modes.fully_bound());
+        debug_assert!(var_modes.len() == 2);
+        debug_assert!(!var_modes.all_inputs());
 
-        let default_sort_variable_for_direction =
-            if in_reverse_direction { constraint.right_id() } else { constraint.left_id() };
+        let is_from_bound = var_modes.get(from_var) == Some(&VariableMode::Input);
+        debug_assert!(var_modes.get(to_var) != Some(&VariableMode::Input));
 
-        if var_modes.fully_unbound() {
-            match sort_by {
-                None => {
-                    // arbitrarily pick from sorted
-                    BinaryIterateMode::Unbound
-                }
-                Some(variable) => {
-                    if default_sort_variable_for_direction == variable {
-                        BinaryIterateMode::Unbound
-                    } else {
-                        BinaryIterateMode::UnboundInverted
-                    }
-                }
-            }
+        if is_from_bound {
+            Self::BoundFrom
+        } else if sort_by == Some(to_var) {
+            Self::UnboundInverted
         } else {
-            BinaryIterateMode::BoundFrom
+            Self::Unbound
         }
     }
 
     pub(crate) fn is_inverted(&self) -> bool {
         self == &Self::UnboundInverted
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub(crate) enum TernaryIterateMode {
+    // [x, y, z] = standard sort order
+    Unbound,
+    // [y, x, z] sort order
+    UnboundInverted,
+    // [X, y, z] sort order
+    BoundFrom,
+    // [X, Y, z]
+    BoundFromBoundTo,
+}
+
+impl TernaryIterateMode {
+    pub(crate) fn new(
+        from_var: VariablePosition,
+        to_var: VariablePosition,
+        var_modes: &VariableModes,
+        sort_by: Option<VariablePosition>,
+    ) -> TernaryIterateMode {
+        debug_assert!(var_modes.len() == 3);
+        debug_assert!(!var_modes.all_inputs());
+        let is_from_bound = var_modes.get(from_var) == Some(&VariableMode::Input);
+        let is_to_bound = var_modes.get(to_var) == Some(&VariableMode::Input);
+
+        if is_to_bound {
+            assert!(is_from_bound);
+            Self::BoundFromBoundTo
+        } else if is_from_bound {
+            Self::BoundFrom
+        } else if sort_by == Some(to_var) {
+            Self::UnboundInverted
+        } else {
+            Self::Unbound
+        }
     }
 }
 

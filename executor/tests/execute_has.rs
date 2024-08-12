@@ -8,7 +8,9 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::{
     inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
-    instruction::constraint::instructions::{ConstraintInstruction, Inputs},
+    instruction::constraint::instructions::{
+        ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs, IsaReverseInstruction,
+    },
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
@@ -132,13 +134,16 @@ fn traverse_has_unbounded_sorted_from() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![ConstraintInstruction::Has(has_age, Inputs::None([]))],
+        vec![ConstraintInstruction::Has(HasInstruction::new(
+            has_age,
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_person, var_age],
     ))];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -200,22 +205,33 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let steps = vec![
         Step::Intersection(IntersectionStep::new(
             var_person_1,
-            vec![ConstraintInstruction::IsaReverse(isa_person_1, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_person_1,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_person_1],
         )),
         Step::Intersection(IntersectionStep::new(
             var_name,
             vec![
-                ConstraintInstruction::Has(has_name_1, Inputs::Single([var_person_1])),
-                ConstraintInstruction::HasReverse(has_name_2, Inputs::None([])),
+                ConstraintInstruction::Has(HasInstruction::new(
+                    has_name_1,
+                    Inputs::Single([var_person_1]),
+                    annotated_program.entry_annotations(),
+                )),
+                ConstraintInstruction::HasReverse(HasReverseInstruction::new(
+                    has_name_2,
+                    Inputs::None([]),
+                    annotated_program.entry_annotations(),
+                )),
             ],
-            &[var_person_2, var_name],
+            &[var_person_1, var_person_2, var_name],
         )),
     ];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -277,15 +293,22 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![
-            ConstraintInstruction::Has(has_age, Inputs::None([])),
-            ConstraintInstruction::Has(has_name, Inputs::None([])),
+            ConstraintInstruction::Has(HasInstruction::new(
+                has_age,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            )),
+            ConstraintInstruction::Has(HasInstruction::new(
+                has_name,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            )),
         ],
         &[var_person, var_name, var_age],
     ))];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -332,12 +355,15 @@ fn traverse_has_unbounded_sorted_to_merged() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_attribute,
-        vec![ConstraintInstruction::Has(has_attribute.clone(), Inputs::None([]))],
+        vec![ConstraintInstruction::Has(HasInstruction::new(
+            has_attribute,
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_person, var_attribute],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -408,12 +434,15 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_age,
-        vec![ConstraintInstruction::HasReverse(has_age.clone(), Inputs::None([]))],
+        vec![ConstraintInstruction::HasReverse(HasReverseInstruction::new(
+            has_age,
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_person, var_age],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();

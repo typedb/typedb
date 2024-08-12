@@ -10,6 +10,7 @@ use std::{
 };
 
 use answer::Type;
+use compiler::instruction::constraint::instructions::IsaReverseInstruction;
 use concept::{
     error::ConceptReadError,
     iterator::InstanceIterator,
@@ -42,8 +43,6 @@ pub(crate) struct IsaReverseExecutor {
     isa: Isa<VariablePosition>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
-    // TODO: if we ever want to implement transitivity directly in Executor, we could leverage type instances
-    type_instance_types: Arc<BTreeMap<Type, Vec<Type>>>,
     thing_types: Arc<HashSet<Type>>,
     type_cache: Option<Arc<HashSet<Type>>>,
 }
@@ -61,15 +60,15 @@ type AttributeToTupleFn = for<'a> fn(Result<Attribute<'a>, ConceptReadError>) ->
 
 impl IsaReverseExecutor {
     pub(crate) fn new(
-        isa: Isa<VariablePosition>,
+        isa_reverse: IsaReverseInstruction<VariablePosition>,
         variable_modes: VariableModes,
         sort_by: Option<VariablePosition>,
-        constraint_types: Arc<BTreeMap<Type, Vec<Type>>>,
-        thing_types: Arc<HashSet<Type>>,
     ) -> Self {
+        let thing_types = isa_reverse.types();
         debug_assert!(thing_types.len() > 0);
-        let iterate_mode = BinaryIterateMode::new(isa.clone(), true, &variable_modes, sort_by);
-        let type_cache = if matches!(iterate_mode, BinaryIterateMode::UnboundInverted) {
+        let isa = isa_reverse.constraint;
+        let iterate_mode = BinaryIterateMode::new(isa.type_(), isa.thing(), &variable_modes, sort_by);
+        let type_cache = if iterate_mode == BinaryIterateMode::UnboundInverted {
             let cache = thing_types.clone();
             debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
             Some(cache)
@@ -77,14 +76,14 @@ impl IsaReverseExecutor {
             None
         };
 
-        Self { isa, iterate_mode, variable_modes, type_instance_types: constraint_types, thing_types, type_cache }
+        Self { isa, iterate_mode, variable_modes, thing_types, type_cache }
     }
 
     pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
-        row: ImmutableRow<'_>,
+        _row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {

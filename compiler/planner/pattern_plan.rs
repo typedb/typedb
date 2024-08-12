@@ -19,7 +19,7 @@ use itertools::Itertools;
 
 use crate::{
     inference::annotated_program::AnnotatedProgram,
-    instruction::constraint::instructions::{ConstraintInstruction, Inputs},
+    instruction::constraint::instructions::{ConstraintInstruction, HasInstruction, Inputs, IsaReverseInstruction},
     planner::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost},
 };
 
@@ -56,7 +56,7 @@ impl PatternPlan {
         let mut adjacency: HashMap<usize, HashSet<usize>> = HashMap::new();
 
         let context = block.context();
-        let type_annotations = program.get_entry_annotations();
+        let type_annotations = program.entry_annotations();
 
         for (variable, category) in context.variable_categories() {
             match category {
@@ -115,7 +115,11 @@ impl PatternPlan {
                     let isa = &variable_isa[&var];
                     steps.push(Step::Intersection(IntersectionStep::new(
                         var,
-                        vec![ConstraintInstruction::IsaReverse(isa.clone(), Inputs::None([]))],
+                        vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                            isa.clone(),
+                            Inputs::None([]),
+                            type_annotations,
+                        ))],
                         &[var],
                     )));
                 }
@@ -132,7 +136,11 @@ impl PatternPlan {
                         let intersection_step = if bound_variables.is_empty() {
                             IntersectionStep::new(
                                 has.owner(),
-                                vec![ConstraintInstruction::Has(has.clone(), Inputs::None([]))],
+                                vec![ConstraintInstruction::Has(HasInstruction::new(
+                                    has.clone(),
+                                    Inputs::None([]),
+                                    program.entry_annotations(),
+                                ))],
                                 &[has.owner(), has.attribute()],
                             )
                         } else if bound_variables.len() == 2 {
@@ -140,13 +148,21 @@ impl PatternPlan {
                         } else if bound_variables.contains(&has.owner()) {
                             IntersectionStep::new(
                                 has.attribute(),
-                                vec![ConstraintInstruction::Has(has.clone(), Inputs::Single([has.owner()]))],
+                                vec![ConstraintInstruction::Has(HasInstruction::new(
+                                    has.clone(),
+                                    Inputs::Single([has.owner()]),
+                                    program.entry_annotations(),
+                                ))],
                                 &[has.attribute()],
                             )
                         } else {
                             IntersectionStep::new(
                                 has.owner(),
-                                vec![ConstraintInstruction::HasReverse(has.clone(), Inputs::Single([has.attribute()]))],
+                                vec![ConstraintInstruction::Has(HasInstruction::new(
+                                    has.clone(),
+                                    Inputs::Single([has.attribute()]),
+                                    program.entry_annotations(),
+                                ))],
                                 &[has.owner()],
                             )
                         };

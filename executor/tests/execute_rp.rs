@@ -8,7 +8,9 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::{
     inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
-    instruction::constraint::instructions::{ConstraintInstruction, Inputs},
+    instruction::constraint::instructions::{
+        ConstraintInstruction, Inputs, IsaReverseInstruction, RolePlayerInstruction, RolePlayerReverseInstruction,
+    },
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
@@ -203,15 +205,22 @@ fn traverse_rp_unbounded_sorted_from() {
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_membership,
         vec![
-            ConstraintInstruction::RolePlayer(rp_membership_person.clone(), Inputs::None([])),
-            ConstraintInstruction::RolePlayer(rp_membership_group.clone(), Inputs::None([])),
+            ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
+                rp_membership_person.clone(),
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            )),
+            ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
+                rp_membership_group.clone(),
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            )),
         ],
         &[var_membership, var_group, var_person],
     ))];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -283,13 +292,16 @@ fn traverse_rp_unbounded_sorted_to() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![ConstraintInstruction::RolePlayer(rp_membership_person, Inputs::None([]))],
+        vec![ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
+            rp_membership_person.clone(),
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_membership, var_person],
     ))];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -363,19 +375,26 @@ fn traverse_rp_bounded_relation() {
     let steps = vec![
         Step::Intersection(IntersectionStep::new(
             var_membership,
-            vec![ConstraintInstruction::IsaReverse(isa_membership, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_membership,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_membership],
         )),
         Step::Intersection(IntersectionStep::new(
             var_person,
-            vec![ConstraintInstruction::RolePlayer(rp_membership_person, Inputs::Single([var_membership]))],
+            vec![ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
+                rp_membership_person.clone(),
+                Inputs::Single([var_membership]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_person],
         )),
     ];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -450,24 +469,35 @@ fn traverse_rp_bounded_relation_player() {
     let steps = vec![
         Step::Intersection(IntersectionStep::new(
             var_membership,
-            vec![ConstraintInstruction::IsaReverse(isa_membership, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_membership,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_membership],
         )),
         Step::Intersection(IntersectionStep::new(
             var_person,
-            vec![ConstraintInstruction::IsaReverse(isa_person, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_person,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_membership, var_person],
         )),
         Step::Intersection(IntersectionStep::new(
             var_membership_member_type,
-            vec![ConstraintInstruction::RolePlayer(rp_membership_person, Inputs::Dual([var_membership, var_person]))],
+            vec![ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
+                rp_membership_person.clone(),
+                Inputs::Dual([var_membership, var_person]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_membership_member_type],
         )),
     ];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -538,13 +568,16 @@ fn traverse_rp_reverse_unbounded_sorted_from() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![ConstraintInstruction::RolePlayerReverse(rp_membership_person.clone(), Inputs::None([]))],
+        vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
+            rp_membership_person.clone(),
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_membership, var_person],
     ))];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -616,13 +649,16 @@ fn traverse_rp_reverse_unbounded_sorted_to() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_membership,
-        vec![ConstraintInstruction::RolePlayerReverse(rp_membership_person, Inputs::None([]))],
+        vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
+            rp_membership_person,
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &[var_membership, var_person],
     ))];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -696,19 +732,26 @@ fn traverse_rp_reverse_bounded_player() {
     let steps = vec![
         Step::Intersection(IntersectionStep::new(
             var_person,
-            vec![ConstraintInstruction::IsaReverse(isa_person, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_person,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_person],
         )),
         Step::Intersection(IntersectionStep::new(
             var_membership,
-            vec![ConstraintInstruction::RolePlayerReverse(rp_membership_person, Inputs::Single([var_person]))],
+            vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
+                rp_membership_person,
+                Inputs::Single([var_person]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_membership],
         )),
     ];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -783,27 +826,35 @@ fn traverse_rp_reverse_bounded_player_relation() {
     let steps = vec![
         Step::Intersection(IntersectionStep::new(
             var_person,
-            vec![ConstraintInstruction::IsaReverse(isa_person, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_person,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_person],
         )),
         Step::Intersection(IntersectionStep::new(
             var_membership,
-            vec![ConstraintInstruction::IsaReverse(isa_membership, Inputs::None([]))],
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_membership,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
             &[var_person, var_membership],
         )),
         Step::Intersection(IntersectionStep::new(
             var_membership_member_type,
-            vec![ConstraintInstruction::RolePlayerReverse(
+            vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
                 rp_membership_person,
                 Inputs::Dual([var_membership, var_person]),
-            )],
+                annotated_program.entry_annotations(),
+            ))],
             &[var_membership_member_type],
         )),
     ];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();

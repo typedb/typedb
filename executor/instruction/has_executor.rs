@@ -11,6 +11,7 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
+use compiler::instruction::constraint::instructions::HasInstruction;
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -69,17 +70,18 @@ pub(crate) type HasOrderingFn = for<'a, 'b> fn(
 
 impl HasExecutor {
     pub(crate) fn new<Snapshot: ReadableSnapshot>(
-        has: ir::pattern::constraint::Has<VariablePosition>,
+        has: HasInstruction<VariablePosition>,
         variable_modes: VariableModes,
         sort_by: Option<VariablePosition>,
-        owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
-        attribute_types: Arc<HashSet<Type>>,
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
+        debug_assert!(!variable_modes.all_inputs());
+        let owner_attribute_types = has.edge_types();
         debug_assert!(owner_attribute_types.len() > 0);
-        debug_assert!(!variable_modes.fully_bound());
-        let iterate_mode = BinaryIterateMode::new(has.clone(), false, &variable_modes, sort_by);
+        let attribute_types = has.end_types();
+        let has = has.constraint;
+        let iterate_mode = BinaryIterateMode::new(has.owner(), has.attribute(), &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
             BinaryIterateMode::Unbound => Self::create_has_filter_owners_attributes(owner_attribute_types.clone()),
             BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {

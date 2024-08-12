@@ -8,7 +8,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::{
     inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
-    instruction::constraint::instructions::{ConstraintInstruction, Inputs},
+    instruction::constraint::instructions::{ConstraintInstruction, HasInstruction, Inputs},
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
@@ -159,12 +159,15 @@ fn anonymous_vars_not_enumerated_or_counted() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![ConstraintInstruction::Has(has_attribute.clone(), Inputs::None([]))],
+        vec![ConstraintInstruction::Has(HasInstruction::new(
+            has_attribute,
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
@@ -232,12 +235,15 @@ fn unselected_named_vars_counted() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![ConstraintInstruction::Has(has_attribute.clone(), Inputs::None([]))],
+        vec![ConstraintInstruction::Has(HasInstruction::new(
+            has_attribute,
+            Inputs::None([]),
+            annotated_program.entry_annotations(),
+        ))],
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {
@@ -317,15 +323,26 @@ fn cartesian_named_counted_checked() {
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![
-            ConstraintInstruction::Has(has_name.clone(), Inputs::None([])),
-            ConstraintInstruction::Has(has_age.clone(), Inputs::None([])),
-            ConstraintInstruction::Has(has_email.clone(), Inputs::None([])),
+            ConstraintInstruction::Has(HasInstruction::new(
+                has_name,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            )),
+            ConstraintInstruction::Has(HasInstruction::new(
+                has_age,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            )),
+            ConstraintInstruction::Has(HasInstruction::new(
+                has_email,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            )),
         ],
         &vec![var_person, var_age],
     ))];
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, annotated_program.get_entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
 
     // Executor
     let executor = {

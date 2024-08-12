@@ -67,7 +67,7 @@ impl Constraints {
 impl fmt::Display for Constraints {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for constraint in &self.constraints {
-            let indent = (0..f.width().unwrap_or(0)).map(|_| " ").join("");
+            let indent = " ".repeat(f.width().unwrap_or(0));
             writeln!(f, "{}{}", indent, constraint)?
         }
         Ok(())
@@ -195,7 +195,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
 
     fn create_function_call(
         &mut self,
-        assigned: &Vec<Variable>,
+        assigned: &[Variable],
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
     ) -> Result<FunctionCall<Variable>, PatternDefinitionError> {
@@ -218,8 +218,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
         }
 
         // Construct
-        let call_variable_mapping =
-            arguments.iter().enumerate().map(|(index, variable)| (variable.clone(), index)).collect();
+        let call_variable_mapping = arguments.iter().enumerate().map(|(index, variable)| (*variable, index)).collect();
         Ok(FunctionCall::new(callee_signature.function_id.clone(), call_variable_mapping))
     }
 
@@ -230,9 +229,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
     ) -> Result<&ExpressionBinding<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
-        binding
-            .validate(&mut self.context)
-            .map_err(|source| PatternDefinitionError::ExpressionDefinition { source })?;
+        binding.validate(self.context).map_err(|source| PatternDefinitionError::ExpressionDefinition { source })?;
         // TODO: Does this mean an expression can't return a list? Else, we can get it from validate.
         self.context.set_variable_category(variable, VariableCategory::Value, binding.clone().into())?;
         let as_ref = self.constraints.add_constraint(binding);
@@ -489,7 +486,7 @@ impl<ID: IrID> fmt::Display for Sub<ID> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Isa<ID: IrID> {
+pub struct Isa<ID> {
     kind: IsaKind,
     thing: ID,
     type_: ID,
@@ -520,7 +517,7 @@ impl<ID: IrID> Isa<ID> {
         function(self.type_, ConstraintIDSide::Right);
     }
 
-    pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> Isa<T> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Isa<T> {
         Isa::new(self.kind, *mapping.get(&self.thing).unwrap(), *mapping.get(&self.type_).unwrap())
     }
 }
@@ -544,7 +541,7 @@ pub enum IsaKind {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct RolePlayer<ID: IrID> {
+pub struct RolePlayer<ID> {
     pub(crate) relation: ID,
     pub(crate) player: ID,
     pub(crate) role_type: ID,
@@ -580,7 +577,7 @@ impl<ID: IrID> RolePlayer<ID> {
         function(self.role_type, ConstraintIDSide::Filter);
     }
 
-    pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> RolePlayer<T> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> RolePlayer<T> {
         RolePlayer::new(
             *mapping.get(&self.relation).unwrap(),
             *mapping.get(&self.player).unwrap(),
@@ -602,7 +599,7 @@ impl<ID: IrID> fmt::Display for RolePlayer<ID> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Has<ID: IrID> {
+pub struct Has<ID> {
     owner: ID,
     attribute: ID,
 }
@@ -632,7 +629,7 @@ impl<ID: IrID> Has<ID> {
         function(self.attribute, ConstraintIDSide::Right);
     }
 
-    pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> Has<T> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Has<T> {
         Has::new(*mapping.get(&self.owner).unwrap(), *mapping.get(&self.attribute).unwrap())
     }
 }
