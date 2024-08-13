@@ -17,7 +17,7 @@ use typeql::{
     TypeRef, TypeRefAny,
 };
 
-use crate::{define::DefineError, SymbolResolutionError};
+use crate::SymbolResolutionError;
 
 pub(crate) fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(Label<'static>, Ordering), ()> {
     match type_ref {

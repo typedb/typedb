@@ -62,6 +62,7 @@ pub struct TypeCache {
     attribute_types_index_label: HashMap<Label<'static>, AttributeType<'static>>,
     struct_definition_index_by_name: HashMap<String, DefinitionKey<'static>>,
 
+    role_types_by_name: HashMap<String, Vec<RoleType<'static>>>,
     // specific caches to simplify architectures
     independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
 }
@@ -121,6 +122,14 @@ impl TypeCache {
             })
             .collect();
 
+        let mut role_types_by_name = HashMap::new();
+        for (label, role_type) in &role_types_index_label {
+            if !role_types_by_name.contains_key(label.name.as_str()) {
+                role_types_by_name.insert(label.name.as_str().to_owned(), Vec::new());
+            }
+            role_types_by_name.get_mut(label.name.as_str()).unwrap().push(role_type.clone());
+        }
+
         Ok(TypeCache {
             open_sequence_number,
             entity_types: entity_type_caches,
@@ -137,6 +146,7 @@ impl TypeCache {
             role_types_index_label,
             attribute_types_index_label,
             struct_definition_index_by_name,
+            role_types_by_name,
 
             independent_attribute_types: Arc::new(independent_attribute_types),
         })
@@ -177,6 +187,10 @@ impl TypeCache {
 
     pub(crate) fn get_role_type(&self, label: &Label<'_>) -> Option<RoleType<'static>> {
         self.role_types_index_label.get(label).cloned()
+    }
+
+    pub(crate) fn get_roles_by_name(&self, name: &str) -> Option<&Vec<RoleType<'static>>> {
+        self.role_types_by_name.get(name)
     }
 
     pub(crate) fn get_attribute_type(&self, label: &Label<'_>) -> Option<AttributeType<'static>> {

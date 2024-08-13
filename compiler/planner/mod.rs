@@ -16,5 +16,4 @@ For example, function stream outputs are probably not seekable since we won't ha
 pub mod function_plan;
 pub mod pattern_plan;
 pub mod program_plan;
-
 mod vertex;

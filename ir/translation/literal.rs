@@ -13,7 +13,7 @@ use encoding::value::{
 };
 use typeql::value::{DateTimeTZLiteral, Literal, Sign, SignedDecimalLiteral, TimeZone, ValueLiteral};
 
-use crate::{LiteralParseError, PatternDefinitionError};
+use crate::LiteralParseError;
 
 pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, LiteralParseError> {
     // We don't know the final type yet. Zip with value-type annotations when constructing the executor.

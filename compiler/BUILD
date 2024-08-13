@@ -17,6 +17,7 @@ rust_library(
         "instruction/expressions/**/*.rs",
         "planner/**/*.rs",
         "optimisation/**/*.rs",
+        "write/*.rs",
     ]),
     deps = [
         "//answer",
@@ -49,7 +50,8 @@ checkstyle_test(
         "instruction/**/*.rs",
         "planner/**/*.rs",
         "expression/**/*.rs",
-        "optimisation/**/*.rs"
+        "optimisation/**/*.rs",
+        "write/*.rs"
     ]),
     exclude = glob([
         "Cargo.*",

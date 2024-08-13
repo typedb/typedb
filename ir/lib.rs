@@ -16,7 +16,10 @@ use std::{
 use answer::variable::Variable;
 use typeql::{
     common::token,
-    statement::{InIterable, StructDeconstruct},
+    statement::{
+        thing::{Relation, RolePlayer},
+        InIterable, StructDeconstruct,
+    },
 };
 
 use crate::{
@@ -90,6 +93,9 @@ pub enum PatternDefinitionError {
     UnimplementedStructAssignment {
         deconstruct: StructDeconstruct,
     },
+    ScopedRoleNameInRelation {
+        role_player: RolePlayer,
+    },
 }
 
 impl fmt::Display for PatternDefinitionError {
@@ -113,6 +119,7 @@ impl Error for PatternDefinitionError {
             | Self::ExpressionBuiltinArgumentCountMismatch { .. }
             | Self::InAssignmentMustBeListOrStream { .. }
             | Self::ExpressionAssignmentMustOneVariable { .. }
+            | Self::ScopedRoleNameInRelation { .. }
             | Self::UnimplementedStructAssignment { .. } => None,
             Self::ParseError { source } => Some(source),
             Self::FunctionRead { source } => Some(source),

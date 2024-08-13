@@ -123,7 +123,8 @@ pub struct Row<'a> {
 }
 
 impl<'a> Row<'a> {
-    pub(crate) fn new(row: &'a mut [VariableValue<'static>], multiplicity: &'a mut u64) -> Self {
+    // TODO: pub(crate)
+    pub fn new(row: &'a mut [VariableValue<'static>], multiplicity: &'a mut u64) -> Self {
         Self { row, multiplicity }
     }
 
@@ -131,7 +132,7 @@ impl<'a> Row<'a> {
         self.row.len()
     }
 
-    pub(crate) fn get(&self, position: VariablePosition) -> &VariableValue<'_> {
+    pub(crate) fn get(&self, position: VariablePosition) -> &VariableValue<'static> {
         &self.row[position.as_usize()]
     }
 

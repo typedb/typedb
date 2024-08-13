@@ -5,11 +5,9 @@
  */
 
 use answer::variable::Variable;
-use encoding::value::value::Value;
 use typeql::{
     common::token::{ArithmeticOperator, Function},
     expression::{BuiltinFunctionName, Expression as TypeQLExpression, FunctionName},
-    Literal,
 };
 
 use crate::{

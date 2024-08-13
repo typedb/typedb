@@ -9,3 +9,4 @@ pub mod inference;
 pub mod instruction;
 mod optimisation;
 pub mod planner;
+pub mod write;

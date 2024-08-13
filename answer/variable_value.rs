@@ -32,6 +32,21 @@ impl<'a> VariableValue<'a> {
         }
     }
 
+    pub fn as_type(&self) -> &Type {
+        match self {
+            VariableValue::Type(type_) => type_,
+            _ => panic!("VariableValue is not a THing"),
+        }
+    }
+
+    pub fn as_value(&self) -> &Value<'a> {
+        match self {
+            VariableValue::Value(value) => value,
+            // TODO: Do we want to implicit cast from attributes?
+            _ => panic!("VariableValue is not a value"),
+        }
+    }
+
     pub fn into_owned(self) -> VariableValue<'static> {
         match self {
             VariableValue::Empty => VariableValue::Empty,

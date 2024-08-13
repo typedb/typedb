@@ -19,6 +19,8 @@ deps = [
     "//storage",
     "@vaticle_typeql//rust:typeql",
     "//util/test:test_utils",
+
+
 ]
 
 rust_test(
@@ -49,6 +51,15 @@ rust_test(
     crate_root = "execute_select.rs",
     srcs = ["execute_select.rs", "common.rs"],
     deps = deps,
+)
+
+rust_test(
+    name = "test_writes",
+    crate_root = "writes.rs",
+    srcs = ["writes.rs", "common.rs"],
+    deps = deps + [
+        "//query:query",
+    ],
 )
 
 rust_test(

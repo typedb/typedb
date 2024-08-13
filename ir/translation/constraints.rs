@@ -5,10 +5,12 @@
  */
 
 use answer::variable::Variable;
+use encoding::value::label::Label;
 use typeql::{
     expression::{Expression as TypeQLExpression, Expression, FunctionCall, FunctionName},
     statement::{AssignmentPattern, InIterable},
     type_::NamedType,
+    ScopedLabel, TypeRef, TypeRefAny,
 };
 
 use crate::{
@@ -34,8 +36,8 @@ pub(super) fn add_statement(
             let assigned: Vec<Variable> = assignment_pattern_to_variables(constraints, &assignment.lhs)?;
             add_typeql_binding(function_index, constraints, assigned, &assignment.rhs, false)?
         }
-        typeql::Statement::Thing(thing) => add_thing_statement(constraints, thing)?,
-        typeql::Statement::AttributeValue(_) => todo!(),
+        typeql::Statement::Thing(thing) => add_thing_statement(function_index, constraints, thing)?,
+        typeql::Statement::AttributeValue(attribute_value) => todo!(),
         typeql::Statement::AttributeComparison(_) => todo!(),
         typeql::Statement::Type(type_) => add_type_statement(constraints, type_)?,
     }
@@ -43,6 +45,7 @@ pub(super) fn add_statement(
 }
 
 fn add_thing_statement(
+    function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
     thing: &typeql::statement::Thing,
 ) -> Result<(), PatternDefinitionError> {
@@ -58,7 +61,7 @@ fn add_thing_statement(
         match constraint {
             typeql::statement::thing::Constraint::Isa(isa) => add_typeql_isa(constraints, var, isa)?,
             typeql::statement::thing::Constraint::Iid(_) => todo!(),
-            typeql::statement::thing::Constraint::Has(has) => add_typeql_has(constraints, var, has)?,
+            typeql::statement::thing::Constraint::Has(has) => add_typeql_has(function_index, constraints, var, has)?,
             typeql::statement::thing::Constraint::Links(links) => {
                 add_typeql_relation(constraints, var, &links.relation)?
             }
@@ -92,14 +95,18 @@ fn add_type_statement(
 }
 
 fn extend_from_inline_typeql_expression(
+    function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
     expression: &TypeQLExpression,
 ) -> Result<Variable, PatternDefinitionError> {
-    let var = match expression {
-        TypeQLExpression::Variable(typeql_var) => register_typeql_var(constraints, &typeql_var)?,
-        _ => todo!(),
-    };
-    Ok(var)
+    if let TypeQLExpression::Variable(typeql_var) = expression {
+        register_typeql_var(constraints, &typeql_var)
+    } else {
+        let expression = build_expression(function_index, constraints, expression)?;
+        let assigned = constraints.create_anonymous_variable()?;
+        constraints.add_expression(assigned, expression)?;
+        Ok(assigned)
+    }
 }
 
 pub(crate) fn register_typeql_var(
@@ -135,10 +142,22 @@ fn register_typeql_type_var(
 ) -> Result<Variable, PatternDefinitionError> {
     match type_ {
         typeql::TypeRef::Named(NamedType::Label(label)) => register_type_label_var(constraints, label),
-        typeql::TypeRef::Named(NamedType::Role(scoped_label)) => todo!(),
+        typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
+            register_type_scoped_label_var(constraints, scoped_label)
+        }
         typeql::TypeRef::Named(NamedType::BuiltinValueType(builtin)) => todo!(),
         typeql::TypeRef::Variable(var) => register_typeql_var(constraints, var),
     }
+}
+
+fn register_type_scoped_label_var(
+    constraints: &mut ConstraintsBuilder<'_>,
+    scoped_label: &ScopedLabel,
+) -> Result<Variable, PatternDefinitionError> {
+    let label = Label::build_scoped(scoped_label.name.ident.as_str(), scoped_label.scope.ident.as_str());
+    let variable = constraints.create_anonymous_variable()?;
+    constraints.add_label(variable, label.scoped_name.as_str())?;
+    Ok(variable)
 }
 
 fn register_type_label_var(
@@ -165,16 +184,22 @@ fn add_typeql_isa(
 }
 
 fn add_typeql_has(
+    function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_>,
     owner: Variable,
     has: &typeql::statement::thing::Has,
 ) -> Result<(), PatternDefinitionError> {
-    let attr = match &has.value {
-        typeql::statement::thing::HasValue::Variable(var) => var,
-        typeql::statement::thing::HasValue::Expression(_) => todo!(),
-        typeql::statement::thing::HasValue::Comparison(_) => todo!(),
+    let attribute = match &has.value {
+        typeql::statement::thing::HasValue::Variable(var) => register_typeql_var(constraints, var)?,
+        typeql::statement::thing::HasValue::Expression(expression) => {
+            let assigned = extend_from_inline_typeql_expression(function_index, constraints, expression)?;
+            let attribute = constraints.create_anonymous_variable()?;
+            constraints.add_comparison(attribute, assigned)?; // TODO: I should probably not piggy back on comparison like this.
+            attribute
+        }
+        typeql::statement::thing::HasValue::Comparison(_) => todo!("Same as above?"),
     };
-    let attribute = register_typeql_var(constraints, attr)?;
+
     constraints.add_has(owner, attribute)?;
     if let Some(type_) = &has.type_ {
         let attribute_type = register_typeql_type_var_any(constraints, type_)?;
@@ -183,16 +208,33 @@ fn add_typeql_has(
     Ok(())
 }
 
-fn add_typeql_relation(
+pub(super) fn add_typeql_relation(
     constraints: &mut ConstraintsBuilder<'_>,
     relation: Variable,
     roleplayers: &typeql::statement::thing::Relation,
 ) -> Result<(), PatternDefinitionError> {
     for role_player in &roleplayers.role_players {
         match role_player {
-            typeql::statement::thing::RolePlayer::Typed(type_, var) => {
-                let player = register_typeql_var(constraints, var)?;
-                let type_ = register_typeql_type_var_any(constraints, type_)?;
+            typeql::statement::thing::RolePlayer::Typed(type_ref, player_var) => {
+                let type_ = match type_ref {
+                    TypeRefAny::Type(TypeRef::Named(NamedType::Label(name))) => {
+                        let variable = constraints.create_anonymous_variable()?;
+                        constraints.add_role_name(variable, name.ident.as_str())?;
+                        variable
+                    }
+                    TypeRefAny::Type(TypeRef::Variable(var)) => register_typeql_var(constraints, var)?,
+                    TypeRefAny::Type(TypeRef::Named(NamedType::Role(name))) => {
+                        return Err(PatternDefinitionError::ScopedRoleNameInRelation {
+                            role_player: role_player.clone(),
+                        });
+                    }
+                    TypeRefAny::Optional(_) => todo!(),
+                    TypeRefAny::List(_) => todo!(),
+                    TypeRefAny::Type(TypeRef::Named(NamedType::BuiltinValueType(_))) => {
+                        unreachable!("Why do we allow value types here?")
+                    }
+                };
+                let player = register_typeql_var(constraints, player_var)?;
                 constraints.add_links(relation, player, type_)?;
             }
             typeql::statement::thing::RolePlayer::Untyped(var) => {

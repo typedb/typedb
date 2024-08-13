@@ -84,7 +84,7 @@ impl PatternPlan {
 
         for constraint in conjunction.constraints() {
             match constraint {
-                Constraint::Label(_) | Constraint::Sub(_) => (), // ignore for now
+                Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) => (), // ignore for now
                 Constraint::Isa(isa) => {
                     variable_isa.insert(isa.thing(), isa.clone());
                 }
@@ -153,7 +153,7 @@ impl PatternPlan {
                     .map(|adj| index_to_variable[adj])
                     .collect::<HashSet<_>>();
                 match index_to_constraint[&index] {
-                    Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_) => todo!(),
+                    Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_) => todo!(),
                     Constraint::Links(rp) => {
                         if bound_variables.len() >= 2 {
                             todo!()

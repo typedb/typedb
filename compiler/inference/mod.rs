@@ -67,6 +67,7 @@ pub enum TypeInferenceError {
     ExpressionVariableHasNoValueType { variable: Variable },
     ExpressionCompilation { source: ExpressionCompilationError },
     VariableInExpressionMustBeValueOrAttribute { variable: Variable, actual_category: VariableCategory },
+    RoleNameNotResolved(String),
 }
 
 impl Display for TypeInferenceError {
@@ -82,6 +83,7 @@ impl Error for TypeInferenceError {
             TypeInferenceError::ExpressionCompilation { source } => Some(source),
 
             TypeInferenceError::LabelNotResolved(_) => None,
+            TypeInferenceError::RoleNameNotResolved(_) => None,
             TypeInferenceError::MultipleAssignmentsForSingleVariable { .. } => None,
             TypeInferenceError::CircularDependencyInExpressions { .. } => None,
             TypeInferenceError::CouldNotDetermineValueTypeForVariable { .. } => None,
