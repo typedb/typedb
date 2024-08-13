@@ -19,7 +19,7 @@ use encoding::{
         },
     },
     layout::infix::Infix,
-    value::{label::Label, string_bytes::StringBytes, value_type::ValueType},
+    value::{label::Label, value_type::ValueType},
     Keyable,
 };
 use iterator::Collector;

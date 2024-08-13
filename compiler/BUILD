@@ -50,7 +50,8 @@ checkstyle_test(
         "instruction/**/*.rs",
         "planner/**/*.rs",
         "expression/**/*.rs",
-        "optimisation/**/*.rs"
+        "optimisation/**/*.rs",
+        "write/*.rs"
     ]),
     exclude = glob([
         "Cargo.*",

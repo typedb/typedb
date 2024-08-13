@@ -18,10 +18,10 @@ use encoding::{
         },
         type_::index::NameToStructDefinitionIndex,
     },
-    value::{string_bytes::StringBytes, value_type::ValueType},
+    value::{value_type::ValueType},
     AsBytes, EncodingKeyspace, Keyable,
 };
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},

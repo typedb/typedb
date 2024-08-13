@@ -19,7 +19,6 @@ use encoding::{
         },
         type_::index::{NameToFunctionDefinitionIndex, NameToStructDefinitionIndex},
     },
-    value::string_bytes::StringBytes,
     AsBytes, Keyable,
 };
 use ir::{
@@ -31,7 +30,7 @@ use ir::{
     translation::function::build_signature,
 };
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{
     key_range::KeyRange,
     snapshot::{ReadableSnapshot, WritableSnapshot},
