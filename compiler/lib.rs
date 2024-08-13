@@ -8,7 +8,6 @@ use std::{error::Error, fmt};
 
 use crate::{expression::ExpressionCompileError, inference::TypeInferenceError};
 
-pub mod compiler;
 pub mod expression;
 pub mod inference;
 pub mod instruction;

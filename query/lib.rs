@@ -9,8 +9,6 @@ use typeql::schema::definable::type_::Capability;
 
 mod define;
 mod error;
-mod match_;
-mod pipeline;
 pub mod query_manager;
 mod util;
 
