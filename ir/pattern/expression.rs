@@ -13,7 +13,10 @@ use std::{
 use answer::variable::Variable;
 use encoding::value::value::Value;
 
-use crate::{pattern::IrID, PatternDefinitionError};
+use crate::{
+    pattern::{variable_category::VariableCategory, IrID},
+    PatternDefinitionError,
+};
 
 enum ExpectedArgumentType {
     Single,
@@ -44,6 +47,7 @@ impl ExpressionTree<Variable> {
     pub fn get_root(&self) -> &Expression<Variable> {
         self.preorder_tree.last().unwrap()
     }
+
     pub fn get(&self, expression_id: ExpressionTreeNodeId) -> &Expression<Variable> {
         &self.preorder_tree[expression_id]
     }

@@ -8,8 +8,11 @@ use std::marker::PhantomData;
 
 use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
 
-use crate::instruction::expression::{
-    op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
+use crate::{
+    expression::{expression_compiler::ExpressionCompilationContext, ExpressionCompileError},
+    instruction::expression::{
+        op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
+    },
 };
 
 pub trait UnaryExpression<T1: DBValue, R: DBValue> {
@@ -45,10 +48,10 @@ where
         Some(R::VALUE_TYPE_CATEGORY)
     }
 
-    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompilationError> {
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
         let a1 = builder.pop_type_single()?;
         if a1 != T1::VALUE_TYPE_CATEGORY {
-            Err(ExpressionCompilationError::InternalUnexpectedValueType)?;
+            Err(ExpressionCompileError::InternalUnexpectedValueType)?;
         }
         builder.push_type_single(R::VALUE_TYPE_CATEGORY);
         builder.append_instruction(Self::OP_CODE);
@@ -71,7 +74,6 @@ macro_rules! unary_instruction {
 
 pub(crate) use unary_instruction;
 
-use crate::{expression::expression_compiler::ExpressionCompilationContext, inference::ExpressionCompilationError};
 unary_instruction! {
     MathAbsLong = MathAbsLongImpl(a1: i64) -> i64 { Ok(i64::abs(a1)) }
     MathAbsDouble = MathAbsDoubleImpl(a1: f64) -> f64 { Ok(f64::abs(a1)) }

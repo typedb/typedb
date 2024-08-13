@@ -15,7 +15,7 @@ use load_cast::ImplicitCast;
 use unary::UnaryExpression;
 
 use crate::{
-    expression::expression_compiler::ExpressionCompilationContext, inference::ExpressionCompilationError,
+    expression::{expression_compiler::ExpressionCompilationContext, ExpressionCompileError},
     instruction::expression::op_codes::ExpressionOpCode,
 };
 
@@ -33,7 +33,7 @@ pub trait ExpressionInstruction: Sized {
 pub trait CompilableExpression: ExpressionInstruction {
     fn return_value_category(&self) -> Option<ValueTypeCategory>;
 
-    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompilationError>;
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError>;
 }
 
 pub(crate) fn check_operation<T>(checked_operation_result: Option<T>) -> Result<T, ExpressionEvaluationError> {

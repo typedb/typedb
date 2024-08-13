@@ -8,7 +8,7 @@ use std::fmt;
 
 use crate::pattern::{disjunction::Disjunction, negation::Negation, optional::Optional};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NestedPattern {
     Disjunction(Disjunction),
     Negation(Negation),

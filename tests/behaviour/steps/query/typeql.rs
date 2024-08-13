@@ -8,12 +8,12 @@ use std::{collections::HashMap, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{
-    inference::annotated_functions::AnnotatedCommittedFunctions,
+    inference::annotated_functions::IndexedAnnotatedFunctions,
     write::insert::{InsertPlan, WriteCompilationError},
 };
 use cucumber::gherkin::Step;
 use executor::{batch::Row, write::insert_executor::WriteError};
-use ir::program::{function_signature::HashMapFunctionIndex, program::Program};
+use ir::program::{function_signature::HashMapFunctionSignatureIndex, program::Program};
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use primitive::either::Either;
@@ -30,17 +30,18 @@ fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPl
     with_write_tx!(context, |tx| {
         let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
         let block = ir::translation::writes::translate_insert(&typeql_insert).unwrap().finish();
-        let annotated_program = compiler::inference::type_inference::infer_types(
-            Program::new(block, vec![]),
+        let (entry_annotations, _) = compiler::inference::type_inference::infer_types(
+            &block,
+            vec![],
             &tx.snapshot,
             &tx.type_manager,
-            Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
+            &IndexedAnnotatedFunctions::empty(),
         )
         .unwrap();
         compiler::write::insert::build_insert_plan(
-            annotated_program.get_entry().conjunction().constraints(),
+            block.conjunction().constraints(),
             &HashMap::new(),
-            annotated_program.entry_annotations(),
+            &entry_annotations,
         )
     })
 }
@@ -74,9 +75,9 @@ fn execute_insert_query(
 #[apply(generic_step)]
 #[step(expr = r"typeql define{may_error}")]
 async fn typeql_define(context: &mut Context, may_error: MayError, step: &Step) {
-    let typeql_define = step.docstring.as_ref().unwrap().as_str();
+    let typeql_define = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap().into_schema();
     with_schema_tx!(context, |tx| {
-        let result = QueryManager::new().execute(&mut tx.snapshot, &tx.type_manager, typeql_define);
+        let result = QueryManager::new().execute_schema(&mut tx.snapshot, &tx.type_manager, typeql_define);
         assert_eq!(may_error.expects_error(), result.is_err(), "{:?}", result);
     });
 }

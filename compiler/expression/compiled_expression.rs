@@ -36,6 +36,17 @@ impl CompiledExpression {
 
 #[derive(Debug, Copy, Clone)]
 pub enum ExpressionValueType {
+    // TODO: we haven't implemented ConceptList, only ValueList right now.
+    // TODO: this should hold an actual ValueType, not a Category!
     Single(ValueTypeCategory),
     List(ValueTypeCategory),
+}
+
+impl ExpressionValueType {
+    pub fn value_type(&self) -> ValueTypeCategory {
+        match self {
+            ExpressionValueType::Single(category) => *category,
+            ExpressionValueType::List(category) => *category,
+        }
+    }
 }

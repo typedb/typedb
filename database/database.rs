@@ -16,7 +16,10 @@ use std::{
 use concept::{
     error::ConceptWriteError,
     thing::statistics::{Statistics, StatisticsError},
-    type_::type_manager::type_cache::{TypeCache, TypeCacheCreateError},
+    type_::type_manager::{
+        type_cache::{TypeCache, TypeCacheCreateError},
+        TypeManager,
+    },
 };
 use concurrency::IntervalRunner;
 use durability::wal::{WALError, WAL};
@@ -28,6 +31,7 @@ use encoding::{
     },
     EncodingKeyspace,
 };
+use function::{function_cache::FunctionCache, FunctionError};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
     recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
@@ -35,10 +39,13 @@ use storage::{
     MVCCStorage, StorageOpenError, StorageResetError,
 };
 
+use crate::DatabaseOpenError::FunctionCacheInitialise;
+
 #[derive(Debug, Clone)]
 pub(super) struct Schema {
     pub(super) thing_statistics: Arc<Statistics>,
     pub(super) type_cache: Arc<TypeCache>,
+    pub(super) function_cache: Arc<FunctionCache>,
 }
 
 pub struct Database<D> {
@@ -84,7 +91,9 @@ impl Database<WALClient> {
     const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 
     fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
-        use DatabaseOpenError::{DirectoryCreate, Encoding, StorageOpen, TypeCacheInitialise, WALOpen};
+        use DatabaseOpenError::{
+            DirectoryCreate, Encoding, FunctionCacheInitialise, StorageOpen, TypeCacheInitialise, WALOpen,
+        };
 
         let name = name.as_ref();
 
@@ -109,7 +118,16 @@ impl Database<WALClient> {
                 .map_err(|error| TypeCacheInitialise { source: error })?,
         );
 
-        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache }));
+        let function_cache = Arc::new(
+            FunctionCache::new(
+                storage.clone(),
+                &TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None),
+                SequenceNumber::MIN,
+            )
+            .map_err(|error| FunctionCacheInitialise { source: error })?,
+        );
+
+        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
         let schema_txn_lock = Arc::new(RwLock::default());
 
         let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone());
@@ -162,7 +180,16 @@ impl Database<WALClient> {
                 .map_err(|error| TypeCacheInitialise { source: error })?,
         );
 
-        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache }));
+        let function_cache = Arc::new(
+            FunctionCache::new(
+                storage.clone(),
+                &TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None),
+                SequenceNumber::MIN,
+            )
+            .map_err(|error| FunctionCacheInitialise { source: error })?,
+        );
+
+        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
         let schema_txn_lock = Arc::new(RwLock::default());
 
         let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone());
@@ -267,6 +294,7 @@ pub enum DatabaseOpenError {
     SchemaInitialise { source: ConceptWriteError },
     StatisticsInitialise { source: StatisticsError },
     TypeCacheInitialise { source: TypeCacheCreateError },
+    FunctionCacheInitialise { source: FunctionError },
 }
 
 impl fmt::Display for DatabaseOpenError {
@@ -290,6 +318,7 @@ impl Error for DatabaseOpenError {
             Self::SchemaInitialise { source } => Some(source),
             Self::StatisticsInitialise { source } => Some(source),
             Self::TypeCacheInitialise { source } => Some(source),
+            Self::FunctionCacheInitialise { source } => Some(source),
         }
     }
 }

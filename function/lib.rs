@@ -12,11 +12,11 @@ use ir::program::{FunctionDefinitionError, FunctionReadError};
 use storage::{snapshot::SnapshotGetError, ReadSnapshotOpenError};
 
 pub mod function;
-mod function_cache;
+pub mod function_cache;
 pub mod function_manager;
 
 #[derive(Debug)]
-pub enum FunctionManagerError {
+pub enum FunctionError {
     SnapshotOpen { source: ReadSnapshotOpenError },
     SnapshotGet { source: SnapshotGetError },
     TypeInference { source: TypeInferenceError },
@@ -27,13 +27,13 @@ pub enum FunctionManagerError {
     ParseError { source: typeql::common::error::Error },
 }
 
-impl fmt::Display for FunctionManagerError {
+impl fmt::Display for FunctionError {
     fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }
 
-impl Error for FunctionManagerError {
+impl Error for FunctionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::SnapshotOpen { source } => Some(source),

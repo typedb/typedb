@@ -44,8 +44,9 @@ use std::{
 
 use answer::variable::Variable;
 use concept::error::ConceptReadError;
-use encoding::value::value_type::ValueTypeCategory;
-use ir::pattern::{expression::Operator, variable_category::VariableCategory};
+use ir::pattern::variable_category::VariableCategory;
+
+use crate::expression::ExpressionCompileError;
 
 pub mod annotated_functions;
 pub mod annotated_program;
@@ -59,13 +60,13 @@ pub enum TypeInferenceError {
     ConceptRead { source: ConceptReadError },
     LabelNotResolved(String),
 
-    MultipleAssignmentsForSingleVariable { variable: Variable },
-    CircularDependencyInExpressions { variable: Variable },
+    MultipleAssignmentsForSingleVariable { assign_variable: Variable },
+    CircularDependencyInExpressions { assign_variable: Variable },
     // TODO: Improve error
     CouldNotDetermineValueTypeForVariable { variable: Variable },
     ExpressionVariableDidNotHaveSingleValueType { variable: Variable },
     ExpressionVariableHasNoValueType { variable: Variable },
-    ExpressionCompilation { source: ExpressionCompilationError },
+    ExpressionCompilation { source: ExpressionCompileError },
     VariableInExpressionMustBeValueOrAttribute { variable: Variable, actual_category: VariableCategory },
     RoleNameNotResolved(String),
 }
@@ -81,7 +82,6 @@ impl Error for TypeInferenceError {
         match self {
             TypeInferenceError::ConceptRead { source } => Some(source),
             TypeInferenceError::ExpressionCompilation { source } => Some(source),
-
             TypeInferenceError::LabelNotResolved(_) => None,
             TypeInferenceError::RoleNameNotResolved(_) => None,
             TypeInferenceError::MultipleAssignmentsForSingleVariable { .. } => None,
@@ -90,108 +90,6 @@ impl Error for TypeInferenceError {
             TypeInferenceError::ExpressionVariableDidNotHaveSingleValueType { .. } => None,
             TypeInferenceError::ExpressionVariableHasNoValueType { .. } => None,
             TypeInferenceError::VariableInExpressionMustBeValueOrAttribute { .. } => None,
-        }
-    }
-}
-
-pub enum ExpressionCompilationError {
-    InternalStackWasEmpty,
-    InternalUnexpectedValueType,
-    UnsupportedOperandsForOperation {
-        op: Operator,
-        left_category: ValueTypeCategory,
-        right_category: ValueTypeCategory,
-    },
-    UnsupportedArgumentsForBuiltin,
-    ListIndexMustBeLong,
-    HeterogenousValuesInList,
-    ExpectedSingleWasList,
-    ExpectedListWasSingle,
-    EmptyListConstructorCannotInferValueType,
-}
-
-impl Debug for ExpressionCompilationError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        // TODO
-        match self {
-            ExpressionCompilationError::InternalStackWasEmpty => {
-                f.write_str("ExpressionCompilationError::InternalStackWasEmpty")
-            }
-            ExpressionCompilationError::InternalUnexpectedValueType => {
-                f.write_str("ExpressionCompilationError::InternalUnexpectedValueType")
-            }
-            ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => {
-                f.write_str("ExpressionCompilationError::UnsupportedOperandsForOperation")
-            }
-            ExpressionCompilationError::UnsupportedArgumentsForBuiltin => {
-                f.write_str("ExpressionCompilationError::UnsupportedArgumentsForBuiltin")
-            }
-            ExpressionCompilationError::ListIndexMustBeLong => {
-                f.write_str("ExpressionCompilationError::ListIndexMustBeLong")
-            }
-            ExpressionCompilationError::HeterogenousValuesInList => {
-                f.write_str("ExpressionCompilationError::HeterogenousValuesInList")
-            }
-            ExpressionCompilationError::ExpectedSingleWasList => {
-                f.write_str("ExpressionCompilationError::ExpectedSingleWasList")
-            }
-            ExpressionCompilationError::ExpectedListWasSingle => {
-                f.write_str("ExpressionCompilationError::ExpectedListWasSingle")
-            }
-            ExpressionCompilationError::EmptyListConstructorCannotInferValueType => {
-                f.write_str("ExpressionCompilationError::EmptyListConstructorCannotInferValueType")
-            }
-        }
-    }
-}
-
-impl Display for ExpressionCompilationError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        // TODO
-        match self {
-            ExpressionCompilationError::InternalStackWasEmpty => {
-                f.write_str("ExpressionCompilationError::InternalStackWasEmpty")
-            }
-            ExpressionCompilationError::InternalUnexpectedValueType => {
-                f.write_str("ExpressionCompilationError::InternalUnexpectedValueType")
-            }
-            ExpressionCompilationError::UnsupportedOperandsForOperation { .. } => {
-                f.write_str("ExpressionCompilationError::UnsupportedOperandsForOperation")
-            }
-            ExpressionCompilationError::UnsupportedArgumentsForBuiltin => {
-                f.write_str("ExpressionCompilationError::UnsupportedArgumentsForBuiltin")
-            }
-            ExpressionCompilationError::ListIndexMustBeLong => {
-                f.write_str("ExpressionCompilationError::ListIndexMustBeLong")
-            }
-            ExpressionCompilationError::HeterogenousValuesInList => {
-                f.write_str("ExpressionCompilationError::HeterogenousValuesInList")
-            }
-            ExpressionCompilationError::ExpectedSingleWasList => {
-                f.write_str("ExpressionCompilationError::ExpectedSingleWasList")
-            }
-            ExpressionCompilationError::ExpectedListWasSingle => {
-                f.write_str("ExpressionCompilationError::ExpectedListWasSingle")
-            }
-            ExpressionCompilationError::EmptyListConstructorCannotInferValueType => {
-                f.write_str("ExpressionCompilationError::EmptyListConstructorCannotInferValueType")
-            }
-        }
-    }
-}
-
-impl Error for ExpressionCompilationError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::InternalStackWasEmpty => None,
-            Self::InternalUnexpectedValueType => None,
-            Self::UnsupportedOperandsForOperation { .. } => None,
-            Self::UnsupportedArgumentsForBuiltin => None,
-            Self::ListIndexMustBeLong => None,
-            Self::HeterogenousValuesInList => None,
-            Self::ExpectedSingleWasList => None,
-            Self::ExpectedListWasSingle => None,
-            Self::EmptyListConstructorCannotInferValueType => None,
         }
     }
 }

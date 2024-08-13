@@ -21,7 +21,7 @@ use crate::{
     PatternDefinitionError::FunctionCallArgumentCountMismatch,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Constraints {
     scope: ScopeId,
     constraints: Vec<Constraint<Variable>>,
@@ -241,9 +241,11 @@ impl<'cx> ConstraintsBuilder<'cx> {
     ) -> Result<&ExpressionBinding<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
-        binding.validate(self.context).map_err(|source| PatternDefinitionError::ExpressionDefinition { source })?;
-        // TODO: Does this mean an expression can't return a list? Else, we can get it from validate.
-        self.context.set_variable_category(variable, VariableCategory::Value, binding.clone().into())?;
+        binding
+            .validate(&mut self.context)
+            .map_err(|source| PatternDefinitionError::ExpressionDefinition { source })?;
+        // WARNING: we can't set a variable category here, since we don't know if the expression will produce a
+        //          Value, a ValueList, or a ThingList! We will know this at compilation time
         let as_ref = self.constraints.add_constraint(binding);
         Ok(as_ref.as_expression_binding().unwrap())
     }

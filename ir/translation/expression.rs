@@ -171,7 +171,7 @@ pub mod tests {
 
     use crate::{
         pattern::expression::{Expression, Operation, Operator},
-        program::{block::FunctionalBlock, function_signature::HashMapFunctionIndex},
+        program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
         translation::match_::translate_match,
         PatternDefinitionError,
     };
@@ -179,7 +179,7 @@ pub mod tests {
     fn parse_query_get_match(query_str: &str) -> Result<FunctionalBlock, PatternDefinitionError> {
         let mut query = typeql::parse_query(query_str).unwrap().into_pipeline();
         let match_ = query.stages.remove(0).into_match();
-        translate_match(&HashMapFunctionIndex::empty(), &match_).map(|builder| builder.finish())
+        translate_match(&HashMapFunctionSignatureIndex::empty(), &match_).map(|builder| builder.finish())
     }
 
     #[test]

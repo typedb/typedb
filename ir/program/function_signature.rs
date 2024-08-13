@@ -6,7 +6,7 @@
 
 use std::{
     collections::HashMap,
-    fmt::{Display, Formatter},
+    fmt::{Debug, Display, Formatter},
 };
 
 use encoding::graph::definition::definition_key::DefinitionKey;
@@ -24,6 +24,7 @@ pub enum FunctionID {
     Preamble(usize),
 }
 
+#[derive(Debug)]
 pub struct FunctionSignature {
     pub(crate) function_id: FunctionID,
     pub(crate) arguments: Vec<VariableCategory>, // TODO: Arguments cannot be optional
@@ -82,7 +83,7 @@ impl Display for FunctionID {
     }
 }
 
-pub trait FunctionIDAPI: Clone + Into<FunctionID> {
+pub trait FunctionIDAPI: Debug + Clone + Into<FunctionID> {
     fn as_usize(&self) -> usize;
 }
 
@@ -115,11 +116,11 @@ pub trait FunctionSignatureIndex {
         -> Result<Option<MaybeOwns<'_, FunctionSignature>>, FunctionReadError>;
 }
 
-pub struct HashMapFunctionIndex {
+pub struct HashMapFunctionSignatureIndex {
     index: HashMap<String, FunctionSignature>,
 }
 
-impl HashMapFunctionIndex {
+impl HashMapFunctionSignatureIndex {
     pub fn build<'func>(buffered_typeql: impl Iterator<Item = (FunctionID, &'func typeql::Function)>) -> Self {
         let index = buffered_typeql
             .map(|(function_id, function)| {
@@ -133,12 +134,12 @@ impl HashMapFunctionIndex {
         Self::build([].into_iter())
     }
 
-    pub fn into_parts(self) -> HashMap<String, FunctionSignature> {
+    pub fn into_map(self) -> HashMap<String, FunctionSignature> {
         self.index
     }
 }
 
-impl FunctionSignatureIndex for HashMapFunctionIndex {
+impl FunctionSignatureIndex for HashMapFunctionSignatureIndex {
     fn get_function_signature(
         &self,
         name: &str,

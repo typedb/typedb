@@ -19,37 +19,23 @@ impl QueryManager {
         QueryManager {}
     }
 
-    pub fn execute(
+    pub fn execute_schema(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        query: &str,
+        query: SchemaQuery,
     ) -> Result<(), QueryError> {
-        let parsed = typeql::parse_query(query)
-            .map_err(|err| QueryError::ParseError { typeql_query: query.to_string(), source: err })?;
-
-        match parsed {
-            Query::Schema(query) => match query {
-                SchemaQuery::Define(define) => {
-                    define::execute(snapshot, type_manager, define).map_err(|err| QueryError::Define { source: err })?
-                }
-                SchemaQuery::Redefine(redefine) => {
-                    todo!()
-                }
-                SchemaQuery::Undefine(undefine) => {
-                    todo!()
-                }
-            },
-            Query::Pipeline(pipeline) => {}
+        match query {
+            SchemaQuery::Define(define) => {
+                define::execute(snapshot, &type_manager, define).map_err(|err| QueryError::Define { source: err })
+            }
+            SchemaQuery::Redefine(redefine) => {
+                todo!()
+            }
+            SchemaQuery::Undefine(undefine) => {
+                todo!()
+            }
         }
-
-        // 1. parse query into list of TypeQL clauses
-        // 2. expand implicit clauses, eg. fetch clause; -> filter clause; fetch clause;
-        // 3. parse query-bound functions
-        // 4. generate list of executors
-        // 5. Execute each executor
-
-        Ok(())
     }
 
     // TODO: take in parsed TypeQL clause

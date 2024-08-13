@@ -7,36 +7,34 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::{
-    expression::{
-        compiled_expression::{CompiledExpression, ExpressionValueType},
-        expression_compiler::ExpressionCompilationContext,
-    },
-    inference::ExpressionCompilationError,
+use compiler::expression::{
+    compiled_expression::{CompiledExpression, ExpressionValueType},
+    expression_compiler::ExpressionCompilationContext,
+    ExpressionCompileError,
 };
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
 use executor::expression_executor::{ExpressionExecutor, ExpressionValue};
 use ir::{
-    pattern::constraint::Constraint, program::function_signature::HashMapFunctionIndex,
+    pattern::constraint::Constraint, program::function_signature::HashMapFunctionSignatureIndex,
     translation::match_::translate_match, PatternDefinitionError,
 };
 use itertools::Itertools;
 use typeql::query::stage::Stage;
 
 #[derive(Debug)]
-pub enum PatternDefitionOrExpressionCompilationError {
+pub enum PatternDefitionOrExpressionCompileError {
     PatternDefinition { source: PatternDefinitionError },
-    ExpressionCompilation { source: ExpressionCompilationError },
+    ExpressionCompilation { source: ExpressionCompileError },
 }
 
-impl From<PatternDefinitionError> for PatternDefitionOrExpressionCompilationError {
+impl From<PatternDefinitionError> for PatternDefitionOrExpressionCompileError {
     fn from(value: PatternDefinitionError) -> Self {
         Self::PatternDefinition { source: value }
     }
 }
 
-impl From<ExpressionCompilationError> for PatternDefitionOrExpressionCompilationError {
-    fn from(value: ExpressionCompilationError) -> Self {
+impl From<ExpressionCompileError> for PatternDefitionOrExpressionCompileError {
+    fn from(value: ExpressionCompileError) -> Self {
         Self::ExpressionCompilation { source: value }
     }
 }
@@ -44,10 +42,10 @@ impl From<ExpressionCompilationError> for PatternDefitionOrExpressionCompilation
 fn compile_expression_via_match(
     s: &str,
     variable_types: HashMap<&str, ExpressionValueType>,
-) -> Result<(HashMap<String, Variable>, CompiledExpression), PatternDefitionOrExpressionCompilationError> {
+) -> Result<(HashMap<String, Variable>, CompiledExpression), PatternDefitionOrExpressionCompileError> {
     let query = format!("match $x = {}; select $x;", s);
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap() {
-        let block = translate_match(&HashMapFunctionIndex::empty(), &match_)?.finish();
+        let block = translate_match(&HashMapFunctionSignatureIndex::empty(), &match_)?.finish();
         let variable_mapping = variable_types
             .keys()
             .map(|name| {
@@ -240,7 +238,7 @@ fn test_functions() {
 
     assert!(matches!(
         compile_expression_via_match("round(3.5e0, 4.5e0)", HashMap::new()),
-        Err(PatternDefitionOrExpressionCompilationError::PatternDefinition {
+        Err(PatternDefitionOrExpressionCompileError::PatternDefinition {
             source: PatternDefinitionError::ExpressionBuiltinArgumentCountMismatch { .. }
         })
     ));
