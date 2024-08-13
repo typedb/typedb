@@ -156,7 +156,7 @@ fn add_role_players(
     instructions: &mut Vec<InsertInstruction>,
 ) -> Result<(), WriteCompilationError> {
     let named_role_types = collect_role_type_bindings(constraints, type_annotations)?;
-    filter_variants!(Constraint::RolePlayer: constraints).try_for_each(|role_player| {
+    filter_variants!(Constraint::Links: constraints).try_for_each(|role_player| {
         let relation = get_thing_source(input_variables, inserted_concepts, role_player.relation())?;
         let player = get_thing_source(input_variables, inserted_concepts, role_player.player())?;
         let role_variable = role_player.role_type();

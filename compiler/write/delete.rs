@@ -63,7 +63,7 @@ pub fn build_delete_plan(
                     attribute: get_thing_source(input_variables, &inserted_things, has.attribute())?,
                 }));
             }
-            Constraint::RolePlayer(role_player) => {
+            Constraint::Links(role_player) => {
                 let relation = get_thing_source(input_variables, &inserted_things, role_player.relation())?;
                 let player = get_thing_source(input_variables, &inserted_things, role_player.player())?;
                 let role_variable = role_player.role_type();
@@ -88,6 +88,9 @@ pub fn build_delete_plan(
             Constraint::Isa(_)
             | Constraint::Label(_)
             | Constraint::RoleName(_)
+            | Constraint::Owns(_)
+            | Constraint::Relates(_)
+            | Constraint::Plays(_)
             | Constraint::ExpressionBinding(_)
             | Constraint::Comparison(_)
             | Constraint::Sub(_)

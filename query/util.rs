@@ -8,15 +8,9 @@
 
 use concept::{
     error::ConceptReadError,
-    type_::{
-        object_type::ObjectType,
-        type_manager::TypeManager,
-        Ordering,
-    },
+    type_::{object_type::ObjectType, type_manager::TypeManager, Ordering},
 };
-use encoding::{
-    value::{label::Label},
-};
+use encoding::value::label::Label;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     type_::{BuiltinValueType, NamedType},

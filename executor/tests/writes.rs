@@ -18,10 +18,7 @@ use concept::{
     type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{
-    batch::Row,
-    write::insert_executor::{InsertExecutor, WriteError},
-};
+use executor::{batch::Row, write::insert_executor::WriteError};
 use ir::program::{function_signature::HashMapFunctionIndex, program::Program};
 use lending_iterator::LendingIterator;
 use storage::{
@@ -97,7 +94,7 @@ fn execute_insert(
     let insert_plan = compiler::write::insert::build_insert_plan(
         annotated_program.get_entry().conjunction().constraints(),
         &input_row_format,
-        annotated_program.get_entry_annotations(),
+        annotated_program.entry_annotations(),
     )
     .unwrap();
 
@@ -166,7 +163,7 @@ fn execute_delete(
 
     let delete_plan = build_delete_plan(
         &input_row_format,
-        annotated_match.get_entry_annotations(),
+        annotated_match.entry_annotations(),
         block.conjunction().constraints(),
         &deleted_concepts,
     )

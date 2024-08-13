@@ -9,13 +9,10 @@ use std::{collections::HashMap, sync::Arc};
 use answer::variable_value::VariableValue;
 use compiler::{
     inference::annotated_functions::AnnotatedCommittedFunctions,
-    planner::insert_planner::{InsertCompilationError, InsertPlan},
+    write::insert::{InsertPlan, WriteCompilationError},
 };
 use cucumber::gherkin::Step;
-use executor::{
-    batch::Row,
-    insert_executor::{InsertError, InsertExecutor},
-};
+use executor::{batch::Row, write::insert_executor::WriteError};
 use ir::program::{function_signature::HashMapFunctionIndex, program::Program};
 use itertools::Itertools;
 use macro_rules_attribute::apply;
@@ -29,11 +26,10 @@ use crate::{
     Context,
 };
 
-fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPlan, InsertCompilationError> {
+fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPlan, WriteCompilationError> {
     with_write_tx!(context, |tx| {
         let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
-        let block =
-            ir::translation::writes::translate_insert(&HashMapFunctionIndex::empty(), &typeql_insert).unwrap().finish();
+        let block = ir::translation::writes::translate_insert(&typeql_insert).unwrap().finish();
         let annotated_program = compiler::inference::type_inference::infer_types(
             Program::new(block, vec![]),
             &tx.snapshot,
@@ -41,10 +37,10 @@ fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPl
             Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
         )
         .unwrap();
-        compiler::planner::insert_planner::build_insert_plan(
-            &HashMap::new(),
-            annotated_program.get_entry_annotations(),
+        compiler::write::insert::build_insert_plan(
             annotated_program.get_entry().conjunction().constraints(),
+            &HashMap::new(),
+            annotated_program.entry_annotations(),
         )
     })
 }
@@ -52,16 +48,16 @@ fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPl
 fn execute_insert_plan(
     context: &mut Context,
     insert_plan: InsertPlan,
-) -> Result<Vec<VariableValue<'static>>, InsertError> {
+) -> Result<Vec<VariableValue<'static>>, WriteError> {
     let mut output_vec = (0..insert_plan.n_created_concepts).map(|_| VariableValue::Empty).collect_vec();
     with_write_tx!(context, |tx| {
-        let mut executor = InsertExecutor::new(insert_plan);
-        executor::insert_executor::execute(
+        executor::write::insert_executor::execute_insert(
             &mut tx.snapshot,
             &tx.thing_manager,
-            &mut executor,
+            &insert_plan,
             &Row::new(vec![].as_mut_slice(), &mut 1),
             Row::new(output_vec.as_mut_slice(), &mut 1),
+            &mut Vec::new(),
         )?;
     });
     Ok(output_vec)
@@ -70,7 +66,7 @@ fn execute_insert_plan(
 fn execute_insert_query(
     context: &mut Context,
     query: &str,
-) -> Result<Vec<VariableValue<'static>>, Either<InsertCompilationError, InsertError>> {
+) -> Result<Vec<VariableValue<'static>>, Either<WriteCompilationError, WriteError>> {
     let insert_plan = create_insert_plan(context, query).map_err(Either::First)?;
     execute_insert_plan(context, insert_plan).map_err(Either::Second)
 }

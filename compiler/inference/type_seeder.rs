@@ -20,7 +20,7 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            Comparison, Constraint, FunctionCallBinding, Has, Isa, IsaKind, Label, Links, Owns, Plays, Relates, Sub,
+            Comparison, Constraint, FunctionCallBinding, Has, Isa, IsaKind, Label, Links, Owns, Plays, Relates, Sub, RoleName,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
@@ -199,6 +199,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
                 | Constraint::Isa(_)
                 | Constraint::Links(_)
                 | Constraint::Has(_)
+                | Constraint::Owns(_)
+                | Constraint::Relates(_)
+                | Constraint::Plays(_)
                 | Constraint::ExpressionBinding(_)
                 | Constraint::Comparison(_) => {}
             }

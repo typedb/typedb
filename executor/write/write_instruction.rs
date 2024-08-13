@@ -75,7 +75,6 @@ pub trait AsDeleteInstruction {
     ) -> Result<(), WriteError>;
 }
 
-
 // Implementation
 impl AsInsertInstruction for PutEntity {
     fn insert(

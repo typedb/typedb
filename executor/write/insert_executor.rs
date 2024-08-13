@@ -22,19 +22,19 @@ use crate::{
         write_instruction::{AsDeleteInstruction, AsInsertInstruction},
     },
 };
-
-pub struct InsertExecutor {
-    plan: InsertPlan,
-    reused_created_things: Vec<answer::Thing<'static>>,
-}
-
-impl InsertExecutor {
-    pub fn new(plan: InsertPlan) -> Self {
-        // let output_row = Vec::new(); // TODO
-        let reused_created_things = Vec::with_capacity(plan.n_created_concepts);
-        Self { plan, reused_created_things }
-    }
-}
+//
+// pub struct InsertExecutor {
+//     plan: InsertPlan,
+//     reused_created_things: Vec<answer::Thing<'static>>,
+// }
+//
+// impl InsertExecutor {
+//     pub fn new(plan: InsertPlan) -> Self {
+//         // let output_row = Vec::new(); // TODO
+//         let reused_created_things = Vec::with_capacity(plan.n_created_concepts);
+//         Self { plan, reused_created_things }
+//     }
+// }
 
 pub fn execute_insert<'input, 'output>(
     // TODO: pub(crate)
