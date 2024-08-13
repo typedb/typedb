@@ -8,14 +8,9 @@ use answer::variable::Variable;
 use typeql::query::stage::delete::DeletableKind;
 
 use crate::{
-    pattern::{
-        constraint::{Constraint, Has, RoleName, RolePlayer},
-        variable_category::VariableCategory,
-        ScopeId,
-    },
     program::{
-        block::{BlockContext, FunctionalBlock, FunctionalBlockBuilder},
-        function_signature::{FunctionSignatureIndex, HashMapFunctionIndex},
+        block::{FunctionalBlock, FunctionalBlockBuilder},
+        function_signature::HashMapFunctionIndex,
     },
     translation::constraints::{add_statement, add_typeql_relation, register_typeql_var},
     PatternDefinitionError,

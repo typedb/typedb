@@ -9,29 +9,21 @@
 use concept::{
     error::ConceptReadError,
     type_::{
-        annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
-            AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
-        },
         object_type::ObjectType,
         type_manager::TypeManager,
         Ordering,
     },
 };
 use encoding::{
-    graph::type_::Kind,
-    value::{label::Label, value::Value, value_type::ValueTypeCategory},
+    value::{label::Label},
 };
-use ir::translation::literal;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    annotation::{Annotation as TypeQLAnnotation, CardinalityRange},
-    common::token::{Kind as TypeQLKind, ValueType},
     type_::{BuiltinValueType, NamedType},
     TypeRef, TypeRefAny,
 };
 
-use crate::{define::DefineError, SymbolResolutionError};
+use crate::SymbolResolutionError;
 
 pub(crate) fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(Label<'static>, Ordering), ()> {
     match type_ref {
