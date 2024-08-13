@@ -9,11 +9,9 @@ use std::collections::{HashMap, HashSet};
 use encoding::{
     graph::{
         definition::definition_key::DefinitionKey,
-        thing::{edge::ThingEdgeRolePlayer, vertex_object::ObjectVertex, ThingVertex},
+        thing::edge::ThingEdgeLinks,
         type_::{CapabilityKind, Kind},
-        Typed,
     },
-    layout::prefix::Prefix,
     value::{label::Label, value_type::ValueType},
 };
 use itertools::Itertools;
@@ -1473,12 +1471,12 @@ impl OperationTimeValidation {
         let mut relation_iterator = _thing_manager.get_relations(snapshot);
         while let Some(result) = relation_iterator.next() {
             let relation_instance = result.map_err(SchemaValidationError::ConceptRead)?;
-            let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation_instance.into_vertex());
+            let prefix = ThingEdgeLinks::prefix_from_relation(relation_instance.into_vertex());
             let mut role_player_iterator = RolePlayerIterator::new(
-                snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING)),
+                snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING)),
             );
             match role_player_iterator.next() {
-                None => {}
+                None => (),
                 Some(Ok(_)) => {
                     let role_type_clone = role_type.clone();
                     Err(SchemaValidationError::CannotDeleteTypeWithExistingInstances(get_label_or_schema_err(

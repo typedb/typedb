@@ -13,7 +13,7 @@ use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
+            edge::{ThingEdgeLinks, ThingEdgeRolePlayerIndex},
             vertex_object::ObjectVertex,
             ThingVertex,
         },
@@ -108,8 +108,8 @@ impl<'a> Relation<'a> {
 
     pub fn has_players(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> bool {
         match self.get_status(snapshot, thing_manager) {
-            ConceptStatus::Inserted => thing_manager.has_role_players(snapshot, self.as_reference(), true),
-            ConceptStatus::Persisted => thing_manager.has_role_players(snapshot, self.as_reference(), false),
+            ConceptStatus::Inserted => thing_manager.has_links(snapshot, self.as_reference(), true),
+            ConceptStatus::Persisted => thing_manager.has_links(snapshot, self.as_reference(), false),
             ConceptStatus::Put => unreachable!("Encountered a `put` relation"),
             ConceptStatus::Deleted => unreachable!("Cannot operate on a deleted concept."),
         }
@@ -185,14 +185,9 @@ impl<'a> Relation<'a> {
         let relates_annotations = relates.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
         let distinct = relates_annotations.contains_key(&RelatesAnnotation::Distinct(AnnotationDistinct));
         if distinct {
-            thing_manager.put_role_player_unordered(
-                snapshot,
-                self.as_reference(),
-                player.as_reference(),
-                role_type.clone(),
-            )
+            thing_manager.put_links_unordered(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
         } else {
-            thing_manager.increment_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
+            thing_manager.increment_links_count(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
         }
     }
 
@@ -233,17 +228,12 @@ impl<'a> Relation<'a> {
         // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
         for player in old_counts.keys() {
             if !new_counts.contains_key(player) {
-                thing_manager.unset_role_player(
-                    snapshot,
-                    self.as_reference(),
-                    player.as_reference(),
-                    role_type.clone(),
-                )?;
+                thing_manager.unset_links(snapshot, self.as_reference(), player.as_reference(), role_type.clone())?;
             }
         }
         for (player, count) in new_counts {
             if old_counts.get(&player) != Some(&count) {
-                thing_manager.set_role_player_count(
+                thing_manager.set_links_count(
                     snapshot,
                     self.as_reference(),
                     player.as_reference(),
@@ -254,7 +244,7 @@ impl<'a> Relation<'a> {
         }
 
         // 3. Overwrite owned list
-        thing_manager.set_role_players_ordered(snapshot, self.as_reference(), role_type, new_players)?;
+        thing_manager.set_links_ordered(snapshot, self.as_reference(), role_type, new_players)?;
         Ok(())
     }
 
@@ -281,9 +271,9 @@ impl<'a> Relation<'a> {
         let distinct = relates_annotations.contains_key(&RelatesAnnotation::Distinct(AnnotationDistinct));
         if distinct {
             debug_assert_eq!(delete_count, 1);
-            thing_manager.unset_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
+            thing_manager.unset_links(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
         } else {
-            thing_manager.decrement_role_player(
+            thing_manager.decrement_links_count(
                 snapshot,
                 self.as_reference(),
                 player.as_reference(),
@@ -406,7 +396,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
             .try_collect::<Vec<_>, _>()
             .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
         {
-            thing_manager.unset_role_player(snapshot, relation, self.as_reference(), role)?;
+            thing_manager.unset_links(snapshot, relation, self.as_reference(), role)?;
         }
 
         let players = self
@@ -420,7 +410,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         for (role, player) in players {
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
-            thing_manager.unset_role_player(snapshot, self.as_reference(), player, role)?;
+            thing_manager.unset_links(snapshot, self.as_reference(), player, role)?;
         }
 
         debug_assert_eq!(self.get_indexed_players(snapshot, thing_manager).count(), 0);
@@ -482,13 +472,14 @@ impl<'a> RolePlayer<'a> {
     }
 }
 
-fn storage_key_to_role_player<'a>(
+fn storage_key_links_edge_to_role_player<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (RolePlayer<'a>, u64) {
-    let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
+    let edge = ThingEdgeLinks::new(storage_key.into_bytes());
     let role_type = RoleType::build_from_type_id(edge.role_id());
-    (RolePlayer { player: Object::new(edge.into_to()), role_type }, decode_value_u64(value.as_reference()))
+    let player = Object::new(edge.into_player());
+    (RolePlayer { player, role_type }, decode_value_u64(value.as_reference()))
 }
 
 impl Hkt for RolePlayer<'static> {
@@ -498,29 +489,29 @@ impl Hkt for RolePlayer<'static> {
 edge_iterator!(
     RolePlayerIterator;
     'a -> (RolePlayer<'a>, u64);
-    storage_key_to_role_player
+    storage_key_links_edge_to_role_player
 );
 
-fn storage_key_to_relation_role<'a>(
+fn storage_key_links_edge_to_relation_role<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Relation<'a>, RoleType<'static>, u64) {
-    let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
+    let edge = ThingEdgeLinks::new(storage_key.into_bytes());
     let role_type = RoleType::build_from_type_id(edge.role_id());
-    (Relation::new(edge.into_from()), role_type, decode_value_u64(value.as_reference()))
+    (Relation::new(edge.into_relation()), role_type, decode_value_u64(value.as_reference()))
 }
 
 edge_iterator!(
     RelationRoleIterator;
     'a -> (Relation<'a>, RoleType<'static>, u64);
-    storage_key_to_relation_role
+    storage_key_links_edge_to_relation_role
 );
 
-fn storage_key_to_relation_role_player<'a>(
+fn storage_key_links_edge_to_relation_role_player<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Relation<'a>, RolePlayer<'a>, u64) {
-    let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
+    let edge = ThingEdgeLinks::new(storage_key.into_bytes());
     let relation = Relation::new(edge.relation().into_owned());
     let role_type = RoleType::build_from_type_id(edge.role_id());
     let player = Object::new(edge.into_player());
@@ -529,9 +520,9 @@ fn storage_key_to_relation_role_player<'a>(
 }
 
 edge_iterator!(
-    RelationRolePlayerIterator;
+    LinksIterator;
     'a -> (Relation<'a>, RolePlayer<'a>, u64);
-    storage_key_to_relation_role_player
+    storage_key_links_edge_to_relation_role_player
 );
 
 fn storage_key_to_indexed_players<'a>(

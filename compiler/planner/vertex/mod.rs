@@ -8,7 +8,8 @@ use std::{collections::HashMap, ops::Deref};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::Has;
+use ir::pattern::constraint::{Has, Links};
+use itertools::Itertools;
 
 use crate::inference::type_annotations::TypeAnnotations;
 
@@ -18,8 +19,9 @@ const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
 // FIXME name
 #[derive(Debug)]
 pub(super) enum PlannerVertex {
-    Has(HasPlanner),
     Thing(ThingPlanner),
+    Has(HasPlanner),
+    Links(LinksPlanner),
 }
 
 impl PlannerVertex {
@@ -33,6 +35,13 @@ impl PlannerVertex {
     pub(super) fn as_has(&self) -> Option<&HasPlanner> {
         match self {
             Self::Has(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub(super) fn as_links(&self) -> Option<&LinksPlanner> {
+        match self {
+            Self::Links(v) => Some(v),
             _ => None,
         }
     }
@@ -53,8 +62,9 @@ pub(super) trait Costed {
 impl Costed for PlannerVertex {
     fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
         match self {
-            Self::Has(inner) => inner.cost(inputs, elements),
             Self::Thing(inner) => inner.cost(inputs, elements),
+            Self::Has(inner) => inner.cost(inputs, elements),
+            Self::Links(inner) => inner.cost(inputs, elements),
         }
     }
 }
@@ -110,7 +120,7 @@ pub(super) struct HasPlanner {
     pub owner: usize,
     pub attribute: usize,
     expected_size: f64,
-    expected_unbound_size: f64,   // TODO encode direction
+    expected_unbound_size: f64,
     pub unbound_is_forward: bool, //FIXME
 }
 
@@ -178,6 +188,112 @@ impl Costed for HasPlanner {
             (true, true) => self.expected_size / owner.expected_size / attribute.expected_size,
             (true, false) => self.expected_size / owner.expected_size,
             (false, true) => self.expected_size / attribute.expected_size,
+            (false, false) => self.expected_size,
+        };
+
+        VertexCost { per_input, per_output, branching_factor }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct LinksPlanner {
+    pub relation: usize,
+    pub player: usize,
+    pub role: usize,
+    expected_size: f64,
+    expected_unbound_size: f64,
+    pub unbound_is_forward: bool, //FIXME
+}
+
+impl LinksPlanner {
+    pub(crate) fn from_constraint(
+        links: &Links<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        type_annotations: &TypeAnnotations,
+        statistics: &Statistics,
+    ) -> Self {
+        let relation = links.relation();
+        let player = links.player();
+        let role = links.role_type();
+
+        let relation_types = type_annotations.variable_annotations_of(relation).unwrap().deref();
+        let player_types = type_annotations.variable_annotations_of(player).unwrap().deref();
+
+        let constraint_types =
+            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
+
+        let expected_size = constraint_types
+            .filters_on_left()
+            .iter()
+            .flat_map(|(relation, roles)| {
+                roles.iter().cartesian_product(player_types).flat_map(|(role, player)| {
+                    statistics
+                        .relation_role_player_counts
+                        .get(&relation.as_relation_type())?
+                        .get(&role.as_role_type())?
+                        .get(&player.as_object_type())
+                })
+            })
+            .sum::<u64>() as f64;
+
+        let unbound_forward_size = relation_types
+            .iter()
+            .filter_map(|relation| {
+                Some(statistics.relation_role_player_counts.get(&relation.as_relation_type())?.values().flat_map(
+                    |player_to_count| {
+                        player_types.iter().filter_map(|player| player_to_count.get(&player.as_object_type()))
+                    },
+                ))
+            })
+            .flatten()
+            .sum::<u64>() as f64;
+
+        let unbound_backward_size = player_types
+            .iter()
+            .filter_map(|player| {
+                Some(statistics.player_role_relation_counts.get(&player.as_object_type())?.values().flat_map(
+                    |relation_to_count| {
+                        relation_types.iter().filter_map(|relation| relation_to_count.get(&relation.as_relation_type()))
+                    },
+                ))
+            })
+            .flatten()
+            .sum::<u64>() as f64;
+
+        let expected_unbound_size = f64::min(unbound_forward_size, unbound_backward_size);
+        let unbound_is_forward = unbound_forward_size <= unbound_backward_size;
+
+        Self {
+            relation: variable_index[&relation],
+            player: variable_index[&player],
+            role: variable_index[&role],
+            expected_size,
+            expected_unbound_size,
+            unbound_is_forward,
+        }
+    }
+}
+
+impl Costed for LinksPlanner {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        let is_relation_bound = inputs.contains(&self.relation);
+        let is_player_bound = inputs.contains(&self.player);
+
+        let per_input = OPEN_ITERATOR_RELATIVE_COST;
+
+        let per_output = match (is_relation_bound, is_player_bound) {
+            (true, true) => 0.0,
+            (false, false) => ADVANCE_ITERATOR_RELATIVE_COST * self.expected_unbound_size / self.expected_size,
+            (true, false) | (false, true) => ADVANCE_ITERATOR_RELATIVE_COST,
+        };
+
+        let relation = elements[self.relation].as_thing().unwrap();
+        let player = elements[self.player].as_thing().unwrap();
+
+        let branching_factor = match (is_relation_bound, is_player_bound) {
+            (true, true) => self.expected_size / relation.expected_size / player.expected_size,
+            (true, false) => self.expected_size / relation.expected_size,
+            (false, true) => self.expected_size / player.expected_size,
             (false, false) => self.expected_size,
         };
 

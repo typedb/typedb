@@ -64,9 +64,9 @@ impl IsaReverseExecutor {
         variable_modes: VariableModes,
         sort_by: Option<VariablePosition>,
     ) -> Self {
-        let thing_types = isa_reverse.types();
+        let thing_types = isa_reverse.types().clone();
         debug_assert!(thing_types.len() > 0);
-        let isa = isa_reverse.constraint;
+        let isa = isa_reverse.isa;
         let iterate_mode = BinaryIterateMode::new(isa.type_(), isa.thing(), &variable_modes, sort_by);
         let type_cache = if iterate_mode == BinaryIterateMode::UnboundInverted {
             let cache = thing_types.clone();

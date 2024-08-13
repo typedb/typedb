@@ -21,7 +21,7 @@ use crate::{
         comparison_reverse_executor::ComparisonReverseIteratorExecutor,
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator,
-        role_player_executor::RolePlayerExecutor, role_player_reverse_executor::RolePlayerReverseExecutor,
+        links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
     },
     VariablePosition,
 };
@@ -33,8 +33,8 @@ mod has_executor;
 mod has_reverse_executor;
 mod isa_reverse_executor;
 pub(crate) mod iterator;
-mod role_player_executor;
-mod role_player_reverse_executor;
+mod links_executor;
+mod links_reverse_executor;
 pub(crate) mod tuple;
 
 pub(crate) enum InstructionExecutor {
@@ -43,8 +43,8 @@ pub(crate) enum InstructionExecutor {
     Has(HasExecutor),
     HasReverse(HasReverseExecutor),
 
-    RolePlayer(RolePlayerExecutor),
-    RolePlayerReverse(RolePlayerReverseExecutor),
+    Links(LinksExecutor),
+    LinksReverse(LinksReverseExecutor),
 
     // RolePlayerIndex(RolePlayerIndexExecutor),
     FunctionCallBinding(FunctionCallBindingIteratorExecutor),
@@ -87,25 +87,25 @@ impl InstructionExecutor {
                 )?;
                 Ok(Self::HasReverse(executor))
             }
-            ConstraintInstruction::RolePlayer(role_player) => {
-                let executor = RolePlayerExecutor::new(
-                    role_player.map(positions),
+            ConstraintInstruction::Links(links) => {
+                let executor = LinksExecutor::new(
+                    links.map(positions),
                     variable_modes,
                     sort_by_position,
                     snapshot,
                     thing_manager,
                 )?;
-                Ok(Self::RolePlayer(executor))
+                Ok(Self::Links(executor))
             }
-            ConstraintInstruction::RolePlayerReverse(role_player_reverse) => {
-                let executor = RolePlayerReverseExecutor::new(
-                    role_player_reverse.map(positions),
+            ConstraintInstruction::LinksReverse(links_reverse) => {
+                let executor = LinksReverseExecutor::new(
+                    links_reverse.map(positions),
                     variable_modes,
                     sort_by_position,
                     snapshot,
                     thing_manager,
                 )?;
-                Ok(Self::RolePlayerReverse(executor))
+                Ok(Self::LinksReverse(executor))
             }
             ConstraintInstruction::FunctionCallBinding(function_call) => {
                 todo!()
@@ -135,8 +135,8 @@ impl InstructionExecutor {
             InstructionExecutor::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::RolePlayer(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::RolePlayerReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            InstructionExecutor::Links(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            InstructionExecutor::LinksReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::FunctionCallBinding(executor) => todo!(),
             InstructionExecutor::Comparison(executor) => todo!(),
             InstructionExecutor::ComparisonReverse(executor) => todo!(),
@@ -292,8 +292,8 @@ impl TernaryIterateMode {
 //     Has(HasCheckExecutor),
 //     HasReverse(HasReverseCheckExecutor),
 //
-//     RolePlayer(RolePlayerCheckExecutor),
-//     RolePlayerReverse(RolePlayerReverseCheckExecutor),
+//     Links(LinksCheckExecutor),
+//     LinksReverse(LinksReverseCheckExecutor),
 //
 //     // RolePlayerIndex(RolePlayerIndexExecutor),
 //

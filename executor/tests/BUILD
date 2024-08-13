@@ -38,9 +38,9 @@ rust_test(
 )
 
 rust_test(
-    name = "test_execute_rp",
-    crate_root = "execute_rp.rs",
-    srcs = ["execute_rp.rs", "common.rs"],
+    name = "test_execute_links",
+    crate_root = "execute_links.rs",
+    srcs = ["execute_links.rs", "common.rs"],
     deps = deps,
 )
 

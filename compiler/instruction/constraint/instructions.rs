@@ -12,15 +12,12 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use ir::pattern::{
-    constraint::{Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, RolePlayer},
+    constraint::{Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, Links},
     IrID,
 };
 use itertools::Itertools;
 
-use crate::{
-    inference::type_annotations::{LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations},
-    planner::pattern_plan::InstructionAPI,
-};
+use crate::{inference::type_annotations::TypeAnnotations, planner::pattern_plan::InstructionAPI};
 
 #[derive(Debug, Clone)]
 pub enum ConstraintInstruction {
@@ -35,9 +32,9 @@ pub enum ConstraintInstruction {
     HasReverse(HasReverseInstruction<Variable>),
 
     // relation -> player
-    RolePlayer(RolePlayerInstruction<Variable>),
+    Links(LinksInstruction<Variable>),
     // player -> relation
-    RolePlayerReverse(RolePlayerReverseInstruction<Variable>),
+    LinksReverse(LinksReverseInstruction<Variable>),
 
     // $x --> $y
     // RolePlayerIndex(IR, IterateBounds)
@@ -71,8 +68,8 @@ impl ConstraintInstruction {
             | ConstraintInstruction::IsaReverse(IsaReverseInstruction { inputs, .. })
             | ConstraintInstruction::Has(HasInstruction { inputs, .. })
             | ConstraintInstruction::HasReverse(HasReverseInstruction { inputs, .. })
-            | ConstraintInstruction::RolePlayer(RolePlayerInstruction { inputs, .. })
-            | ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction { inputs, .. }) => {
+            | ConstraintInstruction::Links(LinksInstruction { inputs, .. })
+            | ConstraintInstruction::LinksReverse(LinksReverseInstruction { inputs, .. }) => {
                 inputs.iter().cloned().for_each(apply)
             }
             ConstraintInstruction::ComparisonCheck(_) => {}
@@ -86,29 +83,29 @@ impl ConstraintInstruction {
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(Variable)) {
         match self {
             ConstraintInstruction::Isa(isa, inputs)
-            | ConstraintInstruction::IsaReverse(IsaReverseInstruction { constraint: isa, inputs, .. }) => isa
-                .ids_foreach(|var, _| {
+            | ConstraintInstruction::IsaReverse(IsaReverseInstruction { isa, inputs, .. }) => {
+                isa.ids_foreach(|var, _| {
                     if !inputs.iter().contains(&var) {
                         apply(var)
                     }
-                }),
-            ConstraintInstruction::Has(HasInstruction { constraint: has, inputs, .. })
-            | ConstraintInstruction::HasReverse(HasReverseInstruction { constraint: has, inputs, .. }) => has
-                .ids_foreach(|var, _| {
+                })
+            }
+            ConstraintInstruction::Has(HasInstruction { has, inputs, .. })
+            | ConstraintInstruction::HasReverse(HasReverseInstruction { has, inputs, .. }) => {
+                has.ids_foreach(|var, _| {
                     if !inputs.iter().contains(&var) {
                         apply(var)
                     }
-                }),
-            ConstraintInstruction::RolePlayer(RolePlayerInstruction { constraint: role_player, inputs, .. })
-            | ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction {
-                constraint: role_player,
-                inputs,
-                ..
-            }) => role_player.ids_foreach(|var, _| {
-                if !inputs.iter().contains(&var) {
-                    apply(var)
-                }
-            }),
+                })
+            }
+            ConstraintInstruction::Links(LinksInstruction { links, inputs, .. })
+            | ConstraintInstruction::LinksReverse(LinksReverseInstruction { links, inputs, .. }) => {
+                links.ids_foreach(|var, _| {
+                    if !inputs.iter().contains(&var) {
+                        apply(var)
+                    }
+                })
+            }
             ConstraintInstruction::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
             ConstraintInstruction::ComparisonGenerator(comparison) => apply(comparison.lhs()),
             ConstraintInstruction::ComparisonGeneratorReverse(comparison) => apply(comparison.rhs()),
@@ -124,11 +121,13 @@ impl ConstraintInstruction {
 impl InstructionAPI for ConstraintInstruction {
     fn constraint(&self) -> Constraint<Variable> {
         match self {
-            Self::Isa(isa, _) | Self::IsaReverse(IsaReverseInstruction { constraint: isa, .. }) => isa.clone().into(),
-            Self::Has(HasInstruction { constraint: has, .. })
-            | Self::HasReverse(HasReverseInstruction { constraint: has, .. }) => has.clone().into(),
-            Self::RolePlayer(RolePlayerInstruction { constraint: rp, .. })
-            | Self::RolePlayerReverse(RolePlayerReverseInstruction { constraint: rp, .. }) => rp.clone().into(),
+            Self::Isa(isa, _) | Self::IsaReverse(IsaReverseInstruction { isa, .. }) => isa.clone().into(),
+            Self::Has(HasInstruction { has, .. }) | Self::HasReverse(HasReverseInstruction { has, .. }) => {
+                has.clone().into()
+            }
+            Self::Links(LinksInstruction { links, .. }) | Self::LinksReverse(LinksReverseInstruction { links, .. }) => {
+                links.clone().into()
+            }
             Self::FunctionCallBinding(call) => call.clone().into(),
             Self::ComparisonGenerator(cmp) | Self::ComparisonGeneratorReverse(cmp) | Self::ComparisonCheck(cmp) => {
                 cmp.clone().into()
@@ -140,197 +139,200 @@ impl InstructionAPI for ConstraintInstruction {
 
 #[derive(Debug, Clone)]
 pub struct IsaReverseInstruction<ID> {
-    pub constraint: Isa<ID>,
+    pub isa: Isa<ID>,
     pub inputs: Inputs<ID>,
-    type_annotations: Arc<HashSet<Type>>,
+    types: Arc<HashSet<Type>>,
 }
 
 impl IsaReverseInstruction<Variable> {
     pub fn new(constraint: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let type_annotations = type_annotations.variable_annotations_of(constraint.thing()).unwrap().clone();
-        Self { constraint, inputs, type_annotations }
+        let types = type_annotations.variable_annotations_of(constraint.thing()).unwrap().clone();
+        Self { isa: constraint, inputs, types }
     }
 }
 
 impl<ID> IsaReverseInstruction<ID> {
-    pub fn types(&self) -> Arc<HashSet<Type>> {
-        self.type_annotations.clone()
+    pub fn types(&self) -> &Arc<HashSet<Type>> {
+        &self.types
     }
 }
 
 impl<ID: IrID> IsaReverseInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsaReverseInstruction<T> {
-        let Self { constraint, inputs, type_annotations } = self;
-        IsaReverseInstruction { constraint: constraint.map(mapping), inputs: inputs.map(mapping), type_annotations }
+        let Self { isa: constraint, inputs, types } = self;
+        IsaReverseInstruction { isa: constraint.map(mapping), inputs: inputs.map(mapping), types }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct HasInstruction<ID> {
-    pub constraint: Has<ID>,
+    pub has: Has<ID>,
     inputs: Inputs<ID>,
-    edge_annotations: LeftRightAnnotations,
-    end_type_annotations: Arc<HashSet<Type>>,
+    owner_to_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    attribute_types: Arc<HashSet<Type>>,
 }
 
 impl HasInstruction<Variable> {
     pub fn new(constraint: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations =
-            type_annotations.constraint_annotations_of(constraint.clone().into()).unwrap().as_left_right().clone();
-        let end_type_annotations = type_annotations.variable_annotations_of(constraint.attribute()).unwrap().clone();
-        Self { constraint, inputs, edge_annotations, end_type_annotations }
+            type_annotations.constraint_annotations_of(constraint.clone().into()).unwrap().as_left_right();
+        let owner_to_attribute_types = edge_annotations.left_to_right();
+        let attribute_types = type_annotations.variable_annotations_of(constraint.attribute()).unwrap().clone();
+        Self { has: constraint, inputs, owner_to_attribute_types, attribute_types }
     }
 }
 
 impl<ID> HasInstruction<ID> {
-    pub fn edge_types(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
-        self.edge_annotations.left_to_right()
+    pub fn owner_to_attribute_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.owner_to_attribute_types
     }
 
-    pub fn end_types(&self) -> Arc<HashSet<Type>> {
-        self.end_type_annotations.clone()
+    pub fn attribute_types(&self) -> &Arc<HashSet<Type>> {
+        &self.attribute_types
     }
 }
 
 impl<ID: IrID> HasInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> HasInstruction<T> {
-        let Self { constraint, inputs, edge_annotations: type_annotations, end_type_annotations } = self;
+        let Self { has: constraint, inputs, owner_to_attribute_types, attribute_types } = self;
         HasInstruction {
-            constraint: constraint.map(mapping),
+            has: constraint.map(mapping),
             inputs: inputs.map(mapping),
-            edge_annotations: type_annotations,
-            end_type_annotations,
+            owner_to_attribute_types,
+            attribute_types,
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct HasReverseInstruction<ID> {
-    pub constraint: Has<ID>,
+    pub has: Has<ID>,
     pub inputs: Inputs<ID>,
-    edge_annotations: LeftRightAnnotations,
-    end_type_annotations: Arc<HashSet<Type>>,
+    attribute_to_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    owner_types: Arc<HashSet<Type>>,
 }
 
 impl HasReverseInstruction<Variable> {
-    pub fn new(constraint: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let edge_annotations =
-            type_annotations.constraint_annotations_of(constraint.clone().into()).unwrap().as_left_right().clone();
-        let end_type_annotations = type_annotations.variable_annotations_of(constraint.owner()).unwrap().clone();
-        Self { constraint, inputs, edge_annotations, end_type_annotations }
+    pub fn new(has: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let edge_annotations = &type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
+        let attribute_to_owner_types = edge_annotations.right_to_left().clone();
+        let owner_types = type_annotations.variable_annotations_of(has.owner()).unwrap().clone();
+        Self { has, inputs, attribute_to_owner_types, owner_types }
     }
 }
 
 impl<ID> HasReverseInstruction<ID> {
-    pub fn edge_types(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
-        self.edge_annotations.right_to_left()
+    pub fn attribute_to_owner_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.attribute_to_owner_types
     }
 
-    pub fn end_types(&self) -> Arc<HashSet<Type>> {
-        self.end_type_annotations.clone()
+    pub fn owner_types(&self) -> &Arc<HashSet<Type>> {
+        &self.owner_types
     }
 }
 
 impl<ID: IrID> HasReverseInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> HasReverseInstruction<T> {
-        let Self { constraint, inputs, edge_annotations: type_annotations, end_type_annotations } = self;
+        let Self { has: constraint, inputs, attribute_to_owner_types, owner_types } = self;
         HasReverseInstruction {
-            constraint: constraint.map(mapping),
+            has: constraint.map(mapping),
             inputs: inputs.map(mapping),
-            edge_annotations: type_annotations,
-            end_type_annotations,
+            attribute_to_owner_types,
+            owner_types,
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct RolePlayerInstruction<ID> {
-    pub constraint: RolePlayer<ID>,
+pub struct LinksInstruction<ID> {
+    pub links: Links<ID>,
     inputs: Inputs<ID>,
-    edge_annotations: LeftRightFilteredAnnotations,
-    end_type_annotations: Arc<HashSet<Type>>,
+    relation_to_player_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    player_to_role_types: Arc<BTreeMap<Type, HashSet<Type>>>,
+    player_types: Arc<HashSet<Type>>,
 }
 
-impl RolePlayerInstruction<Variable> {
-    pub fn new(constraint: RolePlayer<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let edge_annotations = type_annotations
-            .constraint_annotations_of(constraint.clone().into())
-            .unwrap()
-            .as_left_right_filtered()
-            .clone();
-        let end_type_annotations = type_annotations.variable_annotations_of(constraint.player()).unwrap().clone();
-        Self { constraint, inputs, edge_annotations, end_type_annotations }
-    }
-}
-
-impl<ID> RolePlayerInstruction<ID> {
-    pub fn edge_types(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
-        self.edge_annotations.left_to_right()
-    }
-
-    pub fn end_types(&self) -> Arc<HashSet<Type>> {
-        self.end_type_annotations.clone()
-    }
-
-    pub fn filter_types(&self) -> Arc<BTreeMap<Type, HashSet<Type>>> {
-        self.edge_annotations.filters_on_right()
+impl LinksInstruction<Variable> {
+    pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let edge_annotations =
+            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
+        let player_to_role_types = edge_annotations.filters_on_right();
+        let relation_to_player_types = edge_annotations.left_to_right();
+        let player_types = type_annotations.variable_annotations_of(links.player()).unwrap().clone();
+        Self { links, inputs, relation_to_player_types, player_types, player_to_role_types }
     }
 }
 
-impl<ID: IrID> RolePlayerInstruction<ID> {
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> RolePlayerInstruction<T> {
-        let Self { constraint, inputs, edge_annotations: type_annotations, end_type_annotations } = self;
-        RolePlayerInstruction {
-            constraint: constraint.map(mapping),
+impl<ID> LinksInstruction<ID> {
+    pub fn relation_to_player_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.relation_to_player_types
+    }
+
+    pub fn player_types(&self) -> &Arc<HashSet<Type>> {
+        &self.player_types
+    }
+
+    pub fn relation_to_role_types(&self) -> &Arc<BTreeMap<Type, HashSet<Type>>> {
+        &self.player_to_role_types
+    }
+}
+
+impl<ID: IrID> LinksInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> LinksInstruction<T> {
+        let Self { links, inputs, relation_to_player_types, player_types, player_to_role_types } = self;
+        LinksInstruction {
+            links: links.map(mapping),
             inputs: inputs.map(mapping),
-            edge_annotations: type_annotations,
-            end_type_annotations,
+            relation_to_player_types,
+            player_types,
+            player_to_role_types,
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct RolePlayerReverseInstruction<ID> {
-    pub constraint: RolePlayer<ID>,
+pub struct LinksReverseInstruction<ID> {
+    pub links: Links<ID>,
     pub inputs: Inputs<ID>,
-    edge_annotations: LeftRightFilteredAnnotations,
-    end_type_annotations: Arc<HashSet<Type>>,
+    player_to_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    relation_to_role_types: Arc<BTreeMap<Type, HashSet<Type>>>,
+    relation_types: Arc<HashSet<Type>>,
 }
 
-impl RolePlayerReverseInstruction<Variable> {
-    pub fn new(constraint: RolePlayer<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let edge_annotations = type_annotations
-            .constraint_annotations_of(constraint.clone().into())
-            .unwrap()
-            .as_left_right_filtered()
-            .clone();
-        let end_type_annotations = type_annotations.variable_annotations_of(constraint.relation()).unwrap().clone();
-        Self { constraint, inputs, edge_annotations, end_type_annotations }
-    }
-}
-
-impl<ID> RolePlayerReverseInstruction<ID> {
-    pub fn edge_types(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
-        self.edge_annotations.right_to_left()
-    }
-
-    pub fn end_types(&self) -> Arc<HashSet<Type>> {
-        self.end_type_annotations.clone()
-    }
-
-    pub fn filter_types(&self) -> Arc<BTreeMap<Type, HashSet<Type>>> {
-        self.edge_annotations.filters_on_left()
+impl LinksReverseInstruction<Variable> {
+    pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let edge_annotations =
+            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered().clone();
+        let relation_to_role_types = edge_annotations.filters_on_right();
+        let player_to_relation_types = edge_annotations.right_to_left();
+        let relation_types = type_annotations.variable_annotations_of(links.relation()).unwrap().clone();
+        Self { links, inputs, player_to_relation_types, relation_types, relation_to_role_types }
     }
 }
 
-impl<ID: IrID> RolePlayerReverseInstruction<ID> {
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> RolePlayerReverseInstruction<T> {
-        let Self { constraint, inputs, edge_annotations: type_annotations, end_type_annotations } = self;
-        RolePlayerReverseInstruction {
-            constraint: constraint.map(mapping),
+impl<ID> LinksReverseInstruction<ID> {
+    pub fn player_to_relation_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.player_to_relation_types
+    }
+
+    pub fn relation_types(&self) -> &Arc<HashSet<Type>> {
+        &self.relation_types
+    }
+
+    pub fn relation_to_role_types(&self) -> &Arc<BTreeMap<Type, HashSet<Type>>> {
+        &self.relation_to_role_types
+    }
+}
+
+impl<ID: IrID> LinksReverseInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> LinksReverseInstruction<T> {
+        let Self { links, inputs, player_to_relation_types, relation_to_role_types, relation_types } = self;
+        LinksReverseInstruction {
+            links: links.map(mapping),
             inputs: inputs.map(mapping),
-            edge_annotations: type_annotations,
-            end_type_annotations,
+            player_to_relation_types,
+            relation_to_role_types,
+            relation_types,
         }
     }
 }

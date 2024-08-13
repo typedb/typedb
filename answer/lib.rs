@@ -72,6 +72,13 @@ impl Type {
         }
     }
 
+    pub fn as_role_type(&self) -> RoleType<'static> {
+        match self {
+            Type::RoleType(role) => role.clone().into_owned(),
+            _ => panic!("Type is not an Role type."),
+        }
+    }
+
     pub fn next_possible(&self) -> Self {
         match self {
             Type::Entity(entity) => {

@@ -10,8 +10,8 @@ use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
-            property::{HAS_ORDER_PROPERTY_FACTORY, ROLE_PLAYER_ORDER_PROPERTY_FACTORY},
+            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks, ThingEdgeRolePlayerIndex},
+            property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_generator::ThingVertexGenerator,
             vertex_object::ObjectVertex,
@@ -50,17 +50,16 @@ use storage::{
     snapshot::{write::Write, ReadableSnapshot, WritableSnapshot},
 };
 
-use super::{decode_role_players, encode_role_players, relation::RelationRolePlayerIterator, HKInstance};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     iterator::InstanceIterator,
     thing::{
         attribute::{Attribute, AttributeIterator, AttributeOwnerIterator},
-        decode_attribute_ids, encode_attribute_ids,
+        decode_attribute_ids, decode_role_players, encode_attribute_ids, encode_role_players,
         entity::Entity,
         object::{HasAttributeIterator, HasIterator, HasReverseIterator, Object, ObjectAPI},
-        relation::{IndexedPlayersIterator, Relation, RelationRoleIterator, RolePlayerIterator},
-        ThingAPI,
+        relation::{IndexedPlayersIterator, LinksIterator, Relation, RelationRoleIterator, RolePlayerIterator},
+        HKInstance, ThingAPI,
     },
     type_::{
         attribute_type::{AttributeType, AttributeTypeAnnotation},
@@ -163,9 +162,9 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         player: &'o impl ObjectAPI<'o>,
     ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
-        let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.vertex());
+        let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
         let snapshot_iterator =
-            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING_REVERSE));
+            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE));
         RelationRoleIterator::new(snapshot_iterator).map::<Result<Relation<'_>, _>, _>(|res| {
             let (rel, _, _) = res?;
             Ok(rel)
@@ -178,9 +177,9 @@ impl ThingManager {
         player: &'o impl ObjectAPI<'o>,
         role_type: RoleType<'static>,
     ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
-        let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.vertex());
+        let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
         let snapshot_iterator =
-            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING_REVERSE));
+            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE));
         RelationRoleIterator::new(snapshot_iterator).filter_map::<Result<Relation<'_>, _>, _>(move |item| match item {
             Ok((rel, role, _)) => (role == role_type).then_some(Ok(rel)),
             Err(error) => Some(Err(error)),
@@ -550,7 +549,7 @@ impl ThingManager {
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
     ) -> Result<Vec<Attribute<'static>>, ConceptReadError> {
-        let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.vertex(), attribute_type.vertex());
+        let key = build_object_vertex_property_has_order(owner.vertex(), attribute_type.vertex());
         let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
         let value_type = match attribute_value_type.as_ref() {
             None => return Ok(Vec::new()),
@@ -676,82 +675,80 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         player: impl ObjectAPI<'a>,
     ) -> RelationRoleIterator {
-        let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.into_vertex());
+        let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.into_vertex());
         RelationRoleIterator::new(
-            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING_REVERSE)),
+            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE)),
         )
     }
 
-    pub(crate) fn has_role_players(
+    pub(crate) fn has_links(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
         buffered_only: bool, // FIXME use enums
     ) -> bool {
-        let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation.into_vertex());
-        snapshot.any_in_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING), buffered_only)
+        let prefix = ThingEdgeLinks::prefix_from_relation(relation.into_vertex());
+        snapshot.any_in_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
-    pub fn get_relation_role_players_by_relation_type_range(
+    pub fn get_links_by_relation_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type_range: KeyRange<RelationType<'static>>,
-    ) -> RelationRolePlayerIterator {
+    ) -> LinksIterator {
         let range = relation_type_range.map(
-            |type_| ThingEdgeRolePlayer::prefix_from_relation_type(type_.into_vertex()),
-            |_| ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+            |type_| ThingEdgeLinks::prefix_from_relation_type(type_.into_vertex()),
+            |_| ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        RelationRolePlayerIterator::new(snapshot.iterate_range(range))
+        LinksIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_relation_role_players_by_relation_and_player_type_range(
+    pub fn get_links_by_relation_and_player_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
         player_type_range: KeyRange<ObjectType<'static>>,
-    ) -> RelationRolePlayerIterator {
+    ) -> LinksIterator {
         let range = player_type_range.map(
-            |type_| ThingEdgeRolePlayer::prefix_from_relation_player_type(relation.vertex(), type_.into_vertex()),
-            |_| ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+            |type_| ThingEdgeLinks::prefix_from_relation_player_type(relation.vertex(), type_.into_vertex()),
+            |_| ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        RelationRolePlayerIterator::new(snapshot.iterate_range(range))
+        LinksIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_relation_role_players_by_relation_and_player<'a>(
+    pub fn get_links_by_relation_and_player<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
-    ) -> RelationRolePlayerIterator {
-        let prefix = ThingEdgeRolePlayer::prefix_from_relation_player(relation.into_vertex(), player.into_vertex());
-        RelationRolePlayerIterator::new(
-            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING)),
-        )
+    ) -> LinksIterator {
+        let prefix = ThingEdgeLinks::prefix_from_relation_player(relation.into_vertex(), player.into_vertex());
+        LinksIterator::new(snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING)))
     }
 
-    pub fn get_relation_role_players_reverse_by_player_type_range(
+    pub fn get_links_reverse_by_player_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         player_type_range: KeyRange<ObjectType<'static>>,
-    ) -> RelationRolePlayerIterator {
+    ) -> LinksIterator {
         let range = player_type_range.map(
-            |type_| ThingEdgeRolePlayer::prefix_reverse_from_player_type(type_.into_vertex()),
-            |_| ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+            |type_| ThingEdgeLinks::prefix_reverse_from_player_type(type_.into_vertex()),
+            |_| ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        RelationRolePlayerIterator::new(snapshot.iterate_range(range))
+        LinksIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_relation_role_players_reverse_by_player_and_relation_type_range<'a>(
+    pub fn get_links_reverse_by_player_and_relation_type_range<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         player: impl ObjectAPI<'a>,
         relation_type_range: KeyRange<RelationType<'static>>,
-    ) -> RelationRolePlayerIterator {
+    ) -> LinksIterator {
         let range = relation_type_range.map(
-            |type_| ThingEdgeRolePlayer::prefix_reverse_from_player_relation_type(player.vertex(), type_.into_vertex()),
-            |_| ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+            |type_| ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), type_.into_vertex()),
+            |_| ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        RelationRolePlayerIterator::new(snapshot.iterate_range(range))
+        LinksIterator::new(snapshot.iterate_range(range))
     }
 
     pub(crate) fn get_role_players(
@@ -759,9 +756,9 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
     ) -> RolePlayerIterator {
-        let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation.into_vertex());
+        let prefix = ThingEdgeLinks::prefix_from_relation(relation.into_vertex());
         RolePlayerIterator::new(
-            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING)),
+            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING)),
         )
     }
 
@@ -771,7 +768,7 @@ impl ThingManager {
         relation: Relation<'_>,
         role_type: RoleType<'static>,
     ) -> Result<Vec<Object<'static>>, ConceptReadError> {
-        let key = ROLE_PLAYER_ORDER_PROPERTY_FACTORY.build(relation.into_vertex(), role_type.into_vertex());
+        let key = build_object_vertex_property_links_order(relation.into_vertex(), role_type.into_vertex());
         let players = snapshot
             .get_mapped(key.as_storage_key().as_reference(), |bytes| {
                 decode_role_players(bytes.bytes()).map(|vertex| Object::new(vertex).into_owned()).collect()
@@ -848,12 +845,12 @@ impl ThingManager {
             any_deleted = false;
             for (key, _) in snapshot
                 .iterate_buffered_writes_range(KeyRange::new_within(
-                    ThingEdgeRolePlayer::prefix(),
-                    ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+                    ThingEdgeLinks::prefix(),
+                    ThingEdgeLinks::FIXED_WIDTH_ENCODING,
                 ))
                 .filter(|(_, write)| matches!(write, Write::Delete))
             {
-                let edge = ThingEdgeRolePlayer::new(Bytes::Reference(key.byte_array().as_ref()));
+                let edge = ThingEdgeLinks::new(Bytes::Reference(key.byte_array().as_ref()));
                 let relation = Relation::new(edge.from());
                 if relation.get_status(snapshot, self) == ConceptStatus::Deleted {
                     continue;
@@ -941,12 +938,12 @@ impl ThingManager {
         let mut relations_validated = HashSet::new();
         for (key, _) in snapshot
             .iterate_buffered_writes_range(KeyRange::new_within(
-                ThingEdgeRolePlayer::prefix(),
-                ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+                ThingEdgeLinks::prefix(),
+                ThingEdgeLinks::FIXED_WIDTH_ENCODING,
             ))
             .filter(|(_, write)| !matches!(write, Write::Delete))
         {
-            let edge = ThingEdgeRolePlayer::new(Bytes::reference(key.bytes()));
+            let edge = ThingEdgeLinks::new(Bytes::reference(key.bytes()));
             let relation = Relation::new(edge.from());
             if !relations_validated.contains(&relation) {
                 errors.extend(relation.errors(snapshot, self)?);
@@ -1315,7 +1312,7 @@ impl ThingManager {
         let attribute_value_type = attribute_type
             .get_value_type(snapshot, self.type_manager())?
             .expect("Handle missing value type - for abstract attributes. Or assume this will never happen");
-        let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.vertex(), attribute_type.into_vertex());
+        let key = build_object_vertex_property_has_order(owner.vertex(), attribute_type.into_vertex());
         let value = encode_attribute_ids(
             attribute_value_type.category(),
             attributes.into_iter().map(|attr| attr.into_vertex().attribute_id()),
@@ -1331,11 +1328,11 @@ impl ThingManager {
         attribute_type: AttributeType<'static>,
     ) {
         owner.set_modified(snapshot, self);
-        let order_property = HAS_ORDER_PROPERTY_FACTORY.build(owner.vertex(), attribute_type.into_vertex());
+        let order_property = build_object_vertex_property_has_order(owner.vertex(), attribute_type.into_vertex());
         snapshot.delete(order_property.into_storage_key().into_owned_array())
     }
 
-    pub(crate) fn put_role_player_unordered<'a>(
+    pub(crate) fn put_links_unordered<'a>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
@@ -1345,17 +1342,15 @@ impl ThingManager {
         let count: u64 = 1;
         // must be idempotent, so no lock required -- cannot fail
 
-        let role_player =
-            ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        snapshot.put_val(role_player.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
+        snapshot.put_val(links.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
-        let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
+        let links_reverse = ThingEdgeLinks::build_links_reverse(
             player.clone().into_vertex(),
             relation.clone().into_vertex(),
             role_type.clone().into_vertex(),
         );
-        snapshot
-            .put_val(role_player_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+        snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
         if self
             .type_manager
@@ -1367,7 +1362,7 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn set_role_players_ordered(
+    pub(crate) fn set_links_ordered(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
@@ -1375,13 +1370,13 @@ impl ThingManager {
         players: Vec<Object<'_>>,
     ) -> Result<(), ConceptWriteError> {
         relation.set_modified(snapshot, self);
-        let key = ROLE_PLAYER_ORDER_PROPERTY_FACTORY.build(relation.into_vertex(), role_type.into_vertex());
+        let key = build_object_vertex_property_links_order(relation.into_vertex(), role_type.into_vertex());
         let value = encode_role_players(players.into_iter().map(|player| player.into_vertex()));
         snapshot.put_val(key.into_storage_key().into_owned_array(), value);
         Ok(())
     }
 
-    pub(crate) fn set_role_player_count<'a>(
+    pub(crate) fn set_links_count<'a>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
@@ -1389,21 +1384,16 @@ impl ThingManager {
         role_type: RoleType<'_>,
         count: u64,
     ) -> Result<(), ConceptWriteError> {
-        let role_player =
-            ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
-            player.vertex(),
-            relation.vertex(),
-            role_type.clone().into_vertex(),
-        );
+        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
+        let links_reverse =
+            ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.clone().into_vertex());
 
         if count == 0 {
-            snapshot.delete(role_player.as_storage_key().into_owned_array());
-            snapshot.delete(role_player_reverse.as_storage_key().into_owned_array());
+            snapshot.delete(links.as_storage_key().into_owned_array());
+            snapshot.delete(links_reverse.as_storage_key().into_owned_array());
         } else {
-            snapshot.put_val(role_player.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
-            snapshot
-                .put_val(role_player_reverse.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+            snapshot.put_val(links.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+            snapshot.put_val(links_reverse.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
             if self
                 .type_manager
@@ -1416,40 +1406,38 @@ impl ThingManager {
         }
 
         // must lock to fail concurrent transactions updating the same counters
-        snapshot.exclusive_lock_add(role_player.into_storage_key().into_owned_array().into_byte_array());
+        snapshot.exclusive_lock_add(links.into_storage_key().into_owned_array().into_byte_array());
 
         Ok(())
     }
 
     /// Delete all counts of the specific role player in a given relation, and update indexes if required
-    pub fn unset_role_player<'a>(
+    pub fn unset_links<'a>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
     ) -> Result<(), ConceptWriteError> {
-        let role_player =
-            ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex())
-                .into_storage_key()
-                .into_owned_array();
+        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex())
+            .into_storage_key()
+            .into_owned_array();
 
-        let role_player_reverse =
-            ThingEdgeRolePlayer::build_role_player_reverse(player.vertex(), relation.vertex(), role_type.vertex())
-                .into_storage_key()
-                .into_owned_array();
+        let links_reverse = ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex())
+            .into_storage_key()
+            .into_owned_array();
 
         let owner_status = relation.get_status(&*snapshot, self);
 
         match owner_status {
             ConceptStatus::Inserted => {
                 let count = 1;
-                snapshot.unput_val(role_player, ByteArray::copy(&encode_u64(count)));
-                snapshot.unput_val(role_player_reverse, ByteArray::copy(&encode_u64(count)));
+                snapshot.unput_val(links, ByteArray::copy(&encode_u64(count)));
+                snapshot.unput_val(links_reverse, ByteArray::copy(&encode_u64(count)));
             }
             ConceptStatus::Persisted => {
-                snapshot.delete(role_player);
-                snapshot.delete(role_player_reverse);
+                snapshot.delete(links);
+                snapshot.delete(links_reverse);
             }
             ConceptStatus::Put => unreachable!("Encountered a `put` relation: {relation:?}."),
             ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
@@ -1467,40 +1455,39 @@ impl ThingManager {
 
     /// Add a player to a relation that supports duplicates
     /// Caller must provide a lock that prevents race conditions on the player counts on the relation
-    pub(crate) fn increment_role_player<'a>(
+    pub(crate) fn increment_links_count<'a>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
     ) -> Result<(), ConceptWriteError> {
-        let role_player =
-            ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        let rp_count = snapshot
-            .get_mapped(role_player.as_storage_key().as_reference(), |arr| decode_u64(arr.bytes().try_into().unwrap()))
+        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
+        let count = snapshot
+            .get_mapped(links.as_storage_key().as_reference(), |arr| decode_u64(arr.bytes().try_into().unwrap()))
             .map_err(|snapshot_err| ConceptReadError::SnapshotGet { source: snapshot_err })?;
 
         #[cfg(debug_assertions)]
         {
-            let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
+            let links_reverse = ThingEdgeLinks::build_links_reverse(
                 player.vertex(),
                 relation.vertex(),
                 role_type.clone().into_vertex(),
             );
-            let rp_reverse_count = snapshot
-                .get_mapped(role_player_reverse.as_storage_key().as_reference(), |arr| {
+            let reverse_count = snapshot
+                .get_mapped(links_reverse.as_storage_key().as_reference(), |arr| {
                     decode_u64(arr.bytes().try_into().unwrap())
                 })
                 .unwrap();
-            debug_assert_eq!(&rp_count, &rp_reverse_count, "roleplayer count mismatch!");
+            debug_assert_eq!(&count, &reverse_count, "canonical and reverse links edge count mismatch!");
         }
 
-        self.set_role_player_count(snapshot, relation, player, role_type, rp_count.unwrap_or(0) + 1)
+        self.set_links_count(snapshot, relation, player, role_type, count.unwrap_or(0) + 1)
     }
 
     /// Remove a player from a relation that supports duplicates
     /// Caller must provide a lock that prevents race conditions on the player counts on the relation
-    pub(crate) fn decrement_role_player<'a>(
+    pub(crate) fn decrement_links_count<'a>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
@@ -1508,29 +1495,28 @@ impl ThingManager {
         role_type: RoleType<'_>,
         decrement_count: u64,
     ) -> Result<(), ConceptWriteError> {
-        let role_player =
-            ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        let rp_count = snapshot
-            .get_mapped(role_player.as_storage_key().as_reference(), |arr| decode_u64(arr.bytes().try_into().unwrap()))
+        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
+        let count = snapshot
+            .get_mapped(links.as_storage_key().as_reference(), |arr| decode_u64(arr.bytes().try_into().unwrap()))
             .map_err(|snapshot_err| ConceptReadError::SnapshotGet { source: snapshot_err })?;
 
         #[cfg(debug_assertions)]
         {
-            let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
+            let links_reverse = ThingEdgeLinks::build_links_reverse(
                 player.vertex(),
                 relation.vertex(),
                 role_type.clone().into_vertex(),
             );
-            let rp_reverse_count = snapshot
-                .get_mapped(role_player_reverse.as_storage_key().as_reference(), |arr| {
+            let reverse_count = snapshot
+                .get_mapped(links_reverse.as_storage_key().as_reference(), |arr| {
                     decode_u64(arr.bytes().try_into().unwrap())
                 })
                 .unwrap();
-            debug_assert_eq!(&rp_count, &rp_reverse_count, "roleplayer count mismatch!");
+            debug_assert_eq!(&count, &reverse_count, "canonical and reverse links edge count mismatch!");
         }
 
-        debug_assert!(*rp_count.as_ref().unwrap() > decrement_count);
-        self.set_role_player_count(snapshot, relation, player, role_type, rp_count.unwrap() - decrement_count)
+        debug_assert!(*count.as_ref().unwrap() > decrement_count);
+        self.set_links_count(snapshot, relation, player, role_type, count.unwrap() - decrement_count)
     }
 
     ///

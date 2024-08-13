@@ -9,7 +9,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 use compiler::{
     inference::{annotated_functions::AnnotatedCommittedFunctions, type_inference::infer_types},
     instruction::constraint::instructions::{
-        ConstraintInstruction, Inputs, IsaReverseInstruction, RolePlayerInstruction, RolePlayerReverseInstruction,
+        ConstraintInstruction, Inputs, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
     },
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
@@ -57,6 +57,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let group_type = type_manager.create_entity_type(&mut snapshot, &GROUP_LABEL).unwrap();
 
     let membership_type = type_manager.create_relation_type(&mut snapshot, &MEMBERSHIP_LABEL).unwrap();
+
     let relates_member = membership_type
         .create_relates(&mut snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name().as_str(), Ordering::Unordered)
         .unwrap();
@@ -145,7 +146,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 }
 
 #[test]
-fn traverse_rp_unbounded_sorted_from() {
+fn traverse_links_unbounded_sorted_from() {
     let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
@@ -168,16 +169,13 @@ fn traverse_rp_unbounded_sorted_from() {
     let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
-    let rp_membership_person = conjunction
+    let links_membership_person = conjunction
         .constraints_mut()
-        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type)
         .unwrap()
         .clone();
-    let rp_membership_group = conjunction
-        .constraints_mut()
-        .add_role_player(var_membership, var_group, var_membership_group_type)
-        .unwrap()
-        .clone();
+    let links_membership_group =
+        conjunction.constraints_mut().add_links(var_membership, var_group, var_membership_group_type).unwrap().clone();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
@@ -205,13 +203,13 @@ fn traverse_rp_unbounded_sorted_from() {
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_membership,
         vec![
-            ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
-                rp_membership_person.clone(),
+            ConstraintInstruction::Links(LinksInstruction::new(
+                links_membership_person,
                 Inputs::None([]),
                 annotated_program.entry_annotations(),
             )),
-            ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
-                rp_membership_group.clone(),
+            ConstraintInstruction::Links(LinksInstruction::new(
+                links_membership_group,
                 Inputs::None([]),
                 annotated_program.entry_annotations(),
             )),
@@ -238,7 +236,7 @@ fn traverse_rp_unbounded_sorted_from() {
 }
 
 #[test]
-fn traverse_rp_unbounded_sorted_to() {
+fn traverse_links_unbounded_sorted_to() {
     let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
@@ -261,9 +259,9 @@ fn traverse_rp_unbounded_sorted_to() {
     let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
-    let rp_membership_person = conjunction
+    let links_membership_person = conjunction
         .constraints_mut()
-        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type)
         .unwrap()
         .clone();
 
@@ -292,8 +290,8 @@ fn traverse_rp_unbounded_sorted_to() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
-            rp_membership_person.clone(),
+        vec![ConstraintInstruction::Links(LinksInstruction::new(
+            links_membership_person,
             Inputs::None([]),
             annotated_program.entry_annotations(),
         ))],
@@ -319,7 +317,7 @@ fn traverse_rp_unbounded_sorted_to() {
 }
 
 #[test]
-fn traverse_rp_bounded_relation() {
+fn traverse_links_bounded_relation() {
     let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
@@ -342,9 +340,9 @@ fn traverse_rp_bounded_relation() {
     let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
-    let rp_membership_person = conjunction
+    let links_membership_person = conjunction
         .constraints_mut()
-        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type)
         .unwrap()
         .clone();
 
@@ -384,8 +382,8 @@ fn traverse_rp_bounded_relation() {
         )),
         Step::Intersection(IntersectionStep::new(
             var_person,
-            vec![ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
-                rp_membership_person.clone(),
+            vec![ConstraintInstruction::Links(LinksInstruction::new(
+                links_membership_person,
                 Inputs::Single([var_membership]),
                 annotated_program.entry_annotations(),
             ))],
@@ -412,7 +410,7 @@ fn traverse_rp_bounded_relation() {
 }
 
 #[test]
-fn traverse_rp_bounded_relation_player() {
+fn traverse_links_bounded_relation_player() {
     let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
@@ -435,9 +433,9 @@ fn traverse_rp_bounded_relation_player() {
     let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
-    let rp_membership_person = conjunction
+    let links_membership_person = conjunction
         .constraints_mut()
-        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type)
         .unwrap()
         .clone();
 
@@ -487,8 +485,8 @@ fn traverse_rp_bounded_relation_player() {
         )),
         Step::Intersection(IntersectionStep::new(
             var_membership_member_type,
-            vec![ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
-                rp_membership_person.clone(),
+            vec![ConstraintInstruction::Links(LinksInstruction::new(
+                links_membership_person,
                 Inputs::Dual([var_membership, var_person]),
                 annotated_program.entry_annotations(),
             ))],
@@ -514,7 +512,7 @@ fn traverse_rp_bounded_relation_player() {
 }
 
 #[test]
-fn traverse_rp_reverse_unbounded_sorted_from() {
+fn traverse_links_reverse_unbounded_sorted_from() {
     let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
@@ -537,9 +535,9 @@ fn traverse_rp_reverse_unbounded_sorted_from() {
     let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
-    let rp_membership_person = conjunction
+    let links_membership_person = conjunction
         .constraints_mut()
-        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type)
         .unwrap()
         .clone();
 
@@ -568,8 +566,8 @@ fn traverse_rp_reverse_unbounded_sorted_from() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
-            rp_membership_person.clone(),
+        vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
+            links_membership_person,
             Inputs::None([]),
             annotated_program.entry_annotations(),
         ))],
@@ -595,7 +593,7 @@ fn traverse_rp_reverse_unbounded_sorted_from() {
 }
 
 #[test]
-fn traverse_rp_reverse_unbounded_sorted_to() {
+fn traverse_links_reverse_unbounded_sorted_to() {
     let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
@@ -618,9 +616,9 @@ fn traverse_rp_reverse_unbounded_sorted_to() {
     let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
-    let rp_membership_person = conjunction
+    let links_membership_person = conjunction
         .constraints_mut()
-        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type)
         .unwrap()
         .clone();
 
@@ -649,8 +647,8 @@ fn traverse_rp_reverse_unbounded_sorted_to() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_membership,
-        vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
-            rp_membership_person,
+        vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
+            links_membership_person,
             Inputs::None([]),
             annotated_program.entry_annotations(),
         ))],
@@ -676,7 +674,7 @@ fn traverse_rp_reverse_unbounded_sorted_to() {
 }
 
 #[test]
-fn traverse_rp_reverse_bounded_player() {
+fn traverse_links_reverse_bounded_player() {
     let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
@@ -699,9 +697,9 @@ fn traverse_rp_reverse_bounded_player() {
     let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
-    let rp_membership_person = conjunction
+    let links_membership_person = conjunction
         .constraints_mut()
-        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type)
         .unwrap()
         .clone();
 
@@ -741,8 +739,8 @@ fn traverse_rp_reverse_bounded_player() {
         )),
         Step::Intersection(IntersectionStep::new(
             var_membership,
-            vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
-                rp_membership_person,
+            vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
+                links_membership_person,
                 Inputs::Single([var_person]),
                 annotated_program.entry_annotations(),
             ))],
@@ -769,7 +767,7 @@ fn traverse_rp_reverse_bounded_player() {
 }
 
 #[test]
-fn traverse_rp_reverse_bounded_player_relation() {
+fn traverse_links_reverse_bounded_player_relation() {
     let (_tmp_dir, storage) = setup_storage();
 
     setup_database(storage.clone());
@@ -792,9 +790,9 @@ fn traverse_rp_reverse_bounded_player_relation() {
     let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
-    let rp_membership_person = conjunction
+    let links_membership_person = conjunction
         .constraints_mut()
-        .add_role_player(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type)
         .unwrap()
         .clone();
 
@@ -844,8 +842,8 @@ fn traverse_rp_reverse_bounded_player_relation() {
         )),
         Step::Intersection(IntersectionStep::new(
             var_membership_member_type,
-            vec![ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
-                rp_membership_person,
+            vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
+                links_membership_person,
                 Inputs::Dual([var_membership, var_person]),
                 annotated_program.entry_annotations(),
             ))],

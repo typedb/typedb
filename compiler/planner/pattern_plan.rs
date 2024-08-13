@@ -19,8 +19,11 @@ use itertools::Itertools;
 
 use crate::{
     inference::annotated_program::AnnotatedProgram,
-    instruction::constraint::instructions::{ConstraintInstruction, HasInstruction, Inputs, IsaReverseInstruction},
-    planner::vertex::{Costed, HasPlanner, PlannerVertex, ThingPlanner, VertexCost},
+    instruction::constraint::instructions::{
+        ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs, IsaReverseInstruction, LinksInstruction,
+        LinksReverseInstruction,
+    },
+    planner::vertex::{Costed, HasPlanner, LinksPlanner, PlannerVertex, ThingPlanner, VertexCost},
 };
 
 pub struct PatternPlan {
@@ -60,7 +63,10 @@ impl PatternPlan {
 
         for (variable, category) in context.variable_categories() {
             match category {
-                VariableCategory::Type | VariableCategory::ThingType | VariableCategory::RoleType => (), // ignore for now
+                VariableCategory::Type | VariableCategory::ThingType => (), // ignore for now
+                VariableCategory::RoleType => {
+                    variable_index.insert(variable, elements.len());
+                }
                 VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
                     let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
                     variable_index.insert(variable, elements.len());
@@ -82,7 +88,21 @@ impl PatternPlan {
                 Constraint::Isa(isa) => {
                     variable_isa.insert(isa.thing(), isa.clone());
                 }
-                Constraint::RolePlayer(_) => todo!(),
+                Constraint::Links(links) => {
+                    let planner = LinksPlanner::from_constraint(links, &variable_index, type_annotations, statistics);
+
+                    let index = elements.len();
+
+                    index_to_constraint.insert(index, constraint);
+
+                    adjacency.entry(index).or_default().extend([planner.relation, planner.player, planner.role]);
+
+                    adjacency.entry(planner.relation).or_default().insert(index);
+                    adjacency.entry(planner.player).or_default().insert(index);
+                    adjacency.entry(planner.role).or_default().insert(index);
+
+                    elements.push(PlannerVertex::Links(planner));
+                }
                 Constraint::Has(has) => {
                     let planner = HasPlanner::from_constraint(has, &variable_index, type_annotations, statistics);
 
@@ -134,42 +154,93 @@ impl PatternPlan {
                     .collect::<HashSet<_>>();
                 match index_to_constraint[&index] {
                     Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_) => todo!(),
-                    Constraint::RolePlayer(_) => todo!(),
-                    Constraint::Has(has) => {
-                        let intersection_step = if bound_variables.is_empty() {
-                            IntersectionStep::new(
-                                has.owner(),
-                                vec![ConstraintInstruction::Has(HasInstruction::new(
-                                    has.clone(),
-                                    Inputs::None([]),
-                                    program.entry_annotations(),
-                                ))],
-                                &[has.owner(), has.attribute()],
-                            )
-                        } else if bound_variables.len() == 2 {
-                            continue; // TODO verify
-                        } else if bound_variables.contains(&has.owner()) {
-                            IntersectionStep::new(
-                                has.attribute(),
-                                vec![ConstraintInstruction::Has(HasInstruction::new(
-                                    has.clone(),
-                                    Inputs::Single([has.owner()]),
-                                    program.entry_annotations(),
-                                ))],
-                                &[has.attribute()],
-                            )
+                    Constraint::Links(rp) => {
+                        if bound_variables.len() >= 2 {
+                            todo!()
+                        }
+                        let planner = elements[index].as_links().unwrap();
+                        let selected_variables = &[rp.relation(), rp.player(), rp.role_type()];
+                        let instruction = if bound_variables.contains(&rp.relation()) {
+                            ConstraintInstruction::Links(LinksInstruction::new(
+                                rp.clone(),
+                                Inputs::Single([rp.relation()]),
+                                type_annotations,
+                            ))
+                        } else if bound_variables.contains(&rp.player()) {
+                            ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
+                                rp.clone(),
+                                Inputs::Single([rp.player()]),
+                                type_annotations,
+                            ))
+                        } else if planner.unbound_is_forward {
+                            ConstraintInstruction::Links(LinksInstruction::new(
+                                rp.clone(),
+                                Inputs::None([]),
+                                type_annotations,
+                            ))
                         } else {
-                            IntersectionStep::new(
-                                has.owner(),
-                                vec![ConstraintInstruction::Has(HasInstruction::new(
-                                    has.clone(),
-                                    Inputs::Single([has.attribute()]),
-                                    program.entry_annotations(),
-                                ))],
-                                &[has.owner()],
-                            )
+                            ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
+                                rp.clone(),
+                                Inputs::None([]),
+                                type_annotations,
+                            ))
                         };
-                        steps.push(Step::Intersection(intersection_step));
+                        let sort_variable = if bound_variables.is_empty() && planner.unbound_is_forward
+                            || bound_variables.contains(&rp.player())
+                        {
+                            rp.relation()
+                        } else {
+                            rp.player()
+                        };
+                        steps.push(Step::Intersection(IntersectionStep::new(
+                            sort_variable,
+                            vec![instruction],
+                            selected_variables,
+                        )));
+                    }
+                    Constraint::Has(has) => {
+                        if bound_variables.len() == 2 {
+                            todo!()
+                        }
+                        let planner = elements[index].as_has().unwrap();
+                        let selected_variables = &[has.owner(), has.attribute()];
+                        let instruction = if bound_variables.contains(&has.owner()) {
+                            ConstraintInstruction::Has(HasInstruction::new(
+                                has.clone(),
+                                Inputs::Single([has.owner()]),
+                                type_annotations,
+                            ))
+                        } else if bound_variables.contains(&has.attribute()) {
+                            ConstraintInstruction::HasReverse(HasReverseInstruction::new(
+                                has.clone(),
+                                Inputs::Single([has.attribute()]),
+                                type_annotations,
+                            ))
+                        } else if planner.unbound_is_forward {
+                            ConstraintInstruction::Has(HasInstruction::new(
+                                has.clone(),
+                                Inputs::None([]),
+                                type_annotations,
+                            ))
+                        } else {
+                            ConstraintInstruction::HasReverse(HasReverseInstruction::new(
+                                has.clone(),
+                                Inputs::None([]),
+                                type_annotations,
+                            ))
+                        };
+                        let sort_variable = if bound_variables.is_empty() && planner.unbound_is_forward
+                            || bound_variables.contains(&has.attribute())
+                        {
+                            has.owner()
+                        } else {
+                            has.attribute()
+                        };
+                        steps.push(Step::Intersection(IntersectionStep::new(
+                            sort_variable,
+                            vec![instruction],
+                            selected_variables,
+                        )));
                     }
                     Constraint::ExpressionBinding(_) => todo!(),
                     Constraint::FunctionCallBinding(_) => todo!(),

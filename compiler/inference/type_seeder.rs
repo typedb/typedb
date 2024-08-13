@@ -20,8 +20,7 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            Comparison, Constraint, FunctionCallBinding, Has, Isa, IsaKind, Label, Owns, Plays, Relates, RolePlayer,
-            Sub,
+            Comparison, Constraint, FunctionCallBinding, Has, Isa, IsaKind, Label, Links, Owns, Plays, Relates, Sub,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
@@ -291,9 +290,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         let any_modified = match constraint {
             Constraint::Isa(isa) => self.try_propagating_vertex_annotation_impl(isa, vertices)?,
             Constraint::Sub(sub) => self.try_propagating_vertex_annotation_impl(sub, vertices)?,
-            Constraint::RolePlayer(role_player) => {
-                let relation_role = RelationRoleEdge { role_player };
-                let player_role = PlayerRoleEdge { role_player };
+            Constraint::Links(links) => {
+                let relation_role = RelationRoleEdge { links };
+                let player_role = PlayerRoleEdge { links };
                 self.try_propagating_vertex_annotation_impl(&relation_role, vertices)?
                     || self.try_propagating_vertex_annotation_impl(&player_role, vertices)?
             }
@@ -415,9 +414,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             match constraint {
                 Constraint::Isa(isa) => edges.push(self.seed_edge(constraint, isa, vertices)?),
                 Constraint::Sub(sub) => edges.push(self.seed_edge(constraint, sub, vertices)?),
-                Constraint::RolePlayer(role_player) => {
-                    let relation_role = RelationRoleEdge { role_player };
-                    let player_role = PlayerRoleEdge { role_player };
+                Constraint::Links(links) => {
+                    let relation_role = RelationRoleEdge { links };
+                    let player_role = PlayerRoleEdge { links };
                     edges.push(self.seed_edge(constraint, &relation_role, vertices)?);
                     edges.push(self.seed_edge(constraint, &player_role, vertices)?);
                 }
@@ -971,20 +970,20 @@ impl BinaryConstraint for Comparison<Variable> {
 }
 
 struct PlayerRoleEdge<'graph> {
-    role_player: &'graph RolePlayer<Variable>,
+    links: &'graph Links<Variable>,
 }
 
 struct RelationRoleEdge<'graph> {
-    role_player: &'graph RolePlayer<Variable>,
+    links: &'graph Links<Variable>,
 }
 
 impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
     fn left(&self) -> Variable {
-        self.role_player.player()
+        self.links.player()
     }
 
     fn right(&self) -> Variable {
-        self.role_player.role_type()
+        self.links.role_type()
     }
 
     fn annotate_left_to_right_for_type(
@@ -1096,11 +1095,11 @@ impl BinaryConstraint for Plays<Variable> {
 
 impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
     fn left(&self) -> Variable {
-        self.role_player.relation()
+        self.links.relation()
     }
 
     fn right(&self) -> Variable {
-        self.role_player.role_type()
+        self.links.role_type()
     }
 
     fn annotate_left_to_right_for_type(

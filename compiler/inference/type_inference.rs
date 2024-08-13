@@ -102,7 +102,7 @@ pub mod tests {
     };
     use ir::{
         pattern::{
-            constraint::{Constraint, IsaKind, RolePlayer},
+            constraint::{Constraint, IsaKind, Links},
             variable_category::{VariableCategory, VariableOptionality},
         },
         program::{
@@ -158,8 +158,8 @@ pub mod tests {
         let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(2)));
 
         let dummy = FunctionalBlock::builder().finish();
-        let constraint1 = Constraint::RolePlayer(RolePlayer::new(var_relation, var_player, var_role_type));
-        let constraint2 = Constraint::RolePlayer(RolePlayer::new(var_relation, var_player, var_role_type));
+        let constraint1 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
+        let constraint2 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let nested1 = TypeInferenceGraph {
             conjunction: dummy.conjunction(),
             vertices: BTreeMap::from([

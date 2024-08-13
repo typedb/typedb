@@ -162,10 +162,10 @@ pub(crate) fn has_to_tuple_attribute_owner(result: Result<(Has<'_>, u64), Concep
     Ok(Tuple::Pair([VariableValue::Thing(attribute.into()), VariableValue::Thing(owner.into())]))
 }
 
-pub(crate) type RelationRolePlayerToTupleFn =
+pub(crate) type LinksToTupleFn =
     for<'a> fn(Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>) -> TupleResult<'a>;
 
-pub(crate) fn relation_role_player_to_tuple_relation_player_role<'a>(
+pub(crate) fn links_to_tuple_relation_player_role<'a>(
     result: Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>,
 ) -> TupleResult<'a> {
     let (rel, rp, count) = result?;
@@ -177,7 +177,7 @@ pub(crate) fn relation_role_player_to_tuple_relation_player_role<'a>(
     ]))
 }
 
-pub(crate) fn relation_role_player_to_tuple_player_relation_role<'a>(
+pub(crate) fn links_to_tuple_player_relation_role<'a>(
     result: Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>,
 ) -> TupleResult<'a> {
     let (rel, rp, count) = result?;

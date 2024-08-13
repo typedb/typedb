@@ -135,23 +135,23 @@ impl<'cx> ConstraintsBuilder<'cx> {
         Ok(constraint.as_has().unwrap())
     }
 
-    pub fn add_role_player(
+    pub fn add_links(
         &mut self,
         relation: Variable,
         player: Variable,
         role_type: Variable,
-    ) -> Result<&RolePlayer<Variable>, PatternDefinitionError> {
+    ) -> Result<&Links<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, relation)
                 && self.context.is_variable_available(self.constraints.scope, player)
                 && self.context.is_variable_available(self.constraints.scope, role_type)
         );
-        let role_player = Constraint::from(RolePlayer::new(relation, player, role_type));
-        self.context.set_variable_category(relation, VariableCategory::Object, role_player.clone())?;
-        self.context.set_variable_category(player, VariableCategory::Object, role_player.clone())?;
-        self.context.set_variable_category(role_type, VariableCategory::Type, role_player.clone())?;
-        let constraint = self.constraints.add_constraint(role_player);
-        Ok(constraint.as_role_player().unwrap())
+        let links = Constraint::from(Links::new(relation, player, role_type));
+        self.context.set_variable_category(relation, VariableCategory::Object, links.clone())?;
+        self.context.set_variable_category(player, VariableCategory::Object, links.clone())?;
+        self.context.set_variable_category(role_type, VariableCategory::RoleType, links.clone())?;
+        let constraint = self.constraints.add_constraint(links);
+        Ok(constraint.as_links().unwrap())
     }
 
     pub fn add_comparison(
@@ -302,7 +302,7 @@ pub enum Constraint<ID: IrID> {
     Label(Label<ID>),
     Sub(Sub<ID>),
     Isa(Isa<ID>),
-    RolePlayer(RolePlayer<ID>),
+    Links(Links<ID>),
     Has(Has<ID>),
     ExpressionBinding(ExpressionBinding<ID>),
     FunctionCallBinding(FunctionCallBinding<ID>),
@@ -318,7 +318,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Label(label) => Box::new(label.ids()),
             Constraint::Sub(sub) => Box::new(sub.ids()),
             Constraint::Isa(isa) => Box::new(isa.ids()),
-            Constraint::RolePlayer(rp) => Box::new(rp.ids()),
+            Constraint::Links(rp) => Box::new(rp.ids()),
             Constraint::Has(has) => Box::new(has.ids()),
             Constraint::ExpressionBinding(binding) => Box::new(binding.ids_assigned()),
             Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_assigned()),
@@ -337,7 +337,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Label(label) => label.ids_foreach(function),
             Constraint::Sub(sub) => sub.ids_foreach(function),
             Constraint::Isa(isa) => isa.ids_foreach(function),
-            Constraint::RolePlayer(rp) => rp.ids_foreach(function),
+            Constraint::Links(rp) => rp.ids_foreach(function),
             Constraint::Has(has) => has.ids_foreach(function),
             Constraint::ExpressionBinding(binding) => binding.ids_foreach(function),
             Constraint::FunctionCallBinding(binding) => binding.ids_foreach(function),
@@ -395,9 +395,9 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_role_player(&self) -> Option<&RolePlayer<ID>> {
+    pub(crate) fn as_links(&self) -> Option<&Links<ID>> {
         match self {
-            Constraint::RolePlayer(rp) => Some(rp),
+            Constraint::Links(rp) => Some(rp),
             _ => None,
         }
     }
@@ -458,7 +458,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Constraint::Label(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Sub(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Isa(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::RolePlayer(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::Links(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Has(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::ExpressionBinding(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::FunctionCallBinding(constraint) => fmt::Display::fmt(constraint, f),
@@ -626,13 +626,13 @@ pub enum IsaKind {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct RolePlayer<ID> {
+pub struct Links<ID> {
     pub(crate) relation: ID,
     pub(crate) player: ID,
     pub(crate) role_type: ID,
 }
 
-impl<ID: IrID> RolePlayer<ID> {
+impl<ID: IrID> Links<ID> {
     pub fn new(relation: ID, player: ID, role_type: ID) -> Self {
         Self { relation, player, role_type }
     }
@@ -662,8 +662,8 @@ impl<ID: IrID> RolePlayer<ID> {
         function(self.role_type, ConstraintIDSide::Filter);
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> RolePlayer<T> {
-        RolePlayer::new(
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Links<T> {
+        Links::new(
             *mapping.get(&self.relation).unwrap(),
             *mapping.get(&self.player).unwrap(),
             *mapping.get(&self.role_type).unwrap(),
@@ -671,13 +671,13 @@ impl<ID: IrID> RolePlayer<ID> {
     }
 }
 
-impl<ID: IrID> From<RolePlayer<ID>> for Constraint<ID> {
-    fn from(role_player: RolePlayer<ID>) -> Self {
-        Constraint::RolePlayer(role_player)
+impl<ID: IrID> From<Links<ID>> for Constraint<ID> {
+    fn from(links: Links<ID>) -> Self {
+        Constraint::Links(links)
     }
 }
 
-impl<ID: IrID> fmt::Display for RolePlayer<ID> {
+impl<ID: IrID> fmt::Display for Links<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} rp {} (role: {})", self.relation, self.player, self.role_type)
     }
