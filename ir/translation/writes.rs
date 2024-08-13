@@ -32,7 +32,6 @@ pub fn translate_delete(
     delete: &typeql::query::stage::Delete,
 ) -> Result<(FunctionalBlockBuilder, Vec<Variable>), PatternDefinitionError> {
     let mut builder = FunctionalBlock::builder();
-    // let function_index = HashMapFunctionIndex::empty();
     let mut tmp_conjunction = builder.conjunction_mut();
     let mut constraints = tmp_conjunction.constraints_mut();
     let mut deleted_concepts = Vec::new();

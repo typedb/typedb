@@ -55,55 +55,6 @@ fn get_value<'a>(input: &'a Row<'a>, source: &'a ValueSource) -> &'a Value<'stat
     }
 }
 
-//
-// impl<'a, 'row> WriteExecutionContext<'a, 'row> {
-//     pub(crate) fn new(
-//         input: &'a Row<'row>,
-//         created_things: &'a mut Vec<answer::Thing<'static>>,
-//     ) -> WriteExecutionContext<'a, 'row> {
-//         // TODO: Should we keep an attribute cache to avoid re-creating attributes with the same value?
-//         WriteExecutionContext { input, created_things }
-//     }
-//
-//     fn get_input(&self, position: &usize) -> &VariableValue<'static> {
-//         todo!()
-//     }
-//
-//     fn get_value(&self, at: &ValueSource) -> &Value<'static> {
-//         match at {
-//             ValueSource::ValueConstant(index) => self.value_constants.get(*index).unwrap(),
-//             ValueSource::Input(position) => match self.get_input(position) {
-//                 VariableValue::Value(value) => value,
-//                 _ => unreachable!(),
-//             },
-//         }
-//     }
-//
-//     fn get_type(&self, at: &TypeSource) -> &answer::Type {
-//         match at {
-//             TypeSource::TypeConstant(index) => self.type_constants.get(*index).unwrap(),
-//             TypeSource::Input(position) => match self.get_input(position) {
-//                 VariableValue::Type(type_) => type_,
-//                 _ => unreachable!(),
-//             },
-//         }
-//     }
-//
-//     fn get_thing(&self, at: &ThingSource) -> &answer::Thing<'static> {
-//         match at {
-//             ThingSource::Inserted(index) => self.created_things.get(*index).unwrap(),
-//             ThingSource::Input(position) => match self.get_input(position) {
-//                 VariableValue::Thing(thing) => thing,
-//                 _ => unreachable!(),
-//             },
-//         }
-//     }
-//
-//     fn todo__get_thing_list(&self, at: ()) -> &VariableValue<'static> {
-//         todo!("???")
-//     }
-// }
-
 pub trait AsInsertInstruction {
     // fn check(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager, context: &mut WriteExecutionContext<'_, '_>) -> Result<(), CheckError>;
     fn insert(
@@ -124,16 +75,6 @@ pub trait AsDeleteInstruction {
     ) -> Result<(), WriteError>;
 }
 
-type UpdateError = (); // TODO
-pub trait AsUpdateInstruction: AsInsertInstruction + AsDeleteInstruction {
-    fn update(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        thing_manager: &ThingManager,
-        input: &Row<'_>,
-        inserted_concepts: &[answer::Thing<'static>],
-    ) -> Result<(), UpdateError>;
-}
 
 // Implementation
 impl AsInsertInstruction for PutEntity {
@@ -289,25 +230,3 @@ impl AsDeleteInstruction for RolePlayer {
             .map_err(|source| WriteError::ConceptWrite { source })
     }
 }
-//
-// impl AsUpdateInstruction for Has {
-//     fn update(
-//         &self,
-//         snapshot: &mut impl WritableSnapshot,
-//         thing_manager: &ThingManager,
-//         context: &mut WriteExecutionContext<'_, '_>,
-//     ) -> Result<(), UpdateError> {
-//         todo!()
-//     }
-// }
-//
-// impl AsUpdateInstruction for RolePlayer {
-//     fn update(
-//         &self,
-//         snapshot: &mut impl WritableSnapshot,
-//         thing_manager: &ThingManager,
-//         context: &mut WriteExecutionContext<'_, '_>,
-//     ) -> Result<(), UpdateError> {
-//         todo!()
-//     }
-// }
