@@ -18,6 +18,8 @@ use crate::{
         owns::Owns,
     },
 };
+use crate::thing::attribute::Attribute;
+use crate::type_::role_type::RoleType;
 
 pub mod operation_time_validation;
 
@@ -27,6 +29,16 @@ pub enum DataValidationError {
     CannotCreateInstanceOfAbstractType(Label<'static>),
     CannotAddOwnerInstanceForNotOwnedAttributeType(Label<'static>, Label<'static>),
     CannotAddPlayerInstanceForNotPlayedRoleType(Label<'static>, Label<'static>),
+    PlayerViolatesDistinctRelatesConstraint {
+        role_type: RoleType<'static>,
+        player: Object<'static>,
+        count: u64,
+    },
+    AttributeViolatesDistinctOwnsConstraint {
+        owns: Owns<'static>,
+        attribute: Attribute<'static>,
+        count: u64,
+    },
     AttributeViolatesRegexConstraint {
         attribute_type: AttributeType<'static>,
         value: Value<'static>,
@@ -86,6 +98,8 @@ impl Error for DataValidationError {
             Self::CannotCreateInstanceOfAbstractType(_) => None,
             Self::CannotAddOwnerInstanceForNotOwnedAttributeType(_, _) => None,
             Self::CannotAddPlayerInstanceForNotPlayedRoleType(_, _) => None,
+            Self::PlayerViolatesDistinctRelatesConstraint { .. } => None,
+            Self::AttributeViolatesDistinctOwnsConstraint { .. } => None,
             Self::AttributeViolatesRegexConstraint { .. } => None,
             Self::AttributeViolatesRangeConstraint { .. } => None,
             Self::AttributeViolatesValuesConstraint { .. } => None,

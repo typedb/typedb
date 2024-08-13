@@ -60,36 +60,6 @@ impl<'a> Relation<'a> {
         self.vertex.bytes()
     }
 
-    // pub fn delete_has_single(
-    //     &self, thing_manager: &ThingManager, attribute: Attribute<'_>,
-    // ) -> Result<(), ConceptWriteError> {
-    //     self.delete_has_many(thing_manager, attribute, 1)
-    // }
-    //
-    // pub fn delete_has_many(
-    //     &self, thing_manager: &ThingManager, attribute: Attribute<'_>, count: u64,
-    // ) -> Result<(), ConceptWriteError> {
-    //     let owns = self.type_().get_owns_attribute(
-    //         thing_manager.type_manager(),
-    //         attribute.type_(),
-    //     ).map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-    //     match owns {
-    //         None => {
-    //             todo!("throw useful schema violation error")
-    //         }
-    //         Some(owns) => {
-    //             if owns.is_distinct(thing_manager.type_manager())
-    //                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
-    //                 debug_assert_eq!(count, 1);
-    //                 thing_manager.delete_has(self.as_reference(), attribute);
-    //             } else {
-    //                 thing_manager.decrement_has(self.as_reference(), attribute, count);
-    //             }
-    //         }
-    //     }
-    //     Ok(())
-    // }
-
     pub fn get_indexed_players<'m>(
         &self,
         snapshot: &'m impl ReadableSnapshot,
@@ -191,9 +161,8 @@ impl<'a> Relation<'a> {
         )
         .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
-        let relates = role_type.get_relates_declared(snapshot, thing_manager.type_manager())?;
-        let relates_annotations = relates.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
-        let distinct = relates_annotations.contains_key(&RelatesAnnotation::Distinct(AnnotationDistinct));
+        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
+        let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())?;
         if distinct {
             thing_manager.put_links_unordered(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
         } else {
@@ -224,6 +193,14 @@ impl<'a> Relation<'a> {
         for player in &new_players {
             *new_counts.entry(player).or_default() += 1;
         }
+
+        OperationTimeValidation::validate_relates_distinct_constraint(
+            snapshot,
+            thing_manager,
+            role_type.clone(),
+            &new_counts,
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         // 1. get owned list
         let old_players = thing_manager
@@ -276,9 +253,8 @@ impl<'a> Relation<'a> {
         player: Object<'_>,
         delete_count: u64,
     ) -> Result<(), ConceptWriteError> {
-        let relates = role_type.get_relates_declared(snapshot, thing_manager.type_manager())?;
-        let relates_annotations = relates.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
-        let distinct = relates_annotations.contains_key(&RelatesAnnotation::Distinct(AnnotationDistinct));
+        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
+        let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())?;
         if distinct {
             debug_assert_eq!(delete_count, 1);
             thing_manager.unset_links(snapshot, self.as_reference(), player.as_reference(), role_type.clone())

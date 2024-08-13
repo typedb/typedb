@@ -568,19 +568,6 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relates_for_role_type_declared(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'_, Relates<'static>>, ConceptReadError> {
-        if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_role_type_relates_declared(role_type.clone())))
-        } else {
-            let relates = TypeReader::get_role_type_relates_declared(snapshot, role_type.clone())?;
-            Ok(MaybeOwns::Owned(relates))
-        }
-    }
-
     pub(crate) fn get_relations_for_role_type(
         &self,
         snapshot: &impl ReadableSnapshot,

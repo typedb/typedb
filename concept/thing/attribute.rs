@@ -267,7 +267,8 @@ where
                 None => self.state = State::Done,
                 Some(Ok(attribute)) => {
                     let attribute_vertex = attribute.vertex();
-                    let independent = self.independent_attribute_types.contains(&attribute.type_());
+                    // let independent = self.independent_attribute_types.contains(&attribute.type_());
+                    let independent = true; // TODO: Turn off filtering, come up with a complete solution later
                     if independent {
                         self.state = State::ItemReady;
                     } else {

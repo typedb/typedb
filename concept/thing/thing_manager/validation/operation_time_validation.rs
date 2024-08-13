@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 use encoding::value::{label::Label, value::Value, value_type::ValueType, ValueEncodable};
 use lending_iterator::LendingIterator;
@@ -31,6 +31,7 @@ use crate::{
         Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
+use crate::thing::object::Object;
 
 pub struct OperationTimeValidation {}
 
@@ -98,7 +99,7 @@ impl OperationTimeValidation {
             .get_owns(snapshot, &thing_manager.type_manager)
             .map_err(DataValidationError::ConceptRead)?
             .into_iter()
-            .any(|owns| &owns.attribute() == &attribute_type.clone());
+            .any(|owns| owns.attribute() == attribute_type.clone());
         if has_owns {
             Ok(())
         } else {
@@ -106,6 +107,52 @@ impl OperationTimeValidation {
                 Self::get_label_or_data_err(snapshot, &thing_manager.type_manager, object_type)?,
                 Self::get_label_or_data_err(snapshot, &thing_manager.type_manager, attribute_type)?,
             ))
+        }
+    }
+
+    pub(crate) fn validate_relates_distinct_constraint(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        role_type: RoleType<'static>,
+        players_counts: &HashMap<&Object<'_>, u64>,
+    ) -> Result<(), DataValidationError> {
+        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())
+            .map_err(DataValidationError::ConceptRead)?;
+        let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())
+            .map_err(DataValidationError::ConceptRead)?;
+
+        match distinct {
+            true => {
+                let duplicated = players_counts
+                    .iter()
+                    .find(|(_, count)| **count > 1);
+                match duplicated {
+                    Some((player, count)) => Err(DataValidationError::PlayerViolatesDistinctRelatesConstraint { role_type, player: player.clone().clone().into_owned(), count: count.clone() }),
+                    None => Ok(())
+                }
+            }
+            false => Ok(())
+        }
+    }
+
+    pub(crate) fn validate_owns_distinct_constraint(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        owns: Owns<'static>,
+        attributes_counts: &BTreeMap<&Attribute<'_>, u64>,
+    ) -> Result<(), DataValidationError> {
+        let distinct = owns.is_distinct(snapshot, thing_manager.type_manager())
+            .map_err(DataValidationError::ConceptRead)?;
+
+        match distinct {
+            true => {
+                let duplicated = attributes_counts.iter().find(|(_, count)| **count > 1);
+                match duplicated {
+                    Some((attribute, count)) => Err(DataValidationError::AttributeViolatesDistinctOwnsConstraint { owns, attribute: attribute.clone().clone().into_owned(), count: count.clone() }),
+                    None => Ok(())
+                }
+            }
+            false => Ok(())
         }
     }
 

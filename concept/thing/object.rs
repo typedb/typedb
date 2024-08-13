@@ -8,6 +8,7 @@ use std::{
     collections::BTreeMap,
     fmt::{Debug, Display, Formatter},
 };
+use std::collections::HashMap;
 
 use bytes::Bytes;
 use encoding::{
@@ -308,6 +309,14 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         for attr in &new_attributes {
             *new_counts.entry(attr).or_default() += 1;
         }
+
+        OperationTimeValidation::validate_owns_distinct_constraint(
+            snapshot,
+            thing_manager,
+            owns.clone().into_owned(),
+            &new_counts,
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         // 1. get owned list
         let old_attributes =

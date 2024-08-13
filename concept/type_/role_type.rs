@@ -69,14 +69,6 @@ impl<'a> RoleType<'a> {
         type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_relates_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Relates<'static>>, ConceptReadError> {
-        type_manager.get_relates_for_role_type_declared(snapshot, self.clone().into_owned())
-    }
-
     pub fn get_relations<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -262,7 +254,7 @@ impl<'a> RoleType<'a> {
 
     pub(crate) fn get_relates<'m>(
         &self,
-        snapshot: &impl WritableSnapshot,
+        snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Relates<'static>>, ConceptReadError> {
         type_manager.get_role_type_relates(snapshot, self.clone().into_owned())
