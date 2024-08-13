@@ -3,11 +3,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use answer::Thing;
+use answer::{Thing, Type};
 use compiler::write::{
-    write_instructions::{
-        DeleteAttribute, DeleteEntity, DeleteRelation, Has, PutAttribute, PutEntity, PutRelation, RolePlayer,
-    },
+    write_instructions::{DeleteThing, Has, PutAttribute, PutObject, RolePlayer},
     ThingSource, TypeSource, ValueSource,
 };
 use concept::thing::{
@@ -15,7 +13,7 @@ use concept::thing::{
     thing_manager::ThingManager,
     ThingAPI,
 };
-use encoding::value::value::Value;
+use encoding::{graph::type_::Kind, value::value::Value};
 use storage::snapshot::WritableSnapshot;
 
 use crate::{batch::Row, write::insert_executor::WriteError, VariablePosition};
@@ -76,22 +74,6 @@ pub trait AsDeleteInstruction {
 }
 
 // Implementation
-impl AsInsertInstruction for PutEntity {
-    fn insert(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        thing_manager: &ThingManager,
-        input: &Row<'_>,
-        _inserted_concepts: &[answer::Thing<'static>],
-    ) -> Result<Option<Thing<'static>>, WriteError> {
-        let entity_type = try_unwrap_as!(answer::Type::Entity: get_type(input, &self.type_)).unwrap();
-        let inserted = thing_manager
-            .create_entity(snapshot, entity_type.clone())
-            .map_err(|source| WriteError::ConceptWrite { source })?;
-        Ok(Some(Thing::Entity(inserted)))
-    }
-}
-
 impl AsInsertInstruction for PutAttribute {
     fn insert(
         &self,
@@ -108,7 +90,7 @@ impl AsInsertInstruction for PutAttribute {
     }
 }
 
-impl AsInsertInstruction for PutRelation {
+impl AsInsertInstruction for PutObject {
     fn insert(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -116,11 +98,21 @@ impl AsInsertInstruction for PutRelation {
         input: &Row<'_>,
         _inserted_concepts: &[answer::Thing<'static>],
     ) -> Result<Option<Thing<'static>>, WriteError> {
-        let relation_type = try_unwrap_as!(answer::Type::Relation: get_type(input, &self.type_)).unwrap();
-        let inserted = thing_manager
-            .create_relation(snapshot, relation_type.clone())
-            .map_err(|source| WriteError::ConceptWrite { source })?;
-        Ok(Some(Thing::Relation(inserted)))
+        match get_type(input, &self.type_) {
+            Type::Entity(entity_type) => {
+                let inserted = thing_manager
+                    .create_entity(snapshot, entity_type.clone())
+                    .map_err(|source| WriteError::ConceptWrite { source })?;
+                Ok(Some(Thing::Entity(inserted)))
+            }
+            Type::Relation(relation_type) => {
+                let inserted = thing_manager
+                    .create_relation(snapshot, relation_type.clone())
+                    .map_err(|source| WriteError::ConceptWrite { source })?;
+                Ok(Some(Thing::Relation(inserted)))
+            }
+            Type::Attribute(_) | Type::RoleType(_) => unreachable!(),
+        }
     }
 }
 
@@ -161,39 +153,25 @@ impl AsInsertInstruction for RolePlayer {
     }
 }
 
-impl AsDeleteInstruction for DeleteEntity {
+impl AsDeleteInstruction for DeleteThing {
     fn delete(
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         input: &Row<'_>,
     ) -> Result<(), WriteError> {
-        let Object::Entity(entity) = get_thing(input, &[], &self.entity).as_object() else { unreachable!() };
-        entity.delete(snapshot, thing_manager).map_err(|source| WriteError::ConceptWrite { source })
-    }
-}
-
-impl AsDeleteInstruction for DeleteRelation {
-    fn delete(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        thing_manager: &ThingManager,
-        input: &Row<'_>,
-    ) -> Result<(), WriteError> {
-        let Object::Relation(relation) = get_thing(input, &[], &self.relation).as_object() else { unreachable!() };
-        relation.delete(snapshot, thing_manager).map_err(|source| WriteError::ConceptWrite { source })
-    }
-}
-
-impl AsDeleteInstruction for DeleteAttribute {
-    fn delete(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        thing_manager: &ThingManager,
-        input: &Row<'_>,
-    ) -> Result<(), WriteError> {
-        let attribute = get_thing(input, &[], &self.attribute).as_attribute() else { unreachable!() };
-        attribute.delete(snapshot, thing_manager).map_err(|source| WriteError::ConceptWrite { source })
+        let thing = get_thing(input, &[], &self.thing).clone();
+        match thing {
+            Thing::Entity(entity) => {
+                entity.delete(snapshot, thing_manager).map_err(|source| WriteError::ConceptWrite { source })
+            }
+            Thing::Relation(relation) => {
+                relation.delete(snapshot, thing_manager).map_err(|source| WriteError::ConceptWrite { source })
+            }
+            Thing::Attribute(attribute) => {
+                attribute.delete(snapshot, thing_manager).map_err(|source| WriteError::ConceptWrite { source })
+            }
+        }
     }
 }
 

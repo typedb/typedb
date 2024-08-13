@@ -25,8 +25,9 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     inference::type_annotations::TypeAnnotations,
     write::{
-        determine_unique_kind, get_thing_source,
-        write_instructions::{Has, PutAttribute, PutEntity, PutRelation, RolePlayer},
+        get_kinds_from_annotations, get_thing_source,
+        insert::WriteCompilationError::IsaTypeMayBeAttributeOrObject,
+        write_instructions::{Has, PutAttribute, PutObject, RolePlayer},
         TypeSource, ValueSource, VariableSource,
     },
 };
@@ -39,10 +40,8 @@ macro_rules! filter_variants {
 
 #[derive(Debug)]
 pub enum InsertInstruction {
-    // TODO: Just replace this with regular `Constraint`s and use a mapped-row?
-    PutEntity(PutEntity),
+    PutObject(PutObject),
     PutAttribute(PutAttribute),
-    PutRelation(PutRelation),
     Has(Has),               // TODO: Ordering
     RolePlayer(RolePlayer), // TODO: Ordering
 }
@@ -102,30 +101,36 @@ fn add_inserted_concepts(
                 Err(WriteCompilationError::CouldNotDetermineTypeOfInsertedVariable { variable: isa.thing() })?
             }
         };
+        // Requires variable annotations for this stage to be available.
         let annotations = type_annotations.variable_annotations_of(isa.type_()).unwrap();
-        let kind = determine_unique_kind(annotations)
-            .map_err(|_| WriteCompilationError::IsaTypeHasMultipleKinds { isa: isa.clone() })?;
-
-        let instruction = match kind {
-            Kind::Entity => InsertInstruction::PutEntity(PutEntity { type_ }),
-            Kind::Relation => InsertInstruction::PutRelation(PutRelation { type_ }),
-            Kind::Attribute => {
-                let value_variable = resolve_value_variable_for_inserted_attribute(constraints, isa.thing())?;
-                let value = if let Some(constant) = value_bindings.get(&value_variable) {
-                    debug_assert!(!input_variables.contains_key(&value_variable));
-                    ValueSource::ValueConstant(constant.clone().into_owned())
-                } else if let Some(position) = input_variables.get(&value_variable) {
-                    ValueSource::InputVariable(*position as u32)
-                } else {
-                    return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute {
-                        variable: value_variable,
-                    })?;
-                };
-                InsertInstruction::PutAttribute(PutAttribute { type_, value })
+        debug_assert!(!annotations.is_empty());
+        let kinds = get_kinds_from_annotations(annotations);
+        let is_object = {
+            let is_role = kinds.contains(&Kind::Role);
+            let is_object = kinds.contains(&Kind::Relation) || kinds.contains(&Kind::Entity);
+            let is_attribute = kinds.contains(&Kind::Attribute);
+            if is_role {
+                Err(WriteCompilationError::IllegalInsertForRole { isa: isa.clone() })?;
+            } else if is_attribute && is_object {
+                Err(IsaTypeMayBeAttributeOrObject { isa: isa.clone() })?;
             }
-            Kind::Role => {
-                return Err(WriteCompilationError::IsaStatementForRoleType { isa: isa.clone() })?;
-            }
+            is_object
+        };
+        let instruction = if is_object {
+            InsertInstruction::PutObject(PutObject { type_ })
+        } else {
+            let value_variable = resolve_value_variable_for_inserted_attribute(constraints, isa.thing())?;
+            let value = if let Some(constant) = value_bindings.get(&value_variable) {
+                debug_assert!(!input_variables.contains_key(&value_variable));
+                ValueSource::ValueConstant(constant.clone().into_owned())
+            } else if let Some(position) = input_variables.get(&value_variable) {
+                ValueSource::InputVariable(*position as u32)
+            } else {
+                return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute {
+                    variable: value_variable,
+                })?;
+            };
+            InsertInstruction::PutAttribute(PutAttribute { type_, value })
         };
         inserted_concepts.insert(isa.thing(), inserted_concepts.len());
         instructions.push(instruction);
@@ -259,7 +264,7 @@ pub(crate) fn collect_role_type_bindings(
 pub enum WriteCompilationError {
     VariableIsBothInsertedAndInput { variable: Variable },
     IsaStatementForRoleType { isa: Isa<Variable> },
-    IsaTypeHasMultipleKinds { isa: Isa<Variable> },
+    IsaTypeMayBeAttributeOrObject { isa: Isa<Variable> },
     CouldNotDetermineTypeOfInsertedVariable { variable: Variable },
     CouldNotDetermineValueOfInsertedAttribute { variable: Variable },
     CouldNotDetermineThingVariableSource { variable: Variable },
@@ -267,7 +272,8 @@ pub enum WriteCompilationError {
     CouldNotUniquelyDetermineRoleType { variable: Variable },
 
     IllegalRoleDelete { variable: Variable },
-    DeleteHasMultipleKinds { variable: Variable },
+    DeleteHasMultipleKinds { isa: Isa<Variable> },
+    IllegalInsertForRole { isa: Isa<Variable> },
 }
 
 impl Display for WriteCompilationError {

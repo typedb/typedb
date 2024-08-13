@@ -7,11 +7,9 @@ use ir::pattern::constraint::Constraint;
 use crate::{
     inference::type_annotations::TypeAnnotations,
     write::{
-        determine_unique_kind, get_thing_source,
+        get_kinds_from_annotations, get_thing_source,
         insert::{collect_role_type_bindings, WriteCompilationError},
-        write_instructions::{
-            DeleteAttribute, DeleteEntity, DeleteRelation, Has, PutAttribute, PutEntity, PutRelation, RolePlayer,
-        },
+        write_instructions::{DeleteThing, Has, PutAttribute, RolePlayer},
         ThingSource, TypeSource, VariableSource,
     },
 };
@@ -19,9 +17,7 @@ use crate::{
 #[derive(Debug)]
 pub enum DeleteInstruction {
     // TODO: Just replace this with regular `Constraint`s and use a mapped-row?
-    Entity(DeleteEntity),
-    Attribute(DeleteAttribute),
-    Relation(DeleteRelation),
+    Thing(DeleteThing),
     Has(Has),               // TODO: Ordering
     RolePlayer(RolePlayer), // TODO: Ordering
 }
@@ -42,19 +38,6 @@ pub fn build_delete_plan(
     let named_role_types = collect_role_type_bindings(constraints, type_annotations)?;
     let mut instructions = Vec::new();
     let inserted_things = HashMap::new();
-    deleted_concepts.iter().try_for_each(|variable| {
-        let thing = get_thing_source(input_variables, &inserted_things, variable.clone())?;
-        let annotations = type_annotations.variable_annotations_of(*variable).unwrap();
-        let kind = determine_unique_kind(annotations)
-            .map_err(|_| WriteCompilationError::DeleteHasMultipleKinds { variable: variable.clone() })?;
-        match kind {
-            Kind::Entity => instructions.push(DeleteInstruction::Entity(DeleteEntity { entity: thing })),
-            Kind::Attribute => instructions.push(DeleteInstruction::Attribute(DeleteAttribute { attribute: thing })),
-            Kind::Relation => instructions.push(DeleteInstruction::Relation(DeleteRelation { relation: thing })),
-            Kind::Role => Err(WriteCompilationError::IllegalRoleDelete { variable: variable.clone() })?,
-        }
-        Ok(())
-    })?;
     for constraint in constraints {
         match constraint {
             Constraint::Has(has) => {
@@ -71,7 +54,6 @@ pub fn build_delete_plan(
                     (Some(input), None) => TypeSource::InputVariable(*input as u32),
                     (None, Some(type_)) => TypeSource::TypeConstant(type_.clone()),
                     (None, None) => {
-                        // TODO: Do we want to support inserts with unspecified role-types?
                         let annotations = type_annotations.variable_annotations_of(role_variable).unwrap();
                         if annotations.len() == 1 {
                             TypeSource::TypeConstant(annotations.iter().find(|_| true).unwrap().clone())
@@ -100,17 +82,14 @@ pub fn build_delete_plan(
         }
     }
     for variable in deleted_concepts {
-        let source = ThingSource::InputVariable(*input_variables.get(variable).unwrap() as u32);
+        let thing = ThingSource::InputVariable(*input_variables.get(variable).unwrap() as u32);
         let annotations = type_annotations.variable_annotations_of(variable.clone()).unwrap();
-        let kind = determine_unique_kind(annotations)
-            .map_err(|_| WriteCompilationError::DeleteHasMultipleKinds { variable: variable.clone() })?;
-        let instruction = match kind {
-            Kind::Entity => DeleteInstruction::Entity(DeleteEntity { entity: source }),
-            Kind::Attribute => DeleteInstruction::Attribute(DeleteAttribute { attribute: source }),
-            Kind::Relation => DeleteInstruction::Relation(DeleteRelation { relation: source }),
-            Kind::Role => return Err(WriteCompilationError::IllegalRoleDelete { variable: variable.clone() }),
+        let kind = get_kinds_from_annotations(annotations);
+        if kind.contains(&Kind::Role) {
+            Err(WriteCompilationError::IllegalRoleDelete { variable: variable.clone() })?;
+        } else {
+            instructions.push(DeleteInstruction::Thing(DeleteThing { thing }));
         };
-        instructions.push(instruction);
     }
     // To produce the output stream, we remove the deleted concepts from each map in the stream.
     let output_row = input_variables

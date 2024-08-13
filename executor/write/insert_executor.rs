@@ -48,14 +48,11 @@ pub fn execute_insert<'input, 'output>(
     debug_assert!(input.multiplicity() == 1); // Else, we have to return a set of rows.
     for instruction in &plan.instructions {
         let inserted = match instruction {
-            InsertInstruction::PutEntity(isa_entity) => {
-                isa_entity.insert(snapshot, thing_manager, &input, reused_created_things)?
-            }
             InsertInstruction::PutAttribute(isa_attr) => {
                 isa_attr.insert(snapshot, thing_manager, &input, reused_created_things)?
             }
-            InsertInstruction::PutRelation(isa_relation) => {
-                isa_relation.insert(snapshot, thing_manager, &input, reused_created_things)?
+            InsertInstruction::PutObject(isa_object) => {
+                isa_object.insert(snapshot, thing_manager, &input, reused_created_things)?
             }
             InsertInstruction::Has(has) => has.insert(snapshot, thing_manager, &input, reused_created_things)?,
             InsertInstruction::RolePlayer(role_player) => {
@@ -83,9 +80,7 @@ pub fn execute_delete<'input, 'output>(
 
     for instruction in &plan.instructions {
         match instruction {
-            DeleteInstruction::Entity(isa_entity) => isa_entity.delete(snapshot, thing_manager, input)?,
-            DeleteInstruction::Attribute(isa_attr) => isa_attr.delete(snapshot, thing_manager, input)?,
-            DeleteInstruction::Relation(isa_relation) => isa_relation.delete(snapshot, thing_manager, input)?,
+            DeleteInstruction::Thing(thing) => thing.delete(snapshot, thing_manager, input)?,
             DeleteInstruction::Has(has) => has.delete(snapshot, thing_manager, input)?,
             DeleteInstruction::RolePlayer(role_player) => role_player.delete(snapshot, thing_manager, input)?,
         }

@@ -54,11 +54,6 @@ fn get_thing_source(
     }
 }
 
-pub(crate) fn determine_unique_kind(annotations: &HashSet<Type>) -> Result<Kind, ()> {
-    // TODO: Maybe we don't care and want a run-time switch?
-    let kinds = annotations.iter().map(|annotation| annotation.kind().clone()).dedup().collect::<Vec<_>>();
-    match kinds.len() {
-        1 => Ok(kinds[0]),
-        _ => Err(()),
-    }
+pub(crate) fn get_kinds_from_annotations(annotations: &HashSet<Type>) -> Vec<Kind> {
+    annotations.iter().map(|annotation| annotation.kind().clone()).dedup().collect::<Vec<_>>()
 }

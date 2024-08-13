@@ -4,18 +4,13 @@
 * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
-use answer::{variable::Variable, variable_value::VariableValue};
+use answer::variable_value::VariableValue;
 use compiler::{inference::annotated_functions::AnnotatedCommittedFunctions, write::delete::build_delete_plan};
 use concept::{
-    error::ConceptReadError,
-    thing::{
-        object::{Object, ObjectAPI},
-        relation::Relation,
-        thing_manager::ThingManager,
-    },
-    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
+    thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
+    type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::Row, write::insert_executor::WriteError};
@@ -88,7 +83,7 @@ fn execute_insert(
         Program::new(block, vec![]),
         snapshot,
         &type_manager,
-        Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
+        Arc::new(AnnotatedCommittedFunctions::empty()),
     )
     .unwrap();
     let insert_plan = compiler::write::insert::build_insert_plan(
@@ -147,7 +142,7 @@ fn execute_delete(
             Program::new(block, vec![]),
             snapshot,
             &type_manager,
-            Arc::new(AnnotatedCommittedFunctions::new(vec![].into_boxed_slice(), vec![].into_boxed_slice())),
+            Arc::new(AnnotatedCommittedFunctions::empty()),
         )
         .unwrap()
     };

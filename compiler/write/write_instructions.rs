@@ -9,7 +9,7 @@ use encoding::value::value::Value;
 use crate::write::{ThingSource, TypeSource, ValueSource};
 
 #[derive(Debug)]
-pub struct PutEntity {
+pub struct PutObject {
     pub type_: TypeSource,
 }
 
@@ -20,23 +20,8 @@ pub struct PutAttribute {
 }
 
 #[derive(Debug)]
-pub struct PutRelation {
-    pub type_: TypeSource,
-}
-
-#[derive(Debug)]
-pub struct DeleteEntity {
-    pub entity: ThingSource,
-}
-
-#[derive(Debug)]
-pub struct DeleteAttribute {
-    pub attribute: ThingSource,
-}
-
-#[derive(Debug)]
-pub struct DeleteRelation {
-    pub relation: ThingSource,
+pub struct DeleteThing {
+    pub thing: ThingSource,
 }
 
 #[derive(Debug)]
