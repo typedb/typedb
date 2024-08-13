@@ -67,10 +67,10 @@ impl HasReverseExecutor {
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(!variable_modes.all_inputs());
-        let attribute_owner_types = has_reverse.edge_types();
+        let attribute_owner_types = has_reverse.attribute_to_owner_types().clone();
         debug_assert!(!attribute_owner_types.is_empty());
-        let owner_types = has_reverse.end_types();
-        let has = has_reverse.constraint;
+        let owner_types = has_reverse.owner_types().clone();
+        let has = has_reverse.has;
         let iterate_mode = BinaryIterateMode::new(has.attribute(), has.owner(), &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
             BinaryIterateMode::Unbound => Self::create_has_filter_attributes_owners(attribute_owner_types.clone()),

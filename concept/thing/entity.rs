@@ -159,7 +159,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
             .try_collect::<Vec<_>, _>()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (relation, role) in relations_roles {
-            thing_manager.unset_role_player(snapshot, relation, self.as_reference(), role)?;
+            thing_manager.unset_links(snapshot, relation, self.as_reference(), role)?;
         }
 
         thing_manager.delete_entity(snapshot, self);

@@ -23,56 +23,23 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
-trait ObjectVertexPropertyFactory {
-    fn infix(&self) -> Infix;
-
-    fn create<'a>(&self, bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ObjectVertexProperty<'a> {
-        let property = ObjectVertexProperty::new(bytes);
-        debug_assert_eq!(property.infix(), self.infix());
-        property
-    }
-
-    fn matches(&self, bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-        Prefix::from_prefix_id(PrefixID::new([bytes.bytes()[0]])) == ObjectVertexProperty::PREFIX
-            && self.create(bytes).infix() == self.infix()
-    }
+pub fn build_object_vertex_property_has_order(
+    object_vertex: ObjectVertex,
+    attribute_type: TypeVertex,
+) -> ObjectVertexProperty<'static> {
+    debug_assert_eq!(attribute_type.prefix(), Prefix::VertexAttributeType);
+    let suffix: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::Array(ByteArray::copy(&attribute_type.type_id_().bytes()));
+    ObjectVertexProperty::build_suffixed(object_vertex, Infix::PropertyHasOrder, suffix)
 }
 
-pub struct HasOrderPropertyFactory {}
-
-impl HasOrderPropertyFactory {
-    pub fn build(&self, object_vertex: ObjectVertex, attribute_type: TypeVertex) -> ObjectVertexProperty<'static> {
-        debug_assert_eq!(attribute_type.prefix(), Prefix::VertexAttributeType);
-        let suffix: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::Array(ByteArray::copy(&attribute_type.type_id_().bytes()));
-        ObjectVertexProperty::build_suffixed(object_vertex, self.infix(), suffix)
-    }
+pub fn build_object_vertex_property_links_order(
+    object_vertex: ObjectVertex,
+    role_type: TypeVertex,
+) -> ObjectVertexProperty<'static> {
+    debug_assert_eq!(role_type.prefix(), Prefix::VertexRoleType);
+    let suffix: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::Array(ByteArray::copy(&role_type.type_id_().bytes()));
+    ObjectVertexProperty::build_suffixed(object_vertex, Infix::PropertyLinksOrder, suffix)
 }
-
-impl ObjectVertexPropertyFactory for HasOrderPropertyFactory {
-    fn infix(&self) -> Infix {
-        Infix::PropertyHasOrder
-    }
-}
-
-pub const HAS_ORDER_PROPERTY_FACTORY: HasOrderPropertyFactory = HasOrderPropertyFactory {};
-
-pub struct RolePlayerOrderPropertyFactory {}
-
-impl RolePlayerOrderPropertyFactory {
-    pub fn build(&self, object_vertex: ObjectVertex, role_type: TypeVertex) -> ObjectVertexProperty<'static> {
-        debug_assert_eq!(role_type.prefix(), Prefix::VertexRoleType);
-        let suffix: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::Array(ByteArray::copy(&role_type.type_id_().bytes()));
-        ObjectVertexProperty::build_suffixed(object_vertex, self.infix(), suffix)
-    }
-}
-
-impl ObjectVertexPropertyFactory for RolePlayerOrderPropertyFactory {
-    fn infix(&self) -> Infix {
-        Infix::PropertyRolePlayerOrder
-    }
-}
-
-pub const ROLE_PLAYER_ORDER_PROPERTY_FACTORY: RolePlayerOrderPropertyFactory = RolePlayerOrderPropertyFactory {};
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct ObjectVertexProperty<'a> {

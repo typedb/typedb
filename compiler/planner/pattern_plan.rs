@@ -20,10 +20,10 @@ use itertools::Itertools;
 use crate::{
     inference::annotated_program::AnnotatedProgram,
     instruction::constraint::instructions::{
-        ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs, IsaReverseInstruction,
-        RolePlayerInstruction, RolePlayerReverseInstruction,
+        ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs, IsaReverseInstruction, LinksInstruction,
+        LinksReverseInstruction,
     },
-    planner::vertex::{Costed, HasPlanner, PlannerVertex, RolePlayerPlanner, ThingPlanner, VertexCost},
+    planner::vertex::{Costed, HasPlanner, LinksPlanner, PlannerVertex, ThingPlanner, VertexCost},
 };
 
 pub struct PatternPlan {
@@ -85,8 +85,8 @@ impl PatternPlan {
                 Constraint::Isa(isa) => {
                     variable_isa.insert(isa.thing(), isa.clone());
                 }
-                Constraint::RolePlayer(rp) => {
-                    let planner = RolePlayerPlanner::from_constraint(rp, &variable_index, type_annotations, statistics);
+                Constraint::Links(links) => {
+                    let planner = LinksPlanner::from_constraint(links, &variable_index, type_annotations, statistics);
 
                     let index = elements.len();
 
@@ -98,7 +98,7 @@ impl PatternPlan {
                     adjacency.entry(planner.player).or_default().insert(index);
                     adjacency.entry(planner.role).or_default().insert(index);
 
-                    elements.push(PlannerVertex::RolePlayer(planner));
+                    elements.push(PlannerVertex::Links(planner));
                 }
                 Constraint::Has(has) => {
                     let planner = HasPlanner::from_constraint(has, &variable_index, type_annotations, statistics);
@@ -151,32 +151,32 @@ impl PatternPlan {
                     .collect::<HashSet<_>>();
                 match index_to_constraint[&index] {
                     Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_) => todo!(),
-                    Constraint::RolePlayer(rp) => {
+                    Constraint::Links(rp) => {
                         if bound_variables.len() >= 2 {
                             continue; // TODO verify
                         }
-                        let planner = elements[index].as_role_player().unwrap();
+                        let planner = elements[index].as_links().unwrap();
                         let selected_variables = &[rp.relation(), rp.player(), rp.role_type()];
                         let instruction = if bound_variables.contains(&rp.relation()) {
-                            ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
+                            ConstraintInstruction::Links(LinksInstruction::new(
                                 rp.clone(),
                                 Inputs::Single([rp.relation()]),
                                 type_annotations,
                             ))
                         } else if bound_variables.contains(&rp.player()) {
-                            ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
+                            ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
                                 rp.clone(),
                                 Inputs::Single([rp.player()]),
                                 type_annotations,
                             ))
                         } else if planner.unbound_is_forward {
-                            ConstraintInstruction::RolePlayer(RolePlayerInstruction::new(
+                            ConstraintInstruction::Links(LinksInstruction::new(
                                 rp.clone(),
                                 Inputs::None([]),
                                 type_annotations,
                             ))
                         } else {
-                            ConstraintInstruction::RolePlayerReverse(RolePlayerReverseInstruction::new(
+                            ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
                                 rp.clone(),
                                 Inputs::None([]),
                                 type_annotations,

@@ -90,13 +90,13 @@ impl<'this> TypeInferenceGraph<'this> {
     ) {
         let TypeInferenceGraph { vertices, edges, nested_disjunctions, nested_negations, nested_optionals, .. } = self;
 
-        let mut combine_role_player_edges = HashMap::new();
+        let mut combine_links_edges = HashMap::new();
         edges.into_iter().for_each(|edge| {
             let TypeInferenceEdge { constraint, left_to_right, right_to_left, .. } = edge;
-            if let Constraint::RolePlayer(rp) = edge.constraint {
-                if let Some((other_left_right, other_right_left)) = combine_role_player_edges.remove(&edge.right) {
+            if let Constraint::Links(links) = edge.constraint {
+                if let Some((other_left_right, other_right_left)) = combine_links_edges.remove(&edge.right) {
                     let lrf_annotation = {
-                        if edge.left == rp.relation() {
+                        if edge.left == links.relation() {
                             LeftRightFilteredAnnotations::build(
                                 left_to_right,
                                 right_to_left,
@@ -115,7 +115,7 @@ impl<'this> TypeInferenceGraph<'this> {
                     constraint_annotations
                         .insert(constraint.clone(), ConstraintTypeAnnotations::LeftRightFiltered(lrf_annotation));
                 } else {
-                    combine_role_player_edges.insert(edge.right, (left_to_right, right_to_left));
+                    combine_links_edges.insert(edge.right, (left_to_right, right_to_left));
                 }
             } else {
                 let lr_annotations = LeftRightAnnotations::build(left_to_right, right_to_left);
@@ -791,8 +791,8 @@ pub mod tests {
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_fears, var_fears_type).unwrap();
             conjunction.constraints_mut().add_label(var_fears_type, LABEL_FEARS).unwrap();
-            conjunction.constraints_mut().add_role_player(var_fears, var_has_fear, var_role_has_fear).unwrap();
-            conjunction.constraints_mut().add_role_player(var_fears, var_is_feared, var_role_is_feared).unwrap();
+            conjunction.constraints_mut().add_links(var_fears, var_has_fear, var_role_has_fear).unwrap();
+            conjunction.constraints_mut().add_links(var_fears, var_is_feared, var_role_is_feared).unwrap();
 
             conjunction.constraints_mut().add_sub(var_role_has_fear, var_role_has_fear_type).unwrap();
             conjunction.constraints_mut().add_label(var_role_has_fear_type, "fears:has-fear").unwrap();

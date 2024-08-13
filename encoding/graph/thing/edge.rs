@@ -364,14 +364,14 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeHasReverse<'a> {
 /// OR
 /// [rp_reverse][object][relation][role_id]
 ///
-pub struct ThingEdgeRolePlayer<'a> {
+pub struct ThingEdgeLinks<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
-impl<'a> ThingEdgeRolePlayer<'a> {
+impl<'a> ThingEdgeLinks<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-    const PREFIX: Prefix = Prefix::EdgeRolePlayer;
-    const PREFIX_REVERSE: Prefix = Prefix::EdgeRolePlayerReverse;
+    const PREFIX: Prefix = Prefix::EdgeLinks;
+    const PREFIX_REVERSE: Prefix = Prefix::EdgeLinksReverse;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
     pub const FIXED_WIDTH_ENCODING_REVERSE: bool = Self::PREFIX_REVERSE.fixed_width_keys();
 
@@ -387,21 +387,21 @@ impl<'a> ThingEdgeRolePlayer<'a> {
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        let edge = ThingEdgeRolePlayer { bytes };
+        let edge = ThingEdgeLinks { bytes };
         debug_assert!(edge.prefix() == Self::PREFIX || edge.prefix() == Self::PREFIX_REVERSE);
         edge
     }
 
-    pub fn build_role_player(relation: ObjectVertex<'_>, player: ObjectVertex<'_>, role_type: TypeVertex<'_>) -> Self {
+    pub fn build_links(relation: ObjectVertex<'_>, player: ObjectVertex<'_>, role_type: TypeVertex<'_>) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
         bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(player.bytes().bytes());
         bytes.bytes_mut()[Self::RANGE_ROLE_ID].copy_from_slice(&role_type.type_id_().bytes());
-        ThingEdgeRolePlayer { bytes: Bytes::Array(bytes) }
+        ThingEdgeLinks { bytes: Bytes::Array(bytes) }
     }
 
-    pub fn build_role_player_reverse(
+    pub fn build_links_reverse(
         player: ObjectVertex<'_>,
         relation: ObjectVertex<'_>,
         role_type: TypeVertex<'_>,
@@ -411,12 +411,12 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
         bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(relation.bytes().bytes());
         bytes.bytes_mut()[Self::RANGE_ROLE_ID].copy_from_slice(&role_type.type_id_().bytes());
-        ThingEdgeRolePlayer { bytes: Bytes::Array(bytes) }
+        ThingEdgeLinks { bytes: Bytes::Array(bytes) }
     }
 
     pub fn prefix_from_relation_type(
         relation_type: TypeVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TYPE }> {
+    ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from_type()]
@@ -426,7 +426,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
 
     pub fn prefix_from_relation(
         relation: ObjectVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+    ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
@@ -436,7 +436,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     pub fn prefix_from_relation_player_type(
         relation: ObjectVertex<'_>,
         player_type: TypeVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TO_TYPE }> {
+    ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
@@ -448,7 +448,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     pub fn prefix_from_relation_player(
         relation: ObjectVertex<'_>,
         player: ObjectVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TO }> {
+    ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
@@ -458,7 +458,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
 
     pub fn prefix_reverse_from_player(
         player: ObjectVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+    ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
@@ -467,7 +467,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
 
     pub fn prefix_reverse_from_player_type(
         player_type: TypeVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+    ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from_type()]
@@ -478,7 +478,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     pub fn prefix_reverse_from_player_relation_type(
         player: ObjectVertex<'_>,
         relation_type: TypeVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TO_TYPE }> {
+    ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
@@ -490,7 +490,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     pub fn prefix_reverse_from_player_relation(
         player: ObjectVertex<'_>,
         relation: ObjectVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM_TO }> {
+    ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
@@ -514,13 +514,13 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         Self::LENGTH_PREFIX_FROM..Self::LENGTH_PREFIX_FROM + THING_VERTEX_LENGTH_PREFIX_TYPE
     }
 
-    pub fn is_role_player(key: StorageKeyReference<'_>) -> bool {
+    pub fn is_links(key: StorageKeyReference<'_>) -> bool {
         key.keyspace_id() == Self::KEYSPACE.id()
             && key.bytes().len() == Self::LENGTH
             && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
     }
 
-    pub fn is_role_player_reverse(key: StorageKeyReference<'_>) -> bool {
+    pub fn is_links_reverse(key: StorageKeyReference<'_>) -> bool {
         key.keyspace_id() == Self::KEYSPACE.id()
             && key.bytes().len() == Self::LENGTH
             && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX_REVERSE.prefix_id().bytes()
@@ -586,7 +586,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ThingEdgeRolePlayer<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ThingEdgeLinks<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
@@ -596,9 +596,9 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ThingEdgeRolePlayer<'a> {
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ThingEdgeRolePlayer<'a> {}
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ThingEdgeLinks<'a> {}
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeRolePlayer<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeLinks<'a> {
     fn keyspace(&self) -> EncodingKeyspace {
         Self::KEYSPACE
     }

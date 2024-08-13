@@ -527,7 +527,7 @@ impl TypeReader {
                     | Infix::PropertyOrdering
                     | Infix::PropertyOverride
                     | Infix::PropertyHasOrder
-                    | Infix::PropertyRolePlayerOrder => {
+                    | Infix::PropertyLinksOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
                     }
                 };
@@ -597,7 +597,7 @@ impl TypeReader {
                     | Infix::PropertyOrdering
                     | Infix::PropertyOverride
                     | Infix::PropertyHasOrder
-                    | Infix::PropertyRolePlayerOrder => {
+                    | Infix::PropertyLinksOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
                     }
                 }

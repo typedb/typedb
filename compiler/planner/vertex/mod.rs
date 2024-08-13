@@ -8,7 +8,7 @@ use std::{collections::HashMap, ops::Deref};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::{Has, RolePlayer};
+use ir::pattern::constraint::{Has, Links};
 use itertools::Itertools;
 
 use crate::inference::type_annotations::TypeAnnotations;
@@ -21,7 +21,7 @@ const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
 pub(super) enum PlannerVertex {
     Thing(ThingPlanner),
     Has(HasPlanner),
-    RolePlayer(RolePlayerPlanner),
+    Links(LinksPlanner),
 }
 
 impl PlannerVertex {
@@ -39,9 +39,9 @@ impl PlannerVertex {
         }
     }
 
-    pub(super) fn as_role_player(&self) -> Option<&RolePlayerPlanner> {
+    pub(super) fn as_links(&self) -> Option<&LinksPlanner> {
         match self {
-            Self::RolePlayer(v) => Some(v),
+            Self::Links(v) => Some(v),
             _ => None,
         }
     }
@@ -64,7 +64,7 @@ impl Costed for PlannerVertex {
         match self {
             Self::Thing(inner) => inner.cost(inputs, elements),
             Self::Has(inner) => inner.cost(inputs, elements),
-            Self::RolePlayer(inner) => inner.cost(inputs, elements),
+            Self::Links(inner) => inner.cost(inputs, elements),
         }
     }
 }
@@ -196,7 +196,7 @@ impl Costed for HasPlanner {
 }
 
 #[derive(Debug)]
-pub(super) struct RolePlayerPlanner {
+pub(super) struct LinksPlanner {
     pub relation: usize,
     pub player: usize,
     pub role: usize,
@@ -205,22 +205,22 @@ pub(super) struct RolePlayerPlanner {
     pub unbound_is_forward: bool, //FIXME
 }
 
-impl RolePlayerPlanner {
+impl LinksPlanner {
     pub(crate) fn from_constraint(
-        constraint: &RolePlayer<Variable>,
+        links: &Links<Variable>,
         variable_index: &HashMap<Variable, usize>,
         type_annotations: &TypeAnnotations,
         statistics: &Statistics,
     ) -> Self {
-        let relation = constraint.relation();
-        let player = constraint.player();
-        let role = constraint.role_type();
+        let relation = links.relation();
+        let player = links.player();
+        let role = links.role_type();
 
         let relation_types = type_annotations.variable_annotations_of(relation).unwrap().deref();
         let player_types = type_annotations.variable_annotations_of(player).unwrap().deref();
 
         let constraint_types =
-            type_annotations.constraint_annotations_of(constraint.clone().into()).unwrap().as_left_right_filtered();
+            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
 
         let expected_size = constraint_types
             .filters_on_left()
@@ -251,7 +251,7 @@ impl RolePlayerPlanner {
         let unbound_backward_size = player_types
             .iter()
             .filter_map(|player| {
-                Some(statistics.role_player_relation_counts.get(&player.as_object_type())?.values().flat_map(
+                Some(statistics.player_role_relation_counts.get(&player.as_object_type())?.values().flat_map(
                     |relation_to_count| {
                         relation_types.iter().filter_map(|relation| relation_to_count.get(&relation.as_relation_type()))
                     },
@@ -274,7 +274,7 @@ impl RolePlayerPlanner {
     }
 }
 
-impl Costed for RolePlayerPlanner {
+impl Costed for LinksPlanner {
     fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
         let is_relation_bound = inputs.contains(&self.relation);
         let is_player_bound = inputs.contains(&self.player);

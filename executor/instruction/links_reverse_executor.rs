@@ -11,12 +11,12 @@ use std::{
 };
 
 use answer::Type;
-use compiler::instruction::constraint::instructions::RolePlayerReverseInstruction;
+use compiler::instruction::constraint::instructions::LinksReverseInstruction;
 use concept::{
     error::ConceptReadError,
     thing::{
         object::Object,
-        relation::{Relation, RelationRolePlayerIterator, RolePlayer},
+        relation::{LinksIterator, Relation, RolePlayer},
         thing_manager::ThingManager,
     },
 };
@@ -34,16 +34,16 @@ use crate::{
     instruction::{
         iterator::{inverted_instances_cache, SortedTupleIterator, TupleIterator},
         tuple::{
-            relation_role_player_to_tuple_player_relation_role, relation_role_player_to_tuple_relation_player_role,
-            RelationRolePlayerToTupleFn, TuplePositions, TupleResult,
+            links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, LinksToTupleFn, TuplePositions,
+            TupleResult,
         },
         TernaryIterateMode, VariableModes,
     },
     VariablePosition,
 };
 
-pub(crate) struct RolePlayerReverseExecutor {
-    role_player: ir::pattern::constraint::RolePlayer<VariablePosition>,
+pub(crate) struct LinksReverseExecutor {
+    links: ir::pattern::constraint::Links<VariablePosition>,
 
     iterate_mode: TernaryIterateMode,
     variable_modes: VariableModes,
@@ -53,70 +53,51 @@ pub(crate) struct RolePlayerReverseExecutor {
     player_relation_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
     relation_types: Arc<HashSet<Type>>,
 
-    filter_fn: Arc<RolePlayerFilterFn>,
+    filter_fn: Arc<LinksFilterFn>,
     player_cache: Option<Vec<Object<'static>>>,
 }
 
-pub(crate) type RolePlayerReverseUnboundedSortedPlayer = Map<
-    Filter<RelationRolePlayerIterator, Arc<RolePlayerFilterFn>>,
-    RelationRolePlayerToTupleFn,
-    AsHkt![TupleResult<'_>],
->;
-pub(crate) type RolePlayerReverseUnboundedSortedRelationSingle = Map<
-    Filter<RelationRolePlayerIterator, Arc<RolePlayerFilterFn>>,
-    RelationRolePlayerToTupleFn,
-    AsHkt![TupleResult<'_>],
->;
-pub(crate) type RolePlayerReverseUnboundedSortedRelationMerged = Map<
-    Filter<KMergeBy<RelationRolePlayerIterator, RelationRolePlayerOrderingFn>, Arc<RolePlayerFilterFn>>,
-    RelationRolePlayerToTupleFn,
-    AsHkt![TupleResult<'_>],
->;
-pub(crate) type RolePlayerReverseBoundedPlayerSortedRelation = Map<
-    Filter<RelationRolePlayerIterator, Arc<RolePlayerFilterFn>>,
-    RelationRolePlayerToTupleFn,
-    AsHkt![TupleResult<'_>],
->;
-pub(crate) type RolePlayerReverseBoundedPlayerRelation = Map<
-    Filter<RelationRolePlayerIterator, Arc<RolePlayerFilterFn>>,
-    RelationRolePlayerToTupleFn,
-    AsHkt![TupleResult<'_>],
->;
+pub(crate) type LinksReverseUnboundedSortedPlayer =
+    Map<Filter<LinksIterator, Arc<LinksFilterFn>>, LinksToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type LinksReverseUnboundedSortedRelationSingle =
+    Map<Filter<LinksIterator, Arc<LinksFilterFn>>, LinksToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type LinksReverseUnboundedSortedRelationMerged =
+    Map<Filter<KMergeBy<LinksIterator, LinksOrderingFn>, Arc<LinksFilterFn>>, LinksToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type LinksReverseBoundedPlayerSortedRelation =
+    Map<Filter<LinksIterator, Arc<LinksFilterFn>>, LinksToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type LinksReverseBoundedPlayerRelation =
+    Map<Filter<LinksIterator, Arc<LinksFilterFn>>, LinksToTupleFn, AsHkt![TupleResult<'_>]>;
 
-pub(crate) type RolePlayerFilterFn =
+pub(crate) type LinksFilterFn =
     dyn for<'a, 'b> FnHktHelper<&'a Result<(Relation<'b>, RolePlayer<'b>, u64), ConceptReadError>, bool>;
 
-pub(crate) type RelationRolePlayerOrderingFn = for<'a, 'b> fn(
+pub(crate) type LinksOrderingFn = for<'a, 'b> fn(
     (
         &'a Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>,
         &'b Result<(Relation<'b>, RolePlayer<'b>, u64), ConceptReadError>,
     ),
 ) -> Ordering;
 
-impl RolePlayerReverseExecutor {
+impl LinksReverseExecutor {
     pub(crate) fn new(
-        role_player_reverse: RolePlayerReverseInstruction<VariablePosition>,
+        links_reverse: LinksReverseInstruction<VariablePosition>,
         variable_modes: VariableModes,
         sort_by: Option<VariablePosition>,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(!variable_modes.all_inputs());
-        let player_relation_types = role_player_reverse.edge_types();
+        let player_relation_types = links_reverse.player_to_relation_types().clone();
         debug_assert!(!player_relation_types.is_empty());
-        let relation_types = role_player_reverse.end_types();
-        let relation_role_types = role_player_reverse.filter_types();
-        let role_player = role_player_reverse.constraint;
-        let iterate_mode =
-            TernaryIterateMode::new(role_player.player(), role_player.relation(), &variable_modes, sort_by);
-        let filter_fn = create_role_player_filter_relations_players_roles(
-            player_relation_types.clone(),
-            relation_role_types.clone(),
-        );
+        let relation_types = links_reverse.relation_types().clone();
+        let relation_role_types = links_reverse.relation_to_role_types().clone();
+        let links = links_reverse.links;
+        let iterate_mode = TernaryIterateMode::new(links.player(), links.relation(), &variable_modes, sort_by);
+        let filter_fn = create_links_filter_relations_players_roles(player_relation_types.clone(), relation_role_types);
         let output_tuple_positions = if iterate_mode == TernaryIterateMode::UnboundInverted {
-            TuplePositions::Triple([role_player.relation(), role_player.player(), role_player.role_type()])
+            TuplePositions::Triple([links.relation(), links.player(), links.role_type()])
         } else {
-            TuplePositions::Triple([role_player.player(), role_player.relation(), role_player.role_type()])
+            TuplePositions::Triple([links.player(), links.relation(), links.role_type()])
         };
 
         let player_cache = if iterate_mode == TernaryIterateMode::UnboundInverted {
@@ -130,7 +111,7 @@ impl RolePlayerReverseExecutor {
         };
 
         Ok(Self {
-            role_player,
+            links,
             iterate_mode,
             variable_modes,
             tuple_positions: output_tuple_positions,
@@ -155,12 +136,11 @@ impl RolePlayerReverseExecutor {
                     KeyRange::new_inclusive(min_player_type.as_object_type(), max_player_type.as_object_type());
                 let filter_fn = self.filter_fn.clone();
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
-                let iterator: Filter<RelationRolePlayerIterator, Arc<RolePlayerFilterFn>> = thing_manager
-                    .get_relation_role_players_reverse_by_player_type_range(snapshot, key_range)
-                    .filter::<_, RolePlayerFilterFn>(filter_fn);
-                let as_tuples: RolePlayerReverseUnboundedSortedPlayer =
-                    iterator.map(relation_role_player_to_tuple_player_relation_role);
-                Ok(TupleIterator::RolePlayerReverseUnbounded(SortedTupleIterator::new(
+                let iterator: Filter<LinksIterator, Arc<LinksFilterFn>> = thing_manager
+                    .get_links_reverse_by_player_type_range(snapshot, key_range)
+                    .filter::<_, LinksFilterFn>(filter_fn);
+                let as_tuples: LinksReverseUnboundedSortedPlayer = iterator.map(links_to_tuple_player_relation_role);
+                Ok(TupleIterator::LinksReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -177,16 +157,16 @@ impl RolePlayerReverseExecutor {
                 if let Some([player]) = self.player_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
                     let filtered = thing_manager
-                        .get_relation_role_players_reverse_by_player_and_relation_type_range(
+                        .get_links_reverse_by_player_and_relation_type_range(
                             snapshot,
                             player.as_reference(),
                             // TODO: this should be just the types owned by the one instance's type in the cache!
                             relation_type_range,
                         )
-                        .filter::<_, RolePlayerFilterFn>(self.filter_fn.clone());
-                    let as_tuples: RolePlayerReverseUnboundedSortedRelationSingle =
-                        filtered.map(relation_role_player_to_tuple_relation_player_role);
-                    Ok(TupleIterator::RolePlayerReverseUnboundedInvertedSingle(SortedTupleIterator::new(
+                        .filter::<_, LinksFilterFn>(self.filter_fn.clone());
+                    let as_tuples: LinksReverseUnboundedSortedRelationSingle =
+                        filtered.map(links_to_tuple_relation_player_role);
+                    Ok(TupleIterator::LinksReverseUnboundedInvertedSingle(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes,
@@ -197,26 +177,22 @@ impl RolePlayerReverseExecutor {
                     let relations = self.player_cache.as_ref().unwrap().iter();
                     let iterators = relations
                         .map(|relation| {
-                            Ok(Peekable::new(
-                                thing_manager.get_relation_role_players_reverse_by_player_and_relation_type_range(
-                                    snapshot,
-                                    relation.as_reference(),
-                                    relation_type_range.clone(),
-                                ),
-                            ))
+                            Ok(Peekable::new(thing_manager.get_links_reverse_by_player_and_relation_type_range(
+                                snapshot,
+                                relation.as_reference(),
+                                relation_type_range.clone(),
+                            )))
                         })
                         .collect::<Result<Vec<_>, _>>()?;
 
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
-                    let merged: KMergeBy<RelationRolePlayerIterator, RelationRolePlayerOrderingFn> =
+                    let merged: KMergeBy<LinksIterator, LinksOrderingFn> =
                         KMergeBy::new(iterators, compare_by_relation_then_player);
-                    let filtered: Filter<
-                        KMergeBy<RelationRolePlayerIterator, RelationRolePlayerOrderingFn>,
-                        Arc<RolePlayerFilterFn>,
-                    > = merged.filter::<_, RolePlayerFilterFn>(self.filter_fn.clone());
-                    let as_tuples: RolePlayerReverseUnboundedSortedRelationMerged =
-                        filtered.map(relation_role_player_to_tuple_relation_player_role);
-                    Ok(TupleIterator::RolePlayerReverseUnboundedInvertedMerged(SortedTupleIterator::new(
+                    let filtered: Filter<KMergeBy<LinksIterator, LinksOrderingFn>, Arc<LinksFilterFn>> =
+                        merged.filter::<_, LinksFilterFn>(self.filter_fn.clone());
+                    let as_tuples: LinksReverseUnboundedSortedRelationMerged =
+                        filtered.map(links_to_tuple_relation_player_role);
+                    Ok(TupleIterator::LinksReverseUnboundedInvertedMerged(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes,
@@ -225,20 +201,20 @@ impl RolePlayerReverseExecutor {
             }
 
             TernaryIterateMode::BoundFrom => {
-                debug_assert!(row.width() > self.role_player.player().as_usize());
+                debug_assert!(row.width() > self.links.player().as_usize());
                 let (min_relation_type, max_relation_type) = min_max_types(&*self.relation_types);
                 let relation_type_range =
                     KeyRange::new_inclusive(min_relation_type.as_relation_type(), max_relation_type.as_relation_type());
 
-                let iterator = thing_manager.get_relation_role_players_reverse_by_player_and_relation_type_range(
+                let iterator = thing_manager.get_links_reverse_by_player_and_relation_type_range(
                     snapshot,
-                    row.get(self.role_player.player()).as_thing().as_object().as_reference(),
+                    row.get(self.links.player()).as_thing().as_object().as_reference(),
                     relation_type_range,
                 );
-                let filtered = iterator.filter::<_, RolePlayerFilterFn>(self.filter_fn.clone());
-                let as_tuples: RolePlayerReverseBoundedPlayerSortedRelation =
-                    filtered.map(relation_role_player_to_tuple_player_relation_role);
-                Ok(TupleIterator::RolePlayerReverseBoundedPlayer(SortedTupleIterator::new(
+                let filtered = iterator.filter::<_, LinksFilterFn>(self.filter_fn.clone());
+                let as_tuples: LinksReverseBoundedPlayerSortedRelation =
+                    filtered.map(links_to_tuple_player_relation_role);
+                Ok(TupleIterator::LinksReverseBoundedPlayer(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -246,16 +222,15 @@ impl RolePlayerReverseExecutor {
             }
 
             TernaryIterateMode::BoundFromBoundTo => {
-                debug_assert!(row.width() > self.role_player.player().as_usize());
-                debug_assert!(row.width() > self.role_player.relation().as_usize());
-                let relation = row.get(self.role_player.relation()).as_thing().as_relation();
-                let player = row.get(self.role_player.player()).as_thing().as_object();
-                let iterator =
-                    thing_manager.get_relation_role_players_by_relation_and_player(snapshot, relation, player); // NOTE: not reverse, no difference
-                let filtered = iterator.filter::<_, RolePlayerFilterFn>(self.filter_fn.clone());
-                let as_tuples: RolePlayerReverseBoundedPlayerSortedRelation =
-                    filtered.map(relation_role_player_to_tuple_player_relation_role);
-                Ok(TupleIterator::RolePlayerReverseBoundedPlayerRelation(SortedTupleIterator::new(
+                debug_assert!(row.width() > self.links.player().as_usize());
+                debug_assert!(row.width() > self.links.relation().as_usize());
+                let relation = row.get(self.links.relation()).as_thing().as_relation();
+                let player = row.get(self.links.player()).as_thing().as_object();
+                let iterator = thing_manager.get_links_by_relation_and_player(snapshot, relation, player); // NOTE: not reverse, no difference
+                let filtered = iterator.filter::<_, LinksFilterFn>(self.filter_fn.clone());
+                let as_tuples: LinksReverseBoundedPlayerSortedRelation =
+                    filtered.map(links_to_tuple_player_relation_role);
+                Ok(TupleIterator::LinksReverseBoundedPlayerRelation(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -265,10 +240,10 @@ impl RolePlayerReverseExecutor {
     }
 }
 
-fn create_role_player_filter_relations_players_roles(
+fn create_links_filter_relations_players_roles(
     player_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
     relation_to_role: Arc<BTreeMap<Type, HashSet<Type>>>,
-) -> Arc<RolePlayerFilterFn> {
+) -> Arc<LinksFilterFn> {
     Arc::new(move |result| {
         let Ok((rel, rp, _)) = result else {
             return true;

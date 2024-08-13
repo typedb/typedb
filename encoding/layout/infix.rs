@@ -43,7 +43,7 @@ pub enum Infix {
 
     // Data properties
     PropertyHasOrder,
-    PropertyRolePlayerOrder,
+    PropertyLinksOrder,
 }
 
 macro_rules! infix_functions {
@@ -95,6 +95,6 @@ impl Infix {
         _PropertyAnnotationLast => [99];
 
         PropertyHasOrder => [100];
-        PropertyRolePlayerOrder => [101]
+        PropertyLinksOrder => [101]
     );
 }

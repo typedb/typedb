@@ -56,8 +56,8 @@ pub enum Prefix {
 
     EdgeHas,
     EdgeHasReverse,
-    EdgeRolePlayer,
-    EdgeRolePlayerReverse,
+    EdgeLinks,
+    EdgeLinksReverse,
     EdgeRolePlayerIndex,
 
     DefinitionStruct,
@@ -164,8 +164,8 @@ impl Prefix {
 
            EdgeHas => [130], false;
            EdgeHasReverse => [131], false;
-           EdgeRolePlayer => [132], true;
-           EdgeRolePlayerReverse => [133], true;
+           EdgeLinks => [132], true;
+           EdgeLinksReverse => [133], true;
            EdgeRolePlayerIndex => [140], true;
 
            PropertyTypeVertex => [160], true;

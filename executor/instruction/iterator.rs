@@ -30,15 +30,14 @@ use crate::{
             IsaUnboundedSortedThingAttributeSingle, IsaUnboundedSortedThingEntitySingle,
             IsaUnboundedSortedThingRelationSingle,
         },
-        role_player_executor::{
-            RolePlayerBoundedRelationPlayer, RolePlayerBoundedRelationSortedPlayer,
-            RolePlayerUnboundedSortedPlayerMerged, RolePlayerUnboundedSortedPlayerSingle,
-            RolePlayerUnboundedSortedRelation,
+        links_executor::{
+            LinksBoundedRelationPlayer, LinksBoundedRelationSortedPlayer, LinksUnboundedSortedPlayerMerged,
+            LinksUnboundedSortedPlayerSingle, LinksUnboundedSortedRelation,
         },
-        role_player_reverse_executor::{
-            RolePlayerReverseBoundedPlayerRelation, RolePlayerReverseBoundedPlayerSortedRelation,
-            RolePlayerReverseUnboundedSortedPlayer, RolePlayerReverseUnboundedSortedRelationMerged,
-            RolePlayerReverseUnboundedSortedRelationSingle,
+        links_reverse_executor::{
+            LinksReverseBoundedPlayerRelation, LinksReverseBoundedPlayerSortedRelation,
+            LinksReverseUnboundedSortedPlayer, LinksReverseUnboundedSortedRelationMerged,
+            LinksReverseUnboundedSortedRelationSingle,
         },
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
         VariableMode, VariableModes,
@@ -101,17 +100,17 @@ pub(crate) enum TupleIterator {
     HasReverseUnboundedInvertedMerged(SortedTupleIterator<HasReverseUnboundedSortedOwnerMerged>),
     HasReverseBounded(SortedTupleIterator<HasReverseBoundedSortedOwner>),
 
-    RolePlayerUnbounded(SortedTupleIterator<RolePlayerUnboundedSortedRelation>),
-    RolePlayerUnboundedInvertedSingle(SortedTupleIterator<RolePlayerUnboundedSortedPlayerSingle>),
-    RolePlayerUnboundedInvertedMerged(SortedTupleIterator<RolePlayerUnboundedSortedPlayerMerged>),
-    RolePlayerBoundedRelation(SortedTupleIterator<RolePlayerBoundedRelationSortedPlayer>),
-    RolePlayerBoundedRelationPlayer(SortedTupleIterator<RolePlayerBoundedRelationPlayer>),
+    LinksUnbounded(SortedTupleIterator<LinksUnboundedSortedRelation>),
+    LinksUnboundedInvertedSingle(SortedTupleIterator<LinksUnboundedSortedPlayerSingle>),
+    LinksUnboundedInvertedMerged(SortedTupleIterator<LinksUnboundedSortedPlayerMerged>),
+    LinksBoundedRelation(SortedTupleIterator<LinksBoundedRelationSortedPlayer>),
+    LinksBoundedRelationPlayer(SortedTupleIterator<LinksBoundedRelationPlayer>),
 
-    RolePlayerReverseUnbounded(SortedTupleIterator<RolePlayerReverseUnboundedSortedPlayer>),
-    RolePlayerReverseUnboundedInvertedSingle(SortedTupleIterator<RolePlayerReverseUnboundedSortedRelationSingle>),
-    RolePlayerReverseUnboundedInvertedMerged(SortedTupleIterator<RolePlayerReverseUnboundedSortedRelationMerged>),
-    RolePlayerReverseBoundedPlayer(SortedTupleIterator<RolePlayerReverseBoundedPlayerSortedRelation>),
-    RolePlayerReverseBoundedPlayerRelation(SortedTupleIterator<RolePlayerReverseBoundedPlayerRelation>),
+    LinksReverseUnbounded(SortedTupleIterator<LinksReverseUnboundedSortedPlayer>),
+    LinksReverseUnboundedInvertedSingle(SortedTupleIterator<LinksReverseUnboundedSortedRelationSingle>),
+    LinksReverseUnboundedInvertedMerged(SortedTupleIterator<LinksReverseUnboundedSortedRelationMerged>),
+    LinksReverseBoundedPlayer(SortedTupleIterator<LinksReverseBoundedPlayerSortedRelation>),
+    LinksReverseBoundedPlayerRelation(SortedTupleIterator<LinksReverseBoundedPlayerRelation>),
 }
 
 impl {

@@ -52,7 +52,7 @@ macro_rules! assert_statistics_eq {
             role_player_counts: lhs_role_player_counts,
             relation_role_counts: lhs_relation_role_counts,
             relation_role_player_counts: lhs_relation_role_player_counts,
-            role_player_relation_counts: lhs_role_player_relation_counts,
+            player_role_relation_counts: lhs_player_role_relation_counts,
             player_index_counts: lhs_player_index_counts,
             ..
         } = $lhs;
@@ -77,7 +77,7 @@ macro_rules! assert_statistics_eq {
             role_player_counts: rhs_role_player_counts,
             relation_role_counts: rhs_relation_role_counts,
             relation_role_player_counts: rhs_relation_role_player_counts,
-            role_player_relation_counts: rhs_role_player_relation_counts,
+            player_role_relation_counts: rhs_player_role_relation_counts,
             player_index_counts: rhs_player_index_counts,
             ..
         } = $rhs;
@@ -93,7 +93,7 @@ macro_rules! assert_statistics_eq {
                 (lhs_entity_counts, lhs_relation_counts, lhs_attribute_counts, lhs_role_counts),
                 (lhs_has_attribute_counts, lhs_attribute_owner_counts),
                 (lhs_role_player_counts, lhs_relation_role_counts, lhs_player_index_counts),
-                (lhs_relation_role_player_counts, lhs_role_player_relation_counts),
+                (lhs_relation_role_player_counts, lhs_player_role_relation_counts),
             ),
             (
                 rhs_sequence_number,
@@ -102,7 +102,7 @@ macro_rules! assert_statistics_eq {
                 (rhs_entity_counts, rhs_relation_counts, rhs_attribute_counts, rhs_role_counts),
                 (rhs_has_attribute_counts, rhs_attribute_owner_counts),
                 (rhs_role_player_counts, rhs_relation_role_counts, rhs_player_index_counts),
-                (rhs_relation_role_player_counts, rhs_role_player_relation_counts),
+                (rhs_relation_role_player_counts, rhs_player_role_relation_counts),
             )
         );
     };
@@ -178,7 +178,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: ThingMan
                 .entry(player.type_())
                 .or_default() += count;
             *statistics
-                .role_player_relation_counts
+                .player_role_relation_counts
                 .entry(player.type_())
                 .or_default()
                 .entry(role.clone())

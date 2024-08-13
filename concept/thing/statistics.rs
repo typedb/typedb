@@ -15,7 +15,7 @@ use bytes::Bytes;
 use durability::DurabilityRecordType;
 use encoding::graph::{
     thing::{
-        edge::{ThingEdgeHas, ThingEdgeRolePlayer, ThingEdgeRolePlayerIndex},
+        edge::{ThingEdgeHas, ThingEdgeLinks, ThingEdgeRolePlayerIndex},
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
         ThingVertex,
@@ -72,7 +72,7 @@ pub struct Statistics {
     pub relation_role_counts: HashMap<RelationType<'static>, HashMap<RoleType<'static>, u64>>,
     pub relation_role_player_counts:
         HashMap<RelationType<'static>, HashMap<RoleType<'static>, HashMap<ObjectType<'static>, u64>>>,
-    pub role_player_relation_counts:
+    pub player_role_relation_counts:
         HashMap<ObjectType<'static>, HashMap<RoleType<'static>, HashMap<RelationType<'static>, u64>>>,
 
     // TODO: adding role types is possible, but won't help with filtering before reading storage since roles are not in the prefix
@@ -102,7 +102,7 @@ impl Statistics {
             role_player_counts: HashMap::new(),
             relation_role_counts: HashMap::new(),
             relation_role_player_counts: HashMap::new(),
-            role_player_relation_counts: HashMap::new(),
+            player_role_relation_counts: HashMap::new(),
             player_index_counts: HashMap::new(),
         }
     }
@@ -203,8 +203,8 @@ impl Statistics {
             } else if ThingEdgeHas::is_has(key_reference) {
                 let edge = ThingEdgeHas::new(Bytes::Reference(key_reference.byte_ref()));
                 self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta)
-            } else if ThingEdgeRolePlayer::is_role_player(key_reference) {
-                let edge = ThingEdgeRolePlayer::new(Bytes::Reference(key_reference.byte_ref()));
+            } else if ThingEdgeLinks::is_links(key_reference) {
+                let edge = ThingEdgeLinks::new(Bytes::Reference(key_reference.byte_ref()));
                 let role_type = RoleType::build_from_type_id(edge.role_id());
                 self.update_role_player(
                     Object::new(edge.to()).type_(),
@@ -328,15 +328,15 @@ impl Statistics {
             .entry(player_type.clone())
             .or_default();
         *relation_role_player_count = relation_role_player_count.checked_add_signed(delta).unwrap();
-        let role_player_relation_count = self
-            .role_player_relation_counts
+        let player_role_relation_count = self
+            .player_role_relation_counts
             .entry(player_type)
             .or_default()
             .entry(role_type)
             .or_default()
             .entry(relation_type)
             .or_default();
-        *role_player_relation_count = role_player_relation_count.checked_add_signed(delta).unwrap();
+        *player_role_relation_count = player_role_relation_count.checked_add_signed(delta).unwrap();
     }
 
     fn update_indexed_player(
@@ -728,7 +728,7 @@ mod serialise {
 
             state.serialize_field(
                 Field::RolePlayerRelationCounts.name(),
-                &to_serialisable_map_map_map(&self.role_player_relation_counts),
+                &to_serialisable_map_map_map(&self.player_role_relation_counts),
             )?;
 
             state.serialize_field(
@@ -888,11 +888,11 @@ mod serialise {
                             )
                         })
                         .collect();
-                    let encoded_role_player_relation_counts: HashMap<
+                    let encoded_player_role_relation_counts: HashMap<
                         SerialisableType,
                         HashMap<SerialisableType, HashMap<SerialisableType, u64>>,
                     > = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(17, &self))?;
-                    let role_player_relation_counts = encoded_role_player_relation_counts
+                    let player_role_relation_counts = encoded_player_role_relation_counts
                         .into_iter()
                         .map(|(type_1, map)| {
                             (
@@ -927,7 +927,7 @@ mod serialise {
                         role_player_counts,
                         relation_role_counts,
                         relation_role_player_counts,
-                        role_player_relation_counts,
+                        player_role_relation_counts,
                         player_index_counts,
                     })
                 }
@@ -953,7 +953,7 @@ mod serialise {
                     let mut role_player_counts = None;
                     let mut relation_role_counts = None;
                     let mut relation_role_player_counts = None;
-                    let mut role_player_relation_counts = None;
+                    let mut player_role_relation_counts = None;
                     let mut player_index_counts = None;
                     while let Some(key) = map.next_key()? {
                         match key {
@@ -1113,7 +1113,7 @@ mod serialise {
                                     SerialisableType,
                                     HashMap<SerialisableType, HashMap<SerialisableType, u64>>,
                                 > = map.next_value()?;
-                                role_player_relation_counts = Some(
+                                player_role_relation_counts = Some(
                                     encoded
                                         .into_iter()
                                         .map(|(type_1, map)| {
@@ -1179,7 +1179,7 @@ mod serialise {
                             .ok_or_else(|| de::Error::missing_field(Field::RelationRoleCounts.name()))?,
                         relation_role_player_counts: relation_role_player_counts
                             .ok_or_else(|| de::Error::missing_field(Field::RelationRolePlayerCounts.name()))?,
-                        role_player_relation_counts: role_player_relation_counts
+                        player_role_relation_counts: player_role_relation_counts
                             .ok_or_else(|| de::Error::missing_field(Field::RolePlayerRelationCounts.name()))?,
                         player_index_counts: player_index_counts
                             .ok_or_else(|| de::Error::missing_field(Field::PlayerIndexCounts.name()))?,
