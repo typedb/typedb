@@ -500,7 +500,7 @@ impl UnaryConstraint for Label<Variable> {
         tig_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         let annotation_opt =
-            get_type_annotation_from_label(seeder, &encoding::value::label::Label::build(self.type_label()))
+            get_type_annotation_from_label(seeder, &encoding::value::label::Label::parse_from(self.type_label()))
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?;
         if let Some(annotation) = annotation_opt {
             TypeSeeder::<Snapshot>::add_or_intersect(
