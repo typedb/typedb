@@ -40,8 +40,7 @@ fn define_struct<Snapshot: WritableSnapshot>(
         definition_key.clone().into_storage_key().into_owned_array(),
         definition.clone().into_bytes().unwrap().into_array(),
     );
-    let index_key =
-        NameToStructDefinitionIndex::build(StringBytes::<BUFFER_KEY_INLINE>::build_ref(definition.name.as_str()));
+    let index_key = NameToStructDefinitionIndex::build(definition.name.as_str());
     snapshot.put_val(
         index_key.into_storage_key().into_owned_array(),
         ByteArray::copy(definition_key.clone().into_bytes().bytes()),
@@ -50,7 +49,7 @@ fn define_struct<Snapshot: WritableSnapshot>(
 }
 
 fn get_struct_key(snapshot: &impl ReadableSnapshot, name: String) -> Option<DefinitionKey<'static>> {
-    let index_key = NameToStructDefinitionIndex::build(StringBytes::<BUFFER_KEY_INLINE>::build_ref(name.as_str()));
+    let index_key = NameToStructDefinitionIndex::build(name.as_str());
     let bytes = snapshot.get(index_key.into_storage_key().as_reference()).unwrap();
     bytes.map(|value| DefinitionKey::new(Bytes::Array(value)))
 }

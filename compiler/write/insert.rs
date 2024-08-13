@@ -64,7 +64,7 @@ pub fn build_insert_plan(
     input_variables: &HashMap<Variable, usize>,
     type_annotations: &TypeAnnotations,
 ) -> Result<InsertPlan, WriteCompilationError> {
-    let mut instructions = Vec::new();
+    let mut instructions = Vec::with_capacity(constraints.len());
     let inserted_concepts = add_inserted_concepts(constraints, input_variables, type_annotations, &mut instructions)?;
     add_has(constraints, input_variables, &inserted_concepts, &mut instructions)?;
     add_role_players(constraints, type_annotations, input_variables, &inserted_concepts, &mut instructions)?;

@@ -42,9 +42,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         definition_key: DefinitionKey<'static>,
         struct_definition: StructDefinition,
     ) {
-        let index_key = NameToStructDefinitionIndex::build::<BUFFER_KEY_INLINE>(StringBytes::build_ref(
-            struct_definition.name.as_str(),
-        ));
+        let index_key = NameToStructDefinitionIndex::build(struct_definition.name.as_str());
         snapshot
             .put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(definition_key.bytes().bytes()));
         snapshot.insert_val(
@@ -56,9 +54,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     pub(crate) fn storage_delete_struct(snapshot: &mut Snapshot, definition_key: &DefinitionKey<'static>) {
         let existing_struct = TypeReader::get_struct_definition(snapshot, definition_key.clone());
         if let Ok(struct_definition) = existing_struct {
-            let index_key = NameToStructDefinitionIndex::build::<BUFFER_KEY_INLINE>(StringBytes::build_ref(
-                struct_definition.name.as_str(),
-            ));
+            let index_key = NameToStructDefinitionIndex::build(struct_definition.name.as_str());
             snapshot.delete(definition_key.clone().into_storage_key().into_owned_array());
             snapshot.delete(index_key.into_storage_key().into_owned_array());
         }
@@ -69,7 +65,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         debug_assert!(TypeReader::get_label(snapshot, type_.clone()).unwrap().is_none());
         Self::storage_put_type_vertex_property(snapshot, type_.clone(), Some(label.clone().into_owned()));
 
-        let label_to_vertex_key = LabelToTypeVertexIndex::build(label.inverted_scoped_name_for_index());
+        let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
         let vertex_value = ByteArray::from(type_.into_vertex().bytes());
         snapshot.put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
     }
@@ -79,7 +75,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         let existing_label = TypeReader::get_label(snapshot, type_.clone()).unwrap();
         if let Some(label) = existing_label {
             Self::storage_delete_type_vertex_property::<Label<'_>>(snapshot, type_);
-            let label_to_vertex_key = LabelToTypeVertexIndex::build(label.scoped_name());
+            let label_to_vertex_key = LabelToTypeVertexIndex::build(&label);
             snapshot.delete(label_to_vertex_key.into_storage_key().into_owned_array());
         }
     }

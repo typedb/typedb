@@ -87,9 +87,7 @@ impl FunctionManager {
                 .create_function(snapshot)
                 .map_err(|source| FunctionManagerError::Encoding { source })?;
             let function = Function::build(definition_key, FunctionDefinition::build_ref(definition))?;
-            let index_key =
-                NameToStructDefinitionIndex::build::<BUFFER_KEY_INLINE>(StringBytes::build_ref(&function.name()))
-                    .into_storage_key();
+            let index_key = NameToStructDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let existing = snapshot
                 .get::<BUFFER_VALUE_INLINE>(index_key.as_reference())
                 .map_err(|source| FunctionManagerError::SnapshotGet { source })?;
@@ -107,9 +105,7 @@ impl FunctionManager {
             .map_err(|source| FunctionManagerError::FunctionDefinition { source })?;
 
         for (function, definition) in zip(functions.iter(), definitions.iter()) {
-            let index_key =
-                NameToFunctionDefinitionIndex::build::<BUFFER_KEY_INLINE>(StringBytes::build_ref(&function.name()))
-                    .into_storage_key();
+            let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let definition_key = &function.function_id;
             snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes().bytes()));
             snapshot.put_val(
@@ -170,7 +166,7 @@ impl FunctionReader {
         snapshot: &impl ReadableSnapshot,
         name: &str,
     ) -> Result<Option<DefinitionKey<'static>>, FunctionReadError> {
-        let index_key = NameToFunctionDefinitionIndex::build(StringBytes::<BUFFER_KEY_INLINE>::build_ref(name));
+        let index_key = NameToFunctionDefinitionIndex::build(name);
         let bytes_opt = snapshot
             .get(index_key.into_storage_key().as_reference())
             .map_err(|source| FunctionReadError::SnapshotGet { source })?;

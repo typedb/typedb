@@ -57,8 +57,7 @@ impl TypeReader {
     where
         T: TypeAPI<'static>,
     {
-        let key =
-            LabelToTypeVertexIndex::build(label.inverted_scoped_name_for_index().as_reference()).into_storage_key();
+        let key = LabelToTypeVertexIndex::build(label).into_storage_key();
         match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
             Ok(None) => Ok(None),
@@ -78,9 +77,7 @@ impl TypeReader {
     ) -> Result<Vec<RoleType<'static>>, ConceptReadError> {
         let mut name_with_colon = name;
         name_with_colon.push(':');
-        let key =
-            LabelToTypeVertexIndex::build(Label::build(name_with_colon.as_str()).inverted_scoped_name_for_index())
-                .into_storage_key();
+        let key = LabelToTypeVertexIndex::build(&Label::build(name_with_colon.as_str())).into_storage_key();
         let vec = snapshot
             .iterate_range(KeyRange::new_within(key, IdentifierIndex::<TypeVertex<'static>>::FIXED_WIDTH_ENCODING))
             .collect_cloned_vec(|key, value| match RoleType::from_bytes(Bytes::copy(value.bytes())) {
@@ -95,7 +92,7 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         name: &str,
     ) -> Result<Option<DefinitionKey<'static>>, ConceptReadError> {
-        let index_key = NameToStructDefinitionIndex::build(StringBytes::<BUFFER_KEY_INLINE>::build_ref(name));
+        let index_key = NameToStructDefinitionIndex::build(name);
         let bytes = snapshot
             .get(index_key.into_storage_key().as_reference())
             .map_err(|source| ConceptReadError::SnapshotGet { source })?;
