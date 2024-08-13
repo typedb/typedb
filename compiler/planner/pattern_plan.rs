@@ -63,7 +63,10 @@ impl PatternPlan {
 
         for (variable, category) in context.variable_categories() {
             match category {
-                VariableCategory::Type | VariableCategory::ThingType | VariableCategory::RoleType => (), // ignore for now
+                VariableCategory::Type | VariableCategory::ThingType => (), // ignore for now
+                VariableCategory::RoleType => {
+                    variable_index.insert(variable, elements.len());
+                }
                 VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
                     let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
                     variable_index.insert(variable, elements.len());

@@ -149,7 +149,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
         let links = Constraint::from(Links::new(relation, player, role_type));
         self.context.set_variable_category(relation, VariableCategory::Object, links.clone())?;
         self.context.set_variable_category(player, VariableCategory::Object, links.clone())?;
-        self.context.set_variable_category(role_type, VariableCategory::Type, links.clone())?;
+        self.context.set_variable_category(role_type, VariableCategory::RoleType, links.clone())?;
         let constraint = self.constraints.add_constraint(links);
         Ok(constraint.as_links().unwrap())
     }

@@ -57,6 +57,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let group_type = type_manager.create_entity_type(&mut snapshot, &GROUP_LABEL).unwrap();
 
     let membership_type = type_manager.create_relation_type(&mut snapshot, &MEMBERSHIP_LABEL).unwrap();
+
     let relates_member = membership_type
         .create_relates(&mut snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name().as_str(), Ordering::Unordered)
         .unwrap();
