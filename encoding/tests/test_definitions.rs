@@ -18,7 +18,7 @@ use encoding::{
         },
         type_::index::NameToStructDefinitionIndex,
     },
-    value::{value_type::ValueType},
+    value::value_type::ValueType,
     AsBytes, EncodingKeyspace, Keyable,
 };
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;

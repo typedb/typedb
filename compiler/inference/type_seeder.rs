@@ -20,7 +20,8 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            Comparison, Constraint, FunctionCallBinding, Has, Isa, IsaKind, Label, Links, Owns, Plays, Relates, Sub, RoleName,
+            Comparison, Constraint, FunctionCallBinding, Has, Isa, IsaKind, Label, Links, Owns, Plays, Relates,
+            RoleName, Sub,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
