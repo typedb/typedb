@@ -36,4 +36,3 @@ impl Error for CompileError {
         }
     }
 }
->>>>>>> 58324197f (Piece together from Pipeline to Stage to Compile to ProgramPlan)

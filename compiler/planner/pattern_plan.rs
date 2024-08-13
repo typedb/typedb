@@ -13,10 +13,9 @@ use ir::{
         constraint::{Constraint, ExpressionBinding},
         variable_category::VariableCategory,
     },
-    program::block::BlockContext,
+    program::block::{BlockContext, FunctionalBlock},
 };
 use itertools::Itertools;
-use ir::program::block::FunctionalBlock;
 
 use crate::{
     expression::compiled_expression::CompiledExpression,

@@ -10,7 +10,7 @@ use typeql::query::stage::delete::DeletableKind;
 use crate::{
     program::{
         block::{FunctionalBlock, FunctionalBlockBuilder},
-        function_signature::HashMapFunctionIndex,
+        function_signature::HashMapFunctionSignatureIndex,
     },
     translation::constraints::{add_statement, add_typeql_relation, register_typeql_var},
     PatternDefinitionError,
@@ -20,7 +20,7 @@ pub fn translate_insert(
     insert: &typeql::query::stage::Insert,
 ) -> Result<FunctionalBlockBuilder, PatternDefinitionError> {
     let mut builder = FunctionalBlock::builder();
-    let function_index = HashMapFunctionIndex::empty();
+    let function_index = HashMapFunctionSignatureIndex::empty();
     for statement in &insert.statements {
         add_statement(&function_index, &mut builder.conjunction_mut().constraints_mut(), statement)?;
     }

@@ -31,8 +31,11 @@ use ir::{
     program::{block::FunctionalBlock, program::Program},
 };
 use lending_iterator::LendingIterator;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
-use storage::snapshot::ReadSnapshot;
+use storage::{
+    durability_client::WALClient,
+    snapshot::{CommittableSnapshot, ReadSnapshot},
+    MVCCStorage,
+};
 
 use crate::common::{load_managers, setup_storage};
 
@@ -207,12 +210,12 @@ fn traverse_links_unbounded_sorted_from() {
             ConstraintInstruction::Links(LinksInstruction::new(
                 links_membership_person,
                 Inputs::None([]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             )),
             ConstraintInstruction::Links(LinksInstruction::new(
                 links_membership_group,
                 Inputs::None([]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             )),
         ],
         &[var_membership, var_group, var_person],
@@ -295,7 +298,7 @@ fn traverse_links_unbounded_sorted_to() {
         vec![ConstraintInstruction::Links(LinksInstruction::new(
             links_membership_person,
             Inputs::None([]),
-            annotated_program.entry_annotations(),
+            &entry_annotations,
         ))],
         &[var_membership, var_person],
     ))];
@@ -380,7 +383,7 @@ fn traverse_links_bounded_relation() {
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_membership,
                 Inputs::None([]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             ))],
             &[var_membership],
         )),
@@ -389,15 +392,14 @@ fn traverse_links_bounded_relation() {
             vec![ConstraintInstruction::Links(LinksInstruction::new(
                 links_membership_person,
                 Inputs::Single([var_membership]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             ))],
             &[var_person],
         )),
     ];
 
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -475,7 +477,7 @@ fn traverse_links_bounded_relation_player() {
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_membership,
                 Inputs::None([]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             ))],
             &[var_membership],
         )),
@@ -484,7 +486,7 @@ fn traverse_links_bounded_relation_player() {
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_person,
                 Inputs::None([]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             ))],
             &[var_membership, var_person],
         )),
@@ -493,15 +495,14 @@ fn traverse_links_bounded_relation_player() {
             vec![ConstraintInstruction::Links(LinksInstruction::new(
                 links_membership_person,
                 Inputs::Dual([var_membership, var_person]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             ))],
             &[var_membership_member_type],
         )),
     ];
 
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -575,14 +576,13 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
             links_membership_person,
             Inputs::None([]),
-            annotated_program.entry_annotations(),
+            &entry_annotations,
         ))],
         &[var_membership, var_person],
     ))];
 
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -657,14 +657,13 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
             links_membership_person,
             Inputs::None([]),
-            annotated_program.entry_annotations(),
+            &entry_annotations,
         ))],
         &[var_membership, var_person],
     ))];
 
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -741,7 +740,7 @@ fn traverse_links_reverse_bounded_player() {
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_person,
                 Inputs::None([]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             ))],
             &[var_person],
         )),
@@ -750,15 +749,14 @@ fn traverse_links_reverse_bounded_player() {
             vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
                 links_membership_person,
                 Inputs::Single([var_person]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             ))],
             &[var_membership],
         )),
     ];
 
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -836,7 +834,7 @@ fn traverse_links_reverse_bounded_player_relation() {
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_person,
                 Inputs::None([]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             ))],
             &[var_person],
         )),
@@ -845,7 +843,7 @@ fn traverse_links_reverse_bounded_player_relation() {
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_membership,
                 Inputs::None([]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             ))],
             &[var_person, var_membership],
         )),
@@ -854,15 +852,14 @@ fn traverse_links_reverse_bounded_player_relation() {
             vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
                 links_membership_person,
                 Inputs::Dual([var_membership, var_person]),
-                annotated_program.entry_annotations(),
+                &entry_annotations,
             ))],
             &[var_membership_member_type],
         )),
     ];
 
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan =
-        ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();

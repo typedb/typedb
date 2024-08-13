@@ -223,7 +223,7 @@ fn test_links_planning_traversal() {
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
 
     // IR
-    let empty_function_index = HashMapFunctionIndex::empty();
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let builder = translate_match(&empty_function_index, &match_).unwrap();
     // builder.add_limit(3);
     // builder.add_filter(vec!["person", "age"]).unwrap();
@@ -232,11 +232,10 @@ fn test_links_planning_traversal() {
     // Executor
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let program = Program::new(block, Vec::new());
-    let annotated_program =
-        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
-    let pattern_plan = PatternPlan::from_block(&annotated_program, &statistics);
-    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
+    let (entry_annotations, _) =
+        infer_types(&block, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let pattern_plan = PatternPlan::from_block(&block, &entry_annotations, &HashMap::new(), &statistics);
+    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
 

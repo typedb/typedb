@@ -7,14 +7,14 @@
 use std::{collections::HashMap, sync::Arc};
 
 use answer::variable_value::VariableValue;
-use compiler::{inference::annotated_functions::AnnotatedCommittedFunctions, write::delete::build_delete_plan};
+use compiler::{inference::annotated_functions::IndexedAnnotatedFunctions, write::delete::build_delete_plan};
 use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
     type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::Row, write::insert_executor::WriteError};
-use ir::program::{function_signature::HashMapFunctionIndex, program::Program};
+use ir::program::function_signature::HashMapFunctionSignatureIndex;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -79,24 +79,26 @@ fn execute_insert(
         .enumerate()
         .map(|(i, v)| (block.context().get_variable_named(v, block.scope_id()).unwrap().clone(), i))
         .collect::<HashMap<_, _>>();
-    let annotated_program = compiler::inference::type_inference::infer_types(
-        Program::new(block, vec![]),
+    let (entry_annotations, _) = compiler::inference::type_inference::infer_types(
+        &block,
+        vec![],
         snapshot,
         &type_manager,
-        Arc::new(AnnotatedCommittedFunctions::empty()),
+        &IndexedAnnotatedFunctions::empty(),
     )
     .unwrap();
     let insert_plan = compiler::write::insert::build_insert_plan(
-        annotated_program.get_entry().conjunction().constraints(),
+        block.conjunction().constraints(),
         &input_row_format,
-        annotated_program.entry_annotations(),
+        &entry_annotations,
     )
     .unwrap();
 
     println!("{:?}", &insert_plan.instructions);
-    insert_plan.debug_info.iter().for_each(|(k, v)| {
-        println!("{:?} -> {:?}", k, annotated_program.get_entry().context().get_variables_named().get(v))
-    });
+    insert_plan
+        .debug_info
+        .iter()
+        .for_each(|(k, v)| println!("{:?} -> {:?}", k, block.context().get_variables_named().get(v)));
 
     let mut output_rows = Vec::with_capacity(input_rows.len());
     for mut input_row in input_rows {
@@ -128,7 +130,7 @@ fn execute_delete(
     input_row_var_names: &Vec<&str>,
     input_rows: Vec<Vec<VariableValue<'static>>>,
 ) -> Result<Vec<Vec<VariableValue<'static>>>, WriteError> {
-    let annotated_match = {
+    let (entry_annotations, _) = {
         let typeql_match = typeql::parse_query(mock_match_string_for_annotations)
             .unwrap()
             .into_pipeline()
@@ -136,13 +138,15 @@ fn execute_delete(
             .pop()
             .unwrap()
             .into_match();
-        let block =
-            ir::translation::match_::translate_match(&HashMapFunctionIndex::empty(), &typeql_match).unwrap().finish();
+        let block = ir::translation::match_::translate_match(&HashMapFunctionSignatureIndex::empty(), &typeql_match)
+            .unwrap()
+            .finish();
         compiler::inference::type_inference::infer_types(
-            Program::new(block, vec![]),
+            &block,
+            vec![],
             snapshot,
             &type_manager,
-            Arc::new(AnnotatedCommittedFunctions::empty()),
+            &IndexedAnnotatedFunctions::empty(),
         )
         .unwrap()
     };
@@ -156,13 +160,9 @@ fn execute_delete(
         .map(|(i, v)| (block.context().get_variable_named(v, block.scope_id()).unwrap().clone(), i))
         .collect::<HashMap<_, _>>();
 
-    let delete_plan = build_delete_plan(
-        &input_row_format,
-        annotated_match.entry_annotations(),
-        block.conjunction().constraints(),
-        &deleted_concepts,
-    )
-    .unwrap();
+    let delete_plan =
+        build_delete_plan(&input_row_format, &entry_annotations, block.conjunction().constraints(), &deleted_concepts)
+            .unwrap();
     let mut output_rows = Vec::with_capacity(input_rows.len());
     for mut input_row in input_rows {
         let mut output_vec = (0..delete_plan.output_row_plan.len()).map(|_| VariableValue::Empty).collect::<Vec<_>>();

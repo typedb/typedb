@@ -26,7 +26,6 @@ rust_library(
         "//storage:storage",
         "//durability:durability",
         "//util/test:test_utils",
-        "@vaticle_typeql//rust:typeql",
 
         "@vaticle_typeql//rust:typeql",
 

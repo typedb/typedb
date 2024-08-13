@@ -159,15 +159,11 @@ fn anonymous_vars_not_enumerated_or_counted() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![ConstraintInstruction::Has(HasInstruction::new(
-            has_attribute,
-            Inputs::None([]),
-            annotated_program.entry_annotations(),
-        ))],
+        vec![ConstraintInstruction::Has(HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations))],
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(),  HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -234,11 +230,7 @@ fn unselected_named_vars_counted() {
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
-        vec![ConstraintInstruction::Has(HasInstruction::new(
-            has_attribute,
-            Inputs::None([]),
-            annotated_program.entry_annotations(),
-        ))],
+        vec![ConstraintInstruction::Has(HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations))],
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
@@ -322,21 +314,9 @@ fn cartesian_named_counted_checked() {
     let steps = vec![Step::Intersection(IntersectionStep::new(
         var_person,
         vec![
-            ConstraintInstruction::Has(HasInstruction::new(
-                has_name,
-                Inputs::None([]),
-                annotated_program.entry_annotations(),
-            )),
-            ConstraintInstruction::Has(HasInstruction::new(
-                has_age,
-                Inputs::None([]),
-                annotated_program.entry_annotations(),
-            )),
-            ConstraintInstruction::Has(HasInstruction::new(
-                has_email,
-                Inputs::None([]),
-                annotated_program.entry_annotations(),
-            )),
+            ConstraintInstruction::Has(HasInstruction::new(has_name, Inputs::None([]), &entry_annotations)),
+            ConstraintInstruction::Has(HasInstruction::new(has_age, Inputs::None([]), &entry_annotations)),
+            ConstraintInstruction::Has(HasInstruction::new(has_email, Inputs::None([]), &entry_annotations)),
         ],
         &vec![var_person, var_age],
     ))];

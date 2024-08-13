@@ -880,7 +880,7 @@ pub mod tests {
         // Some version of `$a isa animal, has name $n;`
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
-        let function_index = HashMapFunctionIndex::empty();
+        let function_index = HashMapFunctionSignatureIndex::empty();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
@@ -908,7 +908,7 @@ pub mod tests {
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
             let tig =
-                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &block, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -967,7 +967,7 @@ pub mod tests {
 
             let constraints = block.conjunction().constraints();
             let tig =
-                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &block, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -1025,7 +1025,7 @@ pub mod tests {
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
             let tig =
-                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &block, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
 
             let expected_tig = TypeInferenceGraph {
@@ -1068,7 +1068,7 @@ pub mod tests {
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
             let tig =
-                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                infer_types_for_block(&snapshot, &block, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
 
             let expected_tig = TypeInferenceGraph {
