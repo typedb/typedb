@@ -874,4 +874,248 @@ pub mod tests {
             assert_eq!(expected_graph, tig);
         }
     }
+
+    #[test]
+    fn type_constraints() {
+        // Some version of `$a isa animal, has name $n;`
+        let (_tmp_dir, storage) = setup_storage();
+        let (type_manager, thing_manager) = managers();
+        let function_index = HashMapFunctionIndex::empty();
+
+        let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
+            setup_types(storage.clone().open_snapshot_write(), &type_manager);
+
+        let all_animals = BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]);
+        let all_names = BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()]);
+
+        {
+            // Case 1: $a isa $at; $at type cat; $n isa $nt; $at owns $nt;
+            let snapshot = storage.clone().open_snapshot_write();
+            let mut builder = FunctionalBlock::builder();
+            let mut conjunction = builder.conjunction_mut();
+            let (var_animal, var_name, var_animal_type, var_owned_type) =
+                ["animal", "name", "animal_type", "name_type"]
+                    .into_iter()
+                    .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                    .collect_tuple()
+                    .unwrap();
+
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_owned_type).unwrap();
+            conjunction.constraints_mut().add_owns(var_animal_type, var_owned_type).unwrap();
+
+            let block = builder.finish();
+            let constraints = block.conjunction().constraints();
+            let tig =
+                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                    .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: BTreeMap::from([
+                    (var_animal, BTreeSet::from([type_cat.clone()])),
+                    (var_name, BTreeSet::from([type_catname.clone()])),
+                    (var_animal_type, BTreeSet::from([type_cat.clone()])),
+                    (var_owned_type, BTreeSet::from([type_catname.clone()])),
+                ]),
+                edges: vec![
+                    expected_edge(
+                        &constraints[0],
+                        var_animal,
+                        var_animal_type,
+                        vec![(type_cat.clone(), type_cat.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[2],
+                        var_name,
+                        var_owned_type,
+                        vec![(type_catname.clone(), type_catname.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[3],
+                        var_animal_type,
+                        var_owned_type,
+                        vec![(type_cat.clone(), type_catname.clone())],
+                    ),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+
+            assert_eq!(expected_tig, tig);
+        }
+
+        {
+            // Case 2: $a isa $at; $n isa $nt; $nt type catname; $at owns $nt;
+            let snapshot = storage.clone().open_snapshot_write();
+            let mut builder = FunctionalBlock::builder();
+            let mut conjunction = builder.conjunction_mut();
+            let (var_animal, var_name, var_owner_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .collect_tuple()
+                .unwrap();
+
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_owner_type).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME).unwrap();
+            conjunction.constraints_mut().add_owns(var_owner_type, var_name_type).unwrap();
+
+            let block = builder.finish();
+
+            let constraints = block.conjunction().constraints();
+            let tig =
+                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                    .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: BTreeMap::from([
+                    (var_animal, BTreeSet::from([type_cat.clone()])),
+                    (var_name, BTreeSet::from([type_catname.clone()])),
+                    (var_owner_type, BTreeSet::from([type_cat.clone()])),
+                    (var_name_type, BTreeSet::from([type_catname.clone()])),
+                ]),
+                edges: vec![
+                    expected_edge(
+                        &constraints[0],
+                        var_animal,
+                        var_owner_type,
+                        vec![(type_cat.clone(), type_cat.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[1],
+                        var_name,
+                        var_name_type,
+                        vec![(type_catname.clone(), type_catname.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[3],
+                        var_owner_type,
+                        var_name_type,
+                        vec![(type_cat.clone(), type_catname.clone())],
+                    ),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+            assert_eq!(expected_tig, tig);
+        }
+
+        {
+            // Case 3: $a isa $at; $at type cat; $n isa $nt; $nt type dogname; $at owns $nt;
+            let snapshot = storage.clone().open_snapshot_write();
+            let mut builder = FunctionalBlock::builder();
+            let mut conjunction = builder.conjunction_mut();
+            let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .collect_tuple()
+                .unwrap();
+
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME).unwrap();
+            conjunction.constraints_mut().add_owns(var_animal_type, var_name_type).unwrap();
+
+            let block = builder.finish();
+            let constraints = block.conjunction().constraints();
+            let tig =
+                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                    .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: BTreeMap::from([
+                    (var_animal, BTreeSet::new()),
+                    (var_name, BTreeSet::new()),
+                    (var_animal_type, BTreeSet::new()),
+                    (var_name_type, BTreeSet::new()),
+                ]),
+                edges: vec![
+                    expected_edge(&constraints[0], var_animal, var_animal_type, Vec::new()),
+                    expected_edge(&constraints[2], var_name, var_name_type, Vec::new()),
+                    expected_edge(&constraints[4], var_animal_type, var_name_type, Vec::new()),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+            assert_eq!(expected_tig, tig);
+        }
+
+        {
+            // Case 4: $a isa! $at; $n isa! $nt; $at owns $nt;
+            let types_a = all_animals.clone();
+            let types_n = all_names.clone();
+            let snapshot = storage.clone().open_snapshot_write();
+            let mut builder = FunctionalBlock::builder();
+            let mut conjunction = builder.conjunction_mut();
+            let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .collect_tuple()
+                .unwrap();
+
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_animal, var_animal_type).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_name, var_name_type).unwrap();
+            conjunction.constraints_mut().add_owns(var_animal_type, var_name_type).unwrap();
+
+            let block = builder.finish();
+            let constraints = block.conjunction().constraints();
+            let tig =
+                infer_types_for_block(&snapshot, &block, &type_manager, &AnnotatedCommittedFunctions::empty(), None)
+                    .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: BTreeMap::from([
+                    (var_animal, types_a.clone()),
+                    (var_name, types_n.clone()),
+                    (var_animal_type, types_a.clone()),
+                    (var_name_type, types_n.clone()),
+                ]),
+                edges: vec![
+                    expected_edge(
+                        &constraints[0],
+                        var_animal,
+                        var_animal_type,
+                        vec![
+                            (type_cat.clone(), type_cat.clone()),
+                            (type_dog.clone(), type_dog.clone()),
+                            (type_animal.clone(), type_animal.clone()),
+                        ],
+                    ),
+                    expected_edge(
+                        &constraints[1],
+                        var_name,
+                        var_name_type,
+                        vec![
+                            (type_catname.clone(), type_catname.clone()),
+                            (type_dogname.clone(), type_dogname.clone()),
+                            (type_name.clone(), type_name.clone()),
+                        ],
+                    ),
+                    expected_edge(
+                        &constraints[2],
+                        var_animal_type,
+                        var_name_type,
+                        vec![
+                            (type_cat.clone(), type_catname.clone()),
+                            (type_dog.clone(), type_dogname.clone()),
+                            (type_animal.clone(), type_name.clone()),
+                        ],
+                    ),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+            assert_eq!(expected_tig, tig);
+        }
+    }
 }
