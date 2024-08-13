@@ -14,8 +14,13 @@ rust_library(
     deps = [
         "//database",
         "//storage",
+        "@vaticle_typedb_protocol//grpc/rust:typedb_protocol",
 
         "@crates//:itertools",
+        "@crates//:prost",
+        "@crates//:tokio",
+        "@crates//:tokio-stream",
+        "@crates//:tonic",
     ]
 )
 
