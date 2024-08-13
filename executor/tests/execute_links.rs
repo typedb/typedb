@@ -28,7 +28,7 @@ use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
 use ir::{
     pattern::constraint::IsaKind,
-    program::{block::FunctionalBlock, program::Program},
+    program::block::FunctionalBlock,
 };
 use lending_iterator::LendingIterator;
 use storage::{
@@ -197,11 +197,10 @@ fn traverse_links_unbounded_sorted_from() {
         .unwrap();
 
     let entry = builder.finish();
-    let (entry_annotations, annotated_functions) = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap()
-    };
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (entry_annotations, _) =
+        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -224,8 +223,6 @@ fn traverse_links_unbounded_sorted_from() {
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
     let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
     // Executor
-    let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
 
@@ -286,7 +283,7 @@ fn traverse_links_unbounded_sorted_to() {
         .unwrap();
 
     let entry = builder.finish();
-    let (entry_annotations, annotated_functions) = {
+    let (entry_annotations, _) = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
         infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap()
@@ -308,7 +305,7 @@ fn traverse_links_unbounded_sorted_to() {
 
     // Executor
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (_, thing_manager) = load_managers(storage.clone());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
 

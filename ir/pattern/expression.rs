@@ -82,21 +82,6 @@ pub enum Expression<ID: IrID> {
     ListIndexRange(ListIndexRange<ID>),
 }
 
-impl<ID: IrID> Expression<ID> {
-    pub fn return_category(&self) -> VariableCategory {
-        match self {
-            Expression::Constant(_) => {}
-            Expression::Variable(_) => {}
-            Expression::Operation(_) => {}
-            Expression::BuiltInCall(_) => {}
-            Expression::ListIndex(_) => {}
-            Expression::List(_) => {}
-            Expression::ListIndexRange(_) => {}
-        }
-        todo!()
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Operation {
     operator: Operator,

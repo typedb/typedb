@@ -178,9 +178,6 @@ impl<'cx> ConstraintsBuilder<'cx> {
         let comparison = Comparison::new(lhs, rhs);
         self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
         self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
-        todo!("The above lines were the two lines below");
-        // self.context.set_variable_category(lhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
-        // self.context.set_variable_category(rhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
 
         let as_ref = self.constraints.add_constraint(comparison);
         Ok(as_ref.as_comparison().unwrap())
