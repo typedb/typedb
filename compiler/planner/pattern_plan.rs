@@ -156,7 +156,7 @@ impl PatternPlan {
                     Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_) => todo!(),
                     Constraint::Links(rp) => {
                         if bound_variables.len() >= 2 {
-                            continue; // TODO verify
+                            todo!()
                         }
                         let planner = elements[index].as_links().unwrap();
                         let selected_variables = &[rp.relation(), rp.player(), rp.role_type()];
@@ -200,7 +200,7 @@ impl PatternPlan {
                     }
                     Constraint::Has(has) => {
                         if bound_variables.len() == 2 {
-                            continue; // TODO verify
+                            todo!()
                         }
                         let planner = elements[index].as_has().unwrap();
                         let selected_variables = &[has.owner(), has.attribute()];
