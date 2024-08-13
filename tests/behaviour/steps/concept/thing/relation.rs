@@ -21,6 +21,7 @@ use crate::{
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
+use crate::params::check_boolean;
 
 #[apply(generic_step)]
 #[step(expr = r"relation {var} add player for role\({type_label}\): {var}{may_error}")]
@@ -115,6 +116,31 @@ async fn relation_get_players_ordered(
         players.into_iter().map(Object::into_owned).collect()
     });
     context.object_lists.insert(players_var.name, players);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation {var} get players for role\({type_label}[]\) is {vars}: {boolean}")]
+async fn relation_get_players_ordered_is(
+    context: &mut Context,
+    relation_var: params::Var,
+    role_label: params::Label,
+    player_vars: params::Vars,
+    is: params::Boolean,
+) {
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let actuals = with_read_tx!(context, |tx| {
+        let relates = relation.type_().get_relates_of_role(
+            &tx.snapshot,
+            &tx.type_manager,
+            role_label.into_typedb().name().as_str(),
+        );
+        let role_type = relates.unwrap().unwrap().role();
+        let players = relation.get_players_ordered(&tx.snapshot, &tx.thing_manager, role_type).unwrap();
+        players.into_iter().map(Object::into_owned).collect_vec()
+    });
+    let players =
+        player_vars.names.into_iter().map(|name| context.objects[&name].as_ref().unwrap().object.clone()).collect_vec();
+    check_boolean!(is, actuals == players)
 }
 
 #[apply(generic_step)]

@@ -239,18 +239,18 @@ macro_rules! get_type_annotations {
 }
 
 macro_rules! storage_save_annotation {
-    ($snapshot:ident, $type_:ident, $annotation:ident, $put_func:path, $insert_func:path) => {
+    ($snapshot:ident, $type_:ident, $annotation:ident, $save_func:path) => {
         match $annotation {
-            Annotation::Abstract(_) => $put_func($snapshot, $type_, None::<AnnotationAbstract>),
-            Annotation::Distinct(_) => $put_func($snapshot, $type_, None::<AnnotationDistinct>),
-            Annotation::Independent(_) => $put_func($snapshot, $type_, None::<AnnotationIndependent>),
-            Annotation::Unique(_) => $put_func($snapshot, $type_, None::<AnnotationUnique>),
-            Annotation::Key(_) => $put_func($snapshot, $type_, None::<AnnotationKey>),
-            Annotation::Cascade(_) => $put_func($snapshot, $type_, None::<AnnotationCascade>),
-            Annotation::Cardinality(card) => $insert_func($snapshot, $type_, Some(card)),
-            Annotation::Regex(regex) => $insert_func($snapshot, $type_, Some(regex)),
-            Annotation::Range(range) => $insert_func($snapshot, $type_, Some(range)),
-            Annotation::Values(values) => $insert_func($snapshot, $type_, Some(values)),
+            Annotation::Abstract(_) => $save_func($snapshot, $type_, None::<AnnotationAbstract>),
+            Annotation::Distinct(_) => $save_func($snapshot, $type_, None::<AnnotationDistinct>),
+            Annotation::Independent(_) => $save_func($snapshot, $type_, None::<AnnotationIndependent>),
+            Annotation::Unique(_) => $save_func($snapshot, $type_, None::<AnnotationUnique>),
+            Annotation::Key(_) => $save_func($snapshot, $type_, None::<AnnotationKey>),
+            Annotation::Cascade(_) => $save_func($snapshot, $type_, None::<AnnotationCascade>),
+            Annotation::Cardinality(card) => $save_func($snapshot, $type_, Some(card)),
+            Annotation::Regex(regex) => $save_func($snapshot, $type_, Some(regex)),
+            Annotation::Range(range) => $save_func($snapshot, $type_, Some(range)),
+            Annotation::Values(values) => $save_func($snapshot, $type_, Some(values)),
         }
     };
 }
@@ -3387,8 +3387,7 @@ impl TypeManager {
             snapshot,
             type_,
             annotation,
-            TypeWriter::storage_put_type_vertex_property,
-            TypeWriter::storage_insert_type_vertex_property
+            TypeWriter::storage_put_type_vertex_property
         );
         Ok(())
     }
@@ -3403,8 +3402,7 @@ impl TypeManager {
             snapshot,
             capability,
             annotation,
-            TypeWriter::storage_put_type_edge_property,
-            TypeWriter::storage_insert_type_edge_property
+            TypeWriter::storage_put_type_edge_property
         );
         Ok(())
     }

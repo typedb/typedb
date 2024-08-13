@@ -22,6 +22,7 @@ use crate::{
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
+use crate::params::check_boolean;
 
 pub(super) fn object_set_has_impl(
     context: &mut Context,
@@ -164,6 +165,36 @@ async fn object_get_has_list(
             .collect()
     });
     context.attribute_lists.insert(attribute_var.name, attributes);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"{object_root_label} {var} get has\({type_label}[]\) is {vars}: {boolean}")]
+async fn object_get_has_list_is(
+    context: &mut Context,
+    object_root: params::ObjectRootLabel,
+    object_var: params::Var,
+    attribute_type_label: params::Label,
+    attribute_vars: params::Vars,
+    is: params::Boolean,
+) {
+    let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
+    object_root.assert(&object.type_());
+    let actuals = with_read_tx!(context, |tx| {
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
+        object
+            .get_has_type_ordered(&tx.snapshot, &tx.thing_manager, attribute_type)
+            .unwrap()
+            .into_iter()
+            .map(|attr| attr.into_owned())
+            .collect_vec()
+    });
+    let attributes = attribute_vars
+        .names
+        .into_iter()
+        .map(|attr_name| context.attributes[&attr_name].as_ref().unwrap().to_owned())
+        .collect_vec();
+    check_boolean!(is, actuals == attributes)
 }
 
 #[apply(generic_step)]

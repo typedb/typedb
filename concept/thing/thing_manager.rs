@@ -1391,12 +1391,12 @@ impl ThingManager {
 
         // TODO: handle duplicates
         // note: we always re-put the attribute. TODO: optimise knowing when the attribute pre-exists.
-        owner.set_modified(snapshot, self);
-        attribute.set_modified(snapshot, self);
         self.put_attribute(snapshot, attribute_type, value)?;
+        attribute.set_modified(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
-        let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.vertex());
+        owner.set_modified(snapshot, self);
+        let has_reverse = ThingEdgeHasReverse::build(attribute.vertex(), owner.vertex());
         snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
         Ok(())
     }
@@ -1411,8 +1411,6 @@ impl ThingManager {
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex()).into_storage_key().into_owned_array();
         let has_reverse =
             ThingEdgeHasReverse::build(attribute.vertex(), owner.vertex()).into_storage_key().into_owned_array();
-        owner.set_modified(snapshot, self);
-        attribute.set_modified(snapshot, self);
         match owner_status {
             ConceptStatus::Inserted => {
                 let count = 1;
@@ -1426,6 +1424,8 @@ impl ThingManager {
             ConceptStatus::Put => unreachable!("Encountered a `put` attribute owner: {owner:?}."),
             ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
         }
+        owner.set_modified(snapshot, self);
+        attribute.set_modified(snapshot, self);
     }
 
     pub(crate) fn set_has_ordered<'a>(
@@ -1439,13 +1439,18 @@ impl ThingManager {
             .get_value_type(snapshot, self.type_manager())?
             .expect("Handle missing value type - for abstract attributes. Or assume this will never happen");
         let key = build_object_vertex_property_has_order(owner.vertex(), attribute_type.into_vertex());
+        let storage_key = key.into_storage_key().into_owned_array();
         let value = encode_attribute_ids(
             attribute_value_type.category(),
-            attributes.into_iter().map(|attr| attr.into_vertex().attribute_id()),
+            attributes.iter().map(|attr| attr.vertex().attribute_id()),
         );
+        snapshot.put_val(storage_key.clone(), value);
         owner.set_modified(snapshot, self);
-        // attribute.set_modified(snapshot, self); // TODO: What to do with lists?
-        snapshot.put_val(key.into_storage_key().into_owned_array(), value);
+        // TODO: What do we do with lists of attributes?
+        attributes.into_iter().for_each(|attribute| attribute.set_modified(snapshot, self));
+
+        // must lock to fail concurrent transactions updating the same counters
+        snapshot.exclusive_lock_add(storage_key.into_byte_array());
         Ok(())
     }
 
@@ -1457,7 +1462,8 @@ impl ThingManager {
     ) {
         let order_property = build_object_vertex_property_has_order(owner.vertex(), attribute_type.into_vertex());
         owner.set_modified(snapshot, self);
-        // attribute.set_modified(snapshot, self); // TODO: What to do with lists?
+        // TODO: What do we do with lists of attributes?
+        // attributes.into_iter().for_each(|attribute| attribute.set_modified(snapshot, self));
         snapshot.delete(order_property.into_storage_key().into_owned_array())
     }
 
@@ -1499,10 +1505,16 @@ impl ThingManager {
         players: Vec<Object<'_>>,
     ) -> Result<(), ConceptWriteError> {
         let key = build_object_vertex_property_links_order(relation.as_reference().into_vertex(), role_type.into_vertex());
-        let value = encode_role_players(players.into_iter().map(|player| player.into_vertex()));
+        let storage_key = key.into_storage_key().into_owned_array();
+        let value = encode_role_players(players.iter().map(|player| player.vertex()));
         relation.set_modified(snapshot, self);
-        // players.set_modified(snapshot, self); // TODO: What to do with lists?
-        snapshot.put_val(key.into_storage_key().into_owned_array(), value);
+        // TODO: What to do with lists of players?
+        players.into_iter().for_each(|player| player.set_modified(snapshot, self));
+        snapshot.put_val(storage_key.clone(), value);
+
+        // must lock to fail concurrent transactions updating the same counters
+        snapshot.exclusive_lock_add(storage_key.into_byte_array());
+
         Ok(())
     }
 
@@ -1518,8 +1530,10 @@ impl ThingManager {
         let links_reverse =
             ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.clone().into_vertex());
 
+        // TODO: Can we clal it before modification?
         relation.set_modified(snapshot, self);
         player.set_modified(snapshot, self);
+
         if count == 0 {
             snapshot.delete(links.as_storage_key().into_owned_array());
             snapshot.delete(links_reverse.as_storage_key().into_owned_array());
@@ -1536,9 +1550,6 @@ impl ThingManager {
                 self.relation_index_player_regenerate(snapshot, relation, player, role_type, count)?
             }
         }
-
-        // must lock to fail concurrent transactions updating the same counters
-        snapshot.exclusive_lock_add(links.into_storage_key().into_owned_array().into_byte_array());
 
         Ok(())
     }
@@ -1561,8 +1572,6 @@ impl ThingManager {
 
         let owner_status = relation.get_status(&*snapshot, self);
 
-        relation.set_modified(snapshot, self);
-        player.set_modified(snapshot, self);
         match owner_status {
             ConceptStatus::Inserted => {
                 let count = 1;
@@ -1576,6 +1585,9 @@ impl ThingManager {
             ConceptStatus::Put => unreachable!("Encountered a `put` relation: {relation:?}."),
             ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
         }
+
+        relation.set_modified(snapshot, self);
+        player.set_modified(snapshot, self);
 
         if self
             .type_manager

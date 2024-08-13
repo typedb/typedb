@@ -92,10 +92,6 @@ impl SnapshotRangeIterator {
                         self.storage_iterator.next();
                         self.buffered_iterator.next();
                     } else {
-                        #[cfg(debug_assertions)]
-                        if let Write::Put { value, .. } = buffered_write {
-                            debug_assert_eq!(storage_value.bytes(), value.bytes());
-                        }
                         // ACCEPT both
                         self.ready_item_source = Some(ReadyItemSource::Both);
                     }
@@ -222,6 +218,7 @@ impl LendingIterator for SnapshotRangeIterator {
         }
         match self.ready_item_source.take() {
             Some(ReadyItemSource::Both) => {
+                // Skip the storage and get the buffered value because they can be different
                 let _ = self.storage_next();
                 self.buffered_next()
             }
