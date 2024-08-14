@@ -18,6 +18,7 @@ use crate::{
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
+use crate::params::IsEmptyOrNot;
 
 pub fn attribute_put_instance_with_value_impl(
     context: &mut Context,
@@ -190,4 +191,17 @@ async fn attribute_instances_contain(
             .collect()
     });
     containment.check(std::slice::from_ref(attribute), &actuals);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"attribute\({type_label}\) get instances {is_empty_or_not}")]
+async fn object_instances_is_empty(
+    context: &mut Context,
+    type_label: params::Label,
+    is_empty_or_not: IsEmptyOrNot,
+) {
+    with_read_tx!(context, |tx| {
+        let attribute_type = tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        is_empty_or_not.check(tx.thing_manager.get_attributes_in(&tx.snapshot, attribute_type).unwrap().next().is_none());
+    });
 }

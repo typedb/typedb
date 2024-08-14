@@ -1437,7 +1437,7 @@ impl ThingManager {
         // TODO: Understand set_modified
         owner.set_modified(snapshot, self);
         // TODO: What do we do with lists of attributes?
-        attributes.into_iter().for_each(|attribute| attribute.set_modified(snapshot, self));
+        // attributes.into_iter().for_each(|attribute| attribute.set_modified(snapshot, self));
 
         // must lock to fail concurrent transactions updating the same counters
         snapshot.exclusive_lock_add(storage_key.into_byte_array());
@@ -1500,7 +1500,7 @@ impl ThingManager {
         // TODO: Understand set_modified
         relation.set_modified(snapshot, self);
         // TODO: What to do with lists of players?
-        players.into_iter().for_each(|player| player.set_modified(snapshot, self));
+        // players.into_iter().for_each(|player| player.set_modified(snapshot, self));
         snapshot.put_val(storage_key.clone(), value);
 
         // must lock to fail concurrent transactions updating the same counters
