@@ -124,11 +124,11 @@ fn traverse_has_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     block.add_limit(3);
     let filter = block.add_filter(vec!["person", "age"]).unwrap().clone();
+    let entry = block.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
-    let entry = block.finish();
     let (entry_annotations, annotated_functions) =
         infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
 
