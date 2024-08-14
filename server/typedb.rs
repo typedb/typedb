@@ -15,6 +15,7 @@ use std::{
 use database::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
 use itertools::Itertools;
 use storage::durability_client::WALClient;
+use crate::service::typedb_service::TypeDBService;
 
 #[derive(Debug)]
 pub struct Server {
@@ -45,6 +46,7 @@ impl Server {
             })
             .try_collect()?;
         let data_directory = data_directory.to_owned();
+
         Ok(Self { data_directory, databases })
     }
 
@@ -111,8 +113,15 @@ impl Server {
         &self.databases
     }
 
-    pub fn serve(self) {
-        todo!()
+    pub async fn serve(self) -> Result<(), Box<dyn Error>> {
+        let address = "localhost:1729".parse().unwrap();
+        let typedb_service = TypeDBService::default();
+
+        Server::builder()
+            .add_service(typedb_service)
+            .serve(address)
+            .await?;
+        Ok(())
     }
 }
 

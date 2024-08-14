@@ -23,7 +23,7 @@ rust_binary(
         "//resource",
         "//server",
 
-        "@crates//:tokio"
+        "@crates//:tokio",
     ],
 )
 
