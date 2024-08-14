@@ -171,7 +171,7 @@ impl Validation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-        value: Value<'static>,
+        value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let regex = attribute_type
             .get_regex_constraint(snapshot, thing_manager.type_manager())
@@ -181,7 +181,7 @@ impl Validation {
             Some(regex) => match &value {
                 Value::String(string_value) => {
                     if !regex.value_valid(&string_value) {
-                        Err(DataValidationError::AttributeViolatesRegexConstraint { attribute_type, value, regex })
+                        Err(DataValidationError::AttributeViolatesRegexConstraint { attribute_type, value: value.into_owned(), regex })
                     } else {
                         Ok(())
                     }
@@ -202,7 +202,7 @@ impl Validation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-        value: Value<'static>,
+        value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let range = attribute_type
             .get_range_constraint(snapshot, thing_manager.type_manager())
@@ -210,7 +210,7 @@ impl Validation {
 
         match range {
             Some(range) if !range.value_valid(value.clone()) => {
-                Err(DataValidationError::AttributeViolatesRangeConstraint { attribute_type, value, range })
+                Err(DataValidationError::AttributeViolatesRangeConstraint { attribute_type, value: value.into_owned(), range })
             }
             _ => Ok(()),
         }
@@ -220,7 +220,7 @@ impl Validation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-        value: Value<'static>,
+        value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let values = attribute_type
             .get_values_constraint(snapshot, thing_manager.type_manager())
@@ -228,7 +228,7 @@ impl Validation {
 
         match values {
             Some(values) if !values.value_valid(value.clone()) => {
-                Err(DataValidationError::AttributeViolatesValuesConstraint { attribute_type, value, values })
+                Err(DataValidationError::AttributeViolatesValuesConstraint { attribute_type, value: value.into_owned(), values })
             }
             _ => Ok(()),
         }
@@ -238,7 +238,7 @@ impl Validation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owns: Owns<'static>,
-        value: Value<'static>,
+        value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let regex = owns
             .get_regex_constraint(snapshot, thing_manager.type_manager())
@@ -248,7 +248,7 @@ impl Validation {
             Some(regex) => match &value {
                 Value::String(string_value) => {
                     if !regex.value_valid(string_value) {
-                        Err(DataValidationError::HasViolatesRegexConstraint { owns, value, regex })
+                        Err(DataValidationError::HasViolatesRegexConstraint { owns, value: value.into_owned(), regex })
                     } else {
                         Ok(())
                     }
@@ -269,7 +269,7 @@ impl Validation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owns: Owns<'static>,
-        value: Value<'static>,
+        value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let range = owns
             .get_range_constraint(snapshot, thing_manager.type_manager())
@@ -277,7 +277,7 @@ impl Validation {
 
         match range {
             Some(range) if !range.value_valid(value.clone()) => {
-                Err(DataValidationError::HasViolatesRangeConstraint { owns, value, range })
+                Err(DataValidationError::HasViolatesRangeConstraint { owns, value: value.into_owned(), range })
             }
             _ => Ok(()),
         }
@@ -287,7 +287,7 @@ impl Validation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owns: Owns<'static>,
-        value: Value<'static>,
+        value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let values = owns
             .get_values_constraint(snapshot, thing_manager.type_manager())
@@ -295,7 +295,7 @@ impl Validation {
 
         match values {
             Some(values) if !values.value_valid(value.clone()) => {
-                Err(DataValidationError::HasViolatesValuesConstraint { owns, value, values })
+                Err(DataValidationError::HasViolatesValuesConstraint { owns, value: value.into_owned(), values })
             }
             _ => Ok(()),
         }
@@ -305,7 +305,7 @@ impl Validation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owns: Owns<'static>,
-        value: Value<'static>,
+        value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let uniqueness_source = Self::get_uniqueness_source(snapshot, thing_manager, owns.clone())
             .map_err(DataValidationError::ConceptRead)?;
@@ -329,7 +329,7 @@ impl Validation {
                                 attribute_type: owns.attribute(),
                                 taken_owner_type: current_owner_type,
                                 taken_attribute_type: current_owns.attribute(),
-                                value,
+                                value: value.into_owned(),
                             })
                         } else {
                             Err(DataValidationError::UniqueValueTaken {
@@ -337,7 +337,7 @@ impl Validation {
                                 attribute_type: owns.attribute(),
                                 taken_owner_type: current_owner_type,
                                 taken_attribute_type: current_owns.attribute(),
-                                value,
+                                value: value.into_owned(),
                             })
                         };
                     }
@@ -375,7 +375,7 @@ impl Validation {
         Ok(())
     }
 
-    fn get_uniqueness_source(
+    pub(crate) fn get_uniqueness_source(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owns: Owns<'static>,

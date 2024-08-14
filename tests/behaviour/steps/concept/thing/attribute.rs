@@ -14,11 +14,10 @@ use macro_rules_attribute::apply;
 
 use crate::{
     generic_step,
-    params::{self, check_boolean},
+    params::{self, check_boolean, IsEmptyOrNot},
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
-use crate::params::IsEmptyOrNot;
 
 pub fn attribute_put_instance_with_value_impl(
     context: &mut Context,
@@ -195,13 +194,11 @@ async fn attribute_instances_contain(
 
 #[apply(generic_step)]
 #[step(expr = r"attribute\({type_label}\) get instances {is_empty_or_not}")]
-async fn object_instances_is_empty(
-    context: &mut Context,
-    type_label: params::Label,
-    is_empty_or_not: IsEmptyOrNot,
-) {
+async fn object_instances_is_empty(context: &mut Context, type_label: params::Label, is_empty_or_not: IsEmptyOrNot) {
     with_read_tx!(context, |tx| {
-        let attribute_type = tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        is_empty_or_not.check(tx.thing_manager.get_attributes_in(&tx.snapshot, attribute_type).unwrap().next().is_none());
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        is_empty_or_not
+            .check(tx.thing_manager.get_attributes_in(&tx.snapshot, attribute_type).unwrap().next().is_none());
     });
 }

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashSet, iter::once, sync::Arc};
+use std::{any::Any, borrow::Cow, collections::HashSet, io::Read, iter::once, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -19,11 +19,14 @@ use encoding::{
         },
         type_::{
             property::{TypeVertexProperty, TypeVertexPropertyEncoding},
-            vertex::{TypeID, TypeVertex, TypeVertexEncoding},
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertexEncoding},
         },
         Typed,
     },
-    layout::prefix::Prefix,
+    layout::{
+        infix::Infix,
+        prefix::{Prefix},
+    },
     value::{
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
@@ -41,15 +44,17 @@ use encoding::{
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
-    Keyable,
+    AsBytes, Keyable,
 };
 use itertools::Itertools;
 use lending_iterator::{AsHkt, LendingIterator};
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLINE};
 use storage::{
     key_range::KeyRange,
-    key_value::StorageKey,
-    snapshot::{write::Write, ReadableSnapshot, WritableSnapshot},
+    key_value::{StorageKey, StorageKeyReference},
+    snapshot::{
+        lock::create_custom_lock_key, write::Write, ReadableSnapshot, WritableSnapshot,
+    },
 };
 
 use crate::{
@@ -65,14 +70,17 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{
-        annotation::{AnnotationCascade, AnnotationIndependent},
-        attribute_type::AttributeType,
+        annotation::{AnnotationCardinality, AnnotationCascade, AnnotationIndependent},
+        attribute_type::{AttributeType},
         entity_type::EntityType,
         object_type::ObjectType,
+        owns::Owns,
+        plays::Plays,
+        relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, ObjectTypeAPI, OwnerAPI, TypeAPI,
+        Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptStatus,
 };
@@ -388,8 +396,15 @@ impl ThingManager {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<bool, ConceptReadError> {
-        // TODO: check value type matches attribute value type
+        let type_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
         let value_type = value.value_type();
+        if Some(value_type.clone()) != type_value_type {
+            return Err(ConceptReadError::ValueTypeMismatch {
+                expected: type_value_type,
+                provided: value_type.clone(),
+            });
+        }
+
         let vertex = if AttributeID::is_inlineable(value.as_reference()) {
             // don't need to do an extra lookup to get the attribute vertex - if it exists, it will have this ID
             AttributeVertex::build(
@@ -800,10 +815,10 @@ impl ThingManager {
                 Write::Delete => ConceptStatus::Deleted,
             })
             .unwrap_or_else(|| {
-                debug_assert!(
-                    snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()).unwrap().is_some(),
-                    "Attempting to get write status of a key that was not written to in this transaction: {key:?}",
-                );
+                // debug_assert!(
+                //     snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()).unwrap().is_some(),
+                //     "Attempting to get write status of a key that was not written to in this transaction: {key:?}",
+                // );
                 ConceptStatus::Persisted
             })
     }
@@ -821,20 +836,198 @@ impl ThingManager {
 }
 
 impl ThingManager {
-    pub(crate) fn lock_existing<'a>(&self, snapshot: &mut impl WritableSnapshot, object: impl ObjectAPI<'a>) {
+    pub(crate) fn lock_existing_object<'a>(&self, snapshot: &mut impl WritableSnapshot, object: impl ObjectAPI<'a>) {
         snapshot.unmodifiable_lock_add(object.into_vertex().as_storage_key().into_owned_array())
     }
 
-    // TODO we should differentiate "validation errors" and "an error occurred during validation"
+    pub(crate) fn lock_existing_attribute<'a>(&self, snapshot: &mut impl WritableSnapshot, attribute: Attribute<'a>) {
+        snapshot.unmodifiable_lock_add(attribute.into_vertex().as_storage_key().into_owned_array())
+    }
+
     pub fn finalise(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
         self.cleanup_relations(snapshot).map_err(|err| vec![err])?;
         self.cleanup_attributes(snapshot).map_err(|err| vec![err])?;
         let thing_errors = self.thing_errors(snapshot);
+
         match thing_errors {
-            Ok(errors) if errors.is_empty() => Ok(()),
-            Ok(errors) => Err(errors),
+            Ok(errors) if errors.is_empty() => {}
+            Ok(errors) => return Err(errors),
+            Err(error) => return Err(vec![ConceptWriteError::ConceptRead { source: error }]),
+        };
+
+        match self.create_commit_locks(snapshot) {
+            Ok(_) => Ok(()),
             Err(error) => Err(vec![ConceptWriteError::ConceptRead { source: error }]),
         }
+    }
+
+    fn create_commit_locks(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptReadError> {
+        // TODO: Should not collect here (iterate_writes() already copies)
+        for (key, write) in snapshot.iterate_writes().collect_vec() {
+            let key_reference = StorageKeyReference::from(&key);
+            if ThingEdgeHas::is_has(key_reference) {
+                let has = ThingEdgeHas::new(Bytes::Reference(key_reference.byte_ref()));
+                let object = Object::new(has.from()).into_owned();
+                let mut attribute = Attribute::new(has.to()).into_owned();
+                let attribute_type = attribute.type_();
+                let attribute_value = attribute.get_value(snapshot, self)?;
+                let owner_type = object.type_();
+                let owns =
+                    match owner_type.get_owns_attribute(snapshot, self.type_manager(), attribute_type.clone())? {
+                        None => Err(ConceptReadError::CannotGetOwnsDoesntExist(
+                            owner_type.get_label(snapshot, self.type_manager())?.clone(),
+                            attribute_type.get_label(snapshot, self.type_manager())?.clone(),
+                        )),
+                        Some(owns) => Ok(owns),
+                    }?
+                    .into_owned();
+
+                self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, owns.clone())?;
+                self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute_value, owns)?;
+            } else if ThingEdgeRolePlayer::is_role_player(key_reference) {
+                let role_player = ThingEdgeRolePlayer::new(Bytes::Reference(key_reference.byte_ref()));
+                let relation = Relation::new(role_player.relation()).into_owned();
+                let player = Object::new(role_player.player()).into_owned();
+                let relation_type = relation.type_();
+                let owner_type = player.type_();
+                let role_type = RoleType::build_from_type_id(role_player.role_id()).into_owned();
+
+                let plays = match owner_type.get_plays_role(snapshot, self.type_manager(), role_type.clone())? {
+                    None => Err(ConceptReadError::CannotGetPlaysDoesntExist(
+                        owner_type.get_label(snapshot, self.type_manager())?.clone(),
+                        role_type.get_label(snapshot, self.type_manager())?.clone(),
+                    )),
+                    Some(plays) => Ok(plays),
+                }?
+                .into_owned();
+                self.add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, plays)?;
+
+                let relates = match relation_type.get_relates_role(snapshot, self.type_manager(), role_type.clone())? {
+                    None => Err(ConceptReadError::CannotGetPlaysDoesntExist(
+                        owner_type.get_label(snapshot, self.type_manager())?.clone(),
+                        role_type.get_label(snapshot, self.type_manager())?.clone(),
+                    )),
+                    Some(plays) => Ok(plays),
+                }?
+                .into_owned();
+                self.add_exclusive_lock_for_relates_cardinality_constraint(snapshot, &relation, relates)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn add_exclusive_lock_for_unique_constraint<'a>(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owner: &Object<'a>,
+        value: Value<'a>,
+        owns: Owns<'static>,
+    ) -> Result<(), ConceptReadError> {
+        if let Some(uniqueness_source) = Validation::get_uniqueness_source(snapshot, self, owns)? {
+            let lock_key = create_custom_lock_key(
+                [
+                    &Infix::PropertyAnnotationUnique.infix_id().bytes(),
+                    uniqueness_source.attribute().vertex().bytes().bytes(),
+                    value.encode_bytes::<128>().bytes(), // TODO: Where to get 128 from?
+                    owner.vertex().bytes().bytes(),
+                    uniqueness_source.owner().vertex().bytes().bytes(),
+                ]
+                .into_iter(),
+            );
+            snapshot.exclusive_lock_add(lock_key);
+        }
+        Ok(())
+    }
+
+    fn add_exclusive_lock_for_owns_cardinality_constraint<'a>(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owner: &Object<'a>,
+        owns: Owns<'static>,
+    ) -> Result<(), ConceptReadError> {
+        let mut current_capability = Some(owns);
+        while let Some(locked_capability) = current_capability {
+            let cardinality = locked_capability.get_cardinality(snapshot, self.type_manager())?;
+            if cardinality == AnnotationCardinality::unchecked() {
+                break;
+            }
+
+            let lock_key = create_custom_lock_key(
+                [
+                    &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
+                    owner.vertex().bytes().bytes(),
+                    locked_capability.interface().vertex().bytes().bytes(),
+                    // TODO: Do we need attribute type id?
+                ]
+                .into_iter(),
+            );
+            snapshot.exclusive_lock_add(lock_key);
+
+            current_capability = locked_capability.get_override(snapshot, self.type_manager())?.clone();
+        }
+        Ok(())
+    }
+
+    fn add_exclusive_lock_for_plays_cardinality_constraint<'a>(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        player: &Object<'a>,
+        plays: Plays<'static>,
+    ) -> Result<(), ConceptReadError> {
+        let mut current_capability = Some(plays);
+        while let Some(locked_capability) = current_capability {
+            let cardinality = locked_capability.get_cardinality(snapshot, self.type_manager())?;
+            if cardinality == AnnotationCardinality::unchecked() {
+                break;
+            }
+
+            let lock_key = create_custom_lock_key(
+                [
+                    &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
+                    player.vertex().bytes().bytes(),
+                    locked_capability.interface().vertex().bytes().bytes(),
+                    // TODO: Do we need attribute type id?
+                ]
+                .into_iter(),
+            );
+            snapshot.exclusive_lock_add(lock_key);
+
+            current_capability = locked_capability.get_override(snapshot, self.type_manager())?.clone();
+        }
+        Ok(())
+    }
+
+    fn add_exclusive_lock_for_relates_cardinality_constraint<'a>(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation: &Relation<'a>,
+        relates: Relates<'static>,
+    ) -> Result<(), ConceptReadError> {
+        let mut current_capability = Some(relates);
+        while let Some(locked_capability) = current_capability {
+            let cardinality = locked_capability.get_cardinality(snapshot, self.type_manager())?;
+            if cardinality == AnnotationCardinality::unchecked() {
+                break;
+            }
+
+            let lock_key = create_custom_lock_key(
+                [
+                    &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
+                    relation.vertex().bytes().bytes(),
+                    locked_capability.interface().vertex().bytes().bytes(),
+                    // TODO: Do we need attribute type id?
+                ]
+                .into_iter(),
+            );
+            snapshot.exclusive_lock_add(lock_key);
+
+            current_capability = match locked_capability.role().get_supertype(snapshot, self.type_manager())? {
+                Some(superrole_type) => Some(superrole_type.get_relates(snapshot, self.type_manager())?.clone()),
+                None => None,
+            }
+        }
+        Ok(())
     }
 
     fn cleanup_relations(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptWriteError> {
@@ -1004,6 +1197,7 @@ impl ThingManager {
         Ok(())
     }
 
+    //  TODO: Remove excessive
     fn thing_errors(&self, snapshot: &mut impl WritableSnapshot) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
         let mut errors = Vec::new();
 
@@ -1028,6 +1222,7 @@ impl ThingManager {
         Ok(errors)
     }
 
+    //  TODO: Remove excessive
     fn validate_ownerships(
         &self,
         errors: &mut Vec<ConceptWriteError>,
@@ -1064,7 +1259,7 @@ impl ThingManager {
         {
             let owner = Object::new(ObjectVertex::new(Bytes::reference(key.bytes())));
             let owner_type = owner.type_();
-            for owns in &owner_type.get_owns_declared(snapshot, self.type_manager())? {
+            for owns in &owner_type.get_owns(snapshot, self.type_manager())? {
                 if owns.is_key(snapshot, &self.type_manager)? {
                     self.validate_owner(owner.as_reference(), owns.attribute(), snapshot, errors)?;
                 }
@@ -1074,6 +1269,7 @@ impl ThingManager {
         Ok(())
     }
 
+    // TODO: Remove
     fn validate_owner(
         &self,
         owner: Object<'_>,
@@ -1133,7 +1329,7 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType<'static>,
-        value: Value<'static>,
+        value: Value<'_>,
     ) -> Result<Attribute<'a>, ConceptWriteError> {
         Validation::validate_type_instance_is_not_abstract(snapshot, self, attribute_type.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
@@ -1344,14 +1540,7 @@ impl ThingManager {
         count: u64,
     ) -> Result<(), ConceptWriteError> {
         let attribute_type = attribute.type_();
-        let value = match attribute.get_value(snapshot, self) {
-            Ok(value) => value,
-            // When setting attribute ownership, either the attribute was just created, or it was
-            // fetched from the storage by key, so a non-inlined value may be missing.
-            // There should be no way for outside code to get an instance of an `Attribute` without
-            // going through one of the above code paths, so `get_value()` better succeed.
-            Err(error) => panic!("Error encountered when attempting to insert ownership for an attribute: {error:?}"),
-        };
+        let value = attribute.get_value(snapshot, self)?;
 
         let type_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
         if Some(value.value_type()) != type_value_type {
@@ -1376,17 +1565,20 @@ impl ThingManager {
         Validation::validate_has_values_constraint(snapshot, self, owns.clone(), value.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        owner.set_required(snapshot, self);
-        attribute.set_required(snapshot, self);
-        // TODO: handle duplicates
-
-        // TODO: Check 0 like in role player? Write a test
-
-        self.put_attribute(snapshot, attribute_type, value)?;
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
-        snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
         let has_reverse = ThingEdgeHasReverse::build(attribute.vertex(), owner.vertex());
-        snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+
+        if count == 0 {
+            snapshot.delete(has.as_storage_key().into_owned_array());
+            snapshot.delete(has_reverse.as_storage_key().into_owned_array());
+        } else {
+            owner.set_required(snapshot, self);
+            attribute.set_required(snapshot, self);
+
+            snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+            snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+        }
+
         Ok(())
     }
 

@@ -161,7 +161,10 @@ impl From<ConceptReadError> for ConceptWriteError {
                 Self::ConceptRead { source: error }
             }
             ConceptReadError::CannotGetOwnsDoesntExist(_, _) => Self::ConceptRead { source: error },
+            ConceptReadError::CannotGetPlaysDoesntExist(_, _) => Self::ConceptRead { source: error },
+            ConceptReadError::CannotGetRelatesDoesntExist(_, _) => Self::ConceptRead { source: error },
             ConceptReadError::Annotation { .. } => Self::ConceptRead { source: error },
+            ConceptReadError::ValueTypeMismatch { .. } => Self::ConceptRead { source: error },
         }
     }
 }
@@ -178,7 +181,10 @@ pub enum ConceptReadError {
     CorruptMissingMandatoryRelatesForRole,
     CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(Label<'static>, ValueType, Annotation),
     CannotGetOwnsDoesntExist(Label<'static>, Label<'static>),
+    CannotGetPlaysDoesntExist(Label<'static>, Label<'static>),
+    CannotGetRelatesDoesntExist(Label<'static>, Label<'static>),
     Annotation { source: AnnotationError },
+    ValueTypeMismatch { expected: Option<ValueType>, provided: ValueType },
 }
 
 impl fmt::Display for ConceptReadError {
@@ -200,7 +206,10 @@ impl Error for ConceptReadError {
             Self::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(_, _, _) => None,
             Self::CorruptMissingMandatoryRelatesForRole => None,
             Self::CannotGetOwnsDoesntExist(_, _) => None,
+            Self::CannotGetPlaysDoesntExist(_, _) => None,
+            Self::CannotGetRelatesDoesntExist(_, _) => None,
             Self::Annotation { .. } => None,
+            Self::ValueTypeMismatch { .. } => None,
         }
     }
 }

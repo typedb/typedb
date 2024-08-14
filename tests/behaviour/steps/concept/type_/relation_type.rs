@@ -109,7 +109,7 @@ pub async fn relation_role_unset_override(
         let relation_type =
             tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
         let relates = relation_type
-            .get_relates_of_role_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
         let res = relates.unset_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
@@ -200,7 +200,7 @@ pub async fn relation_role_exists(context: &mut Context, type_label: Label, role
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
         let role_opt = relation
-            .get_relates_of_role_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
             .unwrap();
         exists.check(&role_opt, &format!("role {}:{}", type_label.into_typedb(), role_label.into_typedb()));
     });
@@ -217,7 +217,7 @@ pub async fn relation_role_get_label(
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
         let role = relation
-            .get_relates_of_role_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
             .unwrap()
             .unwrap()
             .role();
@@ -239,7 +239,7 @@ pub async fn relation_role_get_name(
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
         let role = relation
-            .get_relates_of_role_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
             .unwrap()
             .unwrap()
             .role();
@@ -261,7 +261,7 @@ pub async fn relation_type_delete_role(
     with_schema_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
         let role = relation
-            .get_relates_of_role_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
             .unwrap()
             .unwrap()
             .role();
@@ -826,7 +826,7 @@ pub async fn role_type_players_contain(
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
         let role = relation
-            .get_relates_of_role_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
@@ -860,7 +860,7 @@ pub async fn role_type_declared_players_contain(
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
         let role = relation
-            .get_relates_of_role_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();

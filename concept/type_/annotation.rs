@@ -83,6 +83,10 @@ impl AnnotationCardinality {
 
     // TODO: Can move to impl Default for AnnotationCardinality and other Annotations
     pub const fn default() -> Self {
+        Self::unchecked()
+    }
+
+    pub const fn unchecked() -> Self {
         Self::new(0, None)
     }
 

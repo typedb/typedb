@@ -20,7 +20,7 @@ use encoding::{
         Typed,
     },
     layout::prefix::Prefix,
-    value::{decode_value_u64, value::Value},
+    value::{decode_value_u64, value::Value, value_type::ValueType},
     AsBytes, Keyable,
 };
 use iterator::State;
@@ -119,11 +119,11 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         Attribute { vertex, value: None }
     }
 
-    fn vertex(&self) -> AttributeVertex<'_> {
+    fn vertex(&self) -> Self::Vertex<'_> {
         self.vertex.as_reference()
     }
 
-    fn into_vertex(self) -> AttributeVertex<'a> {
+    fn into_vertex(self) -> Self::Vertex<'a> {
         self.vertex
     }
 
@@ -132,10 +132,24 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     }
 
     fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
-        // if category == small value type, then put vertex into the snapshot again
-        // otherwise, we should lock
-        // thing_manager.lock_existing(snapshot, self.as_reference());
-
+        match self.type_().get_value_type(snapshot, thing_manager.type_manager()).ok() {
+            Some(Some(value_type)) => match value_type {
+                | ValueType::Boolean
+                | ValueType::Long
+                | ValueType::Double
+                | ValueType::Decimal
+                | ValueType::Date
+                | ValueType::DateTime
+                | ValueType::DateTimeTZ
+                | ValueType::Duration => snapshot.put(self.vertex().as_storage_key().into_owned_array()),
+                // ValueTypes with expensive writes
+                | ValueType::String | ValueType::Struct(_) => {
+                    thing_manager.lock_existing_attribute(snapshot, self.as_reference())
+                }
+            },
+            // Read error or empty value type
+            _ => snapshot.put(self.vertex().as_storage_key().into_owned_array()),
+        }
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {

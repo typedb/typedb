@@ -403,7 +403,7 @@ fn role_player_distinct() {
         let employment_type = type_manager.create_relation_type(&mut snapshot, &employment_label).unwrap();
         employment_type.create_relates(&mut snapshot, &type_manager, employee_role, Ordering::Ordered).unwrap();
         let employee_relates =
-            employment_type.get_relates_of_role(&snapshot, &type_manager, employee_role).unwrap().unwrap();
+            employment_type.get_relates_role_name(&snapshot, &type_manager, employee_role).unwrap().unwrap();
         employee_relates
             .set_annotation(
                 &mut snapshot,
@@ -424,7 +424,7 @@ fn role_player_distinct() {
 
         employment_type.create_relates(&mut snapshot, &type_manager, employer_role, Ordering::Ordered).unwrap();
         let employer_relates =
-            employment_type.get_relates_of_role(&snapshot, &type_manager, employer_role).unwrap().unwrap();
+            employment_type.get_relates_role_name(&snapshot, &type_manager, employer_role).unwrap().unwrap();
         employer_relates
             .set_annotation(
                 &mut snapshot,
@@ -534,7 +534,8 @@ fn role_player_duplicates() {
         let (type_manager, thing_manager) = load_managers(storage.clone());
         let list_type = type_manager.create_relation_type(&mut snapshot, &list_label).unwrap();
         list_type.create_relates(&mut snapshot, &type_manager, entry_role_label, Ordering::Unordered).unwrap();
-        let entry_relates = list_type.get_relates_of_role(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
+        let entry_relates =
+            list_type.get_relates_role_name(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
         entry_relates
             .set_annotation(
                 &mut snapshot,
@@ -546,7 +547,7 @@ fn role_player_duplicates() {
         let entry_type = entry_relates.role();
         list_type.create_relates(&mut snapshot, &type_manager, owner_role_label, Ordering::Unordered).unwrap();
         let owner_type =
-            list_type.get_relates_of_role(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
+            list_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();

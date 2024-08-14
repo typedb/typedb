@@ -284,21 +284,16 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_relates(snapshot, self.clone().into_owned())
     }
 
-    // TODO: Maybe we just don't need this method and it's better to use the undeclared one!
-    // TODO: Rewrite to search as get_relates_of_role. TODO: Do we want to move it to type_manager? Cache it?
-    pub fn get_relates_of_role_declared(
+    pub fn get_relates_role(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        role_name: &str,
+        role_type: RoleType<'static>,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        let role_label = Label::build_scoped(role_name, self.get_label(snapshot, type_manager)?.name().as_str());
-        Ok(type_manager
-            .get_role_type(snapshot, &role_label)?
-            .map(|role_type| Relates::new(self.clone().into_owned(), role_type)))
+        Ok(self.get_relates(snapshot, type_manager)?.iter().find(|relates| relates.role() == role_type).cloned())
     }
 
-    pub fn get_relates_of_role(
+    pub fn get_relates_role_name(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,

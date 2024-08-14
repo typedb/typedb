@@ -245,8 +245,7 @@ fn role_usage() {
         // --- friendship sub relation, relates friend ---
         let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
         friendship_type.create_relates(&mut snapshot, &type_manager, friend_name, Ordering::Unordered).unwrap();
-        let relates =
-            friendship_type.get_relates_of_role_declared(&snapshot, &type_manager, friend_name).unwrap().unwrap();
+        let relates = friendship_type.get_relates_role_name(&snapshot, &type_manager, friend_name).unwrap().unwrap();
         let role_type =
             type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
         debug_assert_eq!(relates.relation(), friendship_type.clone());
@@ -269,7 +268,7 @@ fn role_usage() {
 
         // --- friendship sub relation, relates friend ---
         let friendship_type = type_manager.get_relation_type(&snapshot, &friendship_label).unwrap().unwrap();
-        let relates = friendship_type.get_relates_of_role_declared(&snapshot, &type_manager, friend_name).unwrap();
+        let relates = friendship_type.get_relates_role_name(&snapshot, &type_manager, friend_name).unwrap();
         debug_assert!(relates.is_some());
         let relates = relates.unwrap();
         let role_type =
