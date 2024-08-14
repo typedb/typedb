@@ -63,7 +63,7 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{
-        attribute_type::{AttributeType, AttributeTypeAnnotation},
+        attribute_type::{AttributeType},
         entity_type::EntityType,
         object_type::ObjectType,
         relation_type::RelationType,
@@ -74,7 +74,7 @@ use crate::{
     ConceptStatus,
 };
 use crate::thing::relation::RolePlayer;
-use crate::thing::thing_manager::validation::operation_time_validation::OperationTimeValidation;
+use crate::thing::thing_manager::validation::validation::Validation;
 use crate::type_::annotation::{AnnotationCascade, AnnotationIndependent};
 
 pub mod validation;
@@ -1110,7 +1110,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         entity_type: EntityType<'static>,
     ) -> Result<Entity<'a>, ConceptWriteError> {
-        OperationTimeValidation::validate_type_instance_is_not_abstract(snapshot, self, entity_type.clone())
+        Validation::validate_type_instance_is_not_abstract(snapshot, self, entity_type.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         Ok(Entity::new(self.vertex_generator.create_entity(entity_type.vertex().type_id_(), snapshot)))
@@ -1121,7 +1121,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType<'static>,
     ) -> Result<Relation<'a>, ConceptWriteError> {
-        OperationTimeValidation::validate_type_instance_is_not_abstract(snapshot, self, relation_type.clone())
+        Validation::validate_type_instance_is_not_abstract(snapshot, self, relation_type.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         Ok(Relation::new(self.vertex_generator.create_relation(relation_type.vertex().type_id_(), snapshot)))
@@ -1133,7 +1133,7 @@ impl ThingManager {
         attribute_type: AttributeType<'static>,
         value: Value<'static>,
     ) -> Result<Attribute<'a>, ConceptWriteError> {
-        OperationTimeValidation::validate_type_instance_is_not_abstract(snapshot, self, attribute_type.clone())
+        Validation::validate_type_instance_is_not_abstract(snapshot, self, attribute_type.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         // TODO: Transform to validation!
@@ -1145,7 +1145,7 @@ impl ThingManager {
             });
         }
 
-        OperationTimeValidation::validate_attribute_regex_constraint(
+        Validation::validate_attribute_regex_constraint(
             snapshot,
             self,
             attribute_type.clone(),
@@ -1153,7 +1153,7 @@ impl ThingManager {
         )
         .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        OperationTimeValidation::validate_attribute_range_constraint(
+        Validation::validate_attribute_range_constraint(
             snapshot,
             self,
             attribute_type.clone(),
@@ -1161,7 +1161,7 @@ impl ThingManager {
         )
         .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        OperationTimeValidation::validate_attribute_values_constraint(
+        Validation::validate_attribute_values_constraint(
             snapshot,
             self,
             attribute_type.clone(),
@@ -1380,18 +1380,19 @@ impl ThingManager {
 
         let value = value.into_owned();
 
-        OperationTimeValidation::validate_has_regex_constraint(snapshot, self, owns.clone(), value.clone())
+        Validation::validate_has_regex_constraint(snapshot, self, owns.clone(), value.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        OperationTimeValidation::validate_has_range_constraint(snapshot, self, owns.clone(), value.clone())
+        Validation::validate_has_range_constraint(snapshot, self, owns.clone(), value.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        OperationTimeValidation::validate_has_values_constraint(snapshot, self, owns.clone(), value.clone())
+        Validation::validate_has_values_constraint(snapshot, self, owns.clone(), value.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         // TODO: handle duplicates
         // note: we always re-put the attribute. TODO: optimise knowing when the attribute pre-exists.
         self.put_attribute(snapshot, attribute_type, value)?;
+        // TODO: Understand set_modified
         attribute.set_modified(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
@@ -1416,6 +1417,9 @@ impl ThingManager {
                 let count = 1;
                 snapshot.unput_val(has, ByteArray::copy(&encode_u64(count)));
                 snapshot.unput_val(has_reverse, ByteArray::copy(&encode_u64(count)));
+                // TODO: Understand set_modified
+                owner.set_modified(snapshot, self);
+                attribute.set_modified(snapshot, self);
             }
             ConceptStatus::Persisted => {
                 snapshot.delete(has);
@@ -1424,8 +1428,6 @@ impl ThingManager {
             ConceptStatus::Put => unreachable!("Encountered a `put` attribute owner: {owner:?}."),
             ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
         }
-        owner.set_modified(snapshot, self);
-        attribute.set_modified(snapshot, self);
     }
 
     pub(crate) fn set_has_ordered<'a>(
@@ -1445,6 +1447,7 @@ impl ThingManager {
             attributes.iter().map(|attr| attr.vertex().attribute_id()),
         );
         snapshot.put_val(storage_key.clone(), value);
+        // TODO: Understand set_modified
         owner.set_modified(snapshot, self);
         // TODO: What do we do with lists of attributes?
         attributes.into_iter().for_each(|attribute| attribute.set_modified(snapshot, self));
@@ -1507,6 +1510,7 @@ impl ThingManager {
         let key = build_object_vertex_property_links_order(relation.as_reference().into_vertex(), role_type.into_vertex());
         let storage_key = key.into_storage_key().into_owned_array();
         let value = encode_role_players(players.iter().map(|player| player.vertex()));
+        // TODO: Understand set_modified
         relation.set_modified(snapshot, self);
         // TODO: What to do with lists of players?
         players.into_iter().for_each(|player| player.set_modified(snapshot, self));
@@ -1530,7 +1534,8 @@ impl ThingManager {
         let links_reverse =
             ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.clone().into_vertex());
 
-        // TODO: Can we clal it before modification?
+        // TODO: Understand set_modified
+        // TODO: Can we call it before modification?
         relation.set_modified(snapshot, self);
         player.set_modified(snapshot, self);
 
@@ -1586,6 +1591,7 @@ impl ThingManager {
             ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
         }
 
+        // TODO: Understand set_modified
         relation.set_modified(snapshot, self);
         player.set_modified(snapshot, self);
 

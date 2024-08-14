@@ -5,6 +5,7 @@
  */
 
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::ops::Deref;
 
 use encoding::value::{label::Label, value::Value, value_type::ValueType, ValueEncodable};
 use lending_iterator::LendingIterator;
@@ -33,9 +34,9 @@ use crate::{
 };
 use crate::thing::object::Object;
 
-pub struct OperationTimeValidation {}
+pub struct Validation {}
 
-impl OperationTimeValidation {
+impl Validation {
     pub(crate) fn get_label_or_concept_read_err<'a>(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -398,5 +399,59 @@ impl OperationTimeValidation {
         } else {
             Ok(None)
         }
+    }
+
+    pub(crate) fn validate_has_cardinality_constraint<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        owner: &Object<'a>,
+        owns: Owns<'static>,
+        counts: &HashMap<AttributeType<'static>, u64>,
+    ) -> Result<(), DataValidationError> {
+        let count = counts.get(&owns.attribute()).unwrap_or(&0).clone();
+        Self::check_owns_cardinality(snapshot, thing_manager, owner, owns.clone(), count)?;
+
+        let mut next_owns = owns;
+        while let Some(checked_owns) = &*next_owns.get_override(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)? {
+            let overriding = checked_owns.get_overriding_transitive(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
+            let count = overriding.iter().filter_map(|overriding| counts.get(&overriding.attribute())).sum();
+            Self::check_owns_cardinality(snapshot, thing_manager, owner, checked_owns.clone(), count)?;
+
+            next_owns = checked_owns.clone();
+        }
+
+        Ok(())
+    }
+
+    fn check_owns_cardinality<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        owner: &Object<'a>,
+        owns: Owns<'static>,
+        count: u64,
+    ) -> Result<(), DataValidationError> {
+        let cardinality: AnnotationCardinality = owns.get_cardinality(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
+        let is_key: bool = owns.is_key(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
+        if !cardinality.value_valid(count) {
+            let owner = owner.clone().into_owned();
+            if is_key
+            {
+                Err(DataValidationError::KeyCardinalityViolated {
+                    owner,
+                    owns,
+                    count,
+                })
+            } else {
+                Err(DataValidationError::OwnsCardinalityViolated {
+                    owner,
+                    owns,
+                    count,
+                    cardinality,
+                })
+            }
+        } else {
+            Ok(())
+        }
+
     }
 }

@@ -154,6 +154,7 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::Encoding { source, .. } => Self::Encoding { source },
             ConceptReadError::CorruptMissingLabelOfType => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryCardinality => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingCapability => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryProperty => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryRelatesForRole => Self::ConceptRead { source: error },
             ConceptReadError::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(_, _, _) => {
@@ -172,6 +173,7 @@ pub enum ConceptReadError {
     Encoding { source: EncodingError },
     CorruptMissingLabelOfType,
     CorruptMissingMandatoryCardinality,
+    CorruptMissingCapability,
     CorruptMissingMandatoryProperty,
     CorruptMissingMandatoryRelatesForRole,
     CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(Label<'static>, ValueType, Annotation),
@@ -193,6 +195,7 @@ impl Error for ConceptReadError {
             Self::Encoding { source, .. } => Some(source),
             Self::CorruptMissingLabelOfType => None,
             Self::CorruptMissingMandatoryCardinality => None,
+            Self::CorruptMissingCapability => None,
             Self::CorruptMissingMandatoryProperty => None,
             Self::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(_, _, _) => None,
             Self::CorruptMissingMandatoryRelatesForRole => None,

@@ -779,6 +779,18 @@ impl TypeManager {
         }
     }
 
+    pub(crate) fn get_plays_overriding_transitive(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        plays: Plays<'static>,
+    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_plays_overriding_transitive(plays)))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_overriding_capabilities_transitive(snapshot, plays)?))
+        }
+    }
+
     pub(crate) fn get_attribute_type_value_type(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -841,6 +853,18 @@ impl TypeManager {
         }
     }
 
+    pub(crate) fn get_owns_overriding_transitive(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        owns: Owns<'static>,
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_owns_overriding_transitive(owns)))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_overriding_capabilities_transitive(snapshot, owns)?))
+        }
+    }
+
     pub(crate) fn get_owns_ordering(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -899,6 +923,18 @@ impl TypeManager {
             Ok(MaybeOwns::Borrowed(cache.get_relates_overriding(relates)))
         } else {
             Ok(MaybeOwns::Owned(TypeReader::get_overriding_capabilities(snapshot, relates)?))
+        }
+    }
+
+    pub(crate) fn get_relates_overriding_transitive(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relates: Relates<'static>,
+    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_relates_overriding_transitive(relates)))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_overriding_capabilities_transitive(snapshot, relates)?))
         }
     }
 

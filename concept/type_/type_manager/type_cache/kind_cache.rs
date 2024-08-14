@@ -72,6 +72,7 @@ pub(crate) struct OwnsCache {
     pub(super) ordering: Ordering,
     pub(super) overrides: Option<Owns<'static>>,
     pub(super) overriding: HashSet<Owns<'static>>,
+    pub(super) overriding_transitive: HashSet<Owns<'static>>,
     pub(super) annotations_declared: HashSet<OwnsAnnotation>,
     pub(super) annotations: HashMap<OwnsAnnotation, Owns<'static>>,
 }
@@ -80,6 +81,7 @@ pub(crate) struct OwnsCache {
 pub(crate) struct PlaysCache {
     pub(super) overrides: Option<Plays<'static>>,
     pub(super) overriding: HashSet<Plays<'static>>,
+    pub(super) overriding_transitive: HashSet<Plays<'static>>,
     pub(super) annotations_declared: HashSet<PlaysAnnotation>,
     pub(super) annotations: HashMap<PlaysAnnotation, Plays<'static>>,
 }
@@ -88,6 +90,7 @@ pub(crate) struct PlaysCache {
 pub(crate) struct RelatesCache {
     pub(super) overrides: Option<Relates<'static>>,
     pub(super) overriding: HashSet<Relates<'static>>,
+    pub(super) overriding_transitive: HashSet<Relates<'static>>,
     pub(super) annotations_declared: HashSet<RelatesAnnotation>,
     pub(super) annotations: HashMap<RelatesAnnotation, Relates<'static>>,
 }
@@ -230,6 +233,7 @@ impl OwnsCache {
                 ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
                 overrides: TypeReader::get_capability_override(snapshot, owns.clone()).unwrap(),
                 overriding: TypeReader::get_overriding_capabilities(snapshot, owns.clone()).unwrap(),
+                overriding_transitive: TypeReader::get_overriding_capabilities_transitive(snapshot, owns.clone()).unwrap(),
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, owns.clone())
                     .unwrap()
                     .into_iter()
@@ -263,6 +267,7 @@ impl PlaysCache {
             let cache = PlaysCache {
                 overrides: TypeReader::get_capability_override(snapshot, plays.clone()).unwrap(),
                 overriding: TypeReader::get_overriding_capabilities(snapshot, plays.clone()).unwrap(),
+                overriding_transitive: TypeReader::get_overriding_capabilities_transitive(snapshot, plays.clone()).unwrap(),
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, plays.clone())
                     .unwrap()
                     .into_iter()
@@ -296,6 +301,7 @@ impl RelatesCache {
             let cache = RelatesCache {
                 overrides: TypeReader::get_capability_override(snapshot, relates.clone()).unwrap(),
                 overriding: TypeReader::get_overriding_capabilities(snapshot, relates.clone()).unwrap(),
+                overriding_transitive: TypeReader::get_overriding_capabilities_transitive(snapshot, relates.clone()).unwrap(),
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, relates.clone())
                     .unwrap()
                     .into_iter()

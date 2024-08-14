@@ -19,9 +19,13 @@ use crate::{
     },
 };
 use crate::thing::attribute::Attribute;
+use crate::thing::relation::Relation;
+use crate::type_::annotation::AnnotationCardinality;
+use crate::type_::plays::Plays;
+use crate::type_::relates::Relates;
 use crate::type_::role_type::RoleType;
 
-pub mod operation_time_validation;
+pub mod validation;
 
 #[derive(Debug, Clone)]
 pub enum DataValidationError {
@@ -83,6 +87,29 @@ pub enum DataValidationError {
         taken_attribute_type: AttributeType<'static>,
         value: Value<'static>,
     },
+    KeyCardinalityViolated {
+        owner: Object<'static>,
+        owns: Owns<'static>,
+        count: u64,
+    },
+    OwnsCardinalityViolated {
+        owner: Object<'static>,
+        owns: Owns<'static>,
+        count: u64,
+        cardinality: AnnotationCardinality,
+    },
+    RelatesCardinalityViolated {
+        relation: Relation<'static>,
+        relates: Relates<'static>,
+        count: u64,
+        cardinality: AnnotationCardinality,
+    },
+    PlaysCardinalityViolated {
+        player: Object<'static>,
+        plays: Plays<'static>,
+        count: u64,
+        cardinality: AnnotationCardinality,
+    },
 }
 
 impl fmt::Display for DataValidationError {
@@ -108,6 +135,10 @@ impl Error for DataValidationError {
             Self::HasViolatesValuesConstraint { .. } => None,
             Self::KeyValueTaken { .. } => None,
             Self::UniqueValueTaken { .. } => None,
+            Self::KeyCardinalityViolated { .. } => None,
+            Self::OwnsCardinalityViolated { .. } => None,
+            Self::RelatesCardinalityViolated { .. } => None,
+            Self::PlaysCardinalityViolated { .. } => None,
         }
     }
 }

@@ -365,8 +365,13 @@ impl TypeCache {
     pub(crate) fn get_relates_override<'c>(&'c self, relates: Relates<'c>) -> &'c Option<Relates<'static>> {
         &self.relates.get(&relates).unwrap().overrides
     }
+
     pub(crate) fn get_relates_overriding<'c>(&'c self, relates: Relates<'c>) -> &'c HashSet<Relates<'static>> {
         &self.relates.get(&relates).unwrap().overriding
+    }
+
+    pub(crate) fn get_relates_overriding_transitive<'c>(&'c self, relates: Relates<'c>) -> &'c HashSet<Relates<'static>> {
+        &self.relates.get(&relates).unwrap().overriding_transitive
     }
 
     pub(crate) fn get_plays_for_role_type_declared(&self, role_type: RoleType<'_>) -> &HashSet<Plays<'static>> {
@@ -410,8 +415,13 @@ impl TypeCache {
     pub(crate) fn get_plays_override<'c>(&'c self, plays: Plays<'c>) -> &'c Option<Plays<'static>> {
         &self.plays.get(&plays).unwrap().overrides
     }
+
     pub(crate) fn get_plays_overriding<'c>(&'c self, plays: Plays<'c>) -> &'c HashSet<Plays<'static>> {
         &self.plays.get(&plays).unwrap().overriding
+    }
+
+    pub(crate) fn get_plays_overriding_transitive<'c>(&'c self, plays: Plays<'c>) -> &'c HashSet<Plays<'static>> {
+        &self.plays.get(&plays).unwrap().overriding_transitive
     }
 
     pub(crate) fn get_plays_annotations_declared<'c>(&'c self, plays: Plays<'c>) -> &'c HashSet<PlaysAnnotation> {
@@ -454,8 +464,13 @@ impl TypeCache {
     pub(crate) fn get_owns_override<'c>(&'c self, owns: Owns<'c>) -> &'c Option<Owns<'static>> {
         &self.owns.get(&owns).unwrap().overrides
     }
+
     pub(crate) fn get_owns_overriding<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<Owns<'static>> {
         &self.owns.get(&owns).unwrap().overriding
+    }
+
+    pub(crate) fn get_owns_overriding_transitive<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<Owns<'static>> {
+        &self.owns.get(&owns).unwrap().overriding_transitive
     }
 
     pub(crate) fn get_struct_definition_key(&self, label: &str) -> Option<DefinitionKey<'static>> {

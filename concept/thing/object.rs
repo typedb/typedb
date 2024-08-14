@@ -35,7 +35,7 @@ use crate::{
         entity::Entity,
         has::Has,
         relation::{Relation, RelationRoleIterator},
-        thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
+        thing_manager::{validation::validation::Validation, ThingManager},
         HKInstance, ThingAPI,
     },
     type_::{
@@ -44,6 +44,7 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::thing::thing_manager::validation::DataValidationError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Object<'a> {
@@ -142,10 +143,33 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
-        match self {
+        let mut errors = Vec::new();
+
+        let type_ = self.type_();
+        let object_owns = type_.get_owns(snapshot, thing_manager.type_manager())?;
+        let has_counts = self.get_has_counts(snapshot, thing_manager)?;
+
+        for owns in object_owns.iter() {
+            let cardinality_check = Validation::validate_has_cardinality_constraint(
+                snapshot,
+                thing_manager,
+                &self,
+                owns.clone().into_owned(),
+                &has_counts,
+            );
+
+            match cardinality_check {
+                Err(source) => errors.push(ConceptWriteError::DataValidation { source }),
+                Ok(_) => {}
+            }
+        }
+
+        errors.extend(match self {
             Object::Entity(entity) => entity.errors(snapshot, thing_manager),
             Object::Relation(relation) => relation.errors(snapshot, thing_manager),
-        }
+        }?);
+
+        Ok(errors)
     }
 
     fn delete(
@@ -240,7 +264,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
         }
 
-        OperationTimeValidation::validate_object_type_owns_attribute_type(
+        Validation::validate_object_type_owns_attribute_type(
             snapshot,
             thing_manager,
             self.type_(),
@@ -254,7 +278,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             Ordering::Ordered => return Err(ConceptWriteError::SetHasUnorderedOwnsOrdered {}),
         }
 
-        OperationTimeValidation::validate_has_unique_constraint(
+        Validation::validate_has_unique_constraint(
             snapshot,
             thing_manager,
             owns.into_owned(),
@@ -291,7 +315,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
         }
 
-        OperationTimeValidation::validate_object_type_owns_attribute_type(
+        Validation::validate_object_type_owns_attribute_type(
             snapshot,
             thing_manager,
             self.type_(),
@@ -310,7 +334,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             *new_counts.entry(attr).or_default() += 1;
         }
 
-        OperationTimeValidation::validate_owns_distinct_constraint(
+        Validation::validate_owns_distinct_constraint(
             snapshot,
             thing_manager,
             owns.clone().into_owned(),
@@ -402,6 +426,20 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         thing_manager: &'m ThingManager,
     ) -> RelationRoleIterator {
         thing_manager.get_relations_roles(snapshot, self)
+    }
+
+    fn get_has_counts(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+    ) -> Result<HashMap<AttributeType<'static>, u64>, ConceptReadError> {
+        let mut counts = HashMap::new();
+        let mut has_iter = self.get_has_unordered(snapshot, thing_manager);
+        while let Some((attribute, count)) = has_iter.next().transpose()? {
+            let value = counts.entry(attribute.type_()).or_insert(0);
+            *value += count;
+        }
+        Ok(counts)
     }
 }
 

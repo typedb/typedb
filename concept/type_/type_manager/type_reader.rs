@@ -291,6 +291,7 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
+    // TODO: Return HashMap<CAP::ObjectType (source), CAP>
     pub(crate) fn get_capabilities<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         object_type: CAP::ObjectType,
@@ -391,8 +392,8 @@ impl TypeReader {
     pub(crate) fn get_overriding_capabilities_transitive<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
-    ) -> Result<Vec<CAP>, ConceptReadError> {
-        let mut overriding_capabilities: Vec<CAP> = Vec::new();
+    ) -> Result<HashSet<CAP>, ConceptReadError> {
+        let mut overriding_capabilities: HashSet<CAP> = HashSet::new();
         let mut object_types_and_capabilities: VecDeque<(CAP::ObjectType, CAP)> =
             VecDeque::from([(capability.object(), capability)]);
 
@@ -400,14 +401,14 @@ impl TypeReader {
             let capability_to_overridden =
                 Self::get_object_capabilities_overrides_declared::<CAP>(snapshot, current_object_type.clone())?;
 
-            let mut current_overriding_capabilities: Vec<CAP> = capability_to_overridden
+            let mut current_overriding_capabilities: HashSet<CAP> = capability_to_overridden
                 .into_iter()
                 .filter(|(_, overridden)| overridden == &capability_to_check)
                 .map(|(overriding, _)| overriding)
                 .collect();
 
             if current_overriding_capabilities.is_empty() {
-                current_overriding_capabilities.push(capability_to_check.clone());
+                current_overriding_capabilities.insert(capability_to_check.clone());
             } else {
                 overriding_capabilities.extend(current_overriding_capabilities.clone());
             }

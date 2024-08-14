@@ -36,7 +36,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         object::{Object, ObjectAPI},
-        thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
+        thing_manager::{validation::validation::Validation, ThingManager},
         HKInstance, ThingAPI,
     },
     type_::{
@@ -45,6 +45,7 @@ use crate::{
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
+use crate::type_::type_manager::type_reader::TypeReader;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Relation<'a> {
@@ -122,15 +123,13 @@ impl<'a> Relation<'a> {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<HashMap<RoleType<'static>, u64>, ConceptReadError> {
-        let mut map = HashMap::new();
+        let mut counts = HashMap::new();
         let mut rp_iter = self.get_players(snapshot, thing_manager);
-        let mut rp = rp_iter.next().transpose()?;
-        while let Some((role_player, count)) = rp {
-            let value = map.entry(role_player.role_type.clone()).or_insert(0);
+        while let Some((role_player, count)) = rp_iter.next().transpose()? {
+            let value = counts.entry(role_player.role_type()).or_insert(0);
             *value += count;
-            rp = rp_iter.next().transpose()?;
         }
-        Ok(map)
+        Ok(counts)
     }
 
     /// Semantics:
@@ -153,7 +152,7 @@ impl<'a> Relation<'a> {
             return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
         }
 
-        OperationTimeValidation::validate_object_type_plays_role_type(
+        Validation::validate_object_type_plays_role_type(
             snapshot,
             thing_manager,
             player.type_(),
@@ -194,7 +193,7 @@ impl<'a> Relation<'a> {
             *new_counts.entry(player).or_default() += 1;
         }
 
-        OperationTimeValidation::validate_relates_distinct_constraint(
+        Validation::validate_relates_distinct_constraint(
             snapshot,
             thing_manager,
             role_type.clone(),
@@ -332,7 +331,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
 
         // validate cardinality
         let type_ = self.type_();
-        let relation_relates = type_.get_relates_declared(snapshot, thing_manager.type_manager())?;
+        let relation_relates = type_.get_relates(snapshot, thing_manager.type_manager())?;
         let role_player_count = self.get_player_counts(snapshot, thing_manager)?;
         for relates in relation_relates.iter() {
             let cardinality = relates.get_cardinality(snapshot, thing_manager.type_manager())?;
