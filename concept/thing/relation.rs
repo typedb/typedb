@@ -87,7 +87,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x>=Result<(RolePlayer<'x>, u64), ConceptReadError>> {
         thing_manager.get_role_players(snapshot, self.as_reference())
     }
 
@@ -96,7 +96,7 @@ impl<'a> Relation<'a> {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x>=Result<(RolePlayer<'x>, u64), ConceptReadError>> {
         thing_manager.get_role_players_role(snapshot, self.as_reference(), role_type)
     }
 
@@ -114,7 +114,7 @@ impl<'a> Relation<'a> {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Object<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x>=Result<Object<'x>, ConceptReadError>> {
         self.get_players(snapshot, thing_manager).filter_map::<Result<Object<'_>, _>, _>(move |res| match res {
             Ok((roleplayer, _count)) => (roleplayer.role_type() == role_type).then_some(Ok(roleplayer.player)),
             Err(error) => Some(Err(error)),
@@ -210,16 +210,16 @@ impl<'a> Relation<'a> {
                 thing_manager.unset_links(snapshot, self.as_reference(), player.as_reference(), role_type.clone())?;
             }
         }
+
         for (player, count) in new_counts {
-            if old_counts.get(&player) != Some(&count) {
-                thing_manager.set_links_count(
-                    snapshot,
-                    self.as_reference(),
-                    player.as_reference(),
-                    role_type.clone(),
-                    count,
-                )?;
-            }
+            // Don't skip unchanged count to ensure that locks are placed correctly
+            thing_manager.set_links_count(
+                snapshot,
+                self.as_reference(),
+                player.as_reference(),
+                role_type.clone(),
+                count,
+            )?;
         }
 
         // 3. Overwrite owned list
@@ -305,7 +305,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         Relation::new(self.vertex.into_owned())
     }
 
-    fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
+    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing(snapshot, self.as_reference());
         }

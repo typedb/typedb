@@ -97,7 +97,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         Entity::new(self.vertex.into_owned())
     }
 
-    fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
+    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing(snapshot, self.as_reference());
         }

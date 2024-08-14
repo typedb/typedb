@@ -122,10 +122,10 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         }
     }
 
-    fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
+    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
         match self {
-            Object::Entity(entity) => entity.set_modified(snapshot, thing_manager),
-            Object::Relation(relation) => relation.set_modified(snapshot, thing_manager),
+            Object::Entity(entity) => entity.set_required(snapshot, thing_manager),
+            Object::Relation(relation) => relation.set_required(snapshot, thing_manager),
         }
     }
 
@@ -364,9 +364,8 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             }
         }
         for (attr, count) in new_counts {
-            if old_counts.get(&attr) != Some(&count) {
-                thing_manager.set_has_count(snapshot, self, attr.as_reference(), count)?;
-            }
+            // Don't skip unchanged count to ensure that locks are placed correctly
+            thing_manager.set_has_count(snapshot, self, attr.as_reference(), count)?;
         }
 
         // 3. Overwrite owned list

@@ -1376,14 +1376,15 @@ impl ThingManager {
         Validation::validate_has_values_constraint(snapshot, self, owns.clone(), value.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
+        owner.set_required(snapshot, self);
+        attribute.set_required(snapshot, self);
         // TODO: handle duplicates
-        // note: we always re-put the attribute. TODO: optimise knowing when the attribute pre-exists.
+
+        // TODO: Check 0 like in role player? Write a test
+
         self.put_attribute(snapshot, attribute_type, value)?;
-        // TODO: Understand set_modified
-        attribute.set_modified(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
-        owner.set_modified(snapshot, self);
         let has_reverse = ThingEdgeHasReverse::build(attribute.vertex(), owner.vertex());
         snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
         Ok(())
@@ -1404,9 +1405,6 @@ impl ThingManager {
                 let count = 1;
                 snapshot.unput_val(has, ByteArray::copy(&encode_u64(count)));
                 snapshot.unput_val(has_reverse, ByteArray::copy(&encode_u64(count)));
-                // TODO: Understand set_modified
-                owner.set_modified(snapshot, self);
-                attribute.set_modified(snapshot, self);
             }
             ConceptStatus::Persisted => {
                 snapshot.delete(has);
@@ -1434,10 +1432,6 @@ impl ThingManager {
             attributes.iter().map(|attr| attr.vertex().attribute_id()),
         );
         snapshot.put_val(storage_key.clone(), value);
-        // TODO: Understand set_modified
-        owner.set_modified(snapshot, self);
-        // TODO: What do we do with lists of attributes?
-        // attributes.into_iter().for_each(|attribute| attribute.set_modified(snapshot, self));
 
         // must lock to fail concurrent transactions updating the same counters
         snapshot.exclusive_lock_add(storage_key.into_byte_array());
@@ -1451,9 +1445,6 @@ impl ThingManager {
         attribute_type: AttributeType<'static>,
     ) {
         let order_property = build_object_vertex_property_has_order(owner.vertex(), attribute_type.into_vertex());
-        owner.set_modified(snapshot, self);
-        // TODO: What do we do with lists of attributes?
-        // attributes.into_iter().for_each(|attribute| attribute.set_modified(snapshot, self));
         snapshot.delete(order_property.into_storage_key().into_owned_array())
     }
 
@@ -1497,10 +1488,6 @@ impl ThingManager {
         let key = build_object_vertex_property_links_order(relation.as_reference().into_vertex(), role_type.into_vertex());
         let storage_key = key.into_storage_key().into_owned_array();
         let value = encode_role_players(players.iter().map(|player| player.vertex()));
-        // TODO: Understand set_modified
-        relation.set_modified(snapshot, self);
-        // TODO: What to do with lists of players?
-        // players.into_iter().for_each(|player| player.set_modified(snapshot, self));
         snapshot.put_val(storage_key.clone(), value);
 
         // must lock to fail concurrent transactions updating the same counters
@@ -1521,15 +1508,13 @@ impl ThingManager {
         let links_reverse =
             ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.clone().into_vertex());
 
-        // TODO: Understand set_modified
-        // TODO: Can we call it before modification?
-        relation.set_modified(snapshot, self);
-        player.set_modified(snapshot, self);
-
         if count == 0 {
             snapshot.delete(links.as_storage_key().into_owned_array());
             snapshot.delete(links_reverse.as_storage_key().into_owned_array());
         } else {
+            relation.set_required(snapshot, self);
+            player.set_required(snapshot, self);
+
             snapshot.put_val(links.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(links_reverse.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
@@ -1577,10 +1562,6 @@ impl ThingManager {
             ConceptStatus::Put => unreachable!("Encountered a `put` relation: {relation:?}."),
             ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
         }
-
-        // TODO: Understand set_modified
-        relation.set_modified(snapshot, self);
-        player.set_modified(snapshot, self);
 
         if self
             .type_manager

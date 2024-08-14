@@ -131,9 +131,11 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         Attribute::new(self.vertex.into_owned())
     }
 
-    fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
-        debug_assert_eq!(thing_manager.get_status(snapshot, self.vertex().as_storage_key()), ConceptStatus::Put);
-        // Attributes are always PUT, so we don't have to record a lock on modification
+    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
+        // if category == small value type, then put vertex into the snapshot again
+        // otherwise, we should lock
+        // thing_manager.lock_existing(snapshot, self.as_reference());
+
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
