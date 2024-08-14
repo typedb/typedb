@@ -19,10 +19,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::program_executor::ProgramExecutor;
-use ir::{
-    program::{function_signature::HashMapFunctionSignatureIndex, program::Program},
-    translation::match_::translate_match,
-};
+use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::match_::translate_match};
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::{sequence_number::SequenceNumber, snapshot::CommittableSnapshot};
@@ -36,7 +33,6 @@ const AGE_LABEL: Label = Label::new_static("age");
 const NAME_LABEL: Label = Label::new_static("name");
 const MEMBERSHIP_LABEL: Label = Label::new_static("membership");
 const MEMBERSHIP_MEMBER_LABEL: Label = Label::new_static_scoped("member", "membership", "membership:member");
-const MEMBERSHIP_GROUP_LABEL: Label = Label::new_static_scoped("group", "membership", "membership:group");
 
 #[test]
 fn test_has_planning_traversal() {
@@ -122,7 +118,7 @@ fn test_has_planning_traversal() {
     let (entry_annotations, annotated_functions) =
         infer_types(&block, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
     let pattern_plan = PatternPlan::from_block(&block, &entry_annotations, &HashMap::new(), &statistics);
-    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
 
@@ -235,7 +231,7 @@ fn test_links_planning_traversal() {
     let (entry_annotations, _) =
         infer_types(&block, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
     let pattern_plan = PatternPlan::from_block(&block, &entry_annotations, &HashMap::new(), &statistics);
-    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
 

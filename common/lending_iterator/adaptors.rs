@@ -11,6 +11,29 @@ use crate::{
     LendingIterator, Peekable, Seekable,
 };
 
+pub struct Chain<I1, I2> {
+    iter_1: I1,
+    iter_2: I2,
+}
+
+impl<I1, I2> Chain<I1, I2> {
+    pub fn new(iter_1: I1, iter_2: I2) -> Self {
+        Self { iter_1, iter_2 }
+    }
+}
+
+impl<I1, I2> LendingIterator for Chain<I1, I2>
+where
+    I1: LendingIterator,
+    I2: for<'a> LendingIterator<Item<'a> = I1::Item<'a>>,
+{
+    type Item<'a> = I1::Item<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.iter_1.next().or_else(|| self.iter_2.next())
+    }
+}
+
 pub struct Map<I, F, B> {
     iter: I,
     mapper: F,
@@ -172,16 +195,40 @@ where
     }
 }
 
+pub struct Flatten<I: LendingIterator<Item<'static>: LendingIterator>> {
+    source_iter: I,
+    next_iter: Option<Peekable<I::Item<'static>>>,
+}
+
+impl<I: LendingIterator<Item<'static>: LendingIterator>> Flatten<I> {
+    pub(crate) fn new(iter: I) -> Self {
+        Self { source_iter: iter, next_iter: None }
+    }
+}
+
+impl<I: for<'a> LendingIterator<Item<'a>: LendingIterator>> LendingIterator for Flatten<I> {
+    type Item<'a> = <I::Item<'static> as LendingIterator>::Item<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        while !self.next_iter.as_mut().is_some_and(|iter| iter.peek().is_some()) {
+            let source_item = self.source_iter.next()?;
+            // SAFETY: We only advance source_iter once next_iter is exhausted
+            let source_item = unsafe { std::mem::transmute::<I::Item<'_>, I::Item<'static>>(source_item) };
+            self.next_iter = Some(Peekable::new(source_item));
+        }
+        self.next_iter.as_mut().unwrap().next()
+    }
+}
+
 pub struct FlatMap<I, J: LendingIterator, F> {
     source_iter: I,
     next_iter: Option<Peekable<J>>,
     mapper: F,
-    _pd: PhantomData<J>,
 }
 
 impl<I, J: LendingIterator, F> FlatMap<I, J, F> {
     pub(crate) fn new(iter: I, mapper: F) -> Self {
-        Self { source_iter: iter, mapper, next_iter: None, _pd: PhantomData }
+        Self { source_iter: iter, mapper, next_iter: None }
     }
 }
 
@@ -202,10 +249,44 @@ where
                 }
             }
         }
-        match self.next_iter.as_mut().unwrap().next() {
-            None => None,
-            Some(item) => Some(item),
+        self.next_iter.as_mut().unwrap().next()
+    }
+}
+
+pub struct TryFlatMap<I, J: LendingIterator, F, T, E> {
+    source_iter: I,
+    next_iter: Option<Peekable<J>>,
+    mapper: F,
+    _pd: PhantomData<Result<T, E>>,
+}
+
+impl<I, J: LendingIterator, F, T, E> TryFlatMap<I, J, F, T, E> {
+    pub(crate) fn new(iter: I, mapper: F) -> Self {
+        Self { source_iter: iter, mapper, next_iter: None, _pd: PhantomData }
+    }
+}
+
+impl<I, J, F, T, E> LendingIterator for TryFlatMap<I, J, F, T, E>
+where
+    I: LendingIterator,
+    J: for<'a> LendingIterator<Item<'a> = Result<T::HktSelf<'a>, E>>,
+    F: for<'a> FnMutHktHelper<I::Item<'a>, Result<J, E>>,
+    T: Hkt,
+    E: 'static,
+{
+    type Item<'a> = Result<T::HktSelf<'a>, E>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        while !self.next_iter.as_mut().is_some_and(|iter| iter.peek().is_some()) {
+            match self.source_iter.next() {
+                None => return None,
+                Some(source_item) => match (self.mapper)(source_item) {
+                    Ok(next) => self.next_iter = Some(Peekable::new(next)),
+                    Err(err) => return Some(Err(err)),
+                },
+            }
         }
+        self.next_iter.as_mut().unwrap().next()
     }
 }
 

@@ -33,6 +33,13 @@ rust_test(
 )
 
 rust_test(
+    name = "test_execute_isa",
+    crate_root = "execute_isa.rs",
+    srcs = ["execute_isa.rs", "common.rs"],
+    deps = deps,
+)
+
+rust_test(
     name = "test_execute_has",
     crate_root = "execute_has.rs",
     srcs = ["execute_has.rs", "common.rs"],

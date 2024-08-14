@@ -23,10 +23,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
-use ir::{
-    pattern::constraint::IsaKind,
-    program::{block::FunctionalBlock, program::Program},
-};
+use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -127,11 +124,11 @@ fn traverse_has_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     block.add_limit(3);
     let filter = block.add_filter(vec!["person", "age"]).unwrap().clone();
+    let entry = block.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
-    let entry = block.finish();
     let (entry_annotations, annotated_functions) =
         infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
 
@@ -143,7 +140,7 @@ fn traverse_has_unbounded_sorted_from() {
     ))];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -229,7 +226,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     ];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
@@ -282,11 +279,10 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     let entry = builder.finish();
 
-    let (entry_annotations, annotated_functions) = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap()
-    };
+    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (entry_annotations, annotated_functions) =
+        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -299,11 +295,9 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     ))];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
@@ -340,11 +334,10 @@ fn traverse_has_unbounded_sorted_to_merged() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
-    let (entry_annotations, annotated_functions) = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap()
-    };
+    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (entry_annotations, annotated_functions) =
+        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -353,11 +346,9 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &[var_person, var_attribute],
     ))];
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let variable_positions = executor.entry_variable_positions().clone();
@@ -417,11 +408,10 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     let entry = builder.finish();
 
-    let (entry_annotations, annotated_functions) = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap()
-    };
+    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (entry_annotations, annotated_functions) =
+        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -434,11 +424,9 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         &[var_person, var_age],
     ))];
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
 

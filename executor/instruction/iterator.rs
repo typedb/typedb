@@ -7,14 +7,19 @@
 use std::{cmp::Ordering, iter::Iterator, ops::RangeInclusive};
 
 use answer::variable_value::VariableValue;
-use concept::{
-    error::ConceptReadError,
-    thing::{thing_manager::ThingManager, HKInstance, ThingAPI},
-};
-use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
-use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
-use storage::snapshot::ReadableSnapshot;
+use concept::error::ConceptReadError;
+use lending_iterator::{LendingIterator, Peekable};
 
+use super::{
+    isa_executor::{
+        IsaBoundedSortedType, IsaUnboundedSortedThingMerged, IsaUnboundedSortedThingSingle,
+        IsaUnboundedSortedTypeMerged, IsaUnboundedSortedTypeSingle,
+    },
+    isa_reverse_executor::{
+        IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedThingMerged, IsaReverseUnboundedSortedThingSingle,
+        IsaReverseUnboundedSortedTypeMerged, IsaReverseUnboundedSortedTypeSingle,
+    },
+};
 use crate::{
     batch::Row,
     instruction::{
@@ -25,10 +30,6 @@ use crate::{
         has_reverse_executor::{
             HasReverseBoundedSortedOwner, HasReverseUnboundedSortedAttribute, HasReverseUnboundedSortedOwnerMerged,
             HasReverseUnboundedSortedOwnerSingle,
-        },
-        isa_reverse_executor::{
-            IsaUnboundedSortedThingAttributeSingle, IsaUnboundedSortedThingEntitySingle,
-            IsaUnboundedSortedThingRelationSingle,
         },
         links_executor::{
             LinksBoundedRelationPlayer, LinksBoundedRelationSortedPlayer, LinksUnboundedSortedPlayerMerged,
@@ -86,9 +87,17 @@ macro_rules! dispatch_tuple_iterator {
 dispatch_tuple_iterator! {
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum TupleIterator {
-    IsaEntityInvertedSingle(SortedTupleIterator<IsaUnboundedSortedThingEntitySingle>),
-    IsaRelationInvertedSingle(SortedTupleIterator<IsaUnboundedSortedThingRelationSingle>),
-    IsaAttributeInvertedSingle(SortedTupleIterator<IsaUnboundedSortedThingAttributeSingle>),
+    IsaUnboundedSingle(SortedTupleIterator<IsaUnboundedSortedThingSingle>),
+    IsaUnboundedMerged(SortedTupleIterator<IsaUnboundedSortedThingMerged>),
+    IsaUnboundedInvertedSingle(SortedTupleIterator<IsaUnboundedSortedTypeSingle>),
+    IsaUnboundedInvertedMerged(SortedTupleIterator<IsaUnboundedSortedTypeMerged>),
+    IsaBounded(SortedTupleIterator<IsaBoundedSortedType>),
+
+    IsaReverseUnboundedSingle(SortedTupleIterator<IsaReverseUnboundedSortedTypeSingle>),
+    IsaReverseUnboundedMerged(SortedTupleIterator<IsaReverseUnboundedSortedTypeMerged>),
+    IsaReverseUnboundedInvertedSingle(SortedTupleIterator<IsaReverseUnboundedSortedThingSingle>),
+    IsaReverseUnboundedInvertedMerged(SortedTupleIterator<IsaReverseUnboundedSortedThingMerged>),
+    IsaReverseBounded(SortedTupleIterator<IsaReverseBoundedSortedThing>),
 
     HasUnbounded(SortedTupleIterator<HasUnboundedSortedOwner>),
     HasUnboundedInvertedSingle(SortedTupleIterator<HasUnboundedSortedAttributeSingle>),
@@ -334,26 +343,6 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
     fn positions(&self) -> &TuplePositions {
         &self.positions
     }
-}
-
-// TODO: this method and assertion on size would make more sense constructing a dedicated type, instead returning Vec
-pub(crate) fn inverted_instances_cache<'a, T: HKInstance>(
-    types: impl Iterator<Item = <T::HktSelf<'a> as ThingAPI<'a>>::TypeAPI<'a>>,
-    snapshot: &impl ReadableSnapshot,
-    thing_manager: &ThingManager,
-) -> Result<Vec<T>, ConceptReadError>
-where
-    for<'b> <T as Hkt>::HktSelf<'b>: ThingAPI<'b, Owned = T>,
-{
-    let mut cache = Vec::new();
-    for type_ in types {
-        let mut instances = thing_manager.get_instances_in::<T>(snapshot, type_);
-        while let Some(result) = instances.next() {
-            cache.push(result?.clone().into_owned());
-        }
-    }
-    debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
-    Ok(cache)
 }
 
 fn first_unbound(variable_modes: &VariableModes, positions: &TuplePositions) -> TupleIndex {

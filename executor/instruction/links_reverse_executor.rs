@@ -27,12 +27,13 @@ use lending_iterator::{
     kmerge::KMergeBy,
     AsHkt, LendingIterator, Peekable,
 };
+use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
     batch::ImmutableRow,
     instruction::{
-        iterator::{inverted_instances_cache, SortedTupleIterator, TupleIterator},
+        iterator::{SortedTupleIterator, TupleIterator},
         tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, LinksToTupleFn, TuplePositions,
             TupleResult,
@@ -101,11 +102,16 @@ impl LinksReverseExecutor {
         };
 
         let player_cache = if iterate_mode == TernaryIterateMode::UnboundInverted {
-            Some(inverted_instances_cache(
-                player_relation_types.keys().map(|t| t.as_object_type()),
-                snapshot,
-                thing_manager,
-            )?)
+            let mut cache = Vec::new();
+            for type_ in player_relation_types.keys() {
+                let instances: Vec<Object<'static>> = thing_manager
+                    .get_objects_in(snapshot, type_.as_object_type())
+                    .map_static(|result| Ok(result?.clone().into_owned()))
+                    .try_collect()?;
+                cache.extend(instances);
+            }
+            debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
+            Some(cache)
         } else {
             None
         };

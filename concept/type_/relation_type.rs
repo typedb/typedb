@@ -22,6 +22,7 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -55,6 +56,10 @@ pub struct RelationType<'a> {
 }
 
 impl<'a> RelationType<'a> {}
+
+impl Hkt for RelationType<'static> {
+    type HktSelf<'a> = RelationType<'a>;
+}
 
 impl<'a> ConceptAPI<'a> for RelationType<'a> {}
 

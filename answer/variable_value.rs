@@ -25,17 +25,17 @@ pub enum VariableValue<'a> {
 }
 
 impl<'a> VariableValue<'a> {
+    pub fn as_type(&self) -> &Type {
+        match self {
+            Self::Type(type_) => type_,
+            _ => panic!("VariableValue is not a Type"),
+        }
+    }
+
     pub fn as_thing(&self) -> &Thing<'a> {
         match self {
             VariableValue::Thing(thing) => thing,
             _ => panic!("VariableValue is not a Thing"),
-        }
-    }
-
-    pub fn as_type(&self) -> &Type {
-        match self {
-            VariableValue::Type(type_) => type_,
-            _ => panic!("VariableValue is not a THing"),
         }
     }
 
@@ -44,6 +44,17 @@ impl<'a> VariableValue<'a> {
             VariableValue::Value(value) => value,
             // TODO: Do we want to implicit cast from attributes?
             _ => panic!("VariableValue is not a value"),
+        }
+    }
+
+    pub fn to_owned(&self) -> VariableValue<'static> {
+        match self {
+            VariableValue::Empty => VariableValue::Empty,
+            VariableValue::Type(type_) => VariableValue::Type(type_.clone()),
+            VariableValue::Thing(thing) => VariableValue::Thing(thing.to_owned()),
+            VariableValue::Value(value) => VariableValue::Value(value.clone().into_owned()),
+            VariableValue::ThingList(list) => VariableValue::ThingList(list.clone()),
+            VariableValue::ValueList(list) => VariableValue::ValueList(list.clone()),
         }
     }
 

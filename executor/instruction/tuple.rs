@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable_value::VariableValue;
+use answer::{variable_value::VariableValue, Thing};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -120,34 +120,23 @@ pub(crate) type TupleIndex = u16;
 
 pub(crate) type TupleResult<'a> = Result<Tuple<'a>, ConceptReadError>;
 
-pub(crate) fn isa_entity_to_tuple_thing_type(result: Result<Entity<'_>, ConceptReadError>) -> TupleResult<'_> {
+pub(crate) fn isa_to_tuple_thing_type(result: Result<Thing<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
-        Ok(entity) => {
-            let type_ = entity.type_();
-            Ok(Tuple::Pair([VariableValue::Thing(entity.into()), VariableValue::Type(type_.into())]))
-        }
-        Err(err) => Err(err),
-    }
-}
-pub(crate) fn isa_relation_to_tuple_thing_type(result: Result<Relation<'_>, ConceptReadError>) -> TupleResult<'_> {
-    match result {
-        Ok(relation) => {
-            let type_ = relation.type_();
-            Ok(Tuple::Pair([VariableValue::Thing(relation.into()), VariableValue::Type(type_.into())]))
+        Ok(thing) => {
+            let type_ = thing.type_();
+            Ok(Tuple::Pair([VariableValue::Thing(thing), VariableValue::Type(type_)]))
         }
         Err(err) => Err(err),
     }
 }
 
-pub(crate) fn isa_attribute_to_tuple_thing_type(result: Result<Attribute<'_>, ConceptReadError>) -> TupleResult<'_> {
+pub(crate) fn isa_to_tuple_type_thing(result: Result<Thing<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
-        Ok(attribute) => {
-            let type_ = attribute.type_();
-            Ok(Tuple::Pair([VariableValue::Thing(attribute.into()), VariableValue::Type(type_.into())]))
-        }
+        Ok(thing) => Ok(Tuple::Pair([VariableValue::Type(thing.type_()), VariableValue::Thing(thing)])),
         Err(err) => Err(err),
     }
 }
+
 pub(crate) type HasToTupleFn = for<'a> fn(Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a>;
 
 pub(crate) fn has_to_tuple_owner_attribute(result: Result<(Has<'_>, u64), ConceptReadError>) -> TupleResult<'_> {

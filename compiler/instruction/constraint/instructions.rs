@@ -22,7 +22,7 @@ use crate::{inference::type_annotations::TypeAnnotations, planner::pattern_plan:
 #[derive(Debug, Clone)]
 pub enum ConstraintInstruction {
     // thing -> type
-    Isa(Isa<Variable>, Inputs<Variable>),
+    Isa(IsaInstruction<Variable>),
     // type -> thing
     IsaReverse(IsaReverseInstruction<Variable>),
 
@@ -64,7 +64,7 @@ impl ConstraintInstruction {
 
     pub(crate) fn input_variables_foreach(&self, mut apply: impl FnMut(Variable)) {
         match self {
-            | ConstraintInstruction::Isa(_, inputs)
+            | ConstraintInstruction::Isa(IsaInstruction { inputs, .. })
             | ConstraintInstruction::IsaReverse(IsaReverseInstruction { inputs, .. })
             | ConstraintInstruction::Has(HasInstruction { inputs, .. })
             | ConstraintInstruction::HasReverse(HasReverseInstruction { inputs, .. })
@@ -82,7 +82,7 @@ impl ConstraintInstruction {
 
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(Variable)) {
         match self {
-            ConstraintInstruction::Isa(isa, inputs)
+            ConstraintInstruction::Isa(IsaInstruction { isa, inputs, .. })
             | ConstraintInstruction::IsaReverse(IsaReverseInstruction { isa, inputs, .. }) => {
                 isa.ids_foreach(|var, _| {
                     if !inputs.iter().contains(&var) {
@@ -121,7 +121,9 @@ impl ConstraintInstruction {
 impl InstructionAPI for ConstraintInstruction {
     fn constraint(&self) -> Constraint<Variable> {
         match self {
-            Self::Isa(isa, _) | Self::IsaReverse(IsaReverseInstruction { isa, .. }) => isa.clone().into(),
+            Self::Isa(IsaInstruction { isa, .. }) | Self::IsaReverse(IsaReverseInstruction { isa, .. }) => {
+                isa.clone().into()
+            }
             Self::Has(HasInstruction { has, .. }) | Self::HasReverse(HasReverseInstruction { has, .. }) => {
                 has.clone().into()
             }
@@ -138,6 +140,33 @@ impl InstructionAPI for ConstraintInstruction {
 }
 
 #[derive(Debug, Clone)]
+pub struct IsaInstruction<ID> {
+    pub isa: Isa<ID>,
+    pub inputs: Inputs<ID>,
+    types: Arc<HashSet<Type>>,
+}
+
+impl IsaInstruction<Variable> {
+    pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let types = type_annotations.variable_annotations_of(isa.type_()).unwrap().clone();
+        Self { isa, inputs, types }
+    }
+}
+
+impl<ID> IsaInstruction<ID> {
+    pub fn types(&self) -> &Arc<HashSet<Type>> {
+        &self.types
+    }
+}
+
+impl<ID: IrID> IsaInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsaInstruction<T> {
+        let Self { isa, inputs, types } = self;
+        IsaInstruction { isa: isa.map(mapping), inputs: inputs.map(mapping), types }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct IsaReverseInstruction<ID> {
     pub isa: Isa<ID>,
     pub inputs: Inputs<ID>,
@@ -145,9 +174,9 @@ pub struct IsaReverseInstruction<ID> {
 }
 
 impl IsaReverseInstruction<Variable> {
-    pub fn new(constraint: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let types = type_annotations.variable_annotations_of(constraint.thing()).unwrap().clone();
-        Self { isa: constraint, inputs, types }
+    pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let types = type_annotations.variable_annotations_of(isa.thing()).unwrap().clone();
+        Self { isa, inputs, types }
     }
 }
 
@@ -303,7 +332,7 @@ impl LinksReverseInstruction<Variable> {
     pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations =
             type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered().clone();
-        let relation_to_role_types = edge_annotations.filters_on_right();
+        let relation_to_role_types = edge_annotations.filters_on_left();
         let player_to_relation_types = edge_annotations.right_to_left();
         let relation_types = type_annotations.variable_annotations_of(links.relation()).unwrap().clone();
         Self { links, inputs, player_to_relation_types, relation_types, relation_to_role_types }
