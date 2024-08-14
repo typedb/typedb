@@ -40,7 +40,6 @@ pub(crate) struct PatternExecutor {
 impl PatternExecutor {
     pub(crate) fn new(
         plan: &PatternPlan,
-        type_annotations: &TypeAnnotations,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
@@ -53,8 +52,7 @@ impl PatternExecutor {
                     variable_positions.insert(*variable, VariablePosition::new(variable_positions.len() as u32));
                 debug_assert_eq!(previous, Option::None);
             }
-            let executor =
-                StepExecutor::new(step, context, &variable_positions, type_annotations, snapshot, thing_manager)?;
+            let executor = StepExecutor::new(step, context, &variable_positions, snapshot, thing_manager)?;
             step_executors.push(executor)
         }
 
@@ -194,7 +192,6 @@ impl StepExecutor {
         step: &Step,
         block_context: &BlockContext,
         variable_positions: &HashMap<Variable, VariablePosition>,
-        type_annotations: &TypeAnnotations,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
@@ -208,7 +205,6 @@ impl StepExecutor {
                     selected_variables.clone(),
                     block_context.get_variables_named(),
                     variable_positions,
-                    type_annotations,
                     snapshot,
                     thing_manager,
                 )?;
@@ -232,12 +228,12 @@ impl StepExecutor {
                 todo!()
             }
             Step::Negation(NegationStep { negation: negation_plan, .. }) => {
-                let executor = PatternExecutor::new(negation_plan, type_annotations, snapshot, thing_manager)?;
+                let executor = PatternExecutor::new(negation_plan, snapshot, thing_manager)?;
                 // // TODO: add limit 1, filters if they aren't there already?
                 Ok(Self::Negation(NegationExecutor::new(executor, variable_positions)))
             }
             Step::Optional(OptionalStep { optional: optional_plan, .. }) => {
-                let pattern_executor = PatternExecutor::new(optional_plan, type_annotations, snapshot, thing_manager)?;
+                let pattern_executor = PatternExecutor::new(optional_plan, snapshot, thing_manager)?;
                 Ok(Self::Optional(OptionalExecutor::new(pattern_executor)))
             }
         }
@@ -299,7 +295,6 @@ impl IntersectionExecutor {
         select_variables: Vec<Variable>,
         named_variables: &HashMap<Variable, String>,
         variable_positions: &HashMap<Variable, VariablePosition>,
-        type_annotations: &TypeAnnotations,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
@@ -313,7 +308,6 @@ impl IntersectionExecutor {
                     &select_variables,
                     named_variables,
                     variable_positions,
-                    type_annotations,
                     snapshot,
                     thing_manager,
                     Some(sort_variable),

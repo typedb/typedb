@@ -319,7 +319,7 @@ impl Step {
         match self {
             Step::Intersection(step) => &step.selected_variables,
             Step::UnsortedJoin(step) => &step.selected_variables,
-            Step::Assignment(step) => todo!(),
+            Step::Assignment(_) => todo!(),
             Step::Disjunction(_) => todo!(),
             Step::Negation(_) => todo!(),
             Step::Optional(_) => todo!(),

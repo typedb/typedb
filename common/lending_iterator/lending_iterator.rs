@@ -10,18 +10,23 @@ pub mod kmerge;
 
 use std::{borrow::Borrow, cmp::Ordering, iter, mem::transmute};
 
-use adaptors::FilterMap;
-use higher_order::AdHocHkt;
-
 use crate::{
-    adaptors::{Filter, FlatMap, Map, TakeWhile},
-    higher_order::{FnHktHelper, FnMutHktHelper, Hkt},
+    adaptors::{Chain, Filter, FilterMap, FlatMap, Flatten, Map, TakeWhile, TryFlatMap},
+    higher_order::{AdHocHkt, FnHktHelper, FnMutHktHelper, Hkt},
 };
 
 pub trait LendingIterator: 'static {
     type Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>>;
+
+    fn chain<Other>(self, other: Other) -> Chain<Self, Other>
+    where
+        Self: Sized,
+        Other: for<'a> LendingIterator<Item<'a> = Self::Item<'a>>,
+    {
+        Chain::new(self, other)
+    }
 
     fn filter<P, F>(self, pred: P) -> Filter<Self, P>
     where
@@ -67,6 +72,14 @@ pub trait LendingIterator: 'static {
         FilterMap::new(self, mapper)
     }
 
+    fn flatten(self) -> Flatten<Self>
+    where
+        Self: Sized,
+        Self::Item<'static>: LendingIterator,
+    {
+        Flatten::new(self)
+    }
+
     fn flat_map<J, F>(self, mapper: F) -> FlatMap<Self, J, F>
     where
         Self: Sized,
@@ -74,6 +87,15 @@ pub trait LendingIterator: 'static {
         F: for<'a> FnMutHktHelper<Self::Item<'a>, J>,
     {
         FlatMap::new(self, mapper)
+    }
+
+    fn try_flat_map<J, F, T, E>(self, mapper: F) -> TryFlatMap<Self, J, F, T, E>
+    where
+        Self: Sized,
+        J: for<'a> LendingIterator<Item<'a> = Result<T, E>>,
+        F: for<'a> FnMutHktHelper<Self::Item<'a>, Result<J, E>>,
+    {
+        TryFlatMap::new(self, mapper)
     }
 
     fn into_iter(mut self) -> impl Iterator<Item = Self::Item<'static>>
@@ -96,6 +118,15 @@ pub trait LendingIterator: 'static {
         self.into_iter().collect()
     }
 
+    fn try_collect<B, E>(self) -> Result<B, E>
+    where
+        Self: Sized,
+        for<'a> Self::Item<'a>: 'static,
+        Result<B, E>: FromIterator<Self::Item<'static>>,
+    {
+        self.collect()
+    }
+
     fn count(mut self) -> usize
     where
         Self: Sized,
@@ -116,15 +147,6 @@ pub trait LendingIterator: 'static {
             count += 1;
         }
         count
-    }
-
-    fn try_collect<B, E>(self) -> Result<B, E>
-    where
-        Self: Sized,
-        for<'a> Self::Item<'a>: 'static,
-        Result<B, E>: FromIterator<Self::Item<'static>>,
-    {
-        self.collect()
     }
 }
 
@@ -205,8 +227,8 @@ pub struct AsLendingIterator<I: Iterator> {
 }
 
 impl<I: Iterator> AsLendingIterator<I> {
-    pub fn new(iter: I) -> Self {
-        AsLendingIterator { iter }
+    pub fn new(iter: impl IntoIterator<IntoIter = I>) -> Self {
+        AsLendingIterator { iter: iter.into_iter() }
     }
 }
 
@@ -215,5 +237,24 @@ impl<I: Iterator + 'static> LendingIterator for AsLendingIterator<I> {
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iter.next()
+    }
+}
+
+pub struct Once<T: Hkt> {
+    inner: Option<T::HktSelf<'static>>,
+}
+
+pub fn once<T: Hkt>(inner: T::HktSelf<'static>) -> Once<T> {
+    Once { inner: Some(inner) }
+}
+
+impl<T: Hkt> LendingIterator for Once<T> {
+    type Item<'a> = T::HktSelf<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.inner.take().map(|item| unsafe {
+            // SAFETY: this strictly narrows the lifetime
+            transmute::<Self::Item<'static>, Self::Item<'_>>(item)
+        })
     }
 }

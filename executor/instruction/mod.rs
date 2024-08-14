@@ -7,10 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::{
-    inference::type_annotations::TypeAnnotations, instruction::constraint::instructions::ConstraintInstruction,
-    planner::pattern_plan::InstructionAPI,
-};
+use compiler::{instruction::constraint::instructions::ConstraintInstruction, planner::pattern_plan::InstructionAPI};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 
@@ -20,8 +17,8 @@ use crate::{
         comparison_executor::ComparisonIteratorExecutor,
         comparison_reverse_executor::ComparisonReverseIteratorExecutor,
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-        has_reverse_executor::HasReverseExecutor, isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator,
-        links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
+        has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
+        iterator::TupleIterator, links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
     },
     VariablePosition,
 };
@@ -31,6 +28,7 @@ mod comparison_reverse_executor;
 mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
+mod isa_executor;
 mod isa_reverse_executor;
 pub(crate) mod iterator;
 mod links_executor;
@@ -38,6 +36,7 @@ mod links_reverse_executor;
 pub(crate) mod tuple;
 
 pub(crate) enum InstructionExecutor {
+    Isa(IsaExecutor),
     IsaReverse(IsaReverseExecutor),
 
     Has(HasExecutor),
@@ -59,7 +58,6 @@ impl InstructionExecutor {
         selected: &Vec<Variable>,
         named: &HashMap<Variable, String>,
         positions: &HashMap<Variable, VariablePosition>,
-        type_annotations: &TypeAnnotations,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         sort_by: Option<Variable>,
@@ -67,7 +65,10 @@ impl InstructionExecutor {
         let variable_modes = VariableModes::new_for(&instruction, positions, selected, named);
         let sort_by_position = sort_by.map(|var| *positions.get(&var).unwrap());
         match instruction {
-            ConstraintInstruction::Isa(isa, _) => todo!(),
+            ConstraintInstruction::Isa(isa) => {
+                let executor = IsaExecutor::new(isa.map(positions), variable_modes, sort_by_position);
+                Ok(Self::Isa(executor))
+            }
             ConstraintInstruction::IsaReverse(isa_reverse) => {
                 let executor = IsaReverseExecutor::new(isa_reverse.map(positions), variable_modes, sort_by_position);
                 Ok(Self::IsaReverse(executor))
@@ -132,6 +133,7 @@ impl InstructionExecutor {
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
+            InstructionExecutor::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),

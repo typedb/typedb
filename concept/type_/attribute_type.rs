@@ -22,6 +22,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     Prefixed,
 };
+use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -45,6 +46,10 @@ pub struct AttributeType<'a> {
 }
 
 impl<'a> AttributeType<'a> {}
+
+impl Hkt for AttributeType<'static> {
+    type HktSelf<'a> = AttributeType<'a>;
+}
 
 impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
 

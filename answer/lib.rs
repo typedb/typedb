@@ -19,6 +19,7 @@ use encoding::{
     value::value::Value,
     AsBytes,
 };
+use lending_iterator::higher_order::Hkt;
 
 pub mod answer_map;
 pub mod variable;
@@ -187,6 +188,14 @@ impl<'a> Thing<'a> {
         }
     }
 
+    pub fn to_owned(&self) -> Thing<'static> {
+        match self {
+            Thing::Entity(entity) => Thing::Entity(entity.as_reference().into_owned()),
+            Thing::Relation(relation) => Thing::Relation(relation.as_reference().into_owned()),
+            Thing::Attribute(attribute) => Thing::Attribute(attribute.as_reference().into_owned()),
+        }
+    }
+
     pub fn into_owned(self) -> Thing<'static> {
         match self {
             Thing::Entity(entity) => Thing::Entity(entity.into_owned()),
@@ -202,6 +211,10 @@ impl<'a> Thing<'a> {
             Thing::Attribute(attribute) => Thing::Attribute(attribute.next_possible()),
         }
     }
+}
+
+impl Hkt for Thing<'static> {
+    type HktSelf<'a> = Thing<'a>;
 }
 
 impl<'a> From<Object<'a>> for Thing<'a> {

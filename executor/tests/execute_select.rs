@@ -163,7 +163,8 @@ fn anonymous_vars_not_enumerated_or_counted() {
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+
     // Executor
     let executor = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -234,7 +235,7 @@ fn unselected_named_vars_counted() {
         &vec![var_person],
     ))];
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let executor = {
@@ -321,7 +322,7 @@ fn cartesian_named_counted_checked() {
         &vec![var_person, var_age],
     ))];
     let pattern_plan = PatternPlan::new(steps, entry.context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, entry_annotations.clone(), HashMap::new(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let executor = {

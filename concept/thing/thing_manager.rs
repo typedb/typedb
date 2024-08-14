@@ -89,7 +89,7 @@ impl ThingManager {
 
     /// Return simple iterator of all Concept(Vertex) found for a specific instantiable Type
     /// If this type is an Attribute type, this iterator will not hide the Dependent attributes that have no owners.
-    pub fn get_instances_in<'a, T: HKInstance>(
+    fn get_instances_in<'a, T: HKInstance>(
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_type: <T::HktSelf<'a> as ThingAPI<'a>>::TypeAPI<'a>,
@@ -119,11 +119,6 @@ impl ThingManager {
         self.get_instances::<Relation<'static>>(snapshot)
     }
 
-    // internal only, reveals dependent attributes that don't have owners
-    fn get_attributes_all(&self, snapshot: &impl ReadableSnapshot) -> InstanceIterator<AsHkt![Attribute<'_>]> {
-        self.get_instances::<Attribute<'static>>(snapshot)
-    }
-
     pub fn get_entities_in(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -137,15 +132,6 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         type_: RelationType<'static>,
     ) -> InstanceIterator<AsHkt![Relation<'_>]> {
-        self.get_instances_in(snapshot, type_)
-    }
-
-    // internal only, reveals dependent attributes that don't have owners
-    fn get_attributes_in_all(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_: AttributeType<'static>,
-    ) -> InstanceIterator<AsHkt![Attribute<'_>]> {
         self.get_instances_in(snapshot, type_)
     }
 
@@ -176,7 +162,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         player: &'o impl ObjectAPI<'o>,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
         let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE));
@@ -194,7 +180,7 @@ impl ThingManager {
         let has_reverse_end = ThingEdgeHasReverse::prefix_from_prefix(Prefix::ATTRIBUTE_MAX);
         let has_reverse_iterator = snapshot.iterate_range(KeyRange::new_inclusive(has_reverse_start, has_reverse_end));
         Ok(AttributeIterator::new(
-            self.get_attributes_all(snapshot),
+            self.get_instances::<Attribute<'_>>(snapshot),
             has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
@@ -219,7 +205,7 @@ impl ThingManager {
             snapshot.iterate_range(KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING));
 
         Ok(AttributeIterator::new(
-            self.get_attributes_in_all(snapshot, attribute_type.into_owned()),
+            self.get_instances_in(snapshot, attribute_type.into_owned()),
             has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))

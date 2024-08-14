@@ -33,13 +33,7 @@ impl AnnotatedProgram {
         local_functions: AnnotatedUnindexedFunctions,
         schema_functions: Arc<IndexedAnnotatedFunctions>,
     ) -> Self {
-        Self {
-            entry,
-            entry_annotations,
-            entry_expressions,
-            preamble_functions: local_functions,
-            schema_functions: schema_functions,
-        }
+        Self { entry, entry_annotations, entry_expressions, preamble_functions: local_functions, schema_functions }
     }
 
     pub fn get_entry(&self) -> &FunctionalBlock {
@@ -78,10 +72,7 @@ pub mod tests {
     use std::{collections::HashSet, sync::Arc};
 
     use ir::{
-        program::{
-            function_signature::{FunctionID, HashMapFunctionSignatureIndex},
-            program::Program,
-        },
+        program::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
         translation::{function::translate_function, match_::translate_match},
     };
     use typeql::query::Pipeline;

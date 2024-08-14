@@ -13,6 +13,7 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -249,6 +250,10 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
             ObjectType::Relation(relation) => relation.get_plays(snapshot, type_manager),
         }
     }
+}
+
+impl Hkt for ObjectType<'static> {
+    type HktSelf<'a> = ObjectType<'a>;
 }
 
 macro_rules! with_object_type {

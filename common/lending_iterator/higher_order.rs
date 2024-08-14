@@ -60,8 +60,10 @@ impl<B> Hkt for AdHocHkt<B> {
 
 #[macro_export]
 macro_rules! AsHkt {
-    {$($path_element:ident)::+ <'_> } => { $($path_element)::+<'static> };
-    {$($path_element:ident)::+ <'_ $(, $generic_param:tt)*> } => { $($path_element)::+<'static$(, $generic_param)*> };
+    {$($path_element:ident)::+ <'_ $(, $generic_param:tt)*> } => { $($path_element)::+<'static $(, $generic_param)*> };
+    {<$ty:ty as $trait:ty>::$($path_element:ident)::+ <'_ $(, $generic_param:tt)*> } => {
+        <$ty as $trait>::$($path_element)::+<'static $(, $generic_param)*>
+    };
     {& mut $ty:ty  } => {&'static mut $ty};
     {& $ty:ty  } => {&'static $ty};
 }

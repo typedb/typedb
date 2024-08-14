@@ -22,6 +22,7 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -49,6 +50,10 @@ use crate::{
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
     vertex: TypeVertex<'a>,
+}
+
+impl Hkt for EntityType<'static> {
+    type HktSelf<'a> = EntityType<'static>;
 }
 
 impl<'a> EntityType<'a> {}

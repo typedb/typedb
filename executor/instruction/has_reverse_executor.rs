@@ -22,13 +22,14 @@ use lending_iterator::{
     kmerge::KMergeBy,
     AsHkt, LendingIterator, Peekable,
 };
+use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
     batch::ImmutableRow,
     instruction::{
         has_executor::{HasFilterFn, HasOrderingFn},
-        iterator::{inverted_instances_cache, SortedTupleIterator, TupleIterator},
+        iterator::{SortedTupleIterator, TupleIterator},
         tuple::{
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
             TupleResult,
@@ -85,11 +86,16 @@ impl HasReverseExecutor {
         };
 
         let attribute_cache = if iterate_mode == BinaryIterateMode::UnboundInverted {
-            Some(inverted_instances_cache(
-                attribute_owner_types.keys().map(|type_| type_.as_attribute_type()),
-                snapshot,
-                thing_manager,
-            )?)
+            let mut cache = Vec::new();
+            for type_ in attribute_owner_types.keys() {
+                let instances: Vec<Attribute<'static>> = thing_manager
+                    .get_attributes_in(snapshot, type_.as_attribute_type())?
+                    .map_static(|result| Ok(result?.clone().into_owned()))
+                    .try_collect()?;
+                cache.extend(instances);
+            }
+            debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
+            Some(cache)
         } else {
             None
         };

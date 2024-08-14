@@ -5,9 +5,13 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
+
 use compiler::{
-    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    instruction::constraint::instructions::{ConstraintInstruction, Inputs, IsaReverseInstruction},
+    inference::{
+        annotated_functions::{AnnotatedCommittedFunctions, IndexedAnnotatedFunctions},
+        type_inference::infer_types,
+    },
+    instruction::constraint::instructions::{ConstraintInstruction, Inputs, IsaInstruction, IsaReverseInstruction},
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
@@ -60,6 +64,74 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 }
 
 #[test]
+fn traverse_isa_unbounded_from_thing() {
+    let (_tmp_dir, storage) = setup_storage();
+    setup_database(storage.clone());
+
+    // query:
+    //   match $x isa $t; $x isa $u;
+
+    // IR
+    let mut block = FunctionalBlock::builder();
+    let mut conjunction = block.conjunction_mut();
+    let var_type_from = conjunction.get_or_declare_variable("t").unwrap();
+    let var_type_to = conjunction.get_or_declare_variable("u").unwrap();
+    let var_thing = conjunction.get_or_declare_variable("x").unwrap();
+
+    // add all constraints to make type inference return correct types, though we only plan Has's
+    let isa_from_type =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing, var_type_from).unwrap().clone();
+    let isa_to_type = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing, var_type_to).unwrap().clone();
+    let program = Program::new(block.finish(), Vec::new());
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let annotated_program =
+        infer_types(program, &snapshot, &type_manager, Arc::new(AnnotatedCommittedFunctions::empty())).unwrap();
+
+    // Plan
+    let steps = vec![
+        Step::Intersection(IntersectionStep::new(
+            var_thing,
+            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                isa_from_type,
+                Inputs::None([]),
+                annotated_program.entry_annotations(),
+            ))],
+            &[var_thing],
+        )),
+        Step::Intersection(IntersectionStep::new(
+            var_thing,
+            vec![ConstraintInstruction::Isa(IsaInstruction::new(
+                isa_to_type,
+                Inputs::Single([var_thing]),
+                annotated_program.entry_annotations(),
+            ))],
+            &[var_type_to],
+        )),
+    ];
+
+    let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
+
+    // Executor
+    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+
+    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+    assert_eq!(rows.len(), 6);
+
+    for row in rows {
+        let row = row.unwrap();
+        assert_eq!(row.get_multiplicity(), 1);
+        print!("{}", row);
+    }
+}
+
+#[test]
 fn traverse_isa_unbounded_sorted_thing() {
     let (_tmp_dir, storage) = setup_storage();
     setup_database(storage.clone());
@@ -95,7 +167,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     ))];
 
     let pattern_plan = PatternPlan::new(steps, annotated_program.get_entry().context().clone());
-    let program_plan = ProgramPlan::new(pattern_plan, annotated_program.entry_annotations().clone(), HashMap::new());
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
 
     // Executor
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
