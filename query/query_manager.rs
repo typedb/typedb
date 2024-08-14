@@ -8,6 +8,7 @@ use concept::type_::type_manager::TypeManager;
 use function::function::Function;
 use storage::snapshot::WritableSnapshot;
 use typeql::{query::SchemaQuery, Query};
+use concept::thing::thing_manager::ThingManager;
 
 use crate::{define, error::QueryError};
 
@@ -23,11 +24,12 @@ impl QueryManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         query: SchemaQuery,
     ) -> Result<(), QueryError> {
         match query {
             SchemaQuery::Define(define) => {
-                define::execute(snapshot, &type_manager, define).map_err(|err| QueryError::Define { source: err })
+                define::execute(snapshot, type_manager, thing_manager, define).map_err(|err| QueryError::Define { source: err })
             }
             SchemaQuery::Redefine(redefine) => {
                 todo!()

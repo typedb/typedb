@@ -152,16 +152,16 @@ fn test_links_planning_traversal() {
     let membership_type = type_manager.create_relation_type(&mut snapshot, &MEMBERSHIP_LABEL).unwrap();
 
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
-    name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
     let person_owns_name =
         person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
-    person_owns_name.set_annotation(&mut snapshot, &type_manager, OWNS_CARDINALITY_ANY).unwrap();
+    person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, OWNS_CARDINALITY_ANY).unwrap();
 
     let relates_member = membership_type
         .create_relates(&mut snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name().as_str(), Ordering::Unordered)
         .unwrap();
-    relates_member.set_annotation(&mut snapshot, &type_manager, RELATES_CARDINALITY_ANY).unwrap();
+    relates_member.set_annotation(&mut snapshot, &type_manager, &thing_manager, RELATES_CARDINALITY_ANY).unwrap();
     let membership_member_type = relates_member.role();
 
     person_type.set_plays(&mut snapshot, &type_manager, membership_member_type.clone()).unwrap();

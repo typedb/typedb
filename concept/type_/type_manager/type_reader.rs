@@ -673,7 +673,7 @@ impl TypeReader {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
                     }
                 };
-                CAP::AnnotationType::from(annotation)
+                CAP::AnnotationType::try_from(annotation).unwrap()
             })
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }

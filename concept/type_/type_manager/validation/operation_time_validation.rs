@@ -399,7 +399,7 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                                 let declared_annotations =
                                     TypeReader::get_type_edge_annotations_declared(snapshot, overriding.clone())?;
                                 overriding_annotations_to_revalidate
-                                    .retain(|annotation| !declared_annotations.contains(&annotation.clone().into()));
+                                    .retain(|annotation| !declared_annotations.contains(&annotation.clone().try_into().unwrap()));
 
                                 capabilities_and_annotations_to_check.push_front((
                                     subtype.clone(),
@@ -800,7 +800,7 @@ macro_rules! type_or_its_subtype_with_violated_new_annotation_constraints {
                             TypeReader::get_type_annotations_declared(snapshot, subtype.clone())?;
                         subtype_annotations_to_revalidate
                             .retain(|annotation| annotation.category().inheritable()
-                                && !declared_annotations.contains(&annotation.clone().into())
+                                && !declared_annotations.contains(&annotation.clone().try_into().unwrap())
                             );
 
                         types_and_annotations_to_check.push_front((
@@ -2792,7 +2792,7 @@ impl OperationTimeValidation {
         annotations: &mut HashSet<Annotation>,
     ) -> Result<(), ConceptReadError> {
         let declared_annotations = TypeReader::get_type_annotations_declared(snapshot, type_.clone())?;
-        annotations.retain(|annotation| !declared_annotations.contains(&annotation.clone().into()));
+        annotations.retain(|annotation| !declared_annotations.contains(&annotation.clone().try_into().unwrap()));
         Ok(())
     }
 
@@ -2802,7 +2802,7 @@ impl OperationTimeValidation {
         annotations: &mut HashSet<Annotation>,
     ) -> Result<(), ConceptReadError> {
         let declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, capability.clone())?;
-        annotations.retain(|annotation| !declared_annotations.contains(&annotation.clone().into()));
+        annotations.retain(|annotation| !declared_annotations.contains(&annotation.clone().try_into().unwrap()));
         Ok(())
     }
 
@@ -2984,7 +2984,7 @@ impl OperationTimeValidation {
         let mut unique_values = HashSet::new();
 
         for object_type in object_types {
-            let mut object_iterator = thing_manager.get_instances_in::<Object<'_>>(snapshot, object_type.clone());
+            let mut object_iterator = thing_manager.get_objects_in(snapshot, object_type.clone().into_owned());
             while let Some(object) = object_iterator.next() {
                 let mut real_cardinality = 0;
 
@@ -3077,7 +3077,7 @@ impl OperationTimeValidation {
         debug_assert!(cardinality.is_some(), "At least one constraint should exist otherwise we don't need to iterate");
 
         for object_type in object_types {
-            let mut object_iterator = thing_manager.get_instances_in::<Object<'_>>(snapshot, object_type.clone());
+            let mut object_iterator = thing_manager.get_objects_in(snapshot, object_type.clone().into_owned());
             while let Some(object) = object_iterator.next() {
                 let mut real_cardinality = 0;
 
@@ -3651,7 +3651,7 @@ impl OperationTimeValidation {
     ) -> Result<bool, ConceptReadError> {
         let mut has_instances = false;
 
-        let mut owner_iterator = thing_manager.get_instances_in::<Object<'_>>(snapshot, owner_type.clone());
+        let mut owner_iterator = thing_manager.get_objects_in(snapshot, owner_type.clone().into_owned());
         while let Some(instance) = owner_iterator.next() {
             let mut iterator =
                 instance?.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?;
@@ -3673,7 +3673,7 @@ impl OperationTimeValidation {
     ) -> Result<bool, ConceptReadError> {
         let mut has_instances = false;
 
-        let mut player_iterator = thing_manager.get_instances_in::<Object<'_>>(snapshot, player_type.clone());
+        let mut player_iterator = thing_manager.get_objects_in(snapshot, player_type.clone().into_owned());
         while let Some(instance) = player_iterator.next() {
             let mut iterator = instance?.get_relations_by_role(snapshot, thing_manager, role_type.clone().into_owned());
 
@@ -3816,7 +3816,7 @@ impl OperationTimeValidation {
         // (should be checked on the schema level), so we don't consider them updated
         Ok(new_annotations
             .keys()
-            .chain(once(&Annotation::Cardinality(new_cardinality).into()))
+            .chain(once(&Annotation::Cardinality(new_cardinality).try_into().unwrap()))
             .map(|new_annotation| new_annotation.clone().into())
             .filter(|new_annotation| {
                 let new_annotation_category = new_annotation.category();

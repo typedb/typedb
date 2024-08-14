@@ -52,9 +52,9 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let membership_group_type = relates_group.role();
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
-    name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
     person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
     person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
@@ -246,12 +246,12 @@ fn relation() {
         let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
         let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
         let member_role = membership_type
-            .get_relates_of_role(&snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name.as_str())
+            .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name.as_str())
             .unwrap()
             .unwrap()
             .role();
         let group_role = membership_type
-            .get_relates_of_role(&snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name.as_str())
+            .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name.as_str())
             .unwrap()
             .unwrap()
             .role();
@@ -299,12 +299,12 @@ fn relation_with_inferred_roles() {
         let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
         let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
         let member_role = membership_type
-            .get_relates_of_role(&snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name.as_str())
+            .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name.as_str())
             .unwrap()
             .unwrap()
             .role();
         let group_role = membership_type
-            .get_relates_of_role(&snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name.as_str())
+            .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name.as_str())
             .unwrap()
             .unwrap()
             .role();

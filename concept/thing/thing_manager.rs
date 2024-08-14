@@ -184,7 +184,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         player: &'o impl ObjectAPI<'o>,
         role_type: RoleType<'static>,
-    ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<(Relation<'a>, u64), ConceptReadError>> {
         self.get_relations_roles(snapshot, player).filter_map::<Result<(Relation<'_>, u64), _>, _>(move |item| {
             match item {
                 Ok((rel, role, count)) => (role == role_type).then_some(Ok((rel, count))),
@@ -884,8 +884,8 @@ impl ThingManager {
 
                 self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, owns.clone())?;
                 self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute_value, owns)?;
-            } else if ThingEdgeRolePlayer::is_role_player(key_reference) {
-                let role_player = ThingEdgeRolePlayer::new(Bytes::Reference(key_reference.byte_ref()));
+            } else if ThingEdgeLinks::is_links(key_reference) {
+                let role_player = ThingEdgeLinks::new(Bytes::Reference(key_reference.byte_ref()));
                 let relation = Relation::new(role_player.relation()).into_owned();
                 let player = Object::new(role_player.player()).into_owned();
                 let relation_type = relation.type_();

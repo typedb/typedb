@@ -930,7 +930,7 @@ pub mod tests {
         let function_index = HashMapFunctionSignatureIndex::empty();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager);
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         let all_animals = BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]);
         let all_names = BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()]);

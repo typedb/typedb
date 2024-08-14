@@ -109,13 +109,8 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
         let ((type_animal, type_cat, type_dog), _, _) =
-<<<<<<< HEAD
-            setup_types(storage.clone().open_snapshot_write(), &type_manager);
-        let empty_cache = IndexedAnnotatedFunctions::empty();
-=======
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
-        let empty_cache = Arc::new(AnnotatedCommittedFunctions::empty());
->>>>>>> 2fd922b78 (Fix build for tests based on new concept api interfaces)
+        let empty_cache = IndexedAnnotatedFunctions::empty();
 
         let snapshot = storage.clone().open_snapshot_read();
         let var_f_c = function.block().context().get_variable_named("c", function.block().scope_id()).unwrap().clone();

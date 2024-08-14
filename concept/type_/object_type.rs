@@ -267,25 +267,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         with_object_type!(self, |object| { object.get_plays(snapshot, type_manager) })
     }
 }
-<<<<<<< HEAD
 
 impl Hkt for ObjectType<'static> {
     type HktSelf<'a> = ObjectType<'a>;
 }
-
-macro_rules! with_object_type {
-    ($object_type:ident, |$type_:ident| $expr:expr) => {
-        match $object_type.clone() {
-            ObjectType::Entity($type_) => $expr,
-            ObjectType::Relation($type_) => $expr,
-        }
-    };
-}
-pub(crate) use with_object_type;
-
-use crate::{
-    thing::{object::Object, relation::Relation, thing_manager::ThingManager},
-    type_::ThingTypeAPI,
-};
-=======
->>>>>>> 998ace020 (Refactor and fix unset operations. Start implementing annotation checks for instances of types)
