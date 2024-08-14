@@ -11,7 +11,7 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::instruction::constraint::instructions::LinksInstruction;
+use compiler::match_::instructions::LinksInstruction;
 use concept::{
     error::ConceptReadError,
     thing::{

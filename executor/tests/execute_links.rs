@@ -6,11 +6,9 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use compiler::{
+use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    instruction::constraint::instructions::{
-        ConstraintInstruction, Inputs, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
-    },
+    instructions::{ConstraintInstruction, Inputs, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction},
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,

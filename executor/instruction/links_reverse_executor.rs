@@ -11,7 +11,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::instruction::constraint::instructions::LinksReverseInstruction;
+use compiler::match_::instructions::LinksReverseInstruction;
 use concept::{
     error::ConceptReadError,
     thing::{

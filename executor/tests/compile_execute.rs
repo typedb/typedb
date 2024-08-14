@@ -6,7 +6,7 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use compiler::{
+use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     planner::{pattern_plan::PatternPlan, program_plan::ProgramPlan},
 };

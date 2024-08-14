@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use answer::{Thing, Type};
-use compiler::write::{
-    write_instructions::{DeleteThing, Has, PutAttribute, PutObject, RolePlayer},
+use compiler::insert::{
+    instructions::{PutAttribute, PutObject},
     ThingSource, TypeSource, ValueSource,
 };
 use concept::thing::{
@@ -13,7 +13,7 @@ use concept::thing::{
     thing_manager::ThingManager,
     ThingAPI,
 };
-use encoding::{graph::type_::Kind, value::value::Value};
+use encoding::value::value::Value;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{batch::Row, write::insert_executor::WriteError, VariablePosition};
@@ -116,7 +116,7 @@ impl AsInsertInstruction for PutObject {
     }
 }
 
-impl AsInsertInstruction for Has {
+impl AsInsertInstruction for compiler::insert::instructions::Has {
     fn insert(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -134,7 +134,7 @@ impl AsInsertInstruction for Has {
     }
 }
 
-impl AsInsertInstruction for RolePlayer {
+impl AsInsertInstruction for compiler::insert::instructions::RolePlayer {
     fn insert(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -153,7 +153,7 @@ impl AsInsertInstruction for RolePlayer {
     }
 }
 
-impl AsDeleteInstruction for DeleteThing {
+impl AsDeleteInstruction for compiler::delete::instructions::DeleteThing {
     fn delete(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -175,7 +175,7 @@ impl AsDeleteInstruction for DeleteThing {
     }
 }
 
-impl AsDeleteInstruction for Has {
+impl AsDeleteInstruction for compiler::delete::instructions::Has {
     fn delete(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -191,7 +191,7 @@ impl AsDeleteInstruction for Has {
     }
 }
 
-impl AsDeleteInstruction for RolePlayer {
+impl AsDeleteInstruction for compiler::delete::instructions::RolePlayer {
     fn delete(
         &self,
         snapshot: &mut impl WritableSnapshot,

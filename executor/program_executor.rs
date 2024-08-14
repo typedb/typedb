@@ -7,7 +7,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
-use compiler::planner::program_plan::ProgramPlan;
+use compiler::match_::planner::program_plan::ProgramPlan;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use encoding::graph::definition::definition_key::DefinitionKey;
 use lending_iterator::LendingIterator;

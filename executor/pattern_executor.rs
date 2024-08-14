@@ -7,9 +7,9 @@
 use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
-use compiler::{
+use compiler::match_::{
     inference::type_annotations::TypeAnnotations,
-    instruction::constraint::instructions::ConstraintInstruction,
+    instructions::ConstraintInstruction,
     planner::pattern_plan::{
         AssignmentStep, DisjunctionStep, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
         UnsortedJoinStep,

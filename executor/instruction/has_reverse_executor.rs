@@ -11,7 +11,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::instruction::constraint::instructions::HasReverseInstruction;
+use compiler::match_::instructions::HasReverseInstruction;
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},

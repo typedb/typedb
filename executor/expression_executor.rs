@@ -7,9 +7,9 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::{
-    expression::compiled_expression::CompiledExpression,
-    instruction::expression::{
+use compiler::expression::{
+    compiled_expression::CompiledExpression,
+    instructions::{
         binary::{Binary, BinaryExpression, MathRemainderLong},
         list_operations::{ListConstructor, ListIndex, ListIndexRange},
         load_cast::{

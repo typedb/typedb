@@ -6,7 +6,7 @@
 
 use std::{collections::HashMap, iter::zip, sync::Arc};
 
-use compiler::inference::{
+use compiler::match_::inference::{
     annotated_functions::{AnnotatedFunctions, IndexedAnnotatedFunctions},
     type_annotations::FunctionAnnotations,
     type_inference::infer_types_for_functions,
