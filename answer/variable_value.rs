@@ -52,7 +52,7 @@ impl<'a> VariableValue<'a> {
             VariableValue::Empty => VariableValue::Empty,
             VariableValue::Type(type_) => VariableValue::Type(type_.clone()),
             VariableValue::Thing(thing) => VariableValue::Thing(thing.to_owned()),
-            VariableValue::Value(value) => VariableValue::Value(value.to_owned()),
+            VariableValue::Value(value) => VariableValue::Value(value.clone().into_owned()),
             VariableValue::ThingList(list) => VariableValue::ThingList(list.clone()),
             VariableValue::ValueList(list) => VariableValue::ValueList(list.clone()),
         }

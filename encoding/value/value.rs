@@ -177,21 +177,6 @@ impl<'a> Value<'a> {
         }
     }
 
-    pub fn to_owned(&self) -> Value<'static> {
-        match *self {
-            Self::Boolean(bool) => Value::Boolean(bool),
-            Self::Long(long) => Value::Long(long),
-            Self::Double(double) => Value::Double(double),
-            Self::Decimal(decimal) => Value::Decimal(decimal),
-            Self::Date(date) => Value::Date(date),
-            Self::DateTime(date_time) => Value::DateTime(date_time),
-            Self::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
-            Self::Duration(duration) => Value::Duration(duration),
-            Self::String(ref string) => Value::String(Cow::Owned(string.clone().into_owned())),
-            Self::Struct(ref struct_) => Value::Struct(Cow::Owned(struct_.clone().into_owned())),
-        }
-    }
-
     pub fn into_owned(self) -> Value<'static> {
         match self {
             Self::Boolean(bool) => Value::Boolean(bool),
@@ -304,8 +289,8 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::DateTime(_) => ByteArray::copy(&self.encode_date_time().bytes()),
             Value::DateTimeTZ(_) => ByteArray::copy(&self.encode_date_time_tz().bytes()),
             Value::Duration(_) => ByteArray::copy(&self.encode_duration().bytes()),
-            Value::String(_) => ByteArray::copy(&self.encode_string::<INLINE_LENGTH>().bytes().bytes()),
-            Value::Struct(_) => ByteArray::copy(&self.encode_struct::<INLINE_LENGTH>().bytes().bytes()),
+            Value::String(_) => ByteArray::copy(self.encode_string::<INLINE_LENGTH>().bytes().bytes()),
+            Value::Struct(_) => ByteArray::copy(self.encode_struct::<INLINE_LENGTH>().bytes().bytes()),
         }
     }
 }
