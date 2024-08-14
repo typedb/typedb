@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashSet, sync::Arc};
-use std::iter::once;
+use std::{borrow::Cow, collections::HashSet, iter::once, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -18,7 +17,10 @@ use encoding::{
             vertex_object::ObjectVertex,
             ThingVertex,
         },
-        type_::vertex::{TypeID, TypeVertexEncoding},
+        type_::{
+            property::{TypeVertexProperty, TypeVertexPropertyEncoding},
+            vertex::{TypeID, TypeVertex, TypeVertexEncoding},
+        },
         Typed,
     },
     layout::prefix::Prefix,
@@ -42,7 +44,6 @@ use encoding::{
     Keyable,
 };
 use itertools::Itertools;
-use encoding::graph::type_::property::{TypeVertexProperty, TypeVertexPropertyEncoding};
 use lending_iterator::{AsHkt, LendingIterator};
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLINE};
 use storage::{
@@ -59,11 +60,13 @@ use crate::{
         decode_attribute_ids, decode_role_players, encode_attribute_ids, encode_role_players,
         entity::Entity,
         object::{HasAttributeIterator, HasIterator, HasReverseIterator, Object, ObjectAPI},
-        relation::{IndexedPlayersIterator, LinksIterator, Relation, RelationRoleIterator, RolePlayerIterator},
+        relation::{IndexedPlayersIterator, LinksIterator, Relation, RelationRoleIterator, RolePlayer, RolePlayerIterator},
+        thing_manager::validation::validation::Validation,
         HKInstance, ThingAPI,
     },
     type_::{
-        attribute_type::{AttributeType},
+        annotation::{AnnotationCascade, AnnotationIndependent},
+        attribute_type::AttributeType,
         entity_type::EntityType,
         object_type::ObjectType,
         relation_type::RelationType,
@@ -73,9 +76,6 @@ use crate::{
     },
     ConceptStatus,
 };
-use crate::thing::relation::RolePlayer;
-use crate::thing::thing_manager::validation::validation::Validation;
-use crate::type_::annotation::{AnnotationCascade, AnnotationIndependent};
 
 pub mod validation;
 
@@ -152,7 +152,7 @@ impl ThingManager {
     pub(crate) fn get_relations_roles<'o>(
         &self,
         snapshot: &impl ReadableSnapshot,
-        player: &'o impl ObjectAPI<'o>,
+        player: &impl ObjectAPI<'o>,
     ) -> RelationRoleIterator {
         let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
         RelationRoleIterator::new(
@@ -883,21 +883,20 @@ impl ThingManager {
             any_deleted = false;
             for relation_type in snapshot
                 .iterate_writes_range(KeyRange::new_within(
-                    TypeVertexProperty::build_prefix(), TypeVertexProperty::FIXED_WIDTH_ENCODING,
+                    TypeVertexProperty::build_prefix(),
+                    TypeVertexProperty::FIXED_WIDTH_ENCODING,
                 ))
-                .filter_map(|(key, write)| {
-                    match write {
-                        Write::Put { .. } | Write::Insert { .. } => {
-                            let bytes = Bytes::reference(key.bytes());
-                            if AnnotationCascade::is_decodable_from(bytes.clone()) {
-                                let decoded = TypeVertexProperty::new(bytes);
-                                RelationType::from_vertex(decoded.type_vertex()).ok().map(|type_| type_.into_owned())
-                            } else {
-                                None
-                            }
-                        },
-                        _ => None,
+                .filter_map(|(key, write)| match write {
+                    Write::Put { .. } | Write::Insert { .. } => {
+                        let bytes = Bytes::reference(key.bytes());
+                        if AnnotationCascade::is_decodable_from(bytes.clone()) {
+                            let decoded = TypeVertexProperty::new(bytes);
+                            RelationType::from_vertex(decoded.type_vertex()).ok().map(|type_| type_.into_owned())
+                        } else {
+                            None
+                        }
                     }
+                    _ => None,
                 })
                 .collect_vec()
                 .into_iter()
@@ -906,7 +905,8 @@ impl ThingManager {
                 once(&relation_type).chain(subtypes.into_iter()).try_for_each(|type_| {
                     let is_cascade = type_.is_cascade(snapshot, self.type_manager())?;
                     if is_cascade {
-                        let mut relations: InstanceIterator<Relation<'_>> = self.get_instances_in(snapshot, type_.clone());
+                        let mut relations: InstanceIterator<Relation<'_>> =
+                            self.get_instances_in(snapshot, type_.clone());
                         while let Some(relation) = relations.next() {
                             let relation = relation?;
                             if !relation.has_players(snapshot, self) {
@@ -925,10 +925,7 @@ impl ThingManager {
 
     fn cleanup_attributes(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptWriteError> {
         for (key, _write) in snapshot
-            .iterate_writes_range(KeyRange::new_within(
-                ThingEdgeHas::prefix(),
-                ThingEdgeHas::FIXED_WIDTH_ENCODING,
-            ))
+            .iterate_writes_range(KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING))
             .filter(|(_, write)| matches!(write, Write::Delete))
         {
             let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
@@ -969,21 +966,20 @@ impl ThingManager {
 
         for attribute_type in snapshot
             .iterate_writes_range(KeyRange::new_within(
-                TypeVertexProperty::build_prefix(), TypeVertexProperty::FIXED_WIDTH_ENCODING,
+                TypeVertexProperty::build_prefix(),
+                TypeVertexProperty::FIXED_WIDTH_ENCODING,
             ))
-            .filter_map(|(key, write)| {
-                match write {
-                    Write::Delete => {
-                        let bytes = Bytes::reference(key.bytes());
-                        if AnnotationIndependent::is_decodable_from(bytes.clone()) {
-                            let decoded = TypeVertexProperty::new(bytes);
-                            AttributeType::from_vertex(decoded.type_vertex()).ok().map(|type_| type_.into_owned())
-                        } else {
-                            None
-                        }
-                    },
-                    _ => None,
+            .filter_map(|(key, write)| match write {
+                Write::Delete => {
+                    let bytes = Bytes::reference(key.bytes());
+                    if AnnotationIndependent::is_decodable_from(bytes.clone()) {
+                        let decoded = TypeVertexProperty::new(bytes);
+                        AttributeType::from_vertex(decoded.type_vertex()).ok().map(|type_| type_.into_owned())
+                    } else {
+                        None
+                    }
                 }
+                _ => None,
             })
             .collect_vec()
             .into_iter()
@@ -992,7 +988,8 @@ impl ThingManager {
             once(&attribute_type).chain(subtypes.into_iter()).try_for_each(|type_| {
                 let is_independent = type_.is_independent(snapshot, self.type_manager())?;
                 if !is_independent {
-                    let mut attributes: InstanceIterator<Attribute<'_>> = self.get_instances_in(snapshot, type_.clone());
+                    let mut attributes: InstanceIterator<Attribute<'_>> =
+                        self.get_instances_in(snapshot, type_.clone());
                     while let Some(attribute) = attributes.next() {
                         let attribute = attribute?;
                         if !attribute.has_owners(snapshot, self) {
@@ -1036,10 +1033,9 @@ impl ThingManager {
         errors: &mut Vec<ConceptWriteError>,
         snapshot: &impl WritableSnapshot,
     ) -> Result<(), ConceptReadError> {
-        for (key, _) in snapshot.iterate_writes_range(KeyRange::new_within(
-            ThingEdgeHas::prefix(),
-            ThingEdgeHas::FIXED_WIDTH_ENCODING,
-        )) {
+        for (key, _) in snapshot
+            .iterate_writes_range(KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING))
+        {
             let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
             let owner = Object::new(edge.from());
             if !self.object_exists(snapshot, &owner)? {
@@ -1051,8 +1047,14 @@ impl ThingManager {
 
         for key in snapshot
             .iterate_writes_range(KeyRange::new_inclusive(
-                StorageKey::new(ObjectVertex::KEYSPACE, Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexEntity).bytes())),
-                StorageKey::new(ObjectVertex::KEYSPACE, Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexRelation).bytes())),
+                StorageKey::new(
+                    ObjectVertex::KEYSPACE,
+                    Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexEntity).bytes()),
+                ),
+                StorageKey::new(
+                    ObjectVertex::KEYSPACE,
+                    Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexRelation).bytes()),
+                ),
             ))
             .filter_map(|(key, write)| match write {
                 Write::Insert { .. } => Some(key),
@@ -1145,29 +1147,14 @@ impl ThingManager {
             });
         }
 
-        Validation::validate_attribute_regex_constraint(
-            snapshot,
-            self,
-            attribute_type.clone(),
-            value.clone(),
-        )
-        .map_err(|source| ConceptWriteError::DataValidation { source })?;
+        Validation::validate_attribute_regex_constraint(snapshot, self, attribute_type.clone(), value.clone())
+            .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        Validation::validate_attribute_range_constraint(
-            snapshot,
-            self,
-            attribute_type.clone(),
-            value.clone(),
-        )
-        .map_err(|source| ConceptWriteError::DataValidation { source })?;
+        Validation::validate_attribute_range_constraint(snapshot, self, attribute_type.clone(), value.clone())
+            .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        Validation::validate_attribute_values_constraint(
-            snapshot,
-            self,
-            attribute_type.clone(),
-            value.clone(),
-        )
-        .map_err(|source| ConceptWriteError::DataValidation { source })?;
+        Validation::validate_attribute_values_constraint(snapshot, self, attribute_type.clone(), value.clone())
+            .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         self.put_attribute(snapshot, attribute_type, value)
     }

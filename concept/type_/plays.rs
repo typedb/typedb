@@ -120,7 +120,7 @@ impl<'a> Plays<'a> {
         Ok(())
     }
 
-    fn into_owned(self) -> Plays<'static> {
+    pub(crate) fn into_owned(self) -> Plays<'static> {
         Plays { player: ObjectType::new(self.player.vertex().into_owned()), role: self.role.into_owned() }
     }
 }

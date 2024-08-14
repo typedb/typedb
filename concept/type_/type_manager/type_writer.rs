@@ -167,8 +167,10 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         }
     }
 
-    pub(crate) fn storage_delete_type_vertex_property<'a, P>(snapshot: &mut Snapshot, vertex: impl TypeVertexEncoding<'a>)
-    where
+    pub(crate) fn storage_delete_type_vertex_property<'a, P>(
+        snapshot: &mut Snapshot,
+        vertex: impl TypeVertexEncoding<'a>,
+    ) where
         P: TypeVertexPropertyEncoding<'a>,
     {
         snapshot.delete(P::build_key(vertex).into_storage_key().into_owned_array());

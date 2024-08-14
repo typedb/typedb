@@ -40,12 +40,15 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{
-        annotation::AnnotationDistinct, relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType,
-        type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
+        annotation::AnnotationDistinct,
+        relates::RelatesAnnotation,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::{type_reader::TypeReader, TypeManager},
+        Capability, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
-use crate::type_::type_manager::type_reader::TypeReader;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Relation<'a> {
@@ -152,13 +155,8 @@ impl<'a> Relation<'a> {
             return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
         }
 
-        Validation::validate_object_type_plays_role_type(
-            snapshot,
-            thing_manager,
-            player.type_(),
-            role_type.clone(),
-        )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        Validation::validate_object_type_plays_role_type(snapshot, thing_manager, player.type_(), role_type.clone())
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
         let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())?;
@@ -193,13 +191,8 @@ impl<'a> Relation<'a> {
             *new_counts.entry(player).or_default() += 1;
         }
 
-        Validation::validate_relates_distinct_constraint(
-            snapshot,
-            thing_manager,
-            role_type.clone(),
-            &new_counts,
-        )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        Validation::validate_relates_distinct_constraint(snapshot, thing_manager, role_type.clone(), &new_counts)
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         // 1. get owned list
         let old_players = thing_manager
@@ -329,23 +322,25 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
     ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
         let mut errors = Vec::new();
 
-        // validate cardinality
         let type_ = self.type_();
         let relation_relates = type_.get_relates(snapshot, thing_manager.type_manager())?;
         let role_player_count = self.get_player_counts(snapshot, thing_manager)?;
+
         for relates in relation_relates.iter() {
-            let cardinality = relates.get_cardinality(snapshot, thing_manager.type_manager())?;
-            let role_type = relates.role();
-            let player_count = role_player_count.get(&role_type).map_or(0, |c| *c);
-            if !cardinality.value_valid(player_count) {
-                errors.push(ConceptWriteError::RelationRoleCardinality {
-                    relation: self.clone().into_owned(),
-                    role_type: role_type.clone(),
-                    cardinality,
-                    actual_cardinality: player_count,
-                });
+            let cardinality_check = Validation::validate_relates_cardinality_constraint(
+                snapshot,
+                thing_manager,
+                &self,
+                relates.clone().into_owned(),
+                &role_player_count,
+            );
+
+            match cardinality_check {
+                Err(source) => errors.push(ConceptWriteError::DataValidation { source }),
+                Ok(_) => {}
             }
         }
+
         Ok(errors)
     }
 

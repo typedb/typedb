@@ -233,7 +233,8 @@ impl OwnsCache {
                 ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
                 overrides: TypeReader::get_capability_override(snapshot, owns.clone()).unwrap(),
                 overriding: TypeReader::get_overriding_capabilities(snapshot, owns.clone()).unwrap(),
-                overriding_transitive: TypeReader::get_overriding_capabilities_transitive(snapshot, owns.clone()).unwrap(),
+                overriding_transitive: TypeReader::get_overriding_capabilities_transitive(snapshot, owns.clone())
+                    .unwrap(),
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, owns.clone())
                     .unwrap()
                     .into_iter()
@@ -267,7 +268,8 @@ impl PlaysCache {
             let cache = PlaysCache {
                 overrides: TypeReader::get_capability_override(snapshot, plays.clone()).unwrap(),
                 overriding: TypeReader::get_overriding_capabilities(snapshot, plays.clone()).unwrap(),
-                overriding_transitive: TypeReader::get_overriding_capabilities_transitive(snapshot, plays.clone()).unwrap(),
+                overriding_transitive: TypeReader::get_overriding_capabilities_transitive(snapshot, plays.clone())
+                    .unwrap(),
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, plays.clone())
                     .unwrap()
                     .into_iter()
@@ -301,7 +303,8 @@ impl RelatesCache {
             let cache = RelatesCache {
                 overrides: TypeReader::get_capability_override(snapshot, relates.clone()).unwrap(),
                 overriding: TypeReader::get_overriding_capabilities(snapshot, relates.clone()).unwrap(),
-                overriding_transitive: TypeReader::get_overriding_capabilities_transitive(snapshot, relates.clone()).unwrap(),
+                overriding_transitive: TypeReader::get_overriding_capabilities_transitive(snapshot, relates.clone())
+                    .unwrap(),
                 annotations_declared: TypeReader::get_type_edge_annotations_declared(snapshot, relates.clone())
                     .unwrap()
                     .into_iter()

@@ -330,10 +330,7 @@ impl TypeCache {
         &RoleType::get_cache(self, role_type).relates_declared
     }
 
-    pub(crate) fn get_role_type_relates(
-        &self,
-        role_type: RoleType<'_>,
-    ) -> &HashSet<Relates<'static>> {
+    pub(crate) fn get_role_type_relates(&self, role_type: RoleType<'_>) -> &HashSet<Relates<'static>> {
         &RoleType::get_cache(self, role_type).relates
     }
 
@@ -370,7 +367,10 @@ impl TypeCache {
         &self.relates.get(&relates).unwrap().overriding
     }
 
-    pub(crate) fn get_relates_overriding_transitive<'c>(&'c self, relates: Relates<'c>) -> &'c HashSet<Relates<'static>> {
+    pub(crate) fn get_relates_overriding_transitive<'c>(
+        &'c self,
+        relates: Relates<'c>,
+    ) -> &'c HashSet<Relates<'static>> {
         &self.relates.get(&relates).unwrap().overriding_transitive
     }
 

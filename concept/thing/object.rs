@@ -5,10 +5,9 @@
  */
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     fmt::{Debug, Display, Formatter},
 };
-use std::collections::HashMap;
 
 use bytes::Bytes;
 use encoding::{
@@ -40,11 +39,10 @@ use crate::{
     },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, owns::Owns, role_type::RoleType,
-        type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
+        type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptStatus,
 };
-use crate::thing::thing_manager::validation::DataValidationError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Object<'a> {
@@ -150,12 +148,30 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         let has_counts = self.get_has_counts(snapshot, thing_manager)?;
 
         for owns in object_owns.iter() {
-            let cardinality_check = Validation::validate_has_cardinality_constraint(
+            let cardinality_check = Validation::validate_owns_cardinality_constraint(
                 snapshot,
                 thing_manager,
                 &self,
                 owns.clone().into_owned(),
                 &has_counts,
+            );
+
+            match cardinality_check {
+                Err(source) => errors.push(ConceptWriteError::DataValidation { source }),
+                Ok(_) => {}
+            }
+        }
+
+        let object_plays = type_.get_plays(snapshot, thing_manager.type_manager())?;
+        let played_roles_counts = self.get_played_roles_counts(snapshot, thing_manager)?;
+
+        for plays in object_plays.iter() {
+            let cardinality_check = Validation::validate_plays_cardinality_constraint(
+                snapshot,
+                thing_manager,
+                &self,
+                plays.clone().into_owned(),
+                &played_roles_counts,
             );
 
             match cardinality_check {
@@ -264,13 +280,8 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
         }
 
-        Validation::validate_object_type_owns_attribute_type(
-            snapshot,
-            thing_manager,
-            self.type_(),
-            attribute.type_(),
-        )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        Validation::validate_object_type_owns_attribute_type(snapshot, thing_manager, self.type_(), attribute.type_())
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
@@ -334,13 +345,8 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             *new_counts.entry(attr).or_default() += 1;
         }
 
-        Validation::validate_owns_distinct_constraint(
-            snapshot,
-            thing_manager,
-            owns.clone().into_owned(),
-            &new_counts,
-        )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        Validation::validate_owns_distinct_constraint(snapshot, thing_manager, owns.clone().into_owned(), &new_counts)
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         // 1. get owned list
         let old_attributes =
@@ -421,7 +427,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 
     fn get_relations_roles<'m>(
-        &'a self,
+        &self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
     ) -> RelationRoleIterator {
@@ -437,6 +443,20 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         let mut has_iter = self.get_has_unordered(snapshot, thing_manager);
         while let Some((attribute, count)) = has_iter.next().transpose()? {
             let value = counts.entry(attribute.type_()).or_insert(0);
+            *value += count;
+        }
+        Ok(counts)
+    }
+
+    fn get_played_roles_counts(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+    ) -> Result<HashMap<RoleType<'static>, u64>, ConceptReadError> {
+        let mut counts = HashMap::new();
+        let mut relation_role_iter = self.get_relations_roles(snapshot, thing_manager);
+        while let Some((_, role_type, count)) = relation_role_iter.next().transpose()? {
+            let value = counts.entry(role_type).or_insert(0);
             *value += count;
         }
         Ok(counts)

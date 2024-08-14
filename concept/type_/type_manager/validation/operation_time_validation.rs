@@ -2937,7 +2937,8 @@ impl OperationTimeValidation {
             let relation_type = relates.relation();
             let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.into_owned());
             while let Some(relation) = relation_iterator.next() {
-                let mut role_player_iterator = thing_manager.get_role_players_role(snapshot, relation?, role_type.clone());
+                let mut role_player_iterator =
+                    thing_manager.get_role_players_role(snapshot, relation?, role_type.clone());
                 while let Some(role_player) = role_player_iterator.next() {
                     role_player?;
 

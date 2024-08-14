@@ -113,7 +113,7 @@ impl<'a> Relates<'a> {
         Ok(())
     }
 
-    fn into_owned(self) -> Relates<'static> {
+    pub(crate) fn into_owned(self) -> Relates<'static> {
         Relates { relation: self.relation.into_owned(), role: self.role.into_owned() }
     }
 }

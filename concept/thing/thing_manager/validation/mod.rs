@@ -10,20 +10,17 @@ use encoding::value::{label::Label, value::Value};
 
 use crate::{
     error::ConceptReadError,
-    thing::object::Object,
+    thing::{attribute::Attribute, object::Object, relation::Relation},
     type_::{
-        annotation::{AnnotationRange, AnnotationRegex, AnnotationValues},
+        annotation::{AnnotationCardinality, AnnotationRange, AnnotationRegex, AnnotationValues},
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::Owns,
+        plays::Plays,
+        relates::Relates,
+        role_type::RoleType,
     },
 };
-use crate::thing::attribute::Attribute;
-use crate::thing::relation::Relation;
-use crate::type_::annotation::AnnotationCardinality;
-use crate::type_::plays::Plays;
-use crate::type_::relates::Relates;
-use crate::type_::role_type::RoleType;
 
 pub mod validation;
 

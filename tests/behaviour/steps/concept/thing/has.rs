@@ -18,11 +18,10 @@ use macro_rules_attribute::apply;
 
 use crate::{
     generic_step, params,
-    params::IsEmptyOrNot,
+    params::{check_boolean, IsEmptyOrNot},
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
-use crate::params::check_boolean;
 
 pub(super) fn object_set_has_impl(
     context: &mut Context,

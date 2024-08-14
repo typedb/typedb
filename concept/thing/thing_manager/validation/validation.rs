@@ -4,8 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
-use std::ops::Deref;
+use std::{
+    collections::{BTreeMap, HashMap, HashSet, VecDeque},
+    ops::Deref,
+};
 
 use encoding::value::{label::Label, value::Value, value_type::ValueType, ValueEncodable};
 use lending_iterator::LendingIterator;
@@ -17,7 +19,8 @@ use crate::{
     thing::{
         attribute::Attribute,
         has::Has,
-        object::ObjectAPI,
+        object::{Object, ObjectAPI},
+        relation::Relation,
         thing_manager::{validation::DataValidationError, ThingManager},
     },
     type_::{
@@ -27,12 +30,13 @@ use crate::{
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::{Owns, OwnsAnnotation},
+        plays::Plays,
+        relates::Relates,
         role_type::RoleType,
         type_manager::{validation::validation::get_label_or_concept_read_err, TypeManager},
         Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
-use crate::thing::object::Object;
 
 pub struct Validation {}
 
@@ -117,22 +121,24 @@ impl Validation {
         role_type: RoleType<'static>,
         players_counts: &HashMap<&Object<'_>, u64>,
     ) -> Result<(), DataValidationError> {
-        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())
-            .map_err(DataValidationError::ConceptRead)?;
-        let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())
-            .map_err(DataValidationError::ConceptRead)?;
+        let relates =
+            role_type.get_relates(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
+        let distinct =
+            relates.is_distinct(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
 
         match distinct {
             true => {
-                let duplicated = players_counts
-                    .iter()
-                    .find(|(_, count)| **count > 1);
+                let duplicated = players_counts.iter().find(|(_, count)| **count > 1);
                 match duplicated {
-                    Some((player, count)) => Err(DataValidationError::PlayerViolatesDistinctRelatesConstraint { role_type, player: player.clone().clone().into_owned(), count: count.clone() }),
-                    None => Ok(())
+                    Some((player, count)) => Err(DataValidationError::PlayerViolatesDistinctRelatesConstraint {
+                        role_type,
+                        player: player.clone().clone().into_owned(),
+                        count: count.clone(),
+                    }),
+                    None => Ok(()),
                 }
             }
-            false => Ok(())
+            false => Ok(()),
         }
     }
 
@@ -142,18 +148,22 @@ impl Validation {
         owns: Owns<'static>,
         attributes_counts: &BTreeMap<&Attribute<'_>, u64>,
     ) -> Result<(), DataValidationError> {
-        let distinct = owns.is_distinct(snapshot, thing_manager.type_manager())
-            .map_err(DataValidationError::ConceptRead)?;
+        let distinct =
+            owns.is_distinct(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
 
         match distinct {
             true => {
                 let duplicated = attributes_counts.iter().find(|(_, count)| **count > 1);
                 match duplicated {
-                    Some((attribute, count)) => Err(DataValidationError::AttributeViolatesDistinctOwnsConstraint { owns, attribute: attribute.clone().clone().into_owned(), count: count.clone() }),
-                    None => Ok(())
+                    Some((attribute, count)) => Err(DataValidationError::AttributeViolatesDistinctOwnsConstraint {
+                        owns,
+                        attribute: attribute.clone().clone().into_owned(),
+                        count: count.clone(),
+                    }),
+                    None => Ok(()),
                 }
             }
-            false => Ok(())
+            false => Ok(()),
         }
     }
 
@@ -401,7 +411,7 @@ impl Validation {
         }
     }
 
-    pub(crate) fn validate_has_cardinality_constraint<'a>(
+    pub(crate) fn validate_owns_cardinality_constraint<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: &Object<'a>,
@@ -412,8 +422,13 @@ impl Validation {
         Self::check_owns_cardinality(snapshot, thing_manager, owner, owns.clone(), count)?;
 
         let mut next_owns = owns;
-        while let Some(checked_owns) = &*next_owns.get_override(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)? {
-            let overriding = checked_owns.get_overriding_transitive(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
+        while let Some(checked_owns) = &*next_owns
+            .get_override(snapshot, thing_manager.type_manager())
+            .map_err(DataValidationError::ConceptRead)?
+        {
+            let overriding = checked_owns
+                .get_overriding_transitive(snapshot, thing_manager.type_manager())
+                .map_err(DataValidationError::ConceptRead)?;
             let count = overriding.iter().filter_map(|overriding| counts.get(&overriding.attribute())).sum();
             Self::check_owns_cardinality(snapshot, thing_manager, owner, checked_owns.clone(), count)?;
 
@@ -430,28 +445,110 @@ impl Validation {
         owns: Owns<'static>,
         count: u64,
     ) -> Result<(), DataValidationError> {
-        let cardinality: AnnotationCardinality = owns.get_cardinality(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
-        let is_key: bool = owns.is_key(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
+        let cardinality =
+            owns.get_cardinality(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
+        let is_key: bool =
+            owns.is_key(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
         if !cardinality.value_valid(count) {
             let owner = owner.clone().into_owned();
-            if is_key
-            {
-                Err(DataValidationError::KeyCardinalityViolated {
-                    owner,
-                    owns,
-                    count,
-                })
+            if is_key {
+                Err(DataValidationError::KeyCardinalityViolated { owner, owns, count })
             } else {
-                Err(DataValidationError::OwnsCardinalityViolated {
-                    owner,
-                    owns,
-                    count,
-                    cardinality,
-                })
+                Err(DataValidationError::OwnsCardinalityViolated { owner, owns, count, cardinality })
             }
         } else {
             Ok(())
         }
+    }
 
+    pub(crate) fn validate_plays_cardinality_constraint<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        player: &Object<'a>,
+        plays: Plays<'static>,
+        counts: &HashMap<RoleType<'static>, u64>,
+    ) -> Result<(), DataValidationError> {
+        let count = counts.get(&plays.role()).unwrap_or(&0).clone();
+        Self::check_plays_cardinality(snapshot, thing_manager, player, plays.clone(), count)?;
+
+        let mut next_plays = plays;
+        while let Some(checked_plays) = &*next_plays
+            .get_override(snapshot, thing_manager.type_manager())
+            .map_err(DataValidationError::ConceptRead)?
+        {
+            let overriding = checked_plays
+                .get_overriding_transitive(snapshot, thing_manager.type_manager())
+                .map_err(DataValidationError::ConceptRead)?;
+            let count = overriding.iter().filter_map(|overriding| counts.get(&overriding.role())).sum();
+            Self::check_plays_cardinality(snapshot, thing_manager, player, checked_plays.clone(), count)?;
+
+            next_plays = checked_plays.clone();
+        }
+
+        Ok(())
+    }
+
+    fn check_plays_cardinality<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        player: &Object<'a>,
+        plays: Plays<'static>,
+        count: u64,
+    ) -> Result<(), DataValidationError> {
+        let cardinality =
+            plays.get_cardinality(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
+        if !cardinality.value_valid(count) {
+            let player = player.clone().into_owned();
+            Err(DataValidationError::PlaysCardinalityViolated { player, plays, count, cardinality })
+        } else {
+            Ok(())
+        }
+    }
+
+    pub(crate) fn validate_relates_cardinality_constraint<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation: &Relation<'a>,
+        relates: Relates<'static>,
+        counts: &HashMap<RoleType<'static>, u64>,
+    ) -> Result<(), DataValidationError> {
+        let count = counts.get(&relates.role()).unwrap_or(&0).clone();
+        Self::check_relates_cardinality(snapshot, thing_manager, relation, relates.clone(), count)?;
+
+        let mut next_role = relates.role();
+        while let Some(checked_role) =
+            next_role.get_supertype(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?
+        {
+            let subtypes = checked_role
+                .get_subtypes_transitive(snapshot, thing_manager.type_manager())
+                .map_err(DataValidationError::ConceptRead)?;
+            let count = subtypes.iter().filter_map(|overriding| counts.get(overriding)).sum();
+            let checked_relates = checked_role
+                .get_relates(snapshot, thing_manager.type_manager())
+                .map_err(DataValidationError::ConceptRead)?;
+            Self::check_relates_cardinality(snapshot, thing_manager, relation, checked_relates.clone(), count)?;
+
+            next_role = checked_role;
+        }
+
+        Ok(())
+    }
+
+    fn check_relates_cardinality<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation: &Relation<'a>,
+        relates: Relates<'static>,
+        count: u64,
+    ) -> Result<(), DataValidationError> {
+        let cardinality = relates
+            .get_cardinality(snapshot, thing_manager.type_manager())
+            .map_err(DataValidationError::ConceptRead)?;
+        if !cardinality.value_valid(count) {
+            let relation = relation.clone().into_owned();
+            Err(DataValidationError::RelatesCardinalityViolated { relation, relates, count, cardinality })
+        } else {
+            Ok(())
+        }
     }
 }

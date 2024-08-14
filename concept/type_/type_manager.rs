@@ -3419,12 +3419,7 @@ impl TypeManager {
         type_: impl KindAPI<'static>,
         annotation: Annotation,
     ) -> Result<(), ConceptWriteError> {
-        storage_save_annotation!(
-            snapshot,
-            type_,
-            annotation,
-            TypeWriter::storage_put_type_vertex_property
-        );
+        storage_save_annotation!(snapshot, type_, annotation, TypeWriter::storage_put_type_vertex_property);
         Ok(())
     }
 
@@ -3434,12 +3429,7 @@ impl TypeManager {
         capability: impl Capability<'static>,
         annotation: Annotation,
     ) -> Result<(), ConceptWriteError> {
-        storage_save_annotation!(
-            snapshot,
-            capability,
-            annotation,
-            TypeWriter::storage_put_type_edge_property
-        );
+        storage_save_annotation!(snapshot, capability, annotation, TypeWriter::storage_put_type_edge_property);
         Ok(())
     }
 
