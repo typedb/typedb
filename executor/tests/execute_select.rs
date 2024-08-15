@@ -48,7 +48,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
     let person_owns_age =
-        person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered).unwrap();
     person_owns_age
         .set_annotation(
             &mut snapshot,
@@ -58,7 +58,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
         )
         .unwrap();
     let person_owns_name =
-        person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered).unwrap();
     person_owns_name
         .set_annotation(
             &mut snapshot,
@@ -70,7 +70,7 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let email_type = type_manager.create_attribute_type(&mut snapshot, &EMAIL_LABEL).unwrap();
     email_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
     let person_owns_email =
-        person_type.set_owns(&mut snapshot, &type_manager, email_type.clone(), Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, email_type.clone(), Ordering::Unordered).unwrap();
     person_owns_email
         .set_annotation(
             &mut snapshot,

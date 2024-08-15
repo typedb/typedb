@@ -387,7 +387,7 @@ fn define_capabilities_relates(
             existing_relates
         } else {
             relation_type
-                .create_relates(snapshot, type_manager, role_label.name.as_str(), ordering)
+                .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering, None)// TODO: Provide card in define instead of None
                 .map_err(|source| DefineError::CreateRelates { source, relates: relates.to_owned() })?
         };
         // Handle annotations
@@ -431,10 +431,10 @@ fn define_capabilities_owns(
         };
         let created = match &type_ {
             TypeEnum::Entity(entity_type) => ObjectType::Entity(entity_type.clone())
-                .set_owns(snapshot, type_manager, attribute_type, ordering)
+                .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
                 .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), source })?,
             TypeEnum::Relation(relation_type) => ObjectType::Relation(relation_type.clone())
-                .set_owns(snapshot, type_manager, attribute_type, ordering)
+                .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
                 .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), source })?,
             _ => {
                 return Err(err_unsupported_capability(&label, type_.kind(), capability));
@@ -494,7 +494,7 @@ fn define_capabilities_plays(
                 }
             };
             as_object_type
-                .set_plays(snapshot, type_manager, role_type)
+                .set_plays(snapshot, type_manager, thing_manager, role_type)
                 .map_err(|source| DefineError::CreatePlays { plays: plays.clone(), source })?
         } else {
             return Err(DefineError::CreatePlaysRoleNotFound { plays: plays.clone() })?;

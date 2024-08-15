@@ -181,9 +181,9 @@ impl<'a> Capability<'a> for Plays<'a> {
     fn get_default_cardinality<'this>(
         &'this self,
         _snapshot: &impl ReadableSnapshot,
-        _type_manager: &TypeManager,
+        type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
-        Ok(Self::DEFAULT_CARDINALITY)
+        Ok(type_manager.get_plays_default_cardinality())
     }
 }
 

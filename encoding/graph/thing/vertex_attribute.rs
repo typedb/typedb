@@ -166,8 +166,6 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
 
 impl<'a> ThingVertex<'a> for AttributeVertex<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-
     fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() > THING_VERTEX_LENGTH_PREFIX_TYPE);
         AttributeVertex { bytes }

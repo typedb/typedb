@@ -222,6 +222,13 @@ pub enum SchemaValidationError {
         Label<'static>,
         Label<'static>,
     ),
+    CannotAcquireCapabilityAsExistingInstancesViolateItsConstraint(
+        CapabilityKind,
+        AnnotationCategory,
+        Label<'static>,
+        Label<'static>,
+        Vec<(Label<'static>, Label<'static>)>,
+    ),
     CannotSetAnnotationForCapabilityAsExistingInstancesViolateItsConstraint(
         CapabilityKind,
         AnnotationCategory,
@@ -229,7 +236,7 @@ pub enum SchemaValidationError {
         Label<'static>,
         Vec<(Label<'static>, Label<'static>)>,
     ),
-    CannotChangeSupertypeAsUpdatedAnnotationsConstraintOnCapabilityIsViolatedByExistingInstances(
+    CannotChangeSupertypeAsUpdatedAnnotationsConstraintOnCapabilityOrNewAcquiredCapabilityIsViolatedByExistingInstances(
         CapabilityKind,
         AnnotationCategory,
         Label<'static>,
@@ -357,8 +364,9 @@ impl Error for SchemaValidationError {
             Self::CannotOverrideCapabilityWithExistingInstances(_, _, _, _) => None,
             Self::CannotOverrideCapabilityAsItIsOverriddenForSubtype(_, _, _, _, _, _, _) => None,
             Self::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances(_, _, _, _, _) => None,
+            Self::CannotAcquireCapabilityAsExistingInstancesViolateItsConstraint(_, _, _, _, _) => None,
             Self::CannotSetAnnotationForCapabilityAsExistingInstancesViolateItsConstraint(_, _, _, _, _) => None,
-            Self::CannotChangeSupertypeAsUpdatedAnnotationsConstraintOnCapabilityIsViolatedByExistingInstances(
+            Self::CannotChangeSupertypeAsUpdatedAnnotationsConstraintOnCapabilityOrNewAcquiredCapabilityIsViolatedByExistingInstances(
                 _,
                 _,
                 _,

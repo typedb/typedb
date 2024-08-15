@@ -44,6 +44,8 @@ use encoding::{
     AsBytes, Keyable,
 };
 use itertools::Itertools;
+use encoding::graph::type_::edge::{TypeEdge, TypeEdgeEncoding};
+use encoding::graph::type_::property::{TypeEdgeProperty, TypeEdgePropertyEncoding};
 use lending_iterator::{AsHkt, LendingIterator};
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLINE};
 use storage::{
@@ -86,6 +88,7 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::type_::EdgeOverride;
 
 pub mod validation;
 
@@ -835,6 +838,17 @@ impl ThingManager {
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
         }
     }
+
+    pub(crate) fn relation_exists<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation: &Relation<'a>,
+    ) -> Result<bool, ConceptReadError> {
+        match snapshot.get::<0>(relation.vertex().as_storage_key().as_reference()) {
+            Ok(value) => Ok(value.is_some()),
+            Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
+        }
+    }
 }
 
 impl ThingManager {
@@ -1028,7 +1042,6 @@ impl ThingManager {
     }
 
     fn cleanup_relations(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptWriteError> {
-        // TODO: Consider
         let mut any_deleted = true;
         while any_deleted {
             any_deleted = false;
@@ -1080,7 +1093,7 @@ impl ThingManager {
                 .filter_map(|(key, write)| match write {
                     Write::Put { .. } | Write::Insert { .. } => {
                         let bytes = Bytes::reference(key.bytes());
-                        if AnnotationCascade::is_decodable_from(bytes.clone()) {
+                        if <AnnotationCascade as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
                             let decoded = TypeVertexProperty::new(bytes);
                             RelationType::from_vertex(decoded.type_vertex()).ok().map(|type_| type_.into_owned())
                         } else {
@@ -1089,8 +1102,6 @@ impl ThingManager {
                     }
                     _ => None,
                 })
-                .collect_vec()
-                .into_iter()
             {
                 let subtypes = relation_type.get_subtypes_transitive(snapshot, self.type_manager())?;
                 once(&relation_type).chain(subtypes.into_iter()).try_for_each(|type_| {
@@ -1098,8 +1109,7 @@ impl ThingManager {
                     if is_cascade {
                         let mut relations: InstanceIterator<Relation<'_>> =
                             self.get_instances_in(snapshot, type_.clone());
-                        while let Some(relation) = relations.next() {
-                            let relation = relation?;
+                        while let Some(relation) = relations.next().transpose()? {
                             if !relation.has_players(snapshot, self) {
                                 relation.delete(snapshot, self)?;
                                 any_deleted = true;
@@ -1139,8 +1149,6 @@ impl ThingManager {
                 Write::Put { value, .. } => Some((key, value)),
                 _ => None,
             })
-            .collect_vec()
-            .into_iter()
         {
             let attribute = Attribute::new(AttributeVertex::new(Bytes::reference(key.bytes())));
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
@@ -1157,7 +1165,7 @@ impl ThingManager {
             .filter_map(|(key, write)| match write {
                 Write::Delete => {
                     let bytes = Bytes::reference(key.bytes());
-                    if AnnotationIndependent::is_decodable_from(bytes.clone()) {
+                    if <AnnotationIndependent as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
                         let decoded = TypeVertexProperty::new(bytes);
                         AttributeType::from_vertex(decoded.type_vertex()).ok().map(|type_| type_.into_owned())
                     } else {
@@ -1166,8 +1174,6 @@ impl ThingManager {
                 }
                 _ => None,
             })
-            .collect_vec()
-            .into_iter()
         {
             let subtypes = attribute_type.get_subtypes_transitive(snapshot, self.type_manager())?;
             once(&attribute_type).chain(subtypes.into_iter()).try_for_each(|type_| {
@@ -1175,8 +1181,7 @@ impl ThingManager {
                 if !is_independent {
                     let mut attributes: InstanceIterator<Attribute<'_>> =
                         self.get_instances_in(snapshot, type_.clone());
-                    while let Some(attribute) = attributes.next() {
-                        let attribute = attribute?;
+                    while let Some(attribute) = attributes.next().transpose()? {
                         if !attribute.has_owners(snapshot, self) {
                             attribute.delete(snapshot, self)?;
                         }
@@ -1197,7 +1202,7 @@ impl ThingManager {
         let mut modified_objects_only_links = HashSet::new();
         let mut modified_relations = HashSet::new();
 
-        let mut res = self.collect_modified_objects(snapshot, &mut modified_objects, &mut modified_relations);
+        let mut res = self.collect_new_objects(snapshot, &mut modified_objects, &mut modified_relations);
         collect_errors!(errors, res, DataValidationError::ConceptRead);
         res = self.collect_modified_has(snapshot, &mut modified_objects_only_has);
         collect_errors!(errors, res, DataValidationError::ConceptRead);
@@ -1239,7 +1244,7 @@ impl ThingManager {
         }
     }
 
-    fn collect_modified_objects(
+    fn collect_new_objects(
         &self,
         snapshot: &impl WritableSnapshot,
         out_objects: &mut HashSet<Object<'static>>,
@@ -1284,11 +1289,51 @@ impl ThingManager {
         {
             let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
             let owner = Object::new(edge.from());
-            if !self.object_exists(snapshot, &owner)? {
-                continue;
+            if self.object_exists(snapshot, &owner)? {
+                out_objects.insert(owner.into_owned());
             }
-            out_objects.insert(owner.into_owned());
         }
+
+        for (key, _) in snapshot.iterate_writes_range(KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::EdgeOwns),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        ))
+            .filter(|(_, write)| !matches!(write, Write::Delete))
+        {
+            let edge = TypeEdge::new(Bytes::Reference(key.byte_array().as_ref()));
+            let owner_type = ObjectType::new(edge.from().into_owned());
+            let mut owners = self.get_objects_in(snapshot, owner_type);
+            while let Some(owner) = owners.next().transpose()? {
+                if self.object_exists(snapshot, &owner)? {
+                    out_objects.insert(owner.into_owned());
+                }
+            }
+        }
+
+        for owner_type in snapshot
+            .iterate_writes_range(KeyRange::new_within(TypeEdgeProperty::build_prefix(), TypeEdge::FIXED_WIDTH_ENCODING))
+            .filter_map(|(key, _)| {
+                let bytes = Bytes::reference(key.bytes());
+                if EdgeOverride::<Owns<'static>>::is_decodable_from(bytes.clone()) {
+                    let property = TypeEdgeProperty::new(Bytes::Reference(key.byte_array().as_ref()));
+                    let edge = property.type_edge();
+                    let prefix = edge.prefix();
+                    // We always store EdgeOverride on canonical edges, but it's safe to check both here just in case.
+                    if prefix == Owns::CANONICAL_PREFIX || prefix == Owns::REVERSE_PREFIX {
+                        return Some(ObjectType::new(edge.from()).into_owned());
+                    }
+                }
+                None
+            })
+        {
+            let mut owners = self.get_objects_in(snapshot, owner_type);
+            while let Some(owner) = owners.next().transpose()? {
+                if self.object_exists(snapshot, &owner)? {
+                    out_objects.insert(owner.into_owned());
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -1300,14 +1345,94 @@ impl ThingManager {
     ) -> Result<(), ConceptReadError> {
         for (key, _) in snapshot
             .iterate_writes_range(KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING))
-            .filter(|(_, write)| !matches!(write, Write::Delete))
         {
             let edge = ThingEdgeLinks::new(Bytes::reference(key.bytes()));
             let relation = Relation::new(edge.relation());
             let player = Object::new(edge.player());
-            out_relations.insert(relation.into_owned());
-            out_players.insert(player.into_owned());
+            if self.relation_exists(snapshot, &relation)? {
+                out_relations.insert(relation.into_owned());
+            }
+            if self.object_exists(snapshot, &player)? {
+                out_players.insert(player.into_owned());
+            }
         }
+
+        for (key, _) in snapshot
+            .iterate_writes_range(KeyRange::new_within(TypeEdge::build_prefix(Prefix::EdgePlays), TypeEdge::FIXED_WIDTH_ENCODING, ))
+            .filter(|(_, write)| !matches!(write, Write::Delete))
+        {
+            let edge = TypeEdge::new(Bytes::Reference(key.byte_array().as_ref()));
+            let player_type = ObjectType::new(edge.from().into_owned());
+            let mut players = self.get_objects_in(snapshot, player_type);
+            while let Some(player) = players.next().transpose()? {
+                if self.object_exists(snapshot, &player)? {
+                    out_players.insert(player.into_owned());
+                }
+            }
+        }
+
+        for (key, _) in snapshot.iterate_writes_range(KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::EdgeRelates),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        ))
+            .filter(|(_, write)| !matches!(write, Write::Delete))
+        {
+            let edge = TypeEdge::new(Bytes::Reference(key.byte_array().as_ref()));
+            let relation_type = RelationType::new(edge.from().into_owned());
+            let mut relations = self.get_relations_in(snapshot, relation_type);
+            while let Some(relation) = relations.next().transpose()? {
+                if self.relation_exists(snapshot, &relation)? {
+                    out_relations.insert(relation.into_owned());
+                }
+            }
+        }
+
+        for player_type in snapshot
+            .iterate_writes_range(KeyRange::new_within(TypeEdgeProperty::build_prefix(), TypeEdge::FIXED_WIDTH_ENCODING))
+            .filter_map(|(key, _)| {
+                let bytes = Bytes::reference(key.bytes());
+                if EdgeOverride::<Plays<'static>>::is_decodable_from(bytes.clone()) {
+                    let property = TypeEdgeProperty::new(Bytes::Reference(key.byte_array().as_ref()));
+                    let edge = property.type_edge();
+                    let prefix = edge.prefix();
+                    if prefix == Plays::CANONICAL_PREFIX || prefix == Plays::REVERSE_PREFIX {
+                        return Some(ObjectType::new(edge.from()).into_owned());
+                    }
+                }
+                None
+            })
+        {
+            let mut players = self.get_objects_in(snapshot, player_type);
+            while let Some(player) = players.next().transpose()? {
+                if self.object_exists(snapshot, &player)? {
+                    out_players.insert(player.into_owned());
+                }
+            }
+        }
+
+        for relation_type in snapshot
+            .iterate_writes_range(KeyRange::new_within(TypeEdgeProperty::build_prefix(), TypeEdge::FIXED_WIDTH_ENCODING))
+            .filter_map(|(key, _)| {
+                let bytes = Bytes::reference(key.bytes());
+                if EdgeOverride::<Relates<'static>>::is_decodable_from(bytes.clone()) {
+                    let property = TypeEdgeProperty::new(Bytes::Reference(key.byte_array().as_ref()));
+                    let edge = property.type_edge();
+                    let prefix = edge.prefix();
+                    if prefix == Relates::CANONICAL_PREFIX || prefix == Relates::REVERSE_PREFIX {
+                        return Some(RelationType::new(edge.from()).into_owned());
+                    }
+                }
+                None
+            })
+        {
+            let mut relations = self.get_relations_in(snapshot, relation_type);
+            while let Some(relation) = relations.next().transpose()? {
+                if self.relation_exists(snapshot, &relation)? {
+                    out_relations.insert(relation.into_owned());
+                }
+            }
+        }
+
         Ok(())
     }
 

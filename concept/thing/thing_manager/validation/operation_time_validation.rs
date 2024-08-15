@@ -314,8 +314,7 @@ impl OperationTimeValidation {
 
             while let Some((current_owner_type, current_owns)) = queue.pop_back() {
                 let mut objects = thing_manager.get_objects_in(snapshot, current_owner_type.clone());
-                while let Some(object) = objects.next() {
-                    let object = object.map_err(DataValidationError::ConceptRead)?;
+                while let Some(object) = objects.next().transpose().map_err(DataValidationError::ConceptRead)? {
                     if object
                         .has_attribute_with_value(snapshot, thing_manager, current_owns.attribute(), value.clone())
                         .map_err(DataValidationError::ConceptRead)?

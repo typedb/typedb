@@ -74,6 +74,10 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.delete(type_.vertex().as_storage_key().into_owned_array());
     }
 
+    pub(crate) fn storage_unput_vertex(snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+        snapshot.unput(type_.vertex().as_storage_key().into_owned_array());
+    }
+
     pub(crate) fn storage_delete_label(snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let existing_label = TypeReader::get_label(snapshot, type_.clone()).unwrap();
         if let Some(label) = existing_label {
@@ -173,6 +177,15 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         P: TypeVertexPropertyEncoding<'a>,
     {
         snapshot.delete(P::build_key(vertex).into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_unput_type_vertex_property<'a, P>(
+        snapshot: &mut Snapshot,
+        vertex: impl TypeVertexEncoding<'a>,
+    ) where
+        P: TypeVertexPropertyEncoding<'a>,
+    {
+        snapshot.unput(P::build_key(vertex).into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_set_type_edge_overridden<E>(snapshot: &mut Snapshot, edge: E, overridden: E)

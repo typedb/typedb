@@ -1079,6 +1079,24 @@ impl TypeManager {
         }
     }
 
+    pub fn get_owns_default_cardinality<'a>(&self, ordering: Ordering) -> AnnotationCardinality {
+        match ordering {
+            Ordering::Unordered => Owns::DEFAULT_UNORDERED_CARDINALITY,
+            Ordering::Ordered => Owns::DEFAULT_ORDERED_CARDINALITY,
+        }
+    }
+
+    pub fn get_plays_default_cardinality<'a>(&self) -> AnnotationCardinality {
+        Plays::DEFAULT_CARDINALITY
+    }
+
+    pub fn get_relates_default_cardinality<'a>(&self, role_ordering: Ordering) -> AnnotationCardinality {
+        match role_ordering {
+            Ordering::Unordered => Relates::DEFAULT_UNORDERED_CARDINALITY,
+            Ordering::Ordered => Relates::DEFAULT_ORDERED_CARDINALITY,
+        }
+    }
+
     pub fn get_owns_is_distinct<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1285,9 +1303,11 @@ impl TypeManager {
     pub(crate) fn create_role_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         label: &Label<'_>,
         relation_type: RelationType<'static>,
         ordering: Ordering,
+        cardinality: Option<AnnotationCardinality>,
     ) -> Result<RoleType<'static>, ConceptWriteError> {
         OperationTimeValidation::validate_new_role_name_uniqueness(
             snapshot,
@@ -1296,17 +1316,37 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        // Capabilities can have default values for annotations (e.g. @card(1..X)),
+        // and they can contradict the absence of data for their object types.
+        // It is dirty to delete role type right after creating it with this validation,
+        // but it allows us to have more consistent and scalable validations.
         let type_vertex = self
             .vertex_generator
             .create_role_type(snapshot)
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
-        let role = RoleType::new(type_vertex);
-        let relates = Relates::new(relation_type, role.clone());
+        let role_type = RoleType::new(type_vertex);
+        let relates = Relates::new(relation_type, role_type.clone());
 
-        TypeWriter::storage_put_label(snapshot, role.clone(), label);
+        let initial_annotations = HashSet::from([Annotation::Cardinality(match cardinality {
+            None => self.get_relates_default_cardinality(ordering.clone()),
+            Some(cardinality) => cardinality,
+        })]);
+        if let Err(error) = OperationTimeValidation::validate_new_acquired_relates_compatible_with_instances(
+            snapshot,
+            self,
+            thing_manager,
+            relates.clone().into_owned(),
+            initial_annotations,
+        ) {
+            TypeWriter::storage_unput_vertex(snapshot, role_type);
+            return Err(ConceptWriteError::SchemaValidation { source: error });
+        }
+
+        TypeWriter::storage_put_label(snapshot, role_type.clone(), label);
+        TypeWriter::storage_put_type_vertex_property(snapshot, role_type.clone(), Some(ordering));
         TypeWriter::storage_put_edge(snapshot, relates);
-        TypeWriter::storage_put_type_vertex_property(snapshot, role.clone(), Some(ordering));
-        Ok(role)
+
+        Ok(role_type)
     }
 
     pub fn create_attribute_type(
@@ -2024,6 +2064,7 @@ impl TypeManager {
     pub(crate) fn set_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         owner: ObjectType<'static>,
         attribute: AttributeType<'static>,
         ordering: Ordering,
@@ -2045,6 +2086,16 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
+
+        let initial_annotations = HashSet::from([Annotation::Cardinality(self.get_owns_default_cardinality(ordering.clone()))]);
+        OperationTimeValidation::validate_new_acquired_owns_compatible_with_instances(
+            snapshot,
+            self,
+            thing_manager,
+            owns.clone().into_owned(),
+            initial_annotations,
+        ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         TypeWriter::storage_put_edge(snapshot, owns.clone());
         TypeWriter::storage_put_type_edge_property(snapshot, owns, Some(ordering));
         Ok(())
@@ -2164,7 +2215,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
-        if owns.get_override(snapshot, self)?.is_some() {
+        if let Some(overridden) = &*owns.get_override(snapshot, self)? {
             OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_override(
                 snapshot,
                 self,
@@ -2182,6 +2233,20 @@ impl TypeManager {
             )
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+            let overridden_annotations = overridden
+                .get_annotations(snapshot, self)?
+                .keys()
+                .cloned()
+                .map(|annotation| annotation.try_into().unwrap())
+                .collect();
+            OperationTimeValidation::validate_new_acquired_owns_compatible_with_instances(
+                snapshot,
+                self,
+                thing_manager,
+                overridden.clone(),
+                overridden_annotations,
+            ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
             TypeWriter::storage_delete_type_edge_overridden(snapshot, owns);
         }
         Ok(())
@@ -2190,6 +2255,7 @@ impl TypeManager {
     pub(crate) fn set_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
         player: ObjectType<'static>,
         role: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
@@ -2210,6 +2276,16 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
+
+        let initial_annotations = HashSet::from([Annotation::Cardinality(self.get_plays_default_cardinality())]);
+        OperationTimeValidation::validate_new_acquired_plays_compatible_with_instances(
+            snapshot,
+            self,
+            thing_manager,
+            plays.clone().into_owned(),
+            initial_annotations,
+        ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         TypeWriter::storage_put_edge(snapshot, plays.clone());
         Ok(plays)
     }
@@ -2313,7 +2389,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         plays: Plays<'static>,
     ) -> Result<(), ConceptWriteError> {
-        if plays.get_override(snapshot, self)?.is_some() {
+        if let Some(overridden) = &*plays.get_override(snapshot, self)? {
             OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_override(
                 snapshot,
                 self,
@@ -2330,6 +2406,20 @@ impl TypeManager {
                 None, // unset override
             )
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+            let overridden_annotations = overridden
+                .get_annotations(snapshot, self)?
+                .keys()
+                .cloned()
+                .map(|annotation| annotation.try_into().unwrap())
+                .collect();
+            OperationTimeValidation::validate_new_acquired_plays_compatible_with_instances(
+                snapshot,
+                self,
+                thing_manager,
+                overridden.clone(),
+                overridden_annotations,
+            ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
             TypeWriter::storage_delete_type_edge_overridden(snapshot, plays);
         }
@@ -2648,7 +2738,7 @@ impl TypeManager {
         relates: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
         let role_type = relates.role();
-        if role_type.get_supertype(snapshot, self)?.is_some() {
+        if let Some(superrole_type) = role_type.get_supertype(snapshot, self)? {
             OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_override(
                 snapshot,
                 self,
@@ -2672,6 +2762,21 @@ impl TypeManager {
                 None, // unset override
             )
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+            let overridden = superrole_type.get_relates(snapshot, self)?;
+            let overridden_annotations = overridden
+                .get_annotations(snapshot, self)?
+                .keys()
+                .cloned()
+                .map(|annotation| annotation.try_into().unwrap())
+                .collect();
+            OperationTimeValidation::validate_new_acquired_relates_compatible_with_instances(
+                snapshot,
+                self,
+                thing_manager,
+                overridden.clone(),
+                overridden_annotations,
+            ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
             TypeWriter::storage_delete_type_edge_overridden(snapshot, relates);
             self.unset_supertype(snapshot, role_type)?;

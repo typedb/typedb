@@ -49,6 +49,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::annotation::AnnotationCardinality;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
@@ -260,11 +261,13 @@ impl<'a> RelationType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         name: &str,
         ordering: Ordering,
+        cardinality: Option<AnnotationCardinality>,
     ) -> Result<Relates<'static>, ConceptWriteError> {
         let label = Label::build_scoped(name, self.get_label(snapshot, type_manager).unwrap().name().as_str());
-        let role_type = type_manager.create_role_type(snapshot, &label, self.clone().into_owned(), ordering)?;
+        let role_type = type_manager.create_role_type(snapshot, &thing_manager, &label, self.clone().into_owned(), ordering, cardinality)?;
         Ok(Relates::new(self.clone().into_owned(), role_type))
     }
 
@@ -335,10 +338,11 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
-        type_manager.set_owns(snapshot, self.clone().into_owned_object_type(), attribute_type.clone(), ordering)?;
+        type_manager.set_owns(snapshot, &thing_manager, self.clone().into_owned_object_type(), attribute_type.clone(), ordering)?;
         Ok(Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type))
     }
 
@@ -383,9 +387,10 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
-        type_manager.set_plays(snapshot, self.clone().into_owned_object_type(), role_type.clone())
+        type_manager.set_plays(snapshot, thing_manager, self.clone().into_owned_object_type(), role_type.clone())
     }
 
     fn unset_plays(

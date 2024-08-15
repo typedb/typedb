@@ -5,12 +5,14 @@
  */
 
 use concept::type_::{
-    annotation, annotation::DefaultFrom, object_type::ObjectType, relates::RelatesAnnotation,
+    annotation::{Annotation as TypeDBAnnotation, AnnotationCardinality}, annotation::DefaultFrom, object_type::ObjectType, relates::RelatesAnnotation,
     role_type::RoleTypeAnnotation, Capability, KindAPI, Ordering, TypeAPI,
 };
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
+use concept::error::ConceptWriteError;
+use concept::type_::relates::Relates;
 
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
@@ -28,17 +30,33 @@ pub async fn relation_type_create_role(
     role_label: Label,
     may_error: MayError,
 ) {
-    with_schema_tx!(context, |tx| {
-        let relation_type =
-            tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        let res = relation_type.create_relates(
-            &mut tx.snapshot,
-            &tx.type_manager,
-            role_label.into_typedb().name().as_str(),
-            Ordering::Unordered,
-        );
-        may_error.check_concept_write_without_read_errors(&res);
-    });
+    let res = relation_type_create_role_impl(
+        context,
+        type_label,
+        role_label,
+        Ordering::Unordered,
+        None, // annotation
+    );
+    may_error.check_concept_write_without_read_errors(&res);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) create role: {type_label} with {annotation}{may_error}")]
+pub async fn relation_type_create_role_with_cardinality(
+    context: &mut Context,
+    type_label: Label,
+    role_label: Label,
+    annotation: Annotation,
+    may_error: MayError,
+) {
+    let res = relation_type_create_role_impl(
+        context,
+        type_label,
+        role_label,
+        Ordering::Ordered,
+        Some(annotation),
+    );
+    may_error.check_concept_write_without_read_errors(&res);
 }
 
 #[apply(generic_step)]
@@ -49,17 +67,62 @@ pub async fn relation_type_create_ordered_role(
     role_label: Label,
     may_error: MayError,
 ) {
+    let res = relation_type_create_role_impl(
+        context,
+        type_label,
+        role_label,
+        Ordering::Ordered,
+        None, // annotation
+    );
+    may_error.check_concept_write_without_read_errors(&res);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) create role: {type_label}[] with {annotation}{may_error}")]
+pub async fn relation_type_create_ordered_role_with_cardinality(
+    context: &mut Context,
+    type_label: Label,
+    role_label: Label,
+    annotation: Annotation,
+    may_error: MayError,
+) {
+    let res = relation_type_create_role_impl(
+        context,
+        type_label,
+        role_label,
+        Ordering::Ordered,
+        Some(annotation),
+    );
+    may_error.check_concept_write_without_read_errors(&res);
+}
+
+pub fn relation_type_create_role_impl(
+    context: &mut Context,
+    type_label: Label,
+    role_label: Label,
+    ordering: Ordering,
+    annotation: Option<Annotation>,
+) -> Result<Relates<'static>, ConceptWriteError> {
+    let cardinality = match annotation {
+        None => None,
+        Some(annotation) => Some(match annotation.into_typedb(None) {
+            TypeDBAnnotation::Cardinality(cardinality) => cardinality.clone(),
+            _ => panic!("Expected cardinality annotation"),
+        })
+    };
+
     with_schema_tx!(context, |tx| {
         let relation_type =
             tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        let res = relation_type.create_relates(
+        relation_type.create_relates(
             &mut tx.snapshot,
             &tx.type_manager,
+            &tx.thing_manager,
             role_label.into_typedb().name().as_str(),
-            Ordering::Ordered,
-        );
-        may_error.check_concept_write_without_read_errors(&res);
-    });
+            ordering,
+            cardinality,
+        )
+    })
 }
 
 #[apply(generic_step)]
@@ -517,7 +580,7 @@ pub async fn relation_role_set_annotation(
         let parsed_annotation = annotation.into_typedb(None);
         let res;
         match parsed_annotation {
-            annotation::Annotation::Abstract(_) => {
+            TypeDBAnnotation::Abstract(_) => {
                 res = relates.role().set_annotation(
                     &mut tx.snapshot,
                     &tx.type_manager,
@@ -525,7 +588,7 @@ pub async fn relation_role_set_annotation(
                     parsed_annotation.try_into().unwrap(),
                 );
             }
-            annotation::Annotation::Distinct(_) | annotation::Annotation::Cardinality(_) => {
+            TypeDBAnnotation::Distinct(_) | TypeDBAnnotation::Cardinality(_) => {
                 res = relates.set_annotation(
                     &mut tx.snapshot,
                     &tx.type_manager,
@@ -642,7 +705,7 @@ pub async fn relation_role_annotation_categories_contain(
                 .unwrap()
                 .iter()
                 .map(|(annotation, _)| {
-                    <RoleTypeAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
+                    <RoleTypeAnnotation as Into<TypeDBAnnotation>>::into(annotation.clone()).category()
                 })
                 .contains(&parsed_annotation_category);
         } else if RelatesAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
@@ -651,7 +714,7 @@ pub async fn relation_role_annotation_categories_contain(
                 .unwrap()
                 .iter()
                 .map(|(annotation, _)| {
-                    <RelatesAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
+                    <RelatesAnnotation as Into<TypeDBAnnotation>>::into(annotation.clone()).category()
                 })
                 .contains(&parsed_annotation_category);
         } else {
@@ -764,7 +827,7 @@ pub async fn relation_role_cardinality(
             .unwrap();
         let actual_cardinality = relates.get_cardinality(&tx.snapshot, &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
-            annotation::Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
+            TypeDBAnnotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
             _ => panic!("Expected annotations is not Cardinality"),
         }
     });

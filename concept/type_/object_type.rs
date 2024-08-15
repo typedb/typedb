@@ -86,10 +86,11 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
-        with_object_type!(self, |object| { object.set_owns(snapshot, type_manager, attribute_type, ordering) })
+        with_object_type!(self, |object| { object.set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering) })
     }
 
     fn unset_owns(
@@ -236,9 +237,10 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
-        with_object_type!(self, |object| { object.set_plays(snapshot, type_manager, role_type) })
+        with_object_type!(self, |object| { object.set_plays(snapshot, type_manager, thing_manager, role_type) })
     }
 
     fn unset_plays(

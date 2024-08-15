@@ -30,7 +30,7 @@ pub async fn set_owns(
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
-        let res = object_type.set_owns(&mut tx.snapshot, &tx.type_manager, attr_type, Ordering::Unordered);
+        let res = object_type.set_owns(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, attr_type, Ordering::Unordered);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -48,7 +48,7 @@ pub async fn set_owns_ordered(
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
-        let res = object_type.set_owns(&mut tx.snapshot, &tx.type_manager, attr_type, Ordering::Ordered);
+        let res = object_type.set_owns(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, attr_type, Ordering::Ordered);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }

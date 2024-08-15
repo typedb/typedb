@@ -562,7 +562,7 @@ impl TypeReader {
     ) -> Result<Ordering, ConceptReadError> {
         match Self::get_type_property_declared(snapshot, role_type)? {
             Some(ordering) => Ok(ordering),
-            None => Err(ConceptReadError::CorruptMissingMandatoryProperty),
+            None => Err(ConceptReadError::CorruptMissingMandatoryOrdering),
         }
     }
 
@@ -704,7 +704,7 @@ impl TypeReader {
     ) -> Result<Ordering, ConceptReadError> {
         match Self::get_type_edge_property::<Ordering>(snapshot, owns)? {
             Some(ordering) => Ok(ordering),
-            None => Err(ConceptReadError::CorruptMissingMandatoryProperty),
+            None => Err(ConceptReadError::CorruptMissingMandatoryOrdering),
         }
     }
 

@@ -565,6 +565,54 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
     };
 }
 
+macro_rules! new_acquired_capability_instances_validation {
+    ($func_name:ident, $capability_kind:path, $capability_type:ident, $validation_func:path) => {
+        pub(crate) fn $func_name(
+            snapshot: &impl ReadableSnapshot,
+            type_manager: &TypeManager,
+            thing_manager: &ThingManager,
+            capability: $capability_type<'static>,
+            annotations: HashSet<Annotation>,
+        ) -> Result<(), SchemaValidationError> {
+            let sorted_annotations = Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations)
+                .map_err(|source| SchemaValidationError::ConceptRead(ConceptReadError::Annotation { source }))?;
+
+            let violation = $validation_func(
+                snapshot,
+                type_manager,
+                thing_manager,
+                capability.object(),
+                capability.clone(),
+                sorted_annotations,
+            )
+            .map_err(SchemaValidationError::ConceptRead)?;
+
+            if let Some((violating_objects_with_interfaces, violated_constraint)) = violation {
+                Err(SchemaValidationError::CannotAcquireCapabilityAsExistingInstancesViolateItsConstraint(
+                    $capability_kind,
+                    violated_constraint,
+                    get_label_or_schema_err(snapshot, capability.object())?,
+                    get_label_or_schema_err(snapshot, capability.interface())?,
+                    violating_objects_with_interfaces
+                        .iter()
+                        .map(|(violating_object, violating_interface)| {
+                            match (
+                                get_label_or_schema_err(snapshot, violating_object.clone()),
+                                get_label_or_schema_err(snapshot, violating_interface.clone()),
+                            ) {
+                                (Ok(object_label), Ok(interface_label)) => Ok((object_label, interface_label)),
+                                (Err(err), _) | (_, Err(err)) => Err(err),
+                            }
+                        })
+                        .collect::<Result<Vec<(Label<'static>, Label<'static>)>, SchemaValidationError>>()?,
+                ))
+            } else {
+                Ok(())
+            }
+        }
+    };
+}
+
 macro_rules! new_annotation_compatible_with_capability_and_overriding_capabilities_instances_validation {
     ($func_name:ident, $capability_kind:path, $capability_type:ident, $validation_func:path) => {
         pub(crate) fn $func_name(
@@ -687,7 +735,7 @@ macro_rules! changed_annotations_compatible_with_capability_and_overriding_capab
             type_: $object_type<'static>,
             new_supertype: $object_type<'static>,
         ) -> Result<(), SchemaValidationError> {
-            let updated_capabilities_annotations = OperationTimeValidation::get_capabilities_with_updated_annotations_if_supertype_is_changed::<$capability_type<'static>>(
+            let updated_capabilities_annotations = OperationTimeValidation::get_updated_capabilities_with_annotations_if_supertype_is_changed::<$capability_type<'static>>(
                 snapshot,
                 type_.clone(),
                 new_supertype.clone()
@@ -703,7 +751,7 @@ macro_rules! changed_annotations_compatible_with_capability_and_overriding_capab
                         .map_err(SchemaValidationError::ConceptRead)?;
 
                 if let Some((violating_objects_with_interfaces, violated_constraint)) = violation {
-                    return Err(SchemaValidationError::CannotChangeSupertypeAsUpdatedAnnotationsConstraintOnCapabilityIsViolatedByExistingInstances(
+                    return Err(SchemaValidationError::CannotChangeSupertypeAsUpdatedAnnotationsConstraintOnCapabilityOrNewAcquiredCapabilityIsViolatedByExistingInstances(
                         $capability_kind,
                         violated_constraint,
                         get_label_or_schema_err(snapshot, type_.clone())?,
@@ -2817,9 +2865,7 @@ impl OperationTimeValidation {
         debug_assert!(is_abstract.is_some(), "At least one constraint should exist otherwise we don't need to iterate");
 
         let mut entity_iterator = thing_manager.get_entities_in(snapshot, entity_type.clone().into_owned());
-        while let Some(entity) = entity_iterator.next() {
-            entity?;
-
+        if let Some(_) = entity_iterator.next().transpose()? {
             if is_abstract.is_some() {
                 return Ok(Some(AnnotationCategory::Abstract));
             }
@@ -2842,9 +2888,7 @@ impl OperationTimeValidation {
         debug_assert!(is_abstract.is_some(), "At least one constraint should exist otherwise we don't need to iterate");
 
         let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
-        while let Some(relation) = relation_iterator.next() {
-            relation?;
-
+        if let Some(_) = relation_iterator.next().transpose()? {
             if is_abstract.is_some() {
                 return Ok(Some(AnnotationCategory::Abstract));
             }
@@ -2933,12 +2977,10 @@ impl OperationTimeValidation {
         for relates in all_relates {
             let relation_type = relates.relation();
             let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.into_owned());
-            while let Some(relation) = relation_iterator.next() {
+            while let Some(relation) = relation_iterator.next().transpose()? {
                 let mut role_player_iterator =
-                    thing_manager.get_role_players_role(snapshot, relation?, role_type.clone());
-                while let Some(role_player) = role_player_iterator.next() {
-                    role_player?;
-
+                    thing_manager.get_role_players_role(snapshot, relation, role_type.clone());
+                if let Some(_) = role_player_iterator.next().transpose()? {
                     if is_abstract.is_some() {
                         return Ok(Some(AnnotationCategory::Abstract));
                     }
@@ -2982,12 +3024,12 @@ impl OperationTimeValidation {
 
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, object_type.clone().into_owned());
-            while let Some(object) = object_iterator.next() {
+            while let Some(object) = object_iterator.next().transpose()? {
                 let mut real_cardinality = 0;
 
                 // We assume that it's cheaper to open an iterator once and skip all the
                 // non-interesting interfaces rather creating multiple iterators
-                let mut has_attribute_iterator = object?.get_has_unordered(snapshot, thing_manager);
+                let mut has_attribute_iterator = object.get_has_unordered(snapshot, thing_manager);
                 while let Some(attribute) = has_attribute_iterator.next() {
                     let (mut attribute, count) = attribute?;
                     let attribute_type = attribute.type_();
@@ -3075,12 +3117,12 @@ impl OperationTimeValidation {
 
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, object_type.clone().into_owned());
-            while let Some(object) = object_iterator.next() {
+            while let Some(object) = object_iterator.next().transpose()? {
                 let mut real_cardinality = 0;
 
                 // We assume that it's cheaper to open an iterator once and skip all the
                 // non-interesting interfaces rather creating multiple iterators
-                let mut relations_iterator = object?.get_relations_roles(snapshot, thing_manager);
+                let mut relations_iterator = object.get_relations_roles(snapshot, thing_manager);
                 while let Some(relation) = relations_iterator.next() {
                     let (_, role_type, count) = relation?;
                     if !role_types.contains(&role_type) {
@@ -3121,12 +3163,12 @@ impl OperationTimeValidation {
 
         for relation_type in relation_types {
             let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
-            while let Some(relation) = relation_iterator.next() {
+            while let Some(relation) = relation_iterator.next().transpose()? {
                 let mut real_cardinality = 0;
 
                 // We assume that it's cheaper to open an iterator once and skip all the
                 // non-interesting interfaces rather creating multiple iterators
-                let mut role_players_iterator = relation?.get_players(snapshot, thing_manager);
+                let mut role_players_iterator = relation.get_players(snapshot, thing_manager);
 
                 while let Some(role_players) = role_players_iterator.next() {
                     let (role_player, count) = role_players?;
@@ -3649,9 +3691,9 @@ impl OperationTimeValidation {
         let mut has_instances = false;
 
         let mut owner_iterator = thing_manager.get_objects_in(snapshot, owner_type.clone().into_owned());
-        while let Some(instance) = owner_iterator.next() {
+        while let Some(instance) = owner_iterator.next().transpose()? {
             let mut iterator =
-                instance?.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?;
+                instance.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?;
 
             if iterator.next().is_some() {
                 has_instances = true;
@@ -3671,11 +3713,10 @@ impl OperationTimeValidation {
         let mut has_instances = false;
 
         let mut player_iterator = thing_manager.get_objects_in(snapshot, player_type.clone().into_owned());
-        while let Some(instance) = player_iterator.next() {
-            let mut iterator = instance?.get_relations_by_role(snapshot, thing_manager, role_type.clone().into_owned());
+        while let Some(instance) = player_iterator.next().transpose()? {
+            let mut iterator = instance.get_relations_by_role(snapshot, thing_manager, role_type.clone().into_owned());
 
-            if let Some(first) = iterator.next() {
-                first?;
+            if let Some(_) = iterator.next().transpose()? {
                 has_instances = true;
                 break;
             }
@@ -3693,11 +3734,10 @@ impl OperationTimeValidation {
         let mut has_instances = false;
 
         let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
-        while let Some(instance) = relation_iterator.next() {
-            let mut iterator = instance?.get_players_role_type(snapshot, thing_manager, role_type.clone().into_owned());
+        while let Some(instance) = relation_iterator.next().transpose()? {
+            let mut iterator = instance.get_players_role_type(snapshot, thing_manager, role_type.clone().into_owned());
 
-            if let Some(first) = iterator.next() {
-                first?;
+            if let Some(_) = iterator.next().transpose()? {
                 has_instances = true;
                 break;
             }
@@ -3732,7 +3772,7 @@ impl OperationTimeValidation {
             .collect())
     }
 
-    fn get_capabilities_with_updated_annotations_if_supertype_is_changed<CAP: Capability<'static>>(
+    fn get_updated_capabilities_with_annotations_if_supertype_is_changed<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         type_: CAP::ObjectType,
         new_supertype: CAP::ObjectType,
@@ -3765,6 +3805,17 @@ impl OperationTimeValidation {
                     .collect::<HashSet<Annotation>>();
 
                 updated_annotations_from_inheritance.insert(old_capability.clone(), updated_annotations);
+            }
+        }
+
+        for new_capability in new_inherited_capabilities.into_iter() {
+            if !old_capabilities.iter().any(|cap| cap.interface() == new_capability.interface()) {
+                let annotations = TypeReader::get_type_edge_annotations(snapshot, new_capability.clone())
+                    .map_err(SchemaValidationError::ConceptRead)?
+                    .keys()
+                    .map(|annotation| annotation.clone().try_into().unwrap())
+                    .collect();
+                updated_annotations_from_inheritance.insert(new_capability, annotations);
             }
         }
 
@@ -4009,6 +4060,25 @@ impl OperationTimeValidation {
         RelationType,
         RoleType,
         Self::get_annotation_constraint_violated_by_instances_of_relates
+    );
+
+    new_acquired_capability_instances_validation!(
+        validate_new_acquired_owns_compatible_with_instances,
+        CapabilityKind::Owns,
+        Owns,
+        Self::get_owns_or_its_overriding_owns_with_violated_new_annotation_constraints
+    );
+    new_acquired_capability_instances_validation!(
+        validate_new_acquired_plays_compatible_with_instances,
+        CapabilityKind::Plays,
+        Plays,
+        Self::get_plays_or_its_overriding_plays_with_violated_new_annotation_constraints
+    );
+    new_acquired_capability_instances_validation!(
+        validate_new_acquired_relates_compatible_with_instances,
+        CapabilityKind::Relates,
+        Relates,
+        Self::get_relates_or_its_overriding_relates_with_violated_new_annotation_constraints
     );
 
     new_annotation_compatible_with_capability_and_overriding_capabilities_instances_validation!(

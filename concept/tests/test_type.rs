@@ -128,7 +128,7 @@ fn entity_usage() {
         assert_eq!(supertypes.len(), 1);
 
         // --- child owns age ---
-        child_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
+        child_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
         let owns =
             child_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone().into_owned()).unwrap().unwrap();
         // TODO: test 'owns' structure directly
@@ -148,7 +148,7 @@ fn entity_usage() {
         // --- owns inheritance ---
         let height_label = Label::new_static("height");
         let height_type = type_manager.create_attribute_type(&mut snapshot, &height_label).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, height_type.clone(), Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, height_type.clone(), Ordering::Unordered).unwrap();
 
         match child_type.get_owns_attribute(&snapshot, &type_manager, height_type.clone()).unwrap() {
             None => panic!("child should inherit ownership of height"),
@@ -244,7 +244,7 @@ fn role_usage() {
 
         // --- friendship sub relation, relates friend ---
         let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
-        friendship_type.create_relates(&mut snapshot, &type_manager, friend_name, Ordering::Unordered).unwrap();
+        friendship_type.create_relates(&mut snapshot, &type_manager, &thing_manager, friend_name, Ordering::Unordered, None).unwrap();
         let relates = friendship_type.get_relates_role_name(&snapshot, &type_manager, friend_name).unwrap().unwrap();
         let role_type =
             type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
@@ -253,7 +253,7 @@ fn role_usage() {
 
         // --- person plays friendship:friend ---
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        person_type.set_plays(&mut snapshot, &type_manager, role_type.clone().into_owned()).unwrap();
+        person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, role_type.clone().into_owned()).unwrap();
         let plays =
             person_type.get_plays_role(&snapshot, &type_manager, role_type.clone().into_owned()).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
@@ -352,26 +352,26 @@ fn annotations_with_range_arguments() {
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
-        person_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, name_type.clone().into_owned(), Ordering::Ordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone().into_owned(), Ordering::Ordered).unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, empty_name_type.clone().into_owned(), Ordering::Unordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_name_type.clone().into_owned(), Ordering::Unordered)
             .unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, balance_type.clone().into_owned(), Ordering::Unordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, balance_type.clone().into_owned(), Ordering::Unordered)
             .unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, measurement_type.clone().into_owned(), Ordering::Ordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, measurement_type.clone().into_owned(), Ordering::Ordered)
             .unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, empty_measurement_type.clone().into_owned(), Ordering::Ordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_measurement_type.clone().into_owned(), Ordering::Ordered)
             .unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, schedule_type.clone().into_owned(), Ordering::Unordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, schedule_type.clone().into_owned(), Ordering::Unordered)
             .unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, valid_type.clone().into_owned(), Ordering::Ordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, valid_type.clone().into_owned(), Ordering::Ordered).unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, empty_type.clone().into_owned(), Ordering::Unordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_type.clone().into_owned(), Ordering::Unordered)
             .unwrap();
 
         let name_owns =
@@ -723,26 +723,26 @@ fn annotations_with_value_arguments() {
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
-        person_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, name_type.clone().into_owned(), Ordering::Ordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone().into_owned(), Ordering::Ordered).unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, empty_name_type.clone().into_owned(), Ordering::Unordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_name_type.clone().into_owned(), Ordering::Unordered)
             .unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, balance_type.clone().into_owned(), Ordering::Unordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, balance_type.clone().into_owned(), Ordering::Unordered)
             .unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, measurement_type.clone().into_owned(), Ordering::Ordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, measurement_type.clone().into_owned(), Ordering::Ordered)
             .unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, empty_measurement_type.clone().into_owned(), Ordering::Ordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_measurement_type.clone().into_owned(), Ordering::Ordered)
             .unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, schedule_type.clone().into_owned(), Ordering::Unordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, schedule_type.clone().into_owned(), Ordering::Unordered)
             .unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, valid_type.clone().into_owned(), Ordering::Ordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, valid_type.clone().into_owned(), Ordering::Ordered).unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, empty_type.clone().into_owned(), Ordering::Unordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_type.clone().into_owned(), Ordering::Unordered)
             .unwrap();
 
         let name_owns =

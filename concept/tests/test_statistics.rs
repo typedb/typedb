@@ -298,7 +298,7 @@ fn put_has_twice() {
     let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered).unwrap();
     let person = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
     let name = thing_manager.create_attribute(&mut snapshot, name_type.clone(), Value::String("alice".into())).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
@@ -332,9 +332,9 @@ fn put_plays() {
     let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
     let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
     let friend_relates =
-        friendship_type.create_relates(&mut snapshot, &type_manager, friend_role_name, Ordering::Unordered).unwrap();
+        friendship_type.create_relates(&mut snapshot, &type_manager, &thing_manager, friend_role_name, Ordering::Unordered, None).unwrap();
     let friend_role = friend_relates.role();
-    person_type.set_plays(&mut snapshot, &type_manager, friend_role.clone()).unwrap();
+    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, friend_role.clone()).unwrap();
     friend_relates
         .set_annotation(
             &mut snapshot,

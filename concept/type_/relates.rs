@@ -177,10 +177,7 @@ impl<'a> Capability<'a> for Relates<'a> {
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         let ordering = self.role.get_ordering(snapshot, type_manager)?;
-        Ok(match ordering {
-            Ordering::Unordered => Self::DEFAULT_UNORDERED_CARDINALITY,
-            Ordering::Ordered => Self::DEFAULT_ORDERED_CARDINALITY,
-        })
+        Ok(type_manager.get_relates_default_cardinality(ordering))
     }
 }
 

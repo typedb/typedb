@@ -155,7 +155,7 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::CorruptMissingLabelOfType => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryCardinality => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingCapability => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryProperty => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryOrdering => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryRelatesForRole => Self::ConceptRead { source: error },
             ConceptReadError::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(_, _, _) => {
                 Self::ConceptRead { source: error }
@@ -177,7 +177,7 @@ pub enum ConceptReadError {
     CorruptMissingLabelOfType,
     CorruptMissingMandatoryCardinality,
     CorruptMissingCapability,
-    CorruptMissingMandatoryProperty,
+    CorruptMissingMandatoryOrdering,
     CorruptMissingMandatoryRelatesForRole,
     CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(Label<'static>, ValueType, Annotation),
     CannotGetOwnsDoesntExist(Label<'static>, Label<'static>),
@@ -202,7 +202,7 @@ impl Error for ConceptReadError {
             Self::CorruptMissingLabelOfType => None,
             Self::CorruptMissingMandatoryCardinality => None,
             Self::CorruptMissingCapability => None,
-            Self::CorruptMissingMandatoryProperty => None,
+            Self::CorruptMissingMandatoryOrdering => None,
             Self::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(_, _, _) => None,
             Self::CorruptMissingMandatoryRelatesForRole => None,
             Self::CannotGetOwnsDoesntExist(_, _) => None,
