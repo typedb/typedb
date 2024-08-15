@@ -481,7 +481,7 @@ fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
     seeder: &TypeSeeder<'_, Snapshot>,
     label_value: &encoding::value::label::Label<'static>,
 ) -> Result<Option<TypeAnnotation>, ConceptReadError> {
-    let type_manager = &seeder.type_manager;
+    let type_manager = seeder.type_manager;
     let snapshot = seeder.snapshot;
     if let Some(t) = type_manager.get_attribute_type(snapshot, label_value)?.map(TypeAnnotation::Attribute) {
         Ok(Some(t))

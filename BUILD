@@ -22,6 +22,8 @@ rust_binary(
         "//database",
         "//resource",
         "//server",
+
+        "@crates//:tokio"
     ],
 )
 

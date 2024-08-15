@@ -106,13 +106,13 @@ fn execute_insert(
             .map(|_| VariableValue::Empty)
             .collect::<Vec<_>>();
         let mut output_multiplicity = 0;
-        let output = Row::new(&mut output_vec, &mut output_multiplicity);
-        let output = executor::write::insert_executor::execute_insert(
+        let as_row = Row::new(&mut output_vec, &mut output_multiplicity);
+        executor::write::insert_executor::execute_insert(
             snapshot,
             &thing_manager,
             &insert_plan,
             &Row::new(input_row.as_mut_slice(), &mut 1),
-            output,
+            as_row,
             &mut Vec::new(),
         )?;
         output_rows.push(output_vec);
@@ -207,6 +207,22 @@ fn has() {
         assert_eq!(1, attr_age_10.get_owners(&snapshot, &thing_manager).count());
         snapshot.close_resources()
     }
+}
+
+#[test]
+fn test() {
+    let (_tmp_dir, storage) = setup_storage();
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    setup_schema(storage.clone());
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let query_str = "
+        insert
+         $p isa person; $g isa group;
+         (member: $p, group: $g) isa membership;
+    ";
+    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &vec![], vec![vec![]]).unwrap();
+    snapshot.commit().unwrap();
 }
 
 #[test]

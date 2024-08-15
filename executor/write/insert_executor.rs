@@ -42,9 +42,9 @@ pub fn execute_insert<'input, 'output>(
     thing_manager: &ThingManager,
     plan: &InsertPlan,
     input: &Row<'input>,
-    output: Row<'output>,
+    mut output: Row<'output>,
     reused_created_things: &mut Vec<answer::Thing<'static>>,
-) -> Result<Row<'output>, WriteError> {
+) -> Result<(), WriteError> {
     debug_assert!(input.multiplicity() == 1); // Else, we have to return a set of rows.
     for instruction in &plan.instructions {
         let inserted = match instruction {
@@ -63,9 +63,8 @@ pub fn execute_insert<'input, 'output>(
             reused_created_things.push(thing);
         }
     }
-    let mut output = output;
     populate_output_row(&plan.output_row_plan, input, reused_created_things.as_slice(), &mut output);
-    Ok(output) // TODO: Create output row
+    Ok(()) // TODO: Create output row
 }
 
 pub fn execute_delete<'input, 'output>(
