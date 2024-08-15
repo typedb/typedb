@@ -4,6 +4,3 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub(crate) mod typedb_service;
-pub(crate) mod transaction_service;
-mod connection_service;

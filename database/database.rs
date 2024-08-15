@@ -283,6 +283,7 @@ fn make_update_statistics_fn(
 #[derive(Debug)]
 pub enum DatabaseOpenError {
     InvalidUnicodeName { name: OsString },
+    CouldNotReadDataDirectory { path: PathBuf, source: io::Error },
     DirectoryCreate { path: PathBuf, source: io::Error },
     StorageOpen { source: StorageOpenError },
     WALOpen { source: WALError },
@@ -307,6 +308,7 @@ impl Error for DatabaseOpenError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::InvalidUnicodeName { .. } => None,
+            Self::CouldNotReadDataDirectory { source, .. } => Some(source),
             Self::DirectoryCreate { source, .. } => Some(source),
             Self::StorageOpen { source } => Some(source),
             Self::WALOpen { source } => Some(source),

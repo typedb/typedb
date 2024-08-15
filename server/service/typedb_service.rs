@@ -4,15 +4,33 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::pin::Pin;
+
+use tokio::sync::mpsc::channel;
 use tokio_stream::StreamExt;
+use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 use typedb_protocol;
 use typedb_protocol::connection::pulse::{Req, Res};
 use typedb_protocol::transaction::Client;
 
-#[derive(Debug, Default)]
-pub(crate) struct TypeDBService {
+use database::database_manager::DatabaseManager;
 
+use crate::service::transaction_service::TransactionService;
+
+#[derive(Debug)]
+pub(crate) struct TypeDBService {
+    database_manager: DatabaseManager,
+}
+
+impl TypeDBService {
+    pub(crate) fn new(database_manager: DatabaseManager) -> Self {
+        Self { database_manager }
+    }
+
+    pub(crate) fn database_manager(&self) -> &DatabaseManager {
+        &self.database_manager
+    }
 }
 
 #[tonic::async_trait]
@@ -53,11 +71,20 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         todo!()
     }
 
-    type transactionStream = ();
+    type transactionStream = Pin<Box<ReceiverStream<Result<typedb_protocol::transaction::Server, tonic::Status>>>>;
 
     async fn transaction(&self, request: Request<Streaming<Client>>) -> Result<Response<Self::transactionStream>, Status> {
-        let mut stream = request.into_inner();
+        // TODO: we don't know yet for which database we have the transaction for
+        //       we also don't know which connection this is for??
 
-        stream.next().await;
+        //       therefore we need to hold onto the DatabaseManager as a reference or by Arc in the Txn Service??
+        let mut request_stream = request.into_inner();
+        let (response_sender, response_receiver) = channel(10);
+        let mut service = TransactionService::new(request_stream, response_sender, );
+        tokio::spawn(async move {
+            service.listen().await
+        });
+        todo!()
+        // Ok(Box::pin(ReceiverStream::new(response_receiver)))
     }
 }
