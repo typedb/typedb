@@ -7,7 +7,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use answer::variable_value::VariableValue;
-use compiler::{inference::annotated_functions::IndexedAnnotatedFunctions, write::delete::build_delete_plan};
+use compiler::{delete::delete::build_delete_plan, match_::inference::annotated_functions::IndexedAnnotatedFunctions};
 use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
     type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
@@ -79,7 +79,7 @@ fn execute_insert(
         .enumerate()
         .map(|(i, v)| (block.context().get_variable_named(v, block.scope_id()).unwrap().clone(), i))
         .collect::<HashMap<_, _>>();
-    let (entry_annotations, _) = compiler::inference::type_inference::infer_types(
+    let (entry_annotations, _) = compiler::match_::inference::type_inference::infer_types(
         &block,
         vec![],
         snapshot,
@@ -87,7 +87,7 @@ fn execute_insert(
         &IndexedAnnotatedFunctions::empty(),
     )
     .unwrap();
-    let insert_plan = compiler::write::insert::build_insert_plan(
+    let insert_plan = compiler::insert::insert::build_insert_plan(
         block.conjunction().constraints(),
         &input_row_format,
         &entry_annotations,
@@ -141,7 +141,7 @@ fn execute_delete(
         let block = ir::translation::match_::translate_match(&HashMapFunctionSignatureIndex::empty(), &typeql_match)
             .unwrap()
             .finish();
-        compiler::inference::type_inference::infer_types(
+        compiler::match_::inference::type_inference::infer_types(
             &block,
             vec![],
             snapshot,

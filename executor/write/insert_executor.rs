@@ -8,9 +8,9 @@ use std::{
     fmt::{Debug, Display, Formatter},
 };
 
-use compiler::write::{
-    delete::{DeleteInstruction, DeletePlan},
-    insert::{InsertInstruction, InsertPlan},
+use compiler::{
+    delete::{delete::DeletePlan, instructions::DeleteInstruction},
+    insert::{insert::InsertPlan, instructions::InsertInstruction},
 };
 use concept::{error::ConceptWriteError, thing::thing_manager::ThingManager};
 use storage::snapshot::WritableSnapshot;

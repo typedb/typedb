@@ -13,12 +13,9 @@ use ir::pattern::expression::{
     Operator,
 };
 
-use crate::{
-    expression::{
-        compiled_expression::{CompiledExpression, ExpressionValueType},
-        ExpressionCompileError,
-    },
-    instruction::expression::{
+use crate::expression::{
+    compiled_expression::{CompiledExpression, ExpressionValueType},
+    instructions::{
         list_operations,
         load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
         op_codes::ExpressionOpCode,
@@ -26,6 +23,7 @@ use crate::{
         unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
         CompilableExpression, ExpressionInstruction,
     },
+    ExpressionCompileError,
 };
 
 pub struct ExpressionCompilationContext<'this> {

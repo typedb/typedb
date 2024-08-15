@@ -6,7 +6,7 @@
 
 use std::{error::Error, fmt};
 
-use compiler::inference::TypeInferenceError;
+use compiler::match_::inference::TypeInferenceError;
 use encoding::error::EncodingError;
 use ir::program::{FunctionDefinitionError, FunctionReadError};
 use storage::{snapshot::SnapshotGetError, ReadSnapshotOpenError};

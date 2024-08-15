@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::{instruction::constraint::instructions::ConstraintInstruction, planner::pattern_plan::InstructionAPI};
+use compiler::match_::{instructions::ConstraintInstruction, planner::pattern_plan::InstructionAPI};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 

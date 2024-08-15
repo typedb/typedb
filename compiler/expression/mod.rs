@@ -17,6 +17,7 @@ use ir::pattern::{expression::Operator, variable_category::VariableCategory};
 pub mod block_compiler;
 pub mod compiled_expression;
 pub mod expression_compiler;
+pub mod instructions;
 
 #[derive(Debug)]
 pub enum ExpressionCompileError {

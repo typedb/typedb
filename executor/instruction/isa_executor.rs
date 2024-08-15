@@ -7,7 +7,7 @@
 use std::{collections::HashSet, sync::Arc, vec};
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::instruction::constraint::instructions::IsaInstruction;
+use compiler::match_::instructions::IsaInstruction;
 use concept::{
     error::ConceptReadError,
     iterator::InstanceIterator,

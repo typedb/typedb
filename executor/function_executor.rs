@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::planner::pattern_plan::PatternPlan;
+use compiler::match_::planner::pattern_plan::PatternPlan;
 
 pub(crate) struct FunctionExecutor {
     plan: PatternPlan,

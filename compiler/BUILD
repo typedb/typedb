@@ -11,13 +11,10 @@ rust_library(
     crate_root = "lib.rs",
     srcs = glob([
         "*.rs",
+        "match_/**/*.rs",
+        "insert/**/*.rs",
+        "delete/**/*.rs",
         "expression/**/*.rs",
-        "inference/**/*.rs",
-        "instruction/**/*.rs",
-        "instruction/expressions/**/*.rs",
-        "planner/**/*.rs",
-        "optimisation/**/*.rs",
-        "write/*.rs",
     ]),
     deps = [
         "//answer",
@@ -46,12 +43,10 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
-        "inference/*.rs",
-        "instruction/**/*.rs",
-        "planner/**/*.rs",
+        "match_/**/*.rs",
+        "insert/**/*.rs",
+        "delete/**/*.rs",
         "expression/**/*.rs",
-        "optimisation/**/*.rs",
-        "write/*.rs"
     ]),
     exclude = glob([
         "Cargo.*",

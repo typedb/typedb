@@ -6,9 +6,9 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use compiler::{
+use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    instruction::constraint::instructions::{ConstraintInstruction, Inputs, IsaInstruction, IsaReverseInstruction},
+    instructions::{ConstraintInstruction, Inputs, IsaInstruction, IsaReverseInstruction},
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,

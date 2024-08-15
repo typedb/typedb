@@ -7,7 +7,7 @@
 use std::{collections::HashSet, sync::Arc};
 
 use answer::{Thing, Type};
-use compiler::instruction::constraint::instructions::IsaReverseInstruction;
+use compiler::match_::instructions::IsaReverseInstruction;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::pattern::constraint::Isa;
 use lending_iterator::{adaptors::Map, AsHkt, LendingIterator};

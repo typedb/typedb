@@ -6,9 +6,9 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use compiler::{
+use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    instruction::constraint::instructions::{ConstraintInstruction, HasInstruction, Inputs},
+    instructions::{ConstraintInstruction, HasInstruction, Inputs},
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
@@ -21,10 +21,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
-use ir::{
-    pattern::constraint::IsaKind,
-    program::{block::FunctionalBlock, program::Program},
-};
+use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,

@@ -5,7 +5,7 @@
  */
 
 use answer::variable_value::VariableValue;
-use compiler::write::{ThingSource, TypeSource, ValueSource, VariableSource};
+use compiler::insert::{ThingSource, TypeSource, ValueSource, VariableSource};
 use encoding::value::value::Value;
 
 use crate::{batch::Row, VariablePosition};

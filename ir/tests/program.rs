@@ -17,7 +17,6 @@ use ir::{
         block::FunctionalBlock,
         function_signature::{FunctionID, FunctionSignature},
         modifier::ModifierDefinitionError,
-        program::Program,
     },
 };
 
@@ -41,8 +40,6 @@ fn build_modifiers() {
     builder.add_sort(vec![("person", true), ("name", false)]).unwrap();
 
     let block = builder.finish();
-
-    let _ = Program::new(block, Vec::new());
 }
 
 #[test]
@@ -101,5 +98,4 @@ fn build_program_with_functions() {
     println!("{}", block.conjunction());
 
     // TODO: incomplete, since we don't have the called function IR
-    // let program = Program::new(Pattern::Conjunction(conjunction), HashMap::new());
 }

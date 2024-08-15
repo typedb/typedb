@@ -24,7 +24,7 @@ use crate::{
         expression_compiler::ExpressionCompilationContext,
         ExpressionCompileError,
     },
-    inference::type_annotations::TypeAnnotations,
+    match_::inference::type_annotations::TypeAnnotations,
 };
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
