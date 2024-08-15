@@ -13,7 +13,7 @@ use std::{
 use encoding::{
     graph::{
         definition::definition_key::DefinitionKey,
-        thing::{edge::ThingEdgeLinks, ThingVertex},
+        thing::ThingVertex,
         type_::{CapabilityKind, Kind},
     },
     value::{label::Label, value::Value, value_type::ValueType, ValueEncodable},
@@ -25,10 +25,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
-    thing::{
-        object::{Object, ObjectAPI},
-        thing_manager::ThingManager,
-    },
+    thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange,

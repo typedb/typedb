@@ -156,14 +156,6 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         thing_manager.get_status(snapshot, self.vertex().as_storage_key())
     }
 
-    fn errors(
-        &self,
-        _snapshot: &impl WritableSnapshot,
-        _thing_manager: &ThingManager,
-    ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
-        Ok(Vec::new())
-    }
-
     fn delete(
         self,
         snapshot: &mut impl WritableSnapshot,
@@ -172,8 +164,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         let owners = self
             .get_owners(snapshot, thing_manager)
             .map_static(|res| res.map(|(key, _)| key.into_owned()))
-            .try_collect::<Vec<_>, _>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            .try_collect::<Vec<_>, _>()?;
         for object in owners {
             thing_manager.unset_has(snapshot, &object, self.as_reference());
         }

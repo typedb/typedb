@@ -107,14 +107,6 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         thing_manager.get_status(snapshot, self.vertex().as_storage_key())
     }
 
-    fn errors(
-        &self,
-        snapshot: &impl WritableSnapshot,
-        thing_manager: &ThingManager,
-    ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
-        todo!()
-    }
-
     fn delete(
         self,
         snapshot: &mut impl WritableSnapshot,
@@ -123,21 +115,13 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         for attr in self
             .get_has_unordered(snapshot, thing_manager)
             .map_static(|res| res.map(|(k, _)| k.into_owned()))
-            .try_collect::<Vec<_>, _>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+            .try_collect::<Vec<_>, _>()?
         {
             thing_manager.unset_has(snapshot, &self, attr);
         }
 
-        for owns in self
-            .type_()
-            .get_owns(snapshot, thing_manager.type_manager())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-            .iter()
-        {
-            let ordering = owns
-                .get_ordering(snapshot, thing_manager.type_manager())
-                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())?.iter() {
+            let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
             if matches!(ordering, Ordering::Ordered) {
                 thing_manager.unset_has_ordered(snapshot, &self, owns.attribute());
             }

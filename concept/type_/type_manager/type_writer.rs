@@ -96,8 +96,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     where
         T: TypeAPI<'static>,
     {
-        let supertype = TypeReader::get_supertype(snapshot, subtype.clone())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        let supertype = TypeReader::get_supertype(snapshot, subtype.clone())?;
         if let Some(supertype) = supertype {
             let sub_edge = Sub::from_vertices(subtype.clone(), supertype.clone());
             snapshot.delete(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());

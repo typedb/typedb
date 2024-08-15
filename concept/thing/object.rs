@@ -34,7 +34,7 @@ use crate::{
         entity::Entity,
         has::Has,
         relation::{Relation, RelationRoleIterator},
-        thing_manager::{validation::validation::Validation, ThingManager},
+        thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
         HKInstance, ThingAPI,
     },
     type_::{
@@ -136,58 +136,6 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         }
     }
 
-    fn errors(
-        &self,
-        snapshot: &impl WritableSnapshot,
-        thing_manager: &ThingManager,
-    ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
-        let mut errors = Vec::new();
-
-        let type_ = self.type_();
-        let object_owns = type_.get_owns(snapshot, thing_manager.type_manager())?;
-        let has_counts = self.get_has_counts(snapshot, thing_manager)?;
-
-        for owns in object_owns.iter() {
-            let cardinality_check = Validation::validate_owns_cardinality_constraint(
-                snapshot,
-                thing_manager,
-                &self,
-                owns.clone().into_owned(),
-                &has_counts,
-            );
-
-            match cardinality_check {
-                Err(source) => errors.push(ConceptWriteError::DataValidation { source }),
-                Ok(_) => {}
-            }
-        }
-
-        let object_plays = type_.get_plays(snapshot, thing_manager.type_manager())?;
-        let played_roles_counts = self.get_played_roles_counts(snapshot, thing_manager)?;
-
-        for plays in object_plays.iter() {
-            let cardinality_check = Validation::validate_plays_cardinality_constraint(
-                snapshot,
-                thing_manager,
-                &self,
-                plays.clone().into_owned(),
-                &played_roles_counts,
-            );
-
-            match cardinality_check {
-                Err(source) => errors.push(ConceptWriteError::DataValidation { source }),
-                Ok(_) => {}
-            }
-        }
-
-        errors.extend(match self {
-            Object::Entity(entity) => entity.errors(snapshot, thing_manager),
-            Object::Relation(relation) => relation.errors(snapshot, thing_manager),
-        }?);
-
-        Ok(errors)
-    }
-
     fn delete(
         self,
         snapshot: &mut impl WritableSnapshot,
@@ -280,8 +228,13 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
         }
 
-        Validation::validate_object_type_owns_attribute_type(snapshot, thing_manager, self.type_(), attribute.type_())
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        OperationTimeValidation::validate_object_type_owns_attribute_type(
+            snapshot,
+            thing_manager,
+            self.type_(),
+            attribute.type_(),
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
@@ -289,7 +242,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             Ordering::Ordered => return Err(ConceptWriteError::SetHasUnorderedOwnsOrdered {}),
         }
 
-        Validation::validate_has_unique_constraint(
+        OperationTimeValidation::validate_has_unique_constraint(
             snapshot,
             thing_manager,
             owns.into_owned(),
@@ -326,7 +279,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
         }
 
-        Validation::validate_object_type_owns_attribute_type(
+        OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
             thing_manager,
             self.type_(),
@@ -345,8 +298,13 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             *new_counts.entry(attr).or_default() += 1;
         }
 
-        Validation::validate_owns_distinct_constraint(snapshot, thing_manager, owns.clone().into_owned(), &new_counts)
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        OperationTimeValidation::validate_owns_distinct_constraint(
+            snapshot,
+            thing_manager,
+            owns.clone().into_owned(),
+            &new_counts,
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         // 1. get owned list
         let old_attributes =

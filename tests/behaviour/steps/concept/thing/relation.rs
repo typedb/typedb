@@ -18,7 +18,7 @@ use macro_rules_attribute::apply;
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
-    params::check_boolean,
+    params::{check_boolean, IsEmptyOrNot},
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
@@ -210,6 +210,31 @@ async fn relation_get_players_contains_table(
         })
         .collect_vec();
     contains_or_doesnt.check(&expected, &players);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation {var} get players for role\({type_label}\) {is_empty_or_not}")]
+async fn relation_get_players_for_role_empty(
+    context: &mut Context,
+    relation_var: params::Var,
+    role_label: params::Label,
+    is_empty_or_not: IsEmptyOrNot,
+) {
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let actuals = with_read_tx!(context, |tx| {
+        let role_type = relation
+            .type_()
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        relation
+            .get_players_role_type(&tx.snapshot, &tx.thing_manager, role_type)
+            .map_static(|res| res.unwrap().into_owned())
+            .collect::<Vec<_>>()
+    });
+
+    is_empty_or_not.check(actuals.is_empty());
 }
 
 #[apply(generic_step)]

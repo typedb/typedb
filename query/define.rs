@@ -9,6 +9,7 @@ use std::{error::Error, fmt};
 use answer::Type as TypeEnum;
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
+    thing::thing_manager::ThingManager,
     type_::{
         annotation::{Annotation, AnnotationError},
         attribute_type::AttributeTypeAnnotation,
@@ -39,7 +40,6 @@ use typeql::{
     type_::Optional,
     Definable, ScopedLabel, TypeRef, TypeRefAny,
 };
-use concept::thing::thing_manager::ThingManager;
 
 use crate::{
     util::{resolve_type, resolve_value_type, type_ref_to_label_and_ordering},
@@ -94,23 +94,31 @@ pub(crate) fn process_type_declarations(
     // TODO: Overrides; Idempotency checks.
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
     declarations.clone().try_for_each(|declaration| define_types(snapshot, type_manager, declaration))?;
-    declarations.clone().try_for_each(|declaration| define_type_annotations(snapshot, type_manager, thing_manager, declaration))?;
-    declarations.clone().try_for_each(|declaration| define_capabilities_sub(snapshot, type_manager, thing_manager, declaration))?;
-    declarations.clone().try_for_each(|declaration| define_capabilities_alias(snapshot, type_manager, declaration))?;
     declarations
         .clone()
-        .try_for_each(|declaration| define_capabilities_value_type(snapshot, type_manager, thing_manager, declaration))?;
+        .try_for_each(|declaration| define_type_annotations(snapshot, type_manager, thing_manager, declaration))?;
+    declarations
+        .clone()
+        .try_for_each(|declaration| define_capabilities_sub(snapshot, type_manager, thing_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| define_capabilities_alias(snapshot, type_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| {
+        define_capabilities_value_type(snapshot, type_manager, thing_manager, declaration)
+    })?;
     declarations
         .clone()
         .try_for_each(|declaration| define_capabilities_relates(snapshot, type_manager, thing_manager, declaration))?;
     // declarations.clone().try_for_each(|declaration| {
     //     define_capabilities_relates_overrides(snapshot, type_manager, definables)
     // })?;
-    declarations.clone().try_for_each(|declaration| define_capabilities_owns(snapshot, type_manager,  thing_manager,declaration))?;
+    declarations
+        .clone()
+        .try_for_each(|declaration| define_capabilities_owns(snapshot, type_manager, thing_manager, declaration))?;
     // declarations.clone().try_for_each(|declaration| {
     //     define_capabilities_owns_overrides(snapshot, type_manager, definables)
     // })?;
-    declarations.clone().try_for_each(|declaration| define_capabilities_plays(snapshot, type_manager, thing_manager, declaration))?;
+    declarations
+        .clone()
+        .try_for_each(|declaration| define_capabilities_plays(snapshot, type_manager, thing_manager, declaration))?;
     // declarations.clone().try_for_each(|declaration| {
     //     define_capabilities_plays_overrides(snapshot, type_manager, definables)
     // })?;

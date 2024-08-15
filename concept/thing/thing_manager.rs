@@ -23,10 +23,7 @@ use encoding::{
         },
         Typed,
     },
-    layout::{
-        infix::Infix,
-        prefix::{Prefix},
-    },
+    layout::{infix::Infix, prefix::Prefix},
     value::{
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
@@ -52,9 +49,7 @@ use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLI
 use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
-    snapshot::{
-        lock::create_custom_lock_key, write::Write, ReadableSnapshot, WritableSnapshot,
-    },
+    snapshot::{lock::create_custom_lock_key, write::Write, ReadableSnapshot, WritableSnapshot},
 };
 
 use crate::{
@@ -65,13 +60,20 @@ use crate::{
         decode_attribute_ids, decode_role_players, encode_attribute_ids, encode_role_players,
         entity::Entity,
         object::{HasAttributeIterator, HasIterator, HasReverseIterator, Object, ObjectAPI},
-        relation::{IndexedPlayersIterator, LinksIterator, Relation, RelationRoleIterator, RolePlayer, RolePlayerIterator},
-        thing_manager::validation::validation::Validation,
+        relation::{
+            IndexedPlayersIterator, LinksIterator, Relation, RelationRoleIterator, RolePlayer, RolePlayerIterator,
+        },
+        thing_manager::validation::{
+            commit_time_validation::{collect_errors, CommitTimeValidation},
+            operation_time_validation::OperationTimeValidation,
+            validation::get_uniqueness_source,
+            DataValidationError,
+        },
         HKInstance, ThingAPI,
     },
     type_::{
         annotation::{AnnotationCardinality, AnnotationCascade, AnnotationIndependent},
-        attribute_type::{AttributeType},
+        attribute_type::AttributeType,
         entity_type::EntityType,
         object_type::ObjectType,
         owns::Owns,
@@ -845,15 +847,10 @@ impl ThingManager {
     }
 
     pub fn finalise(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
+        self.validate(snapshot)?;
+
         self.cleanup_relations(snapshot).map_err(|err| vec![err])?;
         self.cleanup_attributes(snapshot).map_err(|err| vec![err])?;
-        let thing_errors = self.thing_errors(snapshot);
-
-        match thing_errors {
-            Ok(errors) if errors.is_empty() => {}
-            Ok(errors) => return Err(errors),
-            Err(error) => return Err(vec![ConceptWriteError::ConceptRead { source: error }]),
-        };
 
         match self.create_commit_locks(snapshot) {
             Ok(_) => Ok(()),
@@ -924,7 +921,7 @@ impl ThingManager {
         value: Value<'a>,
         owns: Owns<'static>,
     ) -> Result<(), ConceptReadError> {
-        if let Some(uniqueness_source) = Validation::get_uniqueness_source(snapshot, self, owns)? {
+        if let Some(uniqueness_source) = get_uniqueness_source(snapshot, self, owns)? {
             let lock_key = create_custom_lock_key(
                 [
                     &Infix::PropertyAnnotationUnique.infix_id().bytes(),
@@ -1031,6 +1028,7 @@ impl ThingManager {
     }
 
     fn cleanup_relations(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptWriteError> {
+        // TODO: Consider
         let mut any_deleted = true;
         while any_deleted {
             any_deleted = false;
@@ -1123,10 +1121,7 @@ impl ThingManager {
         {
             let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
             let attribute = Attribute::new(edge.to());
-            let is_independent = attribute
-                .type_()
-                .is_independent(snapshot, self.type_manager())
-                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if attribute.get_status(snapshot, self) == ConceptStatus::Deleted {
                 continue;
             }
@@ -1148,10 +1143,7 @@ impl ThingManager {
             .into_iter()
         {
             let attribute = Attribute::new(AttributeVertex::new(Bytes::reference(key.bytes())));
-            let is_independent = attribute
-                .type_()
-                .is_independent(snapshot, self.type_manager())
-                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if !is_independent && !attribute.has_owners(snapshot, self) {
                 self.unput_attribute(snapshot, attribute)?;
             }
@@ -1197,49 +1189,62 @@ impl ThingManager {
         Ok(())
     }
 
-    //  TODO: Remove excessive
-    fn thing_errors(&self, snapshot: &mut impl WritableSnapshot) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
+    fn validate(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
         let mut errors = Vec::new();
 
-        self.validate_ownerships(&mut errors, snapshot)?;
+        let mut modified_objects = HashSet::new();
+        let mut modified_objects_only_has = HashSet::new();
+        let mut modified_objects_only_links = HashSet::new();
+        let mut modified_relations = HashSet::new();
 
-        let mut relations_validated = HashSet::new();
-        for (key, _) in snapshot
-            .iterate_writes_range(KeyRange::new_within(
-                ThingEdgeLinks::prefix(),
-                ThingEdgeLinks::FIXED_WIDTH_ENCODING,
-            ))
-            .filter(|(_, write)| !matches!(write, Write::Delete))
-        {
-            let edge = ThingEdgeLinks::new(Bytes::reference(key.bytes()));
-            let relation = Relation::new(edge.from());
-            if !relations_validated.contains(&relation) {
-                errors.extend(relation.errors(snapshot, self)?);
-                relations_validated.insert(relation.into_owned());
-            }
+        let mut res = self.collect_modified_objects(snapshot, &mut modified_objects, &mut modified_relations);
+        collect_errors!(errors, res, DataValidationError::ConceptRead);
+        res = self.collect_modified_has(snapshot, &mut modified_objects_only_has);
+        collect_errors!(errors, res, DataValidationError::ConceptRead);
+        res = self.collect_modified_links(snapshot, &mut modified_relations, &mut modified_objects_only_links);
+        collect_errors!(errors, res, DataValidationError::ConceptRead);
+
+        for object in &modified_objects {
+            res = CommitTimeValidation::validate_object_has(snapshot, self, object, &mut errors);
+            collect_errors!(errors, res, DataValidationError::ConceptRead);
+            res = CommitTimeValidation::validate_object_links(snapshot, self, object, &mut errors);
+            collect_errors!(errors, res, DataValidationError::ConceptRead);
         }
 
-        Ok(errors)
-    }
-
-    //  TODO: Remove excessive
-    fn validate_ownerships(
-        &self,
-        errors: &mut Vec<ConceptWriteError>,
-        snapshot: &impl WritableSnapshot,
-    ) -> Result<(), ConceptReadError> {
-        for (key, _) in snapshot
-            .iterate_writes_range(KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING))
-        {
-            let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
-            let owner = Object::new(edge.from());
-            if !self.object_exists(snapshot, &owner)? {
+        for object in &modified_objects_only_has {
+            if modified_objects.contains(&object) {
                 continue;
             }
-            let attribute = Attribute::new(edge.to());
-            self.validate_owner(owner, attribute.type_(), snapshot, errors)?;
+            res = CommitTimeValidation::validate_object_has(snapshot, self, object, &mut errors);
+            collect_errors!(errors, res, DataValidationError::ConceptRead);
         }
 
+        for object in &modified_objects_only_links {
+            if modified_objects.contains(&object) {
+                continue;
+            }
+            res = CommitTimeValidation::validate_object_links(snapshot, self, object, &mut errors);
+            collect_errors!(errors, res, DataValidationError::ConceptRead);
+        }
+
+        for relation in &modified_relations {
+            res = CommitTimeValidation::validate_relation_links(snapshot, self, relation, &mut errors);
+            collect_errors!(errors, res, DataValidationError::ConceptRead);
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors.into_iter().map(|source| ConceptWriteError::DataValidation { source }).collect())
+        }
+    }
+
+    fn collect_modified_objects(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        out_objects: &mut HashSet<Object<'static>>,
+        out_relations: &mut HashSet<Relation<'static>>,
+    ) -> Result<(), ConceptReadError> {
         for key in snapshot
             .iterate_writes_range(KeyRange::new_inclusive(
                 StorageKey::new(
@@ -1257,49 +1262,52 @@ impl ThingManager {
                 Write::Put { .. } => unreachable!("Encountered a Put for an entity"),
             })
         {
-            let owner = Object::new(ObjectVertex::new(Bytes::reference(key.bytes())));
-            let owner_type = owner.type_();
-            for owns in &owner_type.get_owns(snapshot, self.type_manager())? {
-                if owns.is_key(snapshot, &self.type_manager)? {
-                    self.validate_owner(owner.as_reference(), owns.attribute(), snapshot, errors)?;
+            let owner = Object::new(ObjectVertex::new(Bytes::reference(key.bytes()))).into_owned();
+            match &owner {
+                Object::Entity(_) => {}
+                Object::Relation(relation) => {
+                    out_relations.insert(relation.clone());
                 }
             }
+            out_objects.insert(owner);
         }
-
         Ok(())
     }
 
-    // TODO: Remove
-    fn validate_owner(
+    fn collect_modified_has(
         &self,
-        owner: Object<'_>,
-        attribute_type: AttributeType<'static>,
         snapshot: &impl WritableSnapshot,
-        errors: &mut Vec<ConceptWriteError>,
+        out_objects: &mut HashSet<Object<'static>>,
     ) -> Result<(), ConceptReadError> {
-        let owner_type = owner.type_();
-        let owns = owner_type
-            .get_owns_attribute(snapshot, self.type_manager(), attribute_type.clone())?
-            .expect("encountered a has edge without a corresponding owns in the schema");
-
-        let cardinality = owns.get_cardinality(snapshot, self.type_manager())?;
-        let count = owner.get_has_type_unordered(snapshot, self, attribute_type.clone())?.count();
-        if !cardinality.value_valid(count as u64) {
-            if owns.is_key(snapshot, &self.type_manager)? {
-                if count == 0 {
-                    errors.push(ConceptWriteError::KeyMissing { owner: owner.into_owned(), key_type: attribute_type })
-                } else {
-                    errors.push(ConceptWriteError::MultipleKeys { owner: owner.into_owned(), key_type: attribute_type })
-                }
-            } else {
-                errors.push(ConceptWriteError::CardinalityViolation {
-                    owner: owner.into_owned(),
-                    attribute_type,
-                    cardinality,
-                })
+        for (key, _) in snapshot
+            .iterate_writes_range(KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING))
+        {
+            let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
+            let owner = Object::new(edge.from());
+            if !self.object_exists(snapshot, &owner)? {
+                continue;
             }
+            out_objects.insert(owner.into_owned());
         }
+        Ok(())
+    }
 
+    fn collect_modified_links(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        out_relations: &mut HashSet<Relation<'static>>,
+        out_players: &mut HashSet<Object<'static>>,
+    ) -> Result<(), ConceptReadError> {
+        for (key, _) in snapshot
+            .iterate_writes_range(KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING))
+            .filter(|(_, write)| !matches!(write, Write::Delete))
+        {
+            let edge = ThingEdgeLinks::new(Bytes::reference(key.bytes()));
+            let relation = Relation::new(edge.relation());
+            let player = Object::new(edge.player());
+            out_relations.insert(relation.into_owned());
+            out_players.insert(player.into_owned());
+        }
         Ok(())
     }
 
@@ -1308,7 +1316,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         entity_type: EntityType<'static>,
     ) -> Result<Entity<'a>, ConceptWriteError> {
-        Validation::validate_type_instance_is_not_abstract(snapshot, self, entity_type.clone())
+        OperationTimeValidation::validate_type_instance_is_not_abstract(snapshot, self, entity_type.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         Ok(Entity::new(self.vertex_generator.create_entity(entity_type.vertex().type_id_(), snapshot)))
@@ -1319,7 +1327,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType<'static>,
     ) -> Result<Relation<'a>, ConceptWriteError> {
-        Validation::validate_type_instance_is_not_abstract(snapshot, self, relation_type.clone())
+        OperationTimeValidation::validate_type_instance_is_not_abstract(snapshot, self, relation_type.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         Ok(Relation::new(self.vertex_generator.create_relation(relation_type.vertex().type_id_(), snapshot)))
@@ -1331,7 +1339,7 @@ impl ThingManager {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<Attribute<'a>, ConceptWriteError> {
-        Validation::validate_type_instance_is_not_abstract(snapshot, self, attribute_type.clone())
+        OperationTimeValidation::validate_type_instance_is_not_abstract(snapshot, self, attribute_type.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         // TODO: Transform to validation!
@@ -1343,14 +1351,29 @@ impl ThingManager {
             });
         }
 
-        Validation::validate_attribute_regex_constraint(snapshot, self, attribute_type.clone(), value.clone())
-            .map_err(|source| ConceptWriteError::DataValidation { source })?;
+        OperationTimeValidation::validate_attribute_regex_constraint(
+            snapshot,
+            self,
+            attribute_type.clone(),
+            value.clone(),
+        )
+        .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        Validation::validate_attribute_range_constraint(snapshot, self, attribute_type.clone(), value.clone())
-            .map_err(|source| ConceptWriteError::DataValidation { source })?;
+        OperationTimeValidation::validate_attribute_range_constraint(
+            snapshot,
+            self,
+            attribute_type.clone(),
+            value.clone(),
+        )
+        .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        Validation::validate_attribute_values_constraint(snapshot, self, attribute_type.clone(), value.clone())
-            .map_err(|source| ConceptWriteError::DataValidation { source })?;
+        OperationTimeValidation::validate_attribute_values_constraint(
+            snapshot,
+            self,
+            attribute_type.clone(),
+            value.clone(),
+        )
+        .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         self.put_attribute(snapshot, attribute_type, value)
     }
@@ -1556,13 +1579,13 @@ impl ThingManager {
 
         let value = value.into_owned();
 
-        Validation::validate_has_regex_constraint(snapshot, self, owns.clone(), value.clone())
+        OperationTimeValidation::validate_has_regex_constraint(snapshot, self, owns.clone(), value.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        Validation::validate_has_range_constraint(snapshot, self, owns.clone(), value.clone())
+        OperationTimeValidation::validate_has_range_constraint(snapshot, self, owns.clone(), value.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        Validation::validate_has_values_constraint(snapshot, self, owns.clone(), value.clone())
+        OperationTimeValidation::validate_has_values_constraint(snapshot, self, owns.clone(), value.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
@@ -1660,11 +1683,7 @@ impl ThingManager {
         );
         snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
-        if self
-            .type_manager
-            .relation_index_available(snapshot, relation.type_())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-        {
+        if self.type_manager.relation_index_available(snapshot, relation.type_())? {
             self.relation_index_player_regenerate(snapshot, relation, Object::new(player.vertex()), role_type, 1)?;
         }
         Ok(())
@@ -1677,7 +1696,8 @@ impl ThingManager {
         role_type: RoleType<'static>,
         players: Vec<Object<'_>>,
     ) -> Result<(), ConceptWriteError> {
-        let key = build_object_vertex_property_links_order(relation.as_reference().into_vertex(), role_type.into_vertex());
+        let key =
+            build_object_vertex_property_links_order(relation.as_reference().into_vertex(), role_type.into_vertex());
         let storage_key = key.into_storage_key().into_owned_array();
         let value = encode_role_players(players.iter().map(|player| player.vertex()));
         snapshot.put_val(storage_key.clone(), value);
@@ -1710,11 +1730,7 @@ impl ThingManager {
             snapshot.put_val(links.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(links_reverse.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
-            if self
-                .type_manager
-                .relation_index_available(snapshot, relation.type_())
-                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-            {
+            if self.type_manager.relation_index_available(snapshot, relation.type_())? {
                 let player = Object::new(player.vertex());
                 self.relation_index_player_regenerate(snapshot, relation, player, role_type, count)?
             }
@@ -1848,8 +1864,7 @@ impl ThingManager {
                 let (roleplayer, _count) = item?;
                 Ok((roleplayer.player().into_owned(), roleplayer.role_type()))
             })
-            .try_collect::<Vec<_>, _>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            .try_collect::<Vec<_>, ConceptReadError>()?;
         for (rp_player, rp_role_type) in players {
             debug_assert!(!(rp_player == Object::new(rp_player.vertex()) && role_type == rp_role_type));
             let index = ThingEdgeRolePlayerIndex::build(
@@ -1890,8 +1905,7 @@ impl ThingManager {
                 let (roleplayer, count) = item?;
                 Ok((roleplayer.player().into_owned(), roleplayer.role_type(), count))
             })
-            .try_collect::<Vec<_>, _>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            .try_collect::<Vec<_>, ConceptReadError>()?;
         for (rp_player, rp_role_type, rp_count) in players {
             let is_same_rp = rp_player == player && rp_role_type == role_type;
             if is_same_rp {

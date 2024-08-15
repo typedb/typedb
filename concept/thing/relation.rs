@@ -36,7 +36,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         object::{Object, ObjectAPI},
-        thing_manager::{validation::validation::Validation, ThingManager},
+        thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
         HKInstance, ThingAPI,
     },
     type_::{
@@ -121,7 +121,7 @@ impl<'a> Relation<'a> {
         })
     }
 
-    fn get_player_counts(
+    pub fn get_player_counts(
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
@@ -155,8 +155,13 @@ impl<'a> Relation<'a> {
             return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
         }
 
-        Validation::validate_object_type_plays_role_type(snapshot, thing_manager, player.type_(), role_type.clone())
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        OperationTimeValidation::validate_object_type_plays_role_type(
+            snapshot,
+            thing_manager,
+            player.type_(),
+            role_type.clone(),
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
         let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())?;
@@ -178,10 +183,7 @@ impl<'a> Relation<'a> {
             return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
         }
 
-        match role_type
-            .get_ordering(snapshot, thing_manager.type_manager())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-        {
+        match role_type.get_ordering(snapshot, thing_manager.type_manager())? {
             Ordering::Unordered => return Err(ConceptWriteError::SetPlayersOrderedRoleUnordered {}),
             Ordering::Ordered => (),
         }
@@ -191,13 +193,16 @@ impl<'a> Relation<'a> {
             *new_counts.entry(player).or_default() += 1;
         }
 
-        Validation::validate_relates_distinct_constraint(snapshot, thing_manager, role_type.clone(), &new_counts)
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        OperationTimeValidation::validate_relates_distinct_constraint(
+            snapshot,
+            thing_manager,
+            role_type.clone(),
+            &new_counts,
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         // 1. get owned list
-        let old_players = thing_manager
-            .get_role_players_ordered(snapshot, self.as_reference(), role_type.clone())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        let old_players = thing_manager.get_role_players_ordered(snapshot, self.as_reference(), role_type.clone())?;
 
         let mut old_counts = HashMap::<_, u64>::new();
         for player in &old_players {
@@ -315,35 +320,6 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         thing_manager.get_status(snapshot, self.vertex().as_storage_key())
     }
 
-    fn errors(
-        &self,
-        snapshot: &impl WritableSnapshot,
-        thing_manager: &ThingManager,
-    ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
-        let mut errors = Vec::new();
-
-        let type_ = self.type_();
-        let relation_relates = type_.get_relates(snapshot, thing_manager.type_manager())?;
-        let role_player_count = self.get_player_counts(snapshot, thing_manager)?;
-
-        for relates in relation_relates.iter() {
-            let cardinality_check = Validation::validate_relates_cardinality_constraint(
-                snapshot,
-                thing_manager,
-                &self,
-                relates.clone().into_owned(),
-                &role_player_count,
-            );
-
-            match cardinality_check {
-                Err(source) => errors.push(ConceptWriteError::DataValidation { source }),
-                Ok(_) => {}
-            }
-        }
-
-        Ok(errors)
-    }
-
     fn delete(
         self,
         snapshot: &mut impl WritableSnapshot,
@@ -352,21 +328,13 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         for attr in self
             .get_has_unordered(snapshot, thing_manager)
             .map_static(|res| res.map(|(key, _value)| key.into_owned()))
-            .try_collect::<Vec<_>, _>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+            .try_collect::<Vec<_>, _>()?
         {
             thing_manager.unset_has(snapshot, &self, attr);
         }
 
-        for owns in self
-            .type_()
-            .get_owns(snapshot, thing_manager.type_manager())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-            .iter()
-        {
-            let ordering = owns
-                .get_ordering(snapshot, thing_manager.type_manager())
-                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())?.iter() {
+            let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
             if matches!(ordering, Ordering::Ordered) {
                 thing_manager.unset_has_ordered(snapshot, &self, owns.attribute());
             }

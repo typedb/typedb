@@ -50,12 +50,6 @@ pub trait ThingAPI<'a>: Sized + Clone {
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus;
 
-    fn errors(
-        &self,
-        snapshot: &impl WritableSnapshot,
-        thing_manager: &ThingManager,
-    ) -> Result<Vec<ConceptWriteError>, ConceptReadError>;
-
     fn delete(
         self,
         snapshot: &mut impl WritableSnapshot,

@@ -22,7 +22,9 @@ use crate::{
     },
 };
 
-pub mod validation;
+pub(crate) mod commit_time_validation;
+pub(crate) mod operation_time_validation;
+pub(crate) mod validation;
 
 #[derive(Debug, Clone)]
 pub enum DataValidationError {

@@ -13,8 +13,8 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
-use lending_iterator::higher_order::Hkt;
 use itertools::Itertools;
+use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 

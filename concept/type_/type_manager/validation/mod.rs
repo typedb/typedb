@@ -25,9 +25,9 @@ use crate::{
     },
 };
 
-pub mod annotation_compatibility;
-pub mod commit_time_validation;
-pub mod operation_time_validation;
+pub(crate) mod annotation_compatibility;
+pub(crate) mod commit_time_validation;
+pub(crate) mod operation_time_validation;
 pub(crate) mod validation;
 
 #[derive(Debug, Clone)]
