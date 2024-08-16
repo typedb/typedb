@@ -849,6 +849,17 @@ impl ThingManager {
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
         }
     }
+
+    pub(crate) fn type_exists<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_: impl TypeAPI<'a>,
+    ) -> Result<bool, ConceptReadError> {
+        match snapshot.get::<0>(type_.vertex().as_storage_key().as_reference()) {
+            Ok(value) => Ok(value.is_some()),
+            Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
+        }
+    }
 }
 
 impl ThingManager {
@@ -1103,6 +1114,9 @@ impl ThingManager {
                     _ => None,
                 })
             {
+                if !self.type_exists(snapshot, relation_type.clone())? {
+                    continue;
+                }
                 let subtypes = relation_type.get_subtypes_transitive(snapshot, self.type_manager())?;
                 once(&relation_type).chain(subtypes.into_iter()).try_for_each(|type_| {
                     let is_cascade = type_.is_cascade(snapshot, self.type_manager())?;
@@ -1175,6 +1189,9 @@ impl ThingManager {
                 _ => None,
             })
         {
+            if !self.type_exists(snapshot, attribute_type.clone())? {
+                continue;
+            }
             let subtypes = attribute_type.get_subtypes_transitive(snapshot, self.type_manager())?;
             once(&attribute_type).chain(subtypes.into_iter()).try_for_each(|type_| {
                 let is_independent = type_.is_independent(snapshot, self.type_manager())?;

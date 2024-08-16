@@ -41,7 +41,7 @@ pub async fn relation_type_create_role(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) create role: {type_label} with {annotation}{may_error}")]
+#[step(expr = r"relation\({type_label}\) create role: {type_label}, with {annotation}{may_error}")]
 pub async fn relation_type_create_role_with_cardinality(
     context: &mut Context,
     type_label: Label,
@@ -78,7 +78,7 @@ pub async fn relation_type_create_ordered_role(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) create role: {type_label}[] with {annotation}{may_error}")]
+#[step(expr = r"relation\({type_label}\) create role: {type_label}[], with {annotation}{may_error}")]
 pub async fn relation_type_create_ordered_role_with_cardinality(
     context: &mut Context,
     type_label: Label,

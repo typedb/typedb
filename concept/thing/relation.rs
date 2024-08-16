@@ -72,8 +72,6 @@ impl<'a> Relation<'a> {
         thing_manager.get_indexed_players(snapshot, Object::Relation(self.as_reference()))
     }
 
-    // TODO: If we delete role player and do not touch relation itself, the status is Persisted and
-    // we read players from storage, while they do not exist in the buffer. It is a bug
     pub fn has_players(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> bool {
         match self.get_status(snapshot, thing_manager) {
             ConceptStatus::Inserted => thing_manager.has_links(snapshot, self.as_reference(), true),

@@ -178,8 +178,11 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Prefix, ConceptReadError> {
-        let value_type = type_.get_value_type(snapshot, type_manager)?.unwrap();
-        Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category()))
+        let value_type = type_.get_value_type(snapshot, type_manager)?;
+        match value_type {
+            None => Err(ConceptReadError::CorruptMissingMandatoryValueType),
+            Some(value_type) => Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category()))
+        }
     }
 }
 
