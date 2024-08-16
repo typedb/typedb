@@ -79,6 +79,18 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.unput(type_.vertex().as_storage_key().into_owned_array());
     }
 
+    pub(crate) fn storage_unput_edge<EDGE>(snapshot: &mut Snapshot, capability: EDGE)
+        where
+            EDGE: TypeEdgeEncoding<'static> + Clone,
+    {
+        let canonical_key = capability.clone().to_canonical_type_edge().into_storage_key();
+        let reverse_key = capability.to_reverse_type_edge().into_storage_key();
+        debug_assert!(snapshot.get::<0>(canonical_key.as_reference()).unwrap_or(None).is_some());
+        debug_assert!(snapshot.get::<0>(reverse_key.as_reference()).unwrap_or(None).is_some());
+        snapshot.unput(canonical_key.into_owned_array());
+        snapshot.unput(reverse_key.into_owned_array());
+    }
+
     pub(crate) fn storage_delete_label(snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let existing_label = TypeReader::get_label(snapshot, type_.clone()).unwrap();
         if let Some(label) = existing_label {

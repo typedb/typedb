@@ -6,7 +6,7 @@
 
 use std::collections::{BTreeMap, HashMap, VecDeque};
 
-use encoding::value::{label::Label, value::Value, ValueEncodable};
+use encoding::value::{value::Value, ValueEncodable};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -16,42 +16,26 @@ use crate::{
         attribute::Attribute,
         object::{Object, ObjectAPI},
         thing_manager::{
-            validation::{validation::get_uniqueness_source, DataValidationError},
+            validation::{validation::{get_uniqueness_source, get_label_or_data_err}, DataValidationError},
             ThingManager,
         },
     },
     type_::{
         annotation::Annotation, attribute_type::AttributeType, object_type::ObjectType, owns::Owns,
-        role_type::RoleType, type_manager::TypeManager, Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
+        role_type::RoleType, Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 
 pub struct OperationTimeValidation {}
 
 impl OperationTimeValidation {
-    pub(crate) fn get_label_or_concept_read_err<'a>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        type_: impl TypeAPI<'a>,
-    ) -> Result<Label<'static>, ConceptReadError> {
-        type_.get_label(snapshot, type_manager).map(|label| label.clone())
-    }
-
-    pub(crate) fn get_label_or_data_err<'a>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        type_: impl TypeAPI<'a>,
-    ) -> Result<Label<'static>, DataValidationError> {
-        Self::get_label_or_concept_read_err(snapshot, type_manager, type_).map_err(DataValidationError::ConceptRead)
-    }
-
     pub(crate) fn validate_type_instance_is_not_abstract(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         type_: impl TypeAPI<'static>,
     ) -> Result<(), DataValidationError> {
         if type_.is_abstract(snapshot, &thing_manager.type_manager).map_err(DataValidationError::ConceptRead)? {
-            Err(DataValidationError::CannotCreateInstanceOfAbstractType(Self::get_label_or_data_err(
+            Err(DataValidationError::CannotCreateInstanceOfAbstractType(get_label_or_data_err(
                 snapshot,
                 &thing_manager.type_manager,
                 type_,
@@ -76,8 +60,8 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(DataValidationError::CannotAddPlayerInstanceForNotPlayedRoleType(
-                Self::get_label_or_data_err(snapshot, &thing_manager.type_manager, object_type)?,
-                Self::get_label_or_data_err(snapshot, &thing_manager.type_manager, role_type)?,
+                get_label_or_data_err(snapshot, &thing_manager.type_manager, object_type)?,
+                get_label_or_data_err(snapshot, &thing_manager.type_manager, role_type)?,
             ))
         }
     }
@@ -97,8 +81,8 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(DataValidationError::CannotAddOwnerInstanceForNotOwnedAttributeType(
-                Self::get_label_or_data_err(snapshot, &thing_manager.type_manager, object_type)?,
-                Self::get_label_or_data_err(snapshot, &thing_manager.type_manager, attribute_type)?,
+                get_label_or_data_err(snapshot, &thing_manager.type_manager, object_type)?,
+                get_label_or_data_err(snapshot, &thing_manager.type_manager, attribute_type)?,
             ))
         }
     }
@@ -180,7 +164,7 @@ impl OperationTimeValidation {
                 }
                 _ => Err(DataValidationError::ConceptRead(
                     ConceptReadError::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(
-                        Self::get_label_or_data_err(snapshot, thing_manager.type_manager(), attribute_type)?,
+                        get_label_or_data_err(snapshot, thing_manager.type_manager(), attribute_type)?,
                         value.value_type(),
                         Annotation::Regex(regex.clone()),
                     ),
@@ -255,7 +239,7 @@ impl OperationTimeValidation {
                 }
                 _ => Err(DataValidationError::ConceptRead(
                     ConceptReadError::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(
-                        Self::get_label_or_data_err(snapshot, thing_manager.type_manager(), owns.attribute())?,
+                        get_label_or_data_err(snapshot, thing_manager.type_manager(), owns.attribute())?,
                         value.value_type(),
                         Annotation::Regex(regex.clone()),
                     ),

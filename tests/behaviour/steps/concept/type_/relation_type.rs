@@ -53,7 +53,7 @@ pub async fn relation_type_create_role_with_cardinality(
         context,
         type_label,
         role_label,
-        Ordering::Ordered,
+        Ordering::Unordered,
         Some(annotation),
     );
     may_error.check_concept_write_without_read_errors(&res);
