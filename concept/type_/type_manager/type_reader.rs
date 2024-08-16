@@ -291,7 +291,7 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    // TODO: Return HashMap<CAP::ObjectType (source), CAP>
+    // TODO: Return HashMap<CAP, ObjectType (source)> if needed, just like we do for get_annotations
     pub(crate) fn get_capabilities<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         object_type: CAP::ObjectType,

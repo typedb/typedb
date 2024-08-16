@@ -387,7 +387,7 @@ fn define_capabilities_relates(
             existing_relates
         } else {
             relation_type
-                .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering, None)// TODO: Provide card in define instead of None
+                .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering, None) // TODO: Provide card in define instead of None
                 .map_err(|source| DefineError::CreateRelates { source, relates: relates.to_owned() })?
         };
         // Handle annotations

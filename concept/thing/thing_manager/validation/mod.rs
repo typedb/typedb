@@ -6,7 +6,7 @@
 
 use std::{error::Error, fmt};
 
-use encoding::value::{label::Label, value::Value};
+use encoding::value::{label::Label, value::Value, value_type::ValueType};
 
 use crate::{
     error::ConceptReadError,
@@ -19,6 +19,7 @@ use crate::{
         plays::Plays,
         relates::Relates,
         role_type::RoleType,
+        Ordering,
     },
 };
 
@@ -110,6 +111,17 @@ pub enum DataValidationError {
         count: u64,
         cardinality: AnnotationCardinality,
     },
+    ValueTypeMismatchWithAttributeType {
+        attribute_type: AttributeType<'static>,
+        expected: Option<ValueType>,
+        provided: ValueType,
+    },
+    SetHasOnDeletedOwner {
+        owner: Object<'static>,
+    },
+    AddPlayerOnDeletedRelation {
+        relation: Relation<'static>,
+    },
 }
 
 impl fmt::Display for DataValidationError {
@@ -140,6 +152,9 @@ impl Error for DataValidationError {
             Self::OwnsCardinalityViolated { .. } => None,
             Self::RelatesCardinalityViolated { .. } => None,
             Self::PlaysCardinalityViolated { .. } => None,
+            Self::ValueTypeMismatchWithAttributeType { .. } => None,
+            Self::SetHasOnDeletedOwner { .. } => None,
+            Self::AddPlayerOnDeletedRelation { .. } => None,
         }
     }
 }

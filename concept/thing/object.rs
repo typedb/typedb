@@ -224,9 +224,8 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         thing_manager: &ThingManager,
         mut attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
-        if !thing_manager.object_exists(snapshot, self)? {
-            return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
-        }
+        OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -275,9 +274,8 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         attribute_type: AttributeType<'static>,
         new_attributes: Vec<Attribute<'_>>,
     ) -> Result<(), ConceptWriteError> {
-        if !thing_manager.object_exists(snapshot, self)? {
-            return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
-        }
+        OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,

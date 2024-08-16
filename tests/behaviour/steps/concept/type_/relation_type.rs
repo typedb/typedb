@@ -4,15 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::type_::{
-    annotation::{Annotation as TypeDBAnnotation, AnnotationCardinality}, annotation::DefaultFrom, object_type::ObjectType, relates::RelatesAnnotation,
-    role_type::RoleTypeAnnotation, Capability, KindAPI, Ordering, TypeAPI,
+use concept::{
+    error::ConceptWriteError,
+    type_::{
+        annotation::{Annotation as TypeDBAnnotation, AnnotationCardinality, DefaultFrom},
+        object_type::ObjectType,
+        relates::{Relates, RelatesAnnotation},
+        role_type::RoleTypeAnnotation,
+        Capability, KindAPI, Ordering, TypeAPI,
+    },
 };
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
-use concept::error::ConceptWriteError;
-use concept::type_::relates::Relates;
 
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
@@ -49,13 +53,7 @@ pub async fn relation_type_create_role_with_cardinality(
     annotation: Annotation,
     may_error: MayError,
 ) {
-    let res = relation_type_create_role_impl(
-        context,
-        type_label,
-        role_label,
-        Ordering::Unordered,
-        Some(annotation),
-    );
+    let res = relation_type_create_role_impl(context, type_label, role_label, Ordering::Unordered, Some(annotation));
     may_error.check_concept_write_without_read_errors(&res);
 }
 
@@ -86,13 +84,7 @@ pub async fn relation_type_create_ordered_role_with_cardinality(
     annotation: Annotation,
     may_error: MayError,
 ) {
-    let res = relation_type_create_role_impl(
-        context,
-        type_label,
-        role_label,
-        Ordering::Ordered,
-        Some(annotation),
-    );
+    let res = relation_type_create_role_impl(context, type_label, role_label, Ordering::Ordered, Some(annotation));
     may_error.check_concept_write_without_read_errors(&res);
 }
 
@@ -108,7 +100,7 @@ pub fn relation_type_create_role_impl(
         Some(annotation) => Some(match annotation.into_typedb(None) {
             TypeDBAnnotation::Cardinality(cardinality) => cardinality.clone(),
             _ => panic!("Expected cardinality annotation"),
-        })
+        }),
     };
 
     with_schema_tx!(context, |tx| {

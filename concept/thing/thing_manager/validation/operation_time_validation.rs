@@ -6,26 +6,30 @@
 
 use std::collections::{BTreeMap, HashMap, VecDeque};
 
-use encoding::value::{value::Value, ValueEncodable};
+use encoding::value::{value::Value, value_type::ValueType, ValueEncodable};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    error::ConceptReadError,
+    error::{ConceptReadError, ConceptWriteError},
     thing::{
         attribute::Attribute,
         object::{Object, ObjectAPI},
+        relation::Relation,
         thing_manager::{
-            validation::{validation::{get_uniqueness_source, get_label_or_data_err}, DataValidationError},
+            validation::{
+                validation::{get_label_or_data_err, get_uniqueness_source},
+                DataValidationError,
+            },
             ThingManager,
         },
     },
     type_::{
         annotation::Annotation, attribute_type::AttributeType, object_type::ObjectType, owns::Owns,
-        role_type::RoleType, Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
+        relation_type::RelationType, role_type::RoleType, Capability, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI,
+        TypeAPI,
     },
 };
-use crate::type_::relation_type::RelationType;
 
 pub struct OperationTimeValidation {}
 
@@ -378,5 +382,67 @@ impl OperationTimeValidation {
         }
 
         Ok(())
+    }
+
+    pub(crate) fn validate_value_type_matches_attribute_type_for_write(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        attribute_type: AttributeType<'static>,
+        value_type: ValueType,
+    ) -> Result<(), ConceptWriteError> {
+        let type_value_type = attribute_type.get_value_type(snapshot, thing_manager.type_manager())?;
+        if Some(value_type.clone()) == type_value_type {
+            Ok(())
+        } else {
+            Err(ConceptWriteError::DataValidation {
+                source: DataValidationError::ValueTypeMismatchWithAttributeType {
+                    attribute_type,
+                    expected: type_value_type,
+                    provided: value_type,
+                },
+            })
+        }
+    }
+
+    pub(crate) fn validate_value_type_matches_attribute_type_for_read(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        attribute_type: AttributeType<'static>,
+        value_type: ValueType,
+    ) -> Result<(), ConceptReadError> {
+        let type_value_type = attribute_type.get_value_type(snapshot, thing_manager.type_manager())?;
+        if Some(value_type.clone()) == type_value_type {
+            Ok(())
+        } else {
+            Err(ConceptReadError::ValueTypeMismatchWithAttributeType {
+                attribute_type,
+                expected: type_value_type,
+                provided: value_type,
+            })
+        }
+    }
+
+    pub(crate) fn validate_owner_exists_to_set_has<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        owner: &impl ObjectAPI<'a>,
+    ) -> Result<(), DataValidationError> {
+        if thing_manager.object_exists(snapshot, owner).map_err(DataValidationError::ConceptRead)? {
+            Ok(())
+        } else {
+            Err(DataValidationError::SetHasOnDeletedOwner { owner: owner.clone().into_owned_object() })
+        }
+    }
+
+    pub(crate) fn validate_relation_exists_to_add_player(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation: &Relation<'_>,
+    ) -> Result<(), DataValidationError> {
+        if thing_manager.relation_exists(snapshot, relation).map_err(DataValidationError::ConceptRead)? {
+            Ok(())
+        } else {
+            Err(DataValidationError::AddPlayerOnDeletedRelation { relation: relation.clone().into_owned() })
+        }
     }
 }

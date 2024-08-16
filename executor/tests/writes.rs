@@ -43,11 +43,25 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
 
     let membership_type = type_manager.create_relation_type(&mut snapshot, &MEMBERSHIP_LABEL).unwrap();
     let relates_member = membership_type
-        .create_relates(&mut snapshot, &type_manager, &thing_manager, MEMBERSHIP_MEMBER_LABEL.name().as_str(), Ordering::Unordered, None)
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            MEMBERSHIP_MEMBER_LABEL.name().as_str(),
+            Ordering::Unordered,
+            None,
+        )
         .unwrap();
     let membership_member_type = relates_member.role();
     let relates_group = membership_type
-        .create_relates(&mut snapshot, &type_manager, &thing_manager, MEMBERSHIP_GROUP_LABEL.name().as_str(), Ordering::Unordered, None)
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            MEMBERSHIP_GROUP_LABEL.name().as_str(),
+            Ordering::Unordered,
+            None,
+        )
         .unwrap();
     let membership_group_type = relates_group.role();
 

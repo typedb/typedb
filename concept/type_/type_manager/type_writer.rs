@@ -80,8 +80,8 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     pub(crate) fn storage_unput_edge<EDGE>(snapshot: &mut Snapshot, capability: EDGE)
-        where
-            EDGE: TypeEdgeEncoding<'static> + Clone,
+    where
+        EDGE: TypeEdgeEncoding<'static> + Clone,
     {
         let canonical_key = capability.clone().to_canonical_type_edge().into_storage_key();
         let reverse_key = capability.to_reverse_type_edge().into_storage_key();

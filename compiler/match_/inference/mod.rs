@@ -240,18 +240,25 @@ pub mod tests {
                 .unwrap();
 
             // Ownerships
-            let animal_owns = animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
-            let cat_owns = cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
-            let dog_owns = dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
+            let animal_owns =
+                animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
+            let cat_owns =
+                cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
+            let dog_owns =
+                dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
             cat_owns.set_override(&mut snapshot, type_manager, thing_manager, animal_owns.clone()).unwrap();
             dog_owns.set_override(&mut snapshot, type_manager, thing_manager, animal_owns.clone()).unwrap();
 
             // Relations
             let fears = type_manager.create_relation_type(&mut snapshot, &Label::build(LABEL_FEARS)).unwrap();
-            let has_fear =
-                fears.create_relates(&mut snapshot, type_manager, thing_manager, LABEL_HAS_FEAR, Ordering::Unordered, None).unwrap().role();
-            let is_feared =
-                fears.create_relates(&mut snapshot, type_manager, thing_manager, LABEL_IS_FEARED, Ordering::Unordered, None).unwrap().role();
+            let has_fear = fears
+                .create_relates(&mut snapshot, type_manager, thing_manager, LABEL_HAS_FEAR, Ordering::Unordered, None)
+                .unwrap()
+                .role();
+            let is_feared = fears
+                .create_relates(&mut snapshot, type_manager, thing_manager, LABEL_IS_FEARED, Ordering::Unordered, None)
+                .unwrap()
+                .role();
             cat.set_plays(&mut snapshot, type_manager, thing_manager, has_fear.clone()).unwrap();
             dog.set_plays(&mut snapshot, type_manager, thing_manager, is_feared.clone()).unwrap();
 

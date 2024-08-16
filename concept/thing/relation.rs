@@ -146,12 +146,13 @@ impl<'a> Relation<'a> {
         role_type: RoleType<'static>,
         player: Object<'_>,
     ) -> Result<(), ConceptWriteError> {
-        if !thing_manager
-            .object_exists(snapshot, self)
-            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
-        {
-            return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
+        match role_type.get_ordering(snapshot, thing_manager.type_manager())? {
+            Ordering::Unordered => (),
+            Ordering::Ordered => return Err(ConceptWriteError::SetPlayersUnorderedRoleOrdered {}),
         }
+
+        OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         OperationTimeValidation::validate_relation_type_relates_role_type(
             snapshot,
@@ -185,14 +186,13 @@ impl<'a> Relation<'a> {
         role_type: RoleType<'static>,
         new_players: Vec<Object<'_>>,
     ) -> Result<(), ConceptWriteError> {
-        if !thing_manager.object_exists(snapshot, self)? {
-            return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
-        }
-
         match role_type.get_ordering(snapshot, thing_manager.type_manager())? {
             Ordering::Unordered => return Err(ConceptWriteError::SetPlayersOrderedRoleUnordered {}),
             Ordering::Ordered => (),
         }
+
+        OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         let mut new_counts = HashMap::<_, u64>::new();
         for player in &new_players {

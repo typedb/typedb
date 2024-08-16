@@ -181,7 +181,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         let value_type = type_.get_value_type(snapshot, type_manager)?;
         match value_type {
             None => Err(ConceptReadError::CorruptMissingMandatoryValueType),
-            Some(value_type) => Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category()))
+            Some(value_type) => Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category())),
         }
     }
 }

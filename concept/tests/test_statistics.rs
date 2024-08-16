@@ -331,8 +331,9 @@ fn put_plays() {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
     let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
-    let friend_relates =
-        friendship_type.create_relates(&mut snapshot, &type_manager, &thing_manager, friend_role_name, Ordering::Unordered, None).unwrap();
+    let friend_relates = friendship_type
+        .create_relates(&mut snapshot, &type_manager, &thing_manager, friend_role_name, Ordering::Unordered, None)
+        .unwrap();
     let friend_role = friend_relates.role();
     person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, friend_role.clone()).unwrap();
     friend_relates

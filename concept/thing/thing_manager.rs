@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{any::Any, borrow::Cow, collections::HashSet, io::Read, iter::once, sync::Arc};
+use std::{borrow::Cow, collections::HashSet, io::Read, iter::once, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -18,7 +18,8 @@ use encoding::{
             ThingVertex,
         },
         type_::{
-            property::{TypeVertexProperty, TypeVertexPropertyEncoding},
+            edge::{TypeEdge, TypeEdgeEncoding},
+            property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertexEncoding},
         },
         Typed,
@@ -44,8 +45,6 @@ use encoding::{
     AsBytes, Keyable,
 };
 use itertools::Itertools;
-use encoding::graph::type_::edge::{TypeEdge, TypeEdgeEncoding};
-use encoding::graph::type_::property::{TypeEdgeProperty, TypeEdgePropertyEncoding};
 use lending_iterator::{AsHkt, LendingIterator};
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLINE};
 use storage::{
@@ -84,11 +83,10 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
+        Capability, EdgeOverride, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptStatus,
 };
-use crate::type_::EdgeOverride;
 
 pub mod validation;
 
@@ -401,14 +399,13 @@ impl ThingManager {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<bool, ConceptReadError> {
-        let type_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
         let value_type = value.value_type();
-        if Some(value_type.clone()) != type_value_type {
-            return Err(ConceptReadError::ValueTypeMismatch {
-                expected: type_value_type,
-                provided: value_type.clone(),
-            });
-        }
+        OperationTimeValidation::validate_value_type_matches_attribute_type_for_read(
+            snapshot,
+            self,
+            attribute_type.clone(),
+            value_type.clone(),
+        )?;
 
         let vertex = if AttributeID::is_inlineable(value.as_reference()) {
             // don't need to do an extra lookup to get the attribute vertex - if it exists, it will have this ID
@@ -819,13 +816,7 @@ impl ThingManager {
                 Write::Put { .. } => ConceptStatus::Put,
                 Write::Delete => ConceptStatus::Deleted,
             })
-            .unwrap_or_else(|| {
-                // debug_assert!(
-                //     snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()).unwrap().is_some(),
-                //     "Attempting to get write status of a key that was not written to in this transaction: {key:?}",
-                // );
-                ConceptStatus::Persisted
-            })
+            .unwrap_or_else(|| ConceptStatus::Persisted)
     }
 
     pub(crate) fn object_exists<'a>(
@@ -1311,10 +1302,11 @@ impl ThingManager {
             }
         }
 
-        for (key, _) in snapshot.iterate_writes_range(KeyRange::new_within(
-            TypeEdge::build_prefix(Prefix::EdgeOwns),
-            TypeEdge::FIXED_WIDTH_ENCODING,
-        ))
+        for (key, _) in snapshot
+            .iterate_writes_range(KeyRange::new_within(
+                TypeEdge::build_prefix(Prefix::EdgeOwns),
+                TypeEdge::FIXED_WIDTH_ENCODING,
+            ))
             .filter(|(_, write)| !matches!(write, Write::Delete))
         {
             let edge = TypeEdge::new(Bytes::Reference(key.byte_array().as_ref()));
@@ -1328,7 +1320,10 @@ impl ThingManager {
         }
 
         for owner_type in snapshot
-            .iterate_writes_range(KeyRange::new_within(TypeEdgeProperty::build_prefix(), TypeEdge::FIXED_WIDTH_ENCODING))
+            .iterate_writes_range(KeyRange::new_within(
+                TypeEdgeProperty::build_prefix(),
+                TypeEdge::FIXED_WIDTH_ENCODING,
+            ))
             .filter_map(|(key, _)| {
                 let bytes = Bytes::reference(key.bytes());
                 if EdgeOverride::<Owns<'static>>::is_decodable_from(bytes.clone()) {
@@ -1375,7 +1370,10 @@ impl ThingManager {
         }
 
         for (key, _) in snapshot
-            .iterate_writes_range(KeyRange::new_within(TypeEdge::build_prefix(Prefix::EdgePlays), TypeEdge::FIXED_WIDTH_ENCODING, ))
+            .iterate_writes_range(KeyRange::new_within(
+                TypeEdge::build_prefix(Prefix::EdgePlays),
+                TypeEdge::FIXED_WIDTH_ENCODING,
+            ))
             .filter(|(_, write)| !matches!(write, Write::Delete))
         {
             let edge = TypeEdge::new(Bytes::Reference(key.byte_array().as_ref()));
@@ -1388,10 +1386,11 @@ impl ThingManager {
             }
         }
 
-        for (key, _) in snapshot.iterate_writes_range(KeyRange::new_within(
-            TypeEdge::build_prefix(Prefix::EdgeRelates),
-            TypeEdge::FIXED_WIDTH_ENCODING,
-        ))
+        for (key, _) in snapshot
+            .iterate_writes_range(KeyRange::new_within(
+                TypeEdge::build_prefix(Prefix::EdgeRelates),
+                TypeEdge::FIXED_WIDTH_ENCODING,
+            ))
             .filter(|(_, write)| !matches!(write, Write::Delete))
         {
             let edge = TypeEdge::new(Bytes::Reference(key.byte_array().as_ref()));
@@ -1405,7 +1404,10 @@ impl ThingManager {
         }
 
         for player_type in snapshot
-            .iterate_writes_range(KeyRange::new_within(TypeEdgeProperty::build_prefix(), TypeEdge::FIXED_WIDTH_ENCODING))
+            .iterate_writes_range(KeyRange::new_within(
+                TypeEdgeProperty::build_prefix(),
+                TypeEdge::FIXED_WIDTH_ENCODING,
+            ))
             .filter_map(|(key, _)| {
                 let bytes = Bytes::reference(key.bytes());
                 if EdgeOverride::<Plays<'static>>::is_decodable_from(bytes.clone()) {
@@ -1428,7 +1430,10 @@ impl ThingManager {
         }
 
         for relation_type in snapshot
-            .iterate_writes_range(KeyRange::new_within(TypeEdgeProperty::build_prefix(), TypeEdge::FIXED_WIDTH_ENCODING))
+            .iterate_writes_range(KeyRange::new_within(
+                TypeEdgeProperty::build_prefix(),
+                TypeEdge::FIXED_WIDTH_ENCODING,
+            ))
             .filter_map(|(key, _)| {
                 let bytes = Bytes::reference(key.bytes());
                 if EdgeOverride::<Relates<'static>>::is_decodable_from(bytes.clone()) {
@@ -1484,14 +1489,12 @@ impl ThingManager {
         OperationTimeValidation::validate_type_instance_is_not_abstract(snapshot, self, attribute_type.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        // TODO: Transform to validation!
-        let type_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
-        if Some(value.value_type()) != type_value_type {
-            return Err(ConceptWriteError::ValueTypeMismatch {
-                expected: type_value_type,
-                provided: value.value_type(),
-            });
-        }
+        OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
+            snapshot,
+            self,
+            attribute_type.clone(),
+            value.value_type(),
+        )?;
 
         OperationTimeValidation::validate_attribute_regex_constraint(
             snapshot,
@@ -1526,97 +1529,88 @@ impl ThingManager {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<Attribute<'a>, ConceptWriteError> {
-        let value_type = attribute_type.get_value_type(snapshot, self.type_manager.as_ref())?;
-        if Some(&value.value_type()) == value_type.as_ref() {
-            let vertex = match value {
-                Value::Boolean(bool) => {
-                    let encoded_boolean = BooleanBytes::build(bool);
-                    self.vertex_generator.create_attribute_boolean(
-                        attribute_type.vertex().type_id_(),
-                        encoded_boolean,
-                        snapshot,
-                    )
-                }
-                Value::Long(long) => {
-                    let encoded_long = LongBytes::build(long);
-                    self.vertex_generator.create_attribute_long(
-                        attribute_type.vertex().type_id_(),
-                        encoded_long,
-                        snapshot,
-                    )
-                }
-                Value::Double(double) => {
-                    let encoded_double = DoubleBytes::build(double);
-                    self.vertex_generator.create_attribute_double(
-                        attribute_type.vertex().type_id_(),
-                        encoded_double,
-                        snapshot,
-                    )
-                }
-                Value::Decimal(decimal) => {
-                    println!("PUT DECIMAL ATTR: {:?}", decimal);
-                    let encoded_decimal = DecimalBytes::build(decimal);
-                    self.vertex_generator.create_attribute_decimal(
-                        attribute_type.vertex().type_id_(),
-                        encoded_decimal,
-                        snapshot,
-                    )
-                }
-                Value::Date(date) => {
-                    let encoded_date = DateBytes::build(date);
-                    self.vertex_generator.create_attribute_date(
-                        attribute_type.vertex().type_id_(),
-                        encoded_date,
-                        snapshot,
-                    )
-                }
-                Value::DateTime(date_time) => {
-                    let encoded_date_time = DateTimeBytes::build(date_time);
-                    self.vertex_generator.create_attribute_date_time(
-                        attribute_type.vertex().type_id_(),
-                        encoded_date_time,
-                        snapshot,
-                    )
-                }
-                Value::DateTimeTZ(date_time_tz) => {
-                    let encoded_date_time_tz = DateTimeTZBytes::build(date_time_tz);
-                    self.vertex_generator.create_attribute_date_time_tz(
-                        attribute_type.vertex().type_id_(),
-                        encoded_date_time_tz,
-                        snapshot,
-                    )
-                }
-                Value::Duration(duration) => {
-                    let encoded_duration = DurationBytes::build(duration);
-                    self.vertex_generator.create_attribute_duration(
-                        attribute_type.vertex().type_id_(),
-                        encoded_duration,
-                        snapshot,
-                    )
-                }
-                Value::String(string) => {
-                    let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
-                    self.vertex_generator
-                        .create_attribute_string(attribute_type.vertex().type_id_(), encoded_string, snapshot)
-                        .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
-                }
-                Value::Struct(struct_) => {
-                    let encoded_struct: StructBytes<'static, BUFFER_KEY_INLINE> = StructBytes::build(&struct_);
-                    let struct_attribute = self
-                        .vertex_generator
-                        .create_attribute_struct(attribute_type.vertex().type_id_(), encoded_struct, snapshot)
-                        .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
-                    self.index_struct_fields(snapshot, &struct_attribute, &struct_)?;
-                    struct_attribute
-                }
-            };
-            Ok(Attribute::new(vertex))
-        } else {
-            Err(ConceptWriteError::ValueTypeMismatch {
-                expected: value_type.as_ref().cloned(),
-                provided: value.value_type(),
-            })
-        }
+        OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
+            snapshot,
+            self,
+            attribute_type.clone(),
+            value.value_type(),
+        )?;
+
+        let vertex = match value {
+            Value::Boolean(bool) => {
+                let encoded_boolean = BooleanBytes::build(bool);
+                self.vertex_generator.create_attribute_boolean(
+                    attribute_type.vertex().type_id_(),
+                    encoded_boolean,
+                    snapshot,
+                )
+            }
+            Value::Long(long) => {
+                let encoded_long = LongBytes::build(long);
+                self.vertex_generator.create_attribute_long(attribute_type.vertex().type_id_(), encoded_long, snapshot)
+            }
+            Value::Double(double) => {
+                let encoded_double = DoubleBytes::build(double);
+                self.vertex_generator.create_attribute_double(
+                    attribute_type.vertex().type_id_(),
+                    encoded_double,
+                    snapshot,
+                )
+            }
+            Value::Decimal(decimal) => {
+                println!("PUT DECIMAL ATTR: {:?}", decimal);
+                let encoded_decimal = DecimalBytes::build(decimal);
+                self.vertex_generator.create_attribute_decimal(
+                    attribute_type.vertex().type_id_(),
+                    encoded_decimal,
+                    snapshot,
+                )
+            }
+            Value::Date(date) => {
+                let encoded_date = DateBytes::build(date);
+                self.vertex_generator.create_attribute_date(attribute_type.vertex().type_id_(), encoded_date, snapshot)
+            }
+            Value::DateTime(date_time) => {
+                let encoded_date_time = DateTimeBytes::build(date_time);
+                self.vertex_generator.create_attribute_date_time(
+                    attribute_type.vertex().type_id_(),
+                    encoded_date_time,
+                    snapshot,
+                )
+            }
+            Value::DateTimeTZ(date_time_tz) => {
+                let encoded_date_time_tz = DateTimeTZBytes::build(date_time_tz);
+                self.vertex_generator.create_attribute_date_time_tz(
+                    attribute_type.vertex().type_id_(),
+                    encoded_date_time_tz,
+                    snapshot,
+                )
+            }
+            Value::Duration(duration) => {
+                let encoded_duration = DurationBytes::build(duration);
+                self.vertex_generator.create_attribute_duration(
+                    attribute_type.vertex().type_id_(),
+                    encoded_duration,
+                    snapshot,
+                )
+            }
+            Value::String(string) => {
+                let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
+                self.vertex_generator
+                    .create_attribute_string(attribute_type.vertex().type_id_(), encoded_string, snapshot)
+                    .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
+            }
+            Value::Struct(struct_) => {
+                let encoded_struct: StructBytes<'static, BUFFER_KEY_INLINE> = StructBytes::build(&struct_);
+                let struct_attribute = self
+                    .vertex_generator
+                    .create_attribute_struct(attribute_type.vertex().type_id_(), encoded_struct, snapshot)
+                    .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
+                self.index_struct_fields(snapshot, &struct_attribute, &struct_)?;
+                struct_attribute
+            }
+        };
+        Ok(Attribute::new(vertex))
     }
 
     fn index_struct_fields(
@@ -1706,21 +1700,16 @@ impl ThingManager {
         count: u64,
     ) -> Result<(), ConceptWriteError> {
         let attribute_type = attribute.type_();
-        let value = attribute.get_value(snapshot, self)?;
+        let value = attribute.get_value(snapshot, self)?.into_owned();
 
-        let type_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
-        if Some(value.value_type()) != type_value_type {
-            return Err(ConceptWriteError::ValueTypeMismatch {
-                expected: type_value_type,
-                provided: value.value_type(),
-            });
-        }
+        OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
+            snapshot,
+            self,
+            attribute_type.clone(),
+            value.value_type(),
+        )?;
 
         let owns = owner.get_type_owns(snapshot, self.type_manager(), attribute_type.clone())?.into_owned();
-
-        // TODO: Decide where to put OperationTimeValidation: to concept api or to thing_manager...
-
-        let value = value.into_owned();
 
         OperationTimeValidation::validate_has_regex_constraint(snapshot, self, owns.clone(), value.clone())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
