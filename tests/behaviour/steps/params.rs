@@ -30,7 +30,6 @@ use encoding::{
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
-use typeql::value::Sign;
 
 use crate::assert::assert_matches;
 

@@ -180,7 +180,9 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     ) -> Result<Prefix, ConceptReadError> {
         let value_type = type_.get_value_type(snapshot, type_manager)?;
         match value_type {
-            None => Err(ConceptReadError::CorruptMissingMandatoryValueType),
+            // It should be valid to try getting a prefix without a value type, so we just return
+            // the first prefix of possible. Should get 0 instances anyway
+            None => Ok(Prefix::VertexAttributeBoolean),
             Some(value_type) => Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category())),
         }
     }
