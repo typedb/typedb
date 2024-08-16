@@ -1313,6 +1313,8 @@ impl TypeManager {
             .create_role_type(snapshot)
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let role_type = RoleType::new(type_vertex);
+        TypeWriter::storage_put_label(snapshot, role_type.clone(), &label);
+        TypeWriter::storage_put_type_vertex_property(snapshot, role_type.clone(), Some(ordering));
         let relates = Relates::new(relation_type, role_type.clone());
 
         let initial_annotations = HashSet::from([Annotation::Cardinality(match cardinality {
@@ -1326,14 +1328,13 @@ impl TypeManager {
             relates.clone().into_owned(),
             initial_annotations,
         ) {
+            TypeWriter::storage_unput_type_vertex_property::<Ordering>(snapshot, role_type.clone(), Some(ordering));
+            TypeWriter::storage_unput_label(snapshot, role_type.clone(), &label);
             TypeWriter::storage_unput_vertex(snapshot, role_type);
             return Err(ConceptWriteError::SchemaValidation { source: error });
         }
 
-        TypeWriter::storage_put_label(snapshot, role_type.clone(), label);
-        TypeWriter::storage_put_type_vertex_property(snapshot, role_type.clone(), Some(ordering));
         TypeWriter::storage_put_edge(snapshot, relates);
-
         Ok(role_type)
     }
 

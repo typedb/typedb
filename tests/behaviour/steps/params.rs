@@ -57,10 +57,10 @@ impl MayError {
                 res.as_ref().unwrap();
             }
             MayError::True => match res.as_ref().unwrap_err() {
-                ConceptWriteError::ConceptRead { source } => panic!("Expected error is ConceptRead {:?}", source),
+                ConceptWriteError::ConceptRead { source } => panic!("Expected logic error, got ConceptRead {:?}", source),
                 ConceptWriteError::SchemaValidation { source } => match source {
                     SchemaValidationError::ConceptRead(source) => {
-                        panic!("Expected error is SchemaValidation::ConceptRead {:?}", source)
+                        panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", source)
                     }
                     _ => {}
                 },

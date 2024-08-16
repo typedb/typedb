@@ -75,6 +75,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     pub(crate) fn storage_unput_vertex(snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+        debug_assert!(snapshot.get::<0>(type_.vertex().as_storage_key().as_reference()).unwrap_or(None).is_some());
         snapshot.unput(type_.vertex().as_storage_key().into_owned_array());
     }
 
@@ -85,6 +86,13 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
             let label_to_vertex_key = LabelToTypeVertexIndex::build(&label);
             snapshot.delete(label_to_vertex_key.into_storage_key().into_owned_array());
         }
+    }
+
+    pub(crate) fn storage_unput_label<T: TypeAPI<'static>>(snapshot: &mut Snapshot, type_: T, label: &Label<'_>) {
+        let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
+        Self::storage_unput_type_vertex_property(snapshot, type_.clone(), Some(label.clone().into_owned()));
+        let vertex_value = ByteArray::from(type_.into_vertex().bytes());
+        snapshot.unput_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
     }
 
     pub(crate) fn storage_put_supertype<T>(snapshot: &mut Snapshot, subtype: T, supertype: T)
@@ -182,10 +190,17 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     pub(crate) fn storage_unput_type_vertex_property<'a, P>(
         snapshot: &mut Snapshot,
         vertex: impl TypeVertexEncoding<'a>,
+        property_opt: Option<P>,
     ) where
         P: TypeVertexPropertyEncoding<'a>,
     {
-        snapshot.unput(P::build_key(vertex).into_storage_key().into_owned_array());
+        let key = P::build_key(vertex).into_storage_key();
+        if let Some(property) = property_opt {
+            let value = property.to_value_bytes().unwrap();
+            snapshot.unput_val(key.into_owned_array(), value.into_array())
+        } else {
+            snapshot.unput(key.into_owned_array())
+        }
     }
 
     pub(crate) fn storage_set_type_edge_overridden<E>(snapshot: &mut Snapshot, edge: E, overridden: E)

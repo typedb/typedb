@@ -291,8 +291,8 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         let buffered = self
             .operations
             .writes_in(range.start().keyspace_id())
-            .any_in_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
-        buffered || (!buffered_only && self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
+            .any_not_deleted_in_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
+        buffered || (!buffered_only && self.iterate_range(range).next().is_some())
     }
 
     fn get_write(&self, key: StorageKeyReference<'_>) -> Option<&Write> {
@@ -414,8 +414,8 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         let buffered = self
             .operations
             .writes_in(range.start().keyspace_id())
-            .any_in_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
-        buffered || (!buffered_only && self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
+            .any_not_deleted_in_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
+        buffered || (!buffered_only && self.iterate_range(range).next().is_some())
     }
 
     fn get_write(&self, key: StorageKeyReference<'_>) -> Option<&Write> {

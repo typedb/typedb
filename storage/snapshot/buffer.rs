@@ -190,7 +190,7 @@ impl WriteBuffer {
     }
 
     // TODO: if the iterate_range becomes zero-copy, then we can eliminate this method
-    pub(crate) fn any_in_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> bool {
+    pub(crate) fn any_not_deleted_in_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> bool {
         let (range_start, range_end, _) = range.into_raw();
         let exclusive_end_bytes = Self::compute_exclusive_end(range_start.as_reference(), &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
