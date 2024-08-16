@@ -91,8 +91,7 @@ impl DatabaseManager {
         })
     }
 
-    pub fn database(&self, name: &str) -> Option<&Database<WALClient>> {
-        self.databases.get(name).map(|arc| &**arc)
+    pub fn database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
+        self.databases.get(name).map(|arc| arc.clone())
     }
-
 }

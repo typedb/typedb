@@ -27,6 +27,7 @@ use storage::{
 
 use crate::Database;
 
+#[derive(Debug)]
 pub struct TransactionRead<D> {
     pub snapshot: ReadSnapshot<D>,
     pub type_manager: Arc<TypeManager>,
@@ -67,6 +68,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
     }
 }
 
+#[derive(Debug)]
 pub struct TransactionWrite<D> {
     pub snapshot: WriteSnapshot<D>,
     pub type_manager: Arc<TypeManager>,
@@ -129,6 +131,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 }
 
+#[derive(Debug)]
 pub struct TransactionSchema<D> {
     pub snapshot: SchemaSnapshot<D>,
     pub type_manager: Arc<TypeManager>,

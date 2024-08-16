@@ -4,30 +4,16 @@
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library")
-package(default_visibility = ["//visibility:public",])
+
+package(default_visibility = ["//visibility:public"])
 
 rust_library(
-    name = "server",
+    name = "options",
+    crate_root = "options.rs",
     srcs = glob([
         "*.rs",
-        "service/*.rs",
     ]),
-    deps = [
-        "//common/bytes",
-        "//common/error",
-        "//database",
-        "//storage",
-        "//resource",
-        "@vaticle_typedb_protocol//grpc/rust:typedb_protocol",
-
-        "@crates//:itertools",
-        "@crates//:prost",
-        "@crates//:tokio",
-        "@crates//:tokio-stream",
-        "@crates//:tonic",
-        "@crates//:tonic-types",
-        "@crates//:tracing",
-    ]
+    deps = []
 )
 
 checkstyle_test(

@@ -10,6 +10,7 @@ use std::{
     path::{Path, PathBuf}
     ,
 };
+use tonic::transport::Server;
 
 use database::database_manager::DatabaseManager;
 use database::DatabaseOpenError;
@@ -17,12 +18,12 @@ use database::DatabaseOpenError;
 use crate::service::typedb_service::TypeDBService;
 
 #[derive(Debug)]
-pub struct Server {
+pub struct Server2 {
     data_directory: PathBuf,
     typedb_service: Option<TypeDBService>,
 }
 
-impl Server {
+impl Server2 {
     pub fn open(data_directory: impl AsRef<Path>) -> Result<Self, ServerOpenError> {
         use ServerOpenError::{CouldNotCreateDataDirectory, NotADirectory};
         let data_directory = data_directory.as_ref();
@@ -52,6 +53,7 @@ impl Server {
 
         // TODO: could also construct in Server and await here only
         Server::builder()
+            .http2_keepalive_interval()
             .add_service(self.typedb_service.take().unwrap())
             .serve(address)
             .await?;

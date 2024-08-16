@@ -92,6 +92,7 @@ use crate::{
 
 pub mod validation;
 
+#[derive(Debug)]
 pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
     type_manager: Arc<TypeManager>,

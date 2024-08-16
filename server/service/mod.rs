@@ -6,4 +6,4 @@
 
 pub(crate) mod typedb_service;
 pub(crate) mod transaction_service;
-mod connection_service;
+mod error;

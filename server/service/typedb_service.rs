@@ -4,15 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashMap;
 use std::pin::Pin;
+use std::sync::Arc;
 
 use tokio::sync::mpsc::channel;
 use tokio_stream::StreamExt;
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response, Status, Streaming};
+use tonic::{Code, Request, Response, Status, Streaming};
 use typedb_protocol;
 use typedb_protocol::connection::pulse::{Req, Res};
-use typedb_protocol::transaction::Client;
+use typedb_protocol::transaction::{Client, Server};
 
 use database::database_manager::DatabaseManager;
 
@@ -20,12 +22,14 @@ use crate::service::transaction_service::TransactionService;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
-    database_manager: DatabaseManager,
+    database_manager: Arc<DatabaseManager>,
+
+    // map of connection ID to ConnectionService
 }
 
 impl TypeDBService {
     pub(crate) fn new(database_manager: DatabaseManager) -> Self {
-        Self { database_manager }
+        Self { database_manager: Arc::new(database_manager) }
     }
 
     pub(crate) fn database_manager(&self) -> &DatabaseManager {
@@ -74,17 +78,14 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
     type transactionStream = Pin<Box<ReceiverStream<Result<typedb_protocol::transaction::Server, tonic::Status>>>>;
 
     async fn transaction(&self, request: Request<Streaming<Client>>) -> Result<Response<Self::transactionStream>, Status> {
-        // TODO: we don't know yet for which database we have the transaction for
-        //       we also don't know which connection this is for??
-
         //       therefore we need to hold onto the DatabaseManager as a reference or by Arc in the Txn Service??
         let mut request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(10);
-        let mut service = TransactionService::new(request_stream, response_sender, );
+        let mut service = TransactionService::new(request_stream, response_sender, self.database_manager.clone());
         tokio::spawn(async move {
             service.listen().await
         });
-        todo!()
-        // Ok(Box::pin(ReceiverStream::new(response_receiver)))
+        let stream: ReceiverStream<Result<Server, Status>> = ReceiverStream::new(response_receiver);
+        Ok(Response::new(Box::pin(stream)))
     }
 }
