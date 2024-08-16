@@ -25,6 +25,7 @@ use crate::{
         role_type::RoleType, Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
+use crate::type_::relation_type::RelationType;
 
 pub struct OperationTimeValidation {}
 
@@ -61,6 +62,27 @@ impl OperationTimeValidation {
         } else {
             Err(DataValidationError::CannotAddPlayerInstanceForNotPlayedRoleType(
                 get_label_or_data_err(snapshot, &thing_manager.type_manager, object_type)?,
+                get_label_or_data_err(snapshot, &thing_manager.type_manager, role_type)?,
+            ))
+        }
+    }
+
+    pub(crate) fn validate_relation_type_relates_role_type(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation_type: RelationType<'_>,
+        role_type: RoleType<'_>,
+    ) -> Result<(), DataValidationError> {
+        let has_relates = relation_type
+            .get_relates(snapshot, &thing_manager.type_manager)
+            .map_err(DataValidationError::ConceptRead)?
+            .into_iter()
+            .any(|relates| &relates.role() == &role_type.clone());
+        if has_relates {
+            Ok(())
+        } else {
+            Err(DataValidationError::CannotAddPlayerInstanceForNotRelatedRoleType(
+                get_label_or_data_err(snapshot, &thing_manager.type_manager, relation_type)?,
                 get_label_or_data_err(snapshot, &thing_manager.type_manager, role_type)?,
             ))
         }

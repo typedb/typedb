@@ -153,6 +153,14 @@ impl<'a> Relation<'a> {
             return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
         }
 
+        OperationTimeValidation::validate_relation_type_relates_role_type(
+            snapshot,
+            thing_manager,
+            self.type_(),
+            role_type.clone(),
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
         OperationTimeValidation::validate_object_type_plays_role_type(
             snapshot,
             thing_manager,

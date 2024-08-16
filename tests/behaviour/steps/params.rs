@@ -29,6 +29,7 @@ use encoding::{
     },
 };
 use itertools::Itertools;
+use typeql::value::Sign;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::assert::assert_matches;
@@ -421,13 +422,14 @@ impl Value {
                     (self.raw_value.as_str(), "0")
                 };
 
-                let integer_parsed = integer.trim().parse().unwrap();
+                let integer_parsed: i64 = integer.trim().parse().unwrap();
+                let integer_parsed_abs = integer_parsed.abs();
                 let fractional_parsed = Self::parse_decimal_fraction_part(fractional);
-                if integer.starts_with('-') && integer_parsed == 0 {
-                    TypeDBValue::Decimal(Decimal::new(-1, 0) + Decimal::new(0, fractional_parsed))
-                } else {
-                    TypeDBValue::Decimal(Decimal::new(integer_parsed, fractional_parsed))
-                }
+
+                TypeDBValue::Decimal(match integer.starts_with('-') {
+                    false => Decimal::new(integer_parsed_abs, fractional_parsed),
+                    true => Decimal::new(0, 0) - Decimal::new(integer_parsed_abs, fractional_parsed),
+                })
             }
             TypeDBValueType::Date => {
                 TypeDBValue::Date(NaiveDate::parse_from_str(&self.raw_value, Self::DATE_FORMAT).unwrap())

@@ -32,6 +32,7 @@ pub enum DataValidationError {
     CannotCreateInstanceOfAbstractType(Label<'static>),
     CannotAddOwnerInstanceForNotOwnedAttributeType(Label<'static>, Label<'static>),
     CannotAddPlayerInstanceForNotPlayedRoleType(Label<'static>, Label<'static>),
+    CannotAddPlayerInstanceForNotRelatedRoleType(Label<'static>, Label<'static>),
     PlayerViolatesDistinctRelatesConstraint {
         role_type: RoleType<'static>,
         player: Object<'static>,
@@ -124,6 +125,7 @@ impl Error for DataValidationError {
             Self::CannotCreateInstanceOfAbstractType(_) => None,
             Self::CannotAddOwnerInstanceForNotOwnedAttributeType(_, _) => None,
             Self::CannotAddPlayerInstanceForNotPlayedRoleType(_, _) => None,
+            Self::CannotAddPlayerInstanceForNotRelatedRoleType(_, _) => None,
             Self::PlayerViolatesDistinctRelatesConstraint { .. } => None,
             Self::AttributeViolatesDistinctOwnsConstraint { .. } => None,
             Self::AttributeViolatesRegexConstraint { .. } => None,

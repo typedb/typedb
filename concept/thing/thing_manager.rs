@@ -1554,6 +1554,7 @@ impl ThingManager {
                     )
                 }
                 Value::Decimal(decimal) => {
+                    println!("PUT DECIMAL ATTR: {:?}", decimal);
                     let encoded_decimal = DecimalBytes::build(decimal);
                     self.vertex_generator.create_attribute_decimal(
                         attribute_type.vertex().type_id_(),
