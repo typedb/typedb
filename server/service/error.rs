@@ -4,17 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 use tonic::{Code, Status};
 use tonic_types::{ErrorDetails, StatusExt};
-use error::TypeDBError;
+use error::{typedb_error, TypeDBError};
 
 
 pub(crate) enum ProtocolError {
     MissingField { name: &'static str, description: &'static str },
     TransactionAlreadyOpen {},
     TransactionClosed {},
+    UnrecognisedTransactionType { enum_variant : i32 },
 }
 
 impl Into<Status> for ProtocolError {
@@ -36,29 +38,16 @@ impl Into<Status> for ProtocolError {
             Self::TransactionClosed {} => {
                 Status::new(Code::InvalidArgument, "Transaction already closed, no further operations possible.")
             }
-        }
-    }
-}
-
-#[derive(Debug)]
-pub(crate) enum TransactionServiceError {
-    UnrecognisedTransactionType { enum_variant: i32 },
-    DatabaseNotFound { name: String },
-    CannotCommitReadTransaction {},
-}
-
-impl fmt::Display for TransactionServiceError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(self, f)
-    }
-}
-
-impl Error for TransactionServiceError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::UnrecognisedTransactionType { .. }
-            | Self::CannotCommitReadTransaction { .. }
-            | Self::DatabaseNotFound { .. } => None,
+            ProtocolError::UnrecognisedTransactionType { enum_variant, .. } => {
+                Status::with_error_details(
+                    Code::InvalidArgument,
+                    "Bad request",
+                    ErrorDetails::with_bad_request_violation(
+                        "transaction_type",
+                        format!("Unrecognised transaction type variant: {enum_variant}. Check client-server compatibility?")
+                    )
+                )
+            }
         }
     }
 }
@@ -69,14 +58,22 @@ trait StatusConvertible {
 
 impl<T: TypeDBError> StatusConvertible for T {
     fn into_status(self) -> Status {
-        let details = ErrorDetails::new();
-
         let root_source = self.root_source_typedb_error();
-        root_source.();
+        let code = root_source.code();
+        let domain = code.domain();
+        let mut metadata = HashMap::new();
+        metadata.insert("description", root_source.format_description());
+        let mut details = ErrorDetails::with_error_info(code, domain, metadata);
+        let mut stack_trace = Vec::with_capacity(4); // definitely non-zero!
 
+        let mut error = self;
+        stack_trace.push(error.format_description());
+        while let Some(source) = error.source_typedb_error() {
+            error = source;
+            stack_trace.push(error.format_description());
+        }
+        details.set_debug_info(stack_trace, "");
+
+        Status::with_error_details(Code::InvalidArgument, "Request generated error", details)
     }
-}
-
-impl<T: StatusConvertible> Into<Status> for T {
-
 }

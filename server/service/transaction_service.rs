@@ -19,6 +19,7 @@ use bytes::util::HexBytesFormatter;
 
 use database::database_manager::DatabaseManager;
 use database::transaction::{TransactionRead, TransactionSchema, TransactionWrite};
+use error::typedb_error;
 use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
 use storage::durability_client::WALClient;
 
@@ -118,7 +119,7 @@ impl TransactionService {
                 }
             }
             (true, typedb_protocol::transaction::req::Req::OpenReq(_)) => {
-                return Err(ProtocolError::TransactionAlreadyOpen {}.into())
+                return Err(ProtocolError::TransactionAlreadyOpen {}.into());
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
                 // TODO: compile query, create executor, respond with initial message and then await initial answers to send
@@ -146,11 +147,11 @@ impl TransactionService {
         }
 
         let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type)
-            .map_err(|err| TransactionServiceError::UnrecognisedTransactionType { enum_variant: open_req.r#type })?;
+            .map_err(|err| ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into())?;
 
         let database_name = open_req.database;
         let database = self.database_manager.database(database_name.as_ref())
-            .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name })?;
+            .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name }.into_status())?;
 
         let transaction = match transaction_type {
             Type::Read => {
@@ -168,12 +169,12 @@ impl TransactionService {
         Ok(())
     }
 
-    fn handle_commit(&mut self, commit_req:  typedb_protocol::transaction::commit::Req) -> Result<(), Status> {
+    fn handle_commit(&mut self, commit_req: typedb_protocol::transaction::commit::Req) -> Result<(), Status> {
         match self.transaction.take().unwrap() {
-            Transaction::Read(_) => {
-
-            }
+            Transaction::Read(_) => Err(TransactionServiceError::CannotCommitReadTransaction {}.into_status()),
             Transaction::Write(transaction) => {
+                // TODO: if we use the stack trace of each of these, we'll end up with a tree!
+                //       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?
                 let result = transaction.commit();
             }
             Transaction::Schema(transaction) => {
@@ -191,3 +192,10 @@ impl TransactionService {
         }
     }
 }
+
+typedb_error!(
+    pub(crate) TransactionServiceError(domain = "Service", prefix = "TSV") {
+        DatabaseNotFound(1, "Database '{name}' not found.", name = String),
+        CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
+    }
+);

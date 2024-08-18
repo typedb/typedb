@@ -19,11 +19,13 @@ use concept::{
         TypeManager,
     },
 };
+use encoding::EncodingKeyspace::Schema;
 use function::{function_manager::FunctionManager, FunctionError};
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot},
 };
+use storage::snapshot::SnapshotError;
 
 use crate::Database;
 
@@ -116,11 +118,11 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         }
     }
 
-    pub fn commit(mut self) -> Result<(), Vec<ConceptWriteError>> {
-        self.thing_manager.finalise(&mut self.snapshot)?;
+    pub fn commit(mut self) -> Result<(), DataCommitError> {
+        self.thing_manager.finalise(&mut self.snapshot)
+            .map_err(|errs| DataCommitError::ConceptWriteErrors { source: errs })?;
         drop(self.type_manager);
-        // TODO: pass error up
-        self.snapshot.commit().unwrap_or_else(|_| panic!("Failed to commit snapshot"));
+        self.snapshot.commit().map_err(|err| SchemaCommitError::SnapshotError { source: err })?;
         Ok(())
     }
 
@@ -129,6 +131,12 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         drop(self.type_manager);
         self.snapshot.close_resources();
     }
+}
+
+// TODO this should be a TypeDB error, although it can contain many errors!?
+pub enum DataCommitError {
+    ConceptWriteErrors { source: Vec<ConceptWriteError> },
+    SnapshotError { source: SnapshotError },
 }
 
 #[derive(Debug)]
@@ -197,7 +205,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         // 2. flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
         thing_statistics.durably_write(&self.database.storage).map_err(|error| Statistics { source: error })?;
 
-        let sequence_number = self.snapshot.commit().expect("Failed to commit snapshot");
+        let sequence_number = self.snapshot.commit()
+            .map_err(|err| SchemaCommitError::SnapshotError { source: err })?;
 
         // `None` means empty commit
         if let Some(sequence_number) = sequence_number {
@@ -231,6 +240,7 @@ pub enum SchemaCommitError {
     TypeCacheUpdate { source: TypeCacheCreateError },
     Statistics { source: StatisticsError },
     FunctionError { source: FunctionError },
+    SnapshotError { source: SnapshotError }
 }
 
 impl fmt::Display for SchemaCommitError {
