@@ -126,6 +126,10 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         Ok(())
     }
 
+    pub fn rollback(&mut self) {
+        self.snapshot.clear()
+    }
+
     pub fn close(self) {
         drop(self.thing_manager);
         drop(self.type_manager);
@@ -138,6 +142,9 @@ pub enum DataCommitError {
     ConceptWriteErrors { source: Vec<ConceptWriteError> },
     SnapshotError { source: SnapshotError },
 }
+
+// TODO: when we use typedb_error!, how do we pring stack trace? If we use the stack trace of each of these, we'll end up with a tree!
+//       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?
 
 #[derive(Debug)]
 pub struct TransactionSchema<D> {
@@ -225,6 +232,10 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         *schema_commit_guard = schema;
 
         Ok(())
+    }
+
+    pub fn rollback(&mut self) {
+        self.snapshot.clear()
     }
 
     pub fn close(self) {

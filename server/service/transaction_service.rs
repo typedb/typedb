@@ -5,6 +5,8 @@
  */
 
 use std::future::Future;
+use std::ops::ControlFlow;
+use std::ops::ControlFlow::{Break, Continue};
 use std::sync::Arc;
 
 use tokio::sync::mpsc::error::SendError;
@@ -15,15 +17,16 @@ use tonic_types::{ErrorDetails, FieldViolation, StatusExt};
 use tracing::{event, Level};
 use typedb_protocol::Server;
 use typedb_protocol::transaction::{Client, Req, Type};
-use bytes::util::HexBytesFormatter;
 
+use bytes::util::HexBytesFormatter;
 use database::database_manager::DatabaseManager;
-use database::transaction::{TransactionRead, TransactionSchema, TransactionWrite};
+use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use error::typedb_error;
 use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
 use storage::durability_client::WALClient;
+use storage::snapshot::ReadableSnapshot;
 
-use crate::service::error::{ProtocolError, TransactionServiceError};
+use crate::service::error::ProtocolError;
 
 // TODO: where does this belong?
 #[derive(Debug)]
@@ -33,6 +36,16 @@ pub enum Transaction {
     Schema(TransactionSchema<WALClient>),
 }
 
+impl Transaction {
+    pub fn readable_snapshot(&self) -> &dyn ReadableSnapshot {
+        match self {
+            Transaction::Read(transaction) => &transaction.snapshot,
+            Transaction::Write(transaction) => &transaction.snapshot,
+            Transaction::Schema(transaction) => &transaction.snapshot
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct TransactionService {
     database_manager: Arc<DatabaseManager>,
@@ -40,7 +53,6 @@ pub(crate) struct TransactionService {
     request_stream: Streaming<Client>,
     response_sender: Sender<Result<typedb_protocol::transaction::Server, Status>>,
 
-    is_open: bool,
     transaction_timeout_millis: Option<u64>,
     prefetch_size: Option<u64>,
     network_latency_millis: Option<u64>,
@@ -64,7 +76,6 @@ impl TransactionService {
             request_stream,
             response_sender,
 
-            is_open: false,
             transaction_timeout_millis: None,
             prefetch_size: None,
             network_latency_millis: None,
@@ -110,11 +121,14 @@ impl TransactionService {
         }
     }
 
-    fn handle_request(&mut self, request_id: &[u8], req: typedb_protocol::transaction::req::Req) -> Result<(), Status> {
-        match (self.is_open, req) {
+    fn handle_request(&mut self, request_id: &[u8], req: typedb_protocol::transaction::req::Req) -> Result<ControlFlow<(), ()>, Status> {
+        match (self.transaction.is_some(), req) {
             (false, typedb_protocol::transaction::req::Req::OpenReq(open_req)) => {
                 match self.handle_open(open_req) {
-                    Ok(_) => event!(Level::TRACE, "Transaction opened, request ID: {:?}", HexBytesFormatter(request_id)),
+                    Ok(_) => {
+                        event!(Level::TRACE, "Transaction opened, request ID: {:?}", HexBytesFormatter(request_id));
+                        Ok(Continue(()))
+                    }
                     Err(status) => return Err(status),
                 }
             }
@@ -122,21 +136,28 @@ impl TransactionService {
                 return Err(ProtocolError::TransactionAlreadyOpen {}.into());
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
-                // TODO: compile query, create executor, respond with initial message and then await initial answers to send
+                self.handle_query(query_req)?;
+                Ok(Continue(()))
             }
             (true, typedb_protocol::transaction::req::Req::StreamReq(stream_req)) => {
-                //
+                // TODO: get iterator from map of request id -> iterator, and issue next set of responses.
+                // todo!()
+                Ok(Continue(()))
             }
             (true, typedb_protocol::transaction::req::Req::CommitReq(commit_req)) => {
-                self.handle_commit(commit_req)
+                self.handle_commit(commit_req)?;
+                Ok(Continue(()))
             }
-            (true, typedb_protocol::transaction::req::Req::RollbackReq(rollback_req)) => {}
-            (true, typedb_protocol::transaction::req::Req::CloseReq(close_req)) => {}
-            (false, _) => {
-                Err(ProtocolError::TransactionClosed {})
+            (true, typedb_protocol::transaction::req::Req::RollbackReq(rollback_req)) => {
+                self.handle_rollback(rollback_req)?;
+                Ok(Continue(()))
             }
+            (true, typedb_protocol::transaction::req::Req::CloseReq(close_req)) => {
+                self.handle_close(close_req)?;
+                Ok(Break(()))
+            }
+            (false, _) => return Err(ProtocolError::TransactionClosed {}.into()),
         }
-        Ok(())
     }
 
     fn handle_open(&mut self, open_req: typedb_protocol::transaction::open::Req) -> Result<(), Status> {
@@ -154,33 +175,55 @@ impl TransactionService {
             .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name }.into_status())?;
 
         let transaction = match transaction_type {
-            Type::Read => {
-                Transaction::Read(TransactionRead::open(database))
-            }
-            Type::Write => {
-                Transaction::Write(TransactionWrite::open(database))
-            }
-            Type::Schema => {
-                Transaction::Schema(TransactionSchema::open(database))
-            }
+            Type::Read => Transaction::Read(TransactionRead::open(database)),
+            Type::Write => Transaction::Write(TransactionWrite::open(database)),
+            Type::Schema => Transaction::Schema(TransactionSchema::open(database)),
         };
         self.transaction = Some(transaction);
-        self.is_open = true;
         Ok(())
     }
 
     fn handle_commit(&mut self, commit_req: typedb_protocol::transaction::commit::Req) -> Result<(), Status> {
-        match self.transaction.take().unwrap() {
+        let result = match self.transaction.take().unwrap() {
             Transaction::Read(_) => Err(TransactionServiceError::CannotCommitReadTransaction {}.into_status()),
             Transaction::Write(transaction) => {
-                // TODO: if we use the stack trace of each of these, we'll end up with a tree!
-                //       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?
-                let result = transaction.commit();
+                transaction.commit()
+                    .map_err(|err| TransactionServiceError::DataCommitFailed { source: err }.into())
             }
             Transaction::Schema(transaction) => {
-                let result = transaction.commit();
+                transaction.commit()
+                    .map_err(|err| TransactionServiceError::SchemaCommitFailed { source: err }.into())
             }
-        }
+        };
+        result
+    }
+
+    fn handle_rollback(&mut self, rollback_req: typedb_protocol::transaction::rollback::Req) -> Result<(), Status> {
+        match self.transaction.take().unwrap() {
+            Transaction::Read(_) => return Err(TransactionServiceError::CannotRollbackReadTransaction {}.into_status()),
+            Transaction::Write(mut transaction) => transaction.rollback(),
+            Transaction::Schema(mut transaction) => transaction.rollback(),
+        };
+        Ok(())
+    }
+
+    fn handle_close(&mut self, close_req: typedb_protocol::transaction::close::Req) -> Result<(), Status> {
+        match self.transaction.take().unwrap() {
+            Transaction::Read(transaction) => transaction.close(),
+            Transaction::Write(transaction) => transaction.close(),
+            Transaction::Schema(transaction) => transaction.close(),
+        };
+        Ok(())
+    }
+
+    fn handle_query(&mut self, query_req: typedb_protocol::query::Req) -> Result<(), Status> {
+        // TODO: compile query, create executor, respond with initial message and then await initial answers to send
+        let query_string = query_req.query;
+        let query_options = query_req.options;
+
+        let transaction = self.transaction.as_ref().unwrap();
+        // transaction.readable_snapshot();
+        todo!()
     }
 
     async fn send_err(&mut self, err: Status) {
@@ -197,5 +240,8 @@ typedb_error!(
     pub(crate) TransactionServiceError(domain = "Service", prefix = "TSV") {
         DatabaseNotFound(1, "Database '{name}' not found.", name = String),
         CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
+        CannotRollbackReadTransaction(3, "Read transactions cannot be rolled back, since they never contain writes."),
+        DataCommitFailed(4, "Data transaction commit failed.", source = DataCommitError), // TODO: these should be typedb_source
+        SchemaCommitFailed(5, "Schema transaction commit failed.", source = SchemaCommitError),
     }
 );

@@ -83,6 +83,13 @@ impl OperationsBuffer {
             buffer.iterate_range(KeyRange::new_unbounded(Bytes::Array(ByteArray::<BUFFER_KEY_INLINE>::empty())))
         })
     }
+
+    pub fn clear(&mut self) {
+        self.locks.clear();
+        for buffer in self.write_buffers.iter_mut() {
+            buffer.clear();
+        }
+    }
 }
 
 impl<'a> IntoIterator for &'a OperationsBuffer {
@@ -231,6 +238,10 @@ impl WriteBuffer {
 
     pub fn get_write(&self, key: ByteReference<'_>) -> Option<&Write> {
         self.writes.get(key.bytes())
+    }
+
+    pub fn clear(&mut self) {
+        self.writes.clear()
     }
 }
 
