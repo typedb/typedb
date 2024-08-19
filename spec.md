@@ -3,67 +3,110 @@
 ## Notation and terminology
 
 * **TT** — transaction time
+  * _Interpretation_: any time within transaction
 * **CT** — commit time
-* $`a : A`$ — $a$ is of type $A$ (note capitalization of types). 
+  * _Interpretation_: time of commit to database
+* **tvar** — type variable
+* **dvar** - data variables
+  * _Note_: **tvar**s and **dvar**s are uniquely distinguish everywhere in TypeQL
+* $`a : A`$ — $a$ is of type $A$ (types always capitalized). 
   * _Example_: $p$ is of type $\mathsf{Person}$
+   _Special case_: $a :! A$ ("user-defined type" a.k.a. direct type).
 * $`a(x, y, ...) : A(I,J,...)`$ — $a$ is an element in type "$`A`$ of $`x`$ (as $`I`$), and $`y`$ (as $`J`$), and ..." (i.e. $a$ depends on $x$ through interface $I$).
-  * _Example_: $m$ is of type $\mathsf{Marriage}$ of $p$ (as $\mathsf{Spouse}$) and $q$ (as $\mathsf{Spouse}$).
   * _Alternative notation_: $`a : A(x\to I,y\to J,...)`$. 
+  * _Example_: $m$ is of type $\mathsf{Marriage}$ of $p$ (as $\mathsf{Spouse}$) and $q$ (as $\mathsf{Spouse}$).
   * _Unfilled role slots_: $`a(\emptyset,z,...) : A(I,J)`$ (or $`m : A(\emptyset \to I, z \to J, ...)`$ using alt. notn.)
+  * _Role cardinality_: $|a|_I$ counts $a \to I$ with $a \neq \emptyset$
 * $`A(I, J, ...) : \mathbf{Type}`$ —  $A$ is a type with associated (interface) types $`I, J, ...`$. 
+  * _Alternative notation_: $`A : \mathbf{Type}(I,J,...)`$. 
   * _Example_: $`\mathsf{Person}`$ is a type.
   * _Example_: $`\mathsf{Marriage(Spouse)}`$ is a type with associated type $`\mathsf{Spouse}`$.
   * _Variations_: may replace $\textbf{Type}$ by $\mathbf{Ent}, \mathbf{Rel}, \mathbf{Att}$, or $\mathbf{Obj} = \mathbf{Ent} + \mathbf{Att}$.
-* $`A < B`$ — $A$ subtypes $B$ (this is transitive). Variations (both imply $`<`$):
-  * $`<_!`$ ("direct subtype"). _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
-  * $`<_I`$ ("interface implementation"). _Example_: $`\mathsf{Person} <_I \mathsf{Spouse}`$
+  * _Compositionality_: $A(I) : \mathbf{Type}$ and $A(J) : \mathbf{Type}$ imply $A(I,J) : \mathbf{Type}$
+* $`A < B`$ — $A$ casts into $B$ (this is transitive). Variations (both imply $`<`$):
+  * _Special case_: $`<_!`$ ("user-defined cast" a.k.a. direct cast).
+    *  _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
+    *  _Example_: $`\mathsf{Child} <_! \mathsf{Nameowner}`$
+    *  _Example_: $`\mathsf{Person} <_! \mathsf{Spouse}`$
 * $`|A|`$ — Cardinality of $A$
 * $`[A]`$ — Listtype of $A$ (contains lists $`[a_0, a_1, ...]`$ of $`a_i : A`$)
-* $`[\![\texttt{code}]\!] = \alpha`$ — mathematical meaning of "code" is "$`\alpha`$"
+* $`A + B$ — Sum type
+* $`A \times B$ — Product type
 
 
 ## Schema
 
-### Types
+_Pertaining to defining and manipulating TypeDB schemas_
 
-Topics: kinds, sub, dependencies, as, lists, 
+### Define
+
+* `define` statement fall into four categories:
+  * schema type defs
+  * constraints
+  * value type defs
+  * function defs
+* `define` statements can be chained
+* **TBD**: preceding `define` with `match`, and using results for **tvar**s 
+
+#### Type defs
 
 * $`[\![\texttt{entity A}]\!] = A : \mathbf{Ent}`$
 * $`[\![\texttt{entity A sub B}]\!] = A : \mathbf{Ent}, A < B`$
-* $`[\![\texttt{A sub B}]\!] = A : \mathbf{Ent}`$
 
-### Values
+#### Constraints
 
-Topics: primitives, structs, ...
+#### Struct defs
 
-### Constraints
+#### Functions defs
 
-Topics: cardinality, functionality (key, unique), abstractness, ...
+kinds of functions, function dependency
 
-## Data
+### Undefine
 
-### Matching
+#### Type defs
+
+#### Constraints
+
+#### Struct defs
+
+#### Functions defs
+
+### Redefine
+
+#### Type defs
+
+#### Constraints
+
+#### Struct defs
+
+#### Functions defs
+
+## Data languages
+
+_Pertaining to reading and writing data_
+
+### Match
 
 Topics: match semantics
 
-### Manipulating
+### Insert
 
-Topics: insert, delete, update, put
+### Delete
 
-### Functions
+### Update
 
-Topics: definition, calling, recursion semantics
+### Put
+
+### Function semantics
 
 ## Pipelines
 
-### Clauses
+### Clauses vs Operators
 
 Topics: Match, Manipulation, Fetch, ...
 
-### Operators
-
-Topics: Select, Limit, Offset, ...
-
 ## Concurrency
 
+## Sharding
 
+(TBD)
