@@ -6,11 +6,14 @@
 * **CT** — commit time
 * $`a : A`$ — $a$ is of type $A$ (note capitalization of types). 
   * _Example_: $p$ is of type $\mathsf{Person}$
-* $`a(x, y, ...) : A(I,J,...)`$ — $a$ is an element in type "$`A`$ of $`x`$ (as $`I`$), and $`y`$ (as $`J`$), and ..." (i.e. $a$ depends on $x$ through interface $I$). Alternative notation: $`a : A(x\to I,y\to J,...)`$. 
+* $`a(x, y, ...) : A(I,J,...)`$ — $a$ is an element in type "$`A`$ of $`x`$ (as $`I`$), and $`y`$ (as $`J`$), and ..." (i.e. $a$ depends on $x$ through interface $I$).
   * _Example_: $m$ is of type $\mathsf{Marriage}$ of $p$ (as $\mathsf{Spouse}$) and $q$ (as $\mathsf{Spouse}$).
-* $`A(I, J, ...) : \mathbf{Type}`$ —  $A$ is a type with associated (interface) types $`I, J, ...`$. More specifically, may replace $\mathbf{Type}$ by $\mathbf{Ent}, \mathbf{Rel}, \mathbf{Att}$. Set $\mathbf{Obj} = \mathbf{Ent} + \mathbf{Att}$. 
+  * _Alternative notation_: $`a : A(x\to I,y\to J,...)`$. 
+  * _Unfilled role slots_: $`a(\emptyset,z,...) : A(I,J)`$ (or $`m : A(\emptyset \to I, z \to J, ...)`$ using alt. notn.)
+* $`A(I, J, ...) : \mathbf{Type}`$ —  $A$ is a type with associated (interface) types $`I, J, ...`$. 
   * _Example_: $`\mathsf{Person}`$ is a type.
   * _Example_: $`\mathsf{Marriage(Spouse)}`$ is a type with associated type $`\mathsf{Spouse}`$.
+  * _Variations_: may replace $\textbf{Type}$ by $\mathbf{Ent}, \mathbf{Rel}, \mathbf{Att}$, or $\mathbf{Obj} = \mathbf{Ent} + \mathbf{Att}$.
 * $`A < B`$ — $A$ subtypes $B$ (this is transitive). Variations (both imply $`<`$):
   * $`<_!`$ ("direct subtype"). _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
   * $`<_I`$ ("interface implementation"). _Example_: $`\mathsf{Person} <_I \mathsf{Spouse}`$
