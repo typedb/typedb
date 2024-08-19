@@ -12,6 +12,7 @@ use crate::{
     Keyable,
 };
 
+#[derive(Debug)]
 pub struct DefinitionKeyGenerator {
     next_struct: DefinitionKeyAllocator,
     next_function: DefinitionKeyAllocator,

@@ -5,12 +5,11 @@
  */
 
 use std::collections::HashMap;
-use std::error::Error;
-use std::fmt;
+
 use tonic::{Code, Status};
 use tonic_types::{ErrorDetails, StatusExt};
-use error::{typedb_error, TypeDBError};
 
+use error::TypeDBError;
 
 pub(crate) enum ProtocolError {
     MissingField { name: &'static str, description: &'static str },
@@ -19,8 +18,8 @@ pub(crate) enum ProtocolError {
     UnrecognisedTransactionType { enum_variant : i32 },
 }
 
-impl Into<Status> for ProtocolError {
-    fn into(self) -> Status {
+impl StatusConvertible for ProtocolError {
+    fn into_status(self) -> Status {
         match self {
             Self::MissingField { name, description } => {
                 Status::with_error_details(
@@ -52,7 +51,7 @@ impl Into<Status> for ProtocolError {
     }
 }
 
-trait StatusConvertible {
+pub(crate) trait StatusConvertible {
     fn into_status(self) -> Status;
 }
 
@@ -60,13 +59,13 @@ impl<T: TypeDBError> StatusConvertible for T {
     fn into_status(self) -> Status {
         let root_source = self.root_source_typedb_error();
         let code = root_source.code();
-        let domain = code.domain();
+        let domain = root_source.domain();
         let mut metadata = HashMap::new();
-        metadata.insert("description", root_source.format_description());
+        metadata.insert(String::from("description"), root_source.format_description());
         let mut details = ErrorDetails::with_error_info(code, domain, metadata);
         let mut stack_trace = Vec::with_capacity(4); // definitely non-zero!
 
-        let mut error = self;
+        let mut error: &dyn TypeDBError = &self;
         stack_trace.push(error.format_description());
         while let Some(source) = error.source_typedb_error() {
             error = source;

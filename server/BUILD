@@ -16,8 +16,11 @@ rust_library(
         "//common/bytes",
         "//common/error",
         "//database",
+        "//query",
         "//storage",
         "//resource",
+
+        "@vaticle_typeql//rust:typeql",
         "@vaticle_typedb_protocol//grpc/rust:typedb_protocol",
 
         "@crates//:itertools",

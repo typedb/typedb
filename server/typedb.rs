@@ -49,14 +49,14 @@ impl Server2 {
     }
 
     pub async fn serve(self) -> Result<(), Box<dyn Error>> {
-        let address = "localhost:1729".parse().unwrap();
+        // let address = "localhost:1729".parse().unwrap();
 
         // TODO: could also construct in Server and await here only
-        Server::builder()
-            .http2_keepalive_interval()
-            .add_service(self.typedb_service.take().unwrap())
-            .serve(address)
-            .await?;
+        // Server::builder()
+            // .http2_keepalive_interval()
+            // .add_service(self.typedb_service.take().unwrap())
+            // .serve(address)
+            // .await?;
         Ok(())
     }
 }

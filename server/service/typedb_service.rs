@@ -78,14 +78,14 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
     type transactionStream = Pin<Box<ReceiverStream<Result<typedb_protocol::transaction::Server, tonic::Status>>>>;
 
     async fn transaction(&self, request: Request<Streaming<Client>>) -> Result<Response<Self::transactionStream>, Status> {
-        //       therefore we need to hold onto the DatabaseManager as a reference or by Arc in the Txn Service??
         let mut request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(10);
         let mut service = TransactionService::new(request_stream, response_sender, self.database_manager.clone());
-        tokio::spawn(async move {
-            service.listen().await
-        });
-        let stream: ReceiverStream<Result<Server, Status>> = ReceiverStream::new(response_receiver);
-        Ok(Response::new(Box::pin(stream)))
+        // tokio::spawn(async move {
+        //     service.listen().await
+        // });
+        // let stream: ReceiverStream<Result<Server, Status>> = ReceiverStream::new(response_receiver);
+        // Ok(Response::new(Box::pin(stream)))
+        todo!()
     }
 }

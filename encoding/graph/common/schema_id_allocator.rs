@@ -40,6 +40,7 @@ pub trait SchemaID: Sized {
     fn ids_exhausted_error(prefix: Prefix) -> EncodingError;
 }
 
+#[derive(Debug)]
 pub struct SchemaIDAllocator<T: SchemaID> {
     last_allocated_type_id: AtomicU64,
     prefix: Prefix,

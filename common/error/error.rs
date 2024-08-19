@@ -8,13 +8,14 @@ use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
 pub trait TypeDBError {
+
     fn variant_name(&self) -> &'static str;
 
     fn domain(&self) -> &'static str;
 
     fn code(&self) -> &'static str;
 
-    fn prefix(&self) -> &'static str;
+    fn code_prefix(&self) -> &'static str;
 
     fn code_number(&self) -> usize;
 
@@ -33,6 +34,14 @@ pub trait TypeDBError {
     }
 }
 
+impl PartialEq for dyn TypeDBError {
+    fn eq(&self, other: &Self) -> bool {
+        self.code() == other.code()
+    }
+}
+
+impl Eq for dyn TypeDBError {}
+
 impl Debug for dyn TypeDBError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         Display::fmt(self, f)
@@ -49,25 +58,39 @@ impl Display for dyn TypeDBError {
     }
 }
 
-// ***USAGE WARNING***: We should not set both Source and TypeDBSource, TypeDBSource has precedence! This is only checked in runtime assertion
+
+// ***USAGE WARNING***: We should not set both Source and TypeDBSource, TypeDBSource has precedence!
 #[macro_export]
 macro_rules! typedb_error {
     ( $vis: vis $name:ident(domain = $domain: literal, prefix = $prefix: literal) { $(
         $variant: ident (
             $number: literal,
             $description: literal
-            $(, source = $source: ty )?
-            $(, typedb_source = $typedb_source: ty )?
-            $(, $payload_name: ident = $payload_type: ty )*
+            $(, $payload_name: ident : $payload_type: ty )*
+            $(, ( source : $source: ty ) )?
+            $(, ( typedb_source : $typedb_source: ty ) )?
         ),
     )*}) => {
         $vis enum $name {
             $(
-                $variant { $(source: $source, )? $(typedb_source: $typedb_source, )? $($payload_name: $payload_type, )* },
+                $variant { $(source: $source, )? $(typedb_source: $typedb_source, )? $($payload_name: $payload_type )* },
             )*
+
         }
 
-        impl TypeDBError for $name {
+        impl $name {
+            const _VALIDATE_NUMBERS: () = {
+                #[deny(unreachable_patterns)] // fail to compile if any Numbers are the same
+                match 0 {
+                    $(
+                        $number => (),
+                    )*
+                    _ => (),
+               }
+           };
+        }
+
+        impl error::TypeDBError for $name {
 
             fn variant_name(&self) -> &'static str {
                 match self {
@@ -77,22 +100,26 @@ macro_rules! typedb_error {
                 }
             }
 
-            fn prefix(&self) -> &'static str {
-                & $prefix
-            }
-
-            fn code_number(&self) -> usize {
-                match self {
-                    $(
-                        Self::$variant { .. } => $number,
-                    )*
-                }
+            fn domain(&self) -> &'static str {
+                &$domain
             }
 
             fn code(&self) -> &'static str {
                 match self {
                     $(
                         Self::$variant { .. } => & concat!($prefix, stringify!($number)),
+                    )*
+                }
+            }
+
+            fn code_prefix(&self) -> &'static str {
+                &$prefix
+            }
+
+            fn code_number(&self) -> usize {
+                match self {
+                    $(
+                        Self::$variant { .. } => $number,
                     )*
                 }
             }
@@ -105,55 +132,31 @@ macro_rules! typedb_error {
                 }
             }
 
-            fn source(&self) -> Option<&dyn Error> {
+            fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
                 let error = match self {
                     $(
-                        $( Self::$variant { source, .. } => Some(source as &$source), )?
-                    )*,
+                        $( Self::$variant { source, .. } => {
+                            let source: &$source = source;
+                            Some(source as &dyn std::error::Error)
+                        } )?
+                    )*
                     _ => None
                 };
-                if ::core::cfg!( debug_assertions ) {
-                    // if both are set, they must be equal
-                    if error.is_some() && self.source_typedb_error().is_some() {
-                        ::core::assert!(error == self.source_typedb_error())
-                    }
-                }
                 error
             }
 
-            fn source_typedb_error(&self) -> Option<&dyn TypeDBError> {
+            fn source_typedb_error(&self) -> Option<&(dyn error::TypeDBError + 'static)> {
                 let error = match self {
                     $(
-                        $( Self::$variant { typedb_source, .. } => Some(typedb_source as &$typedb_source), )?
-                    )*,
+                        $( Self::$variant { typedb_source, .. } => {
+                            let typedb_source: &$typedb_source = typedb_source;
+                            Some(typedb_source as &dyn error::TypeDBError),
+                        } )?
+                    )*
                     _ => None
                 };
-                if ::core::cfg!( debug_assertions ) {
-                    // if both are set, they must be equal
-                    if error.is_some() && self.source().is_some() {
-                        ::core::assert!(error == self.source())
-                    }
-                }
                 error
             }
         }
-
-        // impl Debug for dyn $name {
-        //    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        //        Display::fmt(self, f)
-        //    }
-        // }
-        //
-        // impl Display for dyn $name {
-        //    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        //        if self.source_typedb_error().is_some() {
-        //           write!(f, "[{}] {}. Cause: \n\t {}", self.code(), self.description(), self.source_typedb_error().unwrap())
-        //        } else if self.source().is_some() {
-        //           write!(f, "[{}] {}. Cause: \n\t {:?}", self.code(), self.description(), self.source().unwrap())
-        //        } else {
-        //           write!(f, "[{}] {}", self.code(), self.description())
-        //        }
-        //    }
-        // }
     };
 }

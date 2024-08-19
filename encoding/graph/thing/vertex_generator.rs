@@ -42,6 +42,7 @@ use crate::{
     AsBytes, Keyable, Prefixed,
 };
 
+#[derive(Debug)]
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
     relation_ids: Box<[AtomicU64]>,
