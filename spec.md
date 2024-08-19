@@ -32,11 +32,11 @@
     *  _Example_: $`\mathsf{Person} <_! \mathsf{Spouse}`$
   * _Dependency_: $`A(I_1, ..., I_k,J) <_\bot A(I_1, ..., I_k)`$
 * **Type cardinality**.$`|A|`$ — Cardinality of $A$
-* **List types**. $`[A]`$ — Listtype of $A$ (contains lists $`[a_0, a_1, ...]`$ of $`a_i : A`$)
+* **List types**. $`[A]`$ — List type of $A$ (contains lists $`[a_0, a_1, ...]`$ of $`a_i : A`$)
 * **Sum types**. $`A + B`$ — Sum type
 * **Product types**. $`A \times B`$ — Product type
 
-(Complete aside for the nerds: list types are neither sum, nor products, nor polynomials ... they are so-called _inductive_ types!)
+(Complete aside for the nerds: list types are neither sums, nor products, nor polynomials ... they are so-called _inductive_ types!)
 
 
 ## Schema
