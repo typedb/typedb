@@ -1,17 +1,23 @@
 # TypeQL 3.0 Spec (Math BDD)
 
-## Notation
+## Notation and terminology
 
-* $`a : A`$ — $a$ is an instance of $A$ (note capitalization)
-* $`a(x) : A`$ — dependent term, read "$`a`$ of $x$" (i.e. $a$ depends on $x$)
-* $`A \to I_1, I_2, ...`$ — dependent type, read "$`A`$ depends on (interface types) $`I_1, I_2, ...`$
+* **TT** — transaction time
+* **CT** — commit time
+* $`a : A`$ — $a$ is of type $A$ (note capitalization of types). 
+  * _Example_: $p$ is of type $\mathsf{Person}$
+* $`a(x, y, ...) : A(I,J,...)`$ — $a$ is an element in type "$`A`$ of $`x`$ (as $`I`$), and $`y`$ (as $`J`$), and ..." (i.e. $a$ depends on $x$ through interface $I$). Alternative notation: $`a : A(x\to I,y\to J,...)`$. 
+  * _Example_: $m$ is of type $\mathsf{Marriage}$ of $p$ (as $\mathsf{Spouse}$) and $q$ (as $\mathsf{Spouse}$).
+* $`A(I, J, ...) : \mathbf{Type}`$ —  $A$ is a type with associated (interface) types $`I, J, ...`$. More specifically, may replace $\mathbf{Type}$ by $\mathbf{Ent}, \mathbf{Rel}, \mathbf{Att}$. Set $\mathbf{Obj} = \mathbf{Ent} + \mathbf{Att}$. 
+  * _Example_: $`\mathsf{Person}`$ is a type.
+  * _Example_: $`\mathsf{Marriage(Spouse)}`$ is a type with associated type $`\mathsf{Spouse}`$.
 * $`A < B`$ — $A$ subtypes $B$ (this is transitive). Variations (both imply $`<`$):
-  * $`<_!`$ ("direct subtype"), 
-  * $`<_I`$ ("interface implementation").
+  * $`<_!`$ ("direct subtype"). _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
+  * $`<_I`$ ("interface implementation"). _Example_: $`\mathsf{Person} <_I \mathsf{Spouse}`$
 * $`|A|`$ — Cardinality of $A$
-* $`[A]`$ — Listtype of $A$ (contains lists of $a$ for $a : A$)
-* $`A : \mathbf{Type}`$ — $A$ is a type. Similarly for $\mathbf{Ent}, \mathbf{Rel}, \mathbf{Att}$. Let $\mathbf{Obj} = \mathbf{Ent} + \mathbf{Att}$
+* $`[A]`$ — Listtype of $A$ (contains lists $`[a_0, a_1, ...]`$ of $`a_i : A`$)
 * $`[\![\texttt{code}]\!] = \alpha`$ — mathematical meaning of "code" is "$`\alpha`$"
+
 
 ## Schema
 
@@ -54,3 +60,7 @@ Topics: Match, Manipulation, Fetch, ...
 ### Operators
 
 Topics: Select, Limit, Offset, ...
+
+## Concurrency
+
+
