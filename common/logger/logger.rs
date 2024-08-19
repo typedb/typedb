@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![allow(unexpected_cfgs)]
+
 use tracing::{self, dispatcher::DefaultGuard};
 pub use tracing::{error, info, trace};
 use tracing_subscriber::prelude::*;

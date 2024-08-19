@@ -8,18 +8,15 @@
 #![deny(elided_lifetimes_in_paths)]
 #![allow(unused_variables)]
 
-use std::{
-    error::Error,
-    fmt::{self},
-};
+use std::{error::Error, fmt};
 
 use answer::variable::Variable;
 use typeql::{
-    token,
     statement::{
         thing::{Relation, RolePlayer},
         InIterable, StructDeconstruct,
     },
+    token,
     value::StringLiteral,
 };
 

@@ -13,10 +13,7 @@ use std::{
 use answer::variable::Variable;
 use encoding::value::value::Value;
 
-use crate::{
-    pattern::{variable_category::VariableCategory, IrID},
-    PatternDefinitionError,
-};
+use crate::{pattern::IrID, PatternDefinitionError};
 
 enum ExpectedArgumentType {
     Single,
@@ -59,10 +56,9 @@ impl ExpressionTree<Variable> {
 
     pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.preorder_tree.iter().filter_map(|expr| match expr {
-            Expression::Variable(variable) => Some(variable.clone()),
+            &Expression::Variable(variable) => Some(variable),
             Expression::ListIndex(list_index) => Some(list_index.list_variable()),
             Expression::ListIndexRange(list_index_range) => Some(list_index_range.list_variable()),
-
             Expression::Constant(_) | Expression::Operation(_) | Expression::BuiltInCall(_) | Expression::List(_) => {
                 None
             }

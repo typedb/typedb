@@ -12,7 +12,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use ir::pattern::{
-    constraint::{Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, Links},
+    constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, Links},
     IrID,
 };
 use itertools::Itertools;
@@ -140,16 +140,35 @@ impl InstructionAPI for ConstraintInstruction {
 }
 
 #[derive(Debug, Clone)]
+pub enum CheckInstruction<ID> {
+    Range(ID, ID, Comparator),
+}
+
+impl<ID: IrID> CheckInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> CheckInstruction<T> {
+        match self {
+            Self::Range(lhs, rhs, comp) => CheckInstruction::Range(mapping[&lhs], mapping[&rhs], comp),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct IsaInstruction<ID> {
     pub isa: Isa<ID>,
     pub inputs: Inputs<ID>,
     types: Arc<HashSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl IsaInstruction<Variable> {
-    pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+    pub fn new(
+        isa: Isa<Variable>,
+        inputs: Inputs<Variable>,
+        type_annotations: &TypeAnnotations,
+        checks: Vec<CheckInstruction<Variable>>,
+    ) -> Self {
         let types = type_annotations.variable_annotations_of(isa.type_()).unwrap().clone();
-        Self { isa, inputs, types }
+        Self { isa, inputs, types, checks }
     }
 }
 
@@ -161,8 +180,13 @@ impl<ID> IsaInstruction<ID> {
 
 impl<ID: IrID> IsaInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsaInstruction<T> {
-        let Self { isa, inputs, types } = self;
-        IsaInstruction { isa: isa.map(mapping), inputs: inputs.map(mapping), types }
+        let Self { isa, inputs, types, checks } = self;
+        IsaInstruction {
+            isa: isa.map(mapping),
+            inputs: inputs.map(mapping),
+            types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
     }
 }
 
@@ -171,12 +195,18 @@ pub struct IsaReverseInstruction<ID> {
     pub isa: Isa<ID>,
     pub inputs: Inputs<ID>,
     types: Arc<HashSet<Type>>,
+    checks: Vec<CheckInstruction<ID>>,
 }
 
 impl IsaReverseInstruction<Variable> {
-    pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+    pub fn new(
+        isa: Isa<Variable>,
+        inputs: Inputs<Variable>,
+        type_annotations: &TypeAnnotations,
+        checks: Vec<CheckInstruction<Variable>>,
+    ) -> Self {
         let types = type_annotations.variable_annotations_of(isa.thing()).unwrap().clone();
-        Self { isa, inputs, types }
+        Self { isa, inputs, types, checks }
     }
 }
 
@@ -188,8 +218,13 @@ impl<ID> IsaReverseInstruction<ID> {
 
 impl<ID: IrID> IsaReverseInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsaReverseInstruction<T> {
-        let Self { isa: constraint, inputs, types } = self;
-        IsaReverseInstruction { isa: constraint.map(mapping), inputs: inputs.map(mapping), types }
+        let Self { isa: constraint, inputs, types, checks } = self;
+        IsaReverseInstruction {
+            isa: constraint.map(mapping),
+            inputs: inputs.map(mapping),
+            types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
     }
 }
 

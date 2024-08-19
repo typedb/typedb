@@ -188,6 +188,14 @@ impl<'a> Thing<'a> {
         }
     }
 
+    pub fn as_reference(&self) -> Thing<'_> {
+        match self {
+            Thing::Entity(entity) => Thing::Entity(entity.as_reference()),
+            Thing::Relation(relation) => Thing::Relation(relation.as_reference()),
+            Thing::Attribute(attribute) => Thing::Attribute(attribute.as_reference()),
+        }
+    }
+
     pub fn to_owned(&self) -> Thing<'static> {
         match self {
             Thing::Entity(entity) => Thing::Entity(entity.as_reference().into_owned()),

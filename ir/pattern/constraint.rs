@@ -175,7 +175,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             self.context.is_variable_available(self.constraints.scope, lhs)
                 && self.context.is_variable_available(self.constraints.scope, rhs)
         );
-        let comparison = Comparison::new(lhs, rhs);
+        let comparison = Comparison::new(lhs, rhs, Comparator::Equal); // TODO
         self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
         self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
         // todo!("The above lines were the two lines below");
@@ -916,16 +916,27 @@ impl<ID: IrID> fmt::Display for FunctionCallBinding<ID> {
     }
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum Comparator {
+    Equal,
+    Less,
+    Greater,
+    LessOrEqual,
+    GreaterOrEqual,
+    Like,
+    Cointains,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Comparison<ID: IrID> {
     lhs: ID,
     rhs: ID,
-    // comparator: Comparator,
+    comparator: Comparator,
 }
 
 impl<ID: IrID> Comparison<ID> {
-    fn new(lhs: ID, rhs: ID) -> Self {
-        Self { lhs, rhs }
+    fn new(lhs: ID, rhs: ID, comparator: Comparator) -> Self {
+        Self { lhs, rhs, comparator }
     }
 
     pub fn lhs(&self) -> ID {

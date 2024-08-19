@@ -17,7 +17,7 @@ use crate::{
     batch::ImmutableRow,
     instruction::{
         isa_executor::{
-            instances_of_all_types_chained, instances_of_single_type, IsaIterator, MultipleTypeThingIterator,
+            instances_of_all_types_chained, instances_of_single_type, MultipleTypeIsaIterator, SingleTypeIsaIterator,
         },
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions, TupleResult},
@@ -33,14 +33,16 @@ pub(crate) struct IsaReverseExecutor {
     thing_types: Arc<HashSet<Type>>,
 }
 
-pub(crate) type IsaReverseUnboundedSortedTypeSingle = Map<IsaIterator, ThingToTupleFn, AsHkt![TupleResult<'_>]>;
-pub(crate) type IsaReverseUnboundedSortedThingSingle = Map<IsaIterator, ThingToTupleFn, AsHkt![TupleResult<'_>]>;
-pub(crate) type IsaReverseBoundedSortedThing = Map<IsaIterator, ThingToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type IsaReverseUnboundedSortedTypeSingle =
+    Map<SingleTypeIsaIterator, ThingToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type IsaReverseUnboundedSortedThingSingle =
+    Map<SingleTypeIsaIterator, ThingToTupleFn, AsHkt![TupleResult<'_>]>;
+pub(crate) type IsaReverseBoundedSortedThing = Map<SingleTypeIsaIterator, ThingToTupleFn, AsHkt![TupleResult<'_>]>;
 
 pub(crate) type IsaReverseUnboundedSortedTypeMerged =
-    Map<MultipleTypeThingIterator, ThingToTupleFn, AsHkt![TupleResult<'_>]>;
+    Map<MultipleTypeIsaIterator, ThingToTupleFn, AsHkt![TupleResult<'_>]>;
 pub(crate) type IsaReverseUnboundedSortedThingMerged =
-    Map<MultipleTypeThingIterator, ThingToTupleFn, AsHkt![TupleResult<'_>]>;
+    Map<MultipleTypeIsaIterator, ThingToTupleFn, AsHkt![TupleResult<'_>]>;
 
 type ThingToTupleFn = for<'a> fn(Result<Thing<'a>, ConceptReadError>) -> TupleResult<'a>;
 
@@ -88,6 +90,7 @@ impl IsaReverseExecutor {
                     )))
                 }
             }
+
             BinaryIterateMode::UnboundInverted => {
                 let positions = TuplePositions::Pair([self.isa.thing(), self.isa.type_()]);
                 if self.thing_types.len() == 1 {
@@ -110,6 +113,7 @@ impl IsaReverseExecutor {
                     )))
                 }
             }
+
             BinaryIterateMode::BoundFrom => {
                 let positions = TuplePositions::Pair([self.isa.thing(), self.isa.type_()]);
                 let type_ = row.get(self.isa.type_()).as_type();

@@ -148,6 +148,7 @@ impl MatchProgram {
                             isa.clone(),
                             Inputs::None([]),
                             type_annotations,
+                            Vec::new(),
                         ))],
                         &[var],
                     )));

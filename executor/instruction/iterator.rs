@@ -10,16 +10,6 @@ use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
 use lending_iterator::{LendingIterator, Peekable};
 
-use super::{
-    isa_executor::{
-        IsaBoundedSortedType, IsaUnboundedSortedThingMerged, IsaUnboundedSortedThingSingle,
-        IsaUnboundedSortedTypeMerged, IsaUnboundedSortedTypeSingle,
-    },
-    isa_reverse_executor::{
-        IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedThingMerged, IsaReverseUnboundedSortedThingSingle,
-        IsaReverseUnboundedSortedTypeMerged, IsaReverseUnboundedSortedTypeSingle,
-    },
-};
 use crate::{
     batch::Row,
     instruction::{
@@ -30,6 +20,14 @@ use crate::{
         has_reverse_executor::{
             HasReverseBoundedSortedOwner, HasReverseUnboundedSortedAttribute, HasReverseUnboundedSortedOwnerMerged,
             HasReverseUnboundedSortedOwnerSingle,
+        },
+        isa_executor::{
+            IsaBoundedSortedType, IsaUnboundedSortedThingMerged, IsaUnboundedSortedThingSingle,
+            IsaUnboundedSortedTypeMerged, IsaUnboundedSortedTypeSingle,
+        },
+        isa_reverse_executor::{
+            IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedThingMerged, IsaReverseUnboundedSortedThingSingle,
+            IsaReverseUnboundedSortedTypeMerged, IsaReverseUnboundedSortedTypeSingle,
         },
         links_executor::{
             LinksBoundedRelationPlayer, LinksBoundedRelationSortedPlayer, LinksUnboundedSortedPlayerMerged,

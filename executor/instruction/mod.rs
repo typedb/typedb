@@ -4,18 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    marker::PhantomData,
+    ops::{Bound, RangeBounds},
+};
 
-use answer::variable::Variable;
-use compiler::match_::{instructions::ConstraintInstruction, planner::pattern_plan::InstructionAPI};
+use answer::{variable::Variable, variable_value::VariableValue};
+use compiler::{
+    instruction::constraint::instructions::{CheckInstruction, ConstraintInstruction},
+    match_::{instructions::ConstraintInstruction, planner::pattern_plan::InstructionAPI},
+    planner::pattern_plan::InstructionAPI,
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use ir::pattern::constraint::Comparator;
+use lending_iterator::higher_order::{FnHktHelper, Hkt};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::ImmutableRow,
     instruction::{
-        comparison_executor::ComparisonIteratorExecutor,
-        comparison_reverse_executor::ComparisonReverseIteratorExecutor,
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
         iterator::TupleIterator, links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
@@ -23,8 +31,6 @@ use crate::{
     VariablePosition,
 };
 
-mod comparison_executor;
-mod comparison_reverse_executor;
 mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
@@ -47,15 +53,12 @@ pub(crate) enum InstructionExecutor {
 
     // RolePlayerIndex(RolePlayerIndexExecutor),
     FunctionCallBinding(FunctionCallBindingIteratorExecutor),
-
-    Comparison(ComparisonIteratorExecutor),
-    ComparisonReverse(ComparisonReverseIteratorExecutor),
 }
 
 impl InstructionExecutor {
     pub(crate) fn new(
         instruction: ConstraintInstruction,
-        selected: &Vec<Variable>,
+        selected: &[Variable],
         named: &HashMap<Variable, String>,
         positions: &HashMap<Variable, VariablePosition>,
         snapshot: &impl ReadableSnapshot,
@@ -108,21 +111,11 @@ impl InstructionExecutor {
                 )?;
                 Ok(Self::LinksReverse(executor))
             }
-            ConstraintInstruction::FunctionCallBinding(function_call) => {
-                todo!()
-            }
-            ConstraintInstruction::ComparisonGenerator(comparison) => {
-                todo!()
-            }
-            ConstraintInstruction::ComparisonGeneratorReverse(comparison) => {
-                todo!()
-            }
-            ConstraintInstruction::ComparisonCheck(comparison) => {
-                todo!()
-            }
-            ConstraintInstruction::ExpressionBinding(expression_binding) => {
-                todo!()
-            }
+            ConstraintInstruction::FunctionCallBinding(_function_call) => todo!(),
+            ConstraintInstruction::ComparisonGenerator(_comparison) => todo!(),
+            ConstraintInstruction::ComparisonGeneratorReverse(_comparison) => todo!(),
+            ConstraintInstruction::ComparisonCheck(_comparison) => todo!(),
+            ConstraintInstruction::ExpressionBinding(_expression_binding) => todo!(),
         }
     }
 
@@ -139,9 +132,7 @@ impl InstructionExecutor {
             InstructionExecutor::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::Links(executor) => executor.get_iterator(snapshot, thing_manager, row),
             InstructionExecutor::LinksReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::FunctionCallBinding(executor) => todo!(),
-            InstructionExecutor::Comparison(executor) => todo!(),
-            InstructionExecutor::ComparisonReverse(executor) => todo!(),
+            InstructionExecutor::FunctionCallBinding(_executor) => todo!(),
         }
     }
 }
@@ -290,14 +281,79 @@ impl TernaryIterateMode {
     }
 }
 
-// enum CheckExecutor {
-//     Has(HasCheckExecutor),
-//     HasReverse(HasReverseCheckExecutor),
-//
-//     Links(LinksCheckExecutor),
-//     LinksReverse(LinksReverseCheckExecutor),
-//
-//     // RolePlayerIndex(RolePlayerIndexExecutor),
-//
-//     Comparison(ComparisonCheckExecutor),
-// }
+type FilterFn<T> = dyn for<'a, 'b> FnHktHelper<&'a Result<<T as Hkt>::HktSelf<'b>, ConceptReadError>, bool>;
+
+struct Checker<T: Hkt> {
+    extractors: HashMap<VariablePosition, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,
+    checks: Vec<CheckInstruction<VariablePosition>>,
+    _phantom_data: PhantomData<T>,
+}
+
+impl<T: Hkt> Checker<T> {
+    fn range_for<const N: usize>(
+        &self,
+        row: ImmutableRow<'_>,
+        target: VariablePosition,
+    ) -> impl RangeBounds<VariableValue<'_>> {
+        fn intersect<'a>(
+            (a_min, a_max): (Bound<VariableValue<'a>>, Bound<VariableValue<'a>>),
+            (b_min, b_max): (Bound<VariableValue<'a>>, Bound<VariableValue<'a>>),
+        ) -> (Bound<VariableValue<'a>>, Bound<VariableValue<'a>>) {
+            let select_a_min = match (&a_min, &b_min) {
+                (_, Bound::Unbounded) => true,
+                (Bound::Excluded(a), Bound::Included(b)) => a >= b,
+                (Bound::Excluded(a), Bound::Excluded(b)) => a >= b,
+                (Bound::Included(a), Bound::Included(b)) => a >= b,
+                (Bound::Included(a), Bound::Excluded(b)) => a > b,
+                _ => false,
+            };
+            let select_a_max = match (&a_max, &b_max) {
+                (_, Bound::Unbounded) => true,
+                (Bound::Excluded(a), Bound::Included(b)) => a <= b,
+                (Bound::Excluded(a), Bound::Excluded(b)) => a <= b,
+                (Bound::Included(a), Bound::Included(b)) => a <= b,
+                (Bound::Included(a), Bound::Excluded(b)) => a < b,
+                _ => false,
+            };
+            (if select_a_min { a_min } else { b_min }, if select_a_max { a_max } else { b_max })
+        }
+
+        let mut range = (Bound::Unbounded, Bound::Unbounded);
+        for check in &self.checks {
+            match *check {
+                CheckInstruction::Range(lhs, rhs, comp) if lhs == target => {
+                    let rhs = row.get(rhs).to_owned();
+                    let comp_range = match comp {
+                        Comparator::Equal => (Bound::Included(rhs.clone()), Bound::Included(rhs)),
+                        Comparator::Less => (Bound::Unbounded, Bound::Excluded(rhs)),
+                        Comparator::LessOrEqual => (Bound::Unbounded, Bound::Included(rhs)),
+                        Comparator::Greater => (Bound::Excluded(rhs), Bound::Unbounded),
+                        Comparator::GreaterOrEqual => (Bound::Included(rhs), Bound::Unbounded),
+                        Comparator::Like => continue,
+                        Comparator::Cointains => continue,
+                    };
+                    range = intersect(range, comp_range);
+                }
+                _ => (),
+            }
+        }
+        range
+    }
+
+    fn filter_for_row(&self, row: &ImmutableRow<'_>) -> Box<FilterFn<T>> {
+        let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> bool>> = Vec::with_capacity(self.checks.len());
+        for check in &self.checks {
+            match *check {
+                CheckInstruction::Range(lhs, rhs, _comp) => {
+                    let lhs = self.extractors[&lhs];
+                    let rhs = row.get(rhs).to_owned();
+                    filters.push(Box::new(move |value| lhs(value) == rhs)); // TODO use comp
+                }
+            }
+        }
+        Box::new(move |res| match res {
+            Ok(value) => filters.iter().all(|f| f(value)),
+            Err(_) => true,
+        })
+    }
+}

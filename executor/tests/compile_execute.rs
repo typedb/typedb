@@ -60,29 +60,14 @@ fn test_has_planning_traversal() {
         person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone()).unwrap();
     person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
 
-    let person = [
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-    ];
+    let person = [(); 3].map(|()| thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap());
 
-    let age = [
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(10)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(11)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(12)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(13)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(14)).unwrap(),
-    ];
+    let age = [10, 11, 12, 13, 14]
+        .map(|age| thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age)).unwrap());
 
-    let name = [
-        thing_manager.create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("John"))).unwrap(),
-        thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("Alice")))
-            .unwrap(),
-        thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("Leila")))
-            .unwrap(),
-    ];
+    let name = ["John", "Alice", "Leila"].map(|name| {
+        thing_manager.create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(name))).unwrap()
+    });
 
     person[0].set_has_unordered(&mut snapshot, &thing_manager, age[0].clone()).unwrap();
     person[0].set_has_unordered(&mut snapshot, &thing_manager, age[1].clone()).unwrap();

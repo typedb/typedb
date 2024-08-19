@@ -92,7 +92,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_dog,
-        vec![ConstraintInstruction::Isa(IsaInstruction::new(isa, Inputs::None([]), &entry_annotations))],
+        vec![ConstraintInstruction::Isa(IsaInstruction::new(isa, Inputs::None([]), &entry_annotations, Vec::new()))],
         &[var_dog, var_dog_type],
     ))];
 
@@ -151,7 +151,7 @@ fn traverse_isa_unbounded_sorted_type() {
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_dog_type,
-        vec![ConstraintInstruction::Isa(IsaInstruction::new(isa, Inputs::None([]), &entry_annotations))],
+        vec![ConstraintInstruction::Isa(IsaInstruction::new(isa, Inputs::None([]), &entry_annotations, Vec::new()))],
         &[var_dog, var_dog_type],
     ))];
 
@@ -217,6 +217,7 @@ fn traverse_isa_bounded_thing() {
                 isa_from_type,
                 Inputs::None([]),
                 &entry_annotations,
+                Vec::new(),
             ))],
             &[var_thing],
         )),
@@ -226,6 +227,7 @@ fn traverse_isa_bounded_thing() {
                 isa_to_type,
                 Inputs::Single([var_thing]),
                 &entry_annotations,
+                Vec::new(),
             ))],
             &[var_type_to],
         )),
@@ -286,7 +288,12 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_dog,
-        vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations))],
+        vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+            isa,
+            Inputs::None([]),
+            &entry_annotations,
+            Vec::new(),
+        ))],
         &[var_dog, var_dog_type],
     ))];
 
@@ -345,7 +352,12 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_dog_type,
-        vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations))],
+        vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+            isa,
+            Inputs::None([]),
+            &entry_annotations,
+            Vec::new(),
+        ))],
         &[var_dog, var_dog_type],
     ))];
 
@@ -407,7 +419,12 @@ fn traverse_isa_reverse_bounded_type() {
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
             var_thing_from,
-            vec![ConstraintInstruction::Isa(IsaInstruction::new(isa_from_thing, Inputs::None([]), &entry_annotations))],
+            vec![ConstraintInstruction::Isa(IsaInstruction::new(
+                isa_from_thing,
+                Inputs::None([]),
+                &entry_annotations,
+                Vec::new(),
+            ))],
             &[var_thing_from, var_type],
         )),
         Program::Intersection(IntersectionProgram::new(
@@ -416,6 +433,7 @@ fn traverse_isa_reverse_bounded_type() {
                 isa_to_thing,
                 Inputs::Single([var_type]),
                 &entry_annotations,
+                Vec::new(),
             ))],
             &[var_thing_from, var_type, var_thing_to],
         )),

@@ -217,6 +217,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
                 isa_person_1,
                 Inputs::None([]),
                 &entry_annotations,
+                Vec::new(),
             ))],
             &[var_person_1],
         )),

@@ -6,14 +6,12 @@
 
 use std::{
     collections::{HashMap, HashSet, VecDeque},
-    hash::Hash,
     iter::once,
 };
 
 use encoding::{
     graph::{
         definition::definition_key::DefinitionKey,
-        thing::ThingVertex,
         type_::{CapabilityKind, Kind},
     },
     value::{label::Label, value::Value, value_type::ValueType, ValueEncodable},
@@ -28,7 +26,7 @@ use crate::{
     thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{
         annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange,
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationRange,
             AnnotationRegex, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
