@@ -28,6 +28,7 @@ pub mod encoding {
     pub const LABEL_SCOPE_STRING_INLINE: usize = 64;
     pub const LABEL_SCOPED_NAME_STRING_INLINE: usize = LABEL_NAME_STRING_INLINE + LABEL_SCOPE_STRING_INLINE;
     pub const DEFINITION_NAME_STRING_INLINE: usize = 64;
+    pub const AD_HOC_BYTES_INLINE: usize = 128;
 
     pub type DefinitionIDUInt = u16;
     pub type DefinitionIDAtomicUInt = AtomicU16;

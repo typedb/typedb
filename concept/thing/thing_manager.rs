@@ -46,7 +46,10 @@ use encoding::{
 };
 use itertools::Itertools;
 use lending_iterator::{AsHkt, LendingIterator};
-use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLINE};
+use resource::constants::{
+    encoding::{StructFieldIDUInt, AD_HOC_BYTES_INLINE},
+    snapshot::BUFFER_KEY_INLINE,
+};
 use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
@@ -834,7 +837,9 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         object: &impl ObjectAPI<'a>,
     ) -> Result<bool, ConceptReadError> {
-        Ok(snapshot.contains(object.vertex().as_storage_key().as_reference()).map_err(|error| ConceptReadError::SnapshotGet { source: error })?)
+        Ok(snapshot
+            .contains(object.vertex().as_storage_key().as_reference())
+            .map_err(|error| ConceptReadError::SnapshotGet { source: error })?)
     }
 
     pub(crate) fn type_exists<'a>(
@@ -842,7 +847,9 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         type_: impl TypeAPI<'a>,
     ) -> Result<bool, ConceptReadError> {
-        Ok(snapshot.contains(type_.vertex().as_storage_key().as_reference()).map_err(|error| ConceptReadError::SnapshotGet { source: error })?)
+        Ok(snapshot
+            .contains(type_.vertex().as_storage_key().as_reference())
+            .map_err(|error| ConceptReadError::SnapshotGet { source: error })?)
     }
 }
 
@@ -877,7 +884,8 @@ impl ThingManager {
                 let mut attribute = Attribute::new(has.to()).into_owned();
                 let attribute_type = attribute.type_();
                 let attribute_value = attribute.get_value(snapshot, self)?;
-                let owns = object.type_().try_get_owns_attribute(snapshot, self.type_manager(), attribute_type.clone())?;
+                let owns =
+                    object.type_().try_get_owns_attribute(snapshot, self.type_manager(), attribute_type.clone())?;
 
                 self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, owns.clone())?;
                 self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute_value, owns)?;
@@ -911,7 +919,7 @@ impl ThingManager {
                 [
                     &Infix::PropertyAnnotationUnique.infix_id().bytes(),
                     uniqueness_source.attribute().vertex().bytes().bytes(),
-                    value.encode_bytes::<128>().bytes(), // TODO: Where to get 128 from?
+                    value.encode_bytes::<AD_HOC_BYTES_INLINE>().bytes(),
                     owner.vertex().bytes().bytes(),
                     uniqueness_source.owner().vertex().bytes().bytes(),
                 ]
@@ -939,8 +947,8 @@ impl ThingManager {
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
                     owner.vertex().bytes().bytes(),
+                    &Prefix::EdgeOwns.prefix_id().bytes(),
                     locked_capability.interface().vertex().bytes().bytes(),
-                    // TODO: Do we need attribute type id?
                 ]
                 .into_iter(),
             );
@@ -968,8 +976,8 @@ impl ThingManager {
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
                     player.vertex().bytes().bytes(),
+                    &Prefix::EdgePlays.prefix_id().bytes(),
                     locked_capability.interface().vertex().bytes().bytes(),
-                    // TODO: Do we need attribute type id?
                 ]
                 .into_iter(),
             );
@@ -997,8 +1005,8 @@ impl ThingManager {
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
                     relation.vertex().bytes().bytes(),
+                    &Prefix::EdgeRelates.prefix_id().bytes(),
                     locked_capability.interface().vertex().bytes().bytes(),
-                    // TODO: Do we need attribute type id?
                 ]
                 .into_iter(),
             );
@@ -1975,7 +1983,7 @@ impl ThingManager {
             })
             .try_collect::<Vec<_>, ConceptReadError>()?;
         for (rp_player, rp_role_type) in players {
-            debug_assert!(!(rp_player == Object::new(rp_player.vertex()) && role_type == rp_role_type));
+            debug_assert!(!(rp_player == Object::new(player.vertex()) && role_type == rp_role_type));
             let index = ThingEdgeRolePlayerIndex::build(
                 player.vertex(),
                 rp_player.vertex(),

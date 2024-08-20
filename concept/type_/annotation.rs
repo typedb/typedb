@@ -830,6 +830,7 @@ mod serialize_annotation {
         duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value::Value,
         value_type::ValueTypeCategory, ValueEncodable,
     };
+    use resource::constants::encoding::AD_HOC_BYTES_INLINE;
     use serde::{
         de,
         de::{MapAccess, SeqAccess, Visitor},
@@ -838,8 +839,6 @@ mod serialize_annotation {
     };
 
     use crate::type_::annotation::{AnnotationRange, AnnotationValues};
-
-    const INLINE_LENGTH: usize = 128;
 
     fn serialize_value(value: Value<'_>) -> Vec<u8> {
         match value.value_type().category() {
@@ -851,7 +850,7 @@ mod serialize_annotation {
             | ValueTypeCategory::DateTime
             | ValueTypeCategory::DateTimeTZ
             | ValueTypeCategory::Duration
-            | ValueTypeCategory::String => value.encode_bytes::<INLINE_LENGTH>().bytes().to_owned(),
+            | ValueTypeCategory::String => value.encode_bytes::<AD_HOC_BYTES_INLINE>().bytes().to_owned(),
             ValueTypeCategory::Struct => unreachable!("Structs are not supported in annotation serialization"),
         }
     }
@@ -870,9 +869,9 @@ mod serialize_annotation {
                 Value::DateTimeTZ(DateTimeTZBytes::new(bytes.try_into().unwrap()).as_date_time())
             }
             ValueTypeCategory::Duration => Value::Duration(DurationBytes::new(bytes.try_into().unwrap()).as_duration()),
-            ValueTypeCategory::String => {
-                Value::String(Cow::Owned(StringBytes::new(Bytes::<INLINE_LENGTH>::copy(bytes)).as_str().to_owned()))
-            }
+            ValueTypeCategory::String => Value::String(Cow::Owned(
+                StringBytes::new(Bytes::<AD_HOC_BYTES_INLINE>::copy(bytes)).as_str().to_owned(),
+            )),
             ValueTypeCategory::Struct => unreachable!("Structs are not supported in annotation deserialization"),
         }
     }
@@ -1123,7 +1122,7 @@ mod serialize_annotation {
                 | Value::DateTime(_)
                 | Value::DateTimeTZ(_)
                 | Value::String(_)
-                | Value::Duration(_) => value.encode_bytes::<INLINE_LENGTH>().bytes().to_owned(),
+                | Value::Duration(_) => value.encode_bytes::<AD_HOC_BYTES_INLINE>().bytes().to_owned(),
                 Value::Struct(_) => unreachable!("Can't use struct for AnnotationValues"),
             })
             .collect()

@@ -20,14 +20,13 @@ use crate::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationError, DefaultFrom,
         },
+        plays::Plays,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, Ordering,
+        Capability, Ordering, TypeAPI,
     },
 };
-use crate::type_::plays::Plays;
-use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Relates<'a> {

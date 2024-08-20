@@ -97,6 +97,28 @@ async fn relation_remove_player_for_role(
 }
 
 #[apply(generic_step)]
+#[step(expr = r"relation {var} remove {int} players for role\({type_label}[]\): {var}")]
+async fn relation_remove_count_players_for_role(
+    context: &mut Context,
+    relation_var: params::Var,
+    count: u64,
+    role_label: params::Label,
+    player_var: params::Var,
+) {
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object.clone();
+    with_write_tx!(context, |tx| {
+        let role_type = relation
+            .type_()
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        relation.remove_player_many(&mut tx.snapshot, &tx.thing_manager, role_type, player, count).unwrap();
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = r"{var} = relation {var} get players for role\({type_label}[]\)")]
 async fn relation_get_players_ordered(
     context: &mut Context,

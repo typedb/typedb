@@ -45,7 +45,11 @@ pub trait ThingAPI<'a>: Sized + Clone {
 
     fn into_owned(self) -> Self::Owned;
 
-    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) -> Result<(), ConceptReadError>;
+    fn set_required(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptReadError>;
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus;

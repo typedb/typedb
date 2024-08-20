@@ -260,7 +260,7 @@ impl<'a> Relation<'a> {
             self.type_(),
             role_type.clone(),
         )
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         OperationTimeValidation::validate_object_type_plays_role_type(
             snapshot,
@@ -268,7 +268,7 @@ impl<'a> Relation<'a> {
             player.type_(),
             role_type.clone(),
         )
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
         let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())?;
@@ -330,7 +330,11 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         Relation::new(self.vertex.into_owned())
     }
 
-    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) -> Result<(), ConceptReadError> {
+    fn set_required(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptReadError> {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing_object(snapshot, self.as_reference());
         }

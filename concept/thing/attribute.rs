@@ -28,9 +28,8 @@ use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::StorageKey,
-    snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
+    snapshot::{buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
 };
-use storage::snapshot::buffer::BufferRangeIterator;
 
 use crate::{
     edge_iterator,
@@ -132,7 +131,11 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         Attribute::new(self.vertex.into_owned())
     }
 
-    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) -> Result<(), ConceptReadError> {
+    fn set_required(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptReadError> {
         match self.type_().get_value_type(snapshot, thing_manager.type_manager())? {
             Some(value_type) => match value_type {
                 | ValueType::Boolean
@@ -285,14 +288,20 @@ where
                     if independent {
                         self.state = State::ItemReady;
                     } else {
-                        match Self::has_any_writes(self.has_reverse_iterator_buffer.as_mut().unwrap(), attribute_vertex.clone()) {
+                        match Self::has_any_writes(
+                            self.has_reverse_iterator_buffer.as_mut().unwrap(),
+                            attribute_vertex.clone(),
+                        ) {
                             Ok(has_writes) => {
                                 if has_writes {
                                     self.state = State::ItemReady
                                 } else {
-                                    match Self::has_owner(self.has_reverse_iterator_storage.as_mut().unwrap(), attribute_vertex) {
-                                        Ok(has_writes) => {
-                                            if has_writes {
+                                    match Self::has_owner(
+                                        self.has_reverse_iterator_storage.as_mut().unwrap(),
+                                        attribute_vertex,
+                                    ) {
+                                        Ok(has_owner) => {
+                                            if has_owner {
                                                 self.state = State::ItemReady
                                             } else {
                                                 advance_attribute = true

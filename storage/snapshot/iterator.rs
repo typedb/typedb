@@ -73,7 +73,9 @@ impl SnapshotRangeIterator {
                 break;
             };
 
-            let Some(Some((buffered_key, buffered_write))) = self.buffered_iterator.as_mut().map(|mut iter| iter.peek()) else {
+            let Some(Some((buffered_key, buffered_write))) =
+                self.buffered_iterator.as_mut().map(|mut iter| iter.peek())
+            else {
                 self.ready_item_source = Some(ReadyItemSource::Storage);
                 break;
             };

@@ -390,7 +390,7 @@ impl FromStr for ValueType {
     }
 }
 
-#[derive(Debug, Default, Parameter)]
+#[derive(Debug, Default, Parameter, Clone)]
 #[param(name = "value", regex = ".*?")]
 pub(crate) struct Value {
     raw_value: String,

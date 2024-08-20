@@ -4,18 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::value::{label::Label};
+use encoding::value::label::Label;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    thing::{
-        object::ObjectAPI,
-        thing_manager::{validation::DataValidationError},
-    },
-    type_::{
-        type_manager::TypeManager,
-        Capability, TypeAPI,
-    },
+    thing::{object::ObjectAPI, thing_manager::validation::DataValidationError},
+    type_::{type_manager::TypeManager, Capability, TypeAPI},
 };
 
 pub(crate) fn get_label_or_data_err<'a>(
@@ -23,5 +17,8 @@ pub(crate) fn get_label_or_data_err<'a>(
     type_manager: &TypeManager,
     type_: impl TypeAPI<'a>,
 ) -> Result<Label<'static>, DataValidationError> {
-    type_.get_label_cloned(snapshot, type_manager).map(|label| label.into_owned()).map_err(DataValidationError::ConceptRead)
+    type_
+        .get_label_cloned(snapshot, type_manager)
+        .map(|label| label.into_owned())
+        .map_err(DataValidationError::ConceptRead)
 }

@@ -174,7 +174,7 @@ async fn object_get_instance_with_value(
     key_type_label: params::Label,
     value: params::Value,
 ) {
-    let Some(key) = get_attribute_by_value(context, key_type_label, value).unwrap() else {
+    let Some(key) = get_attribute_by_value(context, key_type_label, value.clone()).unwrap() else {
         // no key - no object
         context.objects.insert(var.name, None);
         return;
@@ -192,7 +192,7 @@ async fn object_get_instance_with_value(
         assert!(owners.next().is_none(), "multiple objects found with key {:?}", key);
         owner
     });
-    context.objects.insert(var.name, owner.map(|owner| ObjectWithKey::new_with_key(owner, key)));
+    context.objects.insert(var.name, owner.clone().map(|owner| ObjectWithKey::new_with_key(owner, key)));
 }
 
 #[apply(generic_step)]

@@ -13,7 +13,7 @@ use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use crate::{
     durability_client::DurabilityClient,
     isolation_manager::{CommitRecord, CommitType},
-    iterator::MVCCReadError,
+    iterator::{MVCCRangeIterator, MVCCReadError},
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     sequence_number::SequenceNumber,
@@ -25,7 +25,6 @@ use crate::{
     },
     MVCCStorage, StorageCommitError,
 };
-use crate::iterator::MVCCRangeIterator;
 
 pub trait ReadableSnapshot {
     fn open_sequence_number(&self) -> SequenceNumber;

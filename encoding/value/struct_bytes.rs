@@ -11,7 +11,7 @@ use std::{
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use resource::constants::encoding::StructFieldIDUInt;
+use resource::constants::encoding::{StructFieldIDUInt, AD_HOC_BYTES_INLINE};
 
 use crate::{
     error::EncodingError,
@@ -104,7 +104,7 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
             | Value::Date(_)
             | Value::DateTime(_)
             | Value::DateTimeTZ(_)
-            | Value::Duration(_) => buf.extend_from_slice(value.encode_bytes::<128>().bytes()),
+            | Value::Duration(_) => buf.extend_from_slice(value.encode_bytes::<AD_HOC_BYTES_INLINE>().bytes()),
         }
     }
     Ok(())

@@ -5,8 +5,8 @@
  */
 
 use std::collections::{HashMap, HashSet};
-use itertools::Itertools;
 
+use itertools::Itertools;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -218,7 +218,25 @@ impl CommitTimeValidation {
         Ok(cardinality != AnnotationCardinality::unchecked())
     }
 
-    validate_capability_cardinality_constraint!(validate_owns_cardinality_constraint, Owns, AttributeType, Object, Self::check_owns_cardinality);
-    validate_capability_cardinality_constraint!(validate_plays_cardinality_constraint, Plays, RoleType, Object, Self::check_plays_cardinality);
-    validate_capability_cardinality_constraint!(validate_relates_cardinality_constraint, Relates, RoleType, Relation, Self::check_relates_cardinality);
+    validate_capability_cardinality_constraint!(
+        validate_owns_cardinality_constraint,
+        Owns,
+        AttributeType,
+        Object,
+        Self::check_owns_cardinality
+    );
+    validate_capability_cardinality_constraint!(
+        validate_plays_cardinality_constraint,
+        Plays,
+        RoleType,
+        Object,
+        Self::check_plays_cardinality
+    );
+    validate_capability_cardinality_constraint!(
+        validate_relates_cardinality_constraint,
+        Relates,
+        RoleType,
+        Relation,
+        Self::check_relates_cardinality
+    );
 }

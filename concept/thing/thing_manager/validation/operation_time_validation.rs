@@ -17,10 +17,7 @@ use crate::{
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::{
-            validation::{
-                validation::{get_label_or_data_err},
-                DataValidationError,
-            },
+            validation::{validation::get_label_or_data_err, DataValidationError},
             ThingManager,
         },
     },
@@ -317,8 +314,9 @@ impl OperationTimeValidation {
         owns: Owns<'static>,
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
-        let uniqueness_source =
-            owns.get_uniqueness_source(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
+        let uniqueness_source = owns
+            .get_uniqueness_source(snapshot, thing_manager.type_manager())
+            .map_err(DataValidationError::ConceptRead)?;
         if let Some(unique_root) = uniqueness_source {
             let mut queue = VecDeque::from([(unique_root.owner(), unique_root.clone())]);
 

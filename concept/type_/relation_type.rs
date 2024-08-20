@@ -325,7 +325,8 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager,
         role_name: &str,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        for relates in type_manager.get_relation_type_relates_declared(snapshot, self.clone().into_owned())?.into_iter() {
+        for relates in type_manager.get_relation_type_relates_declared(snapshot, self.clone().into_owned())?.into_iter()
+        {
             let role_label = relates.role().get_label(snapshot, type_manager)?;
             if role_label.name.as_str() == role_name {
                 return Ok(Some(relates.to_owned()));

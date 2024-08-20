@@ -122,7 +122,11 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         }
     }
 
-    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) -> Result<(), ConceptReadError> {
+    fn set_required(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptReadError> {
         match self {
             Object::Entity(entity) => entity.set_required(snapshot, thing_manager),
             Object::Relation(relation) => relation.set_required(snapshot, thing_manager),
@@ -267,7 +271,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             self.type_(),
             attribute.type_(),
         )
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute.type_())?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
@@ -296,7 +300,8 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         )
         .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
-        let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type.clone())?;
+        let owns =
+            self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type.clone())?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
             Ordering::Unordered => return Err(ConceptWriteError::SetHasOrderedOwnsUnordered {}),
             Ordering::Ordered => (),
@@ -354,9 +359,10 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             self.type_(),
             attribute_type.clone(),
         )
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
-        let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type.clone())?;
+        let owns =
+            self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type.clone())?;
         let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
         match ordering {
             Ordering::Unordered => Err(ConceptWriteError::UnsetHasOrderedOwnsUnordered {}),

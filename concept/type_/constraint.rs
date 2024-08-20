@@ -124,15 +124,21 @@ impl Constraint {
         match annotation_category {
             AnnotationCategory::Abstract => &[ConstraintValidationMode::Type],
             AnnotationCategory::Distinct => &[ConstraintValidationMode::Type],
-            AnnotationCategory::Independent =>  &[],
+            AnnotationCategory::Independent => &[],
             AnnotationCategory::Unique => &[ConstraintValidationMode::TypeAndSiblingsAndSubtypes],
             AnnotationCategory::Cardinality =>
-                // ::Type for min, ::TypeAndSiblings for max
-                &[ConstraintValidationMode::Type, ConstraintValidationMode::TypeAndSiblings],
+            // ::Type for min, ::TypeAndSiblings for max
+            {
+                &[ConstraintValidationMode::Type, ConstraintValidationMode::TypeAndSiblings]
+            }
             AnnotationCategory::Key => {
                 // WARNING: must match Unique + Cardinality checks!
-                &[ConstraintValidationMode::Type, ConstraintValidationMode::TypeAndSiblings, ConstraintValidationMode::TypeAndSiblingsAndSubtypes]
-            },
+                &[
+                    ConstraintValidationMode::Type,
+                    ConstraintValidationMode::TypeAndSiblings,
+                    ConstraintValidationMode::TypeAndSiblingsAndSubtypes,
+                ]
+            }
             AnnotationCategory::Regex => &[ConstraintValidationMode::Type],
             AnnotationCategory::Cascade => &[],
             AnnotationCategory::Range => &[ConstraintValidationMode::Type],

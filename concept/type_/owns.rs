@@ -226,13 +226,11 @@ impl<'a> Owns<'a> {
         )?;
         Ok(match unique_source {
             Some(_) => unique_source,
-            None => {
-                type_manager.get_capability_annotation_source(
-                    snapshot,
-                    owns_owned,
-                    OwnsAnnotation::Key(AnnotationKey),
-                )?
-            }
+            None => type_manager.get_capability_annotation_source(
+                snapshot,
+                owns_owned,
+                OwnsAnnotation::Key(AnnotationKey),
+            )?,
         })
     }
 }

@@ -3010,7 +3010,7 @@ impl OperationTimeValidation {
                 // If this abstract type is overridden, the concrete types will inherit the updated
                 // cardinality and revalidate it against themselves in this function if needed.
                 false => real_cardinality == 0 && only_abstract_types,
-            }
+            },
         }
     }
 
@@ -3128,12 +3128,12 @@ impl OperationTimeValidation {
                     }
                 }
 
-                if !Self::check_operation_time_cardinality_constraint(cardinality.clone(), real_cardinality, only_abstract_types) {
-                    return Ok(Some(if is_key {
-                        AnnotationCategory::Key
-                    } else {
-                        AnnotationCategory::Cardinality
-                    }));
+                if !Self::check_operation_time_cardinality_constraint(
+                    cardinality.clone(),
+                    real_cardinality,
+                    only_abstract_types,
+                ) {
+                    return Ok(Some(if is_key { AnnotationCategory::Key } else { AnnotationCategory::Cardinality }));
                 }
             }
         }
@@ -3175,7 +3175,11 @@ impl OperationTimeValidation {
                     real_cardinality += count;
                 }
 
-                if !Self::check_operation_time_cardinality_constraint(cardinality.clone(), real_cardinality, only_abstract_types) {
+                if !Self::check_operation_time_cardinality_constraint(
+                    cardinality.clone(),
+                    real_cardinality,
+                    only_abstract_types,
+                ) {
                     return Ok(Some(AnnotationCategory::Cardinality));
                 }
             }
@@ -3230,7 +3234,11 @@ impl OperationTimeValidation {
                     }
                 }
 
-                if !Self::check_operation_time_cardinality_constraint(cardinality.clone(), real_cardinality, only_abstract_types) {
+                if !Self::check_operation_time_cardinality_constraint(
+                    cardinality.clone(),
+                    real_cardinality,
+                    only_abstract_types,
+                ) {
                     return Ok(Some(AnnotationCategory::Cardinality));
                 }
             }
