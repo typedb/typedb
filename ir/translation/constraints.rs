@@ -20,9 +20,9 @@ use crate::{
     PatternDefinitionError,
 };
 
-pub(super) fn add_statement(
+pub(super) fn add_statement<'cx, 'reg>(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     stmt: &typeql::Statement,
 ) -> Result<(), PatternDefinitionError> {
     match stmt {
@@ -44,9 +44,9 @@ pub(super) fn add_statement(
     Ok(())
 }
 
-fn add_thing_statement(
+fn add_thing_statement<'cx, 'reg>(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     thing: &typeql::statement::Thing,
 ) -> Result<(), PatternDefinitionError> {
     let var = match &thing.head {
@@ -70,8 +70,8 @@ fn add_thing_statement(
     Ok(())
 }
 
-fn add_type_statement(
-    constraints: &mut ConstraintsBuilder<'_>,
+fn add_type_statement<'cx, 'reg>(
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     type_: &typeql::statement::Type,
 ) -> Result<(), PatternDefinitionError> {
     let var = register_typeql_type_var_any(constraints, &type_.type_)?;
@@ -94,9 +94,9 @@ fn add_type_statement(
     Ok(())
 }
 
-fn extend_from_inline_typeql_expression(
+fn extend_from_inline_typeql_expression<'cx, 'reg>(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     expression: &TypeQLExpression,
 ) -> Result<Variable, PatternDefinitionError> {
     if let TypeQLExpression::Variable(typeql_var) = expression {
@@ -109,8 +109,8 @@ fn extend_from_inline_typeql_expression(
     }
 }
 
-pub(crate) fn register_typeql_var(
-    constraints: &mut ConstraintsBuilder<'_>,
+pub(crate) fn register_typeql_var<'cx, 'reg>(
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     var: &typeql::Variable,
 ) -> Result<Variable, PatternDefinitionError> {
     match var {
@@ -125,8 +125,8 @@ pub(crate) fn register_typeql_var(
     }
 }
 
-fn register_typeql_type_var_any(
-    constraints: &mut ConstraintsBuilder<'_>,
+fn register_typeql_type_var_any<'cx, 'reg>(
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     type_: &typeql::TypeRefAny,
 ) -> Result<Variable, PatternDefinitionError> {
     match type_ {
@@ -136,8 +136,8 @@ fn register_typeql_type_var_any(
     }
 }
 
-fn register_typeql_type_var(
-    constraints: &mut ConstraintsBuilder<'_>,
+fn register_typeql_type_var<'cx, 'reg>(
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     type_: &typeql::TypeRef,
 ) -> Result<Variable, PatternDefinitionError> {
     match type_ {
@@ -150,8 +150,8 @@ fn register_typeql_type_var(
     }
 }
 
-fn register_type_scoped_label_var(
-    constraints: &mut ConstraintsBuilder<'_>,
+fn register_type_scoped_label_var<'cx, 'reg>(
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     scoped_label: &ScopedLabel,
 ) -> Result<Variable, PatternDefinitionError> {
     let label = Label::build_scoped(scoped_label.name.ident.as_str(), scoped_label.scope.ident.as_str());
@@ -160,8 +160,8 @@ fn register_type_scoped_label_var(
     Ok(variable)
 }
 
-fn register_type_label_var(
-    constraints: &mut ConstraintsBuilder<'_>,
+fn register_type_label_var<'cx, 'reg>(
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     label: &typeql::Label,
 ) -> Result<Variable, PatternDefinitionError> {
     let variable = constraints.create_anonymous_variable()?;
@@ -169,8 +169,8 @@ fn register_type_label_var(
     Ok(variable)
 }
 
-fn add_typeql_isa(
-    constraints: &mut ConstraintsBuilder<'_>,
+fn add_typeql_isa<'cx, 'reg>(
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     thing: Variable,
     isa: &typeql::statement::thing::isa::Isa,
 ) -> Result<(), PatternDefinitionError> {
@@ -183,9 +183,9 @@ fn add_typeql_isa(
     Ok(())
 }
 
-fn add_typeql_has(
+fn add_typeql_has<'cx, 'reg>(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     owner: Variable,
     has: &typeql::statement::thing::Has,
 ) -> Result<(), PatternDefinitionError> {
@@ -208,8 +208,8 @@ fn add_typeql_has(
     Ok(())
 }
 
-pub(super) fn add_typeql_relation(
-    constraints: &mut ConstraintsBuilder<'_>,
+pub(super) fn add_typeql_relation<'cx, 'reg>(
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     relation: Variable,
     roleplayers: &typeql::statement::thing::Relation,
 ) -> Result<(), PatternDefinitionError> {
@@ -247,9 +247,9 @@ pub(super) fn add_typeql_relation(
     Ok(())
 }
 
-fn add_typeql_binding(
+fn add_typeql_binding<'cx, 'reg>(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     assigned: Vec<Variable>,
     rhs: &TypeQLExpression,
     is_stream_binding: bool,
@@ -286,9 +286,9 @@ fn add_typeql_binding(
 }
 
 // Helpers
-pub(super) fn add_function_call_binding_user(
+pub(super) fn add_function_call_binding_user<'cx, 'reg>(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     assigned: Vec<Variable>,
     function_name: &str,
     arguments: Vec<Variable>,
@@ -314,8 +314,8 @@ pub(super) fn add_function_call_binding_user(
     }
 }
 
-fn assignment_pattern_to_variables(
-    constraints: &mut ConstraintsBuilder<'_>,
+fn assignment_pattern_to_variables<'cx, 'reg>(
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     assignment: &AssignmentPattern,
 ) -> Result<Vec<Variable>, PatternDefinitionError> {
     match assignment {
@@ -326,16 +326,16 @@ fn assignment_pattern_to_variables(
     }
 }
 
-fn assignment_typeql_vars_to_variables(
-    constraints: &mut ConstraintsBuilder<'_>,
+fn assignment_typeql_vars_to_variables<'cx, 'reg>(
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     vars: &Vec<typeql::Variable>,
 ) -> Result<Vec<Variable>, PatternDefinitionError> {
     vars.iter().map(|variable| register_typeql_var(constraints, variable)).collect::<Result<Vec<_>, _>>()
 }
 
-pub(super) fn split_out_inline_expressions(
+pub(super) fn split_out_inline_expressions<'cx, 'reg>(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     expressions: &Vec<typeql::expression::Expression>,
 ) -> Result<Vec<Variable>, PatternDefinitionError> {
     expressions

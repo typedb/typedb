@@ -59,28 +59,28 @@ impl fmt::Display for Conjunction {
     }
 }
 
-pub struct ConjunctionBuilder<'cx> {
-    context: &'cx mut BlockContext,
+pub struct ConjunctionBuilder<'cx, 'reg> {
+    context: &'cx mut BlockContext<'reg>,
     conjunction: &'cx mut Conjunction,
 }
 
-impl<'cx> ConjunctionBuilder<'cx> {
-    pub fn new(context: &'cx mut BlockContext, conjunction: &'cx mut Conjunction) -> Self {
+impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
+    pub fn new(context: &'cx mut BlockContext<'reg>, conjunction: &'cx mut Conjunction) -> Self {
         Self { context, conjunction }
     }
 
-    pub fn constraints_mut(&mut self) -> ConstraintsBuilder<'_> {
+    pub fn constraints_mut(&mut self) -> ConstraintsBuilder<'_, 'reg> {
         ConstraintsBuilder::new(self.context, &mut self.conjunction.constraints)
     }
 
-    pub fn add_disjunction(&mut self) -> DisjunctionBuilder<'_> {
+    pub fn add_disjunction(&mut self) -> DisjunctionBuilder<'_, 'reg> {
         self.conjunction.nested_patterns.push(NestedPattern::Disjunction(Disjunction::new()));
         let disjunction =
             self.conjunction.nested_patterns.last_mut().and_then(NestedPattern::as_disjunction_mut).unwrap();
         DisjunctionBuilder::new(self.context, self.conjunction.scope_id, disjunction)
     }
 
-    pub fn add_negation(&mut self) -> ConjunctionBuilder<'_> {
+    pub fn add_negation(&mut self) -> ConjunctionBuilder<'_, 'reg> {
         let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id);
         let negation = Negation::new(nested_scope_id);
         self.conjunction.nested_patterns.push(NestedPattern::Negation(negation));
@@ -90,7 +90,7 @@ impl<'cx> ConjunctionBuilder<'cx> {
         Negation::new_builder(self.context, negation)
     }
 
-    pub fn add_optional(&mut self) -> ConjunctionBuilder<'_> {
+    pub fn add_optional(&mut self) -> ConjunctionBuilder<'_, 'reg> {
         let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id);
         let optional = Optional::new(nested_scope_id);
         self.conjunction.nested_patterns.push(NestedPattern::Optional(optional));

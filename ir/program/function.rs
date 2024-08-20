@@ -11,7 +11,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 
-use crate::program::block::FunctionalBlock;
+use crate::program::block::{BlockContext, FunctionalBlock, VariableRegistry};
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
@@ -20,12 +20,18 @@ pub struct Function {
     // Variable categories for args & return can be read from the block's context.
     arguments: Vec<Variable>,
     block: FunctionalBlock,
+    variable_registry: VariableRegistry,
     return_operation: ReturnOperation,
 }
 
 impl Function {
-    pub fn new<'a>(block: FunctionalBlock, arguments: Vec<Variable>, return_operation: ReturnOperation) -> Self {
-        Self { block, arguments, return_operation }
+    pub fn new<'a>(
+        block: FunctionalBlock,
+        variable_registry: VariableRegistry,
+        arguments: Vec<Variable>,
+        return_operation: ReturnOperation,
+    ) -> Self {
+        Self { block, variable_registry, arguments, return_operation }
     }
 
     pub fn arguments(&self) -> &Vec<Variable> {
@@ -33,6 +39,9 @@ impl Function {
     }
     pub fn block(&self) -> &FunctionalBlock {
         &self.block
+    }
+    pub fn variable_registry(&self) -> &VariableRegistry {
+        &self.variable_registry
     }
     pub fn return_operation(&self) -> &ReturnOperation {
         &self.return_operation

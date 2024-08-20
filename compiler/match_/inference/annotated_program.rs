@@ -73,7 +73,7 @@ pub mod tests {
 
     use ir::{
         program::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
-        translation::{function::translate_function, match_::translate_match},
+        translation::{function::translate_function, match_::translate_match, TranslationContext},
     };
     use typeql::query::Pipeline;
 
@@ -105,7 +105,8 @@ pub mod tests {
         let function_index =
             HashMapFunctionSignatureIndex::build([(FunctionID::Preamble(0), &typeql_function)].into_iter());
         let function = translate_function(&function_index, &typeql_function).unwrap();
-        let entry = translate_match(&function_index, &typeql_match).unwrap().finish();
+        let mut translation_context = TranslationContext::new();
+        let entry = translate_match(&mut translation_context, &function_index, &typeql_match).unwrap().finish();
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
         let ((type_animal, type_cat, type_dog), _, _) =
@@ -113,10 +114,17 @@ pub mod tests {
         let empty_cache = IndexedAnnotatedFunctions::empty();
 
         let snapshot = storage.clone().open_snapshot_read();
-        let var_f_c = function.block().context().get_variable_named("c", function.block().scope_id()).unwrap().clone();
-        let var_x = entry.context().get_variable_named("x", entry.scope_id()).unwrap().clone();
-        let (entry_annotations, function_annotations) =
-            infer_types(&entry, vec![function], &snapshot, &type_manager, &empty_cache).unwrap();
+        let var_f_c = translation_context.visible_variables.get("c").unwrap().clone();
+        let var_x = translation_context.visible_variables.get("x").unwrap().clone();
+        let (entry_annotations, function_annotations) = infer_types(
+            &entry,
+            vec![function],
+            &snapshot,
+            &type_manager,
+            &empty_cache,
+            &translation_context.variable_registry,
+        )
+        .unwrap();
         assert_eq!(
             &Arc::new(HashSet::from([type_cat.clone()])),
             function_annotations

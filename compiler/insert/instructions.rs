@@ -9,21 +9,29 @@ use encoding::value::value::Value;
 use super::{ThingSource, TypeSource, ValueSource};
 
 #[derive(Debug)]
-pub enum InsertInstruction {
+pub enum InsertVertexInstruction {
     PutObject(PutObject),
     PutAttribute(PutAttribute),
+}
+
+#[derive(Debug)]
+pub enum InsertEdgeInstruction {
     Has(Has),               // TODO: Ordering
     RolePlayer(RolePlayer), // TODO: Ordering
 }
+
+// TODO: Move to storing the inserted thing directly into the output row
 #[derive(Debug)]
 pub struct PutObject {
     pub type_: TypeSource,
+    pub write_to: ThingSource,
 }
 
 #[derive(Debug)]
 pub struct PutAttribute {
     pub type_: TypeSource,
     pub value: ValueSource,
+    pub write_to: ThingSource,
 }
 
 #[derive(Debug)]

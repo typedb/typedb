@@ -15,8 +15,10 @@ use compiler::expression::{
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
 use executor::expression_executor::{ExpressionExecutor, ExpressionValue};
 use ir::{
-    pattern::constraint::Constraint, program::function_signature::HashMapFunctionSignatureIndex,
-    translation::match_::translate_match, PatternDefinitionError,
+    pattern::constraint::Constraint,
+    program::function_signature::HashMapFunctionSignatureIndex,
+    translation::{match_::translate_match, TranslationContext},
+    PatternDefinitionError,
 };
 use itertools::Itertools;
 use typeql::query::stage::Stage;
@@ -44,17 +46,17 @@ fn compile_expression_via_match(
     variable_types: HashMap<&str, ExpressionValueType>,
 ) -> Result<(HashMap<String, Variable>, CompiledExpression), PatternDefitionOrExpressionCompileError> {
     let query = format!("match $x = {}; select $x;", s);
+    let mut translation_context = TranslationContext::new();
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap() {
-        let block = translate_match(&HashMapFunctionSignatureIndex::empty(), &match_)?.finish();
+        let block =
+            translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &match_)?.finish();
         let variable_mapping = variable_types
             .keys()
-            .map(|name| {
-                ((*name).to_owned(), block.context().get_variable_named(name, block.scope_id()).unwrap().clone())
-            })
+            .map(|name| ((*name).to_owned(), translation_context.visible_variables.get(*name).unwrap().clone()))
             .collect::<HashMap<_, _>>();
         let variable_types_mapped = variable_types
             .into_iter()
-            .map(|(name, type_)| (block.context().get_variable_named(name, block.scope_id()).unwrap().clone(), type_))
+            .map(|(name, type_)| (translation_context.visible_variables.get(name).unwrap().clone(), type_))
             .collect::<HashMap<_, _>>();
 
         let expression_binding = match &block.conjunction().constraints()[0] {

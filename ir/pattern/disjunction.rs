@@ -44,18 +44,18 @@ impl fmt::Display for Disjunction {
     }
 }
 
-pub struct DisjunctionBuilder<'cx> {
-    context: &'cx mut BlockContext,
+pub struct DisjunctionBuilder<'cx, 'reg> {
+    context: &'cx mut BlockContext<'reg>,
     disjunction: &'cx mut Disjunction,
     scope_id: ScopeId,
 }
 
-impl<'cx> DisjunctionBuilder<'cx> {
-    pub fn new(context: &'cx mut BlockContext, scope_id: ScopeId, disjunction: &'cx mut Disjunction) -> Self {
+impl<'cx, 'reg> DisjunctionBuilder<'cx, 'reg> {
+    pub fn new(context: &'cx mut BlockContext<'reg>, scope_id: ScopeId, disjunction: &'cx mut Disjunction) -> Self {
         Self { context, disjunction, scope_id }
     }
 
-    pub fn add_conjunction(&mut self) -> ConjunctionBuilder<'_> {
+    pub fn add_conjunction(&mut self) -> ConjunctionBuilder<'_, 'reg> {
         let conj_scope_id = self.context.create_child_scope(self.scope_id);
         self.disjunction.conjunctions.push(Conjunction::new(conj_scope_id));
         ConjunctionBuilder::new(self.context, self.disjunction.conjunctions.last_mut().unwrap())

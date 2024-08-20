@@ -34,7 +34,8 @@ pub struct ScopeId {
 }
 
 impl ScopeId {
-    pub const ROOT: ScopeId = ScopeId { id: 0 };
+    pub const INPUT: ScopeId = ScopeId { id: 0 };
+    pub const ROOT: ScopeId = ScopeId { id: 1 };
 
     pub(crate) fn new(id: u16) -> Self {
         ScopeId { id }

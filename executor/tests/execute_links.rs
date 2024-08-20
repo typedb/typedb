@@ -24,7 +24,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
-use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock};
+use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 
@@ -168,7 +168,8 @@ fn traverse_links_unbounded_sorted_from() {
     //
 
     // IR
-    let mut builder = FunctionalBlock::builder();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
@@ -206,8 +207,15 @@ fn traverse_links_unbounded_sorted_from() {
     let entry = builder.finish();
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -227,7 +235,7 @@ fn traverse_links_unbounded_sorted_from() {
         &[var_membership, var_group, var_person],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -257,7 +265,8 @@ fn traverse_links_unbounded_sorted_to() {
     //
 
     // IR
-    let mut builder = FunctionalBlock::builder();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
@@ -293,8 +302,15 @@ fn traverse_links_unbounded_sorted_to() {
     let entry = builder.finish();
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -307,7 +323,7 @@ fn traverse_links_unbounded_sorted_to() {
         &[var_membership, var_person],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -337,8 +353,9 @@ fn traverse_links_bounded_relation() {
     //
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -371,12 +388,19 @@ fn traverse_links_bounded_relation() {
         .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![
@@ -400,7 +424,7 @@ fn traverse_links_bounded_relation() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -430,8 +454,9 @@ fn traverse_links_bounded_relation_player() {
     //
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -465,12 +490,19 @@ fn traverse_links_bounded_relation_player() {
         .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![
@@ -503,7 +535,7 @@ fn traverse_links_bounded_relation_player() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -532,8 +564,9 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     //
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -565,12 +598,19 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -583,7 +623,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         &[var_membership, var_person],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -613,8 +653,9 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     //
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -646,12 +687,19 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -664,7 +712,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         &[var_membership, var_person],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -694,8 +742,9 @@ fn traverse_links_reverse_bounded_player() {
     //
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -728,12 +777,19 @@ fn traverse_links_reverse_bounded_player() {
         .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![
@@ -757,7 +813,7 @@ fn traverse_links_reverse_bounded_player() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -787,8 +843,9 @@ fn traverse_links_reverse_bounded_player_relation() {
     //
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -822,12 +879,19 @@ fn traverse_links_reverse_bounded_player_relation() {
         .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![
@@ -860,7 +924,7 @@ fn traverse_links_reverse_bounded_player_relation() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor

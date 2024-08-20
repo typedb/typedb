@@ -17,7 +17,7 @@ use compiler::match_::{
 use concept::error::ConceptReadError;
 use encoding::value::label::Label;
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
-use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock};
+use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -66,20 +66,28 @@ fn traverse_isa_unbounded_sorted_thing() {
     //   match $x isa $t; $t label dog;
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -88,7 +96,7 @@ fn traverse_isa_unbounded_sorted_thing() {
         &[var_dog, var_dog_type],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -117,20 +125,28 @@ fn traverse_isa_unbounded_sorted_type() {
     //   match $x isa $t; $t label dog;
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -139,7 +155,7 @@ fn traverse_isa_unbounded_sorted_type() {
         &[var_dog, var_dog_type],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -168,8 +184,9 @@ fn traverse_isa_bounded_thing() {
     //   match $x isa $t; $x isa $u;
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_type_from = conjunction.get_or_declare_variable("t").unwrap();
     let var_type_to = conjunction.get_or_declare_variable("u").unwrap();
     let var_thing = conjunction.get_or_declare_variable("x").unwrap();
@@ -178,12 +195,19 @@ fn traverse_isa_bounded_thing() {
     let isa_from_type =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing, var_type_from).unwrap().clone();
     let isa_to_type = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing, var_type_to).unwrap().clone();
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![
@@ -207,7 +231,7 @@ fn traverse_isa_bounded_thing() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -236,20 +260,28 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     //   match $x isa $t; $t label dog;
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -258,7 +290,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
         &[var_dog, var_dog_type],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -287,20 +319,28 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     //   match $x isa $t; $t label dog;
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![Step::Intersection(IntersectionStep::new(
@@ -309,7 +349,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
         &[var_dog, var_dog_type],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -338,8 +378,9 @@ fn traverse_isa_reverse_bounded_type() {
     //   match $x isa $t; $y isa $t;
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_thing_from = conjunction.get_or_declare_variable("x").unwrap();
     let var_thing_to = conjunction.get_or_declare_variable("y").unwrap();
     let var_type = conjunction.get_or_declare_variable("t").unwrap();
@@ -348,12 +389,19 @@ fn traverse_isa_reverse_bounded_type() {
     let isa_from_thing =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_from, var_type).unwrap().clone();
     let isa_to_thing = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_to, var_type).unwrap().clone();
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![
@@ -373,7 +421,7 @@ fn traverse_isa_reverse_bounded_type() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor

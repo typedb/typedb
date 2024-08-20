@@ -170,8 +170,10 @@ pub mod tests {
     use typeql::query::stage::Stage;
 
     use crate::{
-        pattern::expression::Expression, program::function_signature::HashMapFunctionSignatureIndex,
-        translation::match_::translate_match, PatternDefinitionError,
+        pattern::expression::Expression,
+        program::{block::BlockContext, function_signature::HashMapFunctionSignatureIndex},
+        translation::{match_::translate_match, TranslationContext},
+        PatternDefinitionError,
     };
 
     fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, PatternDefinitionError> {
@@ -179,7 +181,8 @@ pub mod tests {
         if let Stage::Match(match_) =
             typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap()
         {
-            let block = translate_match(&HashMapFunctionSignatureIndex::empty(), &match_)?.finish();
+            let mut context = TranslationContext::new();
+            let block = translate_match(&mut context, &HashMapFunctionSignatureIndex::empty(), &match_)?.finish();
             let x = &block.conjunction().constraints()[0].as_expression_binding().unwrap().expression().get_root();
             match x {
                 Expression::Constant(constant) => Ok(constant.clone()),

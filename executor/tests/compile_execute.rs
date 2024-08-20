@@ -19,7 +19,10 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::program_executor::ProgramExecutor;
-use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::match_::translate_match};
+use ir::{
+    program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
+    translation::{match_::translate_match, TranslationContext},
+};
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::{sequence_number::SequenceNumber, snapshot::CommittableSnapshot};
@@ -109,7 +112,8 @@ fn test_has_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let builder = translate_match(&empty_function_index, &match_).unwrap();
+    let mut translation_context = TranslationContext::new();
+    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
     // builder.add_limit(3);
     // builder.add_filter(vec!["person", "age"]).unwrap();
     let block = builder.finish();
@@ -117,9 +121,22 @@ fn test_has_planning_traversal() {
     // Executor
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, annotated_functions) =
-        infer_types(&block, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
-    let pattern_plan = PatternPlan::from_block(&block, &entry_annotations, &HashMap::new(), &statistics);
+    let (entry_annotations, annotated_functions) = infer_types(
+        &block,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
+    let pattern_plan = PatternPlan::from_block(
+        &block,
+        &entry_annotations,
+        &translation_context.variable_registry,
+        &HashMap::new(),
+        &statistics,
+    );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
@@ -230,7 +247,8 @@ fn test_links_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let builder = translate_match(&empty_function_index, &match_).unwrap();
+    let mut translation_context = TranslationContext::new();
+    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
     // builder.add_limit(3);
     // builder.add_filter(vec!["person", "age"]).unwrap();
     let block = builder.finish();
@@ -238,9 +256,22 @@ fn test_links_planning_traversal() {
     // Executor
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&block, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
-    let pattern_plan = PatternPlan::from_block(&block, &entry_annotations, &HashMap::new(), &statistics);
+    let (entry_annotations, _) = infer_types(
+        &block,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
+    let pattern_plan = PatternPlan::from_block(
+        &block,
+        &entry_annotations,
+        &translation_context.variable_registry,
+        &HashMap::new(),
+        &statistics,
+    );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));

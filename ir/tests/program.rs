@@ -18,11 +18,13 @@ use ir::{
         function_signature::{FunctionID, FunctionSignature},
         modifier::ModifierDefinitionError,
     },
+    translation::TranslationContext,
 };
 
 #[test]
 fn build_modifiers() {
-    let mut builder = FunctionalBlock::builder();
+    let mut context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
@@ -44,7 +46,8 @@ fn build_modifiers() {
 
 #[test]
 fn build_invalid_modifiers() {
-    let mut builder = FunctionalBlock::builder();
+    let mut context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
 
     let person_name = String::from("bob");
@@ -68,7 +71,8 @@ fn build_invalid_modifiers() {
 
 #[test]
 fn build_program_with_functions() {
-    let mut builder = FunctionalBlock::builder();
+    let mut context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
@@ -98,4 +102,5 @@ fn build_program_with_functions() {
     println!("{}", block.conjunction());
 
     // TODO: incomplete, since we don't have the called function IR
+    // let program = Program::new(Pattern::Conjunction(conjunction), HashMap::new());
 }

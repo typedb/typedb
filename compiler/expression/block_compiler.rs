@@ -13,7 +13,7 @@ use ir::{
         conjunction::Conjunction, expression::ExpressionTree, nested_pattern::NestedPattern,
         variable_category::VariableCategory,
     },
-    program::block::FunctionalBlock,
+    program::block::{FunctionalBlock, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -29,6 +29,7 @@ use crate::{
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block FunctionalBlock,
+    variable_registry: &'block VariableRegistry,
     snapshot: &'block Snapshot,
     type_manager: &'block TypeManager,
     type_annotations: &'block TypeAnnotations,
@@ -42,13 +43,15 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     snapshot: &'block Snapshot,
     type_manager: &'block TypeManager,
     block: &'block FunctionalBlock,
+    variable_registry: &'block VariableRegistry,
     type_annotations: &'block TypeAnnotations,
-) -> Result<HashMap<Variable, CompiledExpression>, ExpressionCompileError> {
+) -> Result<(HashMap<Variable, CompiledExpression>, HashMap<Variable, ExpressionValueType>), ExpressionCompileError> {
     let mut expression_index = HashMap::new();
     index_expressions(block.conjunction(), &mut expression_index)?;
     let assigned_variables = expression_index.keys().cloned().collect_vec();
     let mut context = BlockExpressionsCompilationContext {
         block,
+        variable_registry,
         snapshot,
         type_manager,
         type_annotations,
@@ -60,7 +63,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     for variable in assigned_variables {
         compile_expressions_recursive(&mut context, variable, &expression_index)?
     }
-    Ok(context.compiled_expressions)
+    Ok((context.compiled_expressions, context.variable_value_types))
 }
 
 fn index_expressions<'block>(
@@ -106,6 +109,7 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
         resolve_type_for_variable(context, variable, expression_assignments)?;
     }
     let compiled = ExpressionCompilationContext::compile(expression, &context.variable_value_types)?;
+    context.variable_value_types.insert(assigned_variable, compiled.return_type);
     context.compiled_expressions.insert(assigned_variable, compiled);
     Ok(())
 }
@@ -142,7 +146,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         if vec.len() != 1 {
             Err(ExpressionCompileError::VariableDidNotHaveSingleValueType { variable })
         } else if let Some(value_type) = &vec.iter().find(|_| true).unwrap() {
-            let variable_category = context.block.context().get_variable_category(variable).unwrap();
+            let variable_category = context.variable_registry.get_variable_category(variable).unwrap();
             match variable_category {
                 VariableCategory::Attribute | VariableCategory::Value => {
                     context.variable_value_types.insert(variable, ExpressionValueType::Single(value_type.category()));

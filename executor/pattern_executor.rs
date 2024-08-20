@@ -16,7 +16,7 @@ use compiler::match_::{
     },
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::program::block::BlockContext;
+use ir::program::block::{BlockContext, VariableRegistry};
 use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
@@ -24,6 +24,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::{Batch, BatchRowIterator, ImmutableRow, Row},
     instruction::{iterator::TupleIterator, InstructionExecutor},
+    pipeline::{PipelineContext, PipelineError, PipelineStageAPI},
     SelectedPositions, VariablePosition,
 };
 
@@ -43,7 +44,7 @@ impl PatternExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
-        let (steps, context) = (plan.steps(), plan.context());
+        let (steps, context) = (plan.steps(), plan.variable_registry());
         let mut variable_positions = HashMap::new();
         let mut step_executors = Vec::with_capacity(steps.len());
         for step in steps {
@@ -98,7 +99,7 @@ impl PatternExecutor {
             (steps_len - 1, None, Direction::Backward)
         } else {
             self.initialised = true;
-            (0, Some(Batch::EMPTY_SINGLE_ROW), Direction::Forward)
+            (0, Some(Batch::SINGLE_EMPTY_ROW), Direction::Forward)
         };
 
         loop {
@@ -156,15 +157,22 @@ enum Direction {
     Backward,
 }
 
-struct BatchIterator<Snapshot> {
+struct BatchIterator<Snapshot: ReadableSnapshot> {
     executor: PatternExecutor,
-    snapshot: Arc<Snapshot>,
-    thing_manager: Arc<ThingManager>,
+    context: PipelineContext<Snapshot>,
 }
 
 impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
     fn new(executor: PatternExecutor, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
-        Self { executor, snapshot, thing_manager }
+        Self::new_from_context(executor, PipelineContext::Arced(snapshot, thing_manager))
+    }
+
+    fn new_from_context(executor: PatternExecutor, context: PipelineContext<Snapshot>) -> Self {
+        Self { executor, context }
+    }
+
+    fn into_parts(self) -> (PatternExecutor, PipelineContext<Snapshot>) {
+        (self.executor, self.context)
     }
 }
 
@@ -172,7 +180,9 @@ impl<Snapshot: ReadableSnapshot> Iterator for BatchIterator<Snapshot> {
     type Item = Result<Batch, ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let batch = self.executor.compute_next_batch(self.snapshot.as_ref(), self.thing_manager.as_ref());
+        let Self { executor, context } = self;
+        let (snapshot, thing_manager) = self.context.borrow_parts();
+        let batch = self.executor.compute_next_batch(snapshot, thing_manager);
         batch.transpose()
     }
 }
@@ -190,7 +200,7 @@ enum StepExecutor {
 impl StepExecutor {
     fn new(
         step: &Step,
-        block_context: &BlockContext,
+        variable_registry: &VariableRegistry,
         variable_positions: &HashMap<Variable, VariablePosition>,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
@@ -203,7 +213,7 @@ impl StepExecutor {
                     instructions.clone(),
                     row_width,
                     selected_variables.clone(),
-                    block_context.get_variables_named(),
+                    variable_registry.get_variables_named(),
                     variable_positions,
                     snapshot,
                     thing_manager,
@@ -795,5 +805,52 @@ impl OptionalExecutor {
 
     fn batch_continue(&mut self) -> Result<Option<Batch>, ConceptReadError> {
         todo!()
+    }
+}
+
+pub struct MatchStage<Snapshot: ReadableSnapshot> {
+    batch_iterator: BatchIterator<Snapshot>,
+    current_batch: Option<Result<Batch, ConceptReadError>>,
+    current_index: u32,
+}
+
+impl<Snapshot: ReadableSnapshot + 'static> MatchStage<Snapshot> {
+    fn new(batch_iterator: BatchIterator<Snapshot>) -> Self {
+        Self { batch_iterator, current_batch: Some(Ok(Batch::EMPTY)), current_index: 0 }
+    }
+
+    fn forward_batches_till_has_next_or_none(&mut self) {
+        let must_fetch_next = match &self.current_batch {
+            None => false,
+            Some(Err(_)) => false,
+            Some(Ok(batch)) => self.current_index >= batch.rows_count(),
+        };
+        if must_fetch_next {
+            self.current_batch = self.batch_iterator.next();
+            self.forward_batches_till_has_next_or_none(); // Just in case we have empty batches
+        }
+    }
+}
+
+impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for MatchStage<Snapshot> {
+    type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.forward_batches_till_has_next_or_none();
+        match &self.current_batch {
+            None => None,
+            Some(Err(err)) => Some(Err(PipelineError::ConceptRead(err.clone()))),
+            Some(Ok(batch)) => {
+                self.current_index += 1;
+                Some(Ok(batch.get_row(self.current_index - 1)))
+            }
+        }
+    }
+}
+
+impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for MatchStage<Snapshot> {
+    fn finalise(self) -> PipelineContext<Snapshot> {
+        let (_, context) = self.batch_iterator.into_parts();
+        context
     }
 }

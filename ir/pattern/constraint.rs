@@ -74,13 +74,13 @@ impl fmt::Display for Constraints {
     }
 }
 
-pub struct ConstraintsBuilder<'cx> {
-    context: &'cx mut BlockContext,
+pub struct ConstraintsBuilder<'cx, 'reg> {
+    context: &'cx mut BlockContext<'reg>,
     constraints: &'cx mut Constraints,
 }
 
-impl<'cx> ConstraintsBuilder<'cx> {
-    pub fn new(context: &'cx mut BlockContext, constraints: &'cx mut Constraints) -> Self {
+impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
+    pub fn new(context: &'cx mut BlockContext<'reg>, constraints: &'cx mut Constraints) -> Self {
         Self { context, constraints }
     }
 
@@ -178,6 +178,9 @@ impl<'cx> ConstraintsBuilder<'cx> {
         let comparison = Comparison::new(lhs, rhs);
         self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
         self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
+        // todo!("The above lines were the two lines below");
+        // self.context.set_variable_category(lhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
+        // self.context.set_variable_category(rhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
 
         let as_ref = self.constraints.add_constraint(comparison);
         Ok(as_ref.as_comparison().unwrap())
@@ -244,7 +247,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
         binding
             .validate(&mut self.context)
             .map_err(|source| PatternDefinitionError::ExpressionDefinition { source })?;
-        // WARNING: we can't set a variable category here, since we don't know if the expression will produce a
+        // WARNING: we can't set a variable category here, since we don't know if the instruction will produce a
         //          Value, a ValueList, or a ThingList! We will know this at compilation time
         let as_ref = self.constraints.add_constraint(binding);
         Ok(as_ref.as_expression_binding().unwrap())
@@ -817,7 +820,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
         self.ids_assigned().for_each(|id| function(id, ConstraintIDSide::Left));
         // TODO
         // todo!("Do we really need positions here?")
-        // self.expression().ids().for_each(|id| function(id, ConstraintIDSide::Right));
+        // self.instruction().ids().for_each(|id| function(id, ConstraintIDSide::Right));
     }
 }
 
@@ -834,7 +837,7 @@ impl ExpressionBinding<Variable> {
         &self.expression
     }
 
-    pub(crate) fn validate(&self, context: &mut BlockContext) -> Result<(), ExpressionDefinitionError> {
+    pub(crate) fn validate<'cx>(&self, context: &mut BlockContext<'cx>) -> Result<(), ExpressionDefinitionError> {
         if self.expression().is_empty() {
             Err(ExpressionDefinitionError::EmptyExpressionTree {})
         } else {

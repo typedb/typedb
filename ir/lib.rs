@@ -30,7 +30,6 @@ use crate::{
 pub mod pattern;
 pub mod program;
 pub mod translation;
-
 #[derive(Debug)]
 pub enum PatternDefinitionError {
     DisjointVariableReuse {

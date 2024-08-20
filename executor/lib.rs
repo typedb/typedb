@@ -13,30 +13,18 @@ use std::{
 };
 
 use answer::variable::Variable;
+use compiler::VariablePosition;
 use ir::pattern::IrID;
 
+mod accumulator;
 pub mod batch;
 pub mod expression_executor;
 mod function_executor;
 pub(crate) mod instruction;
 pub mod pattern_executor;
+pub mod pipeline;
 pub mod program_executor;
 pub mod write;
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
-pub struct VariablePosition {
-    position: u32,
-}
-
-impl VariablePosition {
-    pub(crate) fn new(position: u32) -> Self {
-        VariablePosition { position }
-    }
-
-    pub fn as_usize(&self) -> usize {
-        self.position as usize
-    }
-}
 
 // TODO: use a bit-vec, since we have a continuously allocated range of positions
 // ---> for now, using a byte vec, which is 8x wasteful and on the heap!
@@ -53,11 +41,3 @@ impl SelectedPositions {
         self.selected.iter().copied()
     }
 }
-
-impl Display for VariablePosition {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "P_{}", self.position)
-    }
-}
-
-impl IrID for VariablePosition {}

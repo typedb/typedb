@@ -7,9 +7,12 @@ use concept::error::ConceptReadError;
 use encoding::{graph::type_::Kind, value::label::Label};
 use typeql::schema::definable::type_::Capability;
 
+mod compilation;
 mod define;
 pub mod error;
 pub mod query_manager;
+mod translation;
+mod type_inference;
 mod util;
 
 #[derive(Debug)]

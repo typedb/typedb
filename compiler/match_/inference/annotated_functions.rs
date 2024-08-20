@@ -64,6 +64,10 @@ impl AnnotatedUnindexedFunctions {
         Self { ir, annotations }
     }
 
+    pub fn empty() -> Self {
+        Self { ir: Box::new([]), annotations: Box::new([]) }
+    }
+
     pub fn iter_functions(&self) -> impl Iterator<Item = &Function> {
         self.ir.iter()
     }

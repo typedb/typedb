@@ -12,10 +12,14 @@ use compiler::{
     match_::inference::annotated_functions::IndexedAnnotatedFunctions,
 };
 use cucumber::gherkin::Step;
-use executor::{batch::Row, write::insert_executor::WriteError};
-use ir::program::function_signature::HashMapFunctionSignatureIndex;
+use executor::{batch::Row, write::insert::WriteError};
+use ir::{
+    program::function_signature::HashMapFunctionSignatureIndex,
+    translation::{match_::translate_match, TranslationContext},
+};
 use itertools::Itertools;
 use macro_rules_attribute::apply;
+use executor::write::insert::InsertExecutor;
 use primitive::either::Either;
 use query::query_manager::QueryManager;
 
@@ -29,20 +33,36 @@ use crate::{
 fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPlan, WriteCompilationError> {
     with_write_tx!(context, |tx| {
         let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
-        let block = ir::translation::writes::translate_insert(&typeql_insert).unwrap().finish();
-        let (entry_annotations, _) = compiler::match_::inference::type_inference::infer_types(
-            &block,
-            vec![],
-            tx.snapshot.as_ref(),
-            &tx.type_manager,
-            &IndexedAnnotatedFunctions::empty(),
-        )
-        .unwrap();
-        compiler::insert::insert::build_insert_plan(
-            block.conjunction().constraints(),
-            &HashMap::new(),
-            &entry_annotations,
-        )
+        let mut translation_context = TranslationContext::new();
+        let constraints = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
+        let mock_annotations = {
+            let mut dummy_for_annotations = query_str.clone().replace("insert", "match");
+            let mut ctx = TranslationContext::new();
+            let block = translate_match(
+                &mut ctx,
+                &HashMapFunctionSignatureIndex::empty(),
+                &typeql::parse_query(dummy_for_annotations.as_str())
+                    .unwrap()
+                    .into_pipeline()
+                    .stages
+                    .pop()
+                    .unwrap()
+                    .into_match(),
+            )
+            .unwrap()
+            .finish();
+            compiler::match_::inference::type_inference::infer_types(
+                &block,
+                vec![],
+                tx.snapshot.as_ref(),
+                tx.type_manager.as_ref(),
+                &IndexedAnnotatedFunctions::empty(),
+                &translation_context.variable_registry,
+            )
+            .unwrap()
+            .0
+        };
+        compiler::insert::insert::build_insert_plan(constraints.constraints(), &HashMap::new(), &mock_annotations)
     })
 }
 
@@ -50,15 +70,13 @@ fn execute_insert_plan(
     context: &mut Context,
     insert_plan: InsertPlan,
 ) -> Result<Vec<VariableValue<'static>>, WriteError> {
-    let mut output_vec = (0..insert_plan.n_created_concepts).map(|_| VariableValue::Empty).collect_vec();
+    let mut output_vec = (0..insert_plan.output_row_plan.len()).map(|_| VariableValue::Empty).collect_vec();
+
     with_write_tx!(context, |tx| {
-        executor::write::insert_executor::execute_insert(
+        InsertExecutor::new(insert_plan).execute_insert(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.thing_manager,
-            &insert_plan,
-            &Row::new(vec![].as_mut_slice(), &mut 1),
-            Row::new(output_vec.as_mut_slice(), &mut 1),
-            &mut Vec::new(),
+            &mut Row::new(output_vec.as_mut_slice(), &mut 1),
         )?;
     });
     Ok(output_vec)
