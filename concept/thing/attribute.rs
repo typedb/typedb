@@ -30,6 +30,7 @@ use storage::{
     key_value::StorageKey,
     snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
 };
+use storage::snapshot::buffer::BufferRangeIterator;
 
 use crate::{
     edge_iterator,
@@ -218,7 +219,8 @@ where
 {
     independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
     attributes_iterator: Option<Peekable<AllAttributesIterator>>,
-    has_reverse_iterator: Option<SnapshotRangeIterator>,
+    has_reverse_iterator_buffer: Option<BufferRangeIterator>,
+    has_reverse_iterator_storage: Option<SnapshotRangeIterator>,
     state: State<ConceptReadError>,
 }
 
@@ -228,13 +230,15 @@ where
 {
     pub(crate) fn new(
         attributes_iterator: AllAttributesIterator,
-        has_reverse_iterator: SnapshotRangeIterator,
+        has_reverse_iterator_buffer: BufferRangeIterator,
+        has_reverse_iterator_storage: SnapshotRangeIterator,
         independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
     ) -> Self {
         Self {
             independent_attribute_types,
             attributes_iterator: Some(Peekable::new(attributes_iterator)),
-            has_reverse_iterator: Some(has_reverse_iterator),
+            has_reverse_iterator_buffer: Some(has_reverse_iterator_buffer),
+            has_reverse_iterator_storage: Some(has_reverse_iterator_storage),
             state: State::Init,
         }
     }
@@ -243,7 +247,8 @@ where
         Self {
             independent_attribute_types: Arc::new(HashSet::new()),
             attributes_iterator: None,
-            has_reverse_iterator: None,
+            has_reverse_iterator_buffer: None,
+            has_reverse_iterator_storage: None,
             state: State::Done,
         }
     }
@@ -260,7 +265,6 @@ where
             }
             State::ItemReady => {
                 let next = self.attributes_iterator.as_mut().unwrap().next();
-                let _ = self.has_reverse_iterator.as_mut().unwrap().next();
                 self.state = State::ItemUsed;
                 next
             }
@@ -277,17 +281,25 @@ where
                 None => self.state = State::Done,
                 Some(Ok(attribute)) => {
                     let attribute_vertex = attribute.vertex();
-                    // let independent = self.independent_attribute_types.contains(&attribute.type_());
-                    let independent = true; // TODO: Turn off filtering, come up with a complete solution later
+                    let independent = self.independent_attribute_types.contains(&attribute.type_());
                     if independent {
                         self.state = State::ItemReady;
                     } else {
-                        match Self::has_owner(self.has_reverse_iterator.as_mut().unwrap(), attribute_vertex) {
-                            Ok(has_owner) => {
-                                if has_owner {
+                        match Self::has_any_writes(self.has_reverse_iterator_buffer.as_mut().unwrap(), attribute_vertex.clone()) {
+                            Ok(has_writes) => {
+                                if has_writes {
                                     self.state = State::ItemReady
                                 } else {
-                                    advance_attribute = true
+                                    match Self::has_owner(self.has_reverse_iterator_storage.as_mut().unwrap(), attribute_vertex) {
+                                        Ok(has_writes) => {
+                                            if has_writes {
+                                                self.state = State::ItemReady
+                                            } else {
+                                                advance_attribute = true
+                                            }
+                                        }
+                                        Err(err) => self.state = State::Error(err),
+                                    }
                                 }
                             }
                             Err(err) => self.state = State::Error(err),
@@ -323,6 +335,15 @@ where
                 }
             }
         }
+    }
+
+    fn has_any_writes(
+        has_reverse_iterator: &mut BufferRangeIterator,
+        attribute_vertex: AttributeVertex<'_>,
+    ) -> Result<bool, ConceptReadError> {
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex.as_reference());
+        has_reverse_iterator.seek(has_reverse_prefix.bytes());
+        Ok(has_reverse_iterator.peek().is_some())
     }
 }
 

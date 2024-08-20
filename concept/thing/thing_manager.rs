@@ -205,10 +205,13 @@ impl ThingManager {
     ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, ConceptReadError> {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix(Prefix::ATTRIBUTE_MIN);
         let has_reverse_end = ThingEdgeHasReverse::prefix_from_prefix(Prefix::ATTRIBUTE_MAX);
-        let has_reverse_iterator = snapshot.iterate_range(KeyRange::new_inclusive(has_reverse_start, has_reverse_end));
+        let range = KeyRange::new_inclusive(has_reverse_start, has_reverse_end);
+        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
+        let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
         Ok(AttributeIterator::new(
             self.get_instances::<Attribute<'_>>(snapshot),
-            has_reverse_iterator,
+            has_reverse_iterator_buffer,
+            has_reverse_iterator_storage,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
@@ -228,12 +231,14 @@ impl ThingManager {
             attribute_value_type_prefix,
             attribute_type.vertex().type_id_(),
         );
-        let has_reverse_iterator =
-            snapshot.iterate_range(KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING));
+        let range = KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
+        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
+        let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
 
         Ok(AttributeIterator::new(
             self.get_instances_in(snapshot, attribute_type.into_owned()),
-            has_reverse_iterator,
+            has_reverse_iterator_buffer,
+            has_reverse_iterator_storage,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
@@ -515,12 +520,14 @@ impl ThingManager {
             attribute_value_type_prefix,
             attribute_type.vertex().type_id_(),
         );
-        let has_reverse_iterator =
-            snapshot.iterate_range(KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING));
+        let range = KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
+        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
+        let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
 
         let iter = AttributeIterator::new(
             index_attribute_iterator,
-            has_reverse_iterator,
+            has_reverse_iterator_buffer,
+            has_reverse_iterator_storage,
             self.type_manager.get_independent_attribute_types(snapshot)?,
         );
         Ok(iter)

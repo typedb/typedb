@@ -248,7 +248,7 @@ impl BufferRangeIterator {
         Self { inner: Vec::new().into_iter().peekable() }
     }
 
-    pub(crate) fn peek(&mut self) -> Option<&(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> {
+    pub fn peek(&mut self) -> Option<&(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> {
         self.inner.peek()
     }
 
@@ -256,7 +256,7 @@ impl BufferRangeIterator {
     //       When buffers are not too large, this is likely to be fast.
     //       This can be improved by opening a new range over the buffer directly.
     //         --> perhaps when the buffer is "large" and the distance to the next key is "large"?
-    pub(crate) fn seek(&mut self, target: impl Borrow<[u8]>) {
+    pub fn seek(&mut self, target: impl Borrow<[u8]>) {
         while let Some((key, _)) = self.peek() {
             if key.bytes().cmp(target.borrow()) == Ordering::Less {
                 self.next();
