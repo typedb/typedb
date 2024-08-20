@@ -76,6 +76,33 @@ pub async fn attribute_type_get_value_type_is_null(context: &mut Context, type_l
 }
 
 #[apply(generic_step)]
+#[step(expr = "attribute\\({type_label}\\) get value type declared: {value_type}")]
+pub async fn attribute_type_get_value_type_declared(
+    context: &mut Context,
+    type_label: params::Label,
+    value_type: params::ValueType,
+) {
+    with_read_tx!(context, |tx| {
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        assert_eq!(
+            value_type.into_typedb(&tx.type_manager, &tx.snapshot),
+            attribute_type.get_value_type_declared(&tx.snapshot, &tx.type_manager).unwrap().unwrap()
+        );
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "attribute\\({type_label}\\) get value type declared is none")]
+pub async fn attribute_type_get_value_type_declared_is_null(context: &mut Context, type_label: params::Label) {
+    with_read_tx!(context, |tx| {
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        assert_eq!(None, attribute_type.get_value_type_declared(&tx.snapshot, &tx.type_manager).unwrap());
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = "attribute\\({type_label}\\) get owners {contains_or_doesnt}:")]
 pub async fn get_owners_contain(
     context: &mut Context,

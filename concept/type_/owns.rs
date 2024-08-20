@@ -70,9 +70,7 @@ impl<'a> Owns<'a> {
         type_manager.get_owns_is_distinct(snapshot, self.clone())
     }
 
-    // TODO: Might call it "get_regex", "get_range", "get_values", but "get_values" sounds like
-    // we return all the values of instances of this type...
-    pub fn get_regex_constraint(
+    pub fn get_constraint_regex(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -80,7 +78,7 @@ impl<'a> Owns<'a> {
         type_manager.get_owns_regex(snapshot, self.clone())
     }
 
-    pub fn get_range_constraint(
+    pub fn get_constraint_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -88,37 +86,12 @@ impl<'a> Owns<'a> {
         type_manager.get_owns_range(snapshot, self.clone())
     }
 
-    pub fn get_values_constraint(
+    pub fn get_constraint_values(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<AnnotationValues>, ConceptReadError> {
         type_manager.get_owns_values(snapshot, self.clone())
-    }
-
-    // TODO: Should it be 'this or just 'tm on type_manager?
-    pub fn get_override<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, Option<Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_override(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_overriding<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_overriding(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_overriding_transitive<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_overriding_transitive(snapshot, self.clone().into_owned())
     }
 
     pub fn set_override(
@@ -232,6 +205,36 @@ impl<'a> Owns<'a> {
     pub(crate) fn into_owned(self) -> Owns<'static> {
         Owns { owner: ObjectType::new(self.owner.vertex().into_owned()), attribute: self.attribute.into_owned() }
     }
+
+    pub(crate) fn get_uniqueness_source(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+        debug_assert!(
+            !AnnotationCategory::Unique.declarable_below(AnnotationCategory::Key)
+                && AnnotationCategory::Key.declarable_below(AnnotationCategory::Unique),
+            "This function uses the fact that @key is always below @unique. Revalidate the logic!"
+        );
+
+        let owns_owned = self.clone().into_owned();
+
+        let unique_source = type_manager.get_capability_annotation_source(
+            snapshot,
+            owns_owned.clone(),
+            OwnsAnnotation::Unique(AnnotationUnique),
+        )?;
+        Ok(match unique_source {
+            Some(_) => unique_source,
+            None => {
+                type_manager.get_capability_annotation_source(
+                    snapshot,
+                    owns_owned,
+                    OwnsAnnotation::Key(AnnotationKey),
+                )?
+            }
+        })
+    }
 }
 
 impl<'a> TypeEdgeEncoding<'a> for Owns<'a> {
@@ -269,6 +272,30 @@ impl<'a> Capability<'a> for Owns<'a> {
 
     fn interface(&self) -> AttributeType<'a> {
         self.attribute.clone()
+    }
+
+    fn get_override<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, Option<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_override(snapshot, self.clone().into_owned())
+    }
+
+    fn get_overriding<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_overriding(snapshot, self.clone().into_owned())
+    }
+
+    fn get_overriding_transitive<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_overriding_transitive(snapshot, self.clone().into_owned())
     }
 
     fn get_annotations_declared<'this>(

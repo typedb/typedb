@@ -119,7 +119,13 @@ pub enum DataValidationError {
     SetHasOnDeletedOwner {
         owner: Object<'static>,
     },
+    UnsetHasOnDeletedOwner {
+        owner: Object<'static>,
+    },
     AddPlayerOnDeletedRelation {
+        relation: Relation<'static>,
+    },
+    RemovePlayerOnDeletedRelation {
         relation: Relation<'static>,
     },
 }
@@ -154,7 +160,9 @@ impl Error for DataValidationError {
             Self::PlaysCardinalityViolated { .. } => None,
             Self::ValueTypeMismatchWithAttributeType { .. } => None,
             Self::SetHasOnDeletedOwner { .. } => None,
+            Self::UnsetHasOnDeletedOwner { .. } => None,
             Self::AddPlayerOnDeletedRelation { .. } => None,
+            Self::RemovePlayerOnDeletedRelation { .. } => None,
         }
     }
 }

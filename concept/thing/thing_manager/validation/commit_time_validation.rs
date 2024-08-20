@@ -4,7 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use itertools::Itertools;
 
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -35,6 +36,48 @@ macro_rules! collect_errors {
     };
 }
 pub(crate) use collect_errors;
+
+macro_rules! validate_capability_cardinality_constraint {
+    ($func_name:ident, $capability_type:ident, $interface_type:ident, $object_instance:ident, $check_func:path) => {
+        pub(crate) fn $func_name<'a>(
+            snapshot: &impl ReadableSnapshot,
+            thing_manager: &ThingManager,
+            owner: &$object_instance<'a>,
+            capability: $capability_type<'static>,
+            counts: &HashMap<$interface_type<'static>, u64>,
+        ) -> Result<(), DataValidationError> {
+            if !CommitTimeValidation::needs_cardinality_validation(snapshot, thing_manager, capability.clone())
+                .map_err(DataValidationError::ConceptRead)?
+            {
+                return Ok(());
+            }
+
+            let count = counts.get(&capability.interface()).unwrap_or(&0).clone();
+            $check_func(snapshot, thing_manager, owner, capability.clone(), count)?;
+
+            let mut next_capability = capability;
+            while let Some(checked_capability) = &*next_capability
+                .get_override(snapshot, thing_manager.type_manager())
+                .map_err(DataValidationError::ConceptRead)?
+            {
+                let overriding = checked_capability
+                    .get_overriding_transitive(snapshot, thing_manager.type_manager())
+                    .map_err(DataValidationError::ConceptRead)?;
+                let count = overriding
+                    .iter()
+                    .map(|overriding| overriding.interface())
+                    .unique()
+                    .filter_map(|interface_type| counts.get(&interface_type))
+                    .sum();
+                $check_func(snapshot, thing_manager, owner, checked_capability.clone(), count)?;
+
+                next_capability = checked_capability.clone();
+            }
+
+            Ok(())
+        }
+    };
+}
 
 pub struct CommitTimeValidation {}
 
@@ -108,39 +151,6 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_owns_cardinality_constraint<'a>(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        owner: &Object<'a>,
-        owns: Owns<'static>,
-        counts: &HashMap<AttributeType<'static>, u64>,
-    ) -> Result<(), DataValidationError> {
-        if !Self::needs_cardinality_validation(snapshot, thing_manager, owns.clone())
-            .map_err(DataValidationError::ConceptRead)?
-        {
-            return Ok(());
-        }
-
-        let count = counts.get(&owns.attribute()).unwrap_or(&0).clone();
-        Self::check_owns_cardinality(snapshot, thing_manager, owner, owns.clone(), count)?;
-
-        let mut next_owns = owns;
-        while let Some(checked_owns) = &*next_owns
-            .get_override(snapshot, thing_manager.type_manager())
-            .map_err(DataValidationError::ConceptRead)?
-        {
-            let overriding = checked_owns
-                .get_overriding_transitive(snapshot, thing_manager.type_manager())
-                .map_err(DataValidationError::ConceptRead)?;
-            let count = overriding.iter().filter_map(|overriding| counts.get(&overriding.attribute())).sum();
-            Self::check_owns_cardinality(snapshot, thing_manager, owner, checked_owns.clone(), count)?;
-
-            next_owns = checked_owns.clone();
-        }
-
-        Ok(())
-    }
-
     fn check_owns_cardinality<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
@@ -164,39 +174,6 @@ impl CommitTimeValidation {
         }
     }
 
-    pub(crate) fn validate_plays_cardinality_constraint<'a>(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        player: &Object<'a>,
-        plays: Plays<'static>,
-        counts: &HashMap<RoleType<'static>, u64>,
-    ) -> Result<(), DataValidationError> {
-        if !Self::needs_cardinality_validation(snapshot, thing_manager, plays.clone())
-            .map_err(DataValidationError::ConceptRead)?
-        {
-            return Ok(());
-        }
-
-        let count = counts.get(&plays.role()).unwrap_or(&0).clone();
-        Self::check_plays_cardinality(snapshot, thing_manager, player, plays.clone(), count)?;
-
-        let mut next_plays = plays;
-        while let Some(checked_plays) = &*next_plays
-            .get_override(snapshot, thing_manager.type_manager())
-            .map_err(DataValidationError::ConceptRead)?
-        {
-            let overriding = checked_plays
-                .get_overriding_transitive(snapshot, thing_manager.type_manager())
-                .map_err(DataValidationError::ConceptRead)?;
-            let count = overriding.iter().filter_map(|overriding| counts.get(&overriding.role())).sum();
-            Self::check_plays_cardinality(snapshot, thing_manager, player, checked_plays.clone(), count)?;
-
-            next_plays = checked_plays.clone();
-        }
-
-        Ok(())
-    }
-
     fn check_plays_cardinality<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
@@ -212,41 +189,6 @@ impl CommitTimeValidation {
         } else {
             Ok(())
         }
-    }
-
-    pub(crate) fn validate_relates_cardinality_constraint<'a>(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        relation: &Relation<'a>,
-        relates: Relates<'static>,
-        counts: &HashMap<RoleType<'static>, u64>,
-    ) -> Result<(), DataValidationError> {
-        if !Self::needs_cardinality_validation(snapshot, thing_manager, relates.clone())
-            .map_err(DataValidationError::ConceptRead)?
-        {
-            return Ok(());
-        }
-
-        let count = counts.get(&relates.role()).unwrap_or(&0).clone();
-        Self::check_relates_cardinality(snapshot, thing_manager, relation, relates.clone(), count)?;
-
-        let mut next_role = relates.role();
-        while let Some(checked_role) =
-            next_role.get_supertype(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?
-        {
-            let subtypes = checked_role
-                .get_subtypes_transitive(snapshot, thing_manager.type_manager())
-                .map_err(DataValidationError::ConceptRead)?;
-            let count = subtypes.iter().filter_map(|overriding| counts.get(overriding)).sum();
-            let checked_relates = checked_role
-                .get_relates(snapshot, thing_manager.type_manager())
-                .map_err(DataValidationError::ConceptRead)?;
-            Self::check_relates_cardinality(snapshot, thing_manager, relation, checked_relates.clone(), count)?;
-
-            next_role = checked_role;
-        }
-
-        Ok(())
     }
 
     fn check_relates_cardinality<'a>(
@@ -275,4 +217,8 @@ impl CommitTimeValidation {
         let cardinality = capability.get_cardinality(snapshot, thing_manager.type_manager())?;
         Ok(cardinality != AnnotationCardinality::unchecked())
     }
+
+    validate_capability_cardinality_constraint!(validate_owns_cardinality_constraint, Owns, AttributeType, Object, Self::check_owns_cardinality);
+    validate_capability_cardinality_constraint!(validate_plays_cardinality_constraint, Plays, RoleType, Object, Self::check_plays_cardinality);
+    validate_capability_cardinality_constraint!(validate_relates_cardinality_constraint, Relates, RoleType, Relation, Self::check_relates_cardinality);
 }

@@ -18,7 +18,7 @@ use crate::{
 #[apply(generic_step)]
 #[step(expr = "connection open {word} transaction for database: {word}")]
 pub async fn connection_open_transaction(context: &mut Context, tx_type: String, db_name: String) {
-    assert!(context.transaction().is_none(), "Have to close previous transaction");
+    assert!(context.transaction().is_none(), "Existing transaction must be closed first");
     let databases = context.databases();
     let database = databases.get(&db_name).unwrap();
     let tx = match tx_type.as_str() {

@@ -18,7 +18,7 @@ use crate::{
         relation::Relation,
         thing_manager::{
             validation::{
-                validation::{get_label_or_data_err, get_uniqueness_source},
+                validation::{get_label_or_data_err},
                 DataValidationError,
             },
             ThingManager,
@@ -172,7 +172,7 @@ impl OperationTimeValidation {
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let regex = attribute_type
-            .get_regex_constraint(snapshot, thing_manager.type_manager())
+            .get_constraint_regex(snapshot, thing_manager.type_manager())
             .map_err(DataValidationError::ConceptRead)?;
 
         match regex {
@@ -207,7 +207,7 @@ impl OperationTimeValidation {
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let range = attribute_type
-            .get_range_constraint(snapshot, thing_manager.type_manager())
+            .get_constraint_range(snapshot, thing_manager.type_manager())
             .map_err(DataValidationError::ConceptRead)?;
 
         match range {
@@ -229,7 +229,7 @@ impl OperationTimeValidation {
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let values = attribute_type
-            .get_values_constraint(snapshot, thing_manager.type_manager())
+            .get_constraint_values(snapshot, thing_manager.type_manager())
             .map_err(DataValidationError::ConceptRead)?;
 
         match values {
@@ -251,7 +251,7 @@ impl OperationTimeValidation {
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let regex = owns
-            .get_regex_constraint(snapshot, thing_manager.type_manager())
+            .get_constraint_regex(snapshot, thing_manager.type_manager())
             .map_err(DataValidationError::ConceptRead)?;
 
         match regex {
@@ -282,7 +282,7 @@ impl OperationTimeValidation {
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let range = owns
-            .get_range_constraint(snapshot, thing_manager.type_manager())
+            .get_constraint_range(snapshot, thing_manager.type_manager())
             .map_err(DataValidationError::ConceptRead)?;
 
         match range {
@@ -300,7 +300,7 @@ impl OperationTimeValidation {
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let values = owns
-            .get_values_constraint(snapshot, thing_manager.type_manager())
+            .get_constraint_values(snapshot, thing_manager.type_manager())
             .map_err(DataValidationError::ConceptRead)?;
 
         match values {
@@ -318,7 +318,7 @@ impl OperationTimeValidation {
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         let uniqueness_source =
-            get_uniqueness_source(snapshot, thing_manager, owns.clone()).map_err(DataValidationError::ConceptRead)?;
+            owns.get_uniqueness_source(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
         if let Some(unique_root) = uniqueness_source {
             let mut queue = VecDeque::from([(unique_root.owner(), unique_root.clone())]);
 
@@ -439,10 +439,34 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         relation: &Relation<'_>,
     ) -> Result<(), DataValidationError> {
-        if thing_manager.relation_exists(snapshot, relation).map_err(DataValidationError::ConceptRead)? {
+        if thing_manager.object_exists(snapshot, relation).map_err(DataValidationError::ConceptRead)? {
             Ok(())
         } else {
             Err(DataValidationError::AddPlayerOnDeletedRelation { relation: relation.clone().into_owned() })
+        }
+    }
+
+    pub(crate) fn validate_owner_exists_to_unset_has<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        owner: &impl ObjectAPI<'a>,
+    ) -> Result<(), DataValidationError> {
+        if thing_manager.object_exists(snapshot, owner).map_err(DataValidationError::ConceptRead)? {
+            Ok(())
+        } else {
+            Err(DataValidationError::UnsetHasOnDeletedOwner { owner: owner.clone().into_owned_object() })
+        }
+    }
+
+    pub(crate) fn validate_relation_exists_to_remove_player(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation: &Relation<'_>,
+    ) -> Result<(), DataValidationError> {
+        if thing_manager.object_exists(snapshot, relation).map_err(DataValidationError::ConceptRead)? {
+            Ok(())
+        } else {
+            Err(DataValidationError::RemovePlayerOnDeletedRelation { relation: relation.clone().into_owned() })
         }
     }
 }

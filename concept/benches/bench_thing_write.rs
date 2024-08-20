@@ -88,7 +88,6 @@ fn create_schema(
 ) {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
-        // TODO: Should not affect much if it's Arc while it was previously Arc?
         let type_manager =
             Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());

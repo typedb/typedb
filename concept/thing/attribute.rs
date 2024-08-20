@@ -131,9 +131,9 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         Attribute::new(self.vertex.into_owned())
     }
 
-    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
-        match self.type_().get_value_type(snapshot, thing_manager.type_manager()).ok() {
-            Some(Some(value_type)) => match value_type {
+    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) -> Result<(), ConceptReadError> {
+        match self.type_().get_value_type(snapshot, thing_manager.type_manager())? {
+            Some(value_type) => match value_type {
                 | ValueType::Boolean
                 | ValueType::Long
                 | ValueType::Double
@@ -147,9 +147,9 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
                     thing_manager.lock_existing_attribute(snapshot, self.as_reference())
                 }
             },
-            // Read error or empty value type
-            _ => snapshot.put(self.vertex().as_storage_key().into_owned_array()),
+            None => panic!("Attribute instances must have a value type"),
         }
+        Ok(())
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
@@ -180,10 +180,8 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     ) -> Result<Prefix, ConceptReadError> {
         let value_type = type_.get_value_type(snapshot, type_manager)?;
         match value_type {
-            // It should be valid to try getting a prefix without a value type, so we just return
-            // the first prefix of possible. Should get 0 instances anyway
-            None => Ok(Prefix::VertexAttributeBoolean),
             Some(value_type) => Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category())),
+            None => Err(ConceptReadError::CorruptMissingMandatoryValueType),
         }
     }
 }

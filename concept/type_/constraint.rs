@@ -101,34 +101,10 @@ impl Constraint {
     compute_constraint_one_to_one_annotation!(compute_range, Annotation::Range, AnnotationRange);
     compute_constraint_one_to_one_annotation!(compute_values, Annotation::Values, AnnotationValues);
 
-    pub fn inherited_constraint_validation_mode(
-        annotation_category: AnnotationCategory,
-    ) -> HashSet<ConstraintValidationMode> {
-        match annotation_category {
-            AnnotationCategory::Abstract => HashSet::from([ConstraintValidationMode::Type]),
-            AnnotationCategory::Distinct => HashSet::from([ConstraintValidationMode::Type]),
-            AnnotationCategory::Independent => HashSet::from([]),
-            AnnotationCategory::Unique => HashSet::from([ConstraintValidationMode::TypeAndSiblingsAndSubtypes]),
-            AnnotationCategory::Cardinality =>
-            // ::Type for min, ::TypeAndSiblings for max
-            {
-                HashSet::from([ConstraintValidationMode::Type, ConstraintValidationMode::TypeAndSiblings])
-            }
-            AnnotationCategory::Key => Self::inherited_constraint_validation_mode(AnnotationCategory::Unique)
-                .union(&Self::inherited_constraint_validation_mode(AnnotationCategory::Cardinality))
-                .cloned()
-                .collect(),
-            AnnotationCategory::Regex => HashSet::from([ConstraintValidationMode::Type]),
-            AnnotationCategory::Cascade => HashSet::from([]),
-            AnnotationCategory::Range => HashSet::from([ConstraintValidationMode::Type]),
-            AnnotationCategory::Values => HashSet::from([ConstraintValidationMode::Type]),
-        }
-    }
-
-    pub(crate) fn sort_annotations_by_inherited_constraint_validation_modes<'a, A: Into<Annotation> + Clone + 'a>(
+    pub(crate) fn annotations_by_validation_modes<'a, A: Into<Annotation> + Clone + 'a>(
         annotations: impl IntoIterator<Item = A>,
-    ) -> Result<HashMap<ConstraintValidationMode, HashSet<Annotation>>, AnnotationError> {
-        let mut map: HashMap<ConstraintValidationMode, HashSet<Annotation>> = HashMap::new();
+    ) -> Result<HashMap<&'static ConstraintValidationMode, HashSet<Annotation>>, AnnotationError> {
+        let mut map: HashMap<&ConstraintValidationMode, HashSet<Annotation>> = HashMap::new();
 
         for annotation in annotations.into_iter() {
             let annotation = annotation.clone().into();
@@ -140,5 +116,27 @@ impl Constraint {
         }
 
         Ok(map)
+    }
+
+    fn inherited_constraint_validation_mode(
+        annotation_category: AnnotationCategory,
+    ) -> &'static [ConstraintValidationMode] {
+        match annotation_category {
+            AnnotationCategory::Abstract => &[ConstraintValidationMode::Type],
+            AnnotationCategory::Distinct => &[ConstraintValidationMode::Type],
+            AnnotationCategory::Independent =>  &[],
+            AnnotationCategory::Unique => &[ConstraintValidationMode::TypeAndSiblingsAndSubtypes],
+            AnnotationCategory::Cardinality =>
+                // ::Type for min, ::TypeAndSiblings for max
+                &[ConstraintValidationMode::Type, ConstraintValidationMode::TypeAndSiblings],
+            AnnotationCategory::Key => {
+                // WARNING: must match Unique + Cardinality checks!
+                &[ConstraintValidationMode::Type, ConstraintValidationMode::TypeAndSiblings, ConstraintValidationMode::TypeAndSiblingsAndSubtypes]
+            },
+            AnnotationCategory::Regex => &[ConstraintValidationMode::Type],
+            AnnotationCategory::Cascade => &[],
+            AnnotationCategory::Range => &[ConstraintValidationMode::Type],
+            AnnotationCategory::Values => &[ConstraintValidationMode::Type],
+        }
     }
 }

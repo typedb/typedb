@@ -285,11 +285,11 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                 thing_manager: &ThingManager,
                 object_type: $object_type<'a>,
                 capability: $capability_type<'static>,
-                sorted_annotations: HashMap<ConstraintValidationMode, HashSet<Annotation>>,
+                sorted_annotations: HashMap<&ConstraintValidationMode, HashSet<Annotation>>,
             ) -> Result<Option<(Vec<($object_type<'a>, $interface_type<'a>)>, AnnotationCategory)>, ConceptReadError> {
                 for (validation_mode, annotations) in sorted_annotations {
                     match validation_mode {
-                        ConstraintValidationMode::Type => {
+                        &ConstraintValidationMode::Type => {
                             let result = Self::[< $func_name _type >](
                                 snapshot,
                                 type_manager,
@@ -302,7 +302,7 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                                 return Ok(result);
                             }
                         }
-                        ConstraintValidationMode::TypeAndSiblings => {
+                        &ConstraintValidationMode::TypeAndSiblings => {
                             let result = Self::[< $func_name _type_and_siblings >](
                                 snapshot,
                                 type_manager,
@@ -315,7 +315,7 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                                 return Ok(result);
                             }
                         }
-                        ConstraintValidationMode::TypeAndSiblingsAndSubtypes => {
+                        &ConstraintValidationMode::TypeAndSiblingsAndSubtypes => {
                             let result = Self::[< $func_name _type_and_siblings_and_subtypes >](
                                 snapshot,
                                 type_manager,
@@ -358,6 +358,7 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                 {
                     if let Some(violated_constraint) = $existing_instances_validation_func(
                         snapshot,
+                        type_manager,
                         thing_manager,
                         &HashSet::from([current_object_type.clone()]),
                         &HashSet::from([current_capability.interface()]),
@@ -447,6 +448,7 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
                     let current_interface_types = current_capabilities.iter().map(|capability| capability.interface()).collect();
                     if let Some(violated_constraint) = $existing_instances_validation_func(
                         snapshot,
+                        type_manager,
                         thing_manager,
                         &HashSet::from([current_object_type.clone()]),
                         &current_interface_types,
@@ -545,6 +547,7 @@ macro_rules! capability_or_its_overriding_capability_with_violated_new_annotatio
 
                 if let Some(violated_constraint) = $existing_instances_validation_func(
                     snapshot,
+                    type_manager,
                     thing_manager,
                     &object_types,
                     &interface_types,
@@ -574,7 +577,7 @@ macro_rules! new_acquired_capability_instances_validation {
             capability: $capability_type<'static>,
             annotations: HashSet<Annotation>,
         ) -> Result<(), SchemaValidationError> {
-            let sorted_annotations = Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations)
+            let sorted_annotations = Constraint::annotations_by_validation_modes(annotations)
                 .map_err(|source| SchemaValidationError::ConceptRead(ConceptReadError::Annotation { source }))?;
 
             let violation = $validation_func(
@@ -630,7 +633,7 @@ macro_rules! new_annotation_compatible_with_capability_and_overriding_capabiliti
             )
             .map_err(SchemaValidationError::ConceptRead)?;
 
-            let sorted_annotations = Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations)
+            let sorted_annotations = Constraint::annotations_by_validation_modes(annotations)
                 .map_err(|source| SchemaValidationError::ConceptRead(ConceptReadError::Annotation { source }))?;
 
             let violation = $validation_func(
@@ -686,7 +689,7 @@ macro_rules! changed_annotations_compatible_with_capability_and_overriding_capab
             )?;
 
             let sorted_annotations =
-                Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations_to_revalidate)
+                Constraint::annotations_by_validation_modes(annotations_to_revalidate)
                     .map_err(|source| SchemaValidationError::ConceptRead(ConceptReadError::Annotation { source }))?;
 
             let violation =
@@ -743,7 +746,7 @@ macro_rules! changed_annotations_compatible_with_capability_and_overriding_capab
 
             for (capability, annotations_to_revalidate) in updated_capabilities_annotations {
                 let sorted_annotations =
-                    Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations_to_revalidate)
+                    Constraint::annotations_by_validation_modes(annotations_to_revalidate)
                         .map_err(|source| SchemaValidationError::ConceptRead(ConceptReadError::Annotation { source }))?;
 
                 let violation =
@@ -787,11 +790,11 @@ macro_rules! type_or_its_subtype_with_violated_new_annotation_constraints {
                 type_manager: &'a TypeManager,
                 thing_manager: &ThingManager,
                 type_: $type_<'static>,
-                sorted_annotations: HashMap<ConstraintValidationMode, HashSet<Annotation>>,
+                sorted_annotations: HashMap<&ConstraintValidationMode, HashSet<Annotation>>,
             ) -> Result<Option<(Vec<$type_<'a>>, AnnotationCategory)>, ConceptReadError> {
                 for (validation_mode, annotations) in sorted_annotations {
                     match validation_mode {
-                        ConstraintValidationMode::Type => {
+                        &ConstraintValidationMode::Type => {
                             let result = Self::[< $func_name _type >](
                                 snapshot,
                                 type_manager,
@@ -803,9 +806,9 @@ macro_rules! type_or_its_subtype_with_violated_new_annotation_constraints {
                                 return Ok(result);
                             }
                         }
-                        ConstraintValidationMode::TypeAndSiblings =>
+                        &ConstraintValidationMode::TypeAndSiblings =>
                             unreachable!("Types do not have TypeAndSiblings constraints"),
-                        ConstraintValidationMode::TypeAndSiblingsAndSubtypes =>
+                        &ConstraintValidationMode::TypeAndSiblingsAndSubtypes =>
                             unreachable!("Types do not have TypeAndSiblingsAndSubtypes constraints"),
                     }
                 }
@@ -878,7 +881,7 @@ macro_rules! new_annotation_compatible_with_type_and_subtypes_instances_validati
             )
             .map_err(SchemaValidationError::ConceptRead)?;
 
-            let sorted_annotations = Constraint::sort_annotations_by_inherited_constraint_validation_modes(annotations)
+            let sorted_annotations = Constraint::annotations_by_validation_modes(annotations)
                 .map_err(|source| SchemaValidationError::ConceptRead(ConceptReadError::Annotation { source }))?;
 
             let violation = $validation_func(snapshot, type_manager, thing_manager, type_.clone(), sorted_annotations)
@@ -916,7 +919,7 @@ macro_rules! updated_annotations_compatible_with_type_and_subtypes_instances_on_
             )?;
 
             let sorted_annotations =
-                Constraint::sort_annotations_by_inherited_constraint_validation_modes(updated_annotations)
+                Constraint::annotations_by_validation_modes(updated_annotations)
                     .map_err(|source| SchemaValidationError::ConceptRead(ConceptReadError::Annotation { source }))?;
 
             let violation =
@@ -2991,8 +2994,45 @@ impl OperationTimeValidation {
         Ok(None)
     }
 
+    fn check_operation_time_cardinality_constraint(
+        cardinality_constraint: Option<AnnotationCardinality>,
+        real_cardinality: u64,
+        only_abstract_types: bool,
+    ) -> bool {
+        match cardinality_constraint {
+            None => true,
+            Some(cardinality) => match cardinality.value_valid(real_cardinality) {
+                true => true,
+                // We check that all capabilities of abstract types are overridden only on commit time,
+                // so card of only abstract interface types can be skipped here.
+                // If this abstract type (where the cardinality comes from) is not overridden,
+                // it will be a commit time violation.
+                // If this abstract type is overridden, the concrete types will inherit the updated
+                // cardinality and revalidate it against themselves in this function if needed.
+                false => real_cardinality == 0 && only_abstract_types,
+            }
+        }
+    }
+
+    fn are_all_abstract<'a>(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        types: impl Iterator<Item = &'a impl TypeAPI<'a>>,
+    ) -> Result<bool, ConceptReadError> {
+        let is_abstracts = types.map(|type_| type_.is_abstract(snapshot, type_manager));
+        for is_abstract in is_abstracts {
+            match is_abstract {
+                Err(e) => return Err(e),
+                Ok(false) => return Ok(false),
+                Ok(true) => continue,
+            }
+        }
+        Ok(true)
+    }
+
     fn get_annotation_constraint_violated_by_instances_of_owns<'a>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         thing_manager: &ThingManager,
         object_types: &HashSet<ObjectType<'a>>,
         attribute_types: &HashSet<AttributeType<'a>>,
@@ -3019,7 +3059,9 @@ impl OperationTimeValidation {
             "At least one constraint should exist otherwise we don't need to iterate"
         );
 
-        // TODO: It is EXCEPTIONALLY memory-greedy and should be optimized before a non-alpha release!
+        let only_abstract_types = Self::are_all_abstract(snapshot, type_manager, attribute_types.iter())?;
+
+        // TODO #7138: It is EXCEPTIONALLY memory-greedy and should be optimized before a non-alpha release!
         let mut unique_values = HashSet::new();
 
         for object_type in object_types {
@@ -3086,14 +3128,12 @@ impl OperationTimeValidation {
                     }
                 }
 
-                if let Some(cardinality) = &cardinality {
-                    if !cardinality.value_valid(real_cardinality) {
-                        return Ok(Some(if is_key {
-                            AnnotationCategory::Key
-                        } else {
-                            AnnotationCategory::Cardinality
-                        }));
-                    }
+                if !Self::check_operation_time_cardinality_constraint(cardinality.clone(), real_cardinality, only_abstract_types) {
+                    return Ok(Some(if is_key {
+                        AnnotationCategory::Key
+                    } else {
+                        AnnotationCategory::Cardinality
+                    }));
                 }
             }
         }
@@ -3103,6 +3143,7 @@ impl OperationTimeValidation {
 
     fn get_annotation_constraint_violated_by_instances_of_plays<'a>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         thing_manager: &ThingManager,
         object_types: &HashSet<ObjectType<'a>>,
         role_types: &HashSet<RoleType<'a>>,
@@ -3114,6 +3155,8 @@ impl OperationTimeValidation {
 
         let cardinality = Constraint::compute_cardinality(annotations, None);
         debug_assert!(cardinality.is_some(), "At least one constraint should exist otherwise we don't need to iterate");
+
+        let only_abstract_types = Self::are_all_abstract(snapshot, type_manager, role_types.iter())?;
 
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, object_type.clone().into_owned());
@@ -3132,10 +3175,8 @@ impl OperationTimeValidation {
                     real_cardinality += count;
                 }
 
-                if let Some(cardinality) = &cardinality {
-                    if !cardinality.value_valid(real_cardinality) {
-                        return Ok(Some(AnnotationCategory::Cardinality));
-                    }
+                if !Self::check_operation_time_cardinality_constraint(cardinality.clone(), real_cardinality, only_abstract_types) {
+                    return Ok(Some(AnnotationCategory::Cardinality));
                 }
             }
         }
@@ -3145,6 +3186,7 @@ impl OperationTimeValidation {
 
     fn get_annotation_constraint_violated_by_instances_of_relates<'a>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         thing_manager: &ThingManager,
         relation_types: &HashSet<RelationType<'a>>,
         role_types: &HashSet<RoleType<'a>>,
@@ -3160,6 +3202,8 @@ impl OperationTimeValidation {
             cardinality.is_some() || distinct.is_some(),
             "At least one constraint should exist otherwise we don't need to iterate"
         );
+
+        let only_abstract_types = Self::are_all_abstract(snapshot, type_manager, role_types.iter())?;
 
         for relation_type in relation_types {
             let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
@@ -3186,10 +3230,8 @@ impl OperationTimeValidation {
                     }
                 }
 
-                if let Some(cardinality) = &cardinality {
-                    if !cardinality.value_valid(real_cardinality) {
-                        return Ok(Some(AnnotationCategory::Cardinality));
-                    }
+                if !Self::check_operation_time_cardinality_constraint(cardinality.clone(), real_cardinality, only_abstract_types) {
+                    return Ok(Some(AnnotationCategory::Cardinality));
                 }
             }
         }

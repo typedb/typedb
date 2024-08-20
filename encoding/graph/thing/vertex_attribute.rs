@@ -174,7 +174,7 @@ impl<'a> ThingVertex<'a> for AttributeVertex<'a> {
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
     fn keyspace(&self) -> EncodingKeyspace {
-        Self::KEYSPACE
+        EncodingKeyspace::Data
     }
 }
 

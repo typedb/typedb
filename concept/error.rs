@@ -61,7 +61,6 @@ pub enum ConceptWriteError {
     UnsetHasOrderedOwnsUnordered {},
     UnsetHasUnorderedOwnsOrdered {},
     SetPlayersOrderedRoleUnordered {},
-    SetPlayersUnorderedRoleOrdered {},
 }
 
 impl fmt::Display for ConceptWriteError {
@@ -83,7 +82,6 @@ impl Error for ConceptWriteError {
             Self::Annotation { .. } => None,
             Self::SetHasOrderedOwnsUnordered { .. } => None,
             Self::SetPlayersOrderedRoleUnordered { .. } => None,
-            Self::SetPlayersUnorderedRoleOrdered { .. } => None,
             Self::SetHasUnorderedOwnsOrdered { .. } => None,
             Self::UnsetHasOrderedOwnsUnordered { .. } => None,
             Self::UnsetHasUnorderedOwnsOrdered { .. } => None,
@@ -101,6 +99,7 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::CorruptMissingMandatoryCardinality => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingCapability => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryOrdering => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryValueType => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryRelatesForRole => Self::ConceptRead { source: error },
             ConceptReadError::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(_, _, _) => {
                 Self::ConceptRead { source: error }
@@ -129,6 +128,7 @@ pub enum ConceptReadError {
     CorruptMissingMandatoryCardinality,
     CorruptMissingCapability,
     CorruptMissingMandatoryOrdering,
+    CorruptMissingMandatoryValueType,
     CorruptMissingMandatoryRelatesForRole,
     CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(Label<'static>, ValueType, Annotation),
     CannotGetOwnsDoesntExist(Label<'static>, Label<'static>),
@@ -160,6 +160,7 @@ impl Error for ConceptReadError {
             Self::CorruptMissingMandatoryCardinality => None,
             Self::CorruptMissingCapability => None,
             Self::CorruptMissingMandatoryOrdering => None,
+            Self::CorruptMissingMandatoryValueType => None,
             Self::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(_, _, _) => None,
             Self::CorruptMissingMandatoryRelatesForRole => None,
             Self::CannotGetOwnsDoesntExist(_, _) => None,

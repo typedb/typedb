@@ -75,7 +75,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     pub(crate) fn storage_unput_vertex(snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
-        debug_assert!(snapshot.get::<0>(type_.vertex().as_storage_key().as_reference()).unwrap_or(None).is_some());
+        debug_assert!(snapshot.contains(type_.vertex().as_storage_key().as_reference()).unwrap_or(false));
         snapshot.unput(type_.vertex().as_storage_key().into_owned_array());
     }
 
@@ -85,8 +85,8 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     {
         let canonical_key = capability.clone().to_canonical_type_edge().into_storage_key();
         let reverse_key = capability.to_reverse_type_edge().into_storage_key();
-        debug_assert!(snapshot.get::<0>(canonical_key.as_reference()).unwrap_or(None).is_some());
-        debug_assert!(snapshot.get::<0>(reverse_key.as_reference()).unwrap_or(None).is_some());
+        debug_assert!(snapshot.contains(canonical_key.as_reference()).unwrap_or(false));
+        debug_assert!(snapshot.contains(reverse_key.as_reference()).unwrap_or(false));
         snapshot.unput(canonical_key.into_owned_array());
         snapshot.unput(reverse_key.into_owned_array());
     }

@@ -85,6 +85,14 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
 
+    fn get_label_cloned<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<Label<'m>, ConceptReadError> {
+        self.get_label(snapshot, type_manager).map(|label| label.clone())
+    }
+
     fn get_supertype(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -210,6 +218,22 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_owns_attribute(snapshot, type_manager, attribute_type)?.is_some())
     }
+
+    fn try_get_owns_attribute(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Owns<'static>, ConceptReadError> {
+        let owns = self.get_owns_attribute(snapshot, type_manager, attribute_type.clone())?;
+        match owns {
+            None => Err(ConceptReadError::CannotGetOwnsDoesntExist(
+                self.get_label(snapshot, type_manager)?.clone(),
+                attribute_type.get_label(snapshot, type_manager)?.clone(),
+            )),
+            Some(owns) => Ok(owns),
+        }
+    }
 }
 
 pub trait PlayerAPI<'a>: TypeAPI<'a> {
@@ -276,6 +300,22 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_plays_role(snapshot, type_manager, role_type)?.is_some())
     }
+
+    fn try_get_plays_role(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<Plays<'static>, ConceptReadError> {
+        let plays = self.get_plays_role(snapshot, type_manager, role_type.clone())?;
+        match plays {
+            None => Err(ConceptReadError::CannotGetPlaysDoesntExist(
+                self.get_label(snapshot, type_manager)?.clone(),
+                role_type.get_label(snapshot, type_manager)?.clone(),
+            )),
+            Some(plays) => Ok(plays),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -330,6 +370,24 @@ pub trait Capability<'a>:
     fn object(&self) -> Self::ObjectType;
 
     fn interface(&self) -> Self::InterfaceType;
+
+    fn get_override<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, Option<Self>>, ConceptReadError>;
+
+    fn get_overriding<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Self>>, ConceptReadError>;
+
+    fn get_overriding_transitive<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Self>>, ConceptReadError>;
 
     fn get_annotations_declared<'this>(
         &'this self,

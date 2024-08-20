@@ -103,7 +103,7 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.delete_entity_type(snapshot, thing_manager, self.clone().into_owned())
+        type_manager.delete_entity_type(snapshot, thing_manager, self.into_owned())
     }
 
     fn get_label<'m>(

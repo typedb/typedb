@@ -26,6 +26,7 @@ use crate::{
     },
 };
 
+// TODO: Use get_label_cloned from TypeAPI instead of this function
 pub(crate) fn get_label_or_concept_read_err<'a>(
     snapshot: &impl ReadableSnapshot,
     type_: impl TypeAPI<'a>,

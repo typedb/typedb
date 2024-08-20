@@ -303,6 +303,37 @@ impl<'a> RelationType<'a> {
         Ok(self.get_relates(snapshot, type_manager)?.iter().find(|relates| relates.role() == role_type).cloned())
     }
 
+    pub fn try_get_relates_role(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<Relates<'static>, ConceptReadError> {
+        let relates = self.get_relates_role(snapshot, type_manager, role_type.clone())?;
+        match relates {
+            None => Err(ConceptReadError::CannotGetRelatesDoesntExist(
+                self.get_label(snapshot, type_manager)?.clone(),
+                role_type.get_label(snapshot, type_manager)?.clone(),
+            )),
+            Some(relates) => Ok(relates),
+        }
+    }
+
+    pub fn get_relates_role_name_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_name: &str,
+    ) -> Result<Option<Relates<'static>>, ConceptReadError> {
+        for relates in type_manager.get_relation_type_relates_declared(snapshot, self.clone().into_owned())?.into_iter() {
+            let role_label = relates.role().get_label(snapshot, type_manager)?;
+            if role_label.name.as_str() == role_name {
+                return Ok(Some(relates.to_owned()));
+            }
+        }
+        Ok(None)
+    }
+
     pub fn get_relates_role_name(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -315,7 +346,6 @@ impl<'a> RelationType<'a> {
                 return Ok(Some(relates.to_owned()));
             }
         }
-
         Ok(None)
     }
 

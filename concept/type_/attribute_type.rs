@@ -178,7 +178,6 @@ impl<'a> ThingTypeAPI<'a> for AttributeType<'a> {
 
 impl<'a> AttributeType<'a> {
     pub fn get_value_type_declared(
-        // TODO: add concept api tests
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -251,9 +250,7 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_is_independent(snapshot, self.clone())
     }
 
-    // TODO: Might call it "get_regex", "get_range", "get_values", but "get_values" sounds like
-    // we return all the values of instances of this type...
-    pub fn get_regex_constraint(
+    pub fn get_constraint_regex(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -261,7 +258,7 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_regex(snapshot, self.clone())
     }
 
-    pub fn get_range_constraint(
+    pub fn get_constraint_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -269,7 +266,7 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_range(snapshot, self.clone())
     }
 
-    pub fn get_values_constraint(
+    pub fn get_constraint_values(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,

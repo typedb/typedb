@@ -26,6 +26,8 @@ use crate::{
         Capability, Ordering,
     },
 };
+use crate::type_::plays::Plays;
+use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Relates<'a> {
@@ -153,6 +155,30 @@ impl<'a> Capability<'a> for Relates<'a> {
 
     fn interface(&self) -> RoleType<'a> {
         self.role.clone()
+    }
+
+    fn get_override<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, Option<Relates<'static>>>, ConceptReadError> {
+        type_manager.get_relates_override(snapshot, self.clone().into_owned())
+    }
+
+    fn get_overriding<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Relates<'static>>>, ConceptReadError> {
+        type_manager.get_relates_overriding(snapshot, self.clone().into_owned())
+    }
+
+    fn get_overriding_transitive<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Relates<'static>>>, ConceptReadError> {
+        type_manager.get_relates_overriding_transitive(snapshot, self.clone().into_owned())
     }
 
     fn get_annotations_declared<'m>(

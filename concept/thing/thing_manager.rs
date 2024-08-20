@@ -67,7 +67,6 @@ use crate::{
         thing_manager::validation::{
             commit_time_validation::{collect_errors, CommitTimeValidation},
             operation_time_validation::OperationTimeValidation,
-            validation::get_uniqueness_source,
             DataValidationError,
         },
         HKInstance, ThingAPI,
@@ -111,6 +110,10 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         thing_type: <T::HktSelf<'a> as ThingAPI<'a>>::TypeAPI<'a>,
     ) -> InstanceIterator<T> {
+        if thing_type.is_abstract(snapshot, self.type_manager()).unwrap() {
+            return InstanceIterator::empty();
+        }
+
         let prefix =
             <T::HktSelf<'_> as ThingAPI>::prefix_for_type(thing_type.clone(), snapshot, self.type_manager()).unwrap();
         let storage_key_prefix =
@@ -824,21 +827,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         object: &impl ObjectAPI<'a>,
     ) -> Result<bool, ConceptReadError> {
-        match snapshot.get::<0>(object.vertex().as_storage_key().as_reference()) {
-            Ok(value) => Ok(value.is_some()),
-            Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
-        }
-    }
-
-    pub(crate) fn relation_exists<'a>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        relation: &Relation<'a>,
-    ) -> Result<bool, ConceptReadError> {
-        match snapshot.get::<0>(relation.vertex().as_storage_key().as_reference()) {
-            Ok(value) => Ok(value.is_some()),
-            Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
-        }
+        Ok(snapshot.contains(object.vertex().as_storage_key().as_reference()).map_err(|error| ConceptReadError::SnapshotGet { source: error })?)
     }
 
     pub(crate) fn type_exists<'a>(
@@ -846,10 +835,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         type_: impl TypeAPI<'a>,
     ) -> Result<bool, ConceptReadError> {
-        match snapshot.get::<0>(type_.vertex().as_storage_key().as_reference()) {
-            Ok(value) => Ok(value.is_some()),
-            Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
-        }
+        Ok(snapshot.contains(type_.vertex().as_storage_key().as_reference()).map_err(|error| ConceptReadError::SnapshotGet { source: error })?)
     }
 }
 
@@ -884,16 +870,7 @@ impl ThingManager {
                 let mut attribute = Attribute::new(has.to()).into_owned();
                 let attribute_type = attribute.type_();
                 let attribute_value = attribute.get_value(snapshot, self)?;
-                let owner_type = object.type_();
-                let owns =
-                    match owner_type.get_owns_attribute(snapshot, self.type_manager(), attribute_type.clone())? {
-                        None => Err(ConceptReadError::CannotGetOwnsDoesntExist(
-                            owner_type.get_label(snapshot, self.type_manager())?.clone(),
-                            attribute_type.get_label(snapshot, self.type_manager())?.clone(),
-                        )),
-                        Some(owns) => Ok(owns),
-                    }?
-                    .into_owned();
+                let owns = object.type_().try_get_owns_attribute(snapshot, self.type_manager(), attribute_type.clone())?;
 
                 self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, owns.clone())?;
                 self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute_value, owns)?;
@@ -902,27 +879,12 @@ impl ThingManager {
                 let relation = Relation::new(role_player.relation()).into_owned();
                 let player = Object::new(role_player.player()).into_owned();
                 let relation_type = relation.type_();
-                let owner_type = player.type_();
                 let role_type = RoleType::build_from_type_id(role_player.role_id()).into_owned();
 
-                let plays = match owner_type.get_plays_role(snapshot, self.type_manager(), role_type.clone())? {
-                    None => Err(ConceptReadError::CannotGetPlaysDoesntExist(
-                        owner_type.get_label(snapshot, self.type_manager())?.clone(),
-                        role_type.get_label(snapshot, self.type_manager())?.clone(),
-                    )),
-                    Some(plays) => Ok(plays),
-                }?
-                .into_owned();
+                let plays = player.type_().try_get_plays_role(snapshot, self.type_manager(), role_type.clone())?;
                 self.add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, plays)?;
 
-                let relates = match relation_type.get_relates_role(snapshot, self.type_manager(), role_type.clone())? {
-                    None => Err(ConceptReadError::CannotGetPlaysDoesntExist(
-                        owner_type.get_label(snapshot, self.type_manager())?.clone(),
-                        role_type.get_label(snapshot, self.type_manager())?.clone(),
-                    )),
-                    Some(plays) => Ok(plays),
-                }?
-                .into_owned();
+                let relates = relation_type.try_get_relates_role(snapshot, self.type_manager(), role_type.clone())?;
                 self.add_exclusive_lock_for_relates_cardinality_constraint(snapshot, &relation, relates)?;
             }
         }
@@ -937,7 +899,7 @@ impl ThingManager {
         value: Value<'a>,
         owns: Owns<'static>,
     ) -> Result<(), ConceptReadError> {
-        if let Some(uniqueness_source) = get_uniqueness_source(snapshot, self, owns)? {
+        if let Some(uniqueness_source) = owns.get_uniqueness_source(snapshot, self.type_manager())? {
             let lock_key = create_custom_lock_key(
                 [
                     &Infix::PropertyAnnotationUnique.infix_id().bytes(),
@@ -1319,6 +1281,7 @@ impl ThingManager {
             }
         }
 
+        // TODO: Should probably remove it
         for owner_type in snapshot
             .iterate_writes_range(KeyRange::new_within(
                 TypeEdgeProperty::build_prefix(),
@@ -1330,8 +1293,7 @@ impl ThingManager {
                     let property = TypeEdgeProperty::new(Bytes::Reference(key.byte_array().as_ref()));
                     let edge = property.type_edge();
                     let prefix = edge.prefix();
-                    // We always store EdgeOverride on canonical edges, but it's safe to check both here just in case.
-                    if prefix == Owns::CANONICAL_PREFIX || prefix == Owns::REVERSE_PREFIX {
+                    if prefix == Owns::CANONICAL_PREFIX {
                         return Some(ObjectType::new(edge.from()).into_owned());
                     }
                 }
@@ -1361,7 +1323,7 @@ impl ThingManager {
             let edge = ThingEdgeLinks::new(Bytes::reference(key.bytes()));
             let relation = Relation::new(edge.relation());
             let player = Object::new(edge.player());
-            if self.relation_exists(snapshot, &relation)? {
+            if self.object_exists(snapshot, &relation)? {
                 out_relations.insert(relation.into_owned());
             }
             if self.object_exists(snapshot, &player)? {
@@ -1397,12 +1359,13 @@ impl ThingManager {
             let relation_type = RelationType::new(edge.from().into_owned());
             let mut relations = self.get_relations_in(snapshot, relation_type);
             while let Some(relation) = relations.next().transpose()? {
-                if self.relation_exists(snapshot, &relation)? {
+                if self.object_exists(snapshot, &relation)? {
                     out_relations.insert(relation.into_owned());
                 }
             }
         }
 
+        // TODO: Should probably remove it
         for player_type in snapshot
             .iterate_writes_range(KeyRange::new_within(
                 TypeEdgeProperty::build_prefix(),
@@ -1414,7 +1377,7 @@ impl ThingManager {
                     let property = TypeEdgeProperty::new(Bytes::Reference(key.byte_array().as_ref()));
                     let edge = property.type_edge();
                     let prefix = edge.prefix();
-                    if prefix == Plays::CANONICAL_PREFIX || prefix == Plays::REVERSE_PREFIX {
+                    if prefix == Plays::CANONICAL_PREFIX {
                         return Some(ObjectType::new(edge.from()).into_owned());
                     }
                 }
@@ -1429,6 +1392,7 @@ impl ThingManager {
             }
         }
 
+        // TODO: Should probably remove it
         for relation_type in snapshot
             .iterate_writes_range(KeyRange::new_within(
                 TypeEdgeProperty::build_prefix(),
@@ -1440,7 +1404,7 @@ impl ThingManager {
                     let property = TypeEdgeProperty::new(Bytes::Reference(key.byte_array().as_ref()));
                     let edge = property.type_edge();
                     let prefix = edge.prefix();
-                    if prefix == Relates::CANONICAL_PREFIX || prefix == Relates::REVERSE_PREFIX {
+                    if prefix == Relates::CANONICAL_PREFIX {
                         return Some(RelationType::new(edge.from()).into_owned());
                     }
                 }
@@ -1449,7 +1413,7 @@ impl ThingManager {
         {
             let mut relations = self.get_relations_in(snapshot, relation_type);
             while let Some(relation) = relations.next().transpose()? {
-                if self.relation_exists(snapshot, &relation)? {
+                if self.object_exists(snapshot, &relation)? {
                     out_relations.insert(relation.into_owned());
                 }
             }
@@ -1500,7 +1464,7 @@ impl ThingManager {
             snapshot,
             self,
             attribute_type.clone(),
-            value.clone(),
+            value.as_reference(),
         )
         .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
@@ -1508,7 +1472,7 @@ impl ThingManager {
             snapshot,
             self,
             attribute_type.clone(),
-            value.clone(),
+            value.as_reference(),
         )
         .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
@@ -1516,7 +1480,7 @@ impl ThingManager {
             snapshot,
             self,
             attribute_type.clone(),
-            value.clone(),
+            value.as_reference(),
         )
         .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
@@ -1558,7 +1522,6 @@ impl ThingManager {
                 )
             }
             Value::Decimal(decimal) => {
-                println!("PUT DECIMAL ATTR: {:?}", decimal);
                 let encoded_decimal = DecimalBytes::build(decimal);
                 self.vertex_generator.create_attribute_decimal(
                     attribute_type.vertex().type_id_(),
@@ -1709,15 +1672,15 @@ impl ThingManager {
             value.value_type(),
         )?;
 
-        let owns = owner.get_type_owns(snapshot, self.type_manager(), attribute_type.clone())?.into_owned();
+        let owns = owner.type_().try_get_owns_attribute(snapshot, self.type_manager(), attribute_type.clone())?;
 
-        OperationTimeValidation::validate_has_regex_constraint(snapshot, self, owns.clone(), value.clone())
+        OperationTimeValidation::validate_has_regex_constraint(snapshot, self, owns.clone(), value.as_reference())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        OperationTimeValidation::validate_has_range_constraint(snapshot, self, owns.clone(), value.clone())
+        OperationTimeValidation::validate_has_range_constraint(snapshot, self, owns.clone(), value.as_reference())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
-        OperationTimeValidation::validate_has_values_constraint(snapshot, self, owns.clone(), value.clone())
+        OperationTimeValidation::validate_has_values_constraint(snapshot, self, owns.clone(), value.as_reference())
             .map_err(|source| ConceptWriteError::DataValidation { source })?;
 
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
@@ -1727,8 +1690,8 @@ impl ThingManager {
             snapshot.delete(has.as_storage_key().into_owned_array());
             snapshot.delete(has_reverse.as_storage_key().into_owned_array());
         } else {
-            owner.set_required(snapshot, self);
-            attribute.set_required(snapshot, self);
+            owner.set_required(snapshot, self)?;
+            attribute.set_required(snapshot, self)?;
 
             snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
@@ -1771,7 +1734,7 @@ impl ThingManager {
     ) -> Result<(), ConceptWriteError> {
         let attribute_value_type = attribute_type
             .get_value_type(snapshot, self.type_manager())?
-            .expect("Handle missing value type - for abstract attributes. Or assume this will never happen");
+            .expect("Value type validation should be implemented in the callers of this method!");
         let key = build_object_vertex_property_has_order(owner.vertex(), attribute_type.into_vertex());
         let storage_key = key.into_storage_key().into_owned_array();
         let value = encode_attribute_ids(
@@ -1856,8 +1819,8 @@ impl ThingManager {
             snapshot.delete(links.as_storage_key().into_owned_array());
             snapshot.delete(links_reverse.as_storage_key().into_owned_array());
         } else {
-            relation.set_required(snapshot, self);
-            player.set_required(snapshot, self);
+            relation.set_required(snapshot, self)?;
+            player.set_required(snapshot, self)?;
 
             snapshot.put_val(links.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(links_reverse.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
@@ -1978,6 +1941,13 @@ impl ThingManager {
         debug_assert!(*count.as_ref().unwrap() >= decrement_count);
         self.set_links_count(snapshot, relation, player, role_type, count.unwrap() - decrement_count)
     }
+
+    ///
+    /// TODO:
+    /// Call index regenerations when cardinality changes in schema
+    /// (create role type, set override, unset override,
+    /// set cardinality annotation, unset cardinality annotation)
+    ///
 
     ///
     /// Clean up all parts of a relation index to do with a specific role player

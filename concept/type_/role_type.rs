@@ -146,7 +146,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.delete_role_type(snapshot, thing_manager, self.clone().into_owned())
+        type_manager.delete_role_type(snapshot, thing_manager, self.into_owned())
     }
 
     fn get_label<'m>(
@@ -252,7 +252,7 @@ impl<'a> RoleType<'a> {
         Ok(())
     }
 
-    pub(crate) fn get_relates<'m>(
+    pub fn get_relates<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,

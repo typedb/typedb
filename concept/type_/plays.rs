@@ -42,30 +42,6 @@ impl<'a> Plays<'a> {
         self.role.clone()
     }
 
-    pub fn get_override<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, Option<Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_override(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_overriding<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_overriding(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_overriding_transitive<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_overriding_transitive(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_override(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -160,6 +136,30 @@ impl<'a> Capability<'a> for Plays<'a> {
 
     fn interface(&self) -> RoleType<'a> {
         self.role.clone()
+    }
+
+    fn get_override<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, Option<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_override(snapshot, self.clone().into_owned())
+    }
+
+    fn get_overriding<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_overriding(snapshot, self.clone().into_owned())
+    }
+
+    fn get_overriding_transitive<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_overriding_transitive(snapshot, self.clone().into_owned())
     }
 
     fn get_annotations_declared<'this>(

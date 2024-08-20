@@ -43,6 +43,10 @@ pub trait ReadableSnapshot {
         Ok(value.map(|bytes| mapper(bytes.as_ref())))
     }
 
+    fn contains(&self, key: StorageKeyReference<'_>) -> Result<bool, SnapshotGetError> {
+        Ok(self.get_mapped(key, |value| true)?.unwrap_or(false))
+    }
+
     fn iterate_range<const PS: usize>(&self, range: KeyRange<StorageKey<'_, PS>>) -> SnapshotRangeIterator;
 
     fn any_in_range<'this, const PS: usize>(

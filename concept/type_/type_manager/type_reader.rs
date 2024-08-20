@@ -291,7 +291,6 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    // TODO: Return HashMap<CAP, ObjectType (source)> if needed, just like we do for get_annotations
     pub(crate) fn get_capabilities<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         object_type: CAP::ObjectType,
@@ -631,7 +630,6 @@ impl TypeReader {
         Ok(annotations)
     }
 
-    // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs
     pub(crate) fn get_type_edge_annotations_declared<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         edge: CAP,

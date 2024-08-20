@@ -146,11 +146,6 @@ impl<'a> Relation<'a> {
         role_type: RoleType<'static>,
         player: Object<'_>,
     ) -> Result<(), ConceptWriteError> {
-        match role_type.get_ordering(snapshot, thing_manager.type_manager())? {
-            Ordering::Unordered => (),
-            Ordering::Ordered => return Err(ConceptWriteError::SetPlayersUnorderedRoleOrdered {}),
-        }
-
         OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
             .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
@@ -256,6 +251,25 @@ impl<'a> Relation<'a> {
         player: Object<'_>,
         delete_count: u64,
     ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_relation_exists_to_remove_player(snapshot, thing_manager, self)
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
+        OperationTimeValidation::validate_relation_type_relates_role_type(
+            snapshot,
+            thing_manager,
+            self.type_(),
+            role_type.clone(),
+        )
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
+        OperationTimeValidation::validate_object_type_plays_role_type(
+            snapshot,
+            thing_manager,
+            player.type_(),
+            role_type.clone(),
+        )
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
         let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
         let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())?;
         if distinct {
@@ -316,10 +330,11 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         Relation::new(self.vertex.into_owned())
     }
 
-    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
+    fn set_required(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) -> Result<(), ConceptReadError> {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing_object(snapshot, self.as_reference());
         }
+        Ok(())
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
