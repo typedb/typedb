@@ -12,10 +12,13 @@ use concept::{
     thing::thing_manager::ThingManager,
     type_::{
         annotation::{Annotation, AnnotationError},
-        attribute_type::AttributeType,
-        owns::Owns,
-        plays::Plays,
+        attribute_type::{AttributeType, AttributeTypeAnnotation},
+        entity_type::EntityTypeAnnotation,
+        object_type::ObjectType,
+        owns::{Owns, OwnsAnnotation},
+        plays::{Plays, PlaysAnnotation},
         relates::{Relates, RelatesAnnotation},
+        relation_type::RelationTypeAnnotation,
         type_manager::TypeManager,
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
@@ -28,7 +31,6 @@ use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     annotation::Annotation as TypeQLAnnotation,
-    token,
     query::schema::Define,
     schema::definable::{
         function::Function,
@@ -39,7 +41,9 @@ use typeql::{
         },
         Struct, Type,
     },
-    Definable,
+    token,
+    type_::Optional,
+    Definable, ScopedLabel, TypeRef, TypeRefAny,
 };
 
 use crate::{
@@ -220,7 +224,7 @@ fn define_types(
                 .map_err(|source| DefineError::DefinitionResolution { source })?;
         }
         Some(token::Kind::Role) => {
-            return Err(DefineError::RoleTypeDirectCreate { type_declaration: type_declaration.clone() })?;
+            return Err(DefineError::RoleTypeDirectCreate { type_declaration: type_declaration.clone() });
         }
         Some(token::Kind::Entity) => {
             let definition_status = get_entity_type_status(snapshot, type_manager, &label)

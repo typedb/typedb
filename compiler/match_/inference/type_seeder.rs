@@ -1269,7 +1269,7 @@ pub mod tests {
     use answer::Type as TypeAnnotation;
     use encoding::value::{label::Label, value_type::ValueType};
     use ir::{
-        pattern::constraint::IsaKind,
+        pattern::constraint::{Comparator, IsaKind},
         program::block::{BlockContext, FunctionalBlock},
         translation::TranslationContext,
     };
@@ -1469,7 +1469,7 @@ pub mod tests {
             let var_b = conjunction.get_or_declare_variable("b").unwrap();
             // Try seeding
             {
-                conjunction.constraints_mut().add_comparison(var_a, var_b).unwrap();
+                conjunction.constraints_mut().add_comparison(var_a, var_b, Comparator::Greater).unwrap();
             }
 
             let block = builder.finish();

@@ -6,8 +6,8 @@
 
 use answer::variable::Variable;
 use typeql::{
+    expression::{BuiltinFunctionName, FunctionName},
     token::{ArithmeticOperator, Function},
-    expression::{BuiltinFunctionName, Expression as TypeQLExpression, FunctionName},
 };
 
 use crate::{
@@ -20,50 +20,63 @@ use crate::{
     },
     program::function_signature::FunctionSignatureIndex,
     translation::{
-        constraints::{add_function_call_binding_user, register_typeql_var, split_out_inline_expressions},
+        constraints::{register_typeql_var, split_out_inline_expressions},
         literal::translate_literal,
     },
     PatternDefinitionError,
 };
 
-pub(crate) fn build_expression<'cx, 'reg>(
+pub(super) fn add_typeql_expression(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
-    expression: &TypeQLExpression,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    variable: Variable,
+    rhs: &typeql::Expression,
+) -> Result<(), PatternDefinitionError> {
+    let expression = build_expression(function_index, constraints, rhs)?;
+    constraints.add_expression(variable, expression)?;
+    Ok(())
+}
+
+pub(crate) fn build_expression(
+    function_index: &impl FunctionSignatureIndex,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    expression: &typeql::Expression,
 ) -> Result<ExpressionTree<Variable>, PatternDefinitionError> {
     let mut tree = ExpressionTree::empty();
     build_recursive(function_index, constraints, expression, &mut tree)?;
     Ok(tree)
 }
 
-fn build_recursive<'cx, 'reg>(
+fn build_recursive(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
-    expression: &TypeQLExpression,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    expression: &typeql::Expression,
     tree: &mut ExpressionTree<Variable>,
 ) -> Result<ExpressionTreeNodeId, PatternDefinitionError> {
     let expression = match expression {
-        TypeQLExpression::Paren(inner) => {
+        typeql::Expression::Paren(inner) => {
             return build_recursive(function_index, constraints, &inner.inner, tree);
         }
-        TypeQLExpression::Variable(var) => Expression::Variable(register_typeql_var(constraints, var)?),
-        TypeQLExpression::ListIndex(list_index) => {
+        typeql::Expression::Variable(var) => Expression::Variable(register_typeql_var(constraints, var)?),
+        typeql::Expression::ListIndex(list_index) => {
             let variable = register_typeql_var(constraints, &list_index.variable)?;
             let id = build_recursive(function_index, constraints, &list_index.index, tree)?;
             Expression::ListIndex(ListIndex::new(variable, id))
         }
-        TypeQLExpression::Value(literal) => {
+        typeql::Expression::Value(literal) => {
             let value = translate_literal(literal)
                 .map_err(|source| PatternDefinitionError::LiteralParseError { literal: literal.to_string(), source })?;
             Expression::Constant(value)
         }
-        TypeQLExpression::Operation(operation) => {
+        typeql::Expression::Operation(operation) => {
             let left_id = build_recursive(function_index, constraints, &operation.left, tree)?;
             let right_id = build_recursive(function_index, constraints, &operation.right, tree)?;
             Expression::Operation(Operation::new(translate_operator(&operation.op), left_id, right_id))
         }
-        TypeQLExpression::Function(function_call) => build_function(function_index, constraints, function_call, tree)?, // Careful, could be either.
-        TypeQLExpression::List(list) => {
+        typeql::Expression::Function(function_call) => {
+            build_function(function_index, constraints, function_call, tree)?
+        } // Careful, could be either.
+        typeql::Expression::List(list) => {
             let sub_exprs = list
                 .items
                 .iter()
@@ -71,7 +84,7 @@ fn build_recursive<'cx, 'reg>(
                 .collect::<Result<Vec<_>, _>>()?;
             Expression::List(ListConstructor::new(sub_exprs))
         }
-        TypeQLExpression::ListIndexRange(range) => {
+        typeql::Expression::ListIndexRange(range) => {
             let list_variable = register_typeql_var(constraints, &range.var)?;
             let left_id = build_recursive(function_index, constraints, &range.from, tree)?;
             let right_id = build_recursive(function_index, constraints, &range.to, tree)?;
@@ -81,9 +94,28 @@ fn build_recursive<'cx, 'reg>(
     Ok(tree.add(expression))
 }
 
-fn build_function<'cx, 'reg>(
+pub(super) fn add_user_defined_function_call(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    identifier: &typeql::Identifier,
+    assigned: Vec<Variable>,
+    args: &[typeql::Expression],
+) -> Result<(), PatternDefinitionError> {
+    let arguments = split_out_inline_expressions(function_index, constraints, args)?;
+    let function_name = identifier.as_str();
+    let callee = function_index
+        .get_function_signature(function_name)
+        .map_err(|source| PatternDefinitionError::FunctionRead { source })?;
+    let Some(callee) = callee else {
+        return Err(PatternDefinitionError::UnresolvedFunction { function_name: function_name.to_owned() });
+    };
+    constraints.add_function_binding(assigned, &callee, arguments)?;
+    Ok(())
+}
+
+fn build_function(
+    function_index: &impl FunctionSignatureIndex,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     function_call: &typeql::expression::FunctionCall,
     tree: &mut ExpressionTree<Variable>,
 ) -> Result<Expression<Variable>, PatternDefinitionError> {
@@ -98,15 +130,7 @@ fn build_function<'cx, 'reg>(
         }
         FunctionName::Identifier(identifier) => {
             let assign = constraints.create_anonymous_variable()?;
-            let arguments = split_out_inline_expressions(function_index, constraints, &function_call.args)?;
-            add_function_call_binding_user(
-                function_index,
-                constraints,
-                vec![assign],
-                identifier.as_str(),
-                arguments,
-                false,
-            )?;
+            add_user_defined_function_call(function_index, constraints, identifier, vec![assign], &function_call.args)?;
             Ok(Expression::Variable(assign))
         }
     }
@@ -123,45 +147,35 @@ fn translate_operator(operator: &ArithmeticOperator) -> Operator {
     }
 }
 
-fn check_builtin_arg_count(
-    builtin: &BuiltinFunctionName,
-    actual: usize,
-    expected: usize,
-) -> Result<(), PatternDefinitionError> {
+fn check_builtin_arg_count(builtin: Function, actual: usize, expected: usize) -> Result<(), PatternDefinitionError> {
     if actual == expected {
         Ok(())
     } else {
-        Err(PatternDefinitionError::ExpressionBuiltinArgumentCountMismatch {
-            builtin: builtin.token.clone(),
-            expected,
-            actual,
-        })
+        Err(PatternDefinitionError::ExpressionBuiltinArgumentCountMismatch { builtin, expected, actual })
     }
 }
 
-fn to_builtin_id(
-    typeql_id: &BuiltinFunctionName,
-    args: &Vec<usize>,
-) -> Result<BuiltInFunctionID, PatternDefinitionError> {
-    Ok(match typeql_id.token {
+fn to_builtin_id(typeql_id: &BuiltinFunctionName, args: &[usize]) -> Result<BuiltInFunctionID, PatternDefinitionError> {
+    let token = typeql_id.token;
+    match token {
         Function::Abs => {
-            check_builtin_arg_count(typeql_id, args.len(), 1)?;
-            BuiltInFunctionID::Abs
+            check_builtin_arg_count(token, args.len(), 1)?;
+            Ok(BuiltInFunctionID::Abs)
         }
         Function::Ceil => {
-            check_builtin_arg_count(typeql_id, args.len(), 1)?;
-            BuiltInFunctionID::Ceil
+            check_builtin_arg_count(token, args.len(), 1)?;
+            Ok(BuiltInFunctionID::Ceil)
         }
         Function::Floor => {
-            check_builtin_arg_count(typeql_id, args.len(), 1)?;
-            BuiltInFunctionID::Floor
+            check_builtin_arg_count(token, args.len(), 1)?;
+            Ok(BuiltInFunctionID::Floor)
         }
         Function::Round => {
-            check_builtin_arg_count(typeql_id, args.len(), 1)?;
-            BuiltInFunctionID::Round
+            check_builtin_arg_count(token, args.len(), 1)?;
+            Ok(BuiltInFunctionID::Round)
         }
         _ => todo!(),
-    })
+    }
 }
 
 #[cfg(test)]
@@ -172,10 +186,7 @@ pub mod tests {
 
     use crate::{
         pattern::expression::{Expression, Operation, Operator},
-        program::{
-            block::{BlockContext, FunctionalBlock},
-            function_signature::HashMapFunctionSignatureIndex,
-        },
+        program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
         translation::{match_::translate_match, TranslationContext},
         PatternDefinitionError,
     };
@@ -192,15 +203,7 @@ pub mod tests {
     #[test]
     fn basic() {
         let mut context = TranslationContext::new();
-        let block = parse_query_get_match(
-            &mut context,
-            "
-            match
-                $y = 5 + 9 * 6;
-            select $y;
-        ",
-        )
-        .unwrap();
+        let block = parse_query_get_match(&mut context, "match $y = 5 + 9 * 6; select $y;").unwrap();
         let var_y = get_named_variable(&context, "y");
 
         let lhs = block.conjunction().constraints()[0].as_expression_binding().unwrap().left();

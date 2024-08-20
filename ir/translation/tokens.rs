@@ -9,20 +9,17 @@ use concept::type_::annotation::{
     AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
 };
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
-use typeql::{
-    annotation::{Annotation as TypeQLAnnotation, CardinalityRange},
-    token::{Kind as TypeQLKind, ValueType as TypeQLValueType},
-};
+use typeql::{annotation::CardinalityRange, token};
 
 use crate::{
     translation::literal::{extract_string_literal, translate_literal},
     LiteralParseError,
 };
 
-pub fn translate_annotation(typeql_kind: &TypeQLAnnotation) -> Result<Annotation, LiteralParseError> {
+pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotation, LiteralParseError> {
     Ok(match typeql_kind {
-        TypeQLAnnotation::Abstract(_) => Annotation::Abstract(AnnotationAbstract),
-        TypeQLAnnotation::Cardinality(cardinality) => {
+        typeql::Annotation::Abstract(_) => Annotation::Abstract(AnnotationAbstract),
+        typeql::Annotation::Cardinality(cardinality) => {
             let (start, end) = match &cardinality.range {
                 CardinalityRange::Exact(start) => {
                     (start.value.parse::<u64>().unwrap(), Some(start.value.parse::<u64>().unwrap()))
@@ -33,47 +30,47 @@ pub fn translate_annotation(typeql_kind: &TypeQLAnnotation) -> Result<Annotation
             };
             Annotation::Cardinality(AnnotationCardinality::new(start, end))
         }
-        TypeQLAnnotation::Cascade(_) => Annotation::Cascade(AnnotationCascade),
-        TypeQLAnnotation::Distinct(_) => Annotation::Distinct(AnnotationDistinct),
+        typeql::Annotation::Cascade(_) => Annotation::Cascade(AnnotationCascade),
+        typeql::Annotation::Distinct(_) => Annotation::Distinct(AnnotationDistinct),
 
-        TypeQLAnnotation::Independent(_) => Annotation::Independent(AnnotationIndependent),
-        TypeQLAnnotation::Key(_) => Annotation::Key(AnnotationKey),
-        TypeQLAnnotation::Range(range) => Annotation::Range(AnnotationRange::new(
+        typeql::Annotation::Independent(_) => Annotation::Independent(AnnotationIndependent),
+        typeql::Annotation::Key(_) => Annotation::Key(AnnotationKey),
+        typeql::Annotation::Range(range) => Annotation::Range(AnnotationRange::new(
             range.min.as_ref().map(translate_literal).transpose()?,
             range.max.as_ref().map(translate_literal).transpose()?,
         )),
-        TypeQLAnnotation::Regex(regex) => {
+        typeql::Annotation::Regex(regex) => {
             Annotation::Regex(AnnotationRegex::new(extract_string_literal(&regex.regex)?))
         }
-        TypeQLAnnotation::Subkey(_) => {
+        typeql::Annotation::Subkey(_) => {
             todo!()
         }
-        TypeQLAnnotation::Unique(_) => Annotation::Unique(AnnotationUnique),
-        TypeQLAnnotation::Values(values) => Annotation::Values(AnnotationValues::new(
+        typeql::Annotation::Unique(_) => Annotation::Unique(AnnotationUnique),
+        typeql::Annotation::Values(values) => Annotation::Values(AnnotationValues::new(
             values.values.iter().map(translate_literal).collect::<Result<Vec<_>, _>>()?,
         )),
     })
 }
 
-pub fn translate_kind(typeql_kind: TypeQLKind) -> Kind {
+pub fn translate_kind(typeql_kind: token::Kind) -> Kind {
     match typeql_kind {
-        TypeQLKind::Entity => Kind::Entity,
-        TypeQLKind::Relation => Kind::Relation,
-        TypeQLKind::Attribute => Kind::Attribute,
-        TypeQLKind::Role => Kind::Role,
+        token::Kind::Entity => Kind::Entity,
+        token::Kind::Relation => Kind::Relation,
+        token::Kind::Attribute => Kind::Attribute,
+        token::Kind::Role => Kind::Role,
     }
 }
 
-pub fn translate_value_type(typeql_value_type: &TypeQLValueType) -> ValueType {
+pub fn translate_value_type(typeql_value_type: &token::ValueType) -> ValueType {
     match typeql_value_type {
-        TypeQLValueType::Boolean => ValueType::Boolean,
-        TypeQLValueType::Date => ValueType::Date,
-        TypeQLValueType::DateTime => ValueType::DateTime,
-        TypeQLValueType::DateTimeTZ => ValueType::DateTimeTZ,
-        TypeQLValueType::Decimal => ValueType::Decimal,
-        TypeQLValueType::Double => ValueType::Double,
-        TypeQLValueType::Duration => ValueType::Duration,
-        TypeQLValueType::Long => ValueType::Long,
-        TypeQLValueType::String => ValueType::String,
+        token::ValueType::Boolean => ValueType::Boolean,
+        token::ValueType::Date => ValueType::Date,
+        token::ValueType::DateTime => ValueType::DateTime,
+        token::ValueType::DateTimeTZ => ValueType::DateTimeTZ,
+        token::ValueType::Decimal => ValueType::Decimal,
+        token::ValueType::Double => ValueType::Double,
+        token::ValueType::Duration => ValueType::Duration,
+        token::ValueType::Long => ValueType::Long,
+        token::ValueType::String => ValueType::String,
     }
 }

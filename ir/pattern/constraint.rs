@@ -170,6 +170,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         lhs: Variable,
         rhs: Variable,
+        comparator: Comparator,
     ) -> Result<&Comparison<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, lhs)
@@ -925,6 +926,22 @@ pub enum Comparator {
     GreaterOrEqual,
     Like,
     Cointains,
+}
+
+impl From<typeql::token::Comparator> for Comparator {
+    fn from(token: typeql::token::Comparator) -> Self {
+        match token {
+            typeql::token::Comparator::Eq => todo!(),
+            typeql::token::Comparator::EqLegacy => todo!(),
+            typeql::token::Comparator::Neq => todo!(),
+            typeql::token::Comparator::Gt => todo!(),
+            typeql::token::Comparator::Gte => todo!(),
+            typeql::token::Comparator::Lt => todo!(),
+            typeql::token::Comparator::Lte => todo!(),
+            typeql::token::Comparator::Contains => todo!(),
+            typeql::token::Comparator::Like => todo!(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
