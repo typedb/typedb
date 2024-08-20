@@ -7,16 +7,15 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use compiler::match_::planner::program_plan::ProgramPlan;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::{error::ConceptReadError};
 use itertools::Either;
 use lending_iterator::LendingIterator;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{Batch, ImmutableRow},
     pattern_executor::{BatchIterator, PatternExecutor},
     pipeline::{PipelineContext, PipelineError, PipelineStageAPI},
-    program_executor::ProgramExecutor,
 };
 
 pub struct MatchStage<Snapshot: ReadableSnapshot + 'static, PipelineStageType: PipelineStageAPI<Snapshot>> {

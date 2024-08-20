@@ -16,6 +16,17 @@ use crate::{
     pipeline::{PipelineContext, PipelineError, PipelineStageAPI},
 };
 
+pub(crate) trait AccumulatingStageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
+    fn process_accumulated(
+        &self,
+        context: &mut PipelineContext<Snapshot>,
+        row: &mut Box<[(Box<[VariableValue<'static>]>, u64)]>,
+    ) -> Result<(), PipelineError>;
+    fn store_incoming_row_into(&self, incoming: &ImmutableRow<'_>, stored_row: &mut Box<[VariableValue<'static>]>);
+    fn must_deduplicate_incoming_rows(&self) -> bool;
+    fn row_width(&self) -> usize;
+}
+
 // TODO: Optimise for allocations
 pub(crate) struct Accumulator<Snapshot, PipelineStageType, Executor>
 where
@@ -80,16 +91,6 @@ where
     }
 }
 
-pub(crate) trait AccumulatingStageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
-    fn process_accumulated(
-        &self,
-        context: &mut PipelineContext<Snapshot>,
-        row: &mut Box<[(Box<[VariableValue<'static>]>, u64)]>,
-    ) -> Result<(), PipelineError>;
-    fn store_incoming_row_into(&self, incoming: &ImmutableRow<'_>, stored_row: &mut Box<[VariableValue<'static>]>);
-    fn must_deduplicate_incoming_rows(&self) -> bool;
-    fn row_width(&self) -> usize;
-}
 
 pub struct AccumulatedRowIterator<Snapshot: ReadableSnapshot + 'static> {
     context: PipelineContext<Snapshot>,
@@ -105,7 +106,6 @@ impl<Snapshot: ReadableSnapshot + 'static> AccumulatedRowIterator<Snapshot> {
     }
 }
 
-// TODO: Implement LendingIterator instead ?
 impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for AccumulatedRowIterator<Snapshot> {
     // type Item<'a> = Result<ImmutableRow<'a>, Executor::Error>;
     type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;

@@ -17,7 +17,7 @@ use concept::{
 };
 use executor::{
     pipeline::{
-        insert::InsertStage, match_::MatchStage, InitialStage, PipelineContext, ReadablePipelineStage,
+        insert::InsertStage, match_::MatchStage, PipelineContext, ReadablePipelineStage,
         WritablePipelineStage,
     },
     write::insert::InsertExecutor,
@@ -25,6 +25,7 @@ use executor::{
 use function::{function::Function, function_manager::FunctionManager};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
+use executor::pipeline::common::InitialStage;
 
 use crate::{
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},

@@ -7,6 +7,7 @@
 pub mod accumulator;
 pub mod insert;
 pub mod match_;
+pub mod common;
 
 use std::{
     error::Error,
@@ -23,6 +24,8 @@ use crate::{
     pipeline::{insert::InsertStage, match_::MatchStage},
     write::WriteError,
 };
+use crate::pipeline::common::InitialStage;
+
 
 pub enum PipelineContext<Snapshot: ReadableSnapshot> {
     Arced(Arc<Snapshot>, Arc<ThingManager>),
@@ -46,20 +49,6 @@ impl<Snapshot: WritableSnapshot> PipelineContext<Snapshot> {
         }
     }
 }
-
-#[derive(Debug, Clone)]
-pub enum PipelineError {
-    ConceptRead(ConceptReadError),
-    WriteError(WriteError),
-}
-
-impl Display for PipelineError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for PipelineError {}
 
 pub trait PipelineStageAPI<Snapshot: ReadableSnapshot>:
     for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, PipelineError>>
@@ -122,26 +111,18 @@ impl<Snapshot: WritableSnapshot + 'static> PipelineStageAPI<Snapshot> for Writab
     }
 }
 
-pub struct InitialStage<Snapshot: ReadableSnapshot + 'static> {
-    context: PipelineContext<Snapshot>,
-    only_entry: BatchRowIterator,
+
+// Errors
+#[derive(Debug, Clone)]
+pub enum PipelineError {
+    ConceptRead(ConceptReadError),
+    WriteError(WriteError),
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> InitialStage<Snapshot> {
-    pub fn new(context: PipelineContext<Snapshot>) -> Self {
-        Self { context, only_entry: BatchRowIterator::new(Ok(Batch::SINGLE_EMPTY_ROW)) }
+impl Display for PipelineError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for InitialStage<Snapshot> {
-    type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.only_entry.next().map(|result| result.map_err(|source| PipelineError::ConceptRead(source.clone())))
-    }
-}
-
-impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for InitialStage<Snapshot> {
-    fn finalise(self) -> PipelineContext<Snapshot> {
-        self.context
-    }
-}
+impl Error for PipelineError {}
