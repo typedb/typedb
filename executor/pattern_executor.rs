@@ -4,32 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, marker::PhantomData, sync::Arc};
+use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use compiler::match_::{
     instructions::ConstraintInstruction,
-    planner::{
-        pattern_plan::{
-            AssignmentStep, DisjunctionStep, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
-            UnsortedJoinStep,
-        },
-        program_plan::ProgramPlan,
+    planner::pattern_plan::{
+        AssignmentStep, DisjunctionStep, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
+        UnsortedJoinStep,
     },
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::program::block::{BlockContext, VariableRegistry};
-use itertools::{Either, Itertools};
+use ir::program::block::VariableRegistry;
+use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    accumulator::AccumulatedRowIterator,
     batch::{Batch, BatchRowIterator, ImmutableRow, Row},
     instruction::{iterator::TupleIterator, InstructionExecutor},
-    pipeline::{PipelineContext, PipelineError, PipelineStageAPI},
-    program_executor::ProgramExecutor,
-    write::insert::InsertStage,
+    pipeline::PipelineContext,
     SelectedPositions, VariablePosition,
 };
 

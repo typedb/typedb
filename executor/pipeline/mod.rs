@@ -4,26 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod accumulator;
+pub mod insert;
 pub mod match_;
 
 use std::{
     error::Error,
     fmt::{Display, Formatter},
-    marker::PhantomData,
     sync::Arc,
 };
 
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::LendingIterator;
-use storage::{
-    durability_client::WALClient,
-    snapshot::{ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
-};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     batch::{Batch, BatchRowIterator, ImmutableRow},
-    pipeline::match_::MatchStage,
-    write::{insert::InsertStage, WriteError},
+    pipeline::{insert::InsertStage, match_::MatchStage},
+    write::WriteError,
 };
 
 pub enum PipelineContext<Snapshot: ReadableSnapshot> {

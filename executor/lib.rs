@@ -7,16 +7,12 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{
-    collections::HashMap,
-    fmt::{Display, Formatter},
-};
+use std::{collections::HashMap, fmt::Display};
 
 use answer::variable::Variable;
 use compiler::VariablePosition;
 use ir::pattern::IrID;
 
-mod accumulator;
 pub mod batch;
 pub mod expression_executor;
 mod function_executor;

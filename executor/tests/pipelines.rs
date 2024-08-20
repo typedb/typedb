@@ -38,6 +38,12 @@ use storage::{
 
 use crate::common::{load_managers, setup_storage};
 
+const PERSON_LABEL: Label = Label::new_static("person");
+const AGE_LABEL: Label = Label::new_static("age");
+const NAME_LABEL: Label = Label::new_static("name");
+const MEMBERSHIP_LABEL: Label = Label::new_static("membership");
+const MEMBERSHIP_MEMBER_LABEL: Label = Label::new_static_scoped("member", "membership", "membership:member");
+
 struct Context {
     storage: Arc<MVCCStorage<WALClient>>,
     type_manager: Arc<TypeManager>,
@@ -195,12 +201,6 @@ fn test_match_as_pipeline() {
 }
 
 // We need a way to work around stuff
-
-const PERSON_LABEL: Label = Label::new_static("person");
-const AGE_LABEL: Label = Label::new_static("age");
-const NAME_LABEL: Label = Label::new_static("name");
-const MEMBERSHIP_LABEL: Label = Label::new_static("membership");
-const MEMBERSHIP_MEMBER_LABEL: Label = Label::new_static_scoped("member", "membership", "membership:member");
 
 #[test]
 fn test_has_planning_traversal() {

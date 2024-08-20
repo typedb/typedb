@@ -39,13 +39,14 @@ impl<Snapshot: ReadableSnapshot, PipelineStage: PipelineStageAPI<Snapshot>> Lend
         if self.inner.is_some() && self.inner.as_ref().unwrap().is_left() {
             let Either::Left(lazy_stage) = self.inner.take().unwrap() else { unreachable!() };
             let LazyMatchStage { upstream, program_plan, .. } = lazy_stage;
-            let PipelineContext::Owned(snapshot, thing_manager) = upstream.finalise() else {
-                todo!("This has to be the try_get_arced")
+            let (snapshot, thing_manager) = match upstream.finalise() {
+                PipelineContext::Arced(snapshot, thing_manager) => (snapshot, thing_manager),
+                PipelineContext::Owned(snapshot, thing_manager) => (Arc::new(snapshot), Arc::new(thing_manager)),
             };
-
-            match PatternExecutor::new(program_plan.entry(), &snapshot, &thing_manager) {
+            let snapshot_borrowed: &Snapshot = &snapshot;
+            match PatternExecutor::new(program_plan.entry(), snapshot_borrowed, &thing_manager) {
                 Ok(executor) => {
-                    let batch_iterator = BatchIterator::new(executor, Arc::new(snapshot), Arc::new(thing_manager));
+                    let batch_iterator = BatchIterator::new(executor, snapshot, thing_manager);
                     let match_iterator = MatchStageIterator::new(batch_iterator);
                     self.inner = Some(Either::Right(match_iterator))
                 }
@@ -80,7 +81,7 @@ impl<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> 
     }
 }
 
-pub struct LazyMatchStage<Snapshot: ReadableSnapshot, PipelineStageType> {
+pub struct LazyMatchStage<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> {
     program_plan: ProgramPlan,
     upstream: Box<PipelineStageType>,
     phantom: PhantomData<Snapshot>,

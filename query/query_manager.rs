@@ -16,8 +16,11 @@ use concept::{
     type_::type_manager::TypeManager,
 };
 use executor::{
-    pipeline::{match_::MatchStage, InitialStage, PipelineContext, ReadablePipelineStage, WritablePipelineStage},
-    write::insert::{InsertExecutor, InsertStage},
+    pipeline::{
+        insert::InsertStage, match_::MatchStage, InitialStage, PipelineContext, ReadablePipelineStage,
+        WritablePipelineStage,
+    },
+    write::insert::InsertExecutor,
 };
 use function::{function::Function, function_manager::FunctionManager};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
