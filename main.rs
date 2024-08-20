@@ -9,7 +9,6 @@
 
 use logger::initialise_logging;
 use resource::constants::server::ASCII_LOGO;
-use server::typedb;
 
 #[tokio::main]
 async fn main() {
@@ -17,10 +16,10 @@ async fn main() {
 
     let _guard = initialise_logging();
 
-    typedb::Server::open("runtimedata/server/data").unwrap()
+    server::typedb::Server::open("runtimedata/server/data").unwrap()
         .serve()
+        .await
         .unwrap()
-        .await;
 }
 
 fn print_ascii_logo() {

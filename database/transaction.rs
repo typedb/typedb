@@ -11,6 +11,7 @@ use std::{
     sync::{Arc, RwLockReadGuard, RwLockWriteGuard},
 };
 use std::fmt::{Debug, Display, Formatter};
+use std::sync::atomic::AtomicU64;
 
 use concept::{
     error::ConceptWriteError,
@@ -25,6 +26,7 @@ use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot},
 };
+use storage::durability_client::WALClient;
 use storage::snapshot::SnapshotError;
 
 use crate::Database;
@@ -80,26 +82,14 @@ pub struct TransactionWrite<D> {
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: FunctionManager, // TODO: krishnan: Should this be an arc or direct ownership?
-
-    // NOTE: The fields of a struct are dropped in declaration order. `_schema_txn_guard`
-    // conceptually borrows `_database`, so it _must_ be dropped before `_database`,
-    // and therefore _must_ be declared before `_database`.
-    // See https://doc.rust-lang.org/reference/destructors.html
-    _schema_txn_guard: RwLockReadGuard<'static, ()>,
-    // prevents opening new schema txns while this txn is alive
-    _database: Arc<Database<D>>,
+    pub database: Arc<Database<D>>,
 }
 
 impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
-        let schema_txn_guard = unsafe {
-            // SAFETY: `TransactionWrite` owns `Arc<Database>`, so the `schema_txn_lock`
-            // is valid for the lifetime of the struct. The ordering of the fields
-            // ensures that the lock is released before the database pointer is dropped.
-            transmute::<RwLockReadGuard<'_, ()>, RwLockReadGuard<'static, ()>>(database.schema_txn_lock.read().unwrap())
-        };
-        let schema = database.schema.read().unwrap();
+        database.reserve_write_transaction();
 
+        let schema = database.schema.read().unwrap();
         let snapshot: WriteSnapshot<D> = database.storage.clone().open_snapshot_write();
         let type_manager = Arc::new(TypeManager::new(
             database.definition_key_generator.clone(),
@@ -109,7 +99,6 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         let thing_manager = Arc::new(ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone()));
         let function_manager =
             FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
-
         drop(schema);
 
         Self {
@@ -117,8 +106,23 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             type_manager,
             thing_manager,
             function_manager,
-            _schema_txn_guard: schema_txn_guard,
-            _database: database,
+            database: database,
+        }
+    }
+
+    pub fn from(
+        snapshot: Arc<WriteSnapshot<D>>,
+        type_manager: Arc<TypeManager>,
+        thing_manager: Arc<ThingManager>,
+        function_manager: FunctionManager,
+        _database: Arc<Database<D>>,
+    ) -> Self {
+        Self {
+            snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            database: _database,
         }
     }
 
@@ -136,6 +140,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 
     pub fn close(self) {
+        self.database.release_write_transaction();
         drop(self.thing_manager);
         drop(self.type_manager);
         Arc::into_inner(self.snapshot).unwrap().close_resources()
@@ -166,26 +171,12 @@ pub struct TransactionSchema<D> {
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: FunctionManager,
-
-    // NOTE: The fields of a struct are dropped in declaration order. `_schema_guard` conceptually
-    // borrows `_database`, so it _must_ be dropped before `_database`, and therefore _must_ be
-    // declared before `_database`.
-    // See https://doc.rust-lang.org/reference/destructors.html
-    pub _schema_txn_guard: RwLockWriteGuard<'static, ()>,
-    // prevents write txns while a schema txns running
     pub database: Arc<Database<D>>,
 }
 
 impl<D: DurabilityClient> TransactionSchema<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
-        let schema_txn_guard = unsafe {
-            // SAFETY: `TransactionSchema` owns `Arc<Database>`, so the `schema_lock` os valid for
-            // the lifetime of the struct. The ordering of the fields ensures that the lock is
-            // released before the database pointer is dropped.
-            transmute::<RwLockWriteGuard<'_, ()>, RwLockWriteGuard<'static, ()>>(
-                database.schema_txn_lock.write().unwrap(),
-            )
-        };
+        database.reserve_schema_transaction();
 
         let snapshot: SchemaSnapshot<D> = database.storage.clone().open_snapshot_schema();
         let type_manager = Arc::new(TypeManager::new(
@@ -200,7 +191,6 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             type_manager,
             thing_manager: Arc::new(thing_manager),
             function_manager,
-            _schema_txn_guard: schema_txn_guard,
             database,
         }
     }
@@ -210,7 +200,6 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
         function_manager: FunctionManager,
-        _schema_txn_guard: RwLockWriteGuard<'static, ()>,
         database: Arc<Database<D>>,
     ) -> Self {
         Self {
@@ -218,7 +207,6 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             type_manager,
             thing_manager,
             function_manager,
-            _schema_txn_guard,
             database,
         }
     }
@@ -278,6 +266,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 
     pub fn close(self) {
+        self.database.release_schema_transaction();
         drop(self.thing_manager);
         drop(self.type_manager);
         Arc::into_inner(self.snapshot).unwrap().close_resources();

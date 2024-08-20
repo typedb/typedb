@@ -8,6 +8,7 @@ use std::collections::HashMap;
 
 use tonic::{Code, Status};
 use tonic_types::{ErrorDetails, StatusExt};
+use uuid::Uuid;
 
 use error::TypeDBError;
 
@@ -15,7 +16,8 @@ pub(crate) enum ProtocolError {
     MissingField { name: &'static str, description: &'static str },
     TransactionAlreadyOpen {},
     TransactionClosed {},
-    UnrecognisedTransactionType { enum_variant : i32 },
+    UnrecognisedTransactionType { enum_variant: i32 },
+    QueryStreamNotFound { query_request_id: Uuid },
 }
 
 impl StatusConvertible for ProtocolError {
@@ -43,8 +45,18 @@ impl StatusConvertible for ProtocolError {
                     "Bad request",
                     ErrorDetails::with_bad_request_violation(
                         "transaction_type",
-                        format!("Unrecognised transaction type variant: {enum_variant}. Check client-server compatibility?")
-                    )
+                        format!("Unrecognised transaction type variant: {enum_variant}. Check client-server compatibility?"),
+                    ),
+                )
+            }
+            ProtocolError::QueryStreamNotFound { query_request_id } => {
+                Status::new(
+                    Code::NotFound,
+                    format!(
+                        "Query stream with protocol id '{:?}' was not found in the transaction. \
+                    The transaction could be closed, committed, rolled back, or this is an error state.",
+                        query_request_id
+                    ),
                 )
             }
         }

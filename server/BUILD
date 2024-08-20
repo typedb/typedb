@@ -30,6 +30,7 @@ rust_library(
         "@crates//:tonic",
         "@crates//:tonic-types",
         "@crates//:tracing",
+        "@crates//:uuid",
     ]
 )
 
