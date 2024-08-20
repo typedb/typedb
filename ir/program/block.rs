@@ -153,6 +153,16 @@ impl VariableRegistry {
         variable
     }
 
+    // TODO: pub(crate)
+    pub fn set_assigned_value_variable_category(
+        &mut self,
+        variable: Variable,
+        category: VariableCategory,
+        source: Constraint<Variable>,
+    ) -> Result<(), PatternDefinitionError> {
+        self.set_variable_category(variable, category, source)
+    }
+
     fn set_variable_category(
         &mut self,
         variable: Variable,

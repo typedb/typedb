@@ -24,9 +24,9 @@ use compiler::{
 };
 use concept::type_::type_manager::TypeManager;
 use ir::{
-    pattern::constraint::Constraint,
+    pattern::{constraint::Constraint, variable_category::VariableCategory},
     program::{
-        block::{FunctionalBlock, VariableRegistry},
+        block::{BlockContext, FunctionalBlock, VariableRegistry},
         function::Function,
         modifier::{Filter, Limit, Offset, Sort},
     },
@@ -136,7 +136,6 @@ fn annotate_stage(
             let (compiled_expressions, variable_value_types) =
                 compile_expressions(snapshot, type_manager, &block, variable_registry, &block_annotations)
                     .map_err(|source| QueryError::ExpressionCompilation { source })?;
-
             Ok(AnnotatedStage::Match { block, block_annotations, compiled_expressions, variable_value_types })
         }
         TranslatedStage::Insert { block } => {

@@ -4,9 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{marker::PhantomData, sync::Arc};
-use std::error::Error;
-use std::fmt::{Display, Formatter};
+pub mod match_;
+
+use std::{
+    error::Error,
+    fmt::{Display, Formatter},
+    marker::PhantomData,
+    sync::Arc,
+};
 
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::LendingIterator;
@@ -17,7 +22,7 @@ use storage::{
 
 use crate::{
     batch::{Batch, BatchRowIterator, ImmutableRow},
-    pattern_executor::MatchStage,
+    pipeline::match_::MatchStage,
     write::{insert::InsertStage, WriteError},
 };
 
@@ -56,9 +61,7 @@ impl Display for PipelineError {
     }
 }
 
-impl Error for PipelineError {
-
-}
+impl Error for PipelineError {}
 
 pub trait PipelineStageAPI<Snapshot: ReadableSnapshot>:
     for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, PipelineError>>
@@ -68,7 +71,7 @@ pub trait PipelineStageAPI<Snapshot: ReadableSnapshot>:
 
 pub enum ReadablePipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
-    Match(MatchStage<Snapshot>),
+    Match(MatchStage<Snapshot, ReadablePipelineStage<Snapshot>>),
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadablePipelineStage<Snapshot> {
@@ -94,7 +97,7 @@ impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for Readab
 
 pub enum WritablePipelineStage<Snapshot: WritableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
-    Match(MatchStage<Snapshot>),
+    Match(MatchStage<Snapshot, WritablePipelineStage<Snapshot>>),
     Insert(InsertStage<Snapshot>),
 }
 

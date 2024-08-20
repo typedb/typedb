@@ -4,27 +4,32 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, sync::Arc};
+use std::{cmp::Ordering, collections::HashMap, marker::PhantomData, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use compiler::match_::{
-    inference::type_annotations::TypeAnnotations,
     instructions::ConstraintInstruction,
-    planner::pattern_plan::{
-        AssignmentStep, DisjunctionStep, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
-        UnsortedJoinStep,
+    planner::{
+        pattern_plan::{
+            AssignmentStep, DisjunctionStep, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
+            UnsortedJoinStep,
+        },
+        program_plan::ProgramPlan,
     },
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::program::block::{BlockContext, VariableRegistry};
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
-use storage::snapshot::ReadableSnapshot;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    accumulator::AccumulatedRowIterator,
     batch::{Batch, BatchRowIterator, ImmutableRow, Row},
     instruction::{iterator::TupleIterator, InstructionExecutor},
     pipeline::{PipelineContext, PipelineError, PipelineStageAPI},
+    program_executor::ProgramExecutor,
+    write::insert::InsertStage,
     SelectedPositions, VariablePosition,
 };
 
@@ -157,13 +162,13 @@ enum Direction {
     Backward,
 }
 
-struct BatchIterator<Snapshot: ReadableSnapshot> {
+pub(crate) struct BatchIterator<Snapshot: ReadableSnapshot> {
     executor: PatternExecutor,
     context: PipelineContext<Snapshot>,
 }
 
 impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
-    fn new(executor: PatternExecutor, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
+    pub(crate) fn new(executor: PatternExecutor, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
         Self::new_from_context(executor, PipelineContext::Arced(snapshot, thing_manager))
     }
 
@@ -171,7 +176,7 @@ impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
         Self { executor, context }
     }
 
-    fn into_parts(self) -> (PatternExecutor, PipelineContext<Snapshot>) {
+    pub(crate) fn into_parts(self) -> (PatternExecutor, PipelineContext<Snapshot>) {
         (self.executor, self.context)
     }
 }
@@ -805,52 +810,5 @@ impl OptionalExecutor {
 
     fn batch_continue(&mut self) -> Result<Option<Batch>, ConceptReadError> {
         todo!()
-    }
-}
-
-pub struct MatchStage<Snapshot: ReadableSnapshot> {
-    batch_iterator: BatchIterator<Snapshot>,
-    current_batch: Option<Result<Batch, ConceptReadError>>,
-    current_index: u32,
-}
-
-impl<Snapshot: ReadableSnapshot + 'static> MatchStage<Snapshot> {
-    fn new(batch_iterator: BatchIterator<Snapshot>) -> Self {
-        Self { batch_iterator, current_batch: Some(Ok(Batch::EMPTY)), current_index: 0 }
-    }
-
-    fn forward_batches_till_has_next_or_none(&mut self) {
-        let must_fetch_next = match &self.current_batch {
-            None => false,
-            Some(Err(_)) => false,
-            Some(Ok(batch)) => self.current_index >= batch.rows_count(),
-        };
-        if must_fetch_next {
-            self.current_batch = self.batch_iterator.next();
-            self.forward_batches_till_has_next_or_none(); // Just in case we have empty batches
-        }
-    }
-}
-
-impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for MatchStage<Snapshot> {
-    type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;
-
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.forward_batches_till_has_next_or_none();
-        match &self.current_batch {
-            None => None,
-            Some(Err(err)) => Some(Err(PipelineError::ConceptRead(err.clone()))),
-            Some(Ok(batch)) => {
-                self.current_index += 1;
-                Some(Ok(batch.get_row(self.current_index - 1)))
-            }
-        }
-    }
-}
-
-impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for MatchStage<Snapshot> {
-    fn finalise(self) -> PipelineContext<Snapshot> {
-        let (_, context) = self.batch_iterator.into_parts();
-        context
     }
 }
