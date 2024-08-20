@@ -195,7 +195,7 @@ impl<'a> Relation<'a> {
             self.type_(),
             role_type.clone(),
         )
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         let mut new_counts = HashMap::<_, u64>::new();
         for player in &new_players {
@@ -205,7 +205,7 @@ impl<'a> Relation<'a> {
                 player.type_(),
                 role_type.clone(),
             )
-                .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
             *new_counts.entry(player).or_default() += 1;
         }
