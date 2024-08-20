@@ -122,7 +122,7 @@ impl BuiltInCall {
         self.builtin_id
     }
 
-    pub fn argument_expression_ids(&self) -> &Vec<ExpressionTreeNodeId> {
+    pub fn argument_expression_ids(&self) -> &[ExpressionTreeNodeId] {
         &self.argument_expression_ids
     }
 }
@@ -169,7 +169,7 @@ impl ListConstructor {
         Self { item_expression_ids }
     }
 
-    pub fn item_expression_ids(&self) -> &Vec<ExpressionTreeNodeId> {
+    pub fn item_expression_ids(&self) -> &[ExpressionTreeNodeId] {
         &self.item_expression_ids
     }
 }

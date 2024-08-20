@@ -90,7 +90,7 @@ fn execute_insert(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     query_str: &str,
-    input_row_var_names: &Vec<&str>,
+    input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
 ) -> Result<Vec<Vec<VariableValue<'static>>>, WriteError> {
     let mut translation_context = TranslationContext::new();
@@ -150,7 +150,7 @@ fn execute_delete(
     thing_manager: &ThingManager,
     mock_match_string_for_annotations: &str,
     delete_str: &str,
-    input_row_var_names: &Vec<&str>,
+    input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
 ) -> Result<Vec<Vec<VariableValue<'static>>>, WriteError> {
     let mut translation_context = TranslationContext::new();

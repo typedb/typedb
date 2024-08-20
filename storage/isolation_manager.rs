@@ -525,8 +525,7 @@ struct TimelineWindow<const SIZE: usize> {
 
 impl<const SIZE: usize> TimelineWindow<SIZE> {
     fn new(start: SequenceNumber) -> TimelineWindow<SIZE> {
-        const EMPTY: OnceLock<CommitRecord> = OnceLock::new();
-        let commit_records = [EMPTY; SIZE];
+        let commit_records = [const { OnceLock::new() }; SIZE];
         let slot_status: [AtomicU8; SIZE] = core::array::from_fn(|_| AtomicU8::new(0));
         debug_assert_eq!(slot_status[0].load(Ordering::SeqCst), SlotMarker::Empty.as_u8());
 

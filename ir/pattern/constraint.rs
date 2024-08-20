@@ -871,7 +871,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         Self { assigned: left, function_call, is_stream }
     }
 
-    pub fn assigned(&self) -> &Vec<ID> {
+    pub fn assigned(&self) -> &[ID] {
         &self.assigned
     }
 

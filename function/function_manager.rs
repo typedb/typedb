@@ -124,7 +124,7 @@ impl FunctionManager {
 
     pub(crate) fn translate_functions(
         function_index: &impl FunctionSignatureIndex,
-        functions: &Vec<SchemaFunction>,
+        functions: &[SchemaFunction],
     ) -> Result<Vec<ir::program::function::Function>, FunctionError> {
         functions
             .iter()

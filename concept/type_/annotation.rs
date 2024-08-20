@@ -18,14 +18,7 @@ use std::{
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
-    layout::infix::{
-        Infix,
-        Infix::{
-            PropertyAnnotationAbstract, PropertyAnnotationCardinality, PropertyAnnotationCascade,
-            PropertyAnnotationDistinct, PropertyAnnotationIndependent, PropertyAnnotationKey, PropertyAnnotationRange,
-            PropertyAnnotationRegex, PropertyAnnotationUnique, PropertyAnnotationValues,
-        },
-    },
+    layout::infix::Infix,
     value::{value::Value, value_type::ValueType, ValueEncodable},
 };
 use regex::Regex;
@@ -174,10 +167,7 @@ impl AnnotationRegex {
     }
 
     pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
-        match value_type {
-            Some(ValueType::String) => true,
-            _ => false,
-        }
+        matches!(value_type, Some(ValueType::String))
     }
 }
 
@@ -404,7 +394,7 @@ impl AnnotationValues {
 
     pub fn narrowed_correctly_by(&self, other: &Self) -> bool {
         for other_value in &other.values {
-            if !self.contains(&other_value) {
+            if !self.contains(other_value) {
                 return false;
             }
         }
@@ -456,7 +446,7 @@ pub enum AnnotationCategory {
 }
 
 impl AnnotationCategory {
-    const fn to_default(&self) -> Annotation {
+    const fn to_default(self) -> Annotation {
         match self {
             AnnotationCategory::Abstract => Annotation::Abstract(AnnotationAbstract),
             AnnotationCategory::Distinct => Annotation::Distinct(AnnotationDistinct),
@@ -473,18 +463,9 @@ impl AnnotationCategory {
 
     pub fn declarable_alongside(&self, other: AnnotationCategory) -> bool {
         match self {
-            AnnotationCategory::Unique => match other {
-                AnnotationCategory::Key => false,
-                _ => true,
-            },
-            AnnotationCategory::Cardinality => match other {
-                AnnotationCategory::Key => false,
-                _ => true,
-            },
-            AnnotationCategory::Key => match other {
-                | AnnotationCategory::Unique | AnnotationCategory::Cardinality => false,
-                _ => true,
-            },
+            AnnotationCategory::Unique => !matches!(other, AnnotationCategory::Key),
+            AnnotationCategory::Cardinality => !matches!(other, AnnotationCategory::Key),
+            AnnotationCategory::Key => !matches!(other, AnnotationCategory::Unique | AnnotationCategory::Cardinality),
             | AnnotationCategory::Abstract
             | AnnotationCategory::Distinct
             | AnnotationCategory::Independent
@@ -497,14 +478,8 @@ impl AnnotationCategory {
 
     pub fn declarable_below(&self, other: AnnotationCategory) -> bool {
         match self {
-            AnnotationCategory::Unique => match other {
-                AnnotationCategory::Key => false,
-                _ => true,
-            },
-            AnnotationCategory::Cardinality => match other {
-                AnnotationCategory::Key => false,
-                _ => true,
-            },
+            AnnotationCategory::Unique => !matches!(other, AnnotationCategory::Key),
+            AnnotationCategory::Cardinality => !matches!(other, AnnotationCategory::Key),
             | AnnotationCategory::Abstract
             | AnnotationCategory::Key
             | AnnotationCategory::Distinct
@@ -521,14 +496,8 @@ impl AnnotationCategory {
         // the type manager validations (other "declarable" methods) and only considers
         // valid inheritance scenarios.
         match self {
-            AnnotationCategory::Unique => match other {
-                AnnotationCategory::Key => false,
-                _ => true,
-            },
-            AnnotationCategory::Cardinality => match other {
-                AnnotationCategory::Key => false,
-                _ => true,
-            },
+            AnnotationCategory::Unique => !matches!(other, AnnotationCategory::Key),
+            AnnotationCategory::Cardinality => !matches!(other, AnnotationCategory::Key),
             | AnnotationCategory::Abstract
             | AnnotationCategory::Key
             | AnnotationCategory::Distinct
@@ -541,19 +510,7 @@ impl AnnotationCategory {
     }
 
     pub fn inheritable(&self) -> bool {
-        match self {
-            AnnotationCategory::Abstract => false,
-
-            | AnnotationCategory::Key
-            | AnnotationCategory::Unique
-            | AnnotationCategory::Cardinality
-            | AnnotationCategory::Distinct
-            | AnnotationCategory::Independent
-            | AnnotationCategory::Regex
-            | AnnotationCategory::Cascade
-            | AnnotationCategory::Range
-            | AnnotationCategory::Values => true,
-        }
+        !matches!(self, AnnotationCategory::Abstract)
     }
 
     pub fn has_parameter(&self) -> bool {
@@ -592,9 +549,9 @@ where
 macro_rules! empty_type_vertex_property_encoding {
     ($property:ident, $infix:ident) => {
         impl<'a> TypeVertexPropertyEncoding<'a> for $property {
-            const INFIX: Infix = $infix;
+            const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes<'b>(value: ByteReference<'b>) -> $property {
+            fn from_value_bytes(value: ByteReference<'_>) -> $property {
                 debug_assert!(value.bytes().is_empty());
                 $property
             }
@@ -611,9 +568,9 @@ macro_rules! empty_type_vertex_property_encoding {
 macro_rules! unreachable_type_vertex_property_encoding {
     ($property:ident, $infix:ident) => {
         impl<'a> TypeVertexPropertyEncoding<'a> for $property {
-            const INFIX: Infix = $infix;
+            const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes<'b>(value: ByteReference<'b>) -> $property {
+            fn from_value_bytes(_: ByteReference<'_>) -> $property {
                 unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
             }
 
@@ -634,9 +591,9 @@ empty_type_vertex_property_encoding!(AnnotationIndependent, PropertyAnnotationIn
 empty_type_vertex_property_encoding!(AnnotationCascade, PropertyAnnotationCascade);
 
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
-    const INFIX: Infix = PropertyAnnotationRegex;
+    const INFIX: Infix = Infix::PropertyAnnotationRegex;
 
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> AnnotationRegex {
+    fn from_value_bytes(value: ByteReference<'_>) -> AnnotationRegex {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
@@ -648,8 +605,8 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
 }
 
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRange {
-    const INFIX: Infix = PropertyAnnotationRange;
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+    const INFIX: Infix = Infix::PropertyAnnotationRange;
+    fn from_value_bytes(value: ByteReference<'_>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         bincode::deserialize(value.bytes()).unwrap()
@@ -661,8 +618,8 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRange {
 }
 
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationValues {
-    const INFIX: Infix = PropertyAnnotationValues;
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+    const INFIX: Infix = Infix::PropertyAnnotationValues;
+    fn from_value_bytes(value: ByteReference<'_>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         bincode::deserialize(value.bytes()).unwrap()
@@ -676,9 +633,9 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationValues {
 macro_rules! empty_type_edge_property_encoder {
     ($property:ident, $infix:ident) => {
         impl<'a> TypeEdgePropertyEncoding<'a> for $property {
-            const INFIX: Infix = $infix;
+            const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes<'b>(value: ByteReference<'b>) -> $property {
+            fn from_value_bytes(value: ByteReference<'_>) -> $property {
                 debug_assert!(value.bytes().is_empty());
                 $property
             }
@@ -695,9 +652,9 @@ macro_rules! empty_type_edge_property_encoder {
 macro_rules! unreachable_type_edge_property_encoder {
     ($property:ident, $infix:ident) => {
         impl<'a> TypeEdgePropertyEncoding<'a> for $property {
-            const INFIX: Infix = $infix;
+            const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes<'b>(value: ByteReference<'b>) -> $property {
+            fn from_value_bytes(_value: ByteReference<'_>) -> $property {
                 unreachable!("TypeEdgePropertyEncoding is not be implemented for {}", stringify!($property))
             }
 
@@ -717,8 +674,8 @@ empty_type_edge_property_encoder!(AnnotationUnique, PropertyAnnotationUnique);
 empty_type_edge_property_encoder!(AnnotationKey, PropertyAnnotationKey);
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
-    const INFIX: Infix = PropertyAnnotationCardinality;
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+    const INFIX: Infix = Infix::PropertyAnnotationCardinality;
+    fn from_value_bytes(value: ByteReference<'_>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         bincode::deserialize(value.bytes()).unwrap()
@@ -730,8 +687,8 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
 }
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
-    const INFIX: Infix = PropertyAnnotationRegex;
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+    const INFIX: Infix = Infix::PropertyAnnotationRegex;
+    fn from_value_bytes(value: ByteReference<'_>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
@@ -743,8 +700,8 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
 }
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
-    const INFIX: Infix = PropertyAnnotationRange;
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+    const INFIX: Infix = Infix::PropertyAnnotationRange;
+    fn from_value_bytes(value: ByteReference<'_>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         bincode::deserialize(value.bytes()).unwrap()
@@ -756,8 +713,8 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
 }
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationValues {
-    const INFIX: Infix = PropertyAnnotationValues;
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+    const INFIX: Infix = Infix::PropertyAnnotationValues;
+    fn from_value_bytes(value: ByteReference<'_>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         bincode::deserialize(value.bytes()).unwrap()
@@ -837,7 +794,7 @@ mod hash_value {
         }
     }
 
-    pub(crate) fn hash_value_vec<H: Hasher>(value_vec: &Vec<Value<'static>>, state: &mut H) {
+    pub(crate) fn hash_value_vec<H: Hasher>(value_vec: &[Value<'static>], state: &mut H) {
         value_vec.iter().for_each(|value| hash_value(value, state))
     }
 }
@@ -927,20 +884,18 @@ mod serialize_annotation {
     }
 
     fn serialize_annotation_range_value_field(value: Option<Value<'_>>) -> Option<Vec<u8>> {
-        match &value {
-            None => None,
-            Some(value) => Some(match value.value_type().category() {
-                | ValueTypeCategory::Boolean
-                | ValueTypeCategory::Long
-                | ValueTypeCategory::Double
-                | ValueTypeCategory::Decimal
-                | ValueTypeCategory::Date
-                | ValueTypeCategory::DateTime
-                | ValueTypeCategory::DateTimeTZ
-                | ValueTypeCategory::String => serialize_value(value.clone()),
-                ValueTypeCategory::Duration => unreachable!("Can't use duration for AnnotationRange"),
-                ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationRange"),
-            }),
+        let value = value?;
+        match value.value_type().category() {
+            | ValueTypeCategory::Boolean
+            | ValueTypeCategory::Long
+            | ValueTypeCategory::Double
+            | ValueTypeCategory::Decimal
+            | ValueTypeCategory::Date
+            | ValueTypeCategory::DateTime
+            | ValueTypeCategory::DateTimeTZ
+            | ValueTypeCategory::String => Some(serialize_value(value.clone())),
+            ValueTypeCategory::Duration => unreachable!("Can't use duration for AnnotationRange"),
+            ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationRange"),
         }
     }
 
@@ -948,20 +903,18 @@ mod serialize_annotation {
         bytes_opt: Option<&[u8]>,
         value_type_category: ValueTypeCategory,
     ) -> Option<Value<'static>> {
-        match bytes_opt {
-            None => None,
-            Some(bytes) => Some(match &value_type_category {
-                | ValueTypeCategory::Boolean
-                | ValueTypeCategory::Long
-                | ValueTypeCategory::Double
-                | ValueTypeCategory::Decimal
-                | ValueTypeCategory::Date
-                | ValueTypeCategory::DateTime
-                | ValueTypeCategory::DateTimeTZ
-                | ValueTypeCategory::String => deserialize_value(bytes, value_type_category),
-                ValueTypeCategory::Duration => unreachable!("Can't use duration for AnnotationRange"),
-                ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationRange"),
-            }),
+        let bytes = bytes_opt?;
+        match &value_type_category {
+            | ValueTypeCategory::Boolean
+            | ValueTypeCategory::Long
+            | ValueTypeCategory::Double
+            | ValueTypeCategory::Decimal
+            | ValueTypeCategory::Date
+            | ValueTypeCategory::DateTime
+            | ValueTypeCategory::DateTimeTZ
+            | ValueTypeCategory::String => Some(deserialize_value(bytes, value_type_category)),
+            ValueTypeCategory::Duration => unreachable!("Can't use duration for AnnotationRange"),
+            ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationRange"),
         }
     }
 
@@ -1043,7 +996,7 @@ mod serialize_annotation {
 
                     let start_inclusive = deserialize_annotation_range_value_field(
                         seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?,
-                        value_type_category.clone(),
+                        value_type_category,
                     );
                     let end_inclusive = deserialize_annotation_range_value_field(
                         seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?,
@@ -1132,7 +1085,7 @@ mod serialize_annotation {
         }
     }
 
-    fn serialize_annotation_values_value_field(values: &Vec<Value<'_>>) -> Vec<Vec<u8>> {
+    fn serialize_annotation_values_value_field(values: &[Value<'_>]) -> Vec<Vec<u8>> {
         values
             .iter()
             .map(|value| match value {
@@ -1151,7 +1104,7 @@ mod serialize_annotation {
     }
 
     fn deserialize_annotation_values_value_field(
-        bytes_vec: &Vec<&[u8]>,
+        bytes_vec: Vec<&[u8]>,
         value_type_category: ValueTypeCategory,
     ) -> Vec<Value<'static>> {
         bytes_vec.iter().map(|bytes| deserialize_value(bytes, value_type_category)).collect()
@@ -1223,7 +1176,7 @@ mod serialize_annotation {
                     );
 
                     let values = deserialize_annotation_values_value_field(
-                        &seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?,
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?,
                         value_type_category,
                     );
 
@@ -1252,7 +1205,7 @@ mod serialize_annotation {
                                     return Err(de::Error::duplicate_field(ValuesField::Values.name()));
                                 }
                                 values = Some(deserialize_annotation_values_value_field(
-                                    &map.next_value()?,
+                                    map.next_value()?,
                                     value_type_category.unwrap(),
                                 ));
                             }

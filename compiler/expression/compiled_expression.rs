@@ -17,7 +17,7 @@ pub struct CompiledExpression {
 }
 
 impl CompiledExpression {
-    pub fn instructions(&self) -> &Vec<ExpressionOpCode> {
+    pub fn instructions(&self) -> &[ExpressionOpCode] {
         &self.instructions
     }
 

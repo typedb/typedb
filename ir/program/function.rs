@@ -34,7 +34,7 @@ impl Function {
         Self { block, variable_registry, arguments, return_operation }
     }
 
-    pub fn arguments(&self) -> &Vec<Variable> {
+    pub fn arguments(&self) -> &[Variable] {
         &self.arguments
     }
     pub fn block(&self) -> &FunctionalBlock {

@@ -75,7 +75,7 @@ impl PatternExecutor {
         &self.variable_positions
     }
 
-    pub(crate) fn variable_positions_index(&self) -> &Vec<Variable> {
+    pub(crate) fn variable_positions_index(&self) -> &[Variable] {
         &self.variable_positions_index
     }
 
@@ -624,8 +624,8 @@ impl CartesianIterator {
         &mut self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        iterator_executors: &Vec<InstructionExecutor>,
-        source_intersection: &Vec<VariableValue<'static>>,
+        iterator_executors: &[InstructionExecutor],
+        source_intersection: &[VariableValue<'static>],
         source_multiplicity: u64,
         intersection_iterators: &mut Vec<TupleIterator>,
     ) -> Result<(), ConceptReadError> {
@@ -663,7 +663,7 @@ impl CartesianIterator {
         &mut self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        executors: &Vec<InstructionExecutor>,
+        executors: &[InstructionExecutor],
     ) -> Result<bool, ConceptReadError> {
         debug_assert!(self.is_active);
         // precondition: all required iterators are open to the intersection point
