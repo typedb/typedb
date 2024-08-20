@@ -91,7 +91,6 @@ where
     }
 }
 
-
 pub struct AccumulatedRowIterator<Snapshot: ReadableSnapshot + 'static> {
     context: PipelineContext<Snapshot>,
     rows: Box<[(Box<[VariableValue<'static>]>, u64)]>,

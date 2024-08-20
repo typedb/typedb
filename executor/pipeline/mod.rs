@@ -5,9 +5,9 @@
  */
 
 pub mod accumulator;
+pub mod common;
 pub mod insert;
 pub mod match_;
-pub mod common;
 
 use std::{
     error::Error,
@@ -21,11 +21,9 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     batch::{Batch, BatchRowIterator, ImmutableRow},
-    pipeline::{insert::InsertStage, match_::MatchStage},
+    pipeline::{common::InitialStage, insert::InsertStage, match_::MatchStage},
     write::WriteError,
 };
-use crate::pipeline::common::InitialStage;
-
 
 pub enum PipelineContext<Snapshot: ReadableSnapshot> {
     Arced(Arc<Snapshot>, Arc<ThingManager>),
@@ -110,7 +108,6 @@ impl<Snapshot: WritableSnapshot + 'static> PipelineStageAPI<Snapshot> for Writab
         }
     }
 }
-
 
 // Errors
 #[derive(Debug, Clone)]

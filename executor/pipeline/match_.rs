@@ -7,7 +7,7 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use compiler::match_::planner::program_plan::ProgramPlan;
-use concept::{error::ConceptReadError};
+use concept::error::ConceptReadError;
 use itertools::Either;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;

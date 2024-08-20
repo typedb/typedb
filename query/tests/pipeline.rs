@@ -57,7 +57,7 @@ fn insert_match_insert_pipeline() {
     .into_pipeline();
     query_manager
         .execute_pipeline(
-            &mut snapshot,
+            snapshot,
             &type_manager,
             &function_manager,
             &statistics,
@@ -89,7 +89,7 @@ fn insert_insert_pipeline() {
     .into_pipeline();
     query_manager
         .execute_pipeline(
-            &mut snapshot,
+            snapshot,
             &type_manager,
             &function_manager,
             &statistics,

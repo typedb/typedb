@@ -6,8 +6,11 @@
 
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
-use crate::batch::{Batch, BatchRowIterator, ImmutableRow};
-use crate::pipeline::{PipelineContext, PipelineError, PipelineStageAPI};
+
+use crate::{
+    batch::{Batch, BatchRowIterator, ImmutableRow},
+    pipeline::{PipelineContext, PipelineError, PipelineStageAPI},
+};
 
 pub struct InitialStage<Snapshot: ReadableSnapshot + 'static> {
     context: PipelineContext<Snapshot>,

@@ -111,6 +111,7 @@ fn test_insert() {
 
 #[test]
 fn test_dummy_match() {
+    todo!("This hits a todo");
     let (mut context, thing_manager) = setup_common();
 
     let snapshot = context.storage.open_snapshot_write();
@@ -138,6 +139,7 @@ fn test_dummy_match() {
 
 #[test]
 fn test_match_as_pipeline() {
+    todo!("This hits a todo");
     let (mut context, thing_manager) = setup_common();
 
     let mut snapshot = context.storage.clone().open_snapshot_write();
