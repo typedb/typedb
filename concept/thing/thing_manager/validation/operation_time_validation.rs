@@ -317,8 +317,8 @@ impl OperationTimeValidation {
         let uniqueness_source = owns
             .get_uniqueness_source(snapshot, thing_manager.type_manager())
             .map_err(DataValidationError::ConceptRead)?;
-        if let Some(unique_root) = uniqueness_source {
-            let mut queue = VecDeque::from([(unique_root.owner(), unique_root.clone())]);
+        if let Some(unique_source) = uniqueness_source {
+            let mut queue = VecDeque::from([(unique_source.owner(), unique_source.clone())]);
 
             while let Some((current_owner_type, current_owns)) = queue.pop_back() {
                 let mut objects = thing_manager.get_objects_in(snapshot, current_owner_type.clone());

@@ -5,7 +5,6 @@
  */
 
 use std::{
-    collections::HashSet,
     fmt::{Display, Formatter},
 };
 
@@ -19,7 +18,7 @@ use encoding::{
     layout::prefix::Prefix,
     AsBytes, Keyable, Prefixed,
 };
-use iterator::Collector;
+use encoding::graph::type_::vertex::TypeVertexEncoding;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -27,7 +26,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         object::{Object, ObjectAPI},
-        relation::{IndexedPlayersIterator, RelationRoleIterator},
+        relation::IndexedPlayersIterator,
         thing_manager::ThingManager,
         HKInstance, ThingAPI,
     },

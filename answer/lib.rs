@@ -19,6 +19,7 @@ use encoding::{
     value::value::Value,
     AsBytes,
 };
+use encoding::graph::type_::vertex::TypeVertexEncoding;
 use lending_iterator::higher_order::Hkt;
 
 pub mod answer_map;

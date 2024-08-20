@@ -18,12 +18,7 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
-use crate::{
-    generic_step, params,
-    params::{check_boolean, IsEmptyOrNot},
-    transaction_context::{with_read_tx, with_write_tx},
-    Context,
-};
+use crate::{generic_step, params::check_boolean, transaction_context::{with_read_tx, with_write_tx}, Context, params};
 
 pub(super) fn object_set_has_impl(
     context: &mut Context,
@@ -79,16 +74,16 @@ fn object_unset_has_ordered_impl(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} set has: {var}{may_error}")]
+#[step(expr = r"{object_kind} {var} set has: {var}{may_error}")]
 async fn object_set_has(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_var: params::Var,
     attribute_var: params::Var,
     may_error: params::MayError,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap().to_owned();
     // TODO: The interesting error (CannotGetOwnsDoesntExist) is a ConceptError, so we need to expect it
     // However, there are other random ConceptErrors that can make the test look like "it passes" while it
@@ -97,17 +92,17 @@ async fn object_set_has(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} set has\({type_label}[]\): {vars}{may_error}")]
+#[step(expr = r"{object_kind} {var} set has\({type_label}[]\): {vars}{may_error}")]
 async fn object_set_has_list(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_var: params::Var,
     attribute_type_label: params::Label,
     attribute_vars: params::Vars,
     may_error: params::MayError,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     let attribute_type = with_read_tx!(context, |tx| {
         tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap()
     });
@@ -125,43 +120,43 @@ async fn object_set_has_list(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} unset has: {var}")]
+#[step(expr = r"{object_kind} {var} unset has: {var}")]
 async fn object_unset_has(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_var: params::Var,
     attribute_var: params::Var,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap().to_owned();
     object_unset_has_impl(context, &object, &attribute).unwrap();
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} unset has: {type_label}[]")]
+#[step(expr = r"{object_kind} {var} unset has: {type_label}[]")]
 async fn object_unset_has_ordered(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_var: params::Var,
     attribute_type_label: params::Label,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     object_unset_has_ordered_impl(context, &object, attribute_type_label).unwrap();
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{var} = {object_root_label} {var} get has\({type_label}[]\)")]
+#[step(expr = r"{var} = {object_kind} {var} get has\({type_label}[]\)")]
 async fn object_get_has_list(
     context: &mut Context,
     attribute_var: params::Var,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_var: params::Var,
     attribute_type_label: params::Label,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     let attributes = with_read_tx!(context, |tx| {
         let attribute_type = tx
             .type_manager
@@ -179,17 +174,17 @@ async fn object_get_has_list(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} get has\({type_label}[]\) is {vars}: {boolean}")]
+#[step(expr = r"{object_kind} {var} get has\({type_label}[]\) is {vars}: {boolean}")]
 async fn object_get_has_list_is(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_var: params::Var,
     attribute_type_label: params::Label,
     attribute_vars: params::Vars,
     is: params::Boolean,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     let actuals = with_read_tx!(context, |tx| {
         let attribute_type = tx
             .type_manager
@@ -212,15 +207,15 @@ async fn object_get_has_list_is(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} get has {is_empty_or_not}")]
+#[step(expr = r"{object_kind} {var} get has {is_empty_or_not}")]
 async fn object_get_has_is_empty(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_var: params::Var,
-    is_empty_or_not: IsEmptyOrNot,
+    is_empty_or_not: params::IsEmptyOrNot,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     let actuals = with_read_tx!(context, |tx| {
         object
             .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager)
@@ -235,16 +230,16 @@ async fn object_get_has_is_empty(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} get has {contains_or_doesnt}: {var}")]
+#[step(expr = r"{object_kind} {var} get has {contains_or_doesnt}: {var}")]
 async fn object_get_has(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_var: params::Var,
     contains_or_doesnt: params::ContainsOrDoesnt,
     attribute_var: params::Var,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let actuals = with_read_tx!(context, |tx| {
         object
@@ -259,17 +254,17 @@ async fn object_get_has(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} get has\({type_label}\) {contains_or_doesnt}: {var}")]
+#[step(expr = r"{object_kind} {var} get has\({type_label}\) {contains_or_doesnt}: {var}")]
 async fn object_get_has_type(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_var: params::Var,
     attribute_type_label: params::Label,
     contains_or_doesnt: params::ContainsOrDoesnt,
     attribute_var: params::Var,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let actuals = with_read_tx!(context, |tx| {
         let attribute_type = tx
@@ -290,17 +285,17 @@ async fn object_get_has_type(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} get has with annotations: {annotations}; {contains_or_doesnt}: {var}")]
+#[step(expr = r"{object_kind} {var} get has with annotations: {annotations}; {contains_or_doesnt}: {var}")]
 async fn object_get_has_with_annotations(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_var: params::Var,
     annotations: params::Annotations,
     contains_or_doesnt: params::ContainsOrDoesnt,
     attribute_var: params::Var,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let annotations = annotations.into_typedb().into_iter().map(|anno| anno.try_into().unwrap()).collect_vec();
     let actuals = with_read_tx!(context, |tx| {

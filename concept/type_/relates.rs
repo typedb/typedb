@@ -20,11 +20,10 @@ use crate::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationError, DefaultFrom,
         },
-        plays::Plays,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, Ordering, TypeAPI,
+        Capability, TypeAPI,
     },
 };
 

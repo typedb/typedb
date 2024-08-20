@@ -18,6 +18,7 @@ use encoding::{
     layout::prefix::Prefix,
     value::{label::Label, value_type::ValueType},
 };
+use encoding::graph::type_::vertex::TypeVertexEncoding;
 use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 

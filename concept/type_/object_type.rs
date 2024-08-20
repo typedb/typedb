@@ -66,6 +66,13 @@ impl<'a> TypeVertexEncoding<'a> for ObjectType<'a> {
         }
     }
 
+    fn vertex(&self) -> TypeVertex<'_> {
+        match self {
+            ObjectType::Entity(entity) => entity.vertex(),
+            ObjectType::Relation(relation) => relation.vertex(),
+        }
+    }
+
     fn into_vertex(self) -> TypeVertex<'a> {
         with_object_type!(self, |object| { object.into_vertex() })
     }
@@ -137,13 +144,6 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
 
     fn new(vertex: TypeVertex<'a>) -> Self {
         Self::from_vertex(vertex).unwrap()
-    }
-
-    fn vertex(&self) -> TypeVertex<'_> {
-        match self {
-            ObjectType::Entity(entity) => entity.vertex(),
-            ObjectType::Relation(relation) => relation.vertex(),
-        }
     }
 
     fn is_abstract(

@@ -141,11 +141,11 @@ pub trait TypeEdgeEncoding<'a>: Sized {
         )
     }
 
-    fn to_canonical_type_edge(self) -> TypeEdge<'a> {
+    fn to_canonical_type_edge(&self) -> TypeEdge<'a> {
         TypeEdge::build(Self::CANONICAL_PREFIX, self.canonical_from().into_vertex(), self.canonical_to().into_vertex())
     }
 
-    fn to_reverse_type_edge(self) -> TypeEdge<'a> {
+    fn to_reverse_type_edge(&self) -> TypeEdge<'a> {
         TypeEdge::build(Self::REVERSE_PREFIX, self.canonical_to().into_vertex(), self.canonical_from().into_vertex())
     }
 

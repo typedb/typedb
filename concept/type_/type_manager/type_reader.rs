@@ -80,7 +80,7 @@ impl TypeReader {
         let key = LabelToTypeVertexIndex::build(&Label::build(name_with_colon.as_str())).into_storage_key();
         let vec = snapshot
             .iterate_range(KeyRange::new_within(key, IdentifierIndex::<TypeVertex<'static>>::FIXED_WIDTH_ENCODING))
-            .collect_cloned_vec(|key, value| match RoleType::from_bytes(Bytes::copy(value.bytes())) {
+            .collect_cloned_vec(|_, value| match RoleType::from_bytes(Bytes::copy(value.bytes())) {
                 Err(_) => None,
                 Ok(role_type) => Some(role_type),
             })

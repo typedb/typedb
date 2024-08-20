@@ -12,7 +12,7 @@ use options::TransactionOptions;
 use crate::{
     assert::assert_matches,
     generic_step,
-    params::{check_boolean, Boolean, MayError},
+    params::{self, check_boolean},
     ActiveTransaction, Context,
 };
 
@@ -34,7 +34,7 @@ pub async fn connection_open_transaction(context: &mut Context, tx_type: String,
 
 #[apply(generic_step)]
 #[step(expr = "transaction is open: {boolean}")]
-pub async fn transaction_is_open(context: &mut Context, is_open: Boolean) {
+pub async fn transaction_is_open(context: &mut Context, is_open: params::Boolean) {
     check_boolean!(is_open, context.transaction().is_some());
 }
 
@@ -51,7 +51,7 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
 
 #[apply(generic_step)]
 #[step(expr = "transaction commits{may_error}")]
-pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
+pub async fn transaction_commits(context: &mut Context, may_error: params::MayError) {
     match context.take_transaction().unwrap() {
         ActiveTransaction::Read(_) => {}
         ActiveTransaction::Write(tx) => {
@@ -92,13 +92,13 @@ pub async fn open_transactions_in_parallel(context: &mut Context) {
 
 #[apply(generic_step)]
 #[step(expr = "transactions in parallel are null: {boolean}")]
-pub async fn transations_in_parallel_are_null(context: &mut Context, are_null: Boolean) {
+pub async fn transations_in_parallel_are_null(context: &mut Context, are_null: params::Boolean) {
     todo!()
 }
 
 #[apply(generic_step)]
 #[step(expr = "transactions in parallel are open: {boolean}")]
-pub async fn transactions_in_parallel_are_open(context: &mut Context, are_open: Boolean) {
+pub async fn transactions_in_parallel_are_open(context: &mut Context, are_open: params::Boolean) {
     todo!()
 }
 

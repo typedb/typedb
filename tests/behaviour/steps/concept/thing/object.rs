@@ -20,8 +20,8 @@ use crate::{
         attribute::{attribute_put_instance_with_value_impl, get_attribute_by_value},
         has::object_set_has_impl,
     },
-    generic_step, params,
-    params::{check_boolean, IsEmptyOrNot},
+    generic_step,
+    params::{self, check_boolean},
     thing_util::ObjectWithKey,
     transaction_context::{with_read_tx, with_write_tx},
     Context,
@@ -47,10 +47,10 @@ fn object_create_instance_impl(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label}\({type_label}\) create new instance{may_error}")]
+#[step(expr = r"{object_kind}\({type_label}\) create new instance{may_error}")]
 async fn object_create_instance(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_type_label: params::Label,
     may_error: params::MayError,
 ) {
@@ -58,16 +58,16 @@ async fn object_create_instance(
     may_error.check(&result);
     if !may_error.expects_error() {
         let object = result.unwrap();
-        object_root.assert(&object.type_());
+        object_kind.assert(&object.type_());
     }
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{var} = {object_root_label}\({type_label}\) create new instance{may_error}")]
+#[step(expr = r"{var} = {object_kind}\({type_label}\) create new instance{may_error}")]
 async fn object_create_instance_var(
     context: &mut Context,
     var: params::Var,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_type_label: params::Label,
     may_error: params::MayError,
 ) {
@@ -75,47 +75,45 @@ async fn object_create_instance_var(
     may_error.check(&result);
     if !may_error.expects_error() {
         let object = result.unwrap();
-        object_root.assert(&object.type_());
+        object_kind.assert(&object.type_());
         context.objects.insert(var.name, Some(ObjectWithKey::new(object)));
     }
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{var} = {object_root_label}\({type_label}\) create new instance with key\({type_label}\): {value}")]
+#[step(expr = r"{var} = {object_kind}\({type_label}\) create new instance with key\({type_label}\): {value}")]
 async fn object_create_instance_with_key_var(
     context: &mut Context,
     var: params::Var,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_type_label: params::Label,
     key_type_label: params::Label,
     value: params::Value,
 ) {
     let object = object_create_instance_impl(context, object_type_label).unwrap();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     let key = attribute_put_instance_with_value_impl(context, key_type_label, value).unwrap();
     object_set_has_impl(context, &object, &key).unwrap();
     context.objects.insert(var.name, Some(ObjectWithKey::new_with_key(object, key)));
 }
 
 #[apply(generic_step)]
-#[step(expr = r"delete {object_root_label}: {var}")]
-async fn delete_object(context: &mut Context, object_root: params::ObjectRootLabel, var: params::Var) {
+#[step(expr = r"delete {object_kind}: {var}")]
+async fn delete_object(context: &mut Context, object_kind: params::ObjectKind, var: params::Var) {
     let object = context.objects[&var.name].as_ref().unwrap().object.clone();
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     with_write_tx!(context, |tx| { object.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap() })
+    object_kind.assert(&object.type_());
+    with_write_tx!(context, |tx| { object.delete(&mut tx.snapshot, &tx.thing_manager).unwrap() })
 }
 
 #[apply(generic_step)]
-#[step(expr = r"delete {object_root_label} of type: {type_label}")]
-async fn delete_objects_of_type(
-    context: &mut Context,
-    object_root_label: params::ObjectRootLabel,
-    type_label: params::Label,
-) {
+#[step(expr = r"delete {object_kind} of type: {type_label}")]
+async fn delete_objects_of_type(context: &mut Context, object_kind: params::ObjectKind, type_label: params::Label) {
     with_write_tx!(context, |tx| {
         let object_type =
             tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
-        object_root_label.assert(&object_type);
+        object_kind.assert(&object_type);
         match object_type {
             ObjectType::Entity(entity_type) => {
                 let mut entity_iterator = tx.thing_manager.get_entities_in(tx.snapshot.as_ref(), entity_type);
@@ -134,15 +132,15 @@ async fn delete_objects_of_type(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} is deleted: {boolean}")]
+#[step(expr = r"{object_kind} {var} is deleted: {boolean}")]
 async fn object_is_deleted(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     var: params::Var,
     is_deleted: params::Boolean,
 ) {
     let object = &context.objects[&var.name].as_ref().unwrap().object;
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     let object_type = object.type_();
     let objects: Vec<Object<'static>> = with_read_tx!(context, |tx| {
         tx.thing_manager
@@ -154,26 +152,26 @@ async fn object_is_deleted(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} has type: {type_label}")]
+#[step(expr = r"{object_kind} {var} has type: {type_label}")]
 async fn object_has_type(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     var: params::Var,
     type_label: params::Label,
 ) {
     let object_type = context.objects[&var.name].as_ref().unwrap().object.type_();
-    object_root.assert(&object_type);
+    object_kind.assert(&object_type);
     with_read_tx!(context, |tx| {
         assert_eq!(object_type.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap(), type_label.into_typedb())
     });
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{var} = {object_root_label}\({type_label}\) get instance with key\({type_label}\): {value}")]
+#[step(expr = r"{var} = {object_kind}\({type_label}\) get instance with key\({type_label}\): {value}")]
 async fn object_get_instance_with_value(
     context: &mut Context,
     var: params::Var,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     object_type_label: params::Label,
     key_type_label: params::Label,
     value: params::Value,
@@ -187,7 +185,7 @@ async fn object_get_instance_with_value(
     let owner = with_read_tx!(context, |tx| {
         let object_type =
             tx.type_manager.get_object_type(tx.snapshot.as_ref(), &object_type_label.into_typedb()).unwrap().unwrap();
-        object_root.assert(&object_type);
+        object_kind.assert(&object_type);
         let mut owners = key.get_owners_by_type(tx.snapshot.as_ref(), &tx.thing_manager, object_type);
         let owner = owners.next().transpose().unwrap().map(|(owner, count)| {
             assert_eq!(count, 1, "found {count} keys owned by the same object, expected 1");
@@ -200,32 +198,32 @@ async fn object_get_instance_with_value(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label}\({type_label}\) get instances {is_empty_or_not}")]
+#[step(expr = r"{object_kind}\({type_label}\) get instances {is_empty_or_not}")]
 async fn object_instances_is_empty(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     type_label: params::Label,
-    is_empty_or_not: IsEmptyOrNot,
+    is_empty_or_not: params::IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
         let object_type =
             tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
-        object_root.assert(&object_type);
+        object_kind.assert(&object_type);
         is_empty_or_not.check(tx.thing_manager.get_objects_in(tx.snapshot.as_ref(), object_type).next().is_none());
     });
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label}\({type_label}\) get instances {contains_or_doesnt}: {var}")]
+#[step(expr = r"{object_kind}\({type_label}\) get instances {contains_or_doesnt}: {var}")]
 async fn object_instances_contain(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     type_label: params::Label,
     containment: params::ContainsOrDoesnt,
     var: params::Var,
 ) {
     let object = &context.objects.get(&var.name).expect("no variable {} in context.").as_ref().unwrap().object;
-    object_root.assert(&object.type_());
+    object_kind.assert(&object.type_());
     with_read_tx!(context, |tx| {
         let object_type =
             tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();

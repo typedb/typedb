@@ -237,7 +237,7 @@ impl TypeVertexPropertyEncoding<'static> for ValueType {
         ValueTypeBytes::new(bytes).to_value_type()
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::copy(&ValueTypeBytes::build(&self).into_bytes())))
     }
 }

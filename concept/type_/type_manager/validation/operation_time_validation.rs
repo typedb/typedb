@@ -3574,7 +3574,7 @@ impl OperationTimeValidation {
         type_: T,
     ) -> Result<(), SchemaValidationError> {
         let annotation = Annotation::Abstract(AnnotationAbstract);
-        match T::ROOT_KIND {
+        match T::KIND {
             Kind::Entity => {
                 let entity_type = EntityType::new(type_.vertex().into_owned());
                 Self::validate_new_annotation_compatible_with_entity_type_and_subtypes_instances(
@@ -3628,7 +3628,7 @@ impl OperationTimeValidation {
         type_: T,
         new_supertype: T,
     ) -> Result<(), SchemaValidationError> {
-        match T::ROOT_KIND {
+        match T::KIND {
             Kind::Entity => {
                 let entity_type = EntityType::new(type_.vertex().into_owned());
                 let entity_supertype = EntityType::new(new_supertype.vertex().into_owned());
@@ -3698,7 +3698,7 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         type_: T,
     ) -> Result<bool, ConceptReadError> {
-        match T::ROOT_KIND {
+        match T::KIND {
             Kind::Entity => {
                 let entity_type = EntityType::new(type_.vertex().into_owned());
                 let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone().into_owned());

@@ -24,6 +24,7 @@ use encoding::{
     value::decode_value_u64,
     AsBytes, Keyable, Prefixed,
 };
+use encoding::graph::type_::vertex::TypeVertexEncoding;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
@@ -40,11 +41,9 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{
-        annotation::AnnotationDistinct,
-        relates::RelatesAnnotation,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::{type_reader::TypeReader, TypeManager},
+        type_manager::TypeManager,
         Capability, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,

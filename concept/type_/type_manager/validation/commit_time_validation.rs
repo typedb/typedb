@@ -627,7 +627,7 @@ impl CommitTimeValidation {
             if supertype_annotations.keys().contains(&annotation) {
                 validation_errors.push(
                     SchemaValidationError::CannotRedeclareInheritedAnnotationWithoutSpecializationForType(
-                        T::ROOT_KIND,
+                        T::KIND,
                         get_label_or_concept_read_err(snapshot, type_.clone())?,
                         get_label_or_concept_read_err(snapshot, supertype.clone())?,
                         annotation.clone().into(),

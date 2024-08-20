@@ -6,19 +6,13 @@
 
 use std::collections::{HashMap, HashSet};
 
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-
 use crate::{
-    error::ConceptReadError,
-    thing::thing_manager::ThingManager,
     type_::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
             AnnotationDistinct, AnnotationError, AnnotationIndependent, AnnotationKey, AnnotationRange,
-            AnnotationRegex, AnnotationUnique, AnnotationValues, DefaultFrom,
+            AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
-        owns::Owns,
-        type_manager::{type_reader::TypeReader, TypeManager},
         Capability,
     },
 };

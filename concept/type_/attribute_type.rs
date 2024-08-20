@@ -67,6 +67,10 @@ impl<'a> TypeVertexEncoding<'a> for AttributeType<'a> {
         }
     }
 
+    fn vertex(&self) -> TypeVertex<'_> {
+        self.vertex.as_reference()
+    }
+
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }
@@ -87,10 +91,6 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
 
     fn new(vertex: TypeVertex<'a>) -> AttributeType<'a> {
         Self::from_vertex(vertex).unwrap()
-    }
-
-    fn vertex(&self) -> TypeVertex<'_> {
-        self.vertex.as_reference()
     }
 
     fn is_abstract(
@@ -153,7 +153,7 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
 
 impl<'a> KindAPI<'a> for AttributeType<'a> {
     type AnnotationType = AttributeTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Attribute;
+    const KIND: Kind = Kind::Attribute;
 
     fn get_annotations_declared<'m>(
         &self,

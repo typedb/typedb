@@ -64,8 +64,6 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         Self::from_bytes(b).unwrap()
     }
 
-    fn vertex(&self) -> TypeVertex<'_>;
-
     fn is_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -120,7 +118,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
 
 pub trait KindAPI<'a>: TypeAPI<'a> {
     type AnnotationType: Hash + Eq + Clone + TryFrom<Annotation, Error = AnnotationError> + Into<Annotation>;
-    const ROOT_KIND: Kind;
+    const KIND: Kind;
 
     fn get_annotations_declared<'this>(
         &'this self,
@@ -340,7 +338,7 @@ impl<'a> TypeVertexPropertyEncoding<'a> for Ordering {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
     }
 }
@@ -352,7 +350,7 @@ impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
     }
 }
@@ -435,7 +433,7 @@ impl<'a, EDGE: TypeEdgeEncoding<'static>> TypeEdgePropertyEncoding<'a> for EdgeO
         Self { overrides: EDGE::decode_canonical_edge(Bytes::Reference(value).into_owned()) }
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Reference(self.overrides.to_canonical_type_edge().bytes()).into_owned())
     }
 }

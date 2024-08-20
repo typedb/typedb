@@ -116,6 +116,10 @@ impl<'a> TypeVertexEncoding<'a> for RoleType<'a> {
         }
     }
 
+    fn vertex(&self) -> TypeVertex<'_> {
+        self.vertex.as_reference()
+    }
+
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }
@@ -126,10 +130,6 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
 
     fn new(vertex: TypeVertex<'a>) -> RoleType<'_> {
         Self::from_vertex(vertex).unwrap()
-    }
-
-    fn vertex(&self) -> TypeVertex<'_> {
-        self.vertex.as_reference()
     }
 
     fn is_abstract(
@@ -192,7 +192,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
 
 impl<'a> KindAPI<'a> for RoleType<'a> {
     type AnnotationType = RoleTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Role;
+    const KIND: Kind = Kind::Role;
 
     fn get_annotations_declared<'m>(
         &self,

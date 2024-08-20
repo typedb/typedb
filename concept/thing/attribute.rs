@@ -23,6 +23,7 @@ use encoding::{
     value::{decode_value_u64, value::Value, value_type::ValueType},
     AsBytes, Keyable,
 };
+use encoding::graph::type_::vertex::TypeVertexEncoding;
 use iterator::State;
 use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};

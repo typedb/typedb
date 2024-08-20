@@ -11,22 +11,21 @@ use encoding::{
     graph::{
         definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
         type_::{
-            edge::{TypeEdge, TypeEdgeEncoding},
+            edge::TypeEdgeEncoding,
             index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
             property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
             vertex::TypeVertexEncoding,
         },
     },
-    value::{label::Label, string_bytes::StringBytes, value_type::ValueType},
+    value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{key_range::KeyRange, snapshot::WritableSnapshot};
+use storage::snapshot::WritableSnapshot;
 
 use crate::{
     error::ConceptWriteError,
     type_::{
-        attribute_type::AttributeType, owns::Owns, relates::Relates, relation_type::RelationType, role_type::RoleType,
+        attribute_type::AttributeType, owns::Owns,
         sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride, Ordering, TypeAPI,
     },
 };
@@ -52,10 +51,10 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     pub(crate) fn storage_delete_struct(snapshot: &mut Snapshot, definition_key: &DefinitionKey<'static>) {
-        let existing_struct = TypeReader::get_struct_definition(snapshot, definition_key.clone());
+        let existing_struct = TypeReader::get_struct_definition(snapshot, definition_key.as_reference());
         if let Ok(struct_definition) = existing_struct {
             let index_key = NameToStructDefinitionIndex::build(struct_definition.name.as_str());
-            snapshot.delete(definition_key.clone().into_storage_key().into_owned_array());
+            snapshot.delete(definition_key.as_storage_key().into_owned_array());
             snapshot.delete(index_key.into_storage_key().into_owned_array());
         }
     }
@@ -83,7 +82,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     where
         EDGE: TypeEdgeEncoding<'static> + Clone,
     {
-        let canonical_key = capability.clone().to_canonical_type_edge().into_storage_key();
+        let canonical_key = capability.to_canonical_type_edge().into_storage_key();
         let reverse_key = capability.to_reverse_type_edge().into_storage_key();
         debug_assert!(snapshot.contains(canonical_key.as_reference()).unwrap_or(false));
         debug_assert!(snapshot.contains(reverse_key.as_reference()).unwrap_or(false));
@@ -111,9 +110,9 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     where
         T: TypeAPI<'static>,
     {
-        let sub_edge = Sub::from_vertices(subtype.clone(), supertype.clone());
-        snapshot.put(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-        snapshot.put(sub_edge.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+        let sub_edge = Sub::from_vertices(subtype, supertype);
+        snapshot.put(sub_edge.to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(sub_edge.to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_may_delete_supertype<T>(snapshot: &mut Snapshot, subtype: T) -> Result<(), ConceptWriteError>
@@ -122,9 +121,9 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     {
         let supertype = TypeReader::get_supertype(snapshot, subtype.clone())?;
         if let Some(supertype) = supertype {
-            let sub_edge = Sub::from_vertices(subtype.clone(), supertype.clone());
-            snapshot.delete(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-            snapshot.delete(sub_edge.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+            let sub_edge = Sub::from_vertices(subtype, supertype);
+            snapshot.delete(sub_edge.to_canonical_type_edge().into_storage_key().into_owned_array());
+            snapshot.delete(sub_edge.to_reverse_type_edge().into_storage_key().into_owned_array());
         }
         Ok(())
     }
@@ -146,16 +145,16 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     where
         EDGE: TypeEdgeEncoding<'static> + Clone,
     {
-        snapshot.put(capability.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-        snapshot.put(capability.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(capability.to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(capability.to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_delete_edge<EDGE>(snapshot: &mut Snapshot, capability: EDGE)
     where
         EDGE: TypeEdgeEncoding<'static> + Clone,
     {
-        snapshot.delete(capability.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-        snapshot.delete(capability.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+        snapshot.delete(capability.to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.delete(capability.to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_insert_type_vertex_property<'a, P>(

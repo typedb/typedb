@@ -74,6 +74,10 @@ impl<'a> TypeVertexEncoding<'a> for RelationType<'a> {
         }
     }
 
+    fn vertex(&self) -> TypeVertex<'_> {
+        self.vertex.as_reference()
+    }
+
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }
@@ -88,10 +92,6 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
 
     fn new(vertex: TypeVertex<'a>) -> RelationType<'_> {
         Self::from_vertex(vertex).unwrap()
-    }
-
-    fn vertex(&self) -> TypeVertex<'_> {
-        self.vertex.as_reference()
     }
 
     fn is_abstract(
@@ -154,7 +154,7 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
 
 impl<'a> KindAPI<'a> for RelationType<'a> {
     type AnnotationType = RelationTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Relation;
+    const KIND: Kind = Kind::Relation;
 
     fn get_annotations_declared<'m>(
         &self,

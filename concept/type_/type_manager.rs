@@ -44,7 +44,7 @@ use crate::{
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::Constraint,
         entity_type::{EntityType, EntityTypeAnnotation},
-        object_type::{with_object_type, ObjectType},
+        object_type::ObjectType,
         owns::{Owns, OwnsAnnotation},
         plays::{Plays, PlaysAnnotation},
         relates::{Relates, RelatesAnnotation},
@@ -1226,10 +1226,11 @@ impl TypeManager {
         Ok(())
     }
 
+    // TODO: Check data instances?
     pub fn delete_struct_field(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        thing_manager: &ThingManager,
+        _thing_manager: &ThingManager,
         definition_key: DefinitionKey<'static>,
         field_name: String,
     ) -> Result<(), ConceptWriteError> {
@@ -1240,10 +1241,11 @@ impl TypeManager {
         Ok(())
     }
 
+    // TODO: Check data instances?
     pub fn delete_struct(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        thing_manager: &ThingManager,
+        _thing_manager: &ThingManager,
         definition_key: &DefinitionKey<'static>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_deleted_struct_is_not_used_in_schema(snapshot, definition_key)
@@ -1552,7 +1554,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, type_.clone()).is_ok());
 
-        match T::ROOT_KIND {
+        match T::KIND {
             Kind::Entity | Kind::Attribute => {
                 OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
                     .map_err(|source| ConceptWriteError::SchemaValidation { source })?;

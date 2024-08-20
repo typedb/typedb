@@ -11,16 +11,14 @@ use concept::type_::{
     relation_type::RelationTypeAnnotation, KindAPI, TypeAPI,
 };
 use cucumber::gherkin::Step;
-use encoding::{graph::type_::Kind, value::value_type::ValueType};
+use encoding::value::value_type::ValueType;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
+use encoding::graph::type_::Kind;
 
 use crate::{
     generic_step,
-    params::{
-        Annotation, AnnotationCategory, ContainsOrDoesnt, ExistsOrDoesnt, IsEmptyOrNot, Label, MayError, RootLabel,
-        RootLabelExtended,
-    },
+    params,
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     util, with_type, Context,
 };
@@ -28,7 +26,6 @@ use crate::{
 #[macro_export]
 macro_rules! with_type {
     ($tx:ident, $kind:expr, $label:ident, $assign_to:ident, $block:block) => {
-        use encoding::graph::type_::Kind;
         match $kind.into_typedb() {
             Kind::Attribute => {
                 let $assign_to =
@@ -53,7 +50,6 @@ macro_rules! with_type {
 #[macro_export]
 macro_rules! with_type_and_value_type {
     ($tx:ident, $kind:expr, $label:ident, $assign_type_to:ident, $assign_value_type_to:ident, $block:block) => {
-        use encoding::graph::type_::Kind;
         let mut $assign_value_type_to: Option<ValueType> = None;
         match $kind.into_typedb() {
             Kind::Attribute => {
@@ -78,7 +74,7 @@ macro_rules! with_type_and_value_type {
     };
 }
 
-pub(super) fn get_as_object_type(context: &mut Context, kind: Kind, label: &Label) -> ObjectType<'static> {
+pub(super) fn get_as_object_type(context: &mut Context, kind: Kind, label: &params::Label) -> ObjectType<'static> {
     with_read_tx!(context, |tx| {
         match kind {
             Kind::Entity => {
@@ -97,10 +93,10 @@ pub(super) fn get_as_object_type(context: &mut Context, kind: Kind, label: &Labe
 }
 
 #[apply(generic_step)]
-#[step(expr = "create {root_label} type: {type_label}{may_error}")]
-pub async fn type_create(context: &mut Context, root_label: RootLabel, type_label: Label, may_error: MayError) {
+#[step(expr = "create {kind} type: {type_label}{may_error}")]
+pub async fn type_create(context: &mut Context, kind: params::Kind, type_label: params::Label, may_error: params::MayError) {
     with_schema_tx!(context, |tx| {
-        match root_label.into_typedb() {
+        match kind.into_typedb() {
             Kind::Entity => {
                 may_error.check_concept_write_without_read_errors(
                     &tx.type_manager
@@ -125,10 +121,10 @@ pub async fn type_create(context: &mut Context, root_label: RootLabel, type_labe
 }
 
 #[apply(generic_step)]
-#[step(expr = "delete {root_label} type: {type_label}{may_error}")]
-pub async fn type_delete(context: &mut Context, root_label: RootLabel, type_label: Label, may_error: MayError) {
+#[step(expr = "delete {kind} type: {type_label}{may_error}")]
+pub async fn type_delete(context: &mut Context, kind: params::Kind, type_label: params::Label, may_error: params::MayError) {
     with_schema_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             let res = type_.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
             may_error.check_concept_write_without_read_errors(&res);
         });
@@ -137,10 +133,10 @@ pub async fn type_delete(context: &mut Context, root_label: RootLabel, type_labe
 
 //
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) {exists_or_doesnt}")]
-pub async fn type_exists(context: &mut Context, root_label: RootLabel, type_label: Label, exists: ExistsOrDoesnt) {
+#[step(expr = "{kind}\\({type_label}\\) {exists_or_doesnt}")]
+pub async fn type_exists(context: &mut Context, kind: params::Kind, type_label: params::Label, exists: params::ExistsOrDoesnt) {
     with_read_tx!(context, |tx| {
-        match root_label.into_typedb() {
+        match kind.into_typedb() {
             Kind::Attribute => {
                 let type_ =
                     tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap();
@@ -160,16 +156,16 @@ pub async fn type_exists(context: &mut Context, root_label: RootLabel, type_labe
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) set label: {type_label}{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) set label: {type_label}{may_error}")]
 pub async fn type_set_label(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    to_label: Label,
-    may_error: MayError,
+    kind: params::Kind,
+    type_label: params::Label,
+    to_label: params::Label,
+    may_error: params::MayError,
 ) {
     with_schema_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             may_error.check_concept_write_without_read_errors(&type_.set_label(
                 Arc::get_mut(&mut tx.snapshot).unwrap(),
                 &tx.type_manager,
@@ -180,10 +176,10 @@ pub async fn type_set_label(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get name: {type_label}")]
-pub async fn type_get_name(context: &mut Context, root_label: RootLabel, type_label: Label, expected: Label) {
+#[step(expr = "{kind}\\({type_label}\\) get name: {type_label}")]
+pub async fn type_get_name(context: &mut Context, kind: params::Kind, type_label: params::Label, expected: params::Label) {
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             let actual_label = type_.get_label(tx.snapshot.as_ref(), &tx.type_manager);
             assert_eq!(expected.into_typedb().name(), actual_label.unwrap().name());
         });
@@ -191,10 +187,10 @@ pub async fn type_get_name(context: &mut Context, root_label: RootLabel, type_la
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get label: {type_label}")]
-pub async fn type_get_label(context: &mut Context, root_label: RootLabel, type_label: Label, expected: Label) {
+#[step(expr = "{kind}\\({type_label}\\) get label: {type_label}")]
+pub async fn type_get_label(context: &mut Context, kind: params::Kind, type_label: params::Label, expected: params::Label) {
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             let actual_label = type_.get_label(tx.snapshot.as_ref(), &tx.type_manager);
             assert_eq!(expected.into_typedb().scoped_name(), actual_label.unwrap().scoped_name());
         });
@@ -202,16 +198,16 @@ pub async fn type_get_label(context: &mut Context, root_label: RootLabel, type_l
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) set annotation: {annotation}{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) set annotation: {annotation}{may_error}")]
 pub async fn type_set_annotation(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    annotation: Annotation,
-    may_error: MayError,
+    kind: params::Kind,
+    type_label: params::Label,
+    annotation: params::Annotation,
+    may_error: params::MayError,
 ) {
     with_write_tx!(context, |tx| {
-        with_type_and_value_type!(tx, root_label, type_label, type_, value_type, {
+        with_type_and_value_type!(tx, kind, type_label, type_, value_type, {
             let res = type_.set_annotation(
                 Arc::get_mut(&mut tx.snapshot).unwrap(),
                 &tx.type_manager,
@@ -224,16 +220,16 @@ pub async fn type_set_annotation(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) unset annotation: {annotation_category}{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) unset annotation: {annotation_category}{may_error}")]
 pub async fn type_unset_annotation(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    annotation_category: AnnotationCategory,
-    may_error: MayError,
+    kind: params::Kind,
+    type_label: params::Label,
+    annotation_category: params::AnnotationCategory,
+    may_error: params::MayError,
 ) {
     with_write_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             let res = type_.unset_annotation(
                 Arc::get_mut(&mut tx.snapshot).unwrap(),
                 &tx.type_manager,
@@ -245,16 +241,16 @@ pub async fn type_unset_annotation(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get annotations {contains_or_doesnt}: {annotation}")]
+#[step(expr = "{kind}\\({type_label}\\) get annotations {contains_or_doesnt}: {annotation}")]
 pub async fn type_annotations_contain(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    contains_or_doesnt: ContainsOrDoesnt,
-    annotation: Annotation,
+    kind: params::Kind,
+    type_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    annotation: params::Annotation,
 ) {
     with_read_tx!(context, |tx| {
-        with_type_and_value_type!(tx, root_label, type_label, type_, value_type, {
+        with_type_and_value_type!(tx, kind, type_label, type_, value_type, {
             let actual_contains = type_
                 .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
@@ -265,16 +261,16 @@ pub async fn type_annotations_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get annotation categories {contains_or_doesnt}: {annotation_category}")]
+#[step(expr = "{kind}\\({type_label}\\) get annotation categories {contains_or_doesnt}: {annotation_category}")]
 pub async fn type_annotation_categories_contain(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    contains_or_doesnt: ContainsOrDoesnt,
-    annotation_category: AnnotationCategory,
+    kind: params::Kind,
+    type_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    annotation_category: params::AnnotationCategory,
 ) {
     with_read_tx!(context, |tx| {
-        match root_label.into_typedb() {
+        match kind.into_typedb() {
             Kind::Attribute => {
                 let type_ = tx
                     .type_manager
@@ -326,16 +322,16 @@ pub async fn type_annotation_categories_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get declared annotations {contains_or_doesnt}: {annotation}")]
+#[step(expr = "{kind}\\({type_label}\\) get declared annotations {contains_or_doesnt}: {annotation}")]
 pub async fn type_declared_annotations_contain(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    contains_or_doesnt: ContainsOrDoesnt,
-    annotation: Annotation,
+    kind: params::Kind,
+    type_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    annotation: params::Annotation,
 ) {
     with_read_tx!(context, |tx| {
-        with_type_and_value_type!(tx, root_label, type_label, type_, value_type, {
+        with_type_and_value_type!(tx, kind, type_label, type_, value_type, {
             let actual_contains = type_
                 .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
@@ -346,15 +342,15 @@ pub async fn type_declared_annotations_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get annotations {is_empty_or_not}")]
+#[step(expr = "{kind}\\({type_label}\\) get annotations {is_empty_or_not}")]
 pub async fn type_annotations_is_empty(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    is_empty_or_not: IsEmptyOrNot,
+    kind: params::Kind,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             let actual_is_empty = type_.get_annotations(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
             is_empty_or_not.check(actual_is_empty);
         });
@@ -362,15 +358,15 @@ pub async fn type_annotations_is_empty(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get declared annotations {is_empty_or_not}")]
+#[step(expr = "{kind}\\({type_label}\\) get declared annotations {is_empty_or_not}")]
 pub async fn type_declared_annotations_is_empty(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    is_empty_or_not: IsEmptyOrNot,
+    kind: params::Kind,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             let actual_is_empty =
                 type_.get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
             is_empty_or_not.check(actual_is_empty);
@@ -379,16 +375,16 @@ pub async fn type_declared_annotations_is_empty(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) set supertype: {type_label}{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) set supertype: {type_label}{may_error}")]
 pub async fn type_set_supertype(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    supertype_label: Label,
-    may_error: MayError,
+    kind: params::Kind,
+    type_label: params::Label,
+    supertype_label: params::Label,
+    may_error: params::MayError,
 ) {
     with_schema_tx!(context, |tx| {
-        match root_label.into_typedb() {
+        match kind.into_typedb() {
             Kind::Attribute => {
                 let thistype = tx
                     .type_manager
@@ -449,15 +445,10 @@ pub async fn type_set_supertype(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) unset supertype{may_error}")]
-pub async fn type_unset_supertype(
-    context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    may_error: MayError,
-) {
+#[step(expr = "{kind}\\({type_label}\\) unset supertype{may_error}")]
+pub async fn type_unset_supertype(context: &mut Context, kind: params::Kind, type_label: params::Label, may_error: params::MayError) {
     with_schema_tx!(context, |tx| {
-        match root_label.into_typedb() {
+        match kind.into_typedb() {
             Kind::Attribute => {
                 let thistype = tx
                     .type_manager
@@ -500,15 +491,10 @@ pub async fn type_unset_supertype(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get supertype: {type_label}")]
-pub async fn type_get_supertype(
-    context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    supertype_label: Label,
-) {
+#[step(expr = "{kind}\\({type_label}\\) get supertype: {type_label}")]
+pub async fn type_get_supertype(context: &mut Context, kind: params::Kind, type_label: params::Label, supertype_label: params::Label) {
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             let supertype = type_.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap();
             assert_eq!(
                 supertype_label.into_typedb().scoped_name(),
@@ -519,15 +505,10 @@ pub async fn type_get_supertype(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get supertype {exists_or_doesnt}")]
-pub async fn type_get_supertype_exists(
-    context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    exists: ExistsOrDoesnt,
-) {
+#[step(expr = "{kind}\\({type_label}\\) get supertype {exists_or_doesnt}")]
+pub async fn type_get_supertype_exists(context: &mut Context, kind: params::Kind, type_label: params::Label, exists: params::ExistsOrDoesnt) {
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             let supertype = type_.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
             exists.check(&supertype, &format!("supertype for type {}", type_label.into_typedb()));
         });
@@ -535,17 +516,17 @@ pub async fn type_get_supertype_exists(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get supertypes {contains_or_doesnt}:")]
+#[step(expr = "{kind}\\({type_label}\\) get supertypes {contains_or_doesnt}:")]
 pub async fn get_supertypes_transitive_contain(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    contains: ContainsOrDoesnt,
+    kind: params::Kind,
+    type_label: params::Label,
+    contains: params::ContainsOrDoesnt,
     step: &Step,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             let supertype_labels = type_
                 .get_supertypes_transitive(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
@@ -565,15 +546,15 @@ pub async fn get_supertypes_transitive_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get supertypes {is_empty_or_not}")]
+#[step(expr = "{kind}\\({type_label}\\) get supertypes {is_empty_or_not}")]
 pub async fn get_supertypes_transitive_is_empty(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    is_empty_or_not: IsEmptyOrNot,
+    kind: params::Kind,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             is_empty_or_not
                 .check(type_.get_supertypes_transitive(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty());
         });
@@ -581,17 +562,17 @@ pub async fn get_supertypes_transitive_is_empty(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
+#[step(expr = "{kind}\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
 pub async fn get_subtypes_contain(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    contains: ContainsOrDoesnt,
+    kind: params::Kind,
+    type_label: params::Label,
+    contains: params::ContainsOrDoesnt,
     step: &Step,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             let subtype_labels = type_
                 .get_subtypes_transitive(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
@@ -606,15 +587,15 @@ pub async fn get_subtypes_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get subtypes {is_empty_or_not}")]
+#[step(expr = "{kind}\\({type_label}\\) get subtypes {is_empty_or_not}")]
 pub async fn get_subtypes_is_empty(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    is_empty_or_not: IsEmptyOrNot,
+    kind: params::Kind,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type!(tx, kind, type_label, type_, {
             is_empty_or_not
                 .check(type_.get_subtypes_transitive(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty());
         });
@@ -622,17 +603,13 @@ pub async fn get_subtypes_is_empty(
 }
 
 #[apply(generic_step)]
-#[step(expr = "get {root_label_extended} types {contains_or_doesnt}:")]
-pub async fn get_types_contain(
-    context: &mut Context,
-    root_label: RootLabelExtended,
-    contains: ContainsOrDoesnt,
-    step: &Step,
-) {
+#[step(expr = "get {kind_extended} types {contains_or_doesnt}:")]
+pub async fn get_types_contain(context: &mut Context, kind: params::KindExtended, contains: params::ContainsOrDoesnt, step: &Step) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     let type_labels = with_read_tx!(context, |tx| {
-        match root_label {
-            RootLabelExtended::Entity => &tx
+        use params::KindExtended;
+        match kind {
+            KindExtended::Entity => &tx
                 .type_manager
                 .get_entity_types(tx.snapshot.as_ref())
                 .unwrap()
@@ -641,7 +618,7 @@ pub async fn get_types_contain(
                     type_.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 })
                 .collect_vec(),
-            RootLabelExtended::Relation => &tx
+            KindExtended::Relation => &tx
                 .type_manager
                 .get_relation_types(tx.snapshot.as_ref())
                 .unwrap()
@@ -650,7 +627,7 @@ pub async fn get_types_contain(
                     type_.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 })
                 .collect_vec(),
-            RootLabelExtended::Attribute => &tx
+            KindExtended::Attribute => &tx
                 .type_manager
                 .get_attribute_types(tx.snapshot.as_ref())
                 .unwrap()
@@ -659,7 +636,7 @@ pub async fn get_types_contain(
                     type_.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 })
                 .collect_vec(),
-            RootLabelExtended::Role => &tx
+            KindExtended::Role => &tx
                 .type_manager
                 .get_role_types(tx.snapshot.as_ref())
                 .unwrap()
@@ -668,7 +645,7 @@ pub async fn get_types_contain(
                     type_.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 })
                 .collect_vec(),
-            RootLabelExtended::Object => &tx
+            KindExtended::Object => &tx
                 .type_manager
                 .get_object_types(tx.snapshot.as_ref())
                 .unwrap()
@@ -683,19 +660,20 @@ pub async fn get_types_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "get {root_label_extended} types {is_empty_or_not}")]
-pub async fn get_types_empty(context: &mut Context, root_label: RootLabelExtended, is_empty_or_not: IsEmptyOrNot) {
+#[step(expr = "get {kind_extended} types {is_empty_or_not}")]
+pub async fn get_types_empty(context: &mut Context, kind: params::KindExtended, is_empty_or_not: params::IsEmptyOrNot) {
     let is_empty = with_read_tx!(context, |tx| {
-        match root_label {
-            RootLabelExtended::Entity => &tx.type_manager.get_entity_types(tx.snapshot.as_ref()).unwrap().is_empty(),
-            RootLabelExtended::Relation => {
+        use params::KindExtended;
+        match kind {
+            KindExtended::Entity => &tx.type_manager.get_entity_types(tx.snapshot.as_ref()).unwrap().is_empty(),
+            KindExtended::Relation => {
                 &tx.type_manager.get_relation_types(tx.snapshot.as_ref()).unwrap().is_empty()
             }
-            RootLabelExtended::Attribute => {
+            KindExtended::Attribute => {
                 &tx.type_manager.get_attribute_types(tx.snapshot.as_ref()).unwrap().is_empty()
             }
-            RootLabelExtended::Role => &tx.type_manager.get_role_types(tx.snapshot.as_ref()).unwrap().is_empty(),
-            RootLabelExtended::Object => &tx.type_manager.get_object_types(tx.snapshot.as_ref()).unwrap().is_empty(),
+            KindExtended::Role => &tx.type_manager.get_role_types(tx.snapshot.as_ref()).unwrap().is_empty(),
+            KindExtended::Object => &tx.type_manager.get_object_types(tx.snapshot.as_ref()).unwrap().is_empty(),
         }
     });
     is_empty_or_not.check(*is_empty)

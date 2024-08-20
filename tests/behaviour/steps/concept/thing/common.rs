@@ -10,14 +10,14 @@ use macro_rules_attribute::apply;
 use crate::{generic_step, params, Context};
 
 #[apply(generic_step)]
-#[step(expr = r"{root_label} {var} {exists_or_doesnt}")]
+#[step(expr = r"{kind} {var} {exists_or_doesnt}")]
 async fn object_exists(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     var: params::Var,
     exists_or_doesnt: params::ExistsOrDoesnt,
 ) {
-    match root_label.into_typedb() {
+    match kind.into_typedb() {
         Kind::Attribute => {
             let attribute = context.attributes.get(&var.name).expect("no variable {} in context.");
             exists_or_doesnt.check(attribute, &format!("variable {}", var.name));

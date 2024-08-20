@@ -877,7 +877,7 @@ impl ThingManager {
 
     fn create_commit_locks(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptReadError> {
         // TODO: Should not collect here (iterate_writes() already copies)
-        for (key, write) in snapshot.iterate_writes().collect_vec() {
+        for (key, _) in snapshot.iterate_writes().collect_vec() {
             let key_reference = StorageKeyReference::from(&key);
             if ThingEdgeHas::is_has(key_reference) {
                 let has = ThingEdgeHas::new(Bytes::Reference(key_reference.byte_ref()));

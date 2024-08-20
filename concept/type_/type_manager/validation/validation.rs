@@ -12,7 +12,6 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
-    thing::thing_manager::ThingManager,
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange, AnnotationRegex,

@@ -15,13 +15,7 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
-use crate::{
-    concept::type_::BehaviourConceptTestExecutionError,
-    generic_step, params,
-    params::{check_boolean, IsEmptyOrNot},
-    transaction_context::{with_read_tx, with_write_tx},
-    Context,
-};
+use crate::{concept::type_::BehaviourConceptTestExecutionError, generic_step, params::check_boolean, transaction_context::{with_read_tx, with_write_tx}, Context, params};
 
 #[apply(generic_step)]
 #[step(expr = r"relation {var} add player for role\({type_label}\): {var}{may_error}")]
@@ -245,7 +239,7 @@ async fn relation_get_players_for_role_empty(
     context: &mut Context,
     relation_var: params::Var,
     role_label: params::Label,
-    is_empty_or_not: IsEmptyOrNot,
+    is_empty_or_not: params::IsEmptyOrNot,
 ) {
     let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
     let actuals = with_read_tx!(context, |tx| {
@@ -291,16 +285,16 @@ async fn relation_get_players_for_role_contains(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} get relations {contains_or_doesnt}: {var}")]
+#[step(expr = r"{object_kind} {var} get relations {contains_or_doesnt}: {var}")]
 async fn object_get_relations_contain(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     player_var: params::Var,
     contains_or_doesnt: params::ContainsOrDoesnt,
     relation_var: params::Var,
 ) {
     let player = &context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
-    object_root.assert(&player.type_());
+    object_kind.assert(&player.type_());
     let relations = with_read_tx!(context, |tx| {
         player
             .get_relations(tx.snapshot.as_ref(), &tx.thing_manager)
@@ -315,11 +309,11 @@ async fn object_get_relations_contain(
 
 #[apply(generic_step)]
 #[step(
-    expr = r"{object_root_label} {var} get relations\({type_label}\) with role\({type_label}\) {contains_or_doesnt}: {var}"
+    expr = r"{object_kind} {var} get relations\({type_label}\) with role\({type_label}\) {contains_or_doesnt}: {var}"
 )]
 async fn object_get_relations_of_type_with_role_contain(
     context: &mut Context,
-    object_root: params::ObjectRootLabel,
+    object_kind: params::ObjectKind,
     player_var: params::Var,
     relation_type_label: params::Label,
     role_label: params::Label,
@@ -327,7 +321,7 @@ async fn object_get_relations_of_type_with_role_contain(
     relation_var: params::Var,
 ) {
     let player = &context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
-    object_root.assert(&player.type_());
+    object_kind.assert(&player.type_());
     let relations = with_read_tx!(context, |tx| {
         let relation_type = tx
             .type_manager
