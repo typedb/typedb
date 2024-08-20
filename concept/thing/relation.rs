@@ -189,8 +189,24 @@ impl<'a> Relation<'a> {
         OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
             .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
+        OperationTimeValidation::validate_relation_type_relates_role_type(
+            snapshot,
+            thing_manager,
+            self.type_(),
+            role_type.clone(),
+        )
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
         let mut new_counts = HashMap::<_, u64>::new();
         for player in &new_players {
+            OperationTimeValidation::validate_object_type_plays_role_type(
+                snapshot,
+                thing_manager,
+                player.type_(),
+                role_type.clone(),
+            )
+                .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
             *new_counts.entry(player).or_default() += 1;
         }
 
