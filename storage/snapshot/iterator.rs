@@ -25,12 +25,12 @@ use crate::{
 
 pub struct SnapshotRangeIterator {
     storage_iterator: MVCCRangeIterator,
-    buffered_iterator: BufferRangeIterator,
+    buffered_iterator: Option<BufferRangeIterator>,
     ready_item_source: Option<ReadyItemSource>,
 }
 
 impl SnapshotRangeIterator {
-    pub(crate) fn new(mvcc_iterator: MVCCRangeIterator, buffered_iterator: BufferRangeIterator) -> Self {
+    pub(crate) fn new(mvcc_iterator: MVCCRangeIterator, buffered_iterator: Option<BufferRangeIterator>) -> Self {
         SnapshotRangeIterator { storage_iterator: mvcc_iterator, buffered_iterator, ready_item_source: None }
     }
 
@@ -51,7 +51,7 @@ impl SnapshotRangeIterator {
     pub fn seek(&mut self, key: StorageKeyReference<'_>) {
         if let Some(Ok((peek, _))) = self.peek() {
             if peek < key {
-                self.buffered_iterator.seek(key.bytes());
+                self.buffered_iterator.as_mut().map(|mut iter| iter.seek(key.bytes()));
                 self.storage_iterator.seek(key.bytes());
                 self.find_next_state()
             }
@@ -61,16 +61,21 @@ impl SnapshotRangeIterator {
     fn find_next_state(&mut self) {
         while self.ready_item_source.is_none() {
             let Some(Ok((storage_key, storage_value))) = self.storage_iterator.peek() else {
-                while let Some((_, Write::Delete)) = self.buffered_iterator.peek() {
-                    // SKIP buffered
-                    self.buffered_iterator.next();
-                }
-                if self.buffered_iterator.peek().is_some() {
-                    self.ready_item_source = Some(ReadyItemSource::Buffered);
+                if let Some(buffered_iterator) = self.buffered_iterator.as_mut() {
+                    while let Some((_, Write::Delete)) = buffered_iterator.peek() {
+                        // SKIP buffered
+                        buffered_iterator.next();
+                    }
+                    if buffered_iterator.peek().is_some() {
+                        self.ready_item_source = Some(ReadyItemSource::Buffered);
+                    }
                 }
                 break;
             };
-            let Some((buffered_key, buffered_write)) = self.buffered_iterator.peek() else {
+
+            let Some(Some((buffered_key, buffered_write))) =
+                self.buffered_iterator.as_mut().map(|mut iter| iter.peek())
+            else {
                 self.ready_item_source = Some(ReadyItemSource::Storage);
                 break;
             };
@@ -80,9 +85,10 @@ impl SnapshotRangeIterator {
                 Ordering::Less => {
                     if buffered_write.is_delete() {
                         // SKIP buffered
-                        self.buffered_iterator.next();
+                        self.buffered_iterator.as_mut().map(|mut iter| iter.next());
                     } else {
                         // ACCEPT buffered
+                        assert!(self.buffered_iterator.is_some());
                         self.ready_item_source = Some(ReadyItemSource::Buffered);
                     }
                 }
@@ -90,13 +96,10 @@ impl SnapshotRangeIterator {
                     if buffered_write.is_delete() {
                         // SKIP both
                         self.storage_iterator.next();
-                        self.buffered_iterator.next();
+                        self.buffered_iterator.as_mut().map(|mut iter| iter.next());
                     } else {
-                        #[cfg(debug_assertions)]
-                        if let Write::Put { value, .. } = buffered_write {
-                            debug_assert_eq!(storage_value.bytes(), value.bytes());
-                        }
                         // ACCEPT both
+                        assert!(self.buffered_iterator.is_some());
                         self.ready_item_source = Some(ReadyItemSource::Both);
                     }
                 }
@@ -110,14 +113,16 @@ impl SnapshotRangeIterator {
     fn advance_and_find_next_state(&mut self) {
         match self.ready_item_source {
             Some(ReadyItemSource::Storage) => {
-                let _ = self.storage_iterator.next();
+                self.storage_iterator.next();
             }
             Some(ReadyItemSource::Buffered) => {
-                let _ = self.buffered_iterator.next();
+                assert!(self.buffered_iterator.is_some());
+                self.buffered_iterator.as_mut().map(|mut iter| iter.next());
             }
             Some(ReadyItemSource::Both) => {
-                let _ = self.buffered_iterator.next();
-                let _ = self.storage_iterator.next();
+                assert!(self.buffered_iterator.is_some());
+                self.buffered_iterator.as_mut().map(|mut iter| iter.next());
+                self.storage_iterator.next();
             }
             None => (),
         }
@@ -197,7 +202,8 @@ impl SnapshotRangeIterator {
         &mut self,
     ) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>>
     {
-        self.buffered_iterator.next().map(|(key, write)| {
+        assert!(self.buffered_iterator.is_some());
+        self.buffered_iterator.as_mut().unwrap().next().map(|(key, write)| {
             assert!(!write.is_delete());
             Ok((StorageKey::Array(key), Bytes::Array(write.into_value())))
         })
@@ -206,7 +212,10 @@ impl SnapshotRangeIterator {
     fn buffered_peek(
         &mut self,
     ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+        assert!(self.buffered_iterator.is_some());
         self.buffered_iterator
+            .as_mut()
+            .unwrap()
             .peek()
             .map(|(key, write)| Ok((StorageKeyReference::from(key), ByteReference::from(write.get_value()))))
     }
@@ -222,6 +231,7 @@ impl LendingIterator for SnapshotRangeIterator {
         }
         match self.ready_item_source.take() {
             Some(ReadyItemSource::Both) => {
+                // Skip the storage and get the buffered value because they can be different
                 let _ = self.storage_next();
                 self.buffered_next()
             }

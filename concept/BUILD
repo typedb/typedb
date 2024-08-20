@@ -22,7 +22,7 @@ rust_library(
     srcs = glob([
         "*.rs",
         "type_/**/*.rs",
-        "thing/*.rs",
+        "thing/**/*.rs",
     ]),
     deps = [
         "//common/bytes",
@@ -41,6 +41,9 @@ rust_library(
         "@crates//:regex",
         "@crates//:serde",
     ],
+    proc_macro_deps = [
+        "@crates//:paste",
+    ],
 )
 
 checkstyle_test(
@@ -48,6 +51,7 @@ checkstyle_test(
     include = glob([
         "*",
         "thing/*",
+        "thing/thing_manager/**/*",
         "type_/*",
         "type_/type_manager/**/*",
     ]),

@@ -20,7 +20,7 @@ use encoding::{
         Typed,
     },
     layout::prefix::Prefix,
-    value::{decode_value_u64, value::Value},
+    value::{decode_value_u64, value::Value, value_type::ValueType},
     AsBytes, Keyable,
 };
 use iterator::State;
@@ -28,7 +28,7 @@ use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::StorageKey,
-    snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
+    snapshot::{buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
 };
 
 use crate::{
@@ -119,11 +119,11 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         Attribute { vertex, value: None }
     }
 
-    fn vertex(&self) -> AttributeVertex<'_> {
+    fn vertex(&self) -> Self::Vertex<'_> {
         self.vertex.as_reference()
     }
 
-    fn into_vertex(self) -> AttributeVertex<'a> {
+    fn into_vertex(self) -> Self::Vertex<'a> {
         self.vertex
     }
 
@@ -131,21 +131,33 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         Attribute::new(self.vertex.into_owned())
     }
 
-    fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
-        debug_assert_eq!(thing_manager.get_status(snapshot, self.vertex().as_storage_key()), ConceptStatus::Put);
-        // Attributes are always PUT, so we don't have to record a lock on modification
+    fn set_required(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptReadError> {
+        match self.type_().get_value_type(snapshot, thing_manager.type_manager())? {
+            Some(value_type) => match value_type {
+                | ValueType::Boolean
+                | ValueType::Long
+                | ValueType::Double
+                | ValueType::Decimal
+                | ValueType::Date
+                | ValueType::DateTime
+                | ValueType::DateTimeTZ
+                | ValueType::Duration => snapshot.put(self.vertex().as_storage_key().into_owned_array()),
+                // ValueTypes with expensive writes
+                | ValueType::String | ValueType::Struct(_) => {
+                    thing_manager.lock_existing_attribute(snapshot, self.as_reference())
+                }
+            },
+            None => panic!("Attribute instances must have a value type"),
+        }
+        Ok(())
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
         thing_manager.get_status(snapshot, self.vertex().as_storage_key())
-    }
-
-    fn errors(
-        &self,
-        _snapshot: &impl WritableSnapshot,
-        _thing_manager: &ThingManager,
-    ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
-        Ok(Vec::new())
     }
 
     fn delete(
@@ -156,8 +168,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         let owners = self
             .get_owners(snapshot, thing_manager)
             .map_static(|res| res.map(|(key, _)| key.into_owned()))
-            .try_collect::<Vec<_>, _>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            .try_collect::<Vec<_>, _>()?;
         for object in owners {
             thing_manager.unset_has(snapshot, &object, self.as_reference());
         }
@@ -171,8 +182,11 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Prefix, ConceptReadError> {
-        let value_type = type_.get_value_type(snapshot, type_manager)?.unwrap();
-        Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category()))
+        let value_type = type_.get_value_type(snapshot, type_manager)?;
+        match value_type {
+            Some(value_type) => Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category())),
+            None => Err(ConceptReadError::CorruptMissingMandatoryValueType),
+        }
     }
 }
 
@@ -208,7 +222,8 @@ where
 {
     independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
     attributes_iterator: Option<Peekable<AllAttributesIterator>>,
-    has_reverse_iterator: Option<SnapshotRangeIterator>,
+    has_reverse_iterator_buffer: Option<BufferRangeIterator>,
+    has_reverse_iterator_storage: Option<SnapshotRangeIterator>,
     state: State<ConceptReadError>,
 }
 
@@ -218,13 +233,15 @@ where
 {
     pub(crate) fn new(
         attributes_iterator: AllAttributesIterator,
-        has_reverse_iterator: SnapshotRangeIterator,
+        has_reverse_iterator_buffer: BufferRangeIterator,
+        has_reverse_iterator_storage: SnapshotRangeIterator,
         independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
     ) -> Self {
         Self {
             independent_attribute_types,
             attributes_iterator: Some(Peekable::new(attributes_iterator)),
-            has_reverse_iterator: Some(has_reverse_iterator),
+            has_reverse_iterator_buffer: Some(has_reverse_iterator_buffer),
+            has_reverse_iterator_storage: Some(has_reverse_iterator_storage),
             state: State::Init,
         }
     }
@@ -233,7 +250,8 @@ where
         Self {
             independent_attribute_types: Arc::new(HashSet::new()),
             attributes_iterator: None,
-            has_reverse_iterator: None,
+            has_reverse_iterator_buffer: None,
+            has_reverse_iterator_storage: None,
             state: State::Done,
         }
     }
@@ -250,7 +268,6 @@ where
             }
             State::ItemReady => {
                 let next = self.attributes_iterator.as_mut().unwrap().next();
-                let _ = self.has_reverse_iterator.as_mut().unwrap().next();
                 self.state = State::ItemUsed;
                 next
             }
@@ -271,12 +288,27 @@ where
                     if independent {
                         self.state = State::ItemReady;
                     } else {
-                        match Self::has_owner(self.has_reverse_iterator.as_mut().unwrap(), attribute_vertex) {
-                            Ok(has_owner) => {
-                                if has_owner {
+                        match Self::has_any_writes(
+                            self.has_reverse_iterator_buffer.as_mut().unwrap(),
+                            attribute_vertex.clone(),
+                        ) {
+                            Ok(has_writes) => {
+                                if has_writes {
                                     self.state = State::ItemReady
                                 } else {
-                                    advance_attribute = true
+                                    match Self::has_owner(
+                                        self.has_reverse_iterator_storage.as_mut().unwrap(),
+                                        attribute_vertex,
+                                    ) {
+                                        Ok(has_owner) => {
+                                            if has_owner {
+                                                self.state = State::ItemReady
+                                            } else {
+                                                advance_attribute = true
+                                            }
+                                        }
+                                        Err(err) => self.state = State::Error(err),
+                                    }
                                 }
                             }
                             Err(err) => self.state = State::Error(err),
@@ -312,6 +344,15 @@ where
                 }
             }
         }
+    }
+
+    fn has_any_writes(
+        has_reverse_iterator: &mut BufferRangeIterator,
+        attribute_vertex: AttributeVertex<'_>,
+    ) -> Result<bool, ConceptReadError> {
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex.as_reference());
+        has_reverse_iterator.seek(has_reverse_prefix.bytes());
+        Ok(has_reverse_iterator.peek().is_some())
     }
 }
 

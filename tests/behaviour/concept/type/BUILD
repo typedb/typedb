@@ -8,7 +8,7 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 rust_test(
     name = "test_attributetype",
     srcs = ["attribute_type.rs"],
-    timeout = "eternal",
+    timeout = "long",
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
@@ -49,7 +49,7 @@ rust_test(
 rust_test(
     name = "test_owns",
     srcs = ["owns.rs"],
-    timeout = "eternal",
+    timeout = "long",
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
@@ -60,7 +60,7 @@ rust_test(
 rust_test(
     name = "test_owns_annotations",
     srcs = ["owns_annotations.rs"],
-    timeout = "eternal",
+    timeout = "long",
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",

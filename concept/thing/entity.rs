@@ -49,14 +49,6 @@ impl<'a> Entity<'a> {
         self.vertex.bytes()
     }
 
-    pub fn get_relations<'m>(
-        &self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
-    ) -> RelationRoleIterator {
-        thing_manager.get_relations_roles(snapshot, self.as_reference())
-    }
-
     pub fn get_indexed_players<'m>(
         &'m self,
         snapshot: &'m impl ReadableSnapshot,
@@ -105,22 +97,19 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         Entity::new(self.vertex.into_owned())
     }
 
-    fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
+    fn set_required(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptReadError> {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
-            thing_manager.lock_existing(snapshot, self.as_reference());
+            thing_manager.lock_existing_object(snapshot, self.as_reference());
         }
+        Ok(())
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
         thing_manager.get_status(snapshot, self.vertex().as_storage_key())
-    }
-
-    fn errors(
-        &self,
-        snapshot: &impl WritableSnapshot,
-        thing_manager: &ThingManager,
-    ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
-        todo!()
     }
 
     fn delete(
@@ -128,37 +117,26 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError> {
-        let has = self
+        for attr in self
             .get_has_unordered(snapshot, thing_manager)
             .map_static(|res| res.map(|(k, _)| k.into_owned()))
-            .try_collect::<Vec<_>, _>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let mut has_attr_type_deleted = HashSet::new();
-        for attr in has {
-            has_attr_type_deleted.add(attr.type_());
+            .try_collect::<Vec<_>, _>()?
+        {
             thing_manager.unset_has(snapshot, &self, attr);
         }
 
-        for owns in self
-            .type_()
-            .get_owns_declared(snapshot, thing_manager.type_manager())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-            .iter()
-        {
-            let ordering = owns
-                .get_ordering(snapshot, thing_manager.type_manager())
-                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())?.iter() {
+            let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
             if matches!(ordering, Ordering::Ordered) {
                 thing_manager.unset_has_ordered(snapshot, &self, owns.attribute());
             }
         }
 
-        let relations_roles = self
-            .get_relations(snapshot, thing_manager)
+        for (relation, role) in self
+            .get_relations_roles(snapshot, thing_manager)
             .map_static(|res| res.map(|(relation, role, _count)| (relation.into_owned(), role.into_owned())))
-            .try_collect::<Vec<_>, _>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        for (relation, role) in relations_roles {
+            .try_collect::<Vec<_>, _>()?
+        {
             thing_manager.unset_links(snapshot, relation, self.as_reference(), role)?;
         }
 

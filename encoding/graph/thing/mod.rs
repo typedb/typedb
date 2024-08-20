@@ -11,7 +11,7 @@ use storage::key_value::StorageKey;
 use crate::{
     graph::{type_::vertex::TypeID, Typed},
     layout::prefix::{Prefix, PrefixID},
-    EncodingKeyspace, Prefixed,
+    EncodingKeyspace, Keyable, Prefixed,
 };
 
 pub mod edge;
@@ -23,7 +23,7 @@ pub mod vertex_object;
 const THING_VERTEX_LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
 pub trait ThingVertex<'a>: Prefixed<'a, BUFFER_KEY_INLINE> + Typed<'a, BUFFER_KEY_INLINE> {
-    const KEYSPACE: EncodingKeyspace;
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
 
     fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self;
 

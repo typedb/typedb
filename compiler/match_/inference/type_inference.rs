@@ -297,7 +297,7 @@ pub mod tests {
         let (type_manager, thing_manager) = managers();
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), (type_fears, _, _)) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager);
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
         let animal_types = [type_animal.clone(), type_cat.clone(), type_dog.clone()];
         let object_types = [type_animal.clone(), type_cat.clone(), type_dog.clone(), type_fears.clone()];
 

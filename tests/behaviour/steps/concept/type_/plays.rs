@@ -11,6 +11,7 @@ use macro_rules_attribute::apply;
 
 use super::thing_type::get_as_object_type;
 use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
     params::{Annotation, AnnotationCategory, ContainsOrDoesnt, IsEmptyOrNot, Label, MayError, RootLabel},
     transaction_context::{with_read_tx, with_schema_tx},
@@ -29,7 +30,7 @@ pub async fn set_plays(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
-        let res = object_type.set_plays(&mut tx.snapshot, &tx.type_manager, role_type);
+        let res = object_type.set_plays(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, role_type);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -46,7 +47,7 @@ pub async fn unset_plays(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
-        let res = object_type.unset_plays(&mut tx.snapshot, &tx.type_manager, role_type);
+        let res = object_type.unset_plays(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, role_type);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -67,7 +68,7 @@ pub async fn get_plays_contain(
             .get_plays(&tx.snapshot, &tx.type_manager)
             .unwrap()
             .iter()
-            .map(|(_role, plays)| {
+            .map(|plays| {
                 plays.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
             .collect_vec();
@@ -129,17 +130,22 @@ pub async fn get_plays_set_override(
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
 
-        let player_supertype = player_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
-        let overridden_role_type =
-            tx.type_manager.get_role_type(&tx.snapshot, &overridden_role_label.into_typedb()).unwrap().unwrap();
-        let overridden_plays_opt =
-            player_supertype.get_plays_role(&tx.snapshot, &tx.type_manager, overridden_role_type).unwrap();
-        if let Some(overridden_plays) = overridden_plays_opt {
-            let res = plays.set_override(&mut tx.snapshot, &tx.type_manager, overridden_plays);
-            may_error.check_concept_write_without_read_errors(&res);
-        } else {
-            assert!(may_error.expects_error());
+        if let Some(player_supertype) = player_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap() {
+            let overridden_role_type =
+                tx.type_manager.get_role_type(&tx.snapshot, &overridden_role_label.into_typedb()).unwrap().unwrap();
+            let overridden_plays_opt =
+                player_supertype.get_plays_role(&tx.snapshot, &tx.type_manager, overridden_role_type).unwrap();
+
+            if let Some(overridden_plays) = overridden_plays_opt {
+                let res = plays.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_plays);
+                may_error.check_concept_write_without_read_errors(&res);
+                return;
+            }
         }
+
+        may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
+            BehaviourConceptTestExecutionError::CannotFindObjectTypeRoleTypeToOverride,
+        ));
     });
 }
 
@@ -156,7 +162,7 @@ pub async fn get_plays_unset_override(
     with_schema_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
-        let res = plays.unset_override(&mut tx.snapshot, &tx.type_manager);
+        let res = plays.unset_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -223,8 +229,12 @@ pub async fn get_plays_set_annotation(
     with_schema_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
-        let res =
-            plays.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(None).try_into().unwrap());
+        let res = plays.set_annotation(
+            &mut tx.snapshot,
+            &tx.type_manager,
+            &tx.thing_manager,
+            annotation.into_typedb(None).try_into().unwrap(),
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -245,7 +255,12 @@ pub async fn get_plays_unset_annotation(
     with_schema_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
-        let res = plays.unset_annotation(&mut tx.snapshot, &tx.type_manager, annotation_category.into_typedb());
+        let res = plays.unset_annotation(
+            &mut tx.snapshot,
+            &tx.type_manager,
+            &tx.thing_manager,
+            annotation_category.into_typedb(),
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }

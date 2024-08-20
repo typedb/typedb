@@ -21,12 +21,14 @@ use encoding::{
     layout::infix::{
         Infix,
         Infix::{
-            PropertyAnnotationAbstract, PropertyAnnotationCascade, PropertyAnnotationDistinct,
-            PropertyAnnotationIndependent, PropertyAnnotationKey, PropertyAnnotationUnique,
+            PropertyAnnotationAbstract, PropertyAnnotationCardinality, PropertyAnnotationCascade,
+            PropertyAnnotationDistinct, PropertyAnnotationIndependent, PropertyAnnotationKey, PropertyAnnotationRange,
+            PropertyAnnotationRegex, PropertyAnnotationUnique, PropertyAnnotationValues,
         },
     },
     value::{value::Value, value_type::ValueType, ValueEncodable},
 };
+use regex::Regex;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
 
@@ -79,7 +81,12 @@ impl AnnotationCardinality {
         Self { start_inclusive, end_inclusive }
     }
 
+    // TODO: Can move to impl Default for AnnotationCardinality and other Annotations
     pub const fn default() -> Self {
+        Self::unchecked()
+    }
+
+    pub const fn unchecked() -> Self {
         Self::new(0, None)
     }
 
@@ -159,11 +166,11 @@ impl AnnotationRegex {
     }
 
     pub fn valid(&self) -> bool {
-        !self.regex.is_empty()
+        !self.regex.is_empty() && Regex::new(&self.regex).is_ok()
     }
 
     pub fn value_valid(&self, value: &str) -> bool {
-        todo!()
+        Regex::new(&self.regex).is_ok_and(|regex| regex.is_match(value))
     }
 
     pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
@@ -245,7 +252,7 @@ impl AnnotationRange {
         }
     }
 
-    pub fn value_valid(&self, value: Value<'static>) -> bool {
+    pub fn value_valid(&self, value: Value<'_>) -> bool {
         self.value_satisfies_start(Some(value.clone())) && self.value_satisfies_end(Some(value))
     }
 
@@ -271,7 +278,7 @@ impl AnnotationRange {
         self.value_satisfies_start(other.start()) && self.value_satisfies_end(other.end())
     }
 
-    fn value_satisfies_start(&self, value: Option<Value<'static>>) -> bool {
+    fn value_satisfies_start(&self, value: Option<Value<'_>>) -> bool {
         match self.start() {
             None => true,
             Some(start) => match &value {
@@ -292,7 +299,7 @@ impl AnnotationRange {
         }
     }
 
-    fn value_satisfies_end(&self, value: Option<Value<'static>>) -> bool {
+    fn value_satisfies_end(&self, value: Option<Value<'_>>) -> bool {
         match self.end() {
             None => true,
             Some(end) => match &value {
@@ -372,7 +379,7 @@ impl AnnotationValues {
         true
     }
 
-    pub fn value_valid(&self, value: Value<'static>) -> bool {
+    pub fn value_valid(&self, value: Value<'_>) -> bool {
         self.contains(&value)
     }
 
@@ -404,7 +411,7 @@ impl AnnotationValues {
         true
     }
 
-    fn contains(&self, value: &Value<'static>) -> bool {
+    fn contains(&self, value: &Value<'_>) -> bool {
         self.values.contains(value)
     }
 }
@@ -583,25 +590,35 @@ macro_rules! empty_type_vertex_property_encoding {
     };
 }
 
-empty_type_vertex_property_encoding!(AnnotationAbstract, PropertyAnnotationAbstract);
-empty_type_vertex_property_encoding!(AnnotationIndependent, PropertyAnnotationIndependent);
-empty_type_vertex_property_encoding!(AnnotationDistinct, PropertyAnnotationDistinct);
+// It is a sign of poor architecture, but it lets us wrap other general places for annotations,
+// otherwise we'd need to write "unreachable"s on every caller's side
+macro_rules! unreachable_type_vertex_property_encoding {
+    ($property:ident, $infix:ident) => {
+        impl<'a> TypeVertexPropertyEncoding<'a> for $property {
+            const INFIX: Infix = $infix;
 
-impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationCardinality {
-    const INFIX: Infix = Infix::PropertyAnnotationCardinality;
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
-        // TODO this .unwrap() should be handled as an error
-        // although it does indicate data corruption
-        bincode::deserialize(value.bytes()).unwrap()
-    }
+            fn from_value_bytes<'b>(value: ByteReference<'b>) -> $property {
+                unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
+            }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
-    }
+            fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+                unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
+            }
+        }
+    };
 }
 
+unreachable_type_vertex_property_encoding!(AnnotationDistinct, PropertyAnnotationDistinct);
+unreachable_type_vertex_property_encoding!(AnnotationUnique, PropertyAnnotationUnique);
+unreachable_type_vertex_property_encoding!(AnnotationKey, PropertyAnnotationKey);
+unreachable_type_vertex_property_encoding!(AnnotationCardinality, PropertyAnnotationCardinality);
+
+empty_type_vertex_property_encoding!(AnnotationAbstract, PropertyAnnotationAbstract);
+empty_type_vertex_property_encoding!(AnnotationIndependent, PropertyAnnotationIndependent);
+empty_type_vertex_property_encoding!(AnnotationCascade, PropertyAnnotationCascade);
+
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
-    const INFIX: Infix = Infix::PropertyAnnotationRegex;
+    const INFIX: Infix = PropertyAnnotationRegex;
 
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> AnnotationRegex {
         // TODO this .unwrap() should be handled as an error
@@ -614,10 +631,8 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
     }
 }
 
-empty_type_vertex_property_encoding!(AnnotationCascade, PropertyAnnotationCascade);
-
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRange {
-    const INFIX: Infix = Infix::PropertyAnnotationRange;
+    const INFIX: Infix = PropertyAnnotationRange;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
@@ -630,7 +645,7 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRange {
 }
 
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationValues {
-    const INFIX: Infix = Infix::PropertyAnnotationValues;
+    const INFIX: Infix = PropertyAnnotationValues;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
@@ -659,12 +674,34 @@ macro_rules! empty_type_edge_property_encoder {
     };
 }
 
+// It is a sign of poor architecture, but it lets us wrap other general places for annotations,
+// otherwise we'd need to write "unreachable"s on every caller's side
+macro_rules! unreachable_type_edge_property_encoder {
+    ($property:ident, $infix:ident) => {
+        impl<'a> TypeEdgePropertyEncoding<'a> for $property {
+            const INFIX: Infix = $infix;
+
+            fn from_value_bytes<'b>(value: ByteReference<'b>) -> $property {
+                unreachable!("TypeEdgePropertyEncoding is not be implemented for {}", stringify!($property))
+            }
+
+            fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+                unreachable!("TypeEdgePropertyEncoding is not be implemented for {}", stringify!($property))
+            }
+        }
+    };
+}
+
+unreachable_type_edge_property_encoder!(AnnotationAbstract, PropertyAnnotationAbstract);
+unreachable_type_edge_property_encoder!(AnnotationIndependent, PropertyAnnotationIndependent);
+unreachable_type_edge_property_encoder!(AnnotationCascade, PropertyAnnotationCascade);
+
 empty_type_edge_property_encoder!(AnnotationDistinct, PropertyAnnotationDistinct);
-empty_type_edge_property_encoder!(AnnotationKey, PropertyAnnotationKey);
 empty_type_edge_property_encoder!(AnnotationUnique, PropertyAnnotationUnique);
+empty_type_edge_property_encoder!(AnnotationKey, PropertyAnnotationKey);
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
-    const INFIX: Infix = Infix::PropertyAnnotationCardinality;
+    const INFIX: Infix = PropertyAnnotationCardinality;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
@@ -677,7 +714,7 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
 }
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
-    const INFIX: Infix = Infix::PropertyAnnotationRegex;
+    const INFIX: Infix = PropertyAnnotationRegex;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
@@ -690,7 +727,7 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
 }
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
-    const INFIX: Infix = Infix::PropertyAnnotationRange;
+    const INFIX: Infix = PropertyAnnotationRange;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
@@ -703,7 +740,7 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
 }
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationValues {
-    const INFIX: Infix = Infix::PropertyAnnotationValues;
+    const INFIX: Infix = PropertyAnnotationValues;
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
@@ -793,6 +830,7 @@ mod serialize_annotation {
         duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value::Value,
         value_type::ValueTypeCategory, ValueEncodable,
     };
+    use resource::constants::encoding::AD_HOC_BYTES_INLINE;
     use serde::{
         de,
         de::{MapAccess, SeqAccess, Visitor},
@@ -801,8 +839,6 @@ mod serialize_annotation {
     };
 
     use crate::type_::annotation::{AnnotationRange, AnnotationValues};
-
-    const INLINE_LENGTH: usize = 128;
 
     fn serialize_value(value: Value<'_>) -> Vec<u8> {
         match value.value_type().category() {
@@ -814,7 +850,7 @@ mod serialize_annotation {
             | ValueTypeCategory::DateTime
             | ValueTypeCategory::DateTimeTZ
             | ValueTypeCategory::Duration
-            | ValueTypeCategory::String => value.encode_bytes::<INLINE_LENGTH>().bytes().to_owned(),
+            | ValueTypeCategory::String => value.encode_bytes::<AD_HOC_BYTES_INLINE>().bytes().to_owned(),
             ValueTypeCategory::Struct => unreachable!("Structs are not supported in annotation serialization"),
         }
     }
@@ -833,9 +869,9 @@ mod serialize_annotation {
                 Value::DateTimeTZ(DateTimeTZBytes::new(bytes.try_into().unwrap()).as_date_time())
             }
             ValueTypeCategory::Duration => Value::Duration(DurationBytes::new(bytes.try_into().unwrap()).as_duration()),
-            ValueTypeCategory::String => {
-                Value::String(Cow::Owned(StringBytes::new(Bytes::<INLINE_LENGTH>::copy(bytes)).as_str().to_owned()))
-            }
+            ValueTypeCategory::String => Value::String(Cow::Owned(
+                StringBytes::new(Bytes::<AD_HOC_BYTES_INLINE>::copy(bytes)).as_str().to_owned(),
+            )),
             ValueTypeCategory::Struct => unreachable!("Structs are not supported in annotation deserialization"),
         }
     }
@@ -1086,7 +1122,7 @@ mod serialize_annotation {
                 | Value::DateTime(_)
                 | Value::DateTimeTZ(_)
                 | Value::String(_)
-                | Value::Duration(_) => value.encode_bytes::<INLINE_LENGTH>().bytes().to_owned(),
+                | Value::Duration(_) => value.encode_bytes::<AD_HOC_BYTES_INLINE>().bytes().to_owned(),
                 Value::Struct(_) => unreachable!("Can't use struct for AnnotationValues"),
             })
             .collect()

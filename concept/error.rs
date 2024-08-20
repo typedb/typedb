@@ -8,17 +8,15 @@ use std::{error::Error, fmt, sync::Arc};
 
 use encoding::{
     error::EncodingError,
-    value::{value::Value, value_type::ValueType},
+    value::{label::Label, value_type::ValueType},
 };
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 
 use crate::{
-    thing::{object::Object, relation::Relation},
+    thing::thing_manager::validation::DataValidationError,
     type_::{
-        annotation::{AnnotationCardinality, AnnotationError},
+        annotation::{Annotation, AnnotationError},
         attribute_type::AttributeType,
-        object_type::ObjectType,
-        role_type::RoleType,
         type_manager::validation::SchemaValidationError,
     },
 };
@@ -50,70 +48,19 @@ impl Error for ConceptError {
 #[derive(Debug, Clone)]
 pub enum ConceptWriteError {
     RootModification,
-    SnapshotGet {
-        source: SnapshotGetError,
-    },
-    SnapshotIterate {
-        source: Arc<SnapshotIteratorError>,
-    },
-    ConceptRead {
-        source: ConceptReadError,
-    },
-    SchemaValidation {
-        source: SchemaValidationError,
-    },
-    Encoding {
-        source: EncodingError,
-    },
-    ValueTypeMismatch {
-        expected: Option<ValueType>,
-        provided: ValueType,
-    },
-    RelationRoleCardinality {
-        relation: Relation<'static>,
-        role_type: RoleType<'static>,
-        cardinality: AnnotationCardinality,
-        actual_cardinality: u64,
-    },
-    StringAttributeRegex {
-        regex: String,
-        value: String,
-    },
-
-    MultipleKeys {
-        owner: Object<'static>,
-        key_type: AttributeType<'static>,
-    },
-    KeyMissing {
-        owner: Object<'static>,
-        key_type: AttributeType<'static>,
-    },
-    KeyTaken {
-        owner: Object<'static>,
-        key_type: AttributeType<'static>,
-        value: Value<'static>,
-        owner_type: ObjectType<'static>,
-    },
-
-    SetHasOnDeleted {
-        owner: Object<'static>,
-    },
-    AddPlayerOnDeleted {
-        relation: Relation<'static>,
-    },
-
-    CardinalityViolation {
-        owner: Object<'static>,
-        attribute_type: AttributeType<'static>,
-        cardinality: AnnotationCardinality,
-    },
-
+    SnapshotGet { source: SnapshotGetError },
+    SnapshotIterate { source: Arc<SnapshotIteratorError> },
+    ConceptRead { source: ConceptReadError },
+    SchemaValidation { source: SchemaValidationError },
+    DataValidation { source: DataValidationError },
+    Encoding { source: EncodingError },
+    Annotation { source: AnnotationError },
+    // TODO: Might refactor these to "InvalidOperationError", or just use unreachable! instead of it.
     SetHasOrderedOwnsUnordered {},
     SetHasUnorderedOwnsOrdered {},
-
-    Annotation {
-        source: AnnotationError,
-    },
+    UnsetHasOrderedOwnsUnordered {},
+    UnsetHasUnorderedOwnsOrdered {},
+    SetPlayersOrderedRoleUnordered {},
 }
 
 impl fmt::Display for ConceptWriteError {
@@ -130,19 +77,14 @@ impl Error for ConceptWriteError {
             Self::ConceptRead { source } => Some(source),
             Self::Encoding { source, .. } => Some(source),
             Self::SchemaValidation { source, .. } => Some(source),
-            Self::ValueTypeMismatch { .. } => None,
-            Self::RelationRoleCardinality { .. } => None,
+            Self::DataValidation { source, .. } => Some(source),
             Self::RootModification { .. } => None,
-            Self::StringAttributeRegex { .. } => None,
-            Self::KeyMissing { .. } => None,
-            Self::KeyTaken { .. } => None,
-            Self::SetHasOnDeleted { .. } => None,
-            Self::MultipleKeys { .. } => None,
-            Self::AddPlayerOnDeleted { .. } => None,
-            Self::CardinalityViolation { .. } => None,
-            Self::SetHasOrderedOwnsUnordered { .. } => None,
-            Self::SetHasUnorderedOwnsOrdered { .. } => None,
             Self::Annotation { .. } => None,
+            Self::SetHasOrderedOwnsUnordered { .. } => None,
+            Self::SetPlayersOrderedRoleUnordered { .. } => None,
+            Self::SetHasUnorderedOwnsOrdered { .. } => None,
+            Self::UnsetHasOrderedOwnsUnordered { .. } => None,
+            Self::UnsetHasUnorderedOwnsOrdered { .. } => None,
         }
     }
 }
@@ -154,20 +96,52 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::SnapshotIterate { source } => Self::SnapshotIterate { source },
             ConceptReadError::Encoding { source, .. } => Self::Encoding { source },
             ConceptReadError::CorruptMissingLabelOfType => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryProperty => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryCardinality => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingCapability => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryOrdering => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryValueType => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryRelatesForRole => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(_, _, _) => {
+                Self::ConceptRead { source: error }
+            }
+            ConceptReadError::CannotGetOwnsDoesntExist(_, _) => Self::ConceptRead { source: error },
+            ConceptReadError::CannotGetPlaysDoesntExist(_, _) => Self::ConceptRead { source: error },
+            ConceptReadError::CannotGetRelatesDoesntExist(_, _) => Self::ConceptRead { source: error },
+            ConceptReadError::Annotation { .. } => Self::ConceptRead { source: error },
+            ConceptReadError::ValueTypeMismatchWithAttributeType { .. } => Self::ConceptRead { source: error },
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum ConceptReadError {
-    SnapshotGet { source: SnapshotGetError },
-    SnapshotIterate { source: Arc<SnapshotIteratorError> },
-    Encoding { source: EncodingError },
+    SnapshotGet {
+        source: SnapshotGetError,
+    },
+    SnapshotIterate {
+        source: Arc<SnapshotIteratorError>,
+    },
+    Encoding {
+        source: EncodingError,
+    },
     CorruptMissingLabelOfType,
-    CorruptMissingMandatoryProperty,
+    CorruptMissingMandatoryCardinality,
+    CorruptMissingCapability,
+    CorruptMissingMandatoryOrdering,
+    CorruptMissingMandatoryValueType,
     CorruptMissingMandatoryRelatesForRole,
+    CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(Label<'static>, ValueType, Annotation),
+    CannotGetOwnsDoesntExist(Label<'static>, Label<'static>),
+    CannotGetPlaysDoesntExist(Label<'static>, Label<'static>),
+    CannotGetRelatesDoesntExist(Label<'static>, Label<'static>),
+    Annotation {
+        source: AnnotationError,
+    },
+    ValueTypeMismatchWithAttributeType {
+        attribute_type: AttributeType<'static>,
+        expected: Option<ValueType>,
+        provided: ValueType,
+    },
 }
 
 impl fmt::Display for ConceptReadError {
@@ -183,8 +157,17 @@ impl Error for ConceptReadError {
             Self::SnapshotIterate { source, .. } => Some(source),
             Self::Encoding { source, .. } => Some(source),
             Self::CorruptMissingLabelOfType => None,
-            Self::CorruptMissingMandatoryProperty => None,
+            Self::CorruptMissingMandatoryCardinality => None,
+            Self::CorruptMissingCapability => None,
+            Self::CorruptMissingMandatoryOrdering => None,
+            Self::CorruptMissingMandatoryValueType => None,
+            Self::CorruptAttributeValueTypeDoesntMatchAttributeTypeConstraint(_, _, _) => None,
             Self::CorruptMissingMandatoryRelatesForRole => None,
+            Self::CannotGetOwnsDoesntExist(_, _) => None,
+            Self::CannotGetPlaysDoesntExist(_, _) => None,
+            Self::CannotGetRelatesDoesntExist(_, _) => None,
+            Self::Annotation { .. } => None,
+            Self::ValueTypeMismatchWithAttributeType { .. } => None,
         }
     }
 }

@@ -7,6 +7,8 @@
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
 };
 
 use bytes::{byte_reference::ByteReference, Bytes};
@@ -28,7 +30,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::ThingAPI,
+    thing::{thing_manager::ThingManager, ThingAPI},
     type_::{
         annotation::{Annotation, AnnotationCardinality, AnnotationError},
         attribute_type::AttributeType,
@@ -43,6 +45,7 @@ use crate::{
 
 pub mod annotation;
 pub mod attribute_type;
+mod constraint;
 pub mod entity_type;
 pub mod object_type;
 pub mod owns;
@@ -69,13 +72,50 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError>;
 
-    fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError>;
+    fn delete(
+        self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptWriteError>;
 
     fn get_label<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
+
+    fn get_label_cloned<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<Label<'m>, ConceptReadError> {
+        self.get_label(snapshot, type_manager).map(|label| label.clone())
+    }
+
+    fn get_supertype(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<Self>, ConceptReadError>;
+
+    fn get_supertypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<Self>>, ConceptReadError>;
+
+    fn get_subtypes<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<Self>>, ConceptReadError>;
+
+    fn get_subtypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, Vec<Self>>, ConceptReadError>;
 }
 
 pub trait KindAPI<'a>: TypeAPI<'a> {
@@ -95,7 +135,7 @@ pub trait KindAPI<'a>: TypeAPI<'a> {
     ) -> Result<MaybeOwns<'this, HashMap<Self::AnnotationType, Self>>, ConceptReadError>;
 }
 
-pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> {
+pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> + ThingTypeAPI<'a> {
     fn into_owned_object_type(self) -> ObjectType<'static>;
 }
 
@@ -108,6 +148,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError>;
@@ -116,6 +157,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError>;
 
@@ -129,14 +171,44 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError>;
+
+    fn get_owns_overrides<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError>;
+
+    fn get_owns_attribute_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+        Ok(self
+            .get_owns_declared(snapshot, type_manager)?
+            .iter()
+            .find(|owns| owns.attribute() == attribute_type)
+            .cloned())
+    }
+
+    fn has_owns_attribute_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_owns_attribute_declared(snapshot, type_manager, attribute_type)?.is_some())
+    }
 
     fn get_owns_attribute(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError>;
+    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+        Ok(self.get_owns(snapshot, type_manager)?.iter().find(|owns| owns.attribute() == attribute_type).cloned())
+    }
 
     fn has_owns_attribute(
         &self,
@@ -147,22 +219,20 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         Ok(self.get_owns_attribute(snapshot, type_manager, attribute_type)?.is_some())
     }
 
-    fn get_owns_attribute_transitive(
+    fn try_get_owns_attribute(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        Ok(self.get_owns(snapshot, type_manager)?.get(&attribute_type).cloned())
-    }
-
-    fn has_owns_attribute_transitive(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<bool, ConceptReadError> {
-        Ok(self.get_owns_attribute_transitive(snapshot, type_manager, attribute_type)?.is_some())
+    ) -> Result<Owns<'static>, ConceptReadError> {
+        let owns = self.get_owns_attribute(snapshot, type_manager, attribute_type.clone())?;
+        match owns {
+            None => Err(ConceptReadError::CannotGetOwnsDoesntExist(
+                self.get_label(snapshot, type_manager)?.clone(),
+                attribute_type.get_label(snapshot, type_manager)?.clone(),
+            )),
+            Some(owns) => Ok(owns),
+        }
     }
 }
 
@@ -171,6 +241,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError>;
 
@@ -178,6 +249,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError>;
 
@@ -187,12 +259,38 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
 
+    fn get_plays<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
+
+    fn get_plays_role_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+        Ok(self.get_plays_declared(snapshot, type_manager)?.iter().find(|plays| plays.role() == role_type).cloned())
+    }
+
+    fn has_plays_role_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_plays_role_declared(snapshot, type_manager, role_type)?.is_some())
+    }
+
     fn get_plays_role(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<Option<Plays<'static>>, ConceptReadError>;
+    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+        Ok(self.get_plays(snapshot, type_manager)?.iter().find(|plays| plays.role() == role_type).cloned())
+    }
 
     fn has_plays_role(
         &self,
@@ -203,11 +301,21 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         Ok(self.get_plays_role(snapshot, type_manager, role_type)?.is_some())
     }
 
-    fn get_plays<'m>(
+    fn try_get_plays_role(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError>;
+        type_manager: &TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<Plays<'static>, ConceptReadError> {
+        let plays = self.get_plays_role(snapshot, type_manager, role_type.clone())?;
+        match plays {
+            None => Err(ConceptReadError::CannotGetPlaysDoesntExist(
+                self.get_label(snapshot, type_manager)?.clone(),
+                role_type.get_label(snapshot, type_manager)?.clone(),
+            )),
+            Some(plays) => Ok(plays),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -257,9 +365,29 @@ pub trait Capability<'a>:
     type InterfaceType: KindAPI<'a>;
     const KIND: CapabilityKind;
 
+    fn new(object_type: Self::ObjectType, interface_type: Self::InterfaceType) -> Self;
+
     fn object(&self) -> Self::ObjectType;
 
     fn interface(&self) -> Self::InterfaceType;
+
+    fn get_override<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, Option<Self>>, ConceptReadError>;
+
+    fn get_overriding<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Self>>, ConceptReadError>;
+
+    fn get_overriding_transitive<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, HashSet<Self>>, ConceptReadError>;
 
     fn get_annotations_declared<'this>(
         &'this self,
@@ -281,6 +409,14 @@ pub trait Capability<'a>:
         type_manager.get_cardinality(snapshot, self.clone())
     }
 
+    fn get_cardinality_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<AnnotationCardinality>, ConceptReadError> {
+        type_manager.get_cardinality_declared(snapshot, self.clone())
+    }
+
     fn get_default_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -289,17 +425,17 @@ pub trait Capability<'a>:
 }
 
 pub struct EdgeOverride<EDGE: TypeEdgeEncoding<'static>> {
-    overridden: EDGE, // TODO: Consider storing EDGE::To instead
+    overrides: EDGE, // TODO: Consider storing EDGE::To instead
 }
 
 impl<'a, EDGE: TypeEdgeEncoding<'static>> TypeEdgePropertyEncoding<'a> for EdgeOverride<EDGE> {
     const INFIX: Infix = Infix::PropertyOverride;
 
     fn from_value_bytes(value: ByteReference<'_>) -> Self {
-        Self { overridden: EDGE::decode_canonical_edge(Bytes::Reference(value).into_owned()) }
+        Self { overrides: EDGE::decode_canonical_edge(Bytes::Reference(value).into_owned()) }
     }
 
     fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::Reference(self.overridden.to_canonical_type_edge().bytes()).into_owned())
+        Some(Bytes::Reference(self.overrides.to_canonical_type_edge().bytes()).into_owned())
     }
 }

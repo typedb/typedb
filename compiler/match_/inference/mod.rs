@@ -168,9 +168,12 @@ pub mod tests {
 
     pub(crate) mod schema_consts {
         use answer::Type as TypeAnnotation;
-        use concept::type_::{
-            annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation,
-            type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
+        use concept::{
+            thing::thing_manager::ThingManager,
+            type_::{
+                annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation,
+                entity_type::EntityTypeAnnotation, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
+            },
         };
         use encoding::value::{label::Label, value_type::ValueType};
         use storage::{
@@ -193,6 +196,7 @@ pub mod tests {
         pub(crate) fn setup_types<Snapshot: WritableSnapshot + CommittableSnapshot<WALClient>>(
             snapshot_: Snapshot,
             type_manager: &TypeManager,
+            thing_manager: &ThingManager,
         ) -> (
             (TypeAnnotation, TypeAnnotation, TypeAnnotation),
             (TypeAnnotation, TypeAnnotation, TypeAnnotation),
@@ -206,40 +210,57 @@ pub mod tests {
             let name = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_NAME)).unwrap();
             let catname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_CATNAME)).unwrap();
             let dogname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_DOGNAME)).unwrap();
-            name.set_annotation(&mut snapshot, type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract))
-                .unwrap();
-            catname.set_supertype(&mut snapshot, type_manager, name.clone()).unwrap();
-            dogname.set_supertype(&mut snapshot, type_manager, name.clone()).unwrap();
+            name.set_annotation(
+                &mut snapshot,
+                type_manager,
+                thing_manager,
+                AttributeTypeAnnotation::Abstract(AnnotationAbstract),
+            )
+            .unwrap();
+            catname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
+            dogname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
 
-            name.set_value_type(&mut snapshot, type_manager, ValueType::String).unwrap();
-            catname.set_value_type(&mut snapshot, type_manager, ValueType::String).unwrap();
-            dogname.set_value_type(&mut snapshot, type_manager, ValueType::String).unwrap();
+            name.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
+            catname.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
+            dogname.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
 
             // Entities
             let animal = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_ANIMAL)).unwrap();
             let cat = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_CAT)).unwrap();
             let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG)).unwrap();
-            cat.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
-            dog.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
+            cat.set_supertype(&mut snapshot, type_manager, thing_manager, animal.clone()).unwrap();
+            dog.set_supertype(&mut snapshot, type_manager, thing_manager, animal.clone()).unwrap();
             animal
-                .set_annotation(&mut snapshot, type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract))
+                .set_annotation(
+                    &mut snapshot,
+                    type_manager,
+                    thing_manager,
+                    EntityTypeAnnotation::Abstract(AnnotationAbstract),
+                )
                 .unwrap();
 
             // Ownerships
-            let animal_owns = animal.set_owns(&mut snapshot, type_manager, name.clone(), Ordering::Unordered).unwrap();
-            let cat_owns = cat.set_owns(&mut snapshot, type_manager, catname.clone(), Ordering::Unordered).unwrap();
-            let dog_owns = dog.set_owns(&mut snapshot, type_manager, dogname.clone(), Ordering::Unordered).unwrap();
-            cat_owns.set_override(&mut snapshot, type_manager, animal_owns.clone()).unwrap();
-            dog_owns.set_override(&mut snapshot, type_manager, animal_owns.clone()).unwrap();
+            let animal_owns =
+                animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
+            let cat_owns =
+                cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
+            let dog_owns =
+                dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
+            cat_owns.set_override(&mut snapshot, type_manager, thing_manager, animal_owns.clone()).unwrap();
+            dog_owns.set_override(&mut snapshot, type_manager, thing_manager, animal_owns.clone()).unwrap();
 
             // Relations
             let fears = type_manager.create_relation_type(&mut snapshot, &Label::build(LABEL_FEARS)).unwrap();
-            let has_fear =
-                fears.create_relates(&mut snapshot, type_manager, LABEL_HAS_FEAR, Ordering::Unordered).unwrap().role();
-            let is_feared =
-                fears.create_relates(&mut snapshot, type_manager, LABEL_IS_FEARED, Ordering::Unordered).unwrap().role();
-            cat.set_plays(&mut snapshot, type_manager, has_fear.clone()).unwrap();
-            dog.set_plays(&mut snapshot, type_manager, is_feared.clone()).unwrap();
+            let has_fear = fears
+                .create_relates(&mut snapshot, type_manager, thing_manager, LABEL_HAS_FEAR, Ordering::Unordered, None)
+                .unwrap()
+                .role();
+            let is_feared = fears
+                .create_relates(&mut snapshot, type_manager, thing_manager, LABEL_IS_FEARED, Ordering::Unordered, None)
+                .unwrap()
+                .role();
+            cat.set_plays(&mut snapshot, type_manager, thing_manager, has_fear.clone()).unwrap();
+            dog.set_plays(&mut snapshot, type_manager, thing_manager, is_feared.clone()).unwrap();
 
             snapshot.commit().unwrap();
 

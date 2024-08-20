@@ -16,7 +16,9 @@ use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
 use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
+    params::{check_boolean, IsEmptyOrNot},
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
@@ -32,16 +34,21 @@ async fn relation_add_player_for_role(
 ) {
     let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
     let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object.clone();
-    let res = with_write_tx!(context, |tx| {
-        let role_type = relation
+    with_write_tx!(context, |tx| {
+        if let Some(relates) = relation
             .type_()
-            .get_relates_of_role(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
-            .unwrap()
-            .role();
-        relation.add_player(&mut tx.snapshot, &tx.thing_manager, role_type, player)
+        {
+            let role_type = relates.role();
+            let res = relation.add_player(&mut tx.snapshot, &tx.thing_manager, role_type, player);
+            may_error.check_concept_write_without_read_errors(&res);
+            return;
+        }
     });
-    may_error.check_concept_write_without_read_errors(&res);
+    may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
+        BehaviourConceptTestExecutionError::CannotFindRoleToAddPlayerTo,
+    ));
 }
 
 #[apply(generic_step)]
@@ -59,7 +66,7 @@ async fn relation_set_players_for_role(
     let res = with_write_tx!(context, |tx| {
         let role_type = relation
             .type_()
-            .get_relates_of_role(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
@@ -81,11 +88,33 @@ async fn relation_remove_player_for_role(
     with_write_tx!(context, |tx| {
         let role_type = relation
             .type_()
-            .get_relates_of_role(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
         relation.remove_player_single(&mut tx.snapshot, &tx.thing_manager, role_type, player).unwrap();
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation {var} remove {int} players for role\({type_label}[]\): {var}")]
+async fn relation_remove_count_players_for_role(
+    context: &mut Context,
+    relation_var: params::Var,
+    count: u64,
+    role_label: params::Label,
+    player_var: params::Var,
+) {
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object.clone();
+    with_write_tx!(context, |tx| {
+        let role_type = relation
+            .type_()
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        relation.remove_player_many(&mut tx.snapshot, &tx.thing_manager, role_type, player, count).unwrap();
     });
 }
 
@@ -99,7 +128,7 @@ async fn relation_get_players_ordered(
 ) {
     let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
     let players = with_read_tx!(context, |tx| {
-        let relates = relation.type_().get_relates_of_role(
+        let relates = relation.type_().get_relates_role_name(
             &tx.snapshot,
             &tx.type_manager,
             role_label.into_typedb().name().as_str(),
@@ -109,6 +138,31 @@ async fn relation_get_players_ordered(
         players.into_iter().map(Object::into_owned).collect()
     });
     context.object_lists.insert(players_var.name, players);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation {var} get players for role\({type_label}[]\) is {vars}: {boolean}")]
+async fn relation_get_players_ordered_is(
+    context: &mut Context,
+    relation_var: params::Var,
+    role_label: params::Label,
+    player_vars: params::Vars,
+    is: params::Boolean,
+) {
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let actuals = with_read_tx!(context, |tx| {
+        let relates = relation.type_().get_relates_role_name(
+            &tx.snapshot,
+            &tx.type_manager,
+            role_label.into_typedb().name().as_str(),
+        );
+        let role_type = relates.unwrap().unwrap().role();
+        let players = relation.get_players_ordered(&tx.snapshot, &tx.thing_manager, role_type).unwrap();
+        players.into_iter().map(Object::into_owned).collect_vec()
+    });
+    let players =
+        player_vars.names.into_iter().map(|name| context.objects[&name].as_ref().unwrap().object.clone()).collect_vec();
+    check_boolean!(is, actuals == players)
 }
 
 #[apply(generic_step)]
@@ -181,6 +235,31 @@ async fn relation_get_players_contains_table(
 }
 
 #[apply(generic_step)]
+#[step(expr = r"relation {var} get players for role\({type_label}\) {is_empty_or_not}")]
+async fn relation_get_players_for_role_empty(
+    context: &mut Context,
+    relation_var: params::Var,
+    role_label: params::Label,
+    is_empty_or_not: IsEmptyOrNot,
+) {
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let actuals = with_read_tx!(context, |tx| {
+        let role_type = relation
+            .type_()
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        relation
+            .get_players_role_type(&tx.snapshot, &tx.thing_manager, role_type)
+            .map_static(|res| res.unwrap().into_owned())
+            .collect::<Vec<_>>()
+    });
+
+    is_empty_or_not.check(actuals.is_empty());
+}
+
+#[apply(generic_step)]
 #[step(expr = r"relation {var} get players for role\({type_label}\) {contains_or_doesnt}: {var}")]
 async fn relation_get_players_for_role_contains(
     context: &mut Context,
@@ -193,7 +272,7 @@ async fn relation_get_players_for_role_contains(
     let players = with_read_tx!(context, |tx| {
         let role_type = relation
             .type_()
-            .get_relates_of_role(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
@@ -248,13 +327,13 @@ async fn object_get_relations_of_type_with_role_contain(
         let relation_type =
             tx.type_manager.get_relation_type(&tx.snapshot, &relation_type_label.into_typedb()).unwrap().unwrap();
         let role_type = relation_type
-            .get_relates_of_role(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
         player
             .get_relations_by_role(&tx.snapshot, &tx.thing_manager, role_type)
-            .map_static(|res| res.unwrap().into_owned())
+            .map_static(|res| res.map(|(relation, count)| relation.into_owned()).unwrap())
             .collect::<Vec<_>>()
     });
     let Object::Relation(relation) = &context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object else {

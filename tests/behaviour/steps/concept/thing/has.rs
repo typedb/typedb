@@ -10,7 +10,7 @@ use concept::{
         attribute::Attribute,
         object::{Object, ObjectAPI},
     },
-    type_::{attribute_type::AttributeType, Capability, OwnerAPI},
+    type_::{attribute_type::AttributeType, Capability, OwnerAPI, TypeAPI},
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
@@ -18,6 +18,7 @@ use macro_rules_attribute::apply;
 
 use crate::{
     generic_step, params,
+    params::{check_boolean, IsEmptyOrNot},
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
@@ -56,6 +57,18 @@ fn object_unset_has_impl(
     with_write_tx!(context, |tx| object.unset_has_unordered(&mut tx.snapshot, &tx.thing_manager, key.as_reference()))
 }
 
+fn object_unset_has_ordered_impl(
+    context: &mut Context,
+    object: &Object<'static>,
+    attribute_type_label: params::Label,
+) -> Result<(), ConceptWriteError> {
+    with_write_tx!(context, |tx| {
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
+        object.unset_has_ordered(&mut tx.snapshot, &tx.thing_manager, attribute_type)
+    })
+}
+
 #[apply(generic_step)]
 #[step(expr = r"{object_root_label} {var} set has: {var}{may_error}")]
 async fn object_set_has(
@@ -68,7 +81,10 @@ async fn object_set_has(
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
     object_root.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap().to_owned();
-    may_error.check_concept_write_without_read_errors(&object_set_has_impl(context, &object, &attribute));
+    // TODO: The interesting error (CannotGetOwnsDoesntExist) is a ConceptError, so we need to expect it
+    // However, there are other random ConceptErrors that can make the test look like "it passes" while it
+    // is just broken
+    may_error.check(&object_set_has_impl(context, &object, &attribute));
 }
 
 #[apply(generic_step)]
@@ -114,6 +130,19 @@ async fn object_unset_has(
 }
 
 #[apply(generic_step)]
+#[step(expr = r"{object_root_label} {var} unset has: {type_label}[]")]
+async fn object_unset_has_ordered(
+    context: &mut Context,
+    object_root: params::ObjectRootLabel,
+    object_var: params::Var,
+    attribute_type_label: params::Label,
+) {
+    let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
+    object_root.assert(&object.type_());
+    object_unset_has_ordered_impl(context, &object, attribute_type_label).unwrap();
+}
+
+#[apply(generic_step)]
 #[step(expr = r"{var} = {object_root_label} {var} get has\({type_label}[]\)")]
 async fn object_get_has_list(
     context: &mut Context,
@@ -135,6 +164,59 @@ async fn object_get_has_list(
             .collect()
     });
     context.attribute_lists.insert(attribute_var.name, attributes);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"{object_root_label} {var} get has\({type_label}[]\) is {vars}: {boolean}")]
+async fn object_get_has_list_is(
+    context: &mut Context,
+    object_root: params::ObjectRootLabel,
+    object_var: params::Var,
+    attribute_type_label: params::Label,
+    attribute_vars: params::Vars,
+    is: params::Boolean,
+) {
+    let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
+    object_root.assert(&object.type_());
+    let actuals = with_read_tx!(context, |tx| {
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
+        object
+            .get_has_type_ordered(&tx.snapshot, &tx.thing_manager, attribute_type)
+            .unwrap()
+            .into_iter()
+            .map(|attr| attr.into_owned())
+            .collect_vec()
+    });
+    let attributes = attribute_vars
+        .names
+        .into_iter()
+        .map(|attr_name| context.attributes[&attr_name].as_ref().unwrap().to_owned())
+        .collect_vec();
+    check_boolean!(is, actuals == attributes)
+}
+
+#[apply(generic_step)]
+#[step(expr = r"{object_root_label} {var} get has {is_empty_or_not}")]
+async fn object_get_has_is_empty(
+    context: &mut Context,
+    object_root: params::ObjectRootLabel,
+    object_var: params::Var,
+    is_empty_or_not: IsEmptyOrNot,
+) {
+    let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
+    object_root.assert(&object.type_());
+    let actuals = with_read_tx!(context, |tx| {
+        object
+            .get_has_unordered(&tx.snapshot, &tx.thing_manager)
+            .map_static(|res| {
+                let (attribute, _count) = res.unwrap();
+                attribute.into_owned()
+            })
+            .collect::<Vec<_>>()
+    });
+
+    is_empty_or_not.check(actuals.is_empty());
 }
 
 #[apply(generic_step)]

@@ -57,10 +57,12 @@ impl MayError {
                 res.as_ref().unwrap();
             }
             MayError::True => match res.as_ref().unwrap_err() {
-                ConceptWriteError::ConceptRead { source } => panic!("Expected error is ConceptRead {:?}", source),
+                ConceptWriteError::ConceptRead { source } => {
+                    panic!("Expected logic error, got ConceptRead {:?}", source)
+                }
                 ConceptWriteError::SchemaValidation { source } => match source {
                     SchemaValidationError::ConceptRead(source) => {
-                        panic!("Expected error is SchemaValidation::ConceptRead {:?}", source)
+                        panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", source)
                     }
                     _ => {}
                 },
@@ -238,7 +240,10 @@ impl Default for Label {
 
 impl Label {
     pub fn into_typedb(&self) -> TypeDBLabel<'static> {
-        TypeDBLabel::build(&self.label_string)
+        match &self.label_string.split_once(":") {
+            None => TypeDBLabel::build(&self.label_string),
+            Some((name, scope)) => TypeDBLabel::build_scoped(scope, name),
+        }
     }
 }
 
@@ -275,7 +280,7 @@ impl FromStr for RootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "object_root_label", regex = r"(entity|relation)")]
+#[param(name = "object_root_label", regex = r"(entity|relation|entities|relations)")]
 pub(crate) struct ObjectRootLabel {
     kind: TypeDBTypeKind,
 }
@@ -298,11 +303,35 @@ impl FromStr for ObjectRootLabel {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let kind = match s {
-            "entity" => TypeDBTypeKind::Entity,
-            "relation" => TypeDBTypeKind::Relation,
+            "entity" | "entities" => TypeDBTypeKind::Entity,
+            "relation" | "relations" => TypeDBTypeKind::Relation,
             _ => unreachable!(),
         };
         Ok(Self { kind })
+    }
+}
+
+#[derive(Debug, Parameter)]
+#[param(name = "root_label_extended", regex = r"(attribute|entity|relation|role|object)")]
+pub(crate) enum RootLabelExtended {
+    Attribute,
+    Entity,
+    Relation,
+    Role,
+    Object,
+}
+
+impl FromStr for RootLabelExtended {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "attribute" => Self::Attribute,
+            "entity" => Self::Entity,
+            "relation" => Self::Relation,
+            "role" => Self::Role,
+            "object" => Self::Object,
+            invalid => return Err(format!("Invalid `RootLabelExtended`: {invalid}")),
+        })
     }
 }
 
@@ -361,7 +390,7 @@ impl FromStr for ValueType {
     }
 }
 
-#[derive(Debug, Default, Parameter)]
+#[derive(Debug, Default, Parameter, Clone)]
 #[param(name = "value", regex = ".*?")]
 pub(crate) struct Value {
     raw_value: String,
@@ -369,8 +398,8 @@ pub(crate) struct Value {
 
 impl Value {
     const DATETIME_FORMATS: [&'static str; 8] = [
-        "%Y-%m-%dT%H:%M:%S%.3f",
-        "%Y-%m-%d %H:%M:%S%.3f",
+        "%Y-%m-%dT%H:%M:%S%.9f",
+        "%Y-%m-%d %H:%M:%S%.9f",
         "%Y-%m-%dT%H:%M:%S",
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%dT%H:%M",
@@ -394,13 +423,14 @@ impl Value {
                     (self.raw_value.as_str(), "0")
                 };
 
-                let integer_parsed = integer.trim().parse().unwrap();
+                let integer_parsed: i64 = integer.trim().parse().unwrap();
+                let integer_parsed_abs = integer_parsed.abs();
                 let fractional_parsed = Self::parse_decimal_fraction_part(fractional);
-                if integer.starts_with('-') && integer_parsed == 0 {
-                    TypeDBValue::Decimal(Decimal::new(-1, 0) + Decimal::new(0, fractional_parsed))
-                } else {
-                    TypeDBValue::Decimal(Decimal::new(integer_parsed, fractional_parsed))
-                }
+
+                TypeDBValue::Decimal(match integer.starts_with('-') {
+                    false => Decimal::new(integer_parsed_abs, fractional_parsed),
+                    true => Decimal::new(0, 0) - Decimal::new(integer_parsed_abs, fractional_parsed),
+                })
             }
             TypeDBValueType::Date => {
                 TypeDBValue::Date(NaiveDate::parse_from_str(&self.raw_value, Self::DATE_FORMAT).unwrap())
@@ -558,7 +588,7 @@ impl Annotation {
             }
             range if range.starts_with("@range") => {
                 assert!(
-                    range.starts_with("@range(") && range.ends_with(')'),
+                    range.starts_with("@range(") && range.ends_with(')') && range.contains(".."),
                     r#"Invalid @range format: {range:?}. Expected "@range(min..max)""#
                 );
                 assert!(value_type.is_some(), "ValueType is expected to parse annotation @range");

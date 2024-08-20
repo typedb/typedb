@@ -14,7 +14,7 @@ use macro_rules_attribute::apply;
 
 use crate::{
     generic_step,
-    params::{self, check_boolean},
+    params::{self, check_boolean, IsEmptyOrNot},
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
@@ -45,15 +45,20 @@ async fn attribute_put_instance_with_value(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{var} = attribute\({type_label}\) put instance with value: {value}")]
+#[step(expr = r"{var} = attribute\({type_label}\) put instance with value: {value}{may_error}")]
 async fn attribute_put_instance_with_value_var(
     context: &mut Context,
     var: params::Var,
     type_label: params::Label,
     value: params::Value,
+    may_error: params::MayError,
 ) {
-    let attribute = attribute_put_instance_with_value_impl(context, type_label, value).unwrap();
-    context.attributes.insert(var.name, Some(attribute));
+    let result = attribute_put_instance_with_value_impl(context, type_label, value);
+    may_error.check(&result);
+    if !may_error.expects_error() {
+        let attribute = result.unwrap();
+        context.attributes.insert(var.name, Some(attribute));
+    }
 }
 
 #[apply(generic_step)]
@@ -147,6 +152,26 @@ async fn attribute_is_deleted(context: &mut Context, var: params::Var, is_delete
 }
 
 #[apply(generic_step)]
+#[step(expr = r"attribute {var} is none: {boolean}")]
+async fn attribute_is_none(context: &mut Context, var: params::Var, is_none: params::Boolean) {
+    let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut();
+    check_boolean!(is_none, attribute.is_none());
+}
+
+#[apply(generic_step)]
+#[step(expr = r"delete attributes of type: {type_label}")]
+async fn delete_attributes_of_type(context: &mut Context, type_label: params::Label) {
+    with_write_tx!(context, |tx| {
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let mut attribute_iterator = tx.thing_manager.get_attributes_in(&mut tx.snapshot, attribute_type).unwrap();
+        while let Some(attribute) = attribute_iterator.next() {
+            attribute.unwrap().delete(&mut tx.snapshot, &tx.thing_manager).unwrap();
+        }
+    })
+}
+
+#[apply(generic_step)]
 #[step(expr = r"attribute\({type_label}\) get instances {contains_or_doesnt}: {var}")]
 async fn attribute_instances_contain(
     context: &mut Context,
@@ -165,4 +190,15 @@ async fn attribute_instances_contain(
             .collect()
     });
     containment.check(std::slice::from_ref(attribute), &actuals);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"attribute\({type_label}\) get instances {is_empty_or_not}")]
+async fn object_instances_is_empty(context: &mut Context, type_label: params::Label, is_empty_or_not: IsEmptyOrNot) {
+    with_read_tx!(context, |tx| {
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        is_empty_or_not
+            .check(tx.thing_manager.get_attributes_in(&tx.snapshot, attribute_type).unwrap().next().is_none());
+    });
 }

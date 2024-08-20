@@ -36,12 +36,16 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         object::{Object, ObjectAPI},
-        thing_manager::ThingManager,
+        thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
         HKInstance, ThingAPI,
     },
     type_::{
-        annotation::AnnotationDistinct, relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType,
-        type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering, TypeAPI,
+        annotation::AnnotationDistinct,
+        relates::RelatesAnnotation,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::{type_reader::TypeReader, TypeManager},
+        Capability, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
@@ -58,44 +62,6 @@ impl<'a> Relation<'a> {
 
     pub fn iid(&self) -> ByteReference<'_> {
         self.vertex.bytes()
-    }
-
-    // pub fn delete_has_single(
-    //     &self, thing_manager: &ThingManager, attribute: Attribute<'_>,
-    // ) -> Result<(), ConceptWriteError> {
-    //     self.delete_has_many(thing_manager, attribute, 1)
-    // }
-    //
-    // pub fn delete_has_many(
-    //     &self, thing_manager: &ThingManager, attribute: Attribute<'_>, count: u64,
-    // ) -> Result<(), ConceptWriteError> {
-    //     let owns = self.type_().get_owns_attribute(
-    //         thing_manager.type_manager(),
-    //         attribute.type_(),
-    //     ).map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-    //     match owns {
-    //         None => {
-    //             todo!("throw useful schema violation error")
-    //         }
-    //         Some(owns) => {
-    //             if owns.is_distinct(thing_manager.type_manager())
-    //                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
-    //                 debug_assert_eq!(count, 1);
-    //                 thing_manager.delete_has(self.as_reference(), attribute);
-    //             } else {
-    //                 thing_manager.decrement_has(self.as_reference(), attribute, count);
-    //             }
-    //         }
-    //     }
-    //     Ok(())
-    // }
-
-    pub fn get_relations<'m>(
-        &self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
-    ) -> RelationRoleIterator {
-        thing_manager.get_relations_roles(snapshot, self.as_reference())
     }
 
     pub fn get_indexed_players<'m>(
@@ -123,6 +89,15 @@ impl<'a> Relation<'a> {
         thing_manager.get_role_players(snapshot, self.as_reference())
     }
 
+    pub fn get_players_by_role(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        role_type: RoleType<'static>,
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
+        thing_manager.get_role_players_role(snapshot, self.as_reference(), role_type)
+    }
+
     pub fn get_players_ordered(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -144,20 +119,18 @@ impl<'a> Relation<'a> {
         })
     }
 
-    fn get_player_counts(
+    pub fn get_player_counts(
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<HashMap<RoleType<'static>, u64>, ConceptReadError> {
-        let mut map = HashMap::new();
+        let mut counts = HashMap::new();
         let mut rp_iter = self.get_players(snapshot, thing_manager);
-        let mut rp = rp_iter.next().transpose()?;
-        while let Some((role_player, count)) = rp {
-            let value = map.entry(role_player.role_type.clone()).or_insert(0);
+        while let Some((role_player, count)) = rp_iter.next().transpose()? {
+            let value = counts.entry(role_player.role_type()).or_insert(0);
             *value += count;
-            rp = rp_iter.next().transpose()?;
         }
-        Ok(map)
+        Ok(counts)
     }
 
     /// Semantics:
@@ -173,17 +146,27 @@ impl<'a> Relation<'a> {
         role_type: RoleType<'static>,
         player: Object<'_>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: validate schema
-        if !thing_manager
-            .object_exists(snapshot, self)
-            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
-        {
-            return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
-        }
+        OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
-        let relates = role_type.get_relates_declared(snapshot, thing_manager.type_manager())?;
-        let relates_annotations = relates.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
-        let distinct = relates_annotations.contains_key(&RelatesAnnotation::Distinct(AnnotationDistinct));
+        OperationTimeValidation::validate_relation_type_relates_role_type(
+            snapshot,
+            thing_manager,
+            self.type_(),
+            role_type.clone(),
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
+        OperationTimeValidation::validate_object_type_plays_role_type(
+            snapshot,
+            thing_manager,
+            player.type_(),
+            role_type.clone(),
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
+        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
+        let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())?;
         if distinct {
             thing_manager.put_links_unordered(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
         } else {
@@ -198,27 +181,45 @@ impl<'a> Relation<'a> {
         role_type: RoleType<'static>,
         new_players: Vec<Object<'_>>,
     ) -> Result<(), ConceptWriteError> {
-        if !thing_manager.object_exists(snapshot, self)? {
-            return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
-        }
-
-        match role_type
-            .get_ordering(snapshot, thing_manager.type_manager())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-        {
-            Ordering::Unordered => todo!(),
+        match role_type.get_ordering(snapshot, thing_manager.type_manager())? {
+            Ordering::Unordered => return Err(ConceptWriteError::SetPlayersOrderedRoleUnordered {}),
             Ordering::Ordered => (),
         }
 
+        OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
+        OperationTimeValidation::validate_relation_type_relates_role_type(
+            snapshot,
+            thing_manager,
+            self.type_(),
+            role_type.clone(),
+        )
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
         let mut new_counts = HashMap::<_, u64>::new();
         for player in &new_players {
+            OperationTimeValidation::validate_object_type_plays_role_type(
+                snapshot,
+                thing_manager,
+                player.type_(),
+                role_type.clone(),
+            )
+                .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
             *new_counts.entry(player).or_default() += 1;
         }
 
+        OperationTimeValidation::validate_relates_distinct_constraint(
+            snapshot,
+            thing_manager,
+            role_type.clone(),
+            &new_counts,
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
         // 1. get owned list
-        let old_players = thing_manager
-            .get_role_players_ordered(snapshot, self.as_reference(), role_type.clone())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        let old_players = thing_manager.get_role_players_ordered(snapshot, self.as_reference(), role_type.clone())?;
 
         let mut old_counts = HashMap::<_, u64>::new();
         for player in &old_players {
@@ -231,16 +232,16 @@ impl<'a> Relation<'a> {
                 thing_manager.unset_links(snapshot, self.as_reference(), player.as_reference(), role_type.clone())?;
             }
         }
+
         for (player, count) in new_counts {
-            if old_counts.get(&player) != Some(&count) {
-                thing_manager.set_links_count(
-                    snapshot,
-                    self.as_reference(),
-                    player.as_reference(),
-                    role_type.clone(),
-                    count,
-                )?;
-            }
+            // Don't skip unchanged count to ensure that locks are placed correctly
+            thing_manager.set_links_count(
+                snapshot,
+                self.as_reference(),
+                player.as_reference(),
+                role_type.clone(),
+                count,
+            )?;
         }
 
         // 3. Overwrite owned list
@@ -266,9 +267,27 @@ impl<'a> Relation<'a> {
         player: Object<'_>,
         delete_count: u64,
     ) -> Result<(), ConceptWriteError> {
-        let relates = role_type.get_relates_declared(snapshot, thing_manager.type_manager())?;
-        let relates_annotations = relates.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
-        let distinct = relates_annotations.contains_key(&RelatesAnnotation::Distinct(AnnotationDistinct));
+        OperationTimeValidation::validate_relation_exists_to_remove_player(snapshot, thing_manager, self)
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
+        OperationTimeValidation::validate_relation_type_relates_role_type(
+            snapshot,
+            thing_manager,
+            self.type_(),
+            role_type.clone(),
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
+        OperationTimeValidation::validate_object_type_plays_role_type(
+            snapshot,
+            thing_manager,
+            player.type_(),
+            role_type.clone(),
+        )
+        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
+        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
+        let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())?;
         if distinct {
             debug_assert_eq!(delete_count, 1);
             thing_manager.unset_links(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
@@ -327,41 +346,19 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         Relation::new(self.vertex.into_owned())
     }
 
-    fn set_modified(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager) {
+    fn set_required(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+    ) -> Result<(), ConceptReadError> {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
-            thing_manager.lock_existing(snapshot, self.as_reference());
+            thing_manager.lock_existing_object(snapshot, self.as_reference());
         }
+        Ok(())
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
         thing_manager.get_status(snapshot, self.vertex().as_storage_key())
-    }
-
-    fn errors(
-        &self,
-        snapshot: &impl WritableSnapshot,
-        thing_manager: &ThingManager,
-    ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
-        let mut errors = Vec::new();
-
-        // validate cardinality
-        let type_ = self.type_();
-        let relation_relates = type_.get_relates_declared(snapshot, thing_manager.type_manager())?;
-        let role_player_count = self.get_player_counts(snapshot, thing_manager)?;
-        for relates in relation_relates.iter() {
-            let cardinality = relates.get_cardinality(snapshot, thing_manager.type_manager())?;
-            let role_type = relates.role();
-            let player_count = role_player_count.get(&role_type).map_or(0, |c| *c);
-            if !cardinality.value_valid(player_count) {
-                errors.push(ConceptWriteError::RelationRoleCardinality {
-                    relation: self.clone().into_owned(),
-                    role_type: role_type.clone(),
-                    cardinality,
-                    actual_cardinality: player_count,
-                });
-            }
-        }
-        Ok(errors)
     }
 
     fn delete(
@@ -372,26 +369,20 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         for attr in self
             .get_has_unordered(snapshot, thing_manager)
             .map_static(|res| res.map(|(key, _value)| key.into_owned()))
-            .try_collect::<Vec<_>, _>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+            .try_collect::<Vec<_>, _>()?
         {
             thing_manager.unset_has(snapshot, &self, attr);
         }
 
-        // TODO
-        /*
-        for attr in self
-            .get_has_ordered(snapshot, thing_manager)
-            .collect_cloned_vec(|(key, _value)| key.into_owned())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-        {
-            // TODO huh?
-            thing_manager.unset_has_ordered(snapshot, &self, attr.type_());
+        for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())?.iter() {
+            let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
+            if matches!(ordering, Ordering::Ordered) {
+                thing_manager.unset_has_ordered(snapshot, &self, owns.attribute());
+            }
         }
-        */
 
         for (relation, role) in self
-            .get_relations(snapshot, thing_manager)
+            .get_relations_roles(snapshot, thing_manager)
             .map_static(|res| res.map(|(relation, role, _count)| (relation.into_owned(), role.into_owned())))
             .try_collect::<Vec<_>, _>()
             .map_err(|error| ConceptWriteError::ConceptRead { source: error })?

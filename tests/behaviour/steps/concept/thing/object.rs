@@ -19,7 +19,7 @@ use crate::{
         has::object_set_has_impl,
     },
     generic_step, params,
-    params::check_boolean,
+    params::{check_boolean, IsEmptyOrNot},
     thing_util::ObjectWithKey,
     transaction_context::{with_read_tx, with_write_tx},
     Context,
@@ -44,16 +44,37 @@ fn object_create_instance_impl(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{var} = {object_root_label}\({type_label}\) create new instance")]
+#[step(expr = r"{object_root_label}\({type_label}\) create new instance{may_error}")]
+async fn object_create_instance(
+    context: &mut Context,
+    object_root: params::ObjectRootLabel,
+    object_type_label: params::Label,
+    may_error: params::MayError,
+) {
+    let result = object_create_instance_impl(context, object_type_label);
+    may_error.check(&result);
+    if !may_error.expects_error() {
+        let object = result.unwrap();
+        object_root.assert(&object.type_());
+    }
+}
+
+#[apply(generic_step)]
+#[step(expr = r"{var} = {object_root_label}\({type_label}\) create new instance{may_error}")]
 async fn object_create_instance_var(
     context: &mut Context,
     var: params::Var,
     object_root: params::ObjectRootLabel,
     object_type_label: params::Label,
+    may_error: params::MayError,
 ) {
-    let object = object_create_instance_impl(context, object_type_label).unwrap();
-    object_root.assert(&object.type_());
-    context.objects.insert(var.name, Some(ObjectWithKey::new(object)));
+    let result = object_create_instance_impl(context, object_type_label);
+    may_error.check(&result);
+    if !may_error.expects_error() {
+        let object = result.unwrap();
+        object_root.assert(&object.type_());
+        context.objects.insert(var.name, Some(ObjectWithKey::new(object)));
+    }
 }
 
 #[apply(generic_step)]
@@ -79,6 +100,33 @@ async fn delete_object(context: &mut Context, object_root: params::ObjectRootLab
     let object = context.objects[&var.name].as_ref().unwrap().object.clone();
     object_root.assert(&object.type_());
     with_write_tx!(context, |tx| { object.delete(&mut tx.snapshot, &tx.thing_manager).unwrap() })
+}
+
+#[apply(generic_step)]
+#[step(expr = r"delete {object_root_label} of type: {type_label}")]
+async fn delete_objects_of_type(
+    context: &mut Context,
+    object_root_label: params::ObjectRootLabel,
+    type_label: params::Label,
+) {
+    with_write_tx!(context, |tx| {
+        let object_type = tx.type_manager.get_object_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        object_root_label.assert(&object_type);
+        match object_type {
+            ObjectType::Entity(entity_type) => {
+                let mut entity_iterator = tx.thing_manager.get_entities_in(&mut tx.snapshot, entity_type);
+                while let Some(entity) = entity_iterator.next() {
+                    entity.unwrap().delete(&mut tx.snapshot, &tx.thing_manager).unwrap();
+                }
+            }
+            ObjectType::Relation(relation_type) => {
+                let mut relation_iterator = tx.thing_manager.get_relations_in(&mut tx.snapshot, relation_type);
+                while let Some(relation) = relation_iterator.next() {
+                    relation.unwrap().delete(&mut tx.snapshot, &tx.thing_manager).unwrap();
+                }
+            }
+        }
+    })
 }
 
 #[apply(generic_step)]
@@ -126,7 +174,7 @@ async fn object_get_instance_with_value(
     key_type_label: params::Label,
     value: params::Value,
 ) {
-    let Some(key) = get_attribute_by_value(context, key_type_label, value).unwrap() else {
+    let Some(key) = get_attribute_by_value(context, key_type_label, value.clone()).unwrap() else {
         // no key - no object
         context.objects.insert(var.name, None);
         return;
@@ -144,21 +192,21 @@ async fn object_get_instance_with_value(
         assert!(owners.next().is_none(), "multiple objects found with key {:?}", key);
         owner
     });
-    context.objects.insert(var.name, owner.map(|owner| ObjectWithKey::new_with_key(owner, key)));
+    context.objects.insert(var.name, owner.clone().map(|owner| ObjectWithKey::new_with_key(owner, key)));
 }
 
-// TODO: is_empty_or_not
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label}\({type_label}\) get instances is empty")]
+#[step(expr = r"{object_root_label}\({type_label}\) get instances {is_empty_or_not}")]
 async fn object_instances_is_empty(
     context: &mut Context,
     object_root: params::ObjectRootLabel,
     type_label: params::Label,
+    is_empty_or_not: IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
         let object_type = tx.type_manager.get_object_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
         object_root.assert(&object_type);
-        assert_matches!(tx.thing_manager.get_objects_in(&tx.snapshot, object_type).next(), None);
+        is_empty_or_not.check(tx.thing_manager.get_objects_in(&tx.snapshot, object_type).next().is_none());
     });
 }
 

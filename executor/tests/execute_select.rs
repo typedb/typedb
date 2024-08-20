@@ -44,35 +44,41 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
-    name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
-    let person_owns_age =
-        person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+    let person_owns_age = person_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
+        .unwrap();
     person_owns_age
         .set_annotation(
             &mut snapshot,
             &type_manager,
+            &thing_manager,
             OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10))),
         )
         .unwrap();
-    let person_owns_name =
-        person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+    let person_owns_name = person_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
+        .unwrap();
     person_owns_name
         .set_annotation(
             &mut snapshot,
             &type_manager,
+            &thing_manager,
             OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10))),
         )
         .unwrap();
     let email_type = type_manager.create_attribute_type(&mut snapshot, &EMAIL_LABEL).unwrap();
-    email_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
-    let person_owns_email =
-        person_type.set_owns(&mut snapshot, &type_manager, email_type.clone(), Ordering::Unordered).unwrap();
+    email_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+    let person_owns_email = person_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, email_type.clone(), Ordering::Unordered)
+        .unwrap();
     person_owns_email
         .set_annotation(
             &mut snapshot,
             &type_manager,
+            &thing_manager,
             OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10))),
         )
         .unwrap();

@@ -89,14 +89,16 @@ fn create_schema(
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let type_manager =
-            Rc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
+            Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
+        let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+        let thing_manager = Arc::new(ThingManager::new(thing_vertex_generator.clone(), type_manager.clone()));
         let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap()).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap()).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
         let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, age_type, Ordering::Unordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, name_type, Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
     }
     snapshot.commit().unwrap();
 }

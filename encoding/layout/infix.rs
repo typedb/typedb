@@ -5,7 +5,7 @@
  */
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub(crate) struct InfixID {
+pub struct InfixID {
     bytes: [u8; InfixID::LENGTH],
 }
 
@@ -16,7 +16,7 @@ impl InfixID {
         InfixID { bytes }
     }
 
-    pub(crate) fn bytes(&self) -> [u8; InfixID::LENGTH] {
+    pub fn bytes(&self) -> [u8; InfixID::LENGTH] {
         self.bytes
     }
 }
@@ -50,7 +50,7 @@ macro_rules! infix_functions {
     ($(
         $name:ident => $bytes:tt
     );*) => {
-        pub(crate) const fn infix_id(&self) -> InfixID {
+        pub const fn infix_id(&self) -> InfixID {
             let bytes = match self {
                 $(
                     Self::$name => {&$bytes}

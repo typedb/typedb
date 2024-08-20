@@ -113,14 +113,24 @@ fn attribute_create() {
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
         age_type
-            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
         name_type
-            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
 
         let mut age_1 =
@@ -175,19 +185,33 @@ fn has() {
         let (type_manager, thing_manager) = load_managers(storage.clone());
 
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
         age_type
-            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
         name_type
-            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+        person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
+            .unwrap();
+        person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
+            .unwrap();
 
         let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
         let age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
@@ -241,15 +265,21 @@ fn attribute_cleanup_on_concurrent_detach() {
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        let owns_age = person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Ordered).unwrap();
-        owns_age.set_annotation(&mut snapshot, &type_manager, OwnsAnnotation::Distinct(AnnotationDistinct)).unwrap();
+        let owns_age = person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Ordered)
+            .unwrap();
+        owns_age
+            .set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Distinct(AnnotationDistinct))
+            .unwrap();
 
-        person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+        person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
+            .unwrap();
 
         let alice = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
         let bob = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
@@ -379,31 +409,47 @@ fn role_player_distinct() {
         let (type_manager, thing_manager) = load_managers(storage.clone());
 
         let employment_type = type_manager.create_relation_type(&mut snapshot, &employment_label).unwrap();
-        employment_type.create_relates(&mut snapshot, &type_manager, employee_role, Ordering::Ordered).unwrap();
+        employment_type
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, employee_role, Ordering::Ordered, None)
+            .unwrap();
         let employee_relates =
-            employment_type.get_relates_of_role(&snapshot, &type_manager, employee_role).unwrap().unwrap();
+            employment_type.get_relates_role_name(&snapshot, &type_manager, employee_role).unwrap().unwrap();
         employee_relates
-            .set_annotation(&mut snapshot, &type_manager, RelatesAnnotation::Distinct(AnnotationDistinct))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Distinct(AnnotationDistinct),
+            )
             .unwrap();
         employee_relates
             .set_annotation(
                 &mut snapshot,
                 &type_manager,
+                &thing_manager,
                 RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(2))),
             )
             .unwrap();
         let employee_type = employee_relates.role();
 
-        employment_type.create_relates(&mut snapshot, &type_manager, employer_role, Ordering::Ordered).unwrap();
+        employment_type
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, employer_role, Ordering::Ordered, None)
+            .unwrap();
         let employer_relates =
-            employment_type.get_relates_of_role(&snapshot, &type_manager, employer_role).unwrap().unwrap();
+            employment_type.get_relates_role_name(&snapshot, &type_manager, employer_role).unwrap().unwrap();
         employer_relates
-            .set_annotation(&mut snapshot, &type_manager, RelatesAnnotation::Distinct(AnnotationDistinct))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Distinct(AnnotationDistinct),
+            )
             .unwrap();
         employer_relates
             .set_annotation(
                 &mut snapshot,
                 &type_manager,
+                &thing_manager,
                 RelatesAnnotation::Cardinality(AnnotationCardinality::new(1, Some(2))),
             )
             .unwrap();
@@ -411,8 +457,8 @@ fn role_player_distinct() {
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         let company_type = type_manager.create_entity_type(&mut snapshot, &company_label).unwrap();
-        person_type.set_plays(&mut snapshot, &type_manager, employee_type.clone()).unwrap();
-        company_type.set_plays(&mut snapshot, &type_manager, employee_type.clone()).unwrap();
+        person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employee_type.clone()).unwrap();
+        company_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employer_type.clone()).unwrap();
 
         let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
         let company_1 = thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
@@ -441,10 +487,10 @@ fn role_player_distinct() {
         assert_eq!(employment_1.get_players(&snapshot, &thing_manager).count(), 2);
         assert_eq!(employment_2.get_players(&snapshot, &thing_manager).count(), 3);
 
-        assert_eq!(person_1.get_relations(&snapshot, &thing_manager).count(), 2);
-        assert_eq!(company_1.get_relations(&snapshot, &thing_manager).count(), 1);
-        assert_eq!(company_2.get_relations(&snapshot, &thing_manager).count(), 1);
-        assert_eq!(company_3.get_relations(&snapshot, &thing_manager).count(), 1);
+        assert_eq!(person_1.get_relations_roles(&snapshot, &thing_manager).count(), 2);
+        assert_eq!(company_1.get_relations_roles(&snapshot, &thing_manager).count(), 1);
+        assert_eq!(company_2.get_relations_roles(&snapshot, &thing_manager).count(), 1);
+        assert_eq!(company_3.get_relations_roles(&snapshot, &thing_manager).count(), 1);
 
         assert_eq!(person_1.get_indexed_players(&snapshot, &thing_manager).count(), 3);
 
@@ -475,7 +521,7 @@ fn role_player_distinct() {
             .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap())
             .unwrap();
 
-        assert_eq!(person_1.get_relations(&snapshot, &thing_manager).count(), 2);
+        assert_eq!(person_1.get_relations_roles(&snapshot, &thing_manager).count(), 2);
         assert_eq!(person_1.get_indexed_players(&snapshot, &thing_manager).count(), 3);
     }
 }
@@ -499,24 +545,30 @@ fn role_player_duplicates() {
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
         let list_type = type_manager.create_relation_type(&mut snapshot, &list_label).unwrap();
-        list_type.create_relates(&mut snapshot, &type_manager, entry_role_label, Ordering::Unordered).unwrap();
-        let entry_relates = list_type.get_relates_of_role(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
+        list_type
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Unordered, None)
+            .unwrap();
+        let entry_relates =
+            list_type.get_relates_role_name(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
         entry_relates
             .set_annotation(
                 &mut snapshot,
                 &type_manager,
+                &thing_manager,
                 RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(4))), // must be small to allow index to kick in
             )
             .unwrap();
         let entry_type = entry_relates.role();
-        list_type.create_relates(&mut snapshot, &type_manager, owner_role_label, Ordering::Unordered).unwrap();
+        list_type
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Unordered, None)
+            .unwrap();
         let owner_type =
-            list_type.get_relates_of_role(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
+            list_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
-        resource_type.set_plays(&mut snapshot, &type_manager, entry_type.clone()).unwrap();
-        group_type.set_plays(&mut snapshot, &type_manager, owner_type.clone()).unwrap();
+        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type.clone()).unwrap();
+        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type.clone()).unwrap();
 
         let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
         let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
@@ -537,7 +589,7 @@ fn role_player_duplicates() {
         assert_eq!(player_counts, 3);
 
         let group_relations_count: u64 = group_1
-            .get_relations(&snapshot, &thing_manager)
+            .get_relations_roles(&snapshot, &thing_manager)
             .map_static(|res| {
                 let (_, _, count) = res.unwrap();
                 count
@@ -546,7 +598,7 @@ fn role_player_duplicates() {
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
-            .get_relations(&snapshot, &thing_manager)
+            .get_relations_roles(&snapshot, &thing_manager)
             .map_static(|res| {
                 let (_, _, count) = res.unwrap();
                 count
@@ -575,7 +627,7 @@ fn role_player_duplicates() {
         assert_eq!(resource_1_indexed_count, 2);
 
         let group_relations_count: u64 = group_1
-            .get_relations(&snapshot, &thing_manager)
+            .get_relations_roles(&snapshot, &thing_manager)
             .map_static(|res| {
                 let (_, _, count) = res.unwrap();
                 count
@@ -614,7 +666,7 @@ fn role_player_duplicates() {
             .unwrap();
 
         let group_relations_count: u64 = group_1
-            .get_relations(&snapshot, &thing_manager)
+            .get_relations_roles(&snapshot, &thing_manager)
             .map_static(|res| {
                 let (_, _, count) = res.unwrap();
                 count
@@ -623,7 +675,7 @@ fn role_player_duplicates() {
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
-            .get_relations(&snapshot, &thing_manager)
+            .get_relations_roles(&snapshot, &thing_manager)
             .map_static(|res| {
                 let (_, _, count) = res.unwrap();
                 count
@@ -669,9 +721,14 @@ fn attribute_string_write_read() {
     let attr_type = {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
-        attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+        attr_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
         attr_type
-            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
 
         snapshot.commit().unwrap();
@@ -745,9 +802,16 @@ fn attribute_struct_write_read() {
         let struct_key = define_struct(&mut snapshot, &type_manager, struct_name, fields);
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
         attr_type
-            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
-        attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
+        attr_type
+            .set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Struct(struct_key.clone()))
+            .unwrap();
         snapshot.commit().unwrap();
         struct_key
     };
@@ -826,9 +890,16 @@ fn read_attribute_struct_by_field() {
         let mut snapshot = storage.clone().open_snapshot_write();
         let struct_key = define_struct(&mut snapshot, &type_manager, struct_spec.0, struct_spec.1);
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
-        attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
         attr_type
-            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Struct(struct_key.clone()))
+            .unwrap();
+        attr_type
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
             .unwrap();
         let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
         snapshot.commit().unwrap();

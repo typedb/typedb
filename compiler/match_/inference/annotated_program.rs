@@ -107,9 +107,9 @@ pub mod tests {
         let function = translate_function(&function_index, &typeql_function).unwrap();
         let entry = translate_match(&function_index, &typeql_match).unwrap().finish();
         let (_tmp_dir, storage) = setup_storage();
-        let (type_manager, _) = managers();
+        let (type_manager, thing_manager) = managers();
         let ((type_animal, type_cat, type_dog), _, _) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager);
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
         let empty_cache = IndexedAnnotatedFunctions::empty();
 
         let snapshot = storage.clone().open_snapshot_read();

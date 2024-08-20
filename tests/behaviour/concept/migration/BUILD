@@ -12,7 +12,7 @@ rust_test(
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
     ],
-    data = ["@vaticle_typedb_behaviour//concept/validation:function.feature"],
+    data = ["@vaticle_typedb_behaviour//concept/migration:function.feature"],
 )
 
 rust_test(
@@ -22,7 +22,7 @@ rust_test(
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
     ],
-    data = ["@vaticle_typedb_behaviour//concept/validation:data-validation.feature"],
+    data = ["@vaticle_typedb_behaviour//concept/migration:data-validation.feature"],
 )
 
 rust_test(
@@ -32,7 +32,7 @@ rust_test(
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
     ],
-    data = ["@vaticle_typedb_behaviour//concept/validation:migration.feature"],
+    data = ["@vaticle_typedb_behaviour//concept/migration:migration.feature"],
 )
 
 checkstyle_test(
