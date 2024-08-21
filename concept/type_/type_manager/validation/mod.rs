@@ -164,7 +164,7 @@ pub enum SchemaValidationError {
     CannotUnsetInheritedEdgeAnnotation(AnnotationCategory, Label<'static>, Label<'static>),
     CannotUnsetInheritedValueType(ValueType, Label<'static>),
     ValueTypeNotCompatibleWithInheritedValueType(Label<'static>, Label<'static>, ValueType, ValueType),
-    RedundantValueTypeDeclarationAsItsAlreadyInherited(Label<'static>, Label<'static>, ValueType, ValueType),
+    CannotRedeclareInheritedValueTypeWithoutSpecialization(Label<'static>, Label<'static>, ValueType, ValueType),
     DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(AnnotationCategory, AnnotationCategory, Label<'static>),
     DeclaredCapabilityAnnotationIsNotCompatibleWithInheritedAnnotation(
         AnnotationCategory,
@@ -338,7 +338,7 @@ impl Error for SchemaValidationError {
             Self::CannotUnsetInheritedEdgeAnnotation(_, _, _) => None,
             Self::CannotUnsetInheritedValueType(_, _) => None,
             Self::ValueTypeNotCompatibleWithInheritedValueType(_, _, _, _) => None,
-            Self::RedundantValueTypeDeclarationAsItsAlreadyInherited(_, _, _, _) => None,
+            Self::CannotRedeclareInheritedValueTypeWithoutSpecialization(_, _, _, _) => None,
             Self::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(_, _, _) => None,
             Self::DeclaredCapabilityAnnotationIsNotCompatibleWithInheritedAnnotation(_, _, _, _) => None,
             Self::AnnotationIsNotCompatibleWithDeclaredAnnotation(_, _, _) => None,

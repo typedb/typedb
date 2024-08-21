@@ -103,7 +103,7 @@ async fn typeql_define(context: &mut Context, may_error: MayError, step: &Step) 
             &tx.thing_manager,
             typeql_define,
         );
-        assert_eq!(may_error.expects_error(), result.is_err(), "{:?}", result);
+        may_error.check(&result);
     });
 }
 
@@ -111,7 +111,7 @@ async fn typeql_define(context: &mut Context, may_error: MayError, step: &Step) 
 #[step(expr = r"typeql insert{may_error}")]
 async fn typeql_insert(context: &mut Context, may_error: MayError, step: &Step) {
     let result = execute_insert_query(context, step.docstring.as_ref().unwrap().as_str());
-    assert_eq!(may_error.expects_error(), result.is_err());
+    may_error.check_either_err(&result);
 }
 
 #[apply(generic_step)]

@@ -19,6 +19,7 @@ use concept::{
         plays::{Plays, PlaysAnnotation},
         relates::{Relates, RelatesAnnotation},
         relation_type::RelationTypeAnnotation,
+        role_type::RoleTypeAnnotation,
         type_manager::TypeManager,
         Ordering, OwnerAPI, PlayerAPI,
     },
@@ -44,6 +45,7 @@ use typeql::{
     type_::Optional,
     Definable, ScopedLabel, TypeRef, TypeRefAny,
 };
+use concept::type_::attribute_type::AttributeType;
 
 use crate::{
     util::{resolve_type, resolve_value_type, type_ref_to_label_and_ordering},
@@ -59,12 +61,25 @@ macro_rules! try_unwrap {
         }
     };
 }
+
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {
         $iterable.iter().filter_map(|item| if let $variant(inner) = item { Some(inner) } else { None })
     };
 }
 pub(crate) use filter_variants;
+
+macro_rules! verify_empty_annotations_for_capability {
+    ($capability:ident, $annotation_error:path) => {
+        if let Some(typeql_annotation) = &$capability.annotations.first() {
+            let annotation =
+                translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+            Err(DefineError::IllegalAnnotation { source: $annotation_error(annotation.category()) })
+        } else {
+            Ok(())
+        }
+    };
+}
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,
@@ -96,28 +111,23 @@ fn process_type_declarations(
     thing_manager: &ThingManager,
     definables: &[Definable],
 ) -> Result<(), DefineError> {
-    // TODO: Idempotency checks.
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
     declarations.clone().try_for_each(|declaration| define_types(snapshot, type_manager, declaration))?;
     declarations
         .clone()
         .try_for_each(|declaration| define_type_annotations(snapshot, type_manager, thing_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| define_sub(snapshot, type_manager, thing_manager, declaration))?;
     declarations
         .clone()
-        .try_for_each(|declaration| define_capabilities_sub(snapshot, type_manager, thing_manager, declaration))?;
-    declarations.clone().try_for_each(|declaration| define_capabilities_alias(snapshot, type_manager, declaration))?;
-    declarations.clone().try_for_each(|declaration| {
-        define_capabilities_value_type(snapshot, type_manager, thing_manager, declaration)
-    })?;
+        .try_for_each(|declaration| define_value_type(snapshot, type_manager, thing_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| define_alias(snapshot, type_manager, declaration))?;
     declarations
         .clone()
-        .try_for_each(|declaration| define_capabilities_relates(snapshot, type_manager, thing_manager, declaration))?;
+        .try_for_each(|declaration| define_relates(snapshot, type_manager, thing_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| define_owns(snapshot, type_manager, thing_manager, declaration))?;
     declarations
         .clone()
-        .try_for_each(|declaration| define_capabilities_owns(snapshot, type_manager, thing_manager, declaration))?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| define_capabilities_plays(snapshot, type_manager, thing_manager, declaration))?;
+        .try_for_each(|declaration| define_plays(snapshot, type_manager, thing_manager, declaration))?;
     Ok(())
 }
 
@@ -179,8 +189,7 @@ fn get_struct_field_value_type_optionality(
                 .map_err(|source| DefineError::StructFieldCouldNotResolveValueType { source })?;
             Ok((value_type, optional))
         }
-        TypeRefAny::Type(TypeRef::Variable(_))
-        | TypeRefAny::Optional(Optional { inner: TypeRef::Variable(_), .. }) => {
+        TypeRefAny::Type(TypeRef::Variable(_)) | TypeRefAny::Optional(Optional { inner: TypeRef::Variable(_), .. }) => {
             return Err(DefineError::StructFieldIllegalVariable { field_declaration: field.clone() });
         }
         TypeRefAny::List(_) => {
@@ -203,19 +212,34 @@ fn define_types(
             return Err(DefineError::RoleTypeDirectCreate { type_declaration: type_declaration.clone() })?;
         }
         Some(token::Kind::Entity) => {
-            type_manager.create_entity_type(snapshot, &label).map(|x| answer::Type::Entity(x)).map_err(|err| {
-                DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
-            })?;
+            let existing = type_manager
+                .get_entity_type(snapshot, &label)
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+            if existing.is_none() {
+                type_manager.create_entity_type(snapshot, &label).map(|x| answer::Type::Entity(x)).map_err(|err| {
+                    DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
+                })?;
+            }
         }
         Some(token::Kind::Relation) => {
-            type_manager.create_relation_type(snapshot, &label).map(|x| answer::Type::Relation(x)).map_err(|err| {
-                DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
-            })?;
+            let existing = type_manager
+                .get_relation_type(snapshot, &label)
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+            if existing.is_none() {
+                type_manager.create_relation_type(snapshot, &label).map(|x| answer::Type::Relation(x)).map_err(
+                    |err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() },
+                )?;
+            }
         }
         Some(token::Kind::Attribute) => {
-            type_manager.create_attribute_type(snapshot, &label).map(|x| answer::Type::Attribute(x)).map_err(
-                |err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() },
-            )?;
+            let existing = type_manager
+                .get_attribute_type(snapshot, &label)
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+            if existing.is_none() {
+                type_manager.create_attribute_type(snapshot, &label).map(|x| answer::Type::Attribute(x)).map_err(
+                    |err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() },
+                )?;
+            }
         }
     }
     Ok(())
@@ -250,6 +274,9 @@ fn define_type_annotations(
             TypeEnum::Attribute(attribute) => {
                 let converted: AttributeTypeAnnotation = AttributeTypeAnnotation::try_from(annotation.clone())
                     .map_err(|source| DefineError::IllegalAnnotation { source })?;
+                if converted.is_value_type_annotation() {
+                    return Err(DefineError::IllegalAnnotation { source: AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()) });
+                }
                 attribute
                     .set_annotation(snapshot, type_manager, thing_manager, converted)
                     .map_err(|source| DefineError::SetAnnotation { source, label: label.to_owned(), annotation })?;
@@ -260,7 +287,7 @@ fn define_type_annotations(
     Ok(())
 }
 
-fn define_capabilities_alias(
+fn define_alias(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
@@ -270,10 +297,20 @@ fn define_capabilities_alias(
         .iter()
         .filter_map(|capability| try_unwrap!(CapabilityBase::Alias = &capability.base))
         .try_for_each(|_| Err(DefineError::Unimplemented))?;
+
+    // TODO: Uncomment when alias is implemented
+    // define_alias_annotations(capability)?;
+
     Ok(())
 }
 
-fn define_capabilities_sub(
+fn define_alias_annotations(
+    typeql_capability: &Capability,
+) -> Result<(), DefineError> {
+    verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForAlias)
+}
+
+fn define_sub(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -315,11 +352,19 @@ fn define_capabilities_sub(
             _ => unreachable!(),
         }
         .map_err(|source| DefineError::SetSupertype { sub: sub.clone(), source })?;
+
+        define_sub_annotations(capability)?;
     }
     Ok(())
 }
 
-fn define_capabilities_value_type(
+fn define_sub_annotations(
+    typeql_capability: &Capability,
+) -> Result<(), DefineError> {
+    verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub)
+}
+
+fn define_value_type(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -339,11 +384,36 @@ fn define_capabilities_value_type(
         attribute_type
             .set_value_type(snapshot, type_manager, thing_manager, value_type.clone())
             .map_err(|source| DefineError::SetValueType { label: label.to_owned(), value_type, source })?;
+
+        define_value_type_annotations(snapshot, type_manager, thing_manager, attribute_type.clone(), &label, capability)?;
     }
     Ok(())
 }
 
-fn define_capabilities_relates(
+fn define_value_type_annotations<'a>(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    attribute_type: AttributeType<'a>,
+    attribute_type_label: &Label<'a>,
+    typeql_capability: &Capability,
+) -> Result<(), DefineError> {
+    for typeql_annotation in &typeql_capability.annotations {
+        let annotation =
+            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+        let converted: AttributeTypeAnnotation = AttributeTypeAnnotation::try_from(annotation.clone())
+            .map_err(|source| DefineError::IllegalAnnotation { source })?;
+        if !converted.is_value_type_annotation() {
+            return Err(DefineError::IllegalAnnotation { source: AnnotationError::UnsupportedAnnotationForValueType(annotation.category()) });
+        }
+        attribute_type
+            .set_annotation(snapshot, type_manager, thing_manager, converted)
+            .map_err(|source| DefineError::SetAnnotation { source, label: attribute_type_label.clone().into_owned(), annotation })?;
+    }
+    Ok(())
+}
+
+fn define_relates(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -413,28 +483,21 @@ fn define_capabilities_relates(
                 .map_err(|source| DefineError::CreateRelates { source, relates: relates.to_owned() })?
         };
 
-        define_capabilities_relates_overridden(
+        define_relates_annotations(
             snapshot,
             type_manager,
             thing_manager,
             &label,
             created.clone(),
-            relates,
-        )?;
-        define_capabilities_relates_annotations(
-            snapshot,
-            type_manager,
-            thing_manager,
-            &label,
-            created,
             &capability,
             is_new,
         )?;
+        define_relates_overridden(snapshot, type_manager, thing_manager, &label, created, relates)?;
     }
     Ok(())
 }
 
-fn define_capabilities_relates_overridden<'a>(
+fn define_relates_overridden<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -458,7 +521,7 @@ fn define_capabilities_relates_overridden<'a>(
     Ok(())
 }
 
-fn define_capabilities_relates_annotations<'a>(
+fn define_relates_annotations<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -470,20 +533,39 @@ fn define_capabilities_relates_annotations<'a>(
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
-        let relates_annotation = RelatesAnnotation::try_from(annotation.clone())
-            .map_err(|source| DefineError::IllegalAnnotation { source })?;
-        // New relates should set Cardinality on initialization
-        if matches!(relates_annotation, RelatesAnnotation::Cardinality(_)) && is_new {
-            continue;
+        match RelatesAnnotation::try_from(annotation.clone()) {
+            Ok(relates_annotation) => {
+                // New relates should set Cardinality on initialization
+                if matches!(relates_annotation, RelatesAnnotation::Cardinality(_)) && is_new {
+                    continue;
+                }
+                relates.set_annotation(snapshot, type_manager, thing_manager, relates_annotation).map_err(
+                    |source| DefineError::SetAnnotation {
+                        label: relation_label.clone().into_owned(),
+                        source,
+                        annotation,
+                    },
+                )?;
+            }
+            Err(_) => match RoleTypeAnnotation::try_from(annotation.clone()) {
+                Ok(role_type_annotation) => {
+                    relates
+                        .role()
+                        .set_annotation(snapshot, type_manager, thing_manager, role_type_annotation)
+                        .map_err(|source| DefineError::SetAnnotation {
+                            label: relation_label.clone().into_owned(),
+                            source,
+                            annotation,
+                        })?;
+                }
+                Err(source) => return Err(DefineError::IllegalAnnotation { source }),
+            },
         }
-        relates.set_annotation(snapshot, type_manager, thing_manager, relates_annotation).map_err(|source| {
-            DefineError::SetAnnotation { label: relation_label.clone().into_owned(), source, annotation }
-        })?
     }
     Ok(())
 }
 
-fn define_capabilities_owns(
+fn define_owns(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -518,13 +600,13 @@ fn define_capabilities_owns(
             }
         };
 
-        define_capabilities_owns_overridden(snapshot, type_manager, thing_manager, &label, created.clone(), owns)?;
-        define_capabilities_owns_annotations(snapshot, type_manager, thing_manager, &label, created, &capability)?;
+        define_owns_annotations(snapshot, type_manager, thing_manager, &label, created.clone(), &capability)?;
+        define_owns_overridden(snapshot, type_manager, thing_manager, &label, created, owns)?;
     }
     Ok(())
 }
 
-fn define_capabilities_owns_overridden<'a>(
+fn define_owns_overridden<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -557,7 +639,7 @@ fn define_capabilities_owns_overridden<'a>(
     Ok(())
 }
 
-fn define_capabilities_owns_annotations<'a>(
+fn define_owns_annotations<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -570,13 +652,14 @@ fn define_capabilities_owns_annotations<'a>(
             translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
         let owns_annotation =
             OwnsAnnotation::try_from(annotation.clone()).map_err(|source| DefineError::IllegalAnnotation { source })?;
-        owns.set_annotation(snapshot, type_manager, thing_manager, owns_annotation)
-            .map_err(|source| DefineError::SetAnnotation { label: owner_label.clone().into_owned(), source, annotation })?;
+        owns.set_annotation(snapshot, type_manager, thing_manager, owns_annotation).map_err(|source| {
+            DefineError::SetAnnotation { label: owner_label.clone().into_owned(), source, annotation }
+        })?;
     }
     Ok(())
 }
 
-fn define_capabilities_plays(
+fn define_plays(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -607,13 +690,13 @@ fn define_capabilities_plays(
             return Err(DefineError::CreatePlaysRoleTypeNotFound { plays: plays.clone() })?;
         };
 
-        define_capabilities_plays_overridden(snapshot, type_manager, thing_manager, &label, created.clone(), plays)?;
-        define_capabilities_plays_annotations(snapshot, type_manager, thing_manager, &label, created, &capability)?;
+        define_plays_annotations(snapshot, type_manager, thing_manager, &label, created.clone(), &capability)?;
+        define_plays_overridden(snapshot, type_manager, thing_manager, &label, created, plays)?;
     }
     Ok(())
 }
 
-fn define_capabilities_plays_overridden<'a>(
+fn define_plays_overridden<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -647,7 +730,7 @@ fn define_capabilities_plays_overridden<'a>(
     Ok(())
 }
 
-fn define_capabilities_plays_annotations<'a>(
+fn define_plays_annotations<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -660,9 +743,9 @@ fn define_capabilities_plays_annotations<'a>(
             translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
         let plays_annotation = PlaysAnnotation::try_from(annotation.clone())
             .map_err(|source| DefineError::IllegalAnnotation { source })?;
-        plays
-            .set_annotation(snapshot, type_manager, thing_manager, plays_annotation)
-            .map_err(|source| DefineError::SetAnnotation { label: player_label.clone().into_owned(), source, annotation })?;
+        plays.set_annotation(snapshot, type_manager, thing_manager, plays_annotation).map_err(|source| {
+            DefineError::SetAnnotation { label: player_label.clone().into_owned(), source, annotation }
+        })?;
     }
     Ok(())
 }

@@ -51,6 +51,21 @@ impl MayError {
         }
     }
 
+    pub fn check_either_err<T, E1, E2>(&self, res: &Result<T, Either<E1, E2>>)
+    where
+        T: fmt::Debug + Clone,
+        E1: fmt::Debug + Clone,
+        E2: fmt::Debug + Clone
+    {
+        match res {
+            Ok(res) => { self.check(&Ok::<T, E1>(res.clone())); }
+            Err(either_err) => match either_err {
+                Either::First(err) => { self.check(&Err::<T, E1>(err.clone())); }
+                Either::Second(err) => { self.check(&Err::<T, E2>(err.clone())); }
+            }
+        }
+    }
+
     pub fn check_concept_write_without_read_errors<T: fmt::Debug>(&self, res: &Result<T, ConceptWriteError>) {
         match self {
             MayError::False => {
@@ -158,6 +173,7 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
+use primitive::either::Either;
 
 impl FromStr for Boolean {
     type Err = String;
@@ -388,7 +404,10 @@ impl FromStr for RootLabelExtended {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "value_type", regex = "(boolean|long|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)")]
+#[param(
+    name = "value_type",
+    regex = "(boolean|long|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)"
+)]
 pub(crate) enum ValueType {
     Boolean,
     Long,
@@ -739,7 +758,7 @@ impl FromStr for Annotations {
                 // TODO: Refactor parsing to support passing ValueTypes into anno.into_typedb
             }
         })
-        .try_collect()?;
+            .try_collect()?;
 
         Ok(Self { typedb_annotations })
     }

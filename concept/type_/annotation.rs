@@ -761,6 +761,9 @@ pub enum AnnotationError {
     UnsupportedAnnotationForRelates(AnnotationCategory),
     UnsupportedAnnotationForPlays(AnnotationCategory),
     UnsupportedAnnotationForOwns(AnnotationCategory),
+    UnsupportedAnnotationForAlias(AnnotationCategory),
+    UnsupportedAnnotationForSub(AnnotationCategory),
+    UnsupportedAnnotationForValueType(AnnotationCategory),
 }
 
 impl fmt::Display for AnnotationError {
@@ -779,6 +782,9 @@ impl Error for AnnotationError {
             Self::UnsupportedAnnotationForRelates(_) => None,
             Self::UnsupportedAnnotationForPlays(_) => None,
             Self::UnsupportedAnnotationForOwns(_) => None,
+            Self::UnsupportedAnnotationForAlias(_) => None,
+            Self::UnsupportedAnnotationForSub(_) => None,
+            Self::UnsupportedAnnotationForValueType(_) => None,
         }
     }
 }
