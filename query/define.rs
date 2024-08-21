@@ -15,10 +15,10 @@ use concept::{
         attribute_type::AttributeTypeAnnotation,
         entity_type::EntityTypeAnnotation,
         object_type::ObjectType,
-        owns::OwnsAnnotation,
-        plays::PlaysAnnotation,
-        relates::RelatesAnnotation,
-        relation_type::{RelationType, RelationTypeAnnotation},
+        owns::{Owns, OwnsAnnotation},
+        plays::{Plays, PlaysAnnotation},
+        relates::{Relates, RelatesAnnotation},
+        relation_type::RelationTypeAnnotation,
         type_manager::TypeManager,
         Ordering, OwnerAPI, PlayerAPI,
     },
@@ -30,11 +30,15 @@ use encoding::{
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
+    annotation::Annotation as TypeQLAnnotation,
     common::token,
     query::schema::Define,
     schema::definable::{
         struct_::Field,
-        type_::{Capability, CapabilityBase},
+        type_::{
+            capability::{Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates},
+            Capability, CapabilityBase,
+        },
         Struct, Type,
     },
     type_::Optional,
@@ -73,7 +77,8 @@ pub(crate) fn execute(
     process_functions(snapshot, type_manager, &define.definables)?;
     Ok(())
 }
-pub(crate) fn process_struct_definitions(
+
+fn process_struct_definitions(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     definables: &[Definable],
@@ -85,13 +90,13 @@ pub(crate) fn process_struct_definitions(
     Ok(())
 }
 
-pub(crate) fn process_type_declarations(
+fn process_type_declarations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     definables: &[Definable],
 ) -> Result<(), DefineError> {
-    // TODO: Overrides; Idempotency checks.
+    // TODO: Idempotency checks.
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
     declarations.clone().try_for_each(|declaration| define_types(snapshot, type_manager, declaration))?;
     declarations
@@ -107,25 +112,16 @@ pub(crate) fn process_type_declarations(
     declarations
         .clone()
         .try_for_each(|declaration| define_capabilities_relates(snapshot, type_manager, thing_manager, declaration))?;
-    // declarations.clone().try_for_each(|declaration| {
-    //     define_capabilities_relates_overrides(snapshot, type_manager, definables)
-    // })?;
     declarations
         .clone()
         .try_for_each(|declaration| define_capabilities_owns(snapshot, type_manager, thing_manager, declaration))?;
-    // declarations.clone().try_for_each(|declaration| {
-    //     define_capabilities_owns_overrides(snapshot, type_manager, definables)
-    // })?;
     declarations
         .clone()
         .try_for_each(|declaration| define_capabilities_plays(snapshot, type_manager, thing_manager, declaration))?;
-    // declarations.clone().try_for_each(|declaration| {
-    //     define_capabilities_plays_overrides(snapshot, type_manager, definables)
-    // })?;
     Ok(())
 }
 
-pub(crate) fn process_functions(
+fn process_functions(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     definables: &[Definable],
@@ -183,8 +179,8 @@ fn get_struct_field_value_type_optionality(
                 .map_err(|source| DefineError::StructFieldCouldNotResolveValueType { source })?;
             Ok((value_type, optional))
         }
-        TypeRefAny::Type(TypeRef::Variable(variable))
-        | TypeRefAny::Optional(Optional { inner: TypeRef::Variable(variable), .. }) => {
+        TypeRefAny::Type(TypeRef::Variable(_))
+        | TypeRefAny::Optional(Optional { inner: TypeRef::Variable(_), .. }) => {
             return Err(DefineError::StructFieldIllegalVariable { field_declaration: field.clone() });
         }
         TypeRefAny::List(_) => {
@@ -369,9 +365,11 @@ fn define_capabilities_relates(
                 role_label: relates.related.clone(),
             }
         })?;
+
         let existing_opt = relation_type
             .get_relates_role_name(snapshot, type_manager, role_label.name.as_str())
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let is_new;
         let created = if let Some(existing_relates) = existing_opt {
             let existing_ordering = existing_relates
                 .role()
@@ -384,22 +382,103 @@ fn define_capabilities_relates(
                     new_ordering: ordering,
                 })?;
             }
+            is_new = false;
             existing_relates
         } else {
+            let init_cardinality = if let Some(typeql_cardinality) =
+                capability.annotations.iter().find(|annotation| matches!(annotation, TypeQLAnnotation::Cardinality(_)))
+            {
+                let annotation = translate_annotation(typeql_cardinality)
+                    .map_err(|source| DefineError::LiteralParseError { source })?;
+                match annotation {
+                    Annotation::Cardinality(card) => Some(card),
+                    other => {
+                        debug_assert!(false, "Expected to translate found typeql annotation for relates to Cardinality. Got {:?} instead", other);
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+            is_new = true;
             relation_type
-                .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering, None) // TODO: Provide card in define instead of None
+                .create_relates(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    role_label.name.as_str(),
+                    ordering,
+                    init_cardinality,
+                )
                 .map_err(|source| DefineError::CreateRelates { source, relates: relates.to_owned() })?
         };
-        // Handle annotations
-        for typeql_annotation in &capability.annotations {
-            let annotation =
-                translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
-            let relates_annotation = RelatesAnnotation::try_from(annotation.clone())
-                .map_err(|source| DefineError::IllegalAnnotation { source })?;
-            created
-                .set_annotation(snapshot, type_manager, thing_manager, relates_annotation)
-                .map_err(|source| DefineError::SetAnnotation { label: label.clone(), source, annotation })?
+
+        define_capabilities_relates_overridden(
+            snapshot,
+            type_manager,
+            thing_manager,
+            &label,
+            created.clone(),
+            relates,
+        )?;
+        define_capabilities_relates_annotations(
+            snapshot,
+            type_manager,
+            thing_manager,
+            &label,
+            created,
+            &capability,
+            is_new,
+        )?;
+    }
+    Ok(())
+}
+
+fn define_capabilities_relates_overridden<'a>(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    relation_label: &Label<'a>,
+    relates: Relates<'a>,
+    typeql_relates: &TypeQLRelates,
+) -> Result<(), DefineError> {
+    if let Some(overridden_label) = &typeql_relates.overridden {
+        let overridden_relates_opt = relates
+            .relation()
+            .get_relates_role_name(snapshot, type_manager, overridden_label.ident.as_str())
+            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        if let Some(overridden_relates) = overridden_relates_opt {
+            relates
+                .set_override(snapshot, type_manager, thing_manager, overridden_relates)
+                .map_err(|source| DefineError::SetOverride { label: relation_label.clone().into_owned(), source })?
+        } else {
+            return Err(DefineError::OverriddenRelatesNotFound { relates: typeql_relates.clone() });
         }
+    }
+    Ok(())
+}
+
+fn define_capabilities_relates_annotations<'a>(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    relation_label: &Label<'a>,
+    relates: Relates<'a>,
+    typeql_capability: &Capability,
+    is_new: bool,
+) -> Result<(), DefineError> {
+    for typeql_annotation in &typeql_capability.annotations {
+        let annotation =
+            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+        let relates_annotation = RelatesAnnotation::try_from(annotation.clone())
+            .map_err(|source| DefineError::IllegalAnnotation { source })?;
+        // New relates should set Cardinality on initialization
+        if matches!(relates_annotation, RelatesAnnotation::Cardinality(_)) && is_new {
+            continue;
+        }
+        relates.set_annotation(snapshot, type_manager, thing_manager, relates_annotation).map_err(|source| {
+            DefineError::SetAnnotation { label: relation_label.clone().into_owned(), source, annotation }
+        })?
     }
     Ok(())
 }
@@ -418,17 +497,15 @@ fn define_capabilities_owns(
         };
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&owns.owned)
             .map_err(|_| DefineError::OwnsAttributeMustBeLabelOrList { owns: owns.clone() })?;
-        let wrapped_attribute_type =
-            resolve_type(snapshot, type_manager, &attr_label).map_err(|source| DefineError::TypeLookup { source })?;
-        let TypeEnum::Attribute(attribute_type) = wrapped_attribute_type else {
-            return Err(err_capability_kind_mismatch(
-                &label,
-                &attr_label,
-                capability,
-                Kind::Attribute,
-                wrapped_attribute_type.kind(),
-            ));
+        let attribute_type_opt = type_manager
+            .get_attribute_type(snapshot, &attr_label)
+            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let attribute_type = if let Some(type_) = attribute_type_opt {
+            type_
+        } else {
+            return Err(DefineError::CreateOwnsAttributeTypeNotFound { owns: owns.clone() })?;
         };
+
         let created = match &type_ {
             TypeEnum::Entity(entity_type) => ObjectType::Entity(entity_type.clone())
                 .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
@@ -440,33 +517,63 @@ fn define_capabilities_owns(
                 return Err(err_unsupported_capability(&label, type_.kind(), capability));
             }
         };
-        for typeql_annotation in &capability.annotations {
-            let annotation =
-                translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
-            let owns_annotation = OwnsAnnotation::try_from(annotation.clone())
-                .map_err(|source| DefineError::IllegalAnnotation { source })?;
-            created
-                .set_annotation(snapshot, type_manager, thing_manager, owns_annotation)
-                .map_err(|source| DefineError::SetAnnotation { label: label.clone(), source, annotation })?;
+
+        define_capabilities_owns_overridden(snapshot, type_manager, thing_manager, &label, created.clone(), owns)?;
+        define_capabilities_owns_annotations(snapshot, type_manager, thing_manager, &label, created, &capability)?;
+    }
+    Ok(())
+}
+
+fn define_capabilities_owns_overridden<'a>(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    owner_label: &Label<'a>,
+    owns: Owns<'a>,
+    typeql_owns: &TypeQLOwns,
+) -> Result<(), DefineError> {
+    if let Some(overridden_label) = &typeql_owns.overridden {
+        let overridden_label = Label::parse_from(overridden_label.ident.as_str());
+        let overridden_attribute_type_opt = type_manager
+            .get_attribute_type(snapshot, &overridden_label)
+            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let overridden_attribute_type = if let Some(type_) = overridden_attribute_type_opt {
+            type_
+        } else {
+            return Err(DefineError::OverriddenOwnsAttributeTypeNotFound { owns: typeql_owns.clone() })?;
+        };
+
+        let overridden_owns_opt = owns
+            .owner()
+            .get_owns_attribute(snapshot, type_manager, overridden_attribute_type)
+            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        if let Some(overridden_owns) = overridden_owns_opt {
+            owns.set_override(snapshot, type_manager, thing_manager, overridden_owns)
+                .map_err(|source| DefineError::SetOverride { label: owner_label.clone().into_owned(), source })?
+        } else {
+            return Err(DefineError::OverriddenOwnsNotFound { owns: typeql_owns.clone() });
         }
     }
     Ok(())
 }
 
-fn err_capability_kind_mismatch(
-    capability_receiver: &Label<'_>,
-    capability_provider: &Label<'_>,
-    capability: &Capability,
-    expected_kind: Kind,
-    actual_kind: Kind,
-) -> DefineError {
-    DefineError::CapabilityKindMismatch {
-        capability_receiver: capability_receiver.clone().into_owned(),
-        capability_provider: capability_provider.clone().into_owned(),
-        capability: capability.clone(),
-        expected_kind,
-        actual_kind,
+fn define_capabilities_owns_annotations<'a>(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    owner_label: &Label<'a>,
+    owns: Owns<'a>,
+    typeql_capability: &Capability,
+) -> Result<(), DefineError> {
+    for typeql_annotation in &typeql_capability.annotations {
+        let annotation =
+            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+        let owns_annotation =
+            OwnsAnnotation::try_from(annotation.clone()).map_err(|source| DefineError::IllegalAnnotation { source })?;
+        owns.set_annotation(snapshot, type_manager, thing_manager, owns_annotation)
+            .map_err(|source| DefineError::SetAnnotation { label: owner_label.clone().into_owned(), source, annotation })?;
     }
+    Ok(())
 }
 
 fn define_capabilities_plays(
@@ -497,18 +604,65 @@ fn define_capabilities_plays(
                 .set_plays(snapshot, type_manager, thing_manager, role_type)
                 .map_err(|source| DefineError::CreatePlays { plays: plays.clone(), source })?
         } else {
-            return Err(DefineError::CreatePlaysRoleNotFound { plays: plays.clone() })?;
+            return Err(DefineError::CreatePlaysRoleTypeNotFound { plays: plays.clone() })?;
         };
 
-        for typeql_annotation in &capability.annotations {
-            let annotation =
-                translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
-            let plays_annotation = PlaysAnnotation::try_from(annotation.clone())
-                .map_err(|source| DefineError::IllegalAnnotation { source })?;
-            created
-                .set_annotation(snapshot, type_manager, thing_manager, plays_annotation)
-                .map_err(|source| DefineError::SetAnnotation { label: label.clone(), source, annotation })?;
+        define_capabilities_plays_overridden(snapshot, type_manager, thing_manager, &label, created.clone(), plays)?;
+        define_capabilities_plays_annotations(snapshot, type_manager, thing_manager, &label, created, &capability)?;
+    }
+    Ok(())
+}
+
+fn define_capabilities_plays_overridden<'a>(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    player_label: &Label<'a>,
+    plays: Plays<'a>,
+    typeql_plays: &TypeQLPlays,
+) -> Result<(), DefineError> {
+    if let Some(overridden_label) = &typeql_plays.overridden {
+        let overridden_label = Label::parse_from(overridden_label.ident.as_str());
+        let overridden_role_type_opt = type_manager
+            .get_role_type(snapshot, &overridden_label)
+            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let overridden_role_type = if let Some(type_) = overridden_role_type_opt {
+            type_
+        } else {
+            return Err(DefineError::OverriddenPlaysRoleTypeNotFound { plays: typeql_plays.clone() })?;
+        };
+
+        let overridden_plays_opt = plays
+            .player()
+            .get_plays_role(snapshot, type_manager, overridden_role_type)
+            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        if let Some(overridden_plays) = overridden_plays_opt {
+            plays
+                .set_override(snapshot, type_manager, thing_manager, overridden_plays)
+                .map_err(|source| DefineError::SetOverride { label: player_label.clone().into_owned(), source })?
+        } else {
+            return Err(DefineError::OverriddenPlaysNotFound { plays: typeql_plays.clone() });
         }
+    }
+    Ok(())
+}
+
+fn define_capabilities_plays_annotations<'a>(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    player_label: &Label<'a>,
+    plays: Plays<'a>,
+    typeql_capability: &Capability,
+) -> Result<(), DefineError> {
+    for typeql_annotation in &typeql_capability.annotations {
+        let annotation =
+            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+        let plays_annotation = PlaysAnnotation::try_from(annotation.clone())
+            .map_err(|source| DefineError::IllegalAnnotation { source })?;
+        plays
+            .set_annotation(snapshot, type_manager, thing_manager, plays_annotation)
+            .map_err(|source| DefineError::SetAnnotation { label: player_label.clone().into_owned(), source, annotation })?;
     }
     Ok(())
 }
@@ -519,6 +673,22 @@ fn define_functions(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     Ok(())
+}
+
+fn err_capability_kind_mismatch(
+    capability_receiver: &Label<'_>,
+    capability_provider: &Label<'_>,
+    capability: &Capability,
+    expected_kind: Kind,
+    actual_kind: Kind,
+) -> DefineError {
+    DefineError::CapabilityKindMismatch {
+        capability_receiver: capability_receiver.clone().into_owned(),
+        capability_provider: capability_provider.clone().into_owned(),
+        capability: capability.clone(),
+        expected_kind,
+        actual_kind,
+    }
 }
 
 #[derive(Debug)]
@@ -585,22 +755,40 @@ pub enum DefineError {
         role_label: TypeRefAny,
     },
     CreateRelates {
-        relates: typeql::schema::definable::type_::capability::Relates,
+        relates: TypeQLRelates,
         source: ConceptWriteError,
+    },
+    OverriddenRelatesNotFound {
+        relates: TypeQLRelates,
     },
     CreatePlays {
-        plays: typeql::schema::definable::type_::capability::Plays,
+        plays: TypeQLPlays,
         source: ConceptWriteError,
     },
-    CreatePlaysRoleNotFound {
-        plays: typeql::schema::definable::type_::capability::Plays,
+    CreatePlaysRoleTypeNotFound {
+        plays: TypeQLPlays,
+    },
+    OverriddenPlaysNotFound {
+        plays: TypeQLPlays,
+    },
+    OverriddenPlaysRoleTypeNotFound {
+        plays: TypeQLPlays,
     },
     OwnsAttributeMustBeLabelOrList {
-        owns: typeql::schema::definable::type_::capability::Owns,
+        owns: TypeQLOwns,
     },
     CreateOwns {
-        owns: typeql::schema::definable::type_::capability::Owns,
+        owns: TypeQLOwns,
         source: ConceptWriteError,
+    },
+    CreateOwnsAttributeTypeNotFound {
+        owns: TypeQLOwns,
+    },
+    OverriddenOwnsNotFound {
+        owns: TypeQLOwns,
+    },
+    OverriddenOwnsAttributeTypeNotFound {
+        owns: TypeQLOwns,
     },
     CreateRelatesModifiesExistingOrdering {
         label: Label<'static>,
@@ -614,6 +802,10 @@ pub enum DefineError {
         source: ConceptWriteError,
         label: Label<'static>,
         annotation: Annotation,
+    },
+    SetOverride {
+        source: ConceptWriteError,
+        label: Label<'static>,
     },
     CapabilityKindMismatch {
         capability_receiver: Label<'static>,

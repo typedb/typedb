@@ -64,6 +64,18 @@ pub(crate) fn try_resolve_type(
     Ok(type_)
 }
 
+pub(crate) fn resolve_relates(
+    snapshot: &impl WritableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label<'_>,
+) -> Result<answer::Type, SymbolResolutionError> {
+    match try_resolve_type(snapshot, type_manager, label) {
+        Ok(Some(type_)) => Ok(type_),
+        Ok(None) => Err(SymbolResolutionError::TypeNotFound { label: label.clone().into_owned() }),
+        Err(source) => Err(SymbolResolutionError::UnexpectedConceptRead { source }),
+    }
+}
+
 pub(crate) fn resolve_value_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
