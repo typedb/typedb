@@ -111,19 +111,19 @@ async fn delete_objects_of_type(
     type_label: params::Label,
 ) {
     with_write_tx!(context, |tx| {
-        let object_type = tx.type_manager.get_object_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let object_type = tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         object_root_label.assert(&object_type);
         match object_type {
             ObjectType::Entity(entity_type) => {
-                let mut entity_iterator = tx.thing_manager.get_entities_in(&mut tx.snapshot, entity_type);
+                let mut entity_iterator = tx.thing_manager.get_entities_in(tx.snapshot.as_ref(), entity_type);
                 while let Some(entity) = entity_iterator.next() {
-                    entity.unwrap().delete(&mut tx.snapshot, &tx.thing_manager).unwrap();
+                    entity.unwrap().delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap();
                 }
             }
             ObjectType::Relation(relation_type) => {
-                let mut relation_iterator = tx.thing_manager.get_relations_in(&mut tx.snapshot, relation_type);
+                let mut relation_iterator = tx.thing_manager.get_relations_in(tx.snapshot.as_ref(), relation_type);
                 while let Some(relation) = relation_iterator.next() {
-                    relation.unwrap().delete(&mut tx.snapshot, &tx.thing_manager).unwrap();
+                    relation.unwrap().delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap();
                 }
             }
         }

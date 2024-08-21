@@ -342,13 +342,14 @@ impl TransactionService {
                 database
             } = schema_transaction;
             let mut snapshot = Arc::into_inner(snapshot).unwrap();
-            let (snapshot, type_manager, result) = spawn_blocking(move || {
+            let (snapshot, type_manager, thing_manager, result) = spawn_blocking(move || {
                 let result = QueryManager::new().execute_schema(
                     &mut snapshot,
                     &type_manager,
+                    &thing_manager,
                     query,
                 ).map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
-                (snapshot, type_manager, result)
+                (snapshot, type_manager, thing_manager, result)
             }).await.unwrap();
             result?;
             let transaction = TransactionSchema::from(

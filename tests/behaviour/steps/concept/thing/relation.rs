@@ -111,11 +111,11 @@ async fn relation_remove_count_players_for_role(
     with_write_tx!(context, |tx| {
         let role_type = relation
             .type_()
-            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
-        relation.remove_player_many(&mut tx.snapshot, &tx.thing_manager, role_type, player, count).unwrap();
+        relation.remove_player_many(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player, count).unwrap();
     });
 }
 
@@ -153,12 +153,12 @@ async fn relation_get_players_ordered_is(
     let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
     let actuals = with_read_tx!(context, |tx| {
         let relates = relation.type_().get_relates_role_name(
-            &tx.snapshot,
+            tx.snapshot.as_ref(),
             &tx.type_manager,
             role_label.into_typedb().name().as_str(),
         );
         let role_type = relates.unwrap().unwrap().role();
-        let players = relation.get_players_ordered(&tx.snapshot, &tx.thing_manager, role_type).unwrap();
+        let players = relation.get_players_ordered(tx.snapshot.as_ref(), &tx.thing_manager, role_type).unwrap();
         players.into_iter().map(Object::into_owned).collect_vec()
     });
     let players =
@@ -247,12 +247,12 @@ async fn relation_get_players_for_role_empty(
     let actuals = with_read_tx!(context, |tx| {
         let role_type = relation
             .type_()
-            .get_relates_role_name(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
         relation
-            .get_players_role_type(&tx.snapshot, &tx.thing_manager, role_type)
+            .get_players_role_type(tx.snapshot.as_ref(), &tx.thing_manager, role_type)
             .map_static(|res| res.unwrap().into_owned())
             .collect::<Vec<_>>()
     });

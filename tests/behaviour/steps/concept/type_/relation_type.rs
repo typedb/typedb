@@ -343,8 +343,8 @@ pub async fn relation_role_get_supertype(
             .unwrap();
         let role = relates.role();
         let superrole = role.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap();
-        let relates_override = relates.get_override(&tx.snapshot, &tx.type_manager).unwrap();
-        assert_eq!(relates_override.clone().unwrap(), *superrole.get_relates(&tx.snapshot, &tx.type_manager).unwrap());
+        let relates_override = relates.get_override(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+        assert_eq!(relates_override.clone().unwrap(), *superrole.get_relates(tx.snapshot.as_ref(), &tx.type_manager).unwrap());
         assert_eq!(
             expected_superrole_label.into_typedb().scoped_name(),
             superrole.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name()
@@ -361,14 +361,14 @@ pub async fn relation_role_get_supertype_exists(
     exists: ExistsOrDoesnt,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
-        let superrole = role.get_supertype(&tx.snapshot, &tx.type_manager).unwrap();
+        let superrole = role.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         exists.check(&superrole, &format!("superrole for role type {}", role_label.into_typedb()));
     });
 }
@@ -383,14 +383,14 @@ pub async fn relation_role_supertypes_is_empty(
     step: &Step,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
-        let is_empty = role.get_supertypes_transitive(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
+        let is_empty = role.get_supertypes_transitive(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(is_empty);
     });
 }
@@ -580,7 +580,7 @@ pub async fn relation_role_set_annotation(
             }
             TypeDBAnnotation::Distinct(_) | TypeDBAnnotation::Cardinality(_) => {
                 res = relates.set_annotation(
-                    &mut tx.snapshot,
+                    Arc::get_mut(&mut tx.snapshot).unwrap(),
                     &tx.type_manager,
                     &tx.thing_manager,
                     parsed_annotation.try_into().unwrap(),

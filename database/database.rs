@@ -35,12 +35,7 @@ use encoding::{
     },
 };
 use function::{function_cache::FunctionCache, FunctionError};
-use storage::{
-    durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    MVCCStorage,
-    recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
-    sequence_number::SequenceNumber, StorageOpenError, StorageResetError,
-};
+use storage::{durability_client::{DurabilityClient, DurabilityClientError, WALClient}, MVCCStorage, recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError}, sequence_number::SequenceNumber, StorageDeleteError, StorageOpenError, StorageResetError};
 
 use crate::DatabaseOpenError::FunctionCacheInitialise;
 
@@ -298,6 +293,13 @@ impl Database<WALClient> {
 
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
         drop(self._statistics_updater);
+        drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
+        drop(Arc::into_inner(self.type_vertex_generator).expect("Cannot get exclusive ownership of inner of Arc<TypeVertexGenerator>"));
+        drop(Arc::into_inner(self.thing_vertex_generator).expect("Cannot get exclusive ownership of inner of Arc<ThingVertexGenerator>"));
+        drop(Arc::into_inner(self.definition_key_generator).expect("Cannot get exclusive ownership of inner of Arc<DefinitionKeyGenerator>"));
+        Arc::into_inner(self.storage).expect("Cannot get exclusive ownership of inner of Arc<MVCCStorage>.")
+            .delete_storage()
+            .map_err(|err| DatabaseDeleteError::StorageDelete { source: err })?;
         let path = self.path;
         fs::remove_dir_all(path).map_err(|err| DatabaseDeleteError::DirectoryDelete { source: err })?;
         Ok(())
@@ -343,7 +345,7 @@ fn make_update_statistics_fn(
     schema_txn_lock: Arc<RwLock<()>>,
 ) -> impl Fn() {
     move || {
-        let mut _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
+        let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
         let mut thing_statistics = (*schema.read().unwrap().thing_statistics).clone();
         thing_statistics.may_synchronise(&storage).ok();
         schema.write().unwrap().thing_statistics = Arc::new(thing_statistics);
@@ -416,6 +418,7 @@ impl Error for DatabaseCheckpointError {
 
 #[derive(Debug)]
 pub enum DatabaseDeleteError {
+    StorageDelete { source: StorageDeleteError },
     DirectoryDelete { source: io::Error },
     InUse {},
 }
@@ -429,6 +432,7 @@ impl fmt::Display for DatabaseDeleteError {
 impl Error for DatabaseDeleteError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
+            Self::StorageDelete { source, .. } => Some(source),
             Self::DirectoryDelete { source } => Some(source),
             Self::InUse { .. } => None,
         }

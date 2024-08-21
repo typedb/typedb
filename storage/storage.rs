@@ -300,24 +300,24 @@ impl<Durability> MVCCStorage<Durability> {
         checkpoint.add_storage(&self.keyspaces, self.read_watermark())
     }
 
-    pub fn delete_storage(self) -> Result<(), Vec<StorageDeleteError>>
+    pub fn delete_storage(self) -> Result<(), StorageDeleteError>
     where
         Durability: DurabilityClient,
     {
         use StorageDeleteError::{DirectoryDelete, DurabilityDelete, KeyspaceDelete};
 
         self.keyspaces.delete().map_err(|errs| {
-            errs.into_iter().map(|error| KeyspaceDelete { name: self.name.clone(), source: error }).collect_vec()
+            KeyspaceDelete { name: self.name.clone(), source: errs }
         })?;
 
         self.durability_client
             .delete_durability()
-            .map_err(|err| vec![DurabilityDelete { name: self.name.clone(), source: err }])?;
+            .map_err(|err| DurabilityDelete { name: self.name.clone(), source: err })?;
 
         if self.path.exists() {
             std::fs::remove_dir_all(&self.path).map_err(|error| {
                 error!("Failed to delete storage {}, received error: {}", self.name, error);
-                vec![DirectoryDelete { name: self.name.clone(), source: error }]
+                DirectoryDelete { name: self.name.clone(), source: error }
             })?;
         }
 
@@ -537,7 +537,7 @@ impl Error for StorageCommitError {
 #[derive(Debug)]
 pub enum StorageDeleteError {
     DurabilityDelete { name: String, source: DurabilityClientError },
-    KeyspaceDelete { name: String, source: KeyspaceDeleteError },
+    KeyspaceDelete { name: String, source: Vec<KeyspaceDeleteError> },
     DirectoryDelete { name: String, source: io::Error },
 }
 
@@ -550,7 +550,7 @@ impl fmt::Display for StorageDeleteError {
 impl Error for StorageDeleteError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::KeyspaceDelete { source, .. } => Some(source),
+            Self::KeyspaceDelete { source, .. } => Some(source.get(0).unwrap()), // TODO: there are technically many sources?
             Self::DirectoryDelete { source, .. } => Some(source),
             Self::DurabilityDelete { source, .. } => Some(source),
         }

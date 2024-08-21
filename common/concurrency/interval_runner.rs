@@ -11,17 +11,21 @@ use std::{
 };
 
 pub struct IntervalRunner {
-    shutdown_sink: SyncSender<()>,
+    shutdown_sink: SyncSender<SyncSender<()>>,
 }
 
 impl IntervalRunner {
     pub fn new(mut action: impl FnMut() + Send + 'static, interval: Duration) -> Self {
-        let (sender, receiver) = sync_channel(0);
+        let (sender, receiver) = sync_channel::<SyncSender<()>>(0);
         thread::spawn(move || {
             loop {
                 action();
                 match receiver.recv_timeout(interval) {
-                    Ok(()) => break,
+                    Ok(done_sender) => {
+                        drop(action);
+                        done_sender.send(()).unwrap();
+                        break;
+                    },
                     Err(RecvTimeoutError::Timeout) => (),
                     Err(RecvTimeoutError::Disconnected) => break, // TODO log?
                 }
@@ -33,6 +37,8 @@ impl IntervalRunner {
 
 impl Drop for IntervalRunner {
     fn drop(&mut self) {
-        self.shutdown_sink.send(()).unwrap()
+        let (done_sender, done_receiver) = sync_channel(0);
+        self.shutdown_sink.send(done_sender).unwrap();
+        done_receiver.recv().unwrap()
     }
 }

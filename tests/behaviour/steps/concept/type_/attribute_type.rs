@@ -85,10 +85,10 @@ pub async fn attribute_type_get_value_type_declared(
 ) {
     with_read_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         assert_eq!(
-            value_type.into_typedb(&tx.type_manager, &tx.snapshot),
-            attribute_type.get_value_type_declared(&tx.snapshot, &tx.type_manager).unwrap().unwrap()
+            value_type.into_typedb(&tx.type_manager, tx.snapshot.as_ref()),
+            attribute_type.get_value_type_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap()
         );
     });
 }
@@ -98,8 +98,8 @@ pub async fn attribute_type_get_value_type_declared(
 pub async fn attribute_type_get_value_type_declared_is_null(context: &mut Context, type_label: params::Label) {
     with_read_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        assert_eq!(None, attribute_type.get_value_type_declared(&tx.snapshot, &tx.type_manager).unwrap());
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        assert_eq!(None, attribute_type.get_value_type_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap());
     });
 }
 

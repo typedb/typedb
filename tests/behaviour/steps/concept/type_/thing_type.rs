@@ -410,20 +410,20 @@ pub async fn type_unset_supertype(
         match root_label.into_typedb() {
             Kind::Attribute => {
                 let thistype =
-                    tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-                let res = thistype.unset_supertype(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
+                    tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+                let res = thistype.unset_supertype(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
                 may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Entity => {
                 let thistype =
-                    tx.type_manager.get_entity_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-                let res = thistype.unset_supertype(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
+                    tx.type_manager.get_entity_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+                let res = thistype.unset_supertype(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
                 may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Relation => {
                 let thistype =
-                    tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-                let res = thistype.unset_supertype(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
+                    tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+                let res = thistype.unset_supertype(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
                 may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),
@@ -460,7 +460,7 @@ pub async fn type_get_supertype_exists(
 ) {
     with_read_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
-            let supertype = type_.get_supertype(&tx.snapshot, &tx.type_manager).unwrap();
+            let supertype = type_.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
             exists.check(&supertype, &format!("supertype for type {}", type_label.into_typedb()));
         });
     });
@@ -559,38 +559,38 @@ pub async fn get_types_contain(
         match root_label {
             RootLabelExtended::Entity => &tx
                 .type_manager
-                .get_entity_types(&tx.snapshot)
+                .get_entity_types(tx.snapshot.as_ref())
                 .unwrap()
                 .into_iter()
-                .map(|type_| type_.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
+                .map(|type_| type_.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
                 .collect_vec(),
             RootLabelExtended::Relation => &tx
                 .type_manager
-                .get_relation_types(&tx.snapshot)
+                .get_relation_types(tx.snapshot.as_ref())
                 .unwrap()
                 .into_iter()
-                .map(|type_| type_.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
+                .map(|type_| type_.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
                 .collect_vec(),
             RootLabelExtended::Attribute => &tx
                 .type_manager
-                .get_attribute_types(&tx.snapshot)
+                .get_attribute_types(tx.snapshot.as_ref())
                 .unwrap()
                 .into_iter()
-                .map(|type_| type_.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
+                .map(|type_| type_.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
                 .collect_vec(),
             RootLabelExtended::Role => &tx
                 .type_manager
-                .get_role_types(&tx.snapshot)
+                .get_role_types(tx.snapshot.as_ref())
                 .unwrap()
                 .into_iter()
-                .map(|type_| type_.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
+                .map(|type_| type_.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
                 .collect_vec(),
             RootLabelExtended::Object => &tx
                 .type_manager
-                .get_object_types(&tx.snapshot)
+                .get_object_types(tx.snapshot.as_ref())
                 .unwrap()
                 .into_iter()
-                .map(|type_| type_.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
+                .map(|type_| type_.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
                 .collect_vec(),
         }
     });
@@ -602,11 +602,11 @@ pub async fn get_types_contain(
 pub async fn get_types_empty(context: &mut Context, root_label: RootLabelExtended, is_empty_or_not: IsEmptyOrNot) {
     let is_empty = with_read_tx!(context, |tx| {
         match root_label {
-            RootLabelExtended::Entity => &tx.type_manager.get_entity_types(&tx.snapshot).unwrap().is_empty(),
-            RootLabelExtended::Relation => &tx.type_manager.get_relation_types(&tx.snapshot).unwrap().is_empty(),
-            RootLabelExtended::Attribute => &tx.type_manager.get_attribute_types(&tx.snapshot).unwrap().is_empty(),
-            RootLabelExtended::Role => &tx.type_manager.get_role_types(&tx.snapshot).unwrap().is_empty(),
-            RootLabelExtended::Object => &tx.type_manager.get_object_types(&tx.snapshot).unwrap().is_empty(),
+            RootLabelExtended::Entity => &tx.type_manager.get_entity_types(tx.snapshot.as_ref()).unwrap().is_empty(),
+            RootLabelExtended::Relation => &tx.type_manager.get_relation_types(tx.snapshot.as_ref()).unwrap().is_empty(),
+            RootLabelExtended::Attribute => &tx.type_manager.get_attribute_types(tx.snapshot.as_ref()).unwrap().is_empty(),
+            RootLabelExtended::Role => &tx.type_manager.get_role_types(tx.snapshot.as_ref()).unwrap().is_empty(),
+            RootLabelExtended::Object => &tx.type_manager.get_object_types(tx.snapshot.as_ref()).unwrap().is_empty(),
         }
     });
     is_empty_or_not.check(*is_empty)

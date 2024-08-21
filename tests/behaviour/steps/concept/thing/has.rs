@@ -65,8 +65,8 @@ fn object_unset_has_ordered_impl(
 ) -> Result<(), ConceptWriteError> {
     with_write_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
-        object.unset_has_ordered(&mut tx.snapshot, &tx.thing_manager, attribute_type)
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
+        object.unset_has_ordered(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, attribute_type)
     })
 }
 
@@ -181,9 +181,9 @@ async fn object_get_has_list_is(
     object_root.assert(&object.type_());
     let actuals = with_read_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
         object
-            .get_has_type_ordered(&tx.snapshot, &tx.thing_manager, attribute_type)
+            .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
             .unwrap()
             .into_iter()
             .map(|attr| attr.into_owned())
@@ -209,7 +209,7 @@ async fn object_get_has_is_empty(
     object_root.assert(&object.type_());
     let actuals = with_read_tx!(context, |tx| {
         object
-            .get_has_unordered(&tx.snapshot, &tx.thing_manager)
+            .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager)
             .map_static(|res| {
                 let (attribute, _count) = res.unwrap();
                 attribute.into_owned()

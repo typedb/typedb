@@ -30,6 +30,7 @@ use storage::durability_client::WALClient;
 use storage::snapshot::SnapshotError;
 
 use crate::Database;
+use crate::transaction::SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
 
 #[derive(Debug)]
 pub struct TransactionRead<D> {
@@ -127,12 +128,18 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 
     pub fn commit(mut self) -> Result<(), DataCommitError> {
+        let database = self.database.clone(); // TODO: can we get away without cloning the database before?
+        let result = self.try_commit();
+        database.release_write_transaction();
+        result
+    }
+
+    pub fn try_commit(mut self) -> Result<(), DataCommitError> {
         let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
         self.thing_manager.finalise(&mut snapshot)
             .map_err(|errs| DataCommitError::ConceptWriteErrors { source: errs })?;
         drop(self.type_manager);
         snapshot.commit().map_err(|err| DataCommitError::SnapshotError { source: err })?;
-        self.database.release_write_transaction();
         Ok(())
     }
 
@@ -213,10 +220,16 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 
     pub fn commit(mut self) -> Result<(), SchemaCommitError> {
+        let database = self.database.clone(); // TODO: can we get away without cloning the database before?
+        let result = self.try_commit();
+        database.release_schema_transaction();
+        result
+    }
+
+    fn try_commit(mut self) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
         let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
-
-        self.type_manager.validate(&self.snapshot).map_err(|errors| ConceptWrite { errors })?;
+        self.type_manager.validate(&mut snapshot).map_err(|errors| ConceptWrite { errors })?;
 
         self.thing_manager.finalise(&mut snapshot).map_err(|errors| ConceptWrite { errors })?;
         drop(self.thing_manager);
@@ -254,12 +267,9 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
         // replace statistics
         thing_statistics.may_synchronise(&self.database.storage).map_err(|error| Statistics { source: error })?;
-
         schema.thing_statistics = Arc::new(thing_statistics);
 
         *schema_commit_guard = schema;
-
-        self.database.release_schema_transaction();
         Ok(())
     }
 

@@ -97,7 +97,7 @@ pub async fn get_owns_set_override(
                 .unwrap()
                 .unwrap();
             let overridden_owns_opt =
-                owner_supertype.get_owns_attribute(&tx.snapshot, &tx.type_manager, overridden_attr_type).unwrap();
+                owner_supertype.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, overridden_attr_type).unwrap();
 
             if let Some(overridden_owns) = overridden_owns_opt {
                 let res = owns.set_override(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, overridden_owns);
