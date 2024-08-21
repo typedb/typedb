@@ -99,7 +99,7 @@ fn execute_insert(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.visible_variables.get(*v).unwrap().clone(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let (entry_annotations, _) = infer_types(
@@ -137,7 +137,7 @@ fn execute_insert(
         // Copy input row in
         insert_executor.execute_insert(
             snapshot,
-            &thing_manager,
+            thing_manager,
             &mut Row::new(output_rows.last_mut().unwrap(), &mut output_multiplicity),
         )?;
     }
@@ -173,7 +173,7 @@ fn execute_delete(
             &block,
             vec![],
             snapshot,
-            &type_manager,
+            type_manager,
             &IndexedAnnotatedFunctions::empty(),
             &translation_context.variable_registry,
         )
@@ -186,7 +186,7 @@ fn execute_delete(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.visible_variables.get(*v).unwrap().clone(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let delete_plan = compiler::delete::program::compile(
@@ -221,7 +221,7 @@ fn has() {
         &type_manager,
         &thing_manager,
         "insert $p isa person, has age 10;",
-        &vec![],
+        &[],
         vec![vec![]],
     )
     .unwrap();
@@ -249,7 +249,7 @@ fn test() {
          $p isa person; $g isa group;
          (member: $p, group: $g) isa membership;
     ";
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &vec![], vec![vec![]]).unwrap();
+    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
 }
 
@@ -265,7 +265,7 @@ fn relation() {
          $p isa person; $g isa group;
          (member: $p, group: $g) isa membership;
     ";
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &vec![], vec![vec![]]).unwrap();
+    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
     // read back
     {
@@ -318,7 +318,7 @@ fn relation_with_inferred_roles() {
          $p isa person; $g isa group;
          ($p, $g) isa membership;
     ";
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &vec![], vec![vec![]]).unwrap();
+    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
     // read back
     {
@@ -366,15 +366,15 @@ fn test_has_with_input_rows() {
     setup_schema(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_write();
     let inserted_rows =
-        execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &vec![], vec![vec![]])
+        execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &[], vec![vec![]])
             .unwrap();
-    let p10 = inserted_rows[0][0].clone().into_owned();
+    let p10 = inserted_rows[0][0].clone();
     let inserted_rows = execute_insert(
         &mut snapshot,
         &type_manager,
         &thing_manager,
         "insert $p has age 10;",
-        &vec!["p"],
+        &["p"],
         vec![vec![p10.clone()]],
     )
     .unwrap();
@@ -410,15 +410,15 @@ fn delete_has() {
     setup_schema(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_write();
     let inserted_rows =
-        execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &vec![], vec![vec![]])
+        execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &[], vec![vec![]])
             .unwrap();
-    let p10 = inserted_rows[0][0].clone().into_owned();
+    let p10 = inserted_rows[0][0].clone();
     let inserted_rows = execute_insert(
         &mut snapshot,
         &type_manager,
         &thing_manager,
         "insert $p has age 10;",
-        &vec!["p"],
+        &["p"],
         vec![vec![p10.clone()]],
     )
     .unwrap();
@@ -433,7 +433,7 @@ fn delete_has() {
         &thing_manager,
         "match $p isa person; $a isa age;",
         "delete has $a of $p;",
-        &vec!["p", "a"],
+        &["p", "a"],
         vec![vec![p10.clone(), a10.clone()]],
     )
     .unwrap();

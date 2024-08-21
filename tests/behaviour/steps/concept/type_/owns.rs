@@ -109,9 +109,7 @@ pub async fn get_owns_set_override(
             }
         }
 
-        may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
-            BehaviourConceptTestExecutionError::CannotFindObjectTypeAttributeTypeToOverride,
-        ));
+        may_error.check::<(), _>(Err(BehaviourConceptTestExecutionError::CannotFindObjectTypeAttributeTypeToOverride));
     });
 }
 

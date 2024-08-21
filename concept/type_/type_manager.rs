@@ -15,16 +15,10 @@ use encoding::{
         definition::{
             definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
         },
-        type_::{
-            property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
-            vertex::TypeVertexEncoding,
-            vertex_generator::TypeVertexGenerator,
-            Kind,
-        },
+        type_::{vertex::TypeVertexEncoding, vertex_generator::TypeVertexGenerator, Kind},
     },
     value::{label::Label, value_type::ValueType},
 };
-use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::encoding::StructFieldIDUInt;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -44,7 +38,7 @@ use crate::{
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::Constraint,
         entity_type::{EntityType, EntityTypeAnnotation},
-        object_type::{with_object_type, ObjectType},
+        object_type::ObjectType,
         owns::{Owns, OwnsAnnotation},
         plays::{Plays, PlaysAnnotation},
         relates::{Relates, RelatesAnnotation},

@@ -15,6 +15,7 @@ use concept::{
         entity::Entity,
         object::{Object, ObjectAPI},
         relation::Relation,
+        statistics::Statistics,
         thing_manager::ThingManager,
     },
     type_::{
@@ -26,7 +27,7 @@ use concept::{
         Ordering, OwnerAPI, PlayerAPI,
     },
 };
-use durability::wal::WAL;
+use durability::{wal::WAL, DurabilitySequenceNumber};
 use encoding::{
     error::EncodingError,
     graph::{
@@ -56,7 +57,11 @@ fn load_managers(storage: Arc<MVCCStorage<WALClient>>) -> (Arc<TypeManager>, Thi
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage).unwrap());
     let type_manager =
         Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
-    let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
+    let thing_manager = ThingManager::new(
+        thing_vertex_generator.clone(),
+        type_manager.clone(),
+        Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+    );
     (type_manager, thing_manager)
 }
 

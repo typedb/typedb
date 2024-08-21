@@ -11,19 +11,18 @@ use std::{
     ffi::c_int,
     fs::File,
     path::Path,
-    rc::Rc,
     sync::{Arc, OnceLock},
 };
 
 use concept::{
-    thing::{object::ObjectAPI, thing_manager::ThingManager},
+    thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
     type_::{
         type_manager::{type_cache::TypeCache, TypeManager},
-        Ordering, OwnerAPI,
+        OwnerAPI,
     },
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
-use durability::wal::WAL;
+use durability::{wal::WAL, DurabilitySequenceNumber};
 use encoding::{
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
@@ -59,7 +58,11 @@ fn write_entity_attributes(
             type_vertex_generator.clone(),
             Some(schema_cache),
         ));
-        let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
+        let thing_manager = ThingManager::new(
+            thing_vertex_generator.clone(),
+            type_manager.clone(),
+            Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+        );
 
         let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot, AGE_LABEL.get().unwrap()).unwrap().unwrap();
@@ -87,19 +90,21 @@ fn create_schema(
     type_vertex_generator: Arc<TypeVertexGenerator>,
 ) {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-    {
-        let type_manager =
-            Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
-        let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        let thing_manager = Arc::new(ThingManager::new(thing_vertex_generator.clone(), type_manager.clone()));
-        let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap()).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
-        let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap()).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-        let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type).unwrap();
-    }
+    let type_manager =
+        Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
+    let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+    let thing_manager = Arc::new(ThingManager::new(
+        thing_vertex_generator.clone(),
+        type_manager.clone(),
+        Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+    ));
+    let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap()).unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap()).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+    let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
+    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type).unwrap();
+    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type).unwrap();
     snapshot.commit().unwrap();
 }
 

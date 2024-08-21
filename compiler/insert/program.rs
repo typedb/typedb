@@ -7,7 +7,7 @@
 // jk there's no planning to be done here, just execution.
 // There is a need to construct the executor though.
 
-use std::{collections::HashMap, fmt::Display};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::{graph::type_::Kind, value::value::Value};
@@ -35,10 +35,11 @@ pub struct InsertProgram {
 }
 
 /*
-* Assumptions:
-*   - Any labels have been assigned to a type variable and added as a type-annotation, though we should have a more explicit mechanism for this.
-*   - Validation has already been done - An input row will not violate schema on insertion.
-*/
+ * Assumptions:
+ *   - Any labels have been assigned to a type variable and added as a type-annotation, though we should have a more explicit mechanism for this.
+ *   - Validation has already been done - An input row will not violate schema on insertion.
+ */
+
 pub fn compile(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
@@ -159,9 +160,7 @@ fn add_role_players(
                 if annotations.len() == 1 {
                     TypeSource::Constant(annotations.iter().find(|_| true).unwrap().clone())
                 } else {
-                    return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType {
-                        variable: role_variable.clone(),
-                    })?;
+                    return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType { variable: role_variable })?;
                 }
             }
             (Some(_), Some(_)) => unreachable!(),
@@ -191,7 +190,7 @@ fn resolve_value_variable_for_inserted_attribute(
     if comparisons.len() == 1 {
         Ok(comparisons[0])
     } else {
-        debug_assert!(comparisons.len() == 0);
+        debug_assert!(comparisons.is_empty());
         Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable })
     }
 }
@@ -219,7 +218,7 @@ fn collect_type_bindings(
     filter_variants!(Constraint::Label : constraints).for_each(|label| {
         let annotations = type_annotations.variable_annotations_of(label.left()).unwrap();
         debug_assert!(annotations.len() == 1);
-        let type_ = annotations.iter().find(|_| true).unwrap();
+        let type_ = annotations.iter().next().unwrap();
         debug_assert!(!type_bindings.contains_key(&label.left()));
         type_bindings.insert(label.left(), type_.clone());
     });

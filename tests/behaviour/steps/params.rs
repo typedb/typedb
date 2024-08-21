@@ -41,13 +41,13 @@ pub(crate) enum MayError {
 }
 
 impl MayError {
-    pub fn check<'a, T: fmt::Debug, E: fmt::Debug>(&self, res: &'a Result<T, E>) -> Option<&'a E> {
+    pub fn check<T: fmt::Debug, E: fmt::Debug>(&self, res: Result<T, E>) -> Option<E> {
         match self {
             MayError::False => {
-                res.as_ref().unwrap();
+                res.unwrap();
                 None
             }
-            MayError::True => Some(res.as_ref().unwrap_err()),
+            MayError::True => Some(res.unwrap_err()),
         }
     }
 

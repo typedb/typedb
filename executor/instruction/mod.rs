@@ -11,9 +11,8 @@ use std::{
 };
 
 use answer::{variable::Variable, variable_value::VariableValue};
-use compiler::{
-    instruction::constraint::instructions::{CheckInstruction, ConstraintInstruction},
-    match_::{instructions::ConstraintInstruction, planner::pattern_plan::InstructionAPI},
+use compiler::match_::{
+    instructions::{CheckInstruction, ConstraintInstruction},
     planner::pattern_plan::InstructionAPI,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};

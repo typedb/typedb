@@ -14,7 +14,10 @@ use typeql::{
 };
 
 use crate::{
-    pattern::constraint::{Comparator, ConstraintsBuilder, IsaKind},
+    pattern::{
+        conjunction::ConjunctionBuilder,
+        constraint::{Comparator, ConstraintsBuilder, IsaKind},
+    },
     program::function_signature::FunctionSignatureIndex,
     translation::expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
     PatternDefinitionError,
@@ -25,6 +28,7 @@ pub(super) fn add_statement(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     stmt: &typeql::Statement,
 ) -> Result<(), PatternDefinitionError> {
+    let constraints = &mut conjunction.constraints_mut();
     match stmt {
         typeql::Statement::Is(_) => todo!(),
         typeql::Statement::InIterable(InIterable { lhs, rhs, .. }) => {
@@ -322,10 +326,10 @@ fn assignment_pattern_to_variables(
 }
 
 fn assignment_typeql_vars_to_variables(
-    constraints: &mut ConstraintsBuilder<'_,'_>,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     vars: &[typeql::Variable],
 ) -> Result<Vec<Variable>, PatternDefinitionError> {
-    vars.iter().map(|variable| register_typeql_var(constraints, variable)).collect::<Result<Vec<_>, _>>()
+    vars.iter().map(|variable| register_typeql_var(constraints, variable)).collect()
 }
 
 pub(super) fn split_out_inline_expressions(
@@ -345,5 +349,5 @@ pub(super) fn split_out_inline_expressions(
                 Ok(variable)
             }
         })
-        .collect::<Result<Vec<_>, _>>()
+        .collect()
 }

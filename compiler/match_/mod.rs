@@ -7,6 +7,7 @@
 use std::{error::Error, fmt};
 
 use crate::{expression::ExpressionCompileError, match_::inference::TypeInferenceError};
+
 pub mod inference;
 pub mod instructions;
 mod optimisation;

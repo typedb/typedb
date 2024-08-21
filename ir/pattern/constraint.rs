@@ -823,18 +823,16 @@ impl<ID: IrID> ExpressionBinding<ID> {
         // todo!("Do we really need positions here?")
         // self.expression().ids().for_each(|id| function(id, ConstraintIDSide::Right));
     }
-}
 
-impl ExpressionBinding<Variable> {
-    fn new(left: Variable, expression: ExpressionTree<Variable>) -> Self {
+    fn new(left: ID, expression: ExpressionTree<ID>) -> Self {
         Self { left, expression }
     }
 
-    pub fn left(&self) -> Variable {
+    pub fn left(&self) -> ID {
         self.left
     }
 
-    pub fn expression(&self) -> &ExpressionTree<Variable> {
+    pub fn expression(&self) -> &ExpressionTree<ID> {
         &self.expression
     }
 

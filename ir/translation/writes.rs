@@ -9,7 +9,7 @@ use typeql::query::stage::delete::DeletableKind;
 
 use crate::{
     program::{
-        block::{BlockContext, FunctionalBlock, FunctionalBlockBuilder},
+        block::{BlockContext, FunctionalBlock},
         function_signature::HashMapFunctionSignatureIndex,
     },
     translation::{
@@ -36,8 +36,8 @@ pub fn translate_delete(
     delete: &typeql::query::stage::Delete,
 ) -> Result<(FunctionalBlock, Vec<Variable>), PatternDefinitionError> {
     let mut builder = FunctionalBlock::builder(context.next_block_context());
-    let mut _conjunction = builder.conjunction_mut();
-    let mut constraints = _conjunction.constraints_mut();
+    let mut conjunction = builder.conjunction_mut();
+    let mut constraints = conjunction.constraints_mut();
     let mut deleted_concepts = Vec::new();
     for deletable in &delete.deletables {
         match &deletable.kind {

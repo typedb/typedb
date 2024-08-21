@@ -47,9 +47,7 @@ async fn relation_add_player_for_role(
             return;
         }
     });
-    may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
-        BehaviourConceptTestExecutionError::CannotFindRoleToAddPlayerTo,
-    ));
+    may_error.check::<(), _>(Err(BehaviourConceptTestExecutionError::CannotFindRoleToAddPlayerTo));
 }
 
 #[apply(generic_step)]

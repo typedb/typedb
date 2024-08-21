@@ -56,7 +56,11 @@ impl<D: DurabilityClient> TransactionRead<D> {
             database.type_vertex_generator.clone(),
             Some(schema.type_cache.clone()),
         )); // TODO pass cache
-        let thing_manager = Arc::new(ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone()));
+        let thing_manager = Arc::new(ThingManager::new(
+            database.thing_vertex_generator.clone(),
+            type_manager.clone(),
+            schema.thing_statistics.clone(),
+        ));
         let function_manager =
             FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
 
@@ -104,7 +108,11 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             database.type_vertex_generator.clone(),
             Some(schema.type_cache.clone()),
         ));
-        let thing_manager = Arc::new(ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone()));
+        let thing_manager = Arc::new(ThingManager::new(
+            database.thing_vertex_generator.clone(),
+            type_manager.clone(),
+            schema.thing_statistics.clone(),
+        ));
         let function_manager =
             FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
         drop(schema);
@@ -197,7 +205,14 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             database.type_vertex_generator.clone(),
             None,
         ));
-        let thing_manager = ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
+        let thing_manager = {
+            let schema = database.schema.read().unwrap();
+            ThingManager::new(
+                database.thing_vertex_generator.clone(),
+                type_manager.clone(),
+                schema.thing_statistics.clone(),
+            )
+        };
         let function_manager = FunctionManager::new(database.definition_key_generator.clone(), None);
         Self {
             snapshot: Arc::new(snapshot),

@@ -27,16 +27,14 @@ pub fn translate_match<'a>(
 pub(crate) fn add_patterns(
     function_index: &impl FunctionSignatureIndex,
     conjunction: &mut ConjunctionBuilder<'_, '_>,
-    patterns: &[typeql::pattern::Pattern],
+    patterns: &[typeql::Pattern],
 ) -> Result<(), PatternDefinitionError> {
     patterns.iter().try_for_each(|pattern| match pattern {
-        typeql::pattern::Pattern::Conjunction(nested) => add_patterns(function_index, conjunction, &nested.patterns),
-        typeql::pattern::Pattern::Disjunction(disjunction) => add_disjunction(function_index, conjunction, disjunction),
-        typeql::pattern::Pattern::Negation(negation) => add_negation(function_index, conjunction, negation),
-        typeql::pattern::Pattern::Optional(optional) => add_optional(function_index, conjunction, optional),
-        typeql::pattern::Pattern::Statement(statement) => {
-            add_statement(function_index, &mut conjunction.constraints_mut(), statement)
-        }
+        typeql::Pattern::Conjunction(nested) => add_patterns(function_index, conjunction, &nested.patterns),
+        typeql::Pattern::Disjunction(disjunction) => add_disjunction(function_index, conjunction, disjunction),
+        typeql::Pattern::Negation(negation) => add_negation(function_index, conjunction, negation),
+        typeql::Pattern::Optional(optional) => add_optional(function_index, conjunction, optional),
+        typeql::Pattern::Statement(statement) => add_statement(function_index, conjunction, statement),
     })?;
     Ok(())
 }

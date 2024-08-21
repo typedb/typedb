@@ -15,7 +15,7 @@ use concept::{
         Ordering, OwnerAPI, PlayerAPI,
     },
 };
-use durability::wal::WAL;
+use durability::{wal::WAL, DurabilitySequenceNumber};
 use encoding::{
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
@@ -232,7 +232,11 @@ fn setup() -> (Arc<MVCCStorage<WALClient>>, Arc<TypeManager>, ThingManager, Temp
     let type_manager = Arc::new(TypeManager::new(definition_key_generator, type_vertex_generator, None));
 
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-    let thing_manager = ThingManager::new(thing_vertex_generator, type_manager.clone());
+    let thing_manager = ThingManager::new(
+        thing_vertex_generator,
+        type_manager.clone(),
+        Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+    );
     (storage, type_manager, thing_manager, _guard)
 }
 

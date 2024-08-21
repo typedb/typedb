@@ -55,7 +55,7 @@ async fn object_create_instance(
     may_error: params::MayError,
 ) {
     let result = object_create_instance_impl(context, object_type_label);
-    may_error.check(&result);
+    may_error.check(result.as_ref());
     if !may_error.expects_error() {
         let object = result.unwrap();
         object_root.assert(&object.type_());
@@ -72,7 +72,7 @@ async fn object_create_instance_var(
     may_error: params::MayError,
 ) {
     let result = object_create_instance_impl(context, object_type_label);
-    may_error.check(&result);
+    may_error.check(result.as_ref());
     if !may_error.expects_error() {
         let object = result.unwrap();
         object_root.assert(&object.type_());

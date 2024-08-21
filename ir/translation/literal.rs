@@ -61,7 +61,7 @@ impl FromTypeQLLiteral for i64 {
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let unsigned: i64 = Self::parse_primitive(literal.integral.as_str())?;
-        Ok(match literal.sign.clone().unwrap_or(Sign::Plus) {
+        Ok(match literal.sign.unwrap_or(Sign::Plus) {
             Sign::Plus => unsigned,
             Sign::Minus => -unsigned,
         })
@@ -72,10 +72,10 @@ impl FromTypeQLLiteral for f64 {
     type TypeQLLiteral = SignedDecimalLiteral;
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let unsigned = Self::parse_primitive::<f64>(literal.decimal.as_str())?;
-        Ok(match &literal.sign.clone().unwrap_or(Sign::Plus) {
-            Sign::Plus => unsigned,
-            Sign::Minus => -unsigned,
-        })
+        match &literal.sign.unwrap_or(Sign::Plus) {
+            Sign::Plus => Ok(unsigned),
+            Sign::Minus => Ok(-unsigned),
+        }
     }
 }
 
@@ -108,8 +108,7 @@ impl FromTypeQLLiteral for NaiveDate {
             Self::parse_primitive(literal.month.as_str())?,
             Self::parse_primitive(literal.day.as_str())?,
         );
-        NaiveDate::from_ymd_opt(year, month, day)
-            .map_or_else(|| Err(LiteralParseError::InvalidDate { year, month, day }), |date| Ok(date))
+        NaiveDate::from_ymd_opt(year, month, day).ok_or(LiteralParseError::InvalidDate { year, month, day })
     }
 }
 
@@ -183,7 +182,7 @@ pub mod tests {
     fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, PatternDefinitionError> {
         let query = format!("match $x = {}; select $x;", s);
         if let Stage::Match(match_) =
-            typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap()
+            typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap()
         {
             let mut context = TranslationContext::new();
             let block = translate_match(&mut context, &HashMapFunctionSignatureIndex::empty(), &match_)?.finish();

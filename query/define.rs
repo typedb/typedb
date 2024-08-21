@@ -234,7 +234,7 @@ fn define_types(
                 DefinableStatus::ExistsSame(_) => return Ok(()),
                 DefinableStatus::ExistsDifferent(_) => unreachable!("Entity types cannot differ"),
             }
-            type_manager.create_entity_type(snapshot, &label).map(|x| answer::Type::Entity(x)).map_err(|err| {
+            type_manager.create_entity_type(snapshot, &label).map(answer::Type::Entity).map_err(|err| {
                 DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
             })?;
         }
@@ -246,7 +246,7 @@ fn define_types(
                 DefinableStatus::ExistsSame(_) => return Ok(()),
                 DefinableStatus::ExistsDifferent(_) => unreachable!("Relation types cannot differ"),
             }
-            type_manager.create_relation_type(snapshot, &label).map(|x| answer::Type::Relation(x)).map_err(|err| {
+            type_manager.create_relation_type(snapshot, &label).map(answer::Type::Relation).map_err(|err| {
                 DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
             })?;
         }
@@ -258,7 +258,7 @@ fn define_types(
                 DefinableStatus::ExistsSame(_) => return Ok(()),
                 DefinableStatus::ExistsDifferent(_) => unreachable!("Attribute types cannot differ"),
             }
-            type_manager.create_attribute_type(snapshot, &label).map(|x| answer::Type::Attribute(x)).map_err(
+            type_manager.create_attribute_type(snapshot, &label).map(answer::Type::Attribute).map_err(
                 |err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() },
             )?;
         }
@@ -330,11 +330,11 @@ fn define_type_annotations(
 }
 
 fn define_alias(
-    snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
+    _snapshot: &mut impl WritableSnapshot,
+    _type_manager: &TypeManager,
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
-    &type_declaration
+    type_declaration
         .capabilities
         .iter()
         .filter_map(|capability| try_unwrap!(CapabilityBase::Alias = &capability.base))
@@ -364,7 +364,7 @@ fn define_sub(
         let CapabilityBase::Sub(sub) = &capability.base else {
             continue;
         };
-        let supertype_label = Label::parse_from(&sub.supertype_label.ident.as_str());
+        let supertype_label = Label::parse_from(sub.supertype_label.ident.as_str());
         let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
             .map_err(|source| DefineError::DefinitionResolution { source })?;
         if type_.kind() != supertype.kind() {
@@ -374,7 +374,7 @@ fn define_sub(
                 capability,
                 type_.kind(),
                 supertype.kind(),
-            ))?;
+            ));
         }
 
         match (&type_, supertype) {

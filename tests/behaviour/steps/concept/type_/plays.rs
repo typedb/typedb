@@ -178,9 +178,7 @@ pub async fn get_plays_set_override(
             }
         }
 
-        may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
-            BehaviourConceptTestExecutionError::CannotFindObjectTypeRoleTypeToOverride,
-        ));
+        may_error.check::<(), _>(Err(BehaviourConceptTestExecutionError::CannotFindObjectTypeRoleTypeToOverride));
     });
 }
 

@@ -7,6 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 #![allow(unused_variables)]
+#![allow(clippy::result_large_err)]
 
 use std::{error::Error, fmt};
 
@@ -86,7 +87,6 @@ pub enum PatternDefinitionError {
         expected: usize,
         actual: usize,
     },
-
     UnimplementedStructAssignment {
         deconstruct: StructDeconstruct,
     },
@@ -104,7 +104,7 @@ impl fmt::Display for PatternDefinitionError {
 impl Error for PatternDefinitionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::DisjointVariableReuse { .. }
+            | Self::DisjointVariableReuse { .. }
             | Self::VariableCategoryMismatch { .. }
             | Self::FunctionCallReturnCountMismatch { .. }
             | Self::FunctionCallArgumentCountMismatch { .. }

@@ -6,9 +6,9 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use compiler::{
+use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    instruction::constraint::instructions::{CheckInstruction, ConstraintInstruction, Inputs, IsaInstruction},
+    instructions::{CheckInstruction, ConstraintInstruction, Inputs, IsaInstruction},
     planner::{
         pattern_plan::{IntersectionStep, PatternPlan, Step},
         program_plan::ProgramPlan,
@@ -38,17 +38,17 @@ mod common;
 const AGE_LABEL: Label = Label::new_static("age");
 const NAME_LABEL: Label = Label::new_static("name");
 
+const ATTRIBUTE_INDEPENDENT: AttributeTypeAnnotation = AttributeTypeAnnotation::Independent(AnnotationIndependent);
+
 fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
-    age_type
-        .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
-        .unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+    age_type.set_annotation(&mut snapshot, &type_manager, &thing_manager, ATTRIBUTE_INDEPENDENT).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
-    name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
     let _age = [10, 11, 12, 13, 14]
         .map(|age| thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age)).unwrap());
