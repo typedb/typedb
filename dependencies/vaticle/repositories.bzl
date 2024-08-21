@@ -41,12 +41,12 @@ def vaticle_typedb_protocol():
 
 def vaticle_typedb_behaviour():
     # TODO: Return github typedb ref before merge
-    native.local_repository(
-        name = "vaticle_typedb_behaviour",
-        path = "../typedb-behaviour",
-    )
-#    git_repository(
+#    native.local_repository(
 #        name = "vaticle_typedb_behaviour",
-#        remote = "https://github.com/typedb/typedb-behaviour",
-#        commit = "cc54afe617ed644fd995da35a8ae1fb26d8486db", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
+#        path = "../typedb-behaviour",
 #    )
+    git_repository(
+        name = "vaticle_typedb_behaviour",
+        remote = "https://github.com/typedb/typedb-behaviour",
+        commit = "cc54afe617ed644fd995da35a8ae1fb26d8486db", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
+    )
