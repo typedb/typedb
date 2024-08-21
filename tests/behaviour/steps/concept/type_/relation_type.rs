@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
 use concept::{
     error::ConceptWriteError,
     type_::{
@@ -105,9 +106,9 @@ pub fn relation_type_create_role_impl(
 
     with_schema_tx!(context, |tx| {
         let relation_type =
-            tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         relation_type.create_relates(
-            &mut tx.snapshot,
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             role_label.into_typedb().name().as_str(),
@@ -128,20 +129,20 @@ pub async fn relation_role_set_override(
 ) {
     with_schema_tx!(context, |tx| {
         let relation_type =
-            tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let relates = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation_type.clone(), role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation_type.clone(), role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
-        if let Some(relation_supertype) = relation_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap() {
+        if let Some(relation_supertype) = relation_type.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap() {
             if let Some(overridden_relates) = tx
                 .type_manager
-                .resolve_relates(&tx.snapshot, relation_supertype, superrole_label.into_typedb().name().as_str())
+                .resolve_relates(tx.snapshot.as_ref(), relation_supertype, superrole_label.into_typedb().name().as_str())
                 .unwrap()
             {
                 let res =
-                    relates.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_relates);
+                    relates.set_override(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, overridden_relates);
                 may_error.check_concept_write_without_read_errors(&res);
                 return;
             }
@@ -162,12 +163,12 @@ pub async fn relation_role_unset_override(
 ) {
     with_schema_tx!(context, |tx| {
         let relation_type =
-            tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let relates = relation_type
-            .get_relates_role_name_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name_declared(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
-        let res = relates.unset_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
+        let res = relates.unset_override(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -178,13 +179,13 @@ pub async fn relation_roles_contain(context: &mut Context, type_label: Label, co
     let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
     with_read_tx!(context, |tx| {
         let relation_type =
-            tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let actual_labels = relation_type
-            .get_relates(&tx.snapshot, &tx.type_manager)
+            .get_relates(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
             .map(|relates| {
-                relates.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                relates.role().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
             .collect_vec();
         contains.check(&expected_labels, &actual_labels);
@@ -196,13 +197,13 @@ pub async fn relation_roles_contain(context: &mut Context, type_label: Label, co
 pub async fn relation_roles_is_empty(context: &mut Context, type_label: Label, is_empty_or_not: IsEmptyOrNot) {
     with_read_tx!(context, |tx| {
         let relation_type =
-            tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let actual_labels = relation_type
-            .get_relates(&tx.snapshot, &tx.type_manager)
+            .get_relates(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
             .map(|relates| {
-                relates.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                relates.role().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
             .collect_vec();
         is_empty_or_not.check(actual_labels.is_empty());
@@ -219,13 +220,13 @@ pub async fn relation_declared_roles_contain(
 ) {
     let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
     with_read_tx!(context, |tx| {
-        let type_ = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let type_ = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let actual_labels = type_
-            .get_relates_declared(&tx.snapshot, &tx.type_manager)
+            .get_relates_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
             .map(|relates| {
-                relates.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                relates.role().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
             .collect_vec();
         contains.check(&expected_labels, &actual_labels);
@@ -236,13 +237,13 @@ pub async fn relation_declared_roles_contain(
 #[step(expr = r"relation\({type_label}\) get declared roles {is_empty_or_not}")]
 pub async fn relation_declared_roles_is_empty(context: &mut Context, type_label: Label, is_empty_or_not: IsEmptyOrNot) {
     with_read_tx!(context, |tx| {
-        let type_ = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let type_ = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let actual_labels = type_
-            .get_relates_declared(&tx.snapshot, &tx.type_manager)
+            .get_relates_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
             .map(|relates| {
-                relates.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                relates.role().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
             .collect_vec();
         is_empty_or_not.check(actual_labels.is_empty());
@@ -253,9 +254,9 @@ pub async fn relation_declared_roles_is_empty(context: &mut Context, type_label:
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) {exists_or_doesnt}")]
 pub async fn relation_role_exists(context: &mut Context, type_label: Label, role_label: Label, exists: ExistsOrDoesnt) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let role_opt = relation
-            .get_relates_role_name_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
+            .get_relates_role_name_declared(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name.as_str())
             .unwrap();
         exists.check(&role_opt, &format!("role {}:{}", type_label.into_typedb(), role_label.into_typedb()));
     });
@@ -270,15 +271,15 @@ pub async fn relation_role_get_label(
     expected_label: Label,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let role = relation
-            .get_relates_role_name_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
+            .get_relates_role_name_declared(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name.as_str())
             .unwrap()
             .unwrap()
             .role();
         assert_eq!(
             expected_label.into_typedb().scoped_name.as_str(),
-            role.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name.as_str()
+            role.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name.as_str()
         );
     });
 }
@@ -292,15 +293,15 @@ pub async fn relation_role_get_name(
     expected_label: Label,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let role = relation
-            .get_relates_role_name_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
+            .get_relates_role_name_declared(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name.as_str())
             .unwrap()
             .unwrap()
             .role();
         assert_eq!(
             expected_label.into_typedb().name.as_str(),
-            role.get_label(&tx.snapshot, &tx.type_manager).unwrap().name.as_str()
+            role.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().name.as_str()
         );
     });
 }
@@ -314,13 +315,13 @@ pub async fn relation_type_delete_role(
     may_error: MayError,
 ) {
     with_schema_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let role = relation
-            .get_relates_role_name_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name.as_str())
+            .get_relates_role_name_declared(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name.as_str())
             .unwrap()
             .unwrap()
             .role();
-        let res = role.delete(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
+        let res = role.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -334,19 +335,19 @@ pub async fn relation_role_get_supertype(
     expected_superrole_label: Label,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let relates = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
         let role = relates.role();
-        let superrole = role.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
+        let superrole = role.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap();
         let relates_override = relates.get_override(&tx.snapshot, &tx.type_manager).unwrap();
         assert_eq!(relates_override.clone().unwrap(), *superrole.get_relates(&tx.snapshot, &tx.type_manager).unwrap());
         assert_eq!(
             expected_superrole_label.into_typedb().scoped_name(),
-            superrole.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name()
+            superrole.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name()
         )
     });
 }
@@ -405,19 +406,19 @@ pub async fn relation_role_supertypes_contain(
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
         let supertype_labels = role
-            .get_supertypes_transitive(&tx.snapshot, &tx.type_manager)
+            .get_supertypes_transitive(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
             .map(|supertype| {
-                supertype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                supertype.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
             .collect_vec();
         contains.check(&expected_labels, &supertype_labels);
@@ -436,18 +437,18 @@ pub async fn relation_role_subtypes_contain(
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
         let subtype_labels = role
-            .get_subtypes_transitive(&tx.snapshot, &tx.type_manager)
+            .get_subtypes_transitive(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
-            .map(|subtype| subtype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
+            .map(|subtype| subtype.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
             .collect_vec();
         contains.check(&expected_labels, &subtype_labels);
     });
@@ -462,18 +463,18 @@ pub async fn relation_role_subtypes_is_empty(
     is_empty_or_not: IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
         let subtype_labels = role
-            .get_subtypes_transitive(&tx.snapshot, &tx.type_manager)
+            .get_subtypes_transitive(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
-            .map(|subtype| subtype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
+            .map(|subtype| subtype.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
             .collect_vec();
         is_empty_or_not.check(subtype_labels.is_empty());
     });
@@ -489,14 +490,14 @@ pub async fn relation_role_set_name(
     may_error: MayError,
 ) {
     with_schema_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
-        let res = role.set_name(&mut tx.snapshot, &tx.type_manager, to_label.into_typedb().name.as_str());
+        let res = role.set_name(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, to_label.into_typedb().name.as_str());
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -510,14 +511,14 @@ pub async fn relation_get_overridden_role(
     exists: ExistsOrDoesnt,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
-        let superrole_opt = role.get_supertype(&tx.snapshot, &tx.type_manager).unwrap();
+        let superrole_opt = role.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         exists.check(
             &superrole_opt,
             &format!("overridden role for {}:{}", relation_label.into_typedb(), role_label.into_typedb()),
@@ -534,17 +535,17 @@ pub async fn relation_overridden_role_get_label(
     expected_label: Label,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
-        let superrole = role.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
+        let superrole = role.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap();
         assert_eq!(
             expected_label.into_typedb().name(),
-            superrole.get_label(&tx.snapshot, &tx.type_manager).unwrap().name()
+            superrole.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().name()
         )
     });
 }
@@ -559,10 +560,10 @@ pub async fn relation_role_set_annotation(
     may_error: MayError,
 ) {
     with_schema_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let relates = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
 
@@ -571,7 +572,7 @@ pub async fn relation_role_set_annotation(
         match parsed_annotation {
             TypeDBAnnotation::Abstract(_) => {
                 res = relates.role().set_annotation(
-                    &mut tx.snapshot,
+                    Arc::get_mut(&mut tx.snapshot).unwrap(),
                     &tx.type_manager,
                     &tx.thing_manager,
                     parsed_annotation.try_into().unwrap(),
@@ -603,20 +604,20 @@ pub async fn relation_role_unset_annotation(
     may_error: MayError,
 ) {
     with_schema_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let relates = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
 
         let parsed_annotation_category = annotation_category.into_typedb();
         let res;
         if RoleTypeAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
-            res = relates.role().unset_annotation(&mut tx.snapshot, &tx.type_manager, parsed_annotation_category);
+            res = relates.role().unset_annotation(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, parsed_annotation_category);
         } else if RelatesAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
             res = relates.unset_annotation(
-                &mut tx.snapshot,
+                Arc::get_mut(&mut tx.snapshot).unwrap(),
                 &tx.type_manager,
                 &tx.thing_manager,
                 parsed_annotation_category,
@@ -638,10 +639,10 @@ pub async fn relation_role_annotations_contain(
     annotation: Annotation,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let relates = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
 
@@ -651,12 +652,12 @@ pub async fn relation_role_annotations_contain(
         if RoleTypeAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
             actual_contains = relates
                 .role()
-                .get_annotations(&tx.snapshot, &tx.type_manager)
+                .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .contains_key(&parsed_annotation.try_into().unwrap());
         } else if RelatesAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
             actual_contains = relates
-                .get_annotations(&tx.snapshot, &tx.type_manager)
+                .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .contains_key(&parsed_annotation.try_into().unwrap());
         } else {
@@ -678,10 +679,10 @@ pub async fn relation_role_annotation_categories_contain(
     annotation_category: AnnotationCategory,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let relates = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
 
@@ -690,7 +691,7 @@ pub async fn relation_role_annotation_categories_contain(
         if RoleTypeAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
             actual_contains = relates
                 .role()
-                .get_annotations(&tx.snapshot, &tx.type_manager)
+                .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .iter()
                 .map(|(annotation, _)| {
@@ -699,7 +700,7 @@ pub async fn relation_role_annotation_categories_contain(
                 .contains(&parsed_annotation_category);
         } else if RelatesAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
             actual_contains = relates
-                .get_annotations(&tx.snapshot, &tx.type_manager)
+                .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .iter()
                 .map(|(annotation, _)| {
@@ -725,10 +726,10 @@ pub async fn relation_role_declared_annotations_contain(
     annotation: Annotation,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let relates = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
 
@@ -738,12 +739,12 @@ pub async fn relation_role_declared_annotations_contain(
         if RoleTypeAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
             actual_contains = relates
                 .role()
-                .get_annotations_declared(&tx.snapshot, &tx.type_manager)
+                .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .contains(&parsed_annotation.try_into().unwrap());
         } else if RelatesAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
             actual_contains = relates
-                .get_annotations_declared(&tx.snapshot, &tx.type_manager)
+                .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .contains(&parsed_annotation.try_into().unwrap());
         } else {
@@ -762,14 +763,14 @@ pub async fn relation_role_annotations_is_empty(
     is_empty_or_not: IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let relates = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
-        let relates_empty = relates.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
-        let role_empty = relates.role().get_annotations(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
+        let relates_empty = relates.get_annotations(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+        let role_empty = relates.role().get_annotations(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
 
         let actual_is_empty = relates_empty && role_empty;
         is_empty_or_not.check(actual_is_empty);
@@ -785,14 +786,14 @@ pub async fn relation_role_declared_annotations_is_empty(
     is_empty_or_not: IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let relates = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
-        let relates_empty = relates.get_annotations_declared(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
-        let role_empty = relates.role().get_annotations_declared(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
+        let relates_empty = relates.get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+        let role_empty = relates.role().get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
 
         let actual_is_empty = relates_empty && role_empty;
         is_empty_or_not.check(actual_is_empty);
@@ -808,13 +809,13 @@ pub async fn relation_role_cardinality(
     cardinality_annotation: Annotation,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let relates = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
-        let actual_cardinality = relates.get_cardinality(&tx.snapshot, &tx.type_manager).unwrap();
+        let actual_cardinality = relates.get_cardinality(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
             TypeDBAnnotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
             _ => panic!("Expected annotations is not Cardinality"),
@@ -832,15 +833,15 @@ pub async fn relation_role_set_ordering(
     may_error: MayError,
 ) {
     with_schema_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
         let res =
-            role.set_ordering(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, ordering.into_typedb().into());
+            role.set_ordering(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, ordering.into_typedb().into());
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -854,14 +855,14 @@ pub async fn relation_role_get_ordering(
     ordering: params::Ordering,
 ) {
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = tx
             .type_manager
-            .resolve_relates(&tx.snapshot, relation, role_label.into_typedb().name().as_str())
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
-        assert_eq!(role.get_ordering(&tx.snapshot, &tx.type_manager).unwrap(), ordering.into_typedb().into());
+        assert_eq!(role.get_ordering(tx.snapshot.as_ref(), &tx.type_manager).unwrap(), ordering.into_typedb().into());
     });
 }
 
@@ -876,22 +877,22 @@ pub async fn role_type_players_contain(
 ) {
     let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = relation
-            .get_relates_role_name_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name_declared(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
         let actual_labels = role
-            .get_plays(&tx.snapshot, &tx.type_manager)
+            .get_plays(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
             .map(|(_, plays)| match plays.player() {
                 ObjectType::Entity(entity_type) => {
-                    entity_type.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    entity_type.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 }
                 ObjectType::Relation(relation_type) => {
-                    relation_type.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    relation_type.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 }
             })
             .collect::<Vec<String>>();
@@ -910,22 +911,22 @@ pub async fn role_type_declared_players_contain(
 ) {
     let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
     with_read_tx!(context, |tx| {
-        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.into_typedb()).unwrap().unwrap();
+        let relation = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = relation
-            .get_relates_role_name_declared(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str())
+            .get_relates_role_name_declared(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap()
             .role();
         let actual_labels = role
-            .get_plays_declared(&tx.snapshot, &tx.type_manager)
+            .get_plays_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
             .map(|plays| match plays.player() {
                 ObjectType::Entity(entity_type) => {
-                    entity_type.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    entity_type.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 }
                 ObjectType::Relation(relation_type) => {
-                    relation_type.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    relation_type.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 }
             })
             .collect::<Vec<String>>();

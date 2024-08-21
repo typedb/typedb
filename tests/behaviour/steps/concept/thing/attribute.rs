@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{attribute::Attribute, ThingAPI},
@@ -26,9 +27,9 @@ pub fn attribute_put_instance_with_value_impl(
 ) -> Result<Attribute<'static>, ConceptWriteError> {
     with_write_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
-        tx.thing_manager.create_attribute(&mut tx.snapshot, attribute_type, value)
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        let value = value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
+        tx.thing_manager.create_attribute(Arc::get_mut(&mut tx.snapshot).unwrap(), attribute_type, value)
     })
 }
 
@@ -66,7 +67,7 @@ async fn attribute_put_instance_with_value_var(
 async fn attribute_has_type(context: &mut Context, var: params::Var, type_label: params::Label) {
     let attribute_type = context.attributes[&var.name].as_ref().unwrap().type_();
     with_read_tx!(context, |tx| {
-        assert_eq!(attribute_type.get_label(&tx.snapshot, &tx.type_manager).unwrap(), type_label.into_typedb())
+        assert_eq!(attribute_type.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap(), type_label.into_typedb())
     });
 }
 
@@ -76,8 +77,8 @@ async fn attribute_has_value_type(context: &mut Context, var: params::Var, value
     let attribute_type = context.attributes[&var.name].as_ref().unwrap().type_();
     with_read_tx!(context, |tx| {
         assert_eq!(
-            attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap(),
-            value_type.into_typedb(&tx.type_manager, &tx.snapshot)
+            attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap(),
+            value_type.into_typedb(&tx.type_manager, tx.snapshot.as_ref())
         );
     });
 }
@@ -88,8 +89,8 @@ async fn attribute_has_value(context: &mut Context, var: params::Var, value: par
     let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
     let attribute_type = attribute.type_();
     with_read_tx!(context, |tx| {
-        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
-        assert_eq!(attribute.get_value(&tx.snapshot, &tx.thing_manager).unwrap(), value);
+        let value = value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
+        assert_eq!(attribute.get_value(tx.snapshot.as_ref(), &tx.thing_manager).unwrap(), value);
     });
 }
 
@@ -113,9 +114,9 @@ pub fn get_attribute_by_value(
 ) -> Result<Option<Attribute<'static>>, ConceptReadError> {
     with_read_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
-        tx.thing_manager.get_attribute_with_value(&tx.snapshot, attribute_type, value)
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        let value = value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
+        tx.thing_manager.get_attribute_with_value(tx.snapshot.as_ref(), attribute_type, value)
     })
 }
 
@@ -135,7 +136,7 @@ async fn attribute_get_instance_with_value(
 #[step(expr = r"delete attribute: {var}")]
 async fn delete_attribute(context: &mut Context, var: params::Var) {
     with_write_tx!(context, |tx| {
-        context.attributes[&var.name].clone().unwrap().delete(&mut tx.snapshot, &tx.thing_manager).unwrap()
+        context.attributes[&var.name].clone().unwrap().delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap()
     })
 }
 
@@ -145,8 +146,8 @@ async fn attribute_is_deleted(context: &mut Context, var: params::Var, is_delete
     let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
     let attribute_type = attribute.type_();
     let get = with_read_tx!(context, |tx| {
-        let value = attribute.get_value(&tx.snapshot, &tx.thing_manager).unwrap();
-        tx.thing_manager.get_attribute_with_value(&tx.snapshot, attribute_type, value).unwrap()
+        let value = attribute.get_value(tx.snapshot.as_ref(), &tx.thing_manager).unwrap();
+        tx.thing_manager.get_attribute_with_value(tx.snapshot.as_ref(), attribute_type, value).unwrap()
     });
     check_boolean!(is_deleted, get.is_none());
 }
@@ -182,9 +183,9 @@ async fn attribute_instances_contain(
     let attribute = context.attributes.get(&var.name).expect("no variable {} in context.").as_ref().unwrap();
     let actuals: Vec<Attribute<'static>> = with_read_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         tx.thing_manager
-            .get_attributes_in(&tx.snapshot, attribute_type)
+            .get_attributes_in(tx.snapshot.as_ref(), attribute_type)
             .unwrap()
             .map_static(|result| result.unwrap().clone().into_owned())
             .collect()

@@ -33,7 +33,7 @@ fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPl
         let (entry_annotations, _) = compiler::match_::inference::type_inference::infer_types(
             &block,
             vec![],
-            &tx.snapshot,
+            tx.snapshot.as_ref(),
             &tx.type_manager,
             &IndexedAnnotatedFunctions::empty(),
         )
@@ -53,7 +53,7 @@ fn execute_insert_plan(
     let mut output_vec = (0..insert_plan.n_created_concepts).map(|_| VariableValue::Empty).collect_vec();
     with_write_tx!(context, |tx| {
         executor::write::insert_executor::execute_insert(
-            &mut tx.snapshot,
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.thing_manager,
             &insert_plan,
             &Row::new(vec![].as_mut_slice(), &mut 1),
@@ -78,7 +78,7 @@ async fn typeql_define(context: &mut Context, may_error: MayError, step: &Step) 
     let typeql_define = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap().into_schema();
     with_schema_tx!(context, |tx| {
         let result =
-            QueryManager::new().execute_schema(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, typeql_define);
+            QueryManager::new().execute_schema(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, typeql_define);
         assert_eq!(may_error.expects_error(), result.is_err(), "{:?}", result);
     });
 }
@@ -108,7 +108,7 @@ async fn get_answers_of_typeql_get(context: &mut Context, step: &Step) {
     let typeql_get = step.docstring.as_ref().unwrap().as_str();
     with_read_tx!(context, |tx| {
         // Can't read_tx because execute always takes a mut snapshot
-        // let result = QueryManager::new().execute(&mut tx.snapshot, &tx.type_manager, typeql_get);
+        // let result = QueryManager::new().execute(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, typeql_get);
         println!("TypeQL get is ignored!")
     });
 }

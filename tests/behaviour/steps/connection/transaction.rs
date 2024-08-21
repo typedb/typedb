@@ -5,7 +5,7 @@
  */
 
 use concept::error::ConceptWriteError;
-use database::transaction::{SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
+use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use macro_rules_attribute::apply;
 
 use crate::{
@@ -19,14 +19,15 @@ use crate::{
 #[step(expr = "connection open {word} transaction for database: {word}")]
 pub async fn connection_open_transaction(context: &mut Context, tx_type: String, db_name: String) {
     assert!(context.transaction().is_none(), "Existing transaction must be closed first");
-    let databases = context.databases();
-    let database = databases.get(&db_name).unwrap();
+    let server = context.server().unwrap().lock().unwrap();
+    let database = server.database_manager().database(&db_name).unwrap();
     let tx = match tx_type.as_str() {
         "read" => ActiveTransaction::Read(TransactionRead::open(database.clone())),
         "write" => ActiveTransaction::Write(TransactionWrite::open(database.clone())),
         "schema" => ActiveTransaction::Schema(TransactionSchema::open(database.clone())),
         _ => unreachable!("Unrecognised transaction type"),
     };
+    drop(server);
     context.set_transaction(tx);
 }
 
@@ -53,10 +54,14 @@ pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
     match context.take_transaction().unwrap() {
         ActiveTransaction::Read(_) => {}
         ActiveTransaction::Write(tx) => {
-            if let Some(errors) = may_error.check(&tx.commit()) {
-                errors
-                    .iter()
-                    .for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone())))
+            if let Some(error) = may_error.check(&tx.commit()) {
+                if let DataCommitError::ConceptWriteErrors { source, .. } = error {
+                    source
+                        .iter()
+                        .for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone())))
+                } else {
+                    panic!("Unexpected write commit error: {:?}", error)
+                }
             }
         }
         ActiveTransaction::Schema(tx) => {

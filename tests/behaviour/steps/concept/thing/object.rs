@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
 use concept::{
     error::ConceptWriteError,
     thing::{object::Object, ThingAPI},
@@ -31,13 +32,13 @@ fn object_create_instance_impl(
 ) -> Result<Object<'static>, ConceptWriteError> {
     with_write_tx!(context, |tx| {
         let object_type =
-            tx.type_manager.get_object_type(&tx.snapshot, &object_type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_object_type(tx.snapshot.as_ref(), &object_type_label.into_typedb()).unwrap().unwrap();
         match object_type {
             ObjectType::Entity(entity_type) => {
-                tx.thing_manager.create_entity(&mut tx.snapshot, entity_type).map(Object::Entity)
+                tx.thing_manager.create_entity(Arc::get_mut(&mut tx.snapshot).unwrap(), entity_type).map(Object::Entity)
             }
             ObjectType::Relation(relation_type) => {
-                tx.thing_manager.create_relation(&mut tx.snapshot, relation_type).map(Object::Relation)
+                tx.thing_manager.create_relation(Arc::get_mut(&mut tx.snapshot).unwrap(), relation_type).map(Object::Relation)
             }
         }
     })
@@ -99,7 +100,7 @@ async fn object_create_instance_with_key_var(
 async fn delete_object(context: &mut Context, object_root: params::ObjectRootLabel, var: params::Var) {
     let object = context.objects[&var.name].as_ref().unwrap().object.clone();
     object_root.assert(&object.type_());
-    with_write_tx!(context, |tx| { object.delete(&mut tx.snapshot, &tx.thing_manager).unwrap() })
+    with_write_tx!(context, |tx| { object.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap() })
 }
 
 #[apply(generic_step)]
@@ -142,7 +143,7 @@ async fn object_is_deleted(
     let object_type = object.type_();
     let objects: Vec<Object<'static>> = with_read_tx!(context, |tx| {
         tx.thing_manager
-            .get_objects_in(&tx.snapshot, object_type)
+            .get_objects_in(tx.snapshot.as_ref(), object_type)
             .map_static(|result| result.unwrap().clone().into_owned())
             .collect()
     });
@@ -160,7 +161,7 @@ async fn object_has_type(
     let object_type = context.objects[&var.name].as_ref().unwrap().object.type_();
     object_root.assert(&object_type);
     with_read_tx!(context, |tx| {
-        assert_eq!(object_type.get_label(&tx.snapshot, &tx.type_manager).unwrap(), type_label.into_typedb())
+        assert_eq!(object_type.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap(), type_label.into_typedb())
     });
 }
 
@@ -182,9 +183,9 @@ async fn object_get_instance_with_value(
 
     let owner = with_read_tx!(context, |tx| {
         let object_type =
-            tx.type_manager.get_object_type(&tx.snapshot, &object_type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_object_type(tx.snapshot.as_ref(), &object_type_label.into_typedb()).unwrap().unwrap();
         object_root.assert(&object_type);
-        let mut owners = key.get_owners_by_type(&tx.snapshot, &tx.thing_manager, object_type);
+        let mut owners = key.get_owners_by_type(tx.snapshot.as_ref(), &tx.thing_manager, object_type);
         let owner = owners.next().transpose().unwrap().map(|(owner, count)| {
             assert_eq!(count, 1, "found {count} keys owned by the same object, expected 1");
             owner.into_owned()
@@ -204,9 +205,9 @@ async fn object_instances_is_empty(
     is_empty_or_not: IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
-        let object_type = tx.type_manager.get_object_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let object_type = tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         object_root.assert(&object_type);
-        is_empty_or_not.check(tx.thing_manager.get_objects_in(&tx.snapshot, object_type).next().is_none());
+        is_empty_or_not.check(tx.thing_manager.get_objects_in(tx.snapshot.as_ref(), object_type).next().is_none());
     });
 }
 
@@ -222,10 +223,10 @@ async fn object_instances_contain(
     let object = &context.objects.get(&var.name).expect("no variable {} in context.").as_ref().unwrap().object;
     object_root.assert(&object.type_());
     with_read_tx!(context, |tx| {
-        let object_type = tx.type_manager.get_object_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+        let object_type = tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let actuals: Vec<Object<'static>> = tx
             .thing_manager
-            .get_objects_in(&tx.snapshot, object_type)
+            .get_objects_in(tx.snapshot.as_ref(), object_type)
             .map_static(|result| result.unwrap().clone().into_owned())
             .collect();
         containment.check(std::slice::from_ref(object), &actuals);
@@ -245,7 +246,7 @@ async fn attribute_owners_contains(
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let actuals = with_read_tx!(context, |tx| {
         attribute
-            .get_owners(&tx.snapshot, &tx.thing_manager)
+            .get_owners(tx.snapshot.as_ref(), &tx.thing_manager)
             .map_static(|res| {
                 let (attribute, _count) = res.unwrap();
                 attribute.into_owned()

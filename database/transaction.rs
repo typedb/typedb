@@ -132,6 +132,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             .map_err(|errs| DataCommitError::ConceptWriteErrors { source: errs })?;
         drop(self.type_manager);
         snapshot.commit().map_err(|err| DataCommitError::SnapshotError { source: err })?;
+        self.database.release_write_transaction();
         Ok(())
     }
 
@@ -258,6 +259,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
         *schema_commit_guard = schema;
 
+        self.database.release_schema_transaction();
         Ok(())
     }
 

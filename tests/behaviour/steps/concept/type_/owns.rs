@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
 use concept::type_::{annotation, owns::OwnsAnnotation, Capability, Ordering, OwnerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
@@ -29,9 +30,9 @@ pub async fn set_owns(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
         let res =
-            object_type.set_owns(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, attr_type, Ordering::Unordered);
+            object_type.set_owns(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, attr_type, Ordering::Unordered);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -48,9 +49,9 @@ pub async fn set_owns_ordered(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
         let res =
-            object_type.set_owns(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, attr_type, Ordering::Ordered);
+            object_type.set_owns(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, attr_type, Ordering::Ordered);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -67,8 +68,8 @@ pub async fn unset_owns(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.into_typedb()).unwrap().unwrap();
-        let res = object_type.unset_owns(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, attr_type);
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
+        let res = object_type.unset_owns(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, attr_type);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -86,20 +87,20 @@ pub async fn get_owns_set_override(
     let owner = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = owner.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = owner.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
 
-        if let Some(owner_supertype) = owner.get_supertype(&tx.snapshot, &tx.type_manager).unwrap() {
+        if let Some(owner_supertype) = owner.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap() {
             let overridden_attr_type = tx
                 .type_manager
-                .get_attribute_type(&tx.snapshot, &overridden_type_label.into_typedb())
+                .get_attribute_type(tx.snapshot.as_ref(), &overridden_type_label.into_typedb())
                 .unwrap()
                 .unwrap();
             let overridden_owns_opt =
                 owner_supertype.get_owns_attribute(&tx.snapshot, &tx.type_manager, overridden_attr_type).unwrap();
 
             if let Some(overridden_owns) = overridden_owns_opt {
-                let res = owns.set_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, overridden_owns);
+                let res = owns.set_override(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, overridden_owns);
                 may_error.check_concept_write_without_read_errors(&res);
                 return;
             }
@@ -123,9 +124,9 @@ pub async fn get_owns_unset_override(
     let owner = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = owner.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let res = owns.unset_override(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = owner.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
+        let res = owns.unset_override(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -143,11 +144,11 @@ pub async fn get_owns_set_annotation(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type.clone()).unwrap().unwrap();
-        let value_type = attr_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type.clone()).unwrap().unwrap();
+        let value_type = attr_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let res = owns.set_annotation(
-            &mut tx.snapshot,
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             annotation.into_typedb(value_type).try_into().unwrap(),
@@ -171,10 +172,10 @@ pub async fn get_owns_unset_annotation(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let res = owns.unset_annotation(
-            &mut tx.snapshot,
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             annotation_category.into_typedb(),
@@ -198,11 +199,11 @@ pub async fn get_owns_annotations_contains(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
+        let value_type = owns.attribute().get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let actual_contains = owns
-            .get_annotations(&tx.snapshot, &tx.type_manager)
+            .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .contains_key(&annotation.into_typedb(value_type).try_into().unwrap());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -224,10 +225,10 @@ pub async fn get_owns_annotations_categories_contains(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let actual_contains = owns
-            .get_annotations(&tx.snapshot, &tx.type_manager)
+            .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
             .map(|(annotation, _)| {
@@ -253,11 +254,11 @@ pub async fn get_owns_declared_annotations_contains(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
+        let value_type = owns.attribute().get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let actual_contains = owns
-            .get_annotations_declared(&tx.snapshot, &tx.type_manager)
+            .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .contains(&annotation.into_typedb(value_type).try_into().unwrap());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -276,10 +277,10 @@ pub async fn get_owns_annotations_is_empty(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
 
-        let actual_is_empty = owns.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
+        let actual_is_empty = owns.get_annotations(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
     });
 }
@@ -296,10 +297,10 @@ pub async fn get_owns_declared_annotations_is_empty(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
 
-        let actual_is_empty = owns.get_annotations_declared(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
+        let actual_is_empty = owns.get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
     });
 }
@@ -316,10 +317,10 @@ pub async fn get_owns_cardinality(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
-        let actual_cardinality = owns.get_cardinality(&tx.snapshot, &tx.type_manager).unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
+        let value_type = owns.attribute().get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+        let actual_cardinality = owns.get_cardinality(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
             annotation::Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
             _ => panic!("Expected annotations is not Cardinality"),
@@ -340,11 +341,11 @@ pub async fn get_owns_contain(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
-            .get_owns(&tx.snapshot, &tx.type_manager)
+            .get_owns(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
             .map(|owns| {
-                owns.attribute().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                owns.attribute().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
             .collect_vec();
         contains.check(&expected_labels, &actual_labels);
@@ -361,7 +362,7 @@ pub async fn get_owns_is_empty(
 ) {
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let actual_is_empty = object_type.get_owns(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
+        let actual_is_empty = object_type.get_owns(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
     });
 }
@@ -379,11 +380,11 @@ pub async fn get_declared_owns_contain(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
-            .get_owns_declared(&tx.snapshot, &tx.type_manager)
+            .get_owns_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
             .map(|owns| {
-                owns.attribute().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                owns.attribute().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
             .collect_vec();
         contains.check(&expected_labels, &actual_labels);
@@ -402,9 +403,9 @@ pub async fn get_owns_overridden_exists(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let overridden_owns_opt = owns.get_override(&tx.snapshot, &tx.type_manager).unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
+        let overridden_owns_opt = owns.get_override(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         exists.check(
             &overridden_owns_opt,
             &format!("override for {} owns {}", type_label.into_typedb(), attr_type_label.into_typedb()),
@@ -424,10 +425,10 @@ pub async fn get_owns_get_label(
     let owner = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = owner.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = owner.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let actual_type_label =
-            owns.attribute().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned();
+            owns.attribute().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned();
         assert_eq!(expected_label.into_typedb().scoped_name().as_str().to_owned(), actual_type_label);
     });
 }
@@ -444,13 +445,13 @@ pub async fn get_owns_overridden_get_label(
     let owner = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = owner.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let overridden_owns_opt = owns.get_override(&tx.snapshot, &tx.type_manager).unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = owner.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
+        let overridden_owns_opt = owns.get_override(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let overridden_owns = overridden_owns_opt.as_ref().unwrap();
         let actual_type_label = overridden_owns
             .attribute()
-            .get_label(&tx.snapshot, &tx.type_manager)
+            .get_label(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .scoped_name()
             .as_str()
@@ -472,9 +473,9 @@ pub async fn get_owns_set_ordering(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let res = owns.set_ordering(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, ordering.into_typedb());
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
+        let res = owns.set_ordering(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, ordering.into_typedb());
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -491,8 +492,8 @@ pub async fn get_owns_get_ordering(
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        assert_eq!(owns.get_ordering(&tx.snapshot, &tx.type_manager).unwrap(), ordering.into_typedb());
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
+        assert_eq!(owns.get_ordering(tx.snapshot.as_ref(), &tx.type_manager).unwrap(), ordering.into_typedb());
     });
 }
