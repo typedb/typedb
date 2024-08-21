@@ -609,23 +609,27 @@ cannot redefine single-return functions.
 * _Syntax_: vars start with `$`
 * _Usage_: vars appear as part of 
   * statements: atomic building blocks, `;`-separated 
-  * patterns: collection of statements, combined with logical connectives: "and" (default), `or`, `not`, `try`
-* _Var kinds_: Position in statements determines wether variables are
+  * patterns: collection of statements, combined with logical connectives:
+    * "and" (default), 
+    * `or`, 
+    * `not`, 
+    * `try`
+* _Var kinds_: Position in a statement determines wether variables are
   * type variables (**tvar**, uppercase convention in this spec)
   * data instance variables (**dvar**, lowercase convention in this spec)
 
 **Answers**
 
-* An answer to a pattern resolves each variable `$x` to a **concept** `concept($x)` (math. notation: $\gamma(x)$), such that the pattern is **satisfied** (as defined in the following sections)
-  * **tvar**s resolve to types
-  * **dvar**s resolve to instances in types
+* _Definition_: An *answer* to a pattern resolves each variable `$x` to a **concept** `concept($x)` (math. notation: $\gamma(x)$), such that the pattern is **satisfied** (as defined in the following sections)
+* _Key properties_:
+  * **tvar**s always resolve to types
+  * **dvar**s always resolve to elements
   * each **dvar** `$x` answer `concept($x)` comes with a type `type($x)` (math. notation: $\tau(x)$) such that one of the following holds
     * either $\tau(x)$ is schema type and $\gamma(x) ~:!~\tau(x)$
     * or $\tau(x)$ is a value type (primitive of structured) and $\gamma(x) :! \tau(x)$.
-* _Key properties_:
   * Based on the rules outline in the next sections, there is a unique minimal solution for the type assignment $x \mapsto \tau(x)$. Algorithm to compute:
-    * To each concept assign its direct type if available,
-    * To attribute concepts used non-comparable, same-valued attribute types otherwise re-assign 
+    1. To each concept assign its direct type if available,
+    2. To attribute concepts used non-comparable, same-valued attribute types otherwise re-assign 
   * Type checking failure (**TCF**) will occur when no joins exists
   * **tvar**s `$T` never resolve to list types
   * **dvar**s `$d` may resolve to lists, but this is always indicated in the pattern as we will see.
@@ -716,30 +720,30 @@ A type containing a pre-defined set of values. Cases:
 
 ### Data instance / instance
 
-A term in an entity, relation, or attribute type. Special cases:
+An element in an entity, relation, or attribute type. Special cases:
 
-* Entity: A term in an entity type.
-* Relation: A term in a relation type.
-* Attribute: A term in attribute type.
-* Object: A term in an entity or relation type.
+* Entity: An element in an entity type.
+* Relation: An element in a relation type.
+* Attribute: An element in attribute type.
+* Object: An element in an entity or relation type.
 * Roleplayer: Object that is cast into the element of a role type.
 * Owner: Object that is cast into the element of an ownership type.
 
 ### Data value / value
 
-A term in a value type.
+An element in a value type.
 
 ### Attribute instance value / attribute value
 
 An attribute cast into an element of its value type.
 
-### Data term / term
+### Data element / element
 
-Any term in any type (i.e. value or instance).
+Any element in any type (i.e. value or instance).
 
 ### Concept
 
-A term or a type.
+A element or a type.
 
 ### Type kind
 
