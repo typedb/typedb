@@ -4,7 +4,7 @@
 
 - [Terminology and notation](#terminology-and-notation)
   - [Terminology](#terminology)
-  - [Type basics and notation](#type-basics-and-notation)
+  - [Type system basics and notation](#type-system-basics-and-notation)
 - [Schema](#schema)
   - [Basics](#basics)
   - [Define semantics](#define-semantics)
@@ -25,15 +25,20 @@
     - [Triggers](#triggers-2)
     - [Value type defs](#value-type-defs-2)
     - [Functions defs](#functions-defs-2)
-- [Data languages](#data-languages)
-  - [Match semantics](#match-semantics)
-    - [Optionality](#optionality)
-    - [Function semantics](#function-semantics)
+- [Data instance languages](#data-instance-languages)
+  - [Match patterns and semantics](#match-patterns-and-semantics)
+    - [Basics: Variables and Answers](#basics-variables-and-answers)
+    - [Assignments, bindings](#assignments-bindings)
+    - [Type patterns](#type-patterns)
+    - [Data patterns](#data-patterns)
+    - [Optionality patterns](#optionality-patterns)
+    - [Value expression patterns](#value-expression-patterns)
+    - [Function patterns](#function-patterns)
   - [Insert semantics](#insert-semantics)
   - [Delete semantics](#delete-semantics)
   - [Update semantics](#update-semantics)
   - [Put semantics](#put-semantics)
-  - [Function semantics](#function-semantics-1)
+  - [Function semantics](#function-semantics)
 - [Pipelines](#pipelines)
   - [Basics of streams](#basics-of-streams)
   - [Clauses](#clauses)
@@ -44,6 +49,28 @@
   - [Snapshots](#snapshots)
   - [Isolation](#isolation)
 - [Sharding](#sharding)
+- [Glossary](#glossary)
+  - [Type system](#type-system)
+    - [Type](#type)
+    - [Schema type](#schema-type)
+    - [Value type](#value-type)
+    - [Data instance / instance](#data-instance--instance)
+    - [Data value / value](#data-value--value)
+    - [Attribute instance value / attribute value](#attribute-instance-value--attribute-value)
+    - [Data term / term](#data-term--term)
+    - [Concept](#concept)
+    - [Type kind](#type-kind)
+  - [TypeQL syntax](#typeql-syntax)
+    - [Schema query](#schema-query)
+    - [Data query](#data-query)
+    - [Clause / Stream clause](#clause--stream-clause)
+    - [Operators / Stream operator](#operators--stream-operator)
+    - [Functions](#functions)
+    - [Statement](#statement)
+    - [Reductions](#reductions)
+    - [Clause](#clause)
+    - [Block](#block)
+    - [Suffix](#suffix)
 
 
 # Terminology and notation
@@ -161,24 +188,40 @@ _Remark for nerds: list types are neither sums, nor products, nor polynomials ..
 
 ## Define semantics
 
+Define adds axioms, as described below. Th
+
 ### Type defs
 
 **Case ENT**
 * `entity A` adds $`A : \mathbf{Ent}`$
 * `(entity) A sub B` adds $`A : \mathbf{Ent}, A <_! B`$
 
+*Model constraints*: 
+
+1. Cannot have $A <_! B`$ and $A <_! C \neq B$
+
 **Case REL**
 * `relation A` adds $`A : \mathbf{Rel}`$
-* `(relation) A sub B` adds $`A : \mathbf{Rel}, A <_! B`$ (**require**: $`B : \mathbf{Rel}`$ and not $A <_! C \neq B$)
+* `(relation) A sub B` adds $`A : \mathbf{Rel}, A <_! B`$ (**require**: $`B : \mathbf{Rel}`$ and not )
 * `(relation) A relates I` adds $`A : \mathbf{Rel}(I)$
 * `(relation) A relates I as J` adds $`A : \mathbf{Rel}(I)`$, $`I <_! J`$ (**require**: $`B : \mathbf{Rel}(J)`$ and $A <_! B$)
 * `(relation) A relates I[]` adds $`A : \mathbf{Rel}([I])$
 * `(relation) A relates I[] as J[]` adds $`A : \mathbf{Rel}([I])`$, $`I <_! J`$ (**require**: $`B : \mathbf{Rel}([J])`$ and $A <_! B$)
 
+*Model constraints*: 
+
+1. Cannot have $A <_! B`$ and $A <_! C \neq B$
+2. Cannot have $I <_! J`$ and $I <_! K \neq J$
+3. Cannot have both $`A : \mathbf{Rel}(I)`$ and $`A : \mathbf{Rel}(I)]`$ (in other words, cannot have both `A relates I` and `A relates I[]`).
+
 **Case ATT**
 * `attribute A` adds $`A : \mathbf{Att}`$ and $`A : \mathbf{Att}(O_A)`$ ($O_A$ being automatically generated ownership interface)
 * `(attribute) A value V` adds $`A < V`$ (**require**: $V$ a primitive or struct value type)
 * `(attribute) A sub B` adds $`A : \mathbf{A}`$, $`A : \mathbf{Att}(O_A)`$, $`A <_! B`$ and $`O_A <_! O_B`$ (**require**: $`B : \mathbf{Att}(O_A)`$ and not $A <_! C \neq B$)
+
+*Model constraints*: 
+
+1. Cannot have $A <_! B`$ and $A <_! C \neq B$
 
 **Case PLAYS**
 * `A plays B:I` adds $`A <_! I`$ (**require**: $B: \mathbf{Rel}(I)$, $`A :\mathbf{Obj}`$)
@@ -188,6 +231,10 @@ _Remark for nerds: list types are neither sums, nor products, nor polynomials ..
 * `A owns B[]` adds $`A <_! O_B`$ (**require**: $B: \mathbf{Att}(O_B)$, **puts B[] to be non-abstract**: i.e. allows declaring terms $`l :! [B](x:O_B)`$, see earlier discussion of list types)
 
 _Note: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract` (abstractness is crucial here, see `abstract` constraint below). See **match semantics**._
+
+*Model constraint*: 
+
+1. If set, at least one of `A owns B` and `A owns B[]` need to be `@abstract`.
 
 ### Constraints
 
@@ -230,9 +277,11 @@ _Comment: both preceding cases are kinda complicated/unnatural ... as reflected 
 * `(type) B @abstract` postulates $`b :! B(...)`$ to be impossible
 * `A plays B:I @abstract` postulates $`b :! B(a:I)`$ to be impossible for $a : A$
 * `A owns B @abstract` postulates $`b :! B(a:I)`$ to be impossible for $a : A$ 
+* `A owns B[] @abstract` postulates $`b :! [B](a:I)`$ to be impossible for $a : A$ 
 * `B relates I @abstract` postulates $`A <_! I`$ to be impossible for $A : \mathbf{Obj}$
+* `B relates I[] @abstract` postulates $`A <_! I`$ to be impossible for $A : \mathbf{Obj}$
 
-_Comment: The last case is the ugly duckling. Revisit?_
+_Comment: The last two cases is the ugly duckling. Revisit?_
 
 **Case VALUES**
 * `A owns B @values(v1, v2)` postulates if $a : A$ then $`a \in \{v_1, v_2\}`$  (**require**: 
@@ -255,9 +304,9 @@ _Comment: The last case is the ugly duckling. Revisit?_
 ### Triggers
 
 **Case DEP_DEL (CASCADE/INDEPEDENT)**
-* `(relation) B relates I @cascade`: deleting $`a : A`$ with existing $`b :! B(a:I,\Gamma)`$, such that $`b :! B(\Gamma)`$ violates $B$'s cardinality for $I$, triggers deletion of $b$.
+* `(relation) B relates I @cascade`: deleting $`a : A`$ with existing $`b :! B(a:I,...)`$, such that $`b :! B(...)`$ violates $B$'s cardinality for $I$, triggers deletion of $b$.
   * **defaults** to **TT** error
-* `(relation) B @cascade`: deleting $`a : A`$ with existing $`b :! B(a:I,\Gamma)`$, such that $`b :! B(\Gamma)`$ violates $B$'s cardinality _for any role_ of $B$, triggers deletion of $b$.
+* `(relation) B @cascade`: deleting $`a : A`$ with existing $`b :! B(a:I,...)`$, such that $`b :! B(...)`$ violates $B$'s cardinality _for any role_ of $B$, triggers deletion of $b$.
   * **defaults** to **TT** error
 * `(attribute) B @independent`. When deleting $`a : A`$ with existing $`b :! B(a:O_B)`$, update the latter to $`b :! B`$.
   * **defaults** to: deleting $`a : A`$ with existing $`b :! B(a:O_B)`$ triggers deletion of $b$.
@@ -379,7 +428,9 @@ _In each case, `undefine` removes the postulated condition (restoring the defaul
 * `@abstract from (type) B` 
 * `@abstract from A plays B:I`
 * `@abstract from A owns B` 
+* `@abstract from A owns B[]` 
 * `@abstract from B relates I`
+* `@abstract from B relates I[]`
 
 **Case VALUES**
 * `@values(v1, v2) from A owns B` 
@@ -434,6 +485,13 @@ _Comment: notice difference in capitalization between the two cases!_
 
 _In each case, redefine acts like an undefine (which cannot be a no-op) and a define of the given axiom_
 
+**Redefine principles**: 
+
+1. Can only redefine one thing at a time
+2. We disallow redefining boolean properties:
+  * _Example 1_: a type can either exists or not. we cannot "redefine" it's existence, but only define or undefine it.
+  * _Example 2_: a type is either abstract or not. we can only define or undefine `@abstract`.
+
 ### Type defs
 
 **Case ENT**
@@ -443,10 +501,10 @@ _In each case, redefine acts like an undefine (which cannot be a no-op) and a de
 **Case REL**
 * cannot redefine `relation A` 
 * `(relation) A sub B` redefines $`A < B`$
-* cannot redefine `(relation) A relates I$`
-* `(relation) A relates I as J$` redefines $`I <_! J`$ 
+* cannot redefine `(relation) A relates I`
+* `(relation) A relates I as J$` redefines $`I <_! J`$ (**require**: either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role)
 * cannot redefine `(relation) A relates I[]`
-* `(relation) A relates I[] as J[]` redefines $`I <_! J`$
+* `(relation) A relates I[] as J[]` redefines $`I <_! J`$ (**require**: either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role)
 
 **Case ATT**
 * cannot redefine `attribute A`
@@ -492,7 +550,9 @@ _In each case, `redefine` redefines the postulated condition._
 * cannot redefine `(type) B @abstract` 
 * cannot redefine `A plays B:I @abstract`
 * cannot redefine `A owns B @abstract` 
+* cannot redefine `A owns B[] @abstract` 
 * cannot redefine `B relates I @abstract`
+* cannot redefine `B relates I[] @abstract`
 
 **Case VALUES**
 * `A owns B @values(v1, v2)` 
@@ -516,30 +576,73 @@ _In each case, `redefine` redefines the triggered action._
 ### Value type defs
 
 **Case PRIMITIVES**
+
 cannot redefine primitives
 
 **Case STRUCT**
+
 cannot redefine structs
 
 ### Functions defs
 
 **Case STREAM_RET_FUN**
+
 cannot redefine stream-return functions.
 
 **Case SINGLE_RET_FUN**
+
 cannot redefine single-return functions.
 
-# Data languages
-
-_Pertaining to reading and writing data_
+# Data instance languages
 
 ## Match patterns and semantics
 
-Topics: match semantics, optionality (in structs and function outputs)
 
-### Optionality
+### Basics: Variables and Answers
 
-### Function semantics
+**Variables**
+
+* _Syntax_: vars start with `$`
+* _Usage_: vars appear as part of 
+  * statements: atomic building blocks, `;`-separated 
+  * patterns: collection of statements, combined with logical connectives: "and" (default), `or`, `not`, `try`
+* _Var kinds_: Position in statements determines wether variables are
+  * type variables (**tvar**, uppercase convention in this spec)
+  * data instance variables (**dvar**, lowercase convention in this spec)
+
+**Answers**
+
+* An answer to a pattern resolves each variable `$x` to a **concept** `concept($x)` (math. notation: $\gamma(x)$), such that the pattern is **satisfied** (as defined in the following sections)
+  * **tvar**s resolve to types
+  * **dvar**s resolve to instances in types
+  * each **dvar** `$x` answer `concept($x)` comes with a type `type($x)` (math. notation: $\tau(x)$) such that one of the following holds
+    * either $\tau(x)$ is schema type and $\gamma(x) ~:!~\tau(x)$
+    * or $\tau(x)$ is a value type (primitive of structured) and $\gamma(x) :! \tau(x)$.
+* _Key properties_:
+  * Based on the rules outline in the next sections, there is a unique minimal solution for the type assignment $x \mapsto \tau(x)$. Algorithm to compute:
+    * To each concept assign its direct type if available,
+    * To attribute concepts used non-comparable, same-valued attribute types otherwise re-assign 
+  * Type checking failure (**TCF**) will occur when no joins exists
+  * **tvar**s `$T` never resolve to list types
+  * **dvar**s `$d` may resolve to lists, but this is always indicated in the pattern as we will see.
+
+
+### Assignments, bindings
+
+### Type patterns
+
+**Case TYPE_DEF**
+
+**Case CONSTRAINT**
+
+### Data patterns
+
+### Optionality patterns
+
+### Value expression patterns
+
+### Function patterns
+
 
 ## Insert semantics
 
@@ -582,3 +685,100 @@ Execution order of pipelines
 Optional fields in structs
 
 sticky: behaviour of `abstract`
+
+# Glossary
+
+## Type system
+
+### Type 
+
+Any type in the type system.
+
+### Schema type
+
+A type containg data inserted into the database. Cases: 
+
+* Entity type, 
+* Relation type, 
+* Attribute type,
+* Interface type.
+
+### Value type
+
+A type containing a pre-defined set of values. Cases:
+
+* Primitive value type: `bool`, `string`, ...
+* Structured value type / struct value type / struct: user-defined
+
+### Data instance / instance
+
+A term in an entity, relation, or attribute type. Special cases:
+
+* Entity: A term in an entity type.
+* Relation: A term in a relation type.
+* Attribute: A term in attribute type.
+* Object: A term in an entity or relation type.
+* Roleplayer: Object that is cast into the element of a role type.
+* Owner: Object that is cast into the element of an ownership type.
+
+### Data value / value
+
+A term in a value type.
+
+### Attribute instance value / attribute value
+
+An attribute cast into an element of its value type.
+
+### Data term / term
+
+Any term in any type (i.e. value or instance).
+
+### Concept
+
+A term or a type.
+
+### Type kind
+
+The kind of a (schema) type: entity, relation, attribute, role, ownership, value.
+
+## TypeQL syntax
+
+### Schema query
+
+(Loosely:) Query pertaining to schema manipulation
+
+### Data query
+
+(Loosely:) Query pertaining to data manipulation or retrieval
+
+### Clause / Stream clause
+
+* `match`, `insert`, `delete`, `define`, `undefine`,
+
+### Operators / Stream operator
+
+* `select`, `sort`, ... 
+
+### Functions
+
+callable `match-return` query. can be single-return or stream-return.
+
+### Statement
+
+... what's in between two `;`.
+
+### Reductions
+
+* `list`, `sum`, `count` ...
+
+### Clause
+
+part of a query pipeline
+
+### Block
+
+`{ pattern }` 
+
+### Suffix
+
+`[]` and `?`.
