@@ -1,5 +1,11 @@
 # TypeDB - Behaviour Specification
 
+<!-- TODO 
+* \gamma -> \mathsf{ans}
+* concept(..) -> ans(...)
+* \tau -> \mathsf{typ}
+-->
+
 **Table of contents**
 
 - [Terminology and notation](#terminology-and-notation)
@@ -84,9 +90,9 @@ _(For reference only)_
 * **CT** — commit time
   * _Interpretation_: time of committing a transaction to DB
 * **tvar** — type variable
-* **dvar** - data variable
+* **evar** - data variable
 
-_Note_: **tvar**s and **dvar**s are uniquely distinguish everywhere in TypeQL
+_Note_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
 
 ## Type system basics and notation
 
@@ -96,7 +102,7 @@ _Note_: **tvar**s and **dvar**s are uniquely distinguish everywhere in TypeQL
   If $A$ is a type, then we may write $`a : A`$ to mean
   > $a$ is an element in type $A$.
 
-  * _Direct typing_: $a :! A$ means:
+  * _Direct typing_: $a :_! A$ means:
     > $a$ was declared as an element of $A$ by the user (a.k.a. a _direct_ typing).
 
   * _Example_: $p$ is of type $\mathsf{Person}$
@@ -107,18 +113,25 @@ _Note_: **tvar**s and **dvar**s are uniquely distinguish everywhere in TypeQL
   * _Example_: $`\mathsf{Person} : \mathbf{Ent}`$ is an entity type.
   * _Example_: $`\mathsf{Marriage : \mathbf{Rel}(Spouse)}`$ is a relation type with interface type $`\mathsf{Spouse}`$.
 * **Dependent typing**. $A : \mathbf{Type}(I,J,...)$ implies $`A(x:I, y:J) : \mathbf{Type}`$ for any $x: I, y: J$. Writing $`a : A(x : I, y : J,...)`$ means:
-  > $a$ is an element in type "$`A`$ of $`x`$ (as $`I`$), and $`y`$ (as $`J`$), and ...".
+  > The element $a$ lives in the type "$`A`$ of $`x`$ (cast as $`I`$), and $`y`$ (cast as $`J`$), and ...".
 
   * _Grouping duplicates_: $`a : A(x : I, y : I)`$ write $`A : A(\{x,y\}:I^2)`$
   * _Role cardinality_: $|a|_I$ counts elements in $\{x_1,...,x_k\} :I^k$
   * **Example**: $m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)$. Then $|m|_{\mathsf{Spouse}} = 2$.
 * **Key properties of dependencies**
-  * _Combining dependencies_: if $A : \mathbf{Type}(I)$ and $A : \mathbf{Type}(J)$ then $A : \mathbf{Type}(I,J)$
+  * _Combining dependencies_: if $A : \mathbf{Type}(I)$ and $A : \mathbf{Type}(J)$ then $A : \mathbf{Type}(I,J)$.
+    > If a type separately depends on $I$ and on $J$, then it may jointly depend on $I$ and $J$! 
+
     * _Remark_: This applies recursively.
     * _Example_: $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband})`$ and $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Wife})`$ then $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband},\mathsf{Wife})`$
-  * _Weakening dependencies_: If $A : \mathbf{Type}(I,J)$ then $A : \mathbf{Type}(I)$
+  * _Weakening dependencies_: If $A : \mathbf{Type}(I,J)$ then $A : \mathbf{Type}(I)$. In words
+    > Dependencies can be, in principle, simply ignored (note: this is a corase rule — we later discuss more fine-grained constraints, e.g. cardinality)
+
     * _Remark_: This applies recursively.
     * _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ then $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and $`\mathsf{Marriage} : \mathbf{Rel}`$ (omit "$`()`$")
+  * _Inheriting dependencies_: If $A : \mathbf{Type}$, $B : \mathbf{Type}(I)$, $A < B$ and _not_ $A : \mathbf{Type}(J)$ with $J < I$, then $A : \mathbf{Type}(I)$. In words:
+    > Dependencies that are not overwritten are inherited
+
 * **Casting**. Write $`A < B`$ to indicating type casts from $A$ to $B$, i.e. if $a : A$ then $a : B$. In other words:
   > A casts into B
 
@@ -133,7 +146,7 @@ _Note_: **tvar**s and **dvar**s are uniquely distinguish everywhere in TypeQL
     > Elements in $`A(I,J)`$ casts into elements of $`A(I)`$.
 
     * _Remark_: This applies recursively.
-    * _Remark 2_: This casting preserves direct typings! I.e. when $`a :! A(x:I, y:J)`$ then $`a :! A(x:I)`$
+    * _Remark 2_: This casting preserves direct typings! I.e. when $`a :_! A(x:I, y:J)`$ then $`a :_! A(x:I)`$
     * _Example_: If $m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)$ then both $m : \mathsf{Marriage}(x:\mathsf{Spouse})$ and $m : \mathsf{Marriage}(y:\mathsf{Spouse})$
   * _Covariance of dependencies_: Given $`A < B`$, $`I < J`$ such that $`A : \mathbf{Type}(I)`$ $`B : \mathbf{Type}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$; in other words:
     > Elements in $`A(I)`$ cast into elements of $`B(J)`$.
@@ -149,7 +162,7 @@ _Note_: **tvar**s and **dvar**s are uniquely distinguish everywhere in TypeQL
 
     * _Example_: $`[a,b,c] : [\mathsf{MiddleName}](x : \mathsf{MiddleNameListOwner})`$
   * _List length_: for list $l : [A]$ the term $\mathrm{len}(l) : \mathbb{N}$ represents $l$'s length
-  * _Abstractness_: all list types are abstract by default, i.e. their terms cannot be explicitly declared (a la $`l :! [A](x:I)`$)
+  * _Abstractness_: all list types are abstract by default, i.e. their terms cannot be explicitly declared (a la $`l :_! [A](x:I)`$)
 * **Sum types**. $`A + B`$ — Sum type
 * **Product types**. $`A \times B`$ — Product type
 * **Type cardinality**.$`|A| : \mathbb{N}`$ — Cardinality of $A$
@@ -228,7 +241,7 @@ Define adds axioms, as described below. Th
 
 **Case OWNS**
 * `A owns B` adds $`A <_! O_B`$ (**require**: $B: \mathbf{Att}(O_B)$, $`A :\mathbf{Obj}`$)
-* `A owns B[]` adds $`A <_! O_B`$ (**require**: $B: \mathbf{Att}(O_B)$, **puts B[] to be non-abstract**: i.e. allows declaring terms $`l :! [B](x:O_B)`$, see earlier discussion of list types)
+* `A owns B[]` adds $`A <_! O_B`$ (**require**: $B: \mathbf{Att}(O_B)$, **puts B[] to be non-abstract**: i.e. allows declaring terms $`l :_! [B](x:O_B)`$, see earlier discussion of list types)
 
 _Note: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract` (abstractness is crucial here, see `abstract` constraint below). See **match semantics**._
 
@@ -274,10 +287,10 @@ _Comment: both preceding cases are kinda complicated/unnatural ... as reflected 
 * `A owns B1 @subkey(<LABEL>); A owns B2 @subkey(<LABEL>)` postulates that if $b : B_1(a:O_{B_1}) \times B_2(a:O_{B_2})`$ for some $a : A$ then this $a$ is unique, and also $|B_1(a:O_{B_1}) \times B_2(a:O_{B_2})| = 1$. **Generalizes** to $n$ subkeys.
 
 **Case ABSTRACT**
-* `(type) B @abstract` postulates $`b :! B(...)`$ to be impossible
-* `A plays B:I @abstract` postulates $`b :! B(a:I)`$ to be impossible for $a : A$
-* `A owns B @abstract` postulates $`b :! B(a:I)`$ to be impossible for $a : A$ 
-* `A owns B[] @abstract` postulates $`b :! [B](a:I)`$ to be impossible for $a : A$ 
+* `(type) B @abstract` postulates $`b :_! B(...)`$ to be impossible
+* `A plays B:I @abstract` postulates $`b :_! B(a:I)`$ to be impossible for $a : A$
+* `A owns B @abstract` postulates $`b :_! B(a:I)`$ to be impossible for $a : A$ 
+* `A owns B[] @abstract` postulates $`b :_! [B](a:I)`$ to be impossible for $a : A$ 
 * `B relates I @abstract` postulates $`A <_! I`$ to be impossible for $A : \mathbf{Obj}$
 * `B relates I[] @abstract` postulates $`A <_! I`$ to be impossible for $A : \mathbf{Obj}$
 
@@ -306,12 +319,12 @@ _Comment: The last two cases is the ugly duckling. Revisit?_
 ### Triggers
 
 **Case DEP_DEL (CASCADE/INDEPEDENT)**
-* `(relation) B relates I @cascade`: deleting $`a : A`$ with existing $`b :! B(a:I,...)`$, such that $`b :! B(...)`$ violates $B$'s cardinality for $I$, triggers deletion of $b$.
+* `(relation) B relates I @cascade`: deleting $`a : A`$ with existing $`b :_! B(a:I,...)`$, such that $`b :_! B(...)`$ violates $B$'s cardinality for $I$, triggers deletion of $b$.
   * **defaults** to **TT** error
-* `(relation) B @cascade`: deleting $`a : A`$ with existing $`b :! B(a:I,...)`$, such that $`b :! B(...)`$ violates $B$'s cardinality _for any role_ of $B$, triggers deletion of $b$.
+* `(relation) B @cascade`: deleting $`a : A`$ with existing $`b :_! B(a:I,...)`$, such that $`b :_! B(...)`$ violates $B$'s cardinality _for any role_ of $B$, triggers deletion of $b$.
   * **defaults** to **TT** error
-* `(attribute) B @independent`. When deleting $`a : A`$ with existing $`b :! B(a:O_B)`$, update the latter to $`b :! B`$.
-  * **defaults** to: deleting $`a : A`$ with existing $`b :! B(a:O_B)`$ triggers deletion of $b$.
+* `(attribute) B @independent`. When deleting $`a : A`$ with existing $`b :_! B(a:O_B)`$, update the latter to $`b :_! B`$.
+  * **defaults** to: deleting $`a : A`$ with existing $`b :_! B(a:O_B)`$ triggers deletion of $b$.
 
 
 ### Value type defs
@@ -608,7 +621,7 @@ cannot redefine single-return functions.
 
 * _Syntax_: vars start with `$`
 * _Usage_: vars appear as part of 
-  * statements: atomic building blocks, `;`-separated 
+  * statements: indivisible patterns (see Glossary), `;`-separated 
   * patterns: collection of statements, combined with logical connectives:
     * "and" (default), 
     * `or`, 
@@ -616,43 +629,130 @@ cannot redefine single-return functions.
     * `try`
 * _Var kinds_: Position in a statement determines wether variables are
   * type variables (**tvar**, uppercase convention in this spec)
-  * data instance variables (**dvar**, lowercase convention in this spec)
+  * data instance variables (**evar**, lowercase convention in this spec)
 
 **Answers**
 
-* _Definition_: An *answer* to a pattern resolves each variable `$x` to a **concept** `concept($x)` (math. notation: $\gamma(x)$), such that the pattern is **satisfied** (as defined in the following sections)
+* _Definition_: 
+
+  An *answer* to a pattern means the following
+  * _Concept map_: it resolves each variable `$x` to a **concept** `concept($x)` (math. notation: $\gamma(x)$). 
+  * _Element typing_: For each **evar** `$x` we further record a type `type($x)` (math. notation: $\tau(x)$), such that
+    * either $\tau(x)$ is schema type and $\gamma(x) :_! \tau(x)$
+    * or $\tau(x)$ is a value type (primitive of structured) and $\gamma(x) :_! \tau(x)$.
+  * _Satisfaction_: The concept map and element typing is such that the pattern is **satisfied** (this is defined in the next sections)
 * _Key properties_:
-  * **tvar**s always resolve to types
-  * **dvar**s always resolve to elements
-  * each **dvar** `$x` answer `concept($x)` comes with a type `type($x)` (math. notation: $\tau(x)$) such that one of the following holds
-    * either $\tau(x)$ is schema type and $\gamma(x) ~:!~\tau(x)$
-    * or $\tau(x)$ is a value type (primitive of structured) and $\gamma(x) :! \tau(x)$.
-  * Based on the rules outline in the next sections, there is a unique minimal solution for the type assignment $x \mapsto \tau(x)$. Algorithm to compute:
-    1. To each concept assign its direct type if available,
-    2. To attribute concepts used non-comparable, same-valued attribute types otherwise re-assign 
-  * Type checking failure (**TCF**) will occur when no joins exists
+  * **tvar**s `$T` always resolve to types
+  * **evar**s `$x` always resolve to elements
   * **tvar**s `$T` never resolve to list types
-  * **dvar**s `$d` may resolve to lists, but this is always indicated in the pattern as we will see.
+  * **evar**s `$x` may resolve to lists, but this is always indicated in the pattern as we will see.
+  * _Theorem_: Based on the rules outlined in the next sections, there is a unique minimal solution for the type assignment $x \mapsto \tau(x)$. Algorithm to compute this:
+    1. To each concept assign its direct type if available,
+    2. To any attribute instance used in non-comparable, same-valued attribute types otherwise re-assign that value type.
 
 
-### Assignments, bindings
+_Remark_: _Type Checking_ preceeds answer computation. Type checking failure (**TCF**) will occur when a variables cannot possibly have an assigned type.
 
-### Type patterns
+**Bindings**
+
+* _Key principle_: 
+  * A pattern will only be accepted by TypeDB if all variables are **bound**. (Otherwise, we may encounter unbounded/literally impossible computations of answers.)
+  * A variable is bound if it appears in a _binding position_ of at least one statement. 
+  (Most statements bind their variables: in the next section we highlight non-binding positions)
+
+### Satisfying type patterns
 
 **Case TYPE_DEF**
+* `type $A` (for `type` in `{entity, relation, attribute}`) satisfied if $`\gamma(A) : \mathbf{Type}`$
+* `(type) $A sub $B` satisfied if $`\gamma(A) : \mathbf{Type}`$, $`\gamma(B) : \mathbf{Type}`$, $`\gamma(A) \lneq \gamma(B)$
+* `(type) $A sub! $B` satisfied if $`\gamma(A) : \mathbf{Type}`$, $`\gamma(B) : \mathbf{Type}`$, $`\gamma(A) <_! \gamma(B)$
 
-**Case CONSTRAINT**
+_Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not`, and `is`. Similar remarks apply to **all** other `!`-variations of TypeQL key words below.
 
-### Data patterns
+**Case REL_PATT**
+* `$A relates $I` satisfied if $`\gamma(A) : \mathbf{Rel}(\gamma(I))`$
+* `$A relates! $I` satisfied if $`\gamma(A) : \mathbf{Rel}(\gamma(I))`$ and **not** $`\gamma(A) \lneq \gamma(B) : \mathbf{Rel}(\gamma(I))`$
+* `$A relates $I as $J` satisfied if $`\gamma(A) : \mathbf{Rel}(\gamma(I))`$, $`B : \mathbf{Rel}(\gamma(J))`$, $`A < B`$, $\gamma(I) < \gamma(J)$.
+* `$A relates $I[]` satisfied if $`\gamma(A) : \mathbf{Rel}(\gamma([I]))`$
+* `$A relates! $I[]` satisfied if $`\gamma(A) : \mathbf{Rel}(\gamma([I]))`$ and **not** $`\gamma(A) \lneq \gamma(B) : \mathbf{Rel}(\gamma([I]))`$
+* `$A relates $I[] as $J[]` satisfied if $`\gamma(A) : \mathbf{Rel}(\gamma([I]))`$, $`B : \mathbf{Rel}(\gamma([J]))`$, $`A < B`$, $\gamma(I) < \gamma(J)$.
 
-### Optionality patterns
+**Case PLAY_PATT**
+* `$A plays $I` satisfied if $`\gamma(A) < A' <_! \gamma(I)`$ (for $A'$ **not** an interface type)
+* `$A plays! $I` satisfied if $`\gamma(A) <_! \gamma(I)`$
 
-### Value expression patterns
+**Case OWNS_PATT**
+* `$A owns $B` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type)
+* `$A owns! $B` satisfied if $`\gamma(A) <_! \gamma(O_B)`$ 
 
-### Function patterns
+### Satisfying constraint patterns
+
+_Remark: the usefulness of constraint patterns seems overall low, could think of a different way to retrieve full schema or at least annotations (this would be more useful than, say,having to find cardinalities by "trialing and erroring" through matching). TODO: discuss!_
+
+**Case CARD_PATT**
+* cannot match `@card(n..m)` (TODO: discuss! `@card($n..$m)`??)
+<!-- 
+* `A relates I @card(n..m)` satisfied if $`\gamma(A) : \mathbf{Rel}(\gamma(I))`$ and schema allows $|a|_I$ to be any number in range `n..m`.
+* `A plays B:I @card(n..m)` satisfied if ...
+* `A owns B @card(n...m)` satisfied if ...
+* `$A relates $I[] @card(n..m)` satisfied if ...
+* `$A owns $B[] @card(n...m)` satisfied if ...
+-->
+
+**Case PLAYS_AS_PATT**
+* `$A plays $B:$I as $C:$J` satisfied if (for simplicitly, let's write $A = \gamma(A)$, $I = \gamma(I), J = \gamma(J)$) $A \leq A' <_! D' \leq D$,  $I \leq I' <_! J' \leq J$, with $`A^{(')} < {I^{(')}}`$, $`D^{(')} < {J^{(')}}`$, and schema directly contains constraint `A' plays B':I' as C':J'` for relation types $B \leq B' \leq_! C' \leq C$.
+
+_Note: this is still not a natural constraint, as foreshadowed by a previous remark!_
+
+**Case OWNS_AS_PATT**
+* `$A owns $B as $C` satisfied if (for simplicitly, let's write $A = \gamma(A), B = \gamma(B), C = \gamma(C)$) $A \leq A' <_! D' \leq D$,  $B \leq B' <_! C' \leq C$, with $`A^{(')} < O_{B^{(')}}`$, $`D^{(')} < O_{C^{(')}}`$, and schema directly contains constraint `A' owns B' as C'`.
+
+**Case UNIQUE_PATT**
+* `$A owns $B @unique` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans(B) @key`.
+* `$A owns! $B @unique` satisfied if $`\gamma(A) <_! \gamma(O_B)`$, and schema directly contains constraint `ans(A) owns ans(B) @unique`.
+
+**Case KEY_PATT**
+* `$A owns $B @key` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans(B) @key`.
+* `$A owns! $B @key` satisfied if $`\gamma(A) <_! \gamma(O_B)`$, and schema directly contains constraint `ans(A) owns ans(B) @key`.
+
+**Case SUBKEY_PATT**
+* `$A owns $B @subkey(<LABEL>)` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans(B) @subkey(<LABEL>)`.
+
+**Case ABSTRACT_PATT**
+* `(type) $B @abstract` satisfied if 
+* cannot match `@abstract` in other cases ()
+
+**Case VALUES_PATT**
+* cannot match `@values/@regex/@range` (TODO: discuss!)
+<!--
+* `A owns B @values(v1, v2)` satisfied if 
+* `A owns B @regex(<EXPR>)` satisfied if 
+* `A owns B @range(v1..v2)` satisfied if 
+* `A value B @values(v1, v2)` satisfied if 
+* `A value B @regex(<EXPR>)` satisfied if 
+* `A value B @range(v1..v2)` satisfied if 
+-->
+
+**Case DISTINCT_PATT**
+* `A owns B[] @distinct` satisfied if 
+* `B relates I[] @distinct` satisfied if 
+
+### Satisfying data patterns
+
+### Satisfying Optionality patterns
+
+### Satisfying value expression patterns
+
+### Satisfying function patterns
+
+Refer to section on Function semantics
 
 
 ## Insert semantics
+
+### Leaf attribute model constraint
+
+TODO: Remove this constraint!
 
 ## Delete semantics
 
@@ -773,9 +873,12 @@ callable `match-return` query. can be single-return or stream-return.
 
 ### Statement
 
-... what's in between two `;`.
+An atomic pattern (cannot be subdivided). Variations:
 
-### Reductions
+* Simple statement: statement not containing `,`
+* Combined statement: statement combined with `,`
+
+### Stream reduction / reduction
 
 * `list`, `sum`, `count` ...
 
