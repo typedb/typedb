@@ -289,13 +289,15 @@ _Comment: The last two cases is the ugly duckling. Revisit?_
   * or $`A`$ is the component of a struct, see section on struct defs.) 
   
   **Generalizes** to $n$ values.
-* `A owns B @values(v1..v2)` postulates if $a : A$ then $`a \in [v_1,v_2]`$ (conditions as before).
+* `A owns B @regex(v1..v2)` postulates if $a : A$ then $`a`$ conforms with regex `<EXPR>`.
+* `A owns B @range(v1..v2)` postulates if $a : A$ then $`a \in [v_1,v_2]`$ (conditions as before).
 * `A value B @values(v1, v2)` postulates if $a : A$ then $`a \in \{v_1, v_2\}`$  (**require**: 
   * either $`A : \mathbf{Att}`$, $`A < V`$, $`v_i : V`$, 
   * or $`A`$ is the component of a struct, see section on struct defs.)
   
   **Generalizes** to $n$ values.
-* `A value B @values(v1..v2)` postulates if $a : A$ then $`a \in [v_1,v_2]`$ (conditions as before).
+* `A value B @regex(v1..v2)` postulates if $a : A$ then $`a`$ conforms with regex `<EXPR>`.
+* `A value B @range(v1..v2)` postulates if $a : A$ then $`a \in [v_1,v_2]`$ (conditions as before).
 
 **Case DISTINCT**
 * `A owns B[] @distinct` postulates that when $`[b_1, ..., b_n] : [B]`$ then all $`b_i`$ are distinct. 
@@ -434,9 +436,9 @@ _In each case, `undefine` removes the postulated condition (restoring the defaul
 
 **Case VALUES**
 * `@values(v1, v2) from A owns B` 
-* `@values(v1..v2) from A owns B`
+* `@range(v1..v2) from A owns B`
 * `@values(v1, v2) from A values B` 
-* `@values(v1..v2) from A values B`
+* `@range(v1..v2) from A values B`
 
 **Case DISTINCT**
 * `@distinct from A owns B[]`
@@ -556,9 +558,11 @@ _In each case, `redefine` redefines the postulated condition._
 
 **Case VALUES**
 * `A owns B @values(v1, v2)` 
-* `A owns B @values(v1..v2)`
-* `A values B @values(v1, v2)` 
-* `A values B @values(v1..v2)`
+* `A owns B @regex(<EXPR>)` 
+* `A owns B @range(v1..v2)`
+* `A value B @values(v1, v2)` 
+* `A value B @regex(<EXPR>)` 
+* `A value B @range(v1..v2)`
 
 **Case DISTINCT**
 * cannot redefine `A owns B[] @distinct`
