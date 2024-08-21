@@ -61,7 +61,7 @@ _(For reference only)_
 
 _Note_: **tvar**s and **dvar**s are uniquely distinguish everywhere in TypeQL
 
-## Type basics and notation
+## Type system basics and notation
 
 * **Types and Typing**. $`A : \mathbf{Type}`$ means
   > $A$ is a type. 
@@ -255,11 +255,11 @@ _Comment: The last case is the ugly duckling. Revisit?_
 ### Triggers
 
 **Case DEP_DEL (CASCADE/INDEPEDENT)**
-* `relation B relates I @cascade`: deleting $`a : A`$ with existing $`b :! B(a:I,\Gamma)`$, such that $`b :! B(\Gamma)`$ violates $B$'s cardinality for $I$, triggers deletion of $b$.
+* `(relation) B relates I @cascade`: deleting $`a : A`$ with existing $`b :! B(a:I,\Gamma)`$, such that $`b :! B(\Gamma)`$ violates $B$'s cardinality for $I$, triggers deletion of $b$.
   * **defaults** to **TT** error
-* `relation B @cascade`: deleting $`a : A`$ with existing $`b :! B(a:I,\Gamma)`$, such that $`b :! B(\Gamma)`$ violates $B$'s cardinality _for any role_ of $B$, triggers deletion of $b$.
+* `(relation) B @cascade`: deleting $`a : A`$ with existing $`b :! B(a:I,\Gamma)`$, such that $`b :! B(\Gamma)`$ violates $B$'s cardinality _for any role_ of $B$, triggers deletion of $b$.
   * **defaults** to **TT** error
-* `attribute B @independent`. When deleting $`a : A`$ with existing $`b :! B(a:O_B)`$, update the latter to $`b :! B`$.
+* `(attribute) B @independent`. When deleting $`a : A`$ with existing $`b :! B(a:O_B)`$, update the latter to $`b :! B`$.
   * **defaults** to: deleting $`a : A`$ with existing $`b :! B(a:O_B)`$ triggers deletion of $b$.
 
 
@@ -370,7 +370,7 @@ _In each case, `undefine` removes the postulated condition (restoring the defaul
 * `@unique from A owns B`
 
 **Case KEY**
-* `@key from A owns B` postulates that if $`b : B(a:O_B)`$ for some $a : A$ then this $a$ is unique, and also $|B(a:O_B) = 1$.
+* `@key from A owns B`
 
 **Case SUBKEY**
 * `@subkey(<LABEL>) from A owns B` removes $`B`$ as part of the `<LABEL>` key of $`A`$
@@ -396,9 +396,9 @@ _In each case, `undefine` removes the postulated condition (restoring the defaul
 _In each case, `undefine` removes the triggered action._
 
 **Case DEP_DEL (CASCADE/INDEPEDENT)**
-* `@cascade from relation B relates I`
-* `@cascade relation B @cascade`
-* `@independent attribute B @independent`
+* `@cascade from (relation) B relates I`
+* `@cascade from (relation) B`
+* `@independent from (attribute) B`
 
 ### Value type defs
 
@@ -449,74 +449,74 @@ _In each case, redefine acts like an undefine (which cannot be a no-op) and a de
 * `(relation) A relates I[] as J[]` redefines $`I <_! J`$
 
 **Case ATT**
-* `attribute A` redefines $`A : \mathbf{Att}`$ and $`A : \mathbf{Att}(O_A)`$
-* `value V from (attribute) A value V` redefines $`A < V`$
-* `sub B from (attribute) A` redefines $`A <_! B`$ and $`O_A <_! O_B`$
+* cannot redefine `attribute A`
+* `(attribute) A value V` redefines $`A < V`$
+* cannot redefine `(attribute) A sub B`
 
 **Case PLAYS**
-* `plays B:I from (type) A` redefines $`A <_! I`$ 
+* cannot redefine `(type) A plays B:I`
 
 **Case OWNS**
-* `owns B from (type) A` redefines $`A <_! O_B`$ 
-* `owns B[] from (type) A` redefines $`A <_! O_B`$
+* cannot redefine `(type) A owns B`
+* cannot redefine `(type) A owns B[]`
 
 ### Constraints
 
-_In each case, `undefine` redefines the postulated condition (restoring the default)._ (minor exception: subkey)
+_In each case, `redefine` redefines the postulated condition._
 
 **Case CARD**
-* `@card(n..m) from A relates I`
-* `@card(n..m) from A plays B:I`
-* `@card(n...m) from A owns B`
+* `A relates I @card(n..m)`
+* `A plays B:I @card(n..m)`
+* `A owns B @card(n...m)`
 
 **Case CARD_LIST**
-* `@card(n..m) from A relates I[]`
-* `@card(n...m) from A owns B[]`
+* `A relates I[] @card(n..m)`
+* `A owns B[] @card(n...m)`
 
 **Case PLAYS_AS**
-* `as C from A plays B`
+* `A plays B as C`
 
 **Case OWNS_AS**
-* `as C from A owns B`
+* `A owns B as C`
 
 **Case UNIQUE**
-* `@unique from A owns B`
+* cannot redefine `A owns B @unique`
 
 **Case KEY**
-* `@key from A owns B` postulates that if $`b : B(a:O_B)`$ for some $a : A$ then this $a$ is unique, and also $|B(a:O_B) = 1$.
+* cannot redefine `A owns B @key`
 
 **Case SUBKEY**
-* `@subkey(<LABEL>) from A owns B` redefines $`B`$ as part of the `<LABEL>` key of $`A`$
+* cannot redefine `A owns B @subkey(<LABEL>)`
 
 **Case ABSTRACT**
-* `@abstract from (type) B` 
-* `@abstract from A plays B:I`
-* `@abstract from A owns B` 
-* `@abstract from B relates I`
+* cannot redefine `(type) B @abstract` 
+* cannot redefine `A plays B:I @abstract`
+* cannot redefine `A owns B @abstract` 
+* cannot redefine `B relates I @abstract`
 
 **Case VALUES**
-* `@values(v1, v2) from A owns B` 
-* `@values(v1..v2) from A owns B`
-* `@values(v1, v2) from A values B` 
-* `@values(v1..v2) from A values B`
+* `A owns B @values(v1, v2)` 
+* `A owns B @values(v1..v2)`
+* `A values B @values(v1, v2)` 
+* `A values B @values(v1..v2)`
 
 **Case DISTINCT**
-* `@distinct from A owns B[]`
-* `@distinct from B relates I[]`
+* cannot redefine `A owns B[] @distinct`
+* cannot redefine `B relates I[] @distinct`
 
 ### Triggers
 
-_In each case, `undefine` redefines the triggered action._
+_In each case, `redefine` redefines the triggered action._
 
 **Case DEP_DEL (CASCADE/INDEPEDENT)**
-* `@cascade from relation B relates I`
-* `@cascade relation B @cascade`
-* `@independent attribute B @independent`
+* cannot redefine `(relation) B relates I @cascade`
+* cannot redefine `(relation) B @cascade`
+* cannot redefine `(attribute) B @independent`
 
 ### Value type defs
 
 **Case PRIMITIVES**
-cannot undefine primitives
+cannot redefine primitives
 
 **Case STRUCT**
 cannot redefine structs
@@ -533,11 +533,9 @@ cannot redefine single-return functions.
 
 _Pertaining to reading and writing data_
 
-## Match semantics
+## Match patterns and semantics
 
 Topics: match semantics, optionality (in structs and function outputs)
-
-
 
 ### Optionality
 
