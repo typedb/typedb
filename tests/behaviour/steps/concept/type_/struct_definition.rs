@@ -99,7 +99,12 @@ pub async fn struct_create_field_with_value_type(
 
 #[apply(generic_step)]
 #[step(expr = "struct\\({type_label}\\) delete field: {type_label}{may_error}")]
-pub async fn struct_delete_field(context: &mut Context, type_label: params::Label, field_label: params::Label, may_error: params::MayError) {
+pub async fn struct_delete_field(
+    context: &mut Context,
+    type_label: params::Label,
+    field_label: params::Label,
+    may_error: params::MayError,
+) {
     with_schema_tx!(context, |tx| {
         let definition_key = &tx
             .type_manager

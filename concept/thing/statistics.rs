@@ -20,11 +20,10 @@ use encoding::graph::{
         vertex_object::ObjectVertex,
         ThingVertex,
     },
-    type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt},
+    type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
     Typed,
 };
 use serde::{Deserialize, Serialize};
-use encoding::graph::type_::vertex::TypeVertexEncoding;
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,

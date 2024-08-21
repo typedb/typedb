@@ -18,7 +18,12 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
-use crate::{generic_step, params::check_boolean, transaction_context::{with_read_tx, with_write_tx}, Context, params};
+use crate::{
+    generic_step, params,
+    params::check_boolean,
+    transaction_context::{with_read_tx, with_write_tx},
+    Context,
+};
 
 pub(super) fn object_set_has_impl(
     context: &mut Context,

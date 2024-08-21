@@ -4,21 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::{Display, Formatter},
-};
+use std::fmt::{Display, Formatter};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
         thing::{vertex_object::ObjectVertex, ThingVertex},
-        type_::vertex::PrefixedTypeVertexEncoding,
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
     layout::prefix::Prefix,
     AsBytes, Keyable, Prefixed,
 };
-use encoding::graph::type_::vertex::TypeVertexEncoding;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 

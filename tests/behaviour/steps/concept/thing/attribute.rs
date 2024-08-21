@@ -203,7 +203,11 @@ async fn attribute_instances_contain(
 
 #[apply(generic_step)]
 #[step(expr = r"attribute\({type_label}\) get instances {is_empty_or_not}")]
-async fn object_instances_is_empty(context: &mut Context, type_label: params::Label, is_empty_or_not: params::IsEmptyOrNot) {
+async fn object_instances_is_empty(
+    context: &mut Context,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
+) {
     with_read_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();

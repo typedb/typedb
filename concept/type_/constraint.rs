@@ -6,15 +6,13 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::{
-    type_::{
-        annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
-            AnnotationDistinct, AnnotationError, AnnotationIndependent, AnnotationKey, AnnotationRange,
-            AnnotationRegex, AnnotationUnique, AnnotationValues,
-        },
-        Capability,
+use crate::type_::{
+    annotation::{
+        Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
+        AnnotationDistinct, AnnotationError, AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex,
+        AnnotationUnique, AnnotationValues,
     },
+    Capability,
 };
 
 pub struct Constraint {}

@@ -7,10 +7,9 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
+    graph::type_::{edge::TypeEdgeEncoding, vertex::TypeVertexEncoding, CapabilityKind},
     layout::prefix::Prefix,
 };
-use encoding::graph::type_::vertex::TypeVertexEncoding;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 

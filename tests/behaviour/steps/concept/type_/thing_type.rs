@@ -11,14 +11,12 @@ use concept::type_::{
     relation_type::RelationTypeAnnotation, KindAPI, TypeAPI,
 };
 use cucumber::gherkin::Step;
-use encoding::value::value_type::ValueType;
+use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use itertools::Itertools;
 use macro_rules_attribute::apply;
-use encoding::graph::type_::Kind;
 
 use crate::{
-    generic_step,
-    params,
+    generic_step, params,
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     util, with_type, Context,
 };
@@ -94,7 +92,12 @@ pub(super) fn get_as_object_type(context: &mut Context, kind: Kind, label: &para
 
 #[apply(generic_step)]
 #[step(expr = "create {kind} type: {type_label}{may_error}")]
-pub async fn type_create(context: &mut Context, kind: params::Kind, type_label: params::Label, may_error: params::MayError) {
+pub async fn type_create(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    may_error: params::MayError,
+) {
     with_schema_tx!(context, |tx| {
         match kind.into_typedb() {
             Kind::Entity => {
@@ -122,7 +125,12 @@ pub async fn type_create(context: &mut Context, kind: params::Kind, type_label: 
 
 #[apply(generic_step)]
 #[step(expr = "delete {kind} type: {type_label}{may_error}")]
-pub async fn type_delete(context: &mut Context, kind: params::Kind, type_label: params::Label, may_error: params::MayError) {
+pub async fn type_delete(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    may_error: params::MayError,
+) {
     with_schema_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let res = type_.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
@@ -134,7 +142,12 @@ pub async fn type_delete(context: &mut Context, kind: params::Kind, type_label: 
 //
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) {exists_or_doesnt}")]
-pub async fn type_exists(context: &mut Context, kind: params::Kind, type_label: params::Label, exists: params::ExistsOrDoesnt) {
+pub async fn type_exists(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    exists: params::ExistsOrDoesnt,
+) {
     with_read_tx!(context, |tx| {
         match kind.into_typedb() {
             Kind::Attribute => {
@@ -177,7 +190,12 @@ pub async fn type_set_label(
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) get name: {type_label}")]
-pub async fn type_get_name(context: &mut Context, kind: params::Kind, type_label: params::Label, expected: params::Label) {
+pub async fn type_get_name(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    expected: params::Label,
+) {
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let actual_label = type_.get_label(tx.snapshot.as_ref(), &tx.type_manager);
@@ -188,7 +206,12 @@ pub async fn type_get_name(context: &mut Context, kind: params::Kind, type_label
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) get label: {type_label}")]
-pub async fn type_get_label(context: &mut Context, kind: params::Kind, type_label: params::Label, expected: params::Label) {
+pub async fn type_get_label(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    expected: params::Label,
+) {
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let actual_label = type_.get_label(tx.snapshot.as_ref(), &tx.type_manager);
@@ -446,7 +469,12 @@ pub async fn type_set_supertype(
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) unset supertype{may_error}")]
-pub async fn type_unset_supertype(context: &mut Context, kind: params::Kind, type_label: params::Label, may_error: params::MayError) {
+pub async fn type_unset_supertype(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    may_error: params::MayError,
+) {
     with_schema_tx!(context, |tx| {
         match kind.into_typedb() {
             Kind::Attribute => {
@@ -492,7 +520,12 @@ pub async fn type_unset_supertype(context: &mut Context, kind: params::Kind, typ
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) get supertype: {type_label}")]
-pub async fn type_get_supertype(context: &mut Context, kind: params::Kind, type_label: params::Label, supertype_label: params::Label) {
+pub async fn type_get_supertype(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    supertype_label: params::Label,
+) {
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let supertype = type_.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap();
@@ -506,7 +539,12 @@ pub async fn type_get_supertype(context: &mut Context, kind: params::Kind, type_
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) get supertype {exists_or_doesnt}")]
-pub async fn type_get_supertype_exists(context: &mut Context, kind: params::Kind, type_label: params::Label, exists: params::ExistsOrDoesnt) {
+pub async fn type_get_supertype_exists(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    exists: params::ExistsOrDoesnt,
+) {
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let supertype = type_.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
@@ -604,7 +642,12 @@ pub async fn get_subtypes_is_empty(
 
 #[apply(generic_step)]
 #[step(expr = "get {kind_extended} types {contains_or_doesnt}:")]
-pub async fn get_types_contain(context: &mut Context, kind: params::KindExtended, contains: params::ContainsOrDoesnt, step: &Step) {
+pub async fn get_types_contain(
+    context: &mut Context,
+    kind: params::KindExtended,
+    contains: params::ContainsOrDoesnt,
+    step: &Step,
+) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     let type_labels = with_read_tx!(context, |tx| {
         use params::KindExtended;

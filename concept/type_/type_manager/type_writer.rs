@@ -25,8 +25,8 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     error::ConceptWriteError,
     type_::{
-        attribute_type::AttributeType, owns::Owns,
-        sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride, Ordering, TypeAPI,
+        attribute_type::AttributeType, owns::Owns, sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride,
+        Ordering, TypeAPI,
     },
 };
 

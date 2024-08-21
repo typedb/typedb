@@ -20,7 +20,12 @@ use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 
-use crate::{concept::type_::BehaviourConceptTestExecutionError, generic_step, transaction_context::{with_read_tx, with_schema_tx}, util, Context, params};
+use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
+    generic_step, params,
+    transaction_context::{with_read_tx, with_schema_tx},
+    util, Context,
+};
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) create role: {type_label}{may_error}")]
@@ -182,7 +187,12 @@ pub async fn relation_role_unset_override(
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) get roles {contains_or_doesnt}:")]
-pub async fn relation_roles_contain(context: &mut Context, type_label: params::Label, contains: params::ContainsOrDoesnt, step: &Step) {
+pub async fn relation_roles_contain(
+    context: &mut Context,
+    type_label: params::Label,
+    contains: params::ContainsOrDoesnt,
+    step: &Step,
+) {
     let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
     with_read_tx!(context, |tx| {
         let relation_type =
@@ -207,7 +217,11 @@ pub async fn relation_roles_contain(context: &mut Context, type_label: params::L
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) get roles {is_empty_or_not}")]
-pub async fn relation_roles_is_empty(context: &mut Context, type_label: params::Label, is_empty_or_not: params::IsEmptyOrNot,) {
+pub async fn relation_roles_is_empty(
+    context: &mut Context,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
+) {
     with_read_tx!(context, |tx| {
         let relation_type =
             tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
@@ -261,7 +275,11 @@ pub async fn relation_declared_roles_contain(
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) get declared roles {is_empty_or_not}")]
-pub async fn relation_declared_roles_is_empty(context: &mut Context, type_label: params::Label, is_empty_or_not: params::IsEmptyOrNot,) {
+pub async fn relation_declared_roles_is_empty(
+    context: &mut Context,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
+) {
     with_read_tx!(context, |tx| {
         let type_ =
             tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
@@ -285,7 +303,12 @@ pub async fn relation_declared_roles_is_empty(context: &mut Context, type_label:
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) {exists_or_doesnt}")]
-pub async fn relation_role_exists(context: &mut Context, type_label: params::Label, role_label: params::Label, exists: params::ExistsOrDoesnt) {
+pub async fn relation_role_exists(
+    context: &mut Context,
+    type_label: params::Label,
+    role_label: params::Label,
+    exists: params::ExistsOrDoesnt,
+) {
     with_read_tx!(context, |tx| {
         let relation =
             tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();

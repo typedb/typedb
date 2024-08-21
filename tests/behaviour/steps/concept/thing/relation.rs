@@ -15,7 +15,13 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
-use crate::{concept::type_::BehaviourConceptTestExecutionError, generic_step, params::check_boolean, transaction_context::{with_read_tx, with_write_tx}, Context, params};
+use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
+    generic_step, params,
+    params::check_boolean,
+    transaction_context::{with_read_tx, with_write_tx},
+    Context,
+};
 
 #[apply(generic_step)]
 #[step(expr = r"relation {var} add player for role\({type_label}\): {var}{may_error}")]

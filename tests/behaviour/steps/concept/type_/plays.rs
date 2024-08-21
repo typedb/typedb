@@ -12,11 +12,22 @@ use itertools::Itertools;
 use macro_rules_attribute::apply;
 
 use super::thing_type::get_as_object_type;
-use crate::{concept::type_::BehaviourConceptTestExecutionError, generic_step, transaction_context::{with_read_tx, with_schema_tx}, util, Context, params};
+use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
+    generic_step, params,
+    transaction_context::{with_read_tx, with_schema_tx},
+    util, Context,
+};
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) set plays: {type_label}{may_error}")]
-pub async fn set_plays(context: &mut Context, kind: params::Kind, type_label: params::Label, role_label: params::Label, may_error: params::MayError) {
+pub async fn set_plays(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    may_error: params::MayError,
+) {
     let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let role_type =
@@ -33,7 +44,13 @@ pub async fn set_plays(context: &mut Context, kind: params::Kind, type_label: pa
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) unset plays: {type_label}{may_error}")]
-pub async fn unset_plays(context: &mut Context, kind: params::Kind, type_label: params::Label, role_label: params::Label, may_error: params::MayError) {
+pub async fn unset_plays(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    may_error: params::MayError,
+) {
     let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let role_type =
@@ -110,7 +127,12 @@ pub async fn get_declared_plays_contain(
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) get plays {is_empty_or_not}")]
-pub async fn get_plays_is_empty(context: &mut Context, kind: params::Kind, type_label: params::Label, is_empty_or_not: params::IsEmptyOrNot) {
+pub async fn get_plays_is_empty(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
+) {
     let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_is_empty = object_type.get_plays(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
