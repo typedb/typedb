@@ -281,11 +281,13 @@ _Remark_. The last part of the condition ensure that we can only declare `A play
 * `A owns B` adds $`A <_! O_B`$, ***requiring*** that $B: \mathbf{Att}(O_B)$, $`A :\mathbf{Obj}`$
 * `A owns B[]` adds $`A <_! O_B`$, ***requiring*** that $B: \mathbf{Att}(O_B)$, **puts B[] to be non-abstract**: i.e. allows declaring terms $`l :_! [B](x:O_B)`$, see earlier discussion of list types
 
-_Remark: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract` (abstractness is crucial here, see `abstract` constraint below). See **match semantics->satisfying type patterns**._
+_Remark: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract` (abstractness is crucial here, see `abstract` constraint below). See also the remark in "Satisfying type patterns"._
 
 ***System property***: 
 
-1. If set, at least one of `A owns B` and `A owns B[]` need to be `@abstract`.
+1. _Exclusive interface modes_: Only one of `A owns B` or `A owns B[]` can be declared in the model.
+2. _Consistent interface modes_: If `A owns B`, and $A' < A$, $B' < B$, then disallow declaring `A' owns B'[]`.
+3. _Consistent interface modes (list case)_: If `A owns B[]`, and $A' < A$, $B' < B$, then disallow declaring `A' owns B'`.
 
 ### Constraints
 
@@ -928,9 +930,8 @@ _Remark_: variables marked with `?` in function assignments are the first exampl
 Now that we have seen how to determine when answers satisfy individual statements, we can extend our discussion of match semantics to full pattern.
 
 **Case AND_PATT**
-* An answer for the pattern `<PATT1>; <PATT2>;` is a minimal answer that simultaneously satisfies both `<PATT1>` and `<PATT2>`.
+* An answer satisfies the pattern `<PATT1>; <PATT2>;` that simultaneously satisfies both `<PATT1>` and `<PATT2>`.
 
-_Remark_: Here, "minimal" means the smallest possible concept map.
 
 **Case OR_PATT**
 * An answer for the pattern `{ <PATT1> } or { <PATT2> };` is an answer that satisfies either `<PATT1>` or `<PATT2>`.
@@ -938,15 +939,40 @@ _Remark_: Here, "minimal" means the smallest possible concept map.
 _Remark_: this generalize to a chain of $k$ `or` clauses.
 
 **Case NOT_PATT**
-* An answer for the pattern `not { <PATT> };` is any partial answer (i.e. not all variables need to be assigned) which cannot be completed to a full answer for `<PATT>`.
+* An answer satisfying the pattern `not { <PATT> };` is any answer which _cannot_ be completed to a answer satisfying `<PATT>`.
 
 **Case TRY_PATT**
 * The pattern `try { <PATT> };` is equivalent to the pattern `{ <PATT> } or { not { <PATT>}; };`.
+
+### Answer sets
+
+Given a database (data model + data), define the _answer set_ `ans(<PATT>)` to be the set of **proper minimal** answers that satisfy the pattern `<PATT>`.
+
+_Definition_. Here, "proper minimal" means 
+* we cannot remove variables from the answer concept map without dissatisfying `<PATT>`
+* all variables in the answer concept map appear outside of a `not` block at least once. 
+
+_Example_: Consider the pattern `$x isa Person;` (this pattern comprises a single statement). Than `($x -> p)` satisfies the pattern if `p` is an element of the type `Person` (i.e. $p : \mathsf{Person}$). The answer `($x -> p, $y -> p)` also satisfies the pattern, but it is not proper minimal.
+
+_Note: we will discuss the insertion of data and relevant system properties in "Insert semantics"._
 
 
 ## Function semantics
 
 ### Function body and operators
+
+_Syntax_:
+```
+match <PATT>
+<OP>
+...
+<OP>
+```
+
+* `<PATT>` can be any pattern as defined in the previous sections. 
+* `<OP>` can be an operator:
+  * 
+
 
 ### Stream-return
 
@@ -962,7 +988,7 @@ _Remark_: this generalize to a chain of $k$ `or` clauses.
 
 ### Recursion
 
-Functions can be called recursively, as long as negation can be stratified. The semantics in this case is computed
+Functions can be called recursively, as long as negation can be stratified. The semantics in this case is computed "stratum by stratum".
 
 ## Insert semantics
 
