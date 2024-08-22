@@ -13,7 +13,9 @@ rust_library(
     srcs = glob([
         "*.rs",
     ]),
-    deps = []
+    deps = [
+        "//resource",
+    ]
 )
 
 checkstyle_test(

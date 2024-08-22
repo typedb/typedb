@@ -7,6 +7,7 @@
 use concept::error::ConceptWriteError;
 use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use macro_rules_attribute::apply;
+use options::TransactionOptions;
 
 use crate::{
     assert::assert_matches,
@@ -22,9 +23,9 @@ pub async fn connection_open_transaction(context: &mut Context, tx_type: String,
     let server = context.server().unwrap().lock().unwrap();
     let database = server.database_manager().database(&db_name).unwrap();
     let tx = match tx_type.as_str() {
-        "read" => ActiveTransaction::Read(TransactionRead::open(database.clone())),
-        "write" => ActiveTransaction::Write(TransactionWrite::open(database.clone())),
-        "schema" => ActiveTransaction::Schema(TransactionSchema::open(database.clone())),
+        "read" => ActiveTransaction::Read(TransactionRead::open(database.clone(), TransactionOptions::default())),
+        "write" => ActiveTransaction::Write(TransactionWrite::open(database.clone(), TransactionOptions::default())),
+        "schema" => ActiveTransaction::Schema(TransactionSchema::open(database.clone(), TransactionOptions::default())),
         _ => unreachable!("Unrecognised transaction type"),
     };
     drop(server);

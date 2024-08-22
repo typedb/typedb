@@ -15,6 +15,7 @@ rust_library(
     deps = [
         "//common/bytes",
         "//common/error",
+        "//common/options",
         "//database",
         "//query",
         "//storage",

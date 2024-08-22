@@ -27,9 +27,10 @@ use bytes::util::HexBytesFormatter;
 use database::database_manager::DatabaseManager;
 use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use error::typedb_error;
+use options::TransactionOptions;
 use query::error::QueryError;
 use query::query_manager::QueryManager;
-use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
+use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
 use storage::durability_client::WALClient;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -75,6 +76,7 @@ pub(crate) struct TransactionService {
     write_responder_interrupt_receiver: broadcast::Receiver<()>,
 
     transaction_timeout_millis: Option<u64>,
+    schema_lock_acquire_timeout_millis: Option<u64>,
     prefetch_size: Option<u64>,
     network_latency_millis: Option<u64>,
 
@@ -117,6 +119,7 @@ impl TransactionService {
             write_responder_interrupt_receiver: write_interrupt_receiver,
 
             transaction_timeout_millis: None,
+            schema_lock_acquire_timeout_millis: None,
             prefetch_size: None,
             network_latency_millis: None,
 
@@ -232,7 +235,14 @@ impl TransactionService {
 
     fn handle_open(&mut self, open_req: typedb_protocol::transaction::open::Req) -> Result<(), Status> {
         self.network_latency_millis = Some(open_req.network_latency_millis);
+        let mut transaction_options = TransactionOptions::default();
         if let Some(options) = open_req.options {
+            // transaction options
+            options.parallel.map(|parallel| transaction_options.parallel = parallel);
+            options.schema_lock_acquire_timeout_millis
+                .map(|timeout| transaction_options.schema_lock_acquire_timeout_millis = timeout);
+
+            // service options
             self.prefetch_size = options.prefetch_size.or(Some(DEFAULT_PREFETCH_SIZE));
             self.transaction_timeout_millis = options.transaction_timeout_millis.or(Some(DEFAULT_TRANSACTION_TIMEOUT_MILLIS));
         }
@@ -245,9 +255,9 @@ impl TransactionService {
             .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name }.into_status())?;
 
         let transaction = match transaction_type {
-            Type::Read => Transaction::Read(TransactionRead::open(database)),
-            Type::Write => Transaction::Write(TransactionWrite::open(database)),
-            Type::Schema => Transaction::Schema(TransactionSchema::open(database)),
+            Type::Read => Transaction::Read(TransactionRead::open(database, transaction_options)),
+            Type::Write => Transaction::Write(TransactionWrite::open(database, transaction_options)),
+            Type::Schema => Transaction::Schema(TransactionSchema::open(database, transaction_options)),
         };
         self.transaction = Some(transaction);
         self.is_open = true;
@@ -311,7 +321,7 @@ impl TransactionService {
     async fn handle_query(&mut self, query_req: typedb_protocol::query::Req) -> Result<(), Status> {
         // TODO: compile query, create executor, respond with initial message and then await initial answers to send
         let query_string = &query_req.query;
-        let query_options = &query_req.options;
+        let query_options = &query_req.options; // TODO: pass query options
         let parsed = parse_query(&query_string)
             .map_err(|err| TransactionServiceError::QueryParseFailed { source: err }.into_status())?;
         match parsed {
@@ -335,11 +345,7 @@ impl TransactionService {
     async fn handle_query_schema(&mut self, query: SchemaQuery) -> Result<(), Status> {
         if let Some(Transaction::Schema(schema_transaction)) = self.transaction.take() {
             let TransactionSchema {
-                snapshot,
-                type_manager,
-                thing_manager,
-                function_manager,
-                database
+                snapshot, type_manager, thing_manager, function_manager, database, transaction_options,
             } = schema_transaction;
             let mut snapshot = Arc::into_inner(snapshot).unwrap();
             let (snapshot, type_manager, thing_manager, result) = spawn_blocking(move || {
@@ -353,7 +359,7 @@ impl TransactionService {
             }).await.unwrap();
             result?;
             let transaction = TransactionSchema::from(
-                snapshot, type_manager, thing_manager, function_manager, database,
+                snapshot, type_manager, thing_manager, function_manager, database, transaction_options,
             );
             self.transaction = Some(Transaction::Schema(transaction));
             return Ok(());
@@ -374,11 +380,7 @@ impl TransactionService {
             let (transaction, result) = spawn_blocking(move || {
                 // TODO: pass in Interrupt Receiver
                 let TransactionSchema {
-                    snapshot,
-                    type_manager,
-                    thing_manager,
-                    function_manager,
-                    database
+                    snapshot, type_manager, thing_manager, function_manager, database, transaction_options,
                 } = schema_transaction;
                 let mut snapshot = Arc::into_inner(snapshot).unwrap();
                 let result = Self::execute_write_pipeline(
@@ -386,7 +388,7 @@ impl TransactionService {
                     pipeline,
                 ).map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
                 let transaction = TransactionSchema::from(
-                    snapshot, type_manager, thing_manager, function_manager, database,
+                    snapshot, type_manager, thing_manager, function_manager, database, transaction_options,
                 );
                 (transaction, result)
             }).await.unwrap();
@@ -397,11 +399,7 @@ impl TransactionService {
             let (transaction, result) = spawn_blocking(move || {
                 // TODO: pass in Interrupt Receiver
                 let TransactionWrite {
-                    snapshot,
-                    type_manager,
-                    thing_manager,
-                    function_manager,
-                    database
+                    snapshot, type_manager, thing_manager, function_manager, database, transaction_options,
                 } = write_transaction;
                 let mut snapshot = Arc::into_inner(snapshot).unwrap();
                 let result = Self::execute_write_pipeline(
@@ -409,7 +407,7 @@ impl TransactionService {
                     pipeline,
                 ).map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
                 let transaction = TransactionWrite::from(
-                    Arc::new(snapshot), type_manager, thing_manager, function_manager, database,
+                    Arc::new(snapshot), type_manager, thing_manager, function_manager, database, transaction_options,
                 );
                 (transaction, result)
             }).await.unwrap();

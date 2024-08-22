@@ -1965,17 +1965,8 @@ impl ThingManager {
     /// set cardinality annotation, unset cardinality annotation)
     ///
 
-    ///
     /// Clean up all parts of a relation index to do with a specific role player
     /// after the player has been deleted.
-    ///
-    ///
-    ///
-    /// RP1 <--RT 1, Count 1-- Relation --RT 2, count 2--> RP2
-    ///
-    /// RP 1 <-- Relation, RT 1, RT 2, Count --> RP2
-    ///
-    ///
     pub(crate) fn relation_index_player_deleted<'a>(
         &self,
         snapshot: &mut impl WritableSnapshot,

@@ -14,6 +14,7 @@ use std::{
 };
 use std::collections::VecDeque;
 use std::sync::{Mutex, MutexGuard};
+use std::sync::atomic::AtomicU64;
 use std::sync::mpsc::{sync_channel, SyncSender};
 
 use concept::{
@@ -56,7 +57,6 @@ pub struct Database<D> {
 
     pub(super) schema: Arc<RwLock<Schema>>,
     schema_write_transaction_exclusivity: Mutex<(bool, usize, VecDeque<TransactionReservationRequest>)>,
-
     _statistics_updater: IntervalRunner,
 }
 
@@ -76,7 +76,7 @@ impl<D> Database<D> {
         &self.name
     }
 
-    pub(super) fn reserve_write_transaction(&self) {
+    pub(super) fn reserve_write_transaction(&self, timeout_millis: u64)  { // TODO: TransactionError
         let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
         let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
         if has_schema_transaction || !notify_queue.is_empty() {
@@ -84,13 +84,14 @@ impl<D> Database<D> {
             notify_queue.push_back(TransactionReservationRequest::Write(sender));
             drop(guard);
             receiver.recv().unwrap();
+            // TODO: turn into TransactionError on timeout
         } else {
             guard.1 = running_write_transactions + 1;
             drop(guard);
         }
     }
 
-    pub(super) fn reserve_schema_transaction(&self) {
+    pub(super) fn reserve_schema_transaction(&self, timeout_millis: u64) {
         let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
         let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
         if has_schema_transaction || running_write_transactions > 0 || !notify_queue.is_empty() {
@@ -98,6 +99,7 @@ impl<D> Database<D> {
             notify_queue.push_back(TransactionReservationRequest::Schema(sender));
             drop(guard);
             receiver.recv().unwrap();
+            // TODO: turn into TransactionError on timeout
         } else {
             guard.0 = true;
             drop(guard);
@@ -128,11 +130,14 @@ impl<D> Database<D> {
             // fulfill exactly 1 schema request
             *has_schema_transaction = true;
             notifier.send(()).unwrap();
+
+            // TODO: if get disconnect error, skip!
         } else {
             // fulfill as many write requests as possible
             while let Some(TransactionReservationRequest::Write(notifier)) = notify_queue.pop_front() {
                 *running_write_transactions += 1;
                 notifier.send(()).unwrap();
+                // TODO: if get disconnect error, skip!
             }
         }
     }
@@ -311,7 +316,7 @@ impl Database<WALClient> {
             TypeVertexGeneratorInUse,
         };
 
-        self.reserve_schema_transaction(); // exclusively lock out other write or schema transactions;
+        self.reserve_schema_transaction(Duration::from_secs(60).as_millis() as u64); // exclusively lock out other write or schema transactions;
         let mut locked_schema = self.schema.write().unwrap();
 
         match Arc::get_mut(&mut self.storage) {

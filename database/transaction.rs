@@ -6,12 +6,11 @@
 
 use core::fmt;
 use std::{
-    error::Error,
-    mem::transmute,
-    sync::{Arc, RwLockReadGuard, RwLockWriteGuard},
+    error::Error
+    ,
+    sync::Arc,
 };
 use std::fmt::{Debug, Display, Formatter};
-use std::sync::atomic::AtomicU64;
 
 use concept::{
     error::ConceptWriteError,
@@ -22,11 +21,11 @@ use concept::{
     },
 };
 use function::{function_manager::FunctionManager, FunctionError};
+use options::TransactionOptions;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot},
 };
-use storage::durability_client::WALClient;
 use storage::snapshot::SnapshotError;
 
 use crate::Database;
@@ -38,12 +37,12 @@ pub struct TransactionRead<D> {
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: FunctionManager,
-    // TODO: krishnan: Should this be an arc or direct ownership?
     _database: Arc<Database<D>>,
+    transaction_options: TransactionOptions,
 }
 
 impl<D: DurabilityClient> TransactionRead<D> {
-    pub fn open(database: Arc<Database<D>>) -> Self {
+    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Self {
         // TODO: when we implement constructor `open_at`, to open a transaction in the past by
         //      time/sequence number, we need to check whether
         //       the statistics that is available is "too far" ahead of the version we're opening (100-1000?)
@@ -63,7 +62,14 @@ impl<D: DurabilityClient> TransactionRead<D> {
 
         drop(schema);
 
-        Self { snapshot: Arc::new(snapshot), type_manager, thing_manager, function_manager, _database: database }
+        Self {
+            snapshot: Arc::new(snapshot),
+            type_manager,
+            thing_manager,
+            function_manager,
+            _database: database,
+            transaction_options,
+        }
     }
 
     pub fn snapshot(&self) -> &ReadSnapshot<D> {
@@ -84,11 +90,12 @@ pub struct TransactionWrite<D> {
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: FunctionManager, // TODO: krishnan: Should this be an arc or direct ownership?
     pub database: Arc<Database<D>>,
+    pub transaction_options: TransactionOptions,
 }
 
 impl<D: DurabilityClient> TransactionWrite<D> {
-    pub fn open(database: Arc<Database<D>>) -> Self {
-        database.reserve_write_transaction();
+    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Self {
+        database.reserve_write_transaction(transaction_options.schema_lock_acquire_timeout_millis);
 
         let schema = database.schema.read().unwrap();
         let snapshot: WriteSnapshot<D> = database.storage.clone().open_snapshot_write();
@@ -107,7 +114,8 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             type_manager,
             thing_manager,
             function_manager,
-            database: database,
+            database,
+            transaction_options,
         }
     }
 
@@ -116,14 +124,16 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
         function_manager: FunctionManager,
-        _database: Arc<Database<D>>,
+        database: Arc<Database<D>>,
+        transaction_options: TransactionOptions,
     ) -> Self {
         Self {
             snapshot,
             type_manager,
             thing_manager,
             function_manager,
-            database: _database,
+            database,
+            transaction_options,
         }
     }
 
@@ -180,11 +190,12 @@ pub struct TransactionSchema<D> {
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: FunctionManager,
     pub database: Arc<Database<D>>,
+    pub transaction_options: TransactionOptions,
 }
 
 impl<D: DurabilityClient> TransactionSchema<D> {
-    pub fn open(database: Arc<Database<D>>) -> Self {
-        database.reserve_schema_transaction();
+    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Self {
+        database.reserve_schema_transaction(transaction_options.schema_lock_acquire_timeout_millis);
 
         let snapshot: SchemaSnapshot<D> = database.storage.clone().open_snapshot_schema();
         let type_manager = Arc::new(TypeManager::new(
@@ -200,6 +211,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             thing_manager: Arc::new(thing_manager),
             function_manager,
             database,
+            transaction_options,
         }
     }
 
@@ -209,6 +221,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         thing_manager: Arc<ThingManager>,
         function_manager: FunctionManager,
         database: Arc<Database<D>>,
+        transaction_options: TransactionOptions,
     ) -> Self {
         Self {
             snapshot: Arc::new(snapshot),
@@ -216,6 +229,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             thing_manager,
             function_manager,
             database,
+            transaction_options,
         }
     }
 
@@ -305,3 +319,5 @@ impl Error for SchemaCommitError {
         todo!()
     }
 }
+
+// TODO: TypeDB Error

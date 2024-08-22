@@ -15,6 +15,7 @@ rust_library(
         "//answer:answer",
         "//common/primitive",
         "//common/lending_iterator",
+        "//common/options",
         "//compiler:compiler",
         "//concept:concept",
         "//database:database",
