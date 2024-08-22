@@ -1053,7 +1053,7 @@ _Syntax_:
 
 ### Recursion
 
-Functions can be called recursively, as long as negation can be stratified. The semantics in this case is computed "stratum by stratum". 
+Functions can be called recursively, as long as negation can be stratified. The semantics in this case is computed "stratum by stratum".
 
 ## Insert semantics
 
