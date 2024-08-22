@@ -210,6 +210,30 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         Ok(self.get_owns(snapshot, type_manager)?.iter().find(|owns| owns.attribute() == attribute_type).cloned())
     }
 
+    fn get_owns_attribute_with_overridden(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+        let self_owns = self.get_owns_attribute(snapshot, type_manager, attribute_type.clone())?;
+        Ok(match self_owns {
+            Some(owns) => Some(owns),
+            None => {
+                match self.get_supertype(snapshot, type_manager)? {
+                    Some(supertype) => {
+                        let supertype_owns = supertype.get_owns_attribute(snapshot, type_manager, attribute_type)?;
+                        match supertype_owns {
+                            Some(supertype_owns) => Some(supertype_owns),
+                            None => None,
+                        }
+                    }
+                    None => None,
+                }
+            }
+        })
+    }
+
     fn has_owns_attribute(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -299,6 +323,30 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         role_type: RoleType<'static>,
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_plays_role(snapshot, type_manager, role_type)?.is_some())
+    }
+
+    fn get_plays_role_with_overridden(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+        let self_plays = self.get_plays_role(snapshot, type_manager, role_type.clone())?;
+        Ok(match self_plays {
+            Some(plays) => Some(plays),
+            None => {
+                match self.get_supertype(snapshot, type_manager)? {
+                    Some(supertype) => {
+                        let supertype_plays = supertype.get_plays_role(snapshot, type_manager, role_type)?;
+                        match supertype_plays {
+                            Some(supertype_plays) => Some(supertype_plays),
+                            None => None,
+                        }
+                    }
+                    None => None,
+                }
+            }
+        })
     }
 
     fn try_get_plays_role(

@@ -2089,16 +2089,18 @@ impl TypeManager {
 
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
 
-        let initial_annotations =
-            HashSet::from([Annotation::Cardinality(self.get_owns_default_cardinality(ordering.clone()))]);
-        OperationTimeValidation::validate_new_acquired_owns_compatible_with_instances(
-            snapshot,
-            self,
-            thing_manager,
-            owns.clone().into_owned(),
-            initial_annotations,
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        if !owner.get_owns(snapshot, self)?.contains(&owns) {
+            let initial_annotations =
+                HashSet::from([Annotation::Cardinality(self.get_owns_default_cardinality(ordering.clone()))]);
+            OperationTimeValidation::validate_new_acquired_owns_compatible_with_instances(
+                snapshot,
+                self,
+                thing_manager,
+                owns.clone().into_owned(),
+                initial_annotations,
+            )
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         TypeWriter::storage_put_edge(snapshot, owns.clone());
         TypeWriter::storage_put_type_edge_property(snapshot, owns, Some(ordering));
@@ -2280,17 +2282,19 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
+        let plays = Plays::new(ObjectType::new(player.clone().into_vertex()), role);
 
-        let initial_annotations = HashSet::from([Annotation::Cardinality(self.get_plays_default_cardinality())]);
-        OperationTimeValidation::validate_new_acquired_plays_compatible_with_instances(
-            snapshot,
-            self,
-            thing_manager,
-            plays.clone().into_owned(),
-            initial_annotations,
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        if !player.get_plays(snapshot, self)?.contains(&plays) {
+            let initial_annotations = HashSet::from([Annotation::Cardinality(self.get_plays_default_cardinality())]);
+            OperationTimeValidation::validate_new_acquired_plays_compatible_with_instances(
+                snapshot,
+                self,
+                thing_manager,
+                plays.clone().into_owned(),
+                initial_annotations,
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         TypeWriter::storage_put_edge(snapshot, plays.clone());
         Ok(plays)

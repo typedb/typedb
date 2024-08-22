@@ -21,6 +21,8 @@ use typeql::{
         InIterable, StructDeconstruct,
     },
 };
+use typeql::common::error::TypeQLError;
+use typeql::value::StringLiteral;
 
 use crate::{
     pattern::{constraint::Constraint, expression::ExpressionDefinitionError, variable_category::VariableCategory},
@@ -133,6 +135,7 @@ pub enum LiteralParseError {
     ScientificNotationNotAllowedForDecimal { literal: String },
     InvalidDate { year: i32, month: u32, day: u32 },
     InvalidTime { hour: u32, minute: u32, second: u32, nano: u32 },
+    CannotUnescapeString { literal: StringLiteral },
 }
 
 impl fmt::Display for LiteralParseError {
@@ -148,6 +151,7 @@ impl Error for LiteralParseError {
             LiteralParseError::ScientificNotationNotAllowedForDecimal { .. } => None,
             LiteralParseError::InvalidDate { .. } => None,
             LiteralParseError::InvalidTime { .. } => None,
+            LiteralParseError::CannotUnescapeString { .. } => None,
         }
     }
 }

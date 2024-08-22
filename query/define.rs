@@ -588,7 +588,7 @@ fn define_relates_overridden<'a>(
     if let Some(overridden_label) = &typeql_relates.overridden {
         let overridden_relates_opt = relates
             .relation()
-            .get_relates_role_name(snapshot, type_manager, overridden_label.ident.as_str())
+            .get_relates_role_name_with_overridden(snapshot, type_manager, overridden_label.ident.as_str())
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let overridden_relates = if let Some(overridden_relates) = overridden_relates_opt {
             overridden_relates
@@ -730,7 +730,7 @@ fn define_owns_overridden<'a>(
 
         let overridden_owns_opt = owns
             .owner()
-            .get_owns_attribute(snapshot, type_manager, overridden_attribute_type)
+            .get_owns_attribute_with_overridden(snapshot, type_manager, overridden_attribute_type.clone())
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let overridden_owns = if let Some(overridden_owns) = overridden_owns_opt {
             overridden_owns
@@ -837,7 +837,7 @@ fn define_plays_overridden<'a>(
 
         let overridden_plays_opt = plays
             .player()
-            .get_plays_role(snapshot, type_manager, overridden_role_type)
+            .get_plays_role_with_overridden(snapshot, type_manager, overridden_role_type)
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let overridden_plays = if let Some(overridden_plays) = overridden_plays_opt {
             overridden_plays
