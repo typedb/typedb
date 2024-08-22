@@ -79,7 +79,7 @@
     - [Suffix](#suffix)
 
 
-# Terminology and notation
+# Foundations
 
 _(For reference only)_
 
@@ -94,71 +94,92 @@ _(For reference only)_
 
 _Note_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
 
-## Type system basics and notation
+## The type system
 
-* **Types and Typing**. $`A : \mathbf{Type}`$ means
+* **Types**. We write 
+  $`A : \mathbf{Type}`$ to mean:
   > $A$ is a type. 
-  
-  If $A$ is a type, then we may write $`a : A`$ to mean
+
+  * _Variations_: in general, may replace $\textbf{Type}$ by: 
+    * $\mathbf{Ent}$ (collection of entity types)
+    * $\mathbf{Rel}$ (collection of relation types)
+    * $`\mathbf{Att}`$ (collection of attribute types)
+    * $`\mathbf{Itf}`$ (collection of interface types)
+  * _Useful abbreviations_:
+    * $\mathbf{Obj} = \mathbf{Ent} + \mathbf{Rel}$ (collection of object types)
+    * $`\mathbf{ERA} = \mathbf{Ent} + \mathbf{Rel} + \mathbf{Att}`$ (collection of ERA types)
+  * _Example_: $`\mathsf{Person} : \mathbf{Ent}`$ means $`\mathsf{Person}`$ an entity type.
+* **Typing**
+  If $A$ is a type, then we may write $`a : A`$ to mean:
   > $a$ is an element in type $A$.
 
-  * _Direct typing_: $a :_! A$ means:
-    > $a$ was declared as an element of $A$ by the user (a.k.a. a _direct_ typing).
+  * _Direct typing_: We write $a :_! A$ to mean:
+    > $a$ was declared as an element of $A$ by the user (we speak of a ***direct typing***).
 
-  * _Example_: $p$ is of type $\mathsf{Person}$
-* **Dependent types**. Write $`A : \mathbf{Type}(I,J,...)`$ to mean
+  * _Example_: $p : \mathsf{Person}$ means $p$ is of type $\mathsf{Person}$
+* **Dependent types**. We write $`A : \mathbf{Type}(I,J,...)`$ to mean:
   > $A$ is a type with interface types $`I, J, ...`$.
-
-  * _Variations_: may replace $\textbf{Type}$ by $\mathbf{Ent}$, $\mathbf{Rel}$, $\mathbf{Obj} = \mathbf{Ent} + \mathbf{Rel}$, or $\mathbf{Att}$
-  * _Example_: $`\mathsf{Person} : \mathbf{Ent}`$ is an entity type.
-  * _Example_: $`\mathsf{Marriage : \mathbf{Rel}(Spouse)}`$ is a relation type with interface type $`\mathsf{Spouse}`$.
-* **Dependent typing**. $A : \mathbf{Type}(I,J,...)$ implies $`A(x:I, y:J) : \mathbf{Type}`$ for any $x: I, y: J$. Writing $`a : A(x : I, y : J,...)`$ means:
+  
+  * _Application_: Writing $A : \mathbf{Type}(I,J,...)$ ***implies*** $`A(x:I, y:J, ...) : \mathbf{Type}`$ whenever we have $x: I, y: J, ...$.
+  * _Variations_: We may replace $`\mathbf{Type}`$ by $`\mathbf{Rel}`$ or $`\mathbf{Att}`$.
+  * _Example_: $`\mathsf{Marriage : \mathbf{Rel}(Spouse)}`$ is a relation type with interface type $`\mathsf{Spouse} : \mathbf{Itf}`$.
+* **Dependent typing**.  We write $`a : A(x : I, y : J,...)`$ to mean:
   > The element $a$ lives in the type "$`A`$ of $`x`$ (cast as $`I`$), and $`y`$ (cast as $`J`$), and ...".
 
-  * _Grouping duplicates_: $`a : A(x : I, y : I)`$ write $`A : A(\{x,y\}:I^2)`$
+  * _Notation for grouping interfaces_: We write $`a : A(x : I, y : I)`$ as $`A : A(\{x,y\}:I^2)`$. (Similarly, when $I$ appears $k$ times in $`A(...)`$, write $I^k$)
   * _Role cardinality_: $|a|_I$ counts elements in $\{x_1,...,x_k\} :I^k$
   * **Example**: $m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)$. Then $|m|_{\mathsf{Spouse}} = 2$.
-* **Key properties of dependencies**
-  * _Combining dependencies_: if $A : \mathbf{Type}(I)$ and $A : \mathbf{Type}(J)$ then $A : \mathbf{Type}(I,J)$.
+* **Key properties of dependencies**. (These are some key rules of the type system!)
+  * _Combining dependencies_: Given $A : \mathbf{Type}(I)$ and $A : \mathbf{Type}(J)$, this ***implies*** $A : \mathbf{Type}(I,J)$. In words:
     > If a type separately depends on $I$ and on $J$, then it may jointly depend on $I$ and $J$! 
 
-    * _Remark_: This applies recursively.
+    * _Remark_: This applies recursively to types with $k$ interfaces.
     * _Example_: $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband})`$ and $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Wife})`$ then $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband},\mathsf{Wife})`$
-  * _Weakening dependencies_: If $A : \mathbf{Type}(I,J)$ then $A : \mathbf{Type}(I)$. In words
-    > Dependencies can be, in principle, simply ignored (note: this is a corase rule — we later discuss more fine-grained constraints, e.g. cardinality)
+  * _Weakening dependencies_: Given $A : \mathbf{Type}(I,J)$, this ***implies*** $A : \mathbf{Type}(I)$. In words:
+    > Dependencies can be simply ignored (note: this is a coarse rule — we later discuss more fine-grained constraints, e.g. cardinality).
 
-    * _Remark_: This applies recursively.
-    * _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ then $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and $`\mathsf{Marriage} : \mathbf{Rel}`$ (omit "$`()`$")
+    * _Remark_: This applies recursively to types with $k$ interfaces.
+    * _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
   * _Inheriting dependencies_: If $A : \mathbf{Type}$, $B : \mathbf{Type}(I)$, $A < B$ and _not_ $A : \mathbf{Type}(J)$ with $J < I$, then $A : \mathbf{Type}(I)$. In words:
     > Dependencies that are not overwritten are inherited
 
-* **Casting**. Write $`A < B`$ to indicating type casts from $A$ to $B$, i.e. if $a : A$ then $a : B$. In other words:
-  > A casts into B
+* **Casting**. We write $`A < B`$ to mean:
+  > type casts from $A$ to $B$ are possible: 
+  
+  * _Casting rule_: If $`A < B`$ and $a : A$, then this ***implies*** $a : B$.
+  * _Transitivity rule_: If $`A < B`$ and $B < C$, then this ***implies*** $A < C$.
+  * _Reflexivity rule_: If $`A : \mathbf{Type}`$ then this **implies** $A < A$ (notation: we sometimes write $`A \leq B`$ to put extra emphasis on the case $`A = B`$ being possible ... but this is also the case for $`A < B`$.)
 
-  * _Direct castings_: Write $`A <_! B`$ mean:
-    > A cast from A to B was declared by user (a.k.a. _direct_ cast) from A to B.
+  * _Direct castings_: We write $`A <_! B`$ to mean:
+    > A cast from A to B was declared by user (we spak of a ***direct casting*** from A to B).
 
-    * _Transitive closure_: $`A <_! B`$ implies $`A < B`$, the latter is transitive
+    * _Direct-to-general rule_: $`A <_! B`$ ***implies*** $`A < B`$.
     * _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
     * _Example_: $`\mathsf{Child} <_! \mathsf{Nameowner}`$
     * _Example_: $`\mathsf{Person} <_! \mathsf{Spouse}`$
-  * _Weakening dependencies_: If $`a : A(x:I, y:J)`$ then $`a : A(x:I)`$. In other words:
+  * _"Weakening dependencies" casting_: If $`a : A(x:I, y:J)`$ then $`a : A(x:I)`$. In other words:
     > Elements in $`A(I,J)`$ casts into elements of $`A(I)`$.
 
-    * _Remark_: This applies recursively.
+    * _Remark_: This applies recursively for types with $k$ interfaces.
     * _Remark 2_: This casting preserves direct typings! I.e. when $`a :_! A(x:I, y:J)`$ then $`a :_! A(x:I)`$
     * _Example_: If $m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)$ then both $m : \mathsf{Marriage}(x:\mathsf{Spouse})$ and $m : \mathsf{Marriage}(y:\mathsf{Spouse})$
-  * _Covariance of dependencies_: Given $`A < B`$, $`I < J`$ such that $`A : \mathbf{Type}(I)`$ $`B : \mathbf{Type}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$; in other words:
-    > Elements in $`A(I)`$ cast into elements of $`B(J)`$.
+  * _"Covariance of dependencies" casting_: Given $`A < B`$, $`I < J`$ such that $`A : \mathbf{Type}(I)`$ $`B : \mathbf{Type}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$. In other words:
+    > When $A$ casts to $B$, and $I$ to $J$, then $`A(I)`$ casts to $`B(J)`$.
 
-    * _Remark_: This applies recursively.
+    * _Remark_: This applies recursively for types with $k$ interfaces.
     * _Example_: If $m : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})$ then $m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)$
-* **List types**. $`[A] : \mathbf{Type}`$ — List type of $A$ (contains lists $`[a_0, a_1, ...]`$ of $`a_i : A`$)
-  * _Dependency on list types_: We allow $`A : \mathbf{Type}([I])`$.
+* **List types**. We write $`[A] : \mathbf{Type}`$ to mean
+  > the type of $A$-lists, i.e. the type which contains lists $`[a_0, a_1, ...]`$ of elements $`a_i : A`$.
+
+  * _Dependency on list types_: We allow $`A : \mathbf{Type}([I])`$, and thus our type system has types $`A(x:[I]) : \mathbf{Type}`$.
+    > $`A(x:[I])`$ is a type depending on lists $`x : [I]`$.
+
     * _Example_: $`\mathsf{FlightPath} : \mathbf{Rel}([\mathsf{Flight}])`$
-  * _Dependent list types_: We allow $`[A] : \mathbf{Type}(I)`$, i.e. $`[A](x:I) : \mathbf{Type}`$.
-    * _List terms_: Enforce $`[A](x:I) < [A]`$, in other words:
-    > Every element $l$ of $`[A](x:I)`$ is actually an $A$-list $`l : [A]`$.
+  * _Dependent list types_: We allow $`[A] : \mathbf{Type}(I)`$, and thus our type system has types $`[A](x:I) : \mathbf{Type}`$.
+    > $`[A](x:I)`$ is a type of $A$-lists depending on interface $I$.
+
+    * _Dependent list type rule_: We ***postulate*** $`[A](x:I) < [A]`$. This reflects that:
+       > Every element $l$ of $`[A](x:I)`$ is actually an $A$-list $`l : [A]`$.
 
     * _Example_: $`[a,b,c] : [\mathsf{MiddleName}](x : \mathsf{MiddleNameListOwner})`$
   * _List length_: for list $l : [A]$ the term $\mathrm{len}(l) : \mathbb{N}$ represents $l$'s length
@@ -172,7 +193,7 @@ _Remark for nerds: list types are neither sums, nor products, nor polynomials ..
 
 # Schema
 
-***Pertaining to defining and manipulating TypeDB schemas***
+This section describes valid declarations of types, axioms relating types (dependencies, subtyping), and constraints that can be further imposed on the type system. It also describe how such declarations can be further manipulated (define, undefine).
 
 ## Basics
 
@@ -288,7 +309,11 @@ _Comment: both preceding cases are kinda complicated/unnatural ... as reflected 
 
 **Case ABSTRACT**
 * `(type) B @abstract` postulates $`b :_! B(...)`$ to be impossible
-* `A plays B:I @abstract` postulates $`b :_! B(a:I)`$ to be impossible for $a : A$
+* `A plays B:I @abstract` postulates that both
+  *  $`b :_! B'(a:I)`$ and 
+  *  $`b :_! B'(l:[I])`$, $a \in l$ 
+  
+  are impossible whenever $a : A$, $B' \leq B$ (_note_: $B' < B$ is needed here, since the interface $I$ may be inherited)
 * `A owns B @abstract` postulates $`b :_! B(a:I)`$ to be impossible for $a : A$ 
 * `A owns B[] @abstract` postulates $`b :_! [B](a:I)`$ to be impossible for $a : A$ 
 * `B relates I @abstract` postulates $`A <_! I`$ to be impossible for $A : \mathbf{Obj}$
@@ -612,8 +637,9 @@ cannot redefine single-return functions.
 
 # Data instance languages
 
-## Match patterns and semantics
+This section first describes the satisfication semantics of match queries, obtained by substituting _variables_ in _patterns_ by concepts (_answers_) such that these patterns are _satisfied_. It is then described how instance in ERA types can be declared and further manipulated. Finally, the section describes the semantics of functions (the novelty over match semantics is the ability to declared functions recursively).
 
+## Match patterns and semantics
 
 ### Basics: Variables and Answers
 
@@ -700,27 +726,34 @@ _Remark: the usefulness of constraint patterns seems overall low, could think of
 -->
 
 **Case PLAYS_AS_PATT**
-* `$A plays $B:$I as $C:$J` satisfied if (for simplicitly, let's write $A = \gamma(A)$, $I = \gamma(I), J = \gamma(J)$) $A \leq A' <_! D' \leq D$,  $I \leq I' <_! J' \leq J$, with $`A^{(')} < {I^{(')}}`$, $`D^{(')} < {J^{(')}}`$, and schema directly contains constraint `A' plays B':I' as C':J'` for relation types $B \leq B' \leq_! C' \leq C$.
 
-_Note: this is still not a natural constraint, as foreshadowed by a previous remark!_
+_Notation: for readability, we simply write $X$ in place of $\gamma(X)$ in this case and the next._
+
+* `$A plays $B:$I as $C:$J` satisfied if $A \leq A' <_! D' \leq D$ for some $D$s, and $I \leq I' <_! J' \leq J$, with $`A^{(')} < {I^{(')}}`$, $`D^{(')} < {J^{(')}}`$, and schema directly contains the constraint `A' plays B':I' as C':J'` for relation types $B \leq B' \leq_! C' \leq C$.
 
 **Case OWNS_AS_PATT**
-* `$A owns $B as $C` satisfied if (for simplicitly, let's write $A = \gamma(A), B = \gamma(B), C = \gamma(C)$) $A \leq A' <_! D' \leq D$,  $B \leq B' <_! C' \leq C$, with $`A^{(')} < O_{B^{(')}}`$, $`D^{(')} < O_{C^{(')}}`$, and schema directly contains constraint `A' owns B' as C'`.
+* `$A owns $B as $C` satisfied if $A \leq A' <_! D' \leq D$ for some $D$s, and $B \leq B' <_! C' \leq C$, with $`A^{(')} < O_{B^{(')}}`$, $`D^{(')} < O_{C^{(')}}`$, and schema directly contains the constraint `A' owns B' as C'`.
+
+_Remark: these two are still not a natural constraint, as foreshadowed by a previous remark!_
 
 **Case UNIQUE_PATT**
-* `$A owns $B @unique` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans(B) @key`.
-* `$A owns! $B @unique` satisfied if $`\gamma(A) <_! \gamma(O_B)`$, and schema directly contains constraint `ans(A) owns ans(B) @unique`.
+* `$A owns $B @unique` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B) @key`.
+* `$A owns! $B @unique` satisfied if $`\gamma(A) <_! \gamma(O_B)`$, and schema directly contains constraint `ans($A) owns ans($B) @unique`.
 
 **Case KEY_PATT**
-* `$A owns $B @key` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans(B) @key`.
-* `$A owns! $B @key` satisfied if $`\gamma(A) <_! \gamma(O_B)`$, and schema directly contains constraint `ans(A) owns ans(B) @key`.
+* `$A owns $B @key` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B) @key`.
+* `$A owns! $B @key` satisfied if $`\gamma(A) <_! \gamma(O_B)`$, and schema directly contains constraint `ans($A) owns ans($B) @key`.
 
 **Case SUBKEY_PATT**
-* `$A owns $B @subkey(<LABEL>)` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans(B) @subkey(<LABEL>)`.
+* `$A owns $B @subkey(<LABEL>)` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B) @subkey(<LABEL>)`.
 
 **Case ABSTRACT_PATT**
-* `(type) $B @abstract` satisfied if 
-* cannot match `@abstract` in other cases ()
+* `(type) $B @abstract` satisfied if schema directly contains `(type) ans($B) @abstract`.
+* `$A plays $B:$I @abstract` satisfied if $`\gamma(A) < A'`$, $`\gamma(B) : \mathbf{Rel}(\gamma(I))`$, $`\gamma(B) < B' : \mathbf{Rel}(\gamma(I))`$ and schema directly contains constraint `A' plays B':ans($I) @abstract`.
+* `$A owns $B @abstract` satisfied if $`\gamma(A) < A'`$ and schema directly contains constraint `A' owns ans($B) @abstract`. 
+* `$A owns $B[] @abstract` satisfied if $`\gamma(A) < A'`$ and schema directly contains constraint `A' owns ans($B)[] @abstract`.
+* `$B relates $I @abstract` satisfied if $`B : \mathbf{Rel}(I)`$, $`\gamma(B) < B'`$, and schema directly contains constraint `B' relates ans($I) @abstract`.
+* `$B relates $I[] @abstract` satisfied if $`B : \mathbf{Rel}([I])`$, $`\gamma(B) < B'`$, and schema directly contains constraint `B' relates ans($I)[] @abstract`.
 
 **Case VALUES_PATT**
 * cannot match `@values/@regex/@range` (TODO: discuss!)
@@ -734,19 +767,36 @@ _Note: this is still not a natural constraint, as foreshadowed by a previous rem
 -->
 
 **Case DISTINCT_PATT**
-* `A owns B[] @distinct` satisfied if 
-* `B relates I[] @distinct` satisfied if 
+* `A owns B[] @distinct` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B)[] @distinct`.
+* `B relates I[] @distinct` satisfied if $`\gamma(B) : \mathbf{Rel}(\gamma([I]))`$, $`B < B'`$ and schema directly contains `B' relates I[] @distinct`.
 
 ### Satisfying data patterns
 
-### Satisfying Optionality patterns
+**Case ISA_PATT**
+* `$x isa $T` satisfied if $`\gamma(x) : \gamma(T)`$ for $`\gamma(T) : \mathbf{ERA}`$
+* `$x isa! $T` satisfied if $`\gamma(x) :_! \gamma(T)`$ for $`\gamma(T) : \mathbf{ERA}`$
+
+**Case LINKS_PATT**
+
+**Case HAS_PATT**
+
+**Case IS_PATT**
 
 ### Satisfying value expression patterns
 
+**Case IN_LIST_PATT**
+
+**Case EQ_PATT**
+
+**Case COMP_PATT**
+
 ### Satisfying function patterns
+
+**Case IN_FUN_PATT**
 
 Refer to section on Function semantics
 
+### Satisfying Optionality patterns
 
 ## Insert semantics
 
