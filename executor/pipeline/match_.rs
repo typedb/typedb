@@ -4,92 +4,38 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{marker::PhantomData, sync::Arc};
+use std::marker::PhantomData;
 
 use compiler::match_::planner::program_plan::ProgramPlan;
-use concept::error::ConceptReadError;
-use itertools::Either;
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{Batch, ImmutableRow},
     pattern_executor::{BatchIterator, PatternExecutor},
-    pipeline::{PipelineContext, PipelineError, PipelineStageAPI},
+    pipeline::{
+        common::PipelineStageCommon, IteratingStageAPI, PipelineContext, PipelineError, PipelineStageAPI,
+        UninitialisedStageAPI,
+    },
 };
 
-pub struct MatchStage<Snapshot: ReadableSnapshot + 'static, PipelineStageType: PipelineStageAPI<Snapshot>> {
-    inner: Option<Either<LazyMatchStage<Snapshot, PipelineStageType>, MatchStageIterator<Snapshot>>>, // TODO: Figure out how to neatly turn one into the other
-    error: Option<PipelineError>,
-}
+pub type MatchStage<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> = PipelineStageCommon<
+    Snapshot,
+    PipelineStageType,
+    LazyMatchStage<Snapshot, PipelineStageType>,
+    MatchStageIterator<Snapshot>,
+>;
+
 impl<Snapshot: ReadableSnapshot + 'static, PipelineStageType: PipelineStageAPI<Snapshot>>
     MatchStage<Snapshot, PipelineStageType>
 {
     pub fn new(upstream: Box<PipelineStageType>, program_plan: ProgramPlan) -> Self {
-        Self { inner: Some(Either::Left(LazyMatchStage::new(upstream, program_plan))), error: None }
-    }
-}
-impl<Snapshot: ReadableSnapshot, PipelineStage: PipelineStageAPI<Snapshot>> LendingIterator
-    for MatchStage<Snapshot, PipelineStage>
-{
-    type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;
-
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        if self.inner.is_some() && self.inner.as_ref().unwrap().is_left() {
-            let Either::Left(lazy_stage) = self.inner.take().unwrap() else { unreachable!() };
-            let LazyMatchStage { upstream, program_plan, .. } = lazy_stage;
-            let (snapshot, thing_manager) = match upstream.try_finalise_and_get_owned_context() {
-                Ok(PipelineContext::Shared(snapshot, thing_manager)) => (snapshot, thing_manager),
-                Ok(PipelineContext::Owned(snapshot, thing_manager)) => (Arc::new(snapshot), Arc::new(thing_manager)),
-                Err(error) => return Some(Err(error)),
-            };
-            let snapshot_borrowed: &Snapshot = &snapshot;
-            match PatternExecutor::new(program_plan.entry(), snapshot_borrowed, &thing_manager) {
-                Ok(executor) => {
-                    let batch_iterator = BatchIterator::new(executor, snapshot, thing_manager);
-                    let match_iterator = MatchStageIterator::new(batch_iterator);
-                    self.inner = Some(Either::Right(match_iterator))
-                }
-                Err(error) => {
-                    self.error = Some(PipelineError::ConceptRead(error));
-                }
-            }
-        };
-
-        if self.error.is_some() {
-            Some(Err(self.error.as_ref().unwrap().clone()))
-        } else {
-            debug_assert!(self.inner.is_some() && self.inner.as_ref().unwrap().is_right());
-            let Either::Right(iterator) = self.inner.as_mut().unwrap() else { unreachable!() };
-            iterator.next()
-        }
+        Self::new_impl(LazyMatchStage::new(upstream, program_plan))
     }
 }
 
-impl<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> PipelineStageAPI<Snapshot>
-    for MatchStage<Snapshot, PipelineStageType>
-{
-    fn try_finalise_and_get_owned_context(self) -> Result<PipelineContext<Snapshot>, PipelineError> {
-        match self.inner {
-            Some(Either::Left(lazy)) => todo!("Illegal, but unhandled"),
-            Some(Either::Right(iterator)) => {
-                // TODO: If we're here, we should have pulled atleast once, right?
-                Ok(iterator.renameme__finalise())
-            }
-            None => todo!("Illegal again, but I don't prevent it?"),
-        }
-    }
-
-    // fn try_get_shared_reference(self) -> Result<PipelineContext<Snapshot>, ()> {
-    //     todo!()
-    // }
-    //
-    // fn try_finalise_and_drop_shared_context(self) -> Result<(), PipelineError> {
-    //     todo!()
-    // }
-}
-
-pub struct LazyMatchStage<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> {
+pub struct LazyMatchStage<Snapshot: ReadableSnapshot + 'static, PipelineStageType: PipelineStageAPI<Snapshot>> {
     program_plan: ProgramPlan,
     upstream: Box<PipelineStageType>,
     phantom: PhantomData<Snapshot>,
@@ -103,17 +49,30 @@ impl<Snapshot: ReadableSnapshot + 'static, PipelineStageType: PipelineStageAPI<S
     }
 }
 
+impl<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> UninitialisedStageAPI<Snapshot>
+    for LazyMatchStage<Snapshot, PipelineStageType>
+{
+    type IteratingStage = MatchStageIterator<Snapshot>;
+
+    fn initialise_and_into_iterator(mut self) -> Result<Self::IteratingStage, PipelineError> {
+        self.upstream.initialise()?;
+        let LazyMatchStage { mut upstream, program_plan, .. } = self;
+        let mut context = upstream.try_get_shared_context()?;
+        let (snapshot_borrowed, thing_manager_borrowed): (&Snapshot, &ThingManager) = context.borrow_parts();
+        let executor = PatternExecutor::new(program_plan.entry(), snapshot_borrowed, &thing_manager_borrowed)
+            .map_err(|source| PipelineError::ConceptRead(source))?;
+        let PipelineContext::Shared(shared_snapshot, shared_thing_manager) = context.try_get_shared()? else {
+            unreachable!()
+        };
+        let batch_iterator = BatchIterator::new(executor, shared_snapshot, shared_thing_manager);
+        Ok(MatchStageIterator::new(batch_iterator))
+    }
+}
+
 pub struct MatchStageIterator<Snapshot: ReadableSnapshot> {
     batch_iterator: BatchIterator<Snapshot>,
     current_batch: Option<Result<Batch, ConceptReadError>>,
     current_index: u32,
-}
-
-impl<Snapshot: ReadableSnapshot> MatchStageIterator<Snapshot> {
-    fn renameme__finalise(self) -> PipelineContext<Snapshot> {
-        let (_, context) = self.batch_iterator.into_parts();
-        context
-    }
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> MatchStageIterator<Snapshot> {
@@ -146,6 +105,21 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for MatchStageIterato
                 self.current_index += 1;
                 Some(Ok(batch.get_row(self.current_index - 1)))
             }
+        }
+    }
+}
+
+impl<Snapshot: ReadableSnapshot + 'static> IteratingStageAPI<Snapshot> for MatchStageIterator<Snapshot> {
+    fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
+        self.batch_iterator.try_get_shared_context()
+    }
+
+    fn finalise_and_into_context(mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
+        if self.next().is_some() {
+            Err(PipelineError::FinalisedUnconsumedStage)
+        } else {
+            let (_, context) = self.batch_iterator.into_parts();
+            Ok(context)
         }
     }
 }

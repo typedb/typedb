@@ -23,7 +23,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     batch::{Batch, BatchRowIterator, ImmutableRow, Row},
     instruction::{iterator::TupleIterator, InstructionExecutor},
-    pipeline::PipelineContext,
+    pipeline::{PipelineContext, PipelineError},
     SelectedPositions, VariablePosition,
 };
 
@@ -172,6 +172,10 @@ impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
 
     pub(crate) fn into_parts(self) -> (PatternExecutor, PipelineContext<Snapshot>) {
         (self.executor, self.context)
+    }
+
+    pub(crate) fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
+        self.context.try_get_shared()
     }
 }
 

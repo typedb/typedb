@@ -22,7 +22,7 @@ use encoding::{
 };
 use executor::{
     batch::ImmutableRow,
-    pipeline::{PipelineContext, PipelineError, PipelineStageAPI},
+    pipeline::{IteratingStageAPI, PipelineContext, PipelineError, PipelineStageAPI},
     program_executor::ProgramExecutor,
 };
 use function::function_manager::FunctionManager;
@@ -93,10 +93,12 @@ fn test_insert() {
             &query,
         )
         .unwrap();
-
-    assert!(pipeline.next().is_some());
+    pipeline.initialise().unwrap();
+    assert!(matches!(pipeline.next(), Some(Ok(_))));
     assert!(pipeline.next().is_none());
-    let PipelineContext::Owned(mut snapshot, mut thing_manager) = pipeline.try_finalise_and_get_owned_context().unwrap() else { unreachable!() };
+    let PipelineContext::Owned(mut snapshot, mut thing_manager) = pipeline.finalise_and_into_context().unwrap() else {
+        unreachable!()
+    };
     snapshot.commit().unwrap();
 
     {
@@ -168,7 +170,10 @@ fn test_match_as_pipeline() {
         assert!(result.is_ok(), "{:?}", result);
         count += 1;
     }
-    let PipelineContext::Owned(mut snapshot, mut thing_manager) = insert_pipeline.try_finalise_and_get_owned_context().unwrap() else { unreachable!() };
+    let PipelineContext::Owned(mut snapshot, mut thing_manager) = insert_pipeline.finalise_and_into_context().unwrap()
+    else {
+        unreachable!()
+    };
     let inserted_seq = snapshot.commit().unwrap();
 
     let mut newer_statistics = Statistics::new(inserted_seq.unwrap());
@@ -290,6 +295,7 @@ fn test_has_planning_traversal() {
             &match_,
         )
         .unwrap();
+    pipeline.initialise().unwrap();
     let mut rows = Vec::new();
     while let Some(row) = pipeline.next() {
         rows.push(row.unwrap().clone().into_owned());
@@ -301,4 +307,63 @@ fn test_has_planning_traversal() {
         }
         println!()
     }
+}
+
+#[test]
+fn delete_has() {
+    // todo!("I haven't been able to test deletes because of the planner");
+    let (context, thing_manager) = setup_common();
+    let mut snapshot = context.storage.clone().open_snapshot_write();
+    let insert_query_str = "insert $p isa person, has age 10;";
+    let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
+    let mut insert_pipeline = context
+        .query_manager
+        .prepare_writable_pipeline(
+            snapshot,
+            thing_manager,
+            &context.type_manager,
+            &context.function_manager,
+            &context.statistics,
+            &IndexedAnnotatedFunctions::empty(),
+            &insert_query,
+        )
+        .unwrap();
+    insert_pipeline.initialise().unwrap();
+
+    assert!(matches!(insert_pipeline.next(), Some(Ok(_))));
+    assert!(insert_pipeline.next().is_none());
+    let PipelineContext::Owned(mut snapshot, mut thing_manager) = insert_pipeline.finalise_and_into_context().unwrap()
+    else {
+        unreachable!()
+    };
+    snapshot.commit().unwrap();
+
+    let mut snapshot = context.storage.clone().open_snapshot_write();
+    let delete_query_str = r#"
+        match $p isa person, has age $a;
+        delete has $a of $p;
+    "#;
+
+    let delete_query = typeql::parse_query(delete_query_str).unwrap().into_pipeline();
+    let mut insert_pipeline = context
+        .query_manager
+        .prepare_writable_pipeline(
+            snapshot,
+            thing_manager,
+            &context.type_manager,
+            &context.function_manager,
+            &context.statistics,
+            &IndexedAnnotatedFunctions::empty(),
+            &delete_query,
+        )
+        .unwrap();
+    insert_pipeline.initialise().unwrap();
+
+    assert!(matches!(insert_pipeline.next(), Some(Ok(_))));
+    assert!(insert_pipeline.next().is_none());
+    let PipelineContext::Owned(mut snapshot, mut thing_manager) = insert_pipeline.finalise_and_into_context().unwrap()
+    else {
+        unreachable!()
+    };
+    snapshot.commit().unwrap();
 }

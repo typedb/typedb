@@ -4,16 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{marker::PhantomData, sync::Arc};
+use std::marker::PhantomData;
 
 use answer::variable_value::VariableValue;
-use concept::thing::thing_manager::ThingManager;
 use lending_iterator::LendingIterator;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::ImmutableRow,
-    pipeline::{PipelineContext, PipelineError, PipelineStageAPI},
+    pipeline::{IteratingStageAPI, PipelineContext, PipelineError, PipelineStageAPI, UninitialisedStageAPI},
 };
 
 pub(crate) trait AccumulatingStageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
@@ -28,7 +27,7 @@ pub(crate) trait AccumulatingStageAPI<Snapshot: ReadableSnapshot + 'static>: 'st
 }
 
 // TODO: Optimise for allocations
-pub(crate) struct Accumulator<Snapshot, PipelineStageType, Executor>
+pub struct Accumulator<Snapshot, PipelineStageType, Executor>
 where
     Snapshot: ReadableSnapshot + 'static,
     Executor: AccumulatingStageAPI<Snapshot>,
@@ -81,13 +80,27 @@ where
         }
     }
 
-    pub fn accumulate_process_and_iterate(mut self) -> Result<AccumulatedRowIterator<Snapshot>, PipelineError> {
+    pub fn accumulate_process_and_into_iterator(mut self) -> Result<AccumulatedRowIterator<Snapshot>, PipelineError> {
         self.accumulate()?;
         let Self { executor, rows, upstream, .. } = self;
-        let mut context = upstream.try_finalise_and_get_owned_context()?;
+        let mut context = upstream.finalise_and_into_context()?; // TODO: Need not always be owned
         let mut rows = rows.into_boxed_slice();
         executor.process_accumulated(&mut context, &mut rows)?;
         Ok(AccumulatedRowIterator { context, rows, next_index: 0 })
+    }
+}
+
+impl<
+        Snapshot: ReadableSnapshot + 'static,
+        PipelineStageType: PipelineStageAPI<Snapshot>,
+        Executor: AccumulatingStageAPI<Snapshot>,
+    > UninitialisedStageAPI<Snapshot> for Accumulator<Snapshot, PipelineStageType, Executor>
+{
+    type IteratingStage = AccumulatedRowIterator<Snapshot>;
+
+    fn initialise_and_into_iterator(mut self) -> Result<Self::IteratingStage, PipelineError> {
+        self.upstream.initialise()?;
+        self.accumulate_process_and_into_iterator()
     }
 }
 
@@ -97,11 +110,18 @@ pub struct AccumulatedRowIterator<Snapshot: ReadableSnapshot + 'static> {
     next_index: usize,
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> AccumulatedRowIterator<Snapshot> {
-    pub(crate) fn finalise(self) -> PipelineContext<Snapshot> {
+impl<Snapshot: ReadableSnapshot + 'static> IteratingStageAPI<Snapshot> for AccumulatedRowIterator<Snapshot> {
+    fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
+        self.context.try_get_shared()
+    }
+
+    fn finalise_and_into_context(mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         // TODO: Ensure we have been consumed
-        debug_assert!(self.next_index >= self.rows.len());
-        self.context
+        if self.next().is_some() {
+            Err(PipelineError::IllegalState)
+        } else {
+            Ok(self.context)
+        }
     }
 }
 

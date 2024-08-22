@@ -16,25 +16,25 @@ use crate::{
         stage_wrappers::WritablePipelineStage,
         PipelineContext, PipelineError,
     },
-    write::insert::InsertExecutor,
+    write::{delete::DeleteExecutor, insert::InsertExecutor},
 };
 
-pub type InsertAccumulator<Snapshot: WritableSnapshot + 'static> =
-    Accumulator<Snapshot, WritablePipelineStage<Snapshot>, InsertExecutor>;
+pub type DeleteAccumulator<Snapshot: WritableSnapshot + 'static> =
+    Accumulator<Snapshot, WritablePipelineStage<Snapshot>, DeleteExecutor>;
 
-pub type InsertStage<Snapshot: WritableSnapshot + 'static> = PipelineStageCommon<
+pub type DeleteStage<Snapshot: WritableSnapshot + 'static> = PipelineStageCommon<
     Snapshot,
     WritablePipelineStage<Snapshot>,
-    InsertAccumulator<Snapshot>,
+    DeleteAccumulator<Snapshot>,
     AccumulatedRowIterator<Snapshot>,
 >;
-impl<Snapshot: WritableSnapshot + 'static> InsertStage<Snapshot> {
-    pub fn new(upstream: Box<WritablePipelineStage<Snapshot>>, executor: InsertExecutor) -> InsertStage<Snapshot> {
+impl<Snapshot: WritableSnapshot + 'static> DeleteStage<Snapshot> {
+    pub fn new(upstream: Box<WritablePipelineStage<Snapshot>>, executor: DeleteExecutor) -> DeleteStage<Snapshot> {
         Self::new_impl(Accumulator::new(upstream, executor))
     }
 }
 
-impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for InsertExecutor {
+impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for DeleteExecutor {
     fn process_accumulated(
         &self,
         context: &mut PipelineContext<Snapshot>,
@@ -42,7 +42,7 @@ impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for In
     ) -> Result<(), PipelineError> {
         let (snapshot, thing_manager) = context.borrow_parts_mut();
         for (row, multiplicity) in rows {
-            self.execute_insert(snapshot, thing_manager, &mut Row::new(row, multiplicity))
+            self.execute_delete(snapshot, thing_manager, &mut Row::new(row, multiplicity))
                 .map_err(|source| PipelineError::WriteError(source))?;
         }
         Ok(())
@@ -55,10 +55,10 @@ impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for In
     }
 
     fn must_deduplicate_incoming_rows(&self) -> bool {
-        true
+        false
     }
 
     fn row_width(&self) -> usize {
-        self.plan().output_row_plan.len()
+        self.plan().output_row_plan.len() + self.plan().vertex_instructions.len()
     }
 }

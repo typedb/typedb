@@ -17,8 +17,11 @@ use concept::{
 };
 use executor::{
     pipeline::{
-        common::InitialStage, insert::InsertStage, match_::MatchStage, PipelineContext, ReadablePipelineStage,
-        WritablePipelineStage,
+        initial::InitialStage,
+        insert::InsertStage,
+        match_::MatchStage,
+        stage_wrappers::{ReadablePipelineStage, WritablePipelineStage},
+        PipelineContext,
     },
     write::insert::InsertExecutor,
 };

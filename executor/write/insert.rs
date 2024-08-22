@@ -5,29 +5,18 @@
  */
 use std::fmt::{Debug, Display};
 
-use answer::variable_value::VariableValue;
-use compiler::{
-    insert::{
-        insert::InsertPlan,
-        instructions::{InsertEdgeInstruction, InsertVertexInstruction},
-    },
-    VariablePosition,
+use compiler::insert::{
+    insert::InsertPlan,
+    instructions::{InsertEdgeInstruction, InsertVertexInstruction},
 };
 use concept::thing::thing_manager::ThingManager;
-use itertools::Either;
-use lending_iterator::LendingIterator;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::WritableSnapshot;
 
 use crate::{
-    batch::{ImmutableRow, Row},
-    pipeline::{
-        accumulator::{AccumulatedRowIterator, AccumulatingStageAPI, Accumulator},
-        PipelineContext, PipelineError, PipelineStageAPI, WritablePipelineStage,
-    },
+    batch::Row,
     write::{write_instruction::AsWriteInstruction, WriteError},
 };
 
-//
 pub struct InsertExecutor {
     plan: InsertPlan,
 }
@@ -36,38 +25,11 @@ impl InsertExecutor {
     pub fn new(plan: InsertPlan) -> Self {
         Self { plan }
     }
-}
 
-impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for InsertExecutor {
-    fn process_accumulated(
-        &self,
-        context: &mut PipelineContext<Snapshot>,
-        rows: &mut Box<[(Box<[VariableValue<'static>]>, u64)]>,
-    ) -> Result<(), PipelineError> {
-        let (snapshot, thing_manager) = context.borrow_parts_mut();
-        for (row, multiplicity) in rows {
-            self.execute_insert(snapshot, thing_manager, &mut Row::new(row, multiplicity))
-                .map_err(|source| PipelineError::WriteError(source))?;
-        }
-        Ok(())
+    pub(crate) fn plan(&self) -> &InsertPlan {
+        &self.plan
     }
 
-    fn store_incoming_row_into(&self, incoming: &ImmutableRow<'_>, stored_row: &mut Box<[VariableValue<'static>]>) {
-        (0..incoming.width()).for_each(|i| {
-            stored_row[i] = incoming.get(VariablePosition::new(i as u32)).clone().into_owned();
-        });
-    }
-
-    fn must_deduplicate_incoming_rows(&self) -> bool {
-        true
-    }
-
-    fn row_width(&self) -> usize {
-        self.plan.output_row_plan.len()
-    }
-}
-
-impl InsertExecutor {
     pub fn execute_insert(
         &self,
         snapshot: &mut impl WritableSnapshot,
