@@ -959,38 +959,105 @@ _Note: we will discuss the insertion of data and relevant system properties in "
 
 ## Function semantics
 
-### Function body and operators
+### Function signature, body, operators
+
+**case FUN_SIGN_STREAM**
+
+_Syntax_:
+```
+fun F ($x: A, $y: B[]) -> { C, D[], E? } :
+```
+where
+* types `A, B, C, D, E` can be available entity, relation, attribute, value types (both structure and primitive).
+
+_TODO: allow types to be optional in args (this extends types to sum types, interface types, etc.)_
+
+**case FUN_SIGN_SINGLE**
+
+_Syntax_:
+```
+fun F ($x: A, $y: B[]) -> C, D[], E? :
+```
+where
+* types `A, B, C, D, E` can be available entity, relation, attribute, value types (both structure and primitive).
+
+_TODO: allow types to be optional in args (this extends types to sum types, interface types, etc.)_
+
+**case FUN_BODY**
 
 _Syntax_:
 ```
 match <PATT>
-<OP>
+```
+* `<PATT>;` can be any pattern as defined in the previous sections. 
+
+**case FUN_OPS**
+
+_Syntax_:
+```
+<OP>;
 ...
-<OP>
+<OP>;
 ```
 
-* `<PATT>` can be any pattern as defined in the previous sections. 
-* `<OP>` can be an operator:
-  * 
-
+* `<OP>` can be one of:
+  * `limit <int>`
+  * `offset <int>`
+  * `sort $x, $y` (sorts first in `$x`, then in `$y`)
+  * `select $x, $y`
+* Each `<OP>` stage takes the concept map set from the previous stage and return a concept map set for the 
+  * These concept map set operatioins are described in "Operators"
+* The final output concept map set of the last operator is called the **body concept map set**
 
 ### Stream-return
 
-* `return { }`
+* `return { $x, $y, ... }`
+  * performs a `select` of the listed variables
+  * return resulting concept map set
 
 ### Single-return
 
-* `return check`, 
-* `return sum()`, 
-* `return first()`, 
-* `return count`, 
-* `return count()`
+* `return <AGG>, <AGG>, ...;` where `<AGG>` is one of the following **aggregate functions**:
+  * `check`:
+    * output type `bool`
+    * returns `true` if concept map set non-empty
+  * `sum($x)`:
+    * output type `float` or `int`
+    * return sum of all `ans($x)` in answer set
+    * `$x` can be optional
+    * empty sums yield `0.0f` or `0`
+  * `mean($x)`:
+    * output type `float?`
+    * return mean of all `ans($x)` in answer set
+    * `$x` can be optional
+    * empty mean return $\emptyset$
+  * `median($x)`, 
+    * output type `float?` or `int?` (depending on type of `$x`)
+    * return median of all `ans($x)` in answer set
+    * `$x` can be optional
+    * empty medians return $\emptyset$
+  * `first($x)`
+    * `A?` for any `A`
+    * return sum of all `ans($x)` in answer set
+    * `$x` can be optional
+    * if no `ans($x)`is set, return $\emptyset$
+  * `count`
+    * output type `long`
+    * return count of all answers
+  * `count($x)`
+    * output type `long`
+    * return count of all `ans($x)` in answer set
+    * `$x` can be optional
+* Each `<AGG>` reduces the final concept map set to a single value
+  * These reduction operations are described in "Reduce"
 
 ### Recursion
 
-Functions can be called recursively, as long as negation can be stratified. The semantics in this case is computed "stratum by stratum".
+Functions can be called recursively, as long as negation can be stratified. The semantics in this case is computed "stratum by stratum". 
 
 ## Insert semantics
+
+### 
 
 ### Leaf attribute system constraint
 
@@ -1006,6 +1073,9 @@ TODO: Remove this constraint!
 # Pipelines
 
 ## Basics of streams
+
+Stream are ordered concept map sets
+Eager evaluation
 
 ## Clauses
 
@@ -1104,9 +1174,22 @@ Any element in any type (i.e. value or instance).
 
 A element or a type.
 
-### Type kind
+### Concept map
 
-The kind of a (schema) type: entity, relation, attribute, role, ownership, value.
+Mapping of variables to concepts
+
+### Stream
+
+An ordered concept map.
+
+### Answer set
+
+The set of concept maps that satisfy a pattern.
+
+### Answer 
+
+An element in the answer set of a pattern.
+
 
 ## TypeQL syntax
 
@@ -1132,10 +1215,14 @@ callable `match-return` query. can be single-return or stream-return.
 
 ### Statement
 
-An atomic pattern (cannot be subdivided). Variations:
+A syntactic unit (cannot be subdivided). Variations:
 
 * Simple statement: statement not containing `,`
 * Combined statement: statement combined with `,`
+
+### Pattern
+
+Context for variables (this "context" describes properties of the variables), used to form a data retrieval query.
 
 ### Stream reduction / reduction
 
