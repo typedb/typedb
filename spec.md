@@ -14,22 +14,22 @@
 - [Schema](#schema)
   - [Basics of schemas](#basics-of-schemas)
   - [Define semantics](#define-semantics)
-    - [Type defs](#type-defs)
+    - [Types, subtypes, dependencies](#types-subtypes-dependencies)
     - [Constraints](#constraints)
     - [Triggers](#triggers)
-    - [Value type defs](#value-type-defs)
+    - [Value types](#value-types)
     - [Functions defs](#functions-defs)
   - [Undefine semantics](#undefine-semantics)
-    - [Type defs](#type-defs-1)
+    - [Types, subtypes, dependencies](#types-subtypes-dependencies-1)
     - [Constraints](#constraints-1)
     - [Triggers](#triggers-1)
-    - [Value type defs](#value-type-defs-1)
+    - [Value types](#value-types-1)
     - [Functions defs](#functions-defs-1)
   - [Redefine semantics](#redefine-semantics)
-    - [Type defs](#type-defs-2)
+    - [Types, subtypes, dependencies](#types-subtypes-dependencies-2)
     - [Constraints](#constraints-2)
     - [Triggers](#triggers-2)
-    - [Value type defs](#value-type-defs-2)
+    - [Value types](#value-types-2)
     - [Functions defs](#functions-defs-2)
 - [Data instance languages](#data-instance-languages)
   - [Match semantics](#match-semantics)
@@ -216,12 +216,12 @@ This section describes valid declarations of _types_ and axioms relating types (
   * `define`: adds type axioms or model constraints
   * `undefine`: removes type axioms or model constraints
   * `redefine`: both removes and adds axioms or model constraints (remove is never no-op)
-* Suggested distinciton of schema components:
-  * **Schema type defs**: data-capturing types and type dependencies.
-  * **Constraints**: postulate conditions that the system satisfies.
-  * **Triggers**: actions to be executed based on certain conditions.
-  * **Value type defs**: compositions of primitive value types.
-  * **Function defs**: composite data-capturing types
+* Loose categories for the main schema components:
+  * **Types, subtypes, and dependencies**: the "core" of the user model.
+  * **Constraints**: postulated conditions that the model satisfies.
+  * **Triggers**: actions to be executed based on data/model changes.
+  * **Value types**: types for primitive and structured values.
+  * **Functions**: parametrized query templates/pre-defined "model logic"
 * For execution and validation of definitions see "Transactionality" section
 * Definition clauses can be chained:
   * _Example_: 
@@ -237,7 +237,7 @@ This section describes valid declarations of _types_ and axioms relating types (
 
 ## Define semantics
 
-### Type defs
+### Types, subtypes, dependencies
 
 **Case ENT**
 * `entity A` adds $`A : \mathbf{Ent}`$
@@ -385,7 +385,7 @@ _Notation_: Write $X(I) < Y(J)$ to mean $X < Y$, $I < J$, $X : \mathbf{Type}(I)$
   * **defaults** to: deleting $`a : A`$ with existing $`b :_! B(a:O_B)`$ triggers deletion of $b$.
 
 
-### Value type defs
+### Value types
 
 **Case PRIMITIVES**
 * `bool`
@@ -443,7 +443,7 @@ _Comment: notice difference in capitalization between the two cases!_
 
 ## Undefine semantics
 
-### Type defs
+### Types, subtypes, dependencies
 
 **Case ENT**
 * `entity A` removes $`A : \mathbf{Ent}`$
@@ -524,7 +524,7 @@ _In each case, `undefine` removes the triggered action._
 * `@cascade from (relation) B`
 * `@independent from (attribute) B`
 
-### Value type defs
+### Value types
 
 **Case PRIMITIVES**
 cannot undefine primitives
@@ -565,7 +565,7 @@ _In each case, redefine acts like an undefine (which cannot be a no-op) and a de
   * _Example 1_: a type can either exists or not. we cannot "redefine" it's existence, but only define or undefine it.
   * _Example 2_: a type is either abstract or not. we can only define or undefine `@abstract`.
 
-### Type defs
+### Types, subtypes, dependencies
 
 **Case ENT**
 * cannot redefine `entity A`
@@ -648,7 +648,7 @@ _In each case, `redefine` redefines the triggered action._
 * cannot redefine `(relation) B @cascade`
 * cannot redefine `(attribute) B @independent`
 
-### Value type defs
+### Value types
 
 **Case PRIMITIVES**
 
@@ -715,7 +715,7 @@ _Key principle_:
 
 * If variables are used only in specific positions (called **optional positions**) of patterns, then they are optional variables.
 * Only **evar**s can be optional
-* A optional variable `$x` is allowed to have the empty concept assigned to it in an answer: $\gamma(x) = \empty$.
+* A optional variable `$x` is allowed to have the empty concept assigned to it in an answer: $\gamma(x) = \emptyset$.
 
 **Partial answers convention**
 
@@ -910,15 +910,15 @@ The following are all kind of obvious.
 * `$x, $y?, ... = <FUN_CALL>` is satisfied if substituting answers in `<FUN_CALL>` yields a **function answer set** $F$ (see "Function semantics") of tuples $t$, and for some tuple $t \in F$ we have:
   * for the $i$th variable `$z`, which is non-optional, we have $`\gamma(z) = t_i`$
   * for the $i$th variable `$z`, which is marked as optional using `?`, we have either
-    * $\gamma(z) = t_i$ and $t_i \neq \empty$
-    * $\gamma(z) = t_i$ and $t_i = \empty$
+    * $\gamma(z) = t_i$ and $t_i \neq \emptyset$
+    * $\gamma(z) = t_i$ and $t_i = \emptyset$
 
 **Case ASS_FUN_PATT**
 * `$x, $y?, ... = <FUN_CALL>` is satisfied if substituting answers in `<FUN_CALL>` yields a **function answer tuple** $f$ (see "Function semantics") and we have:
   * for the $i$th variable `$z`, which is non-optional, we have $`\gamma(z) = t_i`$
   * for the $i$th variable `$z`, which is marked as optional using `?`, we have either
-    * $\gamma(z) = t_i$ and $t_i \neq \empty$
-    * $\gamma(z) = t_i$ and $t_i = \empty$
+    * $\gamma(z) = t_i$ and $t_i \neq \emptyset$
+    * $\gamma(z) = t_i$ and $t_i = \emptyset$
 
 _Remark_: variables marked with `?` in function assignments are the first example of **optional variables**. We will meet other pattern yielding optional variables in the following section.
 
