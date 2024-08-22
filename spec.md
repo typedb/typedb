@@ -8,11 +8,11 @@
 
 **Table of contents**
 
-- [Terminology and notation](#terminology-and-notation)
+- [Foundations](#foundations)
   - [Terminology](#terminology)
-  - [Type system basics and notation](#type-system-basics-and-notation)
+  - [The type system](#the-type-system)
 - [Schema](#schema)
-  - [Basics](#basics)
+  - [Basics of schemas](#basics-of-schemas)
   - [Define semantics](#define-semantics)
     - [Type defs](#type-defs)
     - [Constraints](#constraints)
@@ -32,26 +32,41 @@
     - [Value type defs](#value-type-defs-2)
     - [Functions defs](#functions-defs-2)
 - [Data instance languages](#data-instance-languages)
-  - [Match patterns and semantics](#match-patterns-and-semantics)
+  - [Match semantics](#match-semantics)
     - [Basics: Variables and Answers](#basics-variables-and-answers)
-    - [Assignments, bindings](#assignments-bindings)
-    - [Type patterns](#type-patterns)
-    - [Data patterns](#data-patterns)
-    - [Optionality patterns](#optionality-patterns)
-    - [Value expression patterns](#value-expression-patterns)
-    - [Function patterns](#function-patterns)
+    - [Satisfying type patterns](#satisfying-type-patterns)
+    - [Satisfying constraint patterns](#satisfying-constraint-patterns)
+    - [Satisfying data patterns](#satisfying-data-patterns)
+    - [Satisfying value expression patterns](#satisfying-value-expression-patterns)
+    - [Satisfying function patterns](#satisfying-function-patterns)
+    - [Satisfying composite patterns](#satisfying-composite-patterns)
+  - [Function semantics](#function-semantics)
+    - [Function body and operators](#function-body-and-operators)
+    - [Stream-return](#stream-return)
+    - [Single-return](#single-return)
+    - [Recursion](#recursion)
   - [Insert semantics](#insert-semantics)
+    - [Leaf attribute system constraint](#leaf-attribute-system-constraint)
   - [Delete semantics](#delete-semantics)
   - [Update semantics](#update-semantics)
   - [Put semantics](#put-semantics)
-  - [Function semantics](#function-semantics)
 - [Pipelines](#pipelines)
   - [Basics of streams](#basics-of-streams)
   - [Clauses](#clauses)
+    - [Match](#match)
+    - [Insert](#insert)
+    - [Delete](#delete)
+    - [Update](#update)
+    - [Fetch](#fetch)
   - [Operators](#operators)
+    - [Select](#select)
+    - [Sort](#sort)
+    - [Limit](#limit)
+    - [Offset](#offset)
+    - [Reduce](#reduce)
   - [Execution](#execution)
 - [Transactionality and Concurrency](#transactionality-and-concurrency)
-  - [Basics](#basics-1)
+  - [Basics](#basics)
   - [Snapshots](#snapshots)
   - [Isolation](#isolation)
 - [Sharding](#sharding)
@@ -63,7 +78,7 @@
     - [Data instance / instance](#data-instance--instance)
     - [Data value / value](#data-value--value)
     - [Attribute instance value / attribute value](#attribute-instance-value--attribute-value)
-    - [Data term / term](#data-term--term)
+    - [Data element / element](#data-element--element)
     - [Concept](#concept)
     - [Type kind](#type-kind)
   - [TypeQL syntax](#typeql-syntax)
@@ -73,7 +88,7 @@
     - [Operators / Stream operator](#operators--stream-operator)
     - [Functions](#functions)
     - [Statement](#statement)
-    - [Reductions](#reductions)
+    - [Stream reduction / reduction](#stream-reduction--reduction)
     - [Clause](#clause)
     - [Block](#block)
     - [Suffix](#suffix)
@@ -92,7 +107,7 @@ _(For reference only)_
 * **tvar** — type variable
 * **evar** - data variable
 
-_Note_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
+_Remark_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
 
 ## The type system
 
@@ -195,7 +210,7 @@ _Remark for nerds: list types are neither sums, nor products, nor polynomials ..
 
 This section describes valid declarations of _types_ and axioms relating types (_dependencies and _type castings_) for the user's data model, as well as _model constraints_ that can be further imposed. These declarations are subject to a set of _type system properties_ as listed in this section. The section also describes how such declarations can be manipulated after being first declared (undefine, redefine).
 
-## Basics
+## Basics of schemas
 
 * Kinds of definition clauses:
   * `define`: adds type axioms or model constraints
@@ -230,40 +245,43 @@ This section describes valid declarations of _types_ and axioms relating types (
 
 ***System property***: 
 
-1. Single inheritance: Cannot have $A <_! B`$ and $A <_! C \neq B$
+1. _Single inheritance_: Cannot have $A <_! B`$ and $A <_! C \neq B$
 
 **Case REL**
 * `relation A` adds $`A : \mathbf{Rel}`$
-* `(relation) A sub B` adds $`A : \mathbf{Rel}, A <_! B`$ (**require**: $`B : \mathbf{Rel}`$ and not )
+* `(relation) A sub B` adds $`A : \mathbf{Rel}, A <_! B`$, ***requiring*** that $`B : \mathbf{Rel}`$ 
 * `(relation) A relates I` adds $`A : \mathbf{Rel}(I)$
-* `(relation) A relates I as J` adds $`A : \mathbf{Rel}(I)`$, $`I <_! J`$ (**require**: $`B : \mathbf{Rel}(J)`$ and $A <_! B$)
+* `(relation) A relates I as J` adds $`A : \mathbf{Rel}(I)`$, $`I <_! J`$, ***requiring*** that $`B : \mathbf{Rel}(J)`$ and $A <_! B$
 * `(relation) A relates I[]` adds $`A : \mathbf{Rel}([I])$
-* `(relation) A relates I[] as J[]` adds $`A : \mathbf{Rel}([I])`$, $`I <_! J`$ (**require**: $`B : \mathbf{Rel}([J])`$ and $A <_! B$)
+* `(relation) A relates I[] as J[]` adds $`A : \mathbf{Rel}([I])`$, $`I <_! J`$, ***requiring*** that $`B : \mathbf{Rel}([J])`$ and $A <_! B$
 
 ***System property***: 
 
-1. Single inheritance: Cannot have $`A <_! B`$ and $A <_! C \neq B$
-2. Single inheritance (for interfaces): Cannot have $`I <_! J`$ and $I <_! K \neq J$
-3. Exclusive interface kind: Cannot have both $`A : \mathbf{Rel}(I)`$ and $`A : \mathbf{Rel}([I])`$ (in other words, cannot have both `A relates I` and `A relates I[]`).
-4. Implicit inheritance: Cannot redeclare inherited interface (i.e. when `B relates I`, `A sub B` we cannot re-declare `A relates I`... this is automatically inherited!)
+1. _Single inheritance_: Cannot have $`A <_! B`$ and $A <_! C \neq B$
+2. _Single inheritance (for interfaces)_: Cannot have $`I <_! J`$ and $I <_! K \neq J$
+3. _Exclusive interface modes_: Cannot have both $`A : \mathbf{Rel}(I)`$ and $`A : \mathbf{Rel}([I])`$ (in other words, cannot have both `A relates I` and `A relates I[]`).
+4. _Implicit inheritance_: Cannot redeclare inherited interface (i.e. when `B relates I`, `A sub B` we cannot re-declare `A relates I`... this is automatically inherited!)
 
 **Case ATT**
 * `attribute A` adds $`A : \mathbf{Att}`$ and $`A : \mathbf{Att}(O_A)`$ ($O_A$ being automatically generated ownership interface)
-* `(attribute) A value V` adds $`A < V`$ (**require**: $V$ a primitive or struct value type)
-* `(attribute) A sub B` adds $`A : \mathbf{A}`$, $`A : \mathbf{Att}(O_A)`$, $`A <_! B`$ and $`O_A <_! O_B`$ (**require**: $`B : \mathbf{Att}(O_A)`$ and not $A <_! C \neq B$)
+* `(attribute) A value V` adds $`A < V`$, ***requiring*** that $V$ is a primitive or struct value type
+* `(attribute) A sub B` adds $`A : \mathbf{Att}(O_A)`$, $`A <_! B`$ and $`O_A <_! O_B`$, ***requiring*** that $`B : \mathbf{Att}(O_A)`$
 
 ***System property***: 
 
-1. Single inheritance: Cannot have $A <_! B`$ and $A <_! C \neq B$
+1. _Single inheritance_: Cannot have $A <_! B`$ and $A <_! C \neq B$
 
 **Case PLAYS**
-* `A plays B:I` adds $`A <_! I`$ (**require**: $B: \mathbf{Rel}(I)$, $`A :\mathbf{Obj}`$)
+
+* `A plays B:I` adds $`A <_! I`$, ***requiring*** that $B: \mathbf{Rel}(I)$, $`A :\mathbf{Obj}`$ and not $B \lneq B'$ with $B': \mathbf{Rel}(I)$
+
+_Remark_. The last part of the condition ensure that we can only declare `A plays B:I` if `I` is a role directly declared for `B`, and not an inherited role.
 
 **Case OWNS**
-* `A owns B` adds $`A <_! O_B`$ (**require**: $B: \mathbf{Att}(O_B)$, $`A :\mathbf{Obj}`$)
-* `A owns B[]` adds $`A <_! O_B`$ (**require**: $B: \mathbf{Att}(O_B)$, **puts B[] to be non-abstract**: i.e. allows declaring terms $`l :_! [B](x:O_B)`$, see earlier discussion of list types)
+* `A owns B` adds $`A <_! O_B`$, ***requiring*** that $B: \mathbf{Att}(O_B)$, $`A :\mathbf{Obj}`$
+* `A owns B[]` adds $`A <_! O_B`$, ***requiring*** that $B: \mathbf{Att}(O_B)$, **puts B[] to be non-abstract**: i.e. allows declaring terms $`l :_! [B](x:O_B)`$, see earlier discussion of list types
 
-_Note: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract` (abstractness is crucial here, see `abstract` constraint below). See **match semantics**._
+_Remark: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract` (abstractness is crucial here, see `abstract` constraint below). See **match semantics->satisfying type patterns**._
 
 ***System property***: 
 
@@ -284,9 +302,9 @@ _Note: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract` (
 1. For inherited interfaces, we cannot redeclare cardinality (this is actually a consequence of "Implicit inheritance" above). 
 2. When we have direct subinterfaces $I_i <_! J$, for $i = 1,...,n$, and each $I_i$ has `card(`$`n_i,m_i`$`)` while J has $card(n,m)$ then we must have $`n \leq \sum_i n_i \leq \sum_i m_i \leq m`$.
   
-_Note 1: Upper bounds can be omitted, writing `@card(2..)`, to allow for arbitrary large cardinalities_
+_Remark 1: Upper bounds can be omitted, writing `@card(2..)`, to allow for arbitrary large cardinalities_
 
-_Note 2: For cardinality, and for most other constraints, we should reject redundant conditions, such as `A owns B card(0..3);` when `A sub A'` and `A' owns B card(1..2);`_
+_Remark 2: For cardinality, and for most other constraints, we should reject redundant conditions, such as `A owns B card(0..3);` when `A sub A'` and `A' owns B card(1..2);`_
 
 **Case CARD_LIST**
 * `A relates I[] @card(n..m)` postulates $n \leq \mathrm{len}(l) \leq m$ whenever $a : A'(l : [I])$, $A' \leq A$, $A' : \mathbf{Rel}([I])$, and $k$ is _maximal_ (for fixed $a : A$).
@@ -295,10 +313,10 @@ _Note 2: For cardinality, and for most other constraints, we should reject redun
   * **defaults** to `@card(0..)` if omitted ("many")
 
 **Case PLAYS_AS**
-* `A plays B as C` postulates $`|C(x:O_C)| - |B(x:O_B)| = 0`$ for all $`x:A`$ (**require**: $B \lneq C$, $A < D$, $`D <_! C`$). **Invalidated** when $A <_! C'$ for $B \lneq C' \leq C$.
+* `A plays B as C` postulates $`|C(x:O_C)| - |B(x:O_B)| = 0`$ for all $`x:A`$, ***requiring*** that $B \lneq C$, $A < D$, $`D <_! C`$. **Invalidated** when $A <_! C'$ for $B \lneq C' \leq C$.
 
 **Case OWNS_AS**
-* `A owns B as C` postulates $`|C(x:O_C)| - |B(x:O_B)| = 0`$ for all $`x:A`$ (**require**: $B \lneq C$, $A < D$, $`D <_! O_C`$). **Invalidated** when $A <_! O_{C'}$ for $B \lneq C' \leq C$.
+* `A owns B as C` postulates $`|C(x:O_C)| - |B(x:O_B)| = 0`$ for all $`x:A`$, ***requiring*** that $B \lneq C$, $A < D$, $`D <_! O_C`$. **Invalidated** when $A <_! O_{C'}$ for $B \lneq C' \leq C$.
 
 _Comment: both preceding cases are kinda complicated/unnatural ... as reflected by the math._
 
@@ -312,30 +330,41 @@ _Comment: both preceding cases are kinda complicated/unnatural ... as reflected 
 * `A owns B1 @subkey(<LABEL>); A owns B2 @subkey(<LABEL>)` postulates that if $b : B_1(a:O_{B_1}) \times B_2(a:O_{B_2})`$ for some $a : A$ then this $a$ is unique, and also $|B_1(a:O_{B_1}) \times B_2(a:O_{B_2})| = 1$. **Generalizes** to $n$ subkeys.
 
 **Case ABSTRACT**
-* `(type) B @abstract` postulates $`b :_! B(...)`$ to be impossible
-* `A plays B:I @abstract` postulates that both
-  *  $`b :_! B'(a:I)`$ and 
-  *  $`b :_! B'(l:[I])`$, $a \in l$ 
-  
-  are impossible whenever $a : A$, $B' \leq B$ (_note_: $B' < B$ is needed here, since the interface $I$ may be inherited)
-* `A owns B @abstract` postulates $`b :_! B(a:I)`$ to be impossible for $a : A$ 
-* `A owns B[] @abstract` postulates $`b :_! [B](a:I)`$ to be impossible for $a : A$ 
+* `(type) A @abstract` postulates $`a :_! A(...)`$ to be impossible
 * `B relates I @abstract` postulates $`A <_! I`$ to be impossible for $A : \mathbf{Obj}$
 * `B relates I[] @abstract` postulates $`A <_! I`$ to be impossible for $A : \mathbf{Obj}$
+* `A plays B:I @abstract` postulates that
+  *  (if $I$ is used as a plain role:) $`b :_! B'(a:I)`$ 
+  *  (if $I$ is used as a list role:) $`b :_! B'(l:[I])`$, $a \in l$ 
+  
+  is impossible whenever $a : A$, $B' \leq B$ (_note_: $B' < B$ is needed here, since the interface $I$ may be inherited to some subtypes)
+* `A owns B @abstract` postulates $`b :_! B(a:I)`$ to be impossible for $a : A$ 
+* `A owns B[] @abstract` postulates $`b :_! [B](a:I)`$ to be impossible for $a : A$ 
 
-_Comment: The last two cases is the ugly duckling. Revisit?_
+***System property***:
+
+> _The following properties capture that parents of abstract things are meant to be abstract too. But this is not really a crucial condition. (TODO: discuss!)_ 
+
+_Notation_: Write $X(I) < Y(J)$ to mean $X < Y$, $I < J$, $X : \mathbf{Type}(I)$, $Y : \mathbf{Type}(J)$.
+
+1. If `(type) A @abstract` and $A < B$ then `(type) B` cannot be non-abstract.
+2. If `A relates I @abstract` and $A(I) < B(J)$ then `B relates J` cannot be non-abstract.
+3. If `A relates I[] @abstract` and $A([I]) < B([J])$ then `B relates J[]` cannot be non-abstract.
+4. If `A plays B:I @abstract` and $B(I) < C(J)$ then `A plays B:J` cannot be non-abstract.
+5. If `A owns B @abstract` and $B < C$ then `A owns C` cannot be non-abstract. 
+6. If `A owns B[] @abstract` and $B < C$ then `A owns C[]` cannot be non-abstract. 
 
 **Case VALUES**
-* `A owns B @values(v1, v2)` postulates if $a : A$ then $`a \in \{v_1, v_2\}`$  (**require**: 
+* `A owns B @values(v1, v2)` postulates if $a : A$ then $`a \in \{v_1, v_2\}`$ , ***requiring*** that 
   * either $`A : \mathbf{Att}`$, $`A < V`$, $`v_i : V`$, 
-  * or $`A`$ is the component of a struct, see section on struct defs.) 
+  * or $`A`$ is the component of a struct, see section on struct defs. 
   
   **Generalizes** to $n$ values.
 * `A owns B @regex(v1..v2)` postulates if $a : A$ then $`a`$ conforms with regex `<EXPR>`.
 * `A owns B @range(v1..v2)` postulates if $a : A$ then $`a \in [v_1,v_2]`$ (conditions as before).
-* `A value B @values(v1, v2)` postulates if $a : A$ then $`a \in \{v_1, v_2\}`$  (**require**: 
+* `A value B @values(v1, v2)` postulates if $a : A$ then $`a \in \{v_1, v_2\}`$ , ***requiring*** that: 
   * either $`A : \mathbf{Att}`$, $`A < V`$, $`v_i : V`$, 
-  * or $`A`$ is the component of a struct, see section on struct defs.)
+  * or $`A`$ is the component of a struct, see section on struct defs.
   
   **Generalizes** to $n$ values.
 * `A value B @regex(v1..v2)` postulates if $a : A$ then $`a`$ conforms with regex `<EXPR>`.
@@ -546,9 +575,9 @@ _In each case, redefine acts like an undefine (which cannot be a no-op) and a de
 * cannot redefine `relation A` 
 * `(relation) A sub B` redefines $`A < B`$
 * cannot redefine `(relation) A relates I`
-* `(relation) A relates I as J$` redefines $`I <_! J`$ (**require**: either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role)
+* `(relation) A relates I as J$` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
 * cannot redefine `(relation) A relates I[]`
-* `(relation) A relates I[] as J[]` redefines $`I <_! J`$ (**require**: either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role)
+* `(relation) A relates I[] as J[]` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
 
 **Case ATT**
 * cannot redefine `attribute A`
@@ -643,7 +672,7 @@ cannot redefine single-return functions.
 
 This section first describes the satisfication semantics of match queries, obtained by substituting _variables_ in _patterns_ by concepts (_answers_) such that these patterns are _satisfied_. It is then described how instance in ERA types can be declared and further manipulated. Finally, the section describes the semantics of functions (the novelty over match semantics is the ability to declared functions recursively).
 
-## Match patterns and semantics
+## Match semantics
 
 ### Basics: Variables and Answers
 
@@ -666,7 +695,7 @@ This section first describes the satisfication semantics of match queries, obtai
 * _Definition_: 
 
   An *answer* to a pattern means the following
-  * _Concept map_: it resolves each variable `$x` to a **concept** `concept($x)` (math. notation: $\gamma(x)$). 
+  * _Concept map_: it resolves each variable `$x` to a **concept** `concept($x)` (math. notation: $\gamma(x)$).
   * _Element typing_: For each **evar** `$x` we further record a type `type($x)` (math. notation: $\tau(x)$), such that
     * either $\tau(x)$ is schema type and $\gamma(x) :_! \tau(x)$
     * or $\tau(x)$ is a value type (primitive of structured) and $\gamma(x) :_! \tau(x)$.
@@ -680,20 +709,35 @@ This section first describes the satisfication semantics of match queries, obtai
     1. To each concept assign its direct type if available,
     2. To any attribute instance used in non-comparable, same-valued attribute types otherwise re-assign that value type.
 
+**Optional variables**
+
+_Key principle_:
+
+* If variables are used only in specific positions (called **optional positions**) of patterns, then they are optional variables.
+* Only **evar**s can be optional
+* A optional variable `$x` is allowed to have the empty concept assigned to it in an answer: $\gamma(x) = \empty$.
+
+**Partial answers convention**
+
+In the next section, we describe the answer satisfying statement. By convention (and for brevity), we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). Indeed, this also determines valid answers to **partially answered** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`) by assigning this partial answers to the variables in the fully variablized statement versions.
+
+**Variable bindings convention**
+
+_Key principle_:
+
+* A pattern will only be accepted by TypeDB if all variables are **bound**. (Otherwise, we may encounter unbounded/literally impossible computations of answers.)
+* A variable is bound if it appears in a _binding position_ of at least one statement. 
+(Most statements bind their variables: in the next section we highlight non-binding positions)
+
+**Type checking**
 
 _Remark_: _Type Checking_ preceeds answer computation. Type checking failure (**TCF**) will occur when a variables cannot possibly have an assigned type.
-
-**Bindings**
-
-* _Key principle_: 
-  * A pattern will only be accepted by TypeDB if all variables are **bound**. (Otherwise, we may encounter unbounded/literally impossible computations of answers.)
-  * A variable is bound if it appears in a _binding position_ of at least one statement. 
-  (Most statements bind their variables: in the next section we highlight non-binding positions)
 
 ### Satisfying type patterns
 
 **Case TYPE_DEF**
 * `type $A` (for `type` in `{entity, relation, attribute}`) satisfied if $`\gamma(A) : \mathbf{Type}`$
+
 * `(type) $A sub $B` satisfied if $`\gamma(A) : \mathbf{Type}`$, $`\gamma(B) : \mathbf{Type}`$, $`\gamma(A) \lneq \gamma(B)$
 * `(type) $A sub! $B` satisfied if $`\gamma(A) : \mathbf{Type}`$, $`\gamma(B) : \mathbf{Type}`$, $`\gamma(A) <_! \gamma(B)$
 
@@ -701,6 +745,7 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
 
 **Case REL_PATT**
 * `$A relates $I` satisfied if $`\gamma(A) : \mathbf{Rel}(\gamma(I))`$
+
 * `$A relates! $I` satisfied if $`\gamma(A) : \mathbf{Rel}(\gamma(I))`$ and **not** $`\gamma(A) \lneq \gamma(B) : \mathbf{Rel}(\gamma(I))`$
 * `$A relates $I as $J` satisfied if $`\gamma(A) : \mathbf{Rel}(\gamma(I))`$, $`B : \mathbf{Rel}(\gamma(J))`$, $`A < B`$, $\gamma(I) < \gamma(J)$.
 * `$A relates $I[]` satisfied if $`\gamma(A) : \mathbf{Rel}(\gamma([I]))`$
@@ -714,6 +759,8 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
 **Case OWNS_PATT**
 * `$A owns $B` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type)
 * `$A owns! $B` satisfied if $`\gamma(A) <_! \gamma(O_B)`$ 
+
+_Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` will match the answer `ans($X) = A`.
 
 ### Satisfying constraint patterns
 
@@ -742,10 +789,12 @@ _Remark: these two are still not a natural constraint, as foreshadowed by a prev
 
 **Case UNIQUE_PATT**
 * `$A owns $B @unique` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B) @key`.
+
 * `$A owns! $B @unique` satisfied if $`\gamma(A) <_! \gamma(O_B)`$, and schema directly contains constraint `ans($A) owns ans($B) @unique`.
 
 **Case KEY_PATT**
 * `$A owns $B @key` satisfied if $`\gamma(A) < A' <_! \gamma(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B) @key`.
+
 * `$A owns! $B @key` satisfied if $`\gamma(A) <_! \gamma(O_B)`$, and schema directly contains constraint `ans($A) owns ans($B) @key`.
 
 **Case SUBKEY_PATT**
@@ -754,7 +803,10 @@ _Remark: these two are still not a natural constraint, as foreshadowed by a prev
 **Case ABSTRACT_PATT**
 * `(type) $B @abstract` satisfied if schema directly contains `(type) ans($B) @abstract`.
 * `$A plays $B:$I @abstract` satisfied if $`\gamma(A) < A'`$, $`\gamma(B) : \mathbf{Rel}(\gamma(I))`$, $`\gamma(B) < B' : \mathbf{Rel}(\gamma(I))`$ and schema directly contains constraint `A' plays B':ans($I) @abstract`.
-* `$A owns $B @abstract` satisfied if $`\gamma(A) < A'`$ and schema directly contains constraint `A' owns ans($B) @abstract`. 
+* `$A owns $B @abstract` satisfied if $`\gamma(A) < A'`$ and schema directly contains one of the constraints
+  * `A' owns ans($B) @abstract`
+  * `A' owns ans($B)[]`
+
 * `$A owns $B[] @abstract` satisfied if $`\gamma(A) < A'`$ and schema directly contains constraint `A' owns ans($B)[] @abstract`.
 * `$B relates $I @abstract` satisfied if $`B : \mathbf{Rel}(I)`$, $`\gamma(B) < B'`$, and schema directly contains constraint `B' relates ans($I) @abstract`.
 * `$B relates $I[] @abstract` satisfied if $`B : \mathbf{Rel}([I])`$, $`\gamma(B) < B'`$, and schema directly contains constraint `B' relates ans($I)[] @abstract`.
@@ -840,37 +892,77 @@ _Expression grammar_
 
 The following are all kind of obvious.
 
-* `<INT> < <INT>` 
-* `<INT> <= <INT>` 
-* `<INT> > <INT>` 
-* `<INT> >= <INT>`
-* `<STRING> < <STRING>` (lexicographic comparison)
-* `<STRING> <= <STRING>` (lexicographic comparison)
-* `<STRING> > <STRING>`  (lexicographic comparison)
-* `<STRING> >= <STRING>` (lexicographic comparison)
+* `<INT> <COMP> <INT>` 
+* `<BOOl> <COMP> <BOOL>` (`false` < `true`)
+* `<STRING> <COMP> <STRING>` (lexicographic comparison)
+* `<DATETIME> <COMP> <DATETIME>` (usual datetime order)
+* `<TIME> <COMP> <TIME>` (usual time order)
 * `<STRING> contains <STRING>` 
 * `<STRING> like <REGEX>` (where `<REGEX>` is a regex string without variables)
 
 ***System property***
 
-1. None of the above pattern bind any of their variables are **not bound**.
+1. In all the above patterns all their variables are **not bound**.
 
 ### Satisfying function patterns
 
 **Case IN_FUN_PATT**
-
-Refer to section on Function semantics
+* `$x, $y?, ... = <FUN_CALL>` is satisfied if substituting answers in `<FUN_CALL>` yields a **function answer set** $F$ (see "Function semantics") of tuples $t$, and for some tuple $t \in F$ we have:
+  * for the $i$th variable `$z`, which is non-optional, we have $`\gamma(z) = t_i`$
+  * for the $i$th variable `$z`, which is marked as optional using `?`, we have either
+    * $\gamma(z) = t_i$ and $t_i \neq \empty$
+    * $\gamma(z) = t_i$ and $t_i = \empty$
 
 **Case ASS_FUN_PATT**
-* 
+* `$x, $y?, ... = <FUN_CALL>` is satisfied if substituting answers in `<FUN_CALL>` yields a **function answer tuple** $f$ (see "Function semantics") and we have:
+  * for the $i$th variable `$z`, which is non-optional, we have $`\gamma(z) = t_i`$
+  * for the $i$th variable `$z`, which is marked as optional using `?`, we have either
+    * $\gamma(z) = t_i$ and $t_i \neq \empty$
+    * $\gamma(z) = t_i$ and $t_i = \empty$
 
-Refer to section on Function semantics
+_Remark_: variables marked with `?` in function assignments are the first example of **optional variables**. We will meet other pattern yielding optional variables in the following section.
 
-
-
-### Satisfying Optionality patterns
 
 ### Satisfying composite patterns
+
+Now that we have seen how to determine when answers satisfy individual statements, we can extend our discussion of match semantics to full pattern.
+
+**Case AND_PATT**
+* An answer for the pattern `<PATT1>; <PATT2>;` is a minimal answer that simultaneously satisfies both `<PATT1>` and `<PATT2>`.
+
+_Remark_: Here, "minimal" means the smallest possible concept map.
+
+**Case OR_PATT**
+* An answer for the pattern `{ <PATT1> } or { <PATT2> };` is an answer that satisfies either `<PATT1>` or `<PATT2>`.
+
+_Remark_: this generalize to a chain of $k$ `or` clauses.
+
+**Case NOT_PATT**
+* An answer for the pattern `not { <PATT> };` is any partial answer (i.e. not all variables need to be assigned) which cannot be completed to a full answer for `<PATT>`.
+
+**Case TRY_PATT**
+* The pattern `try { <PATT> };` is equivalent to the pattern `{ <PATT> } or { not { <PATT>}; };`.
+
+
+## Function semantics
+
+### Function body and operators
+
+### Stream-return
+
+* `return { }`
+
+### Single-return
+
+* `return check`, 
+* `return sum()`, 
+* `return first()`, 
+* `return count`, 
+* `return count()`
+
+### Recursion
+
+Functions can be called recursively, as long as negation can be stratified. The semantics in this case is computed
 
 ## Insert semantics
 
@@ -884,22 +976,6 @@ TODO: Remove this constraint!
 
 ## Put semantics
 
-## Function semantics
-
-### Basics about streams
-
-### Stream-return
-
-
-
-### Single-return
-
-check, sum, first
-
-### Recursion
-
-
-
 
 # Pipelines
 
@@ -907,11 +983,29 @@ check, sum, first
 
 ## Clauses
 
-Fetch, 
+### Match
+
+### Insert
+
+### Delete
+
+### Update
+
+### Fetch
 
 ## Operators
 
-Select, Reduce, 
+### Select 
+
+### Sort
+
+### Limit
+
+### Offset
+
+_Remark_: Offset is only useful when streams (and the order of answers) are fully deterministic.
+
+### Reduce
 
 ## Execution
 
