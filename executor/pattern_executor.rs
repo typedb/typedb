@@ -163,7 +163,7 @@ pub(crate) struct BatchIterator<Snapshot: ReadableSnapshot> {
 
 impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
     pub(crate) fn new(executor: PatternExecutor, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
-        Self::new_from_context(executor, PipelineContext::Arced(snapshot, thing_manager))
+        Self::new_from_context(executor, PipelineContext::Shared(snapshot, thing_manager))
     }
 
     fn new_from_context(executor: PatternExecutor, context: PipelineContext<Snapshot>) -> Self {

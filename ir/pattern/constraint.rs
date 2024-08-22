@@ -247,7 +247,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         binding
             .validate(&mut self.context)
             .map_err(|source| PatternDefinitionError::ExpressionDefinition { source })?;
-        // WARNING: we can't set a variable category here, since we don't know if the instruction will produce a
+        // WARNING: we can't set a variable category here, since we don't know if the expression will produce a
         //          Value, a ValueList, or a ThingList! We will know this at compilation time
         let as_ref = self.constraints.add_constraint(binding);
         Ok(as_ref.as_expression_binding().unwrap())
@@ -820,7 +820,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
         self.ids_assigned().for_each(|id| function(id, ConstraintIDSide::Left));
         // TODO
         // todo!("Do we really need positions here?")
-        // self.instruction().ids().for_each(|id| function(id, ConstraintIDSide::Right));
+        // self.expression().ids().for_each(|id| function(id, ConstraintIDSide::Right));
     }
 }
 

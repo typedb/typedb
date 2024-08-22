@@ -84,7 +84,7 @@ where
     pub fn accumulate_process_and_iterate(mut self) -> Result<AccumulatedRowIterator<Snapshot>, PipelineError> {
         self.accumulate()?;
         let Self { executor, rows, upstream, .. } = self;
-        let mut context = upstream.finalise();
+        let mut context = upstream.try_finalise_and_get_owned_context()?;
         let mut rows = rows.into_boxed_slice();
         executor.process_accumulated(&mut context, &mut rows)?;
         Ok(AccumulatedRowIterator { context, rows, next_index: 0 })

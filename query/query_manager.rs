@@ -121,7 +121,7 @@ impl QueryManager {
         let CompiledPipeline { compiled_functions, compiled_stages } =
             compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
 
-        let context = PipelineContext::Arced(Arc::new(snapshot), Arc::new(thing_manager));
+        let context = PipelineContext::Shared(Arc::new(snapshot), Arc::new(thing_manager));
         let mut latest_stage = ReadablePipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {

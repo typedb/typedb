@@ -26,15 +26,34 @@ use crate::{
 };
 
 pub enum PipelineContext<Snapshot: ReadableSnapshot> {
-    Arced(Arc<Snapshot>, Arc<ThingManager>),
+    Shared(Arc<Snapshot>, Arc<ThingManager>),
     Owned(Snapshot, ThingManager),
 }
 
 impl<Snapshot: ReadableSnapshot> PipelineContext<Snapshot> {
     pub(crate) fn borrow_parts(&self) -> (&Snapshot, &ThingManager) {
         match self {
-            PipelineContext::Arced(snapshot, thing_manager) => (&snapshot, &thing_manager),
+            PipelineContext::Shared(snapshot, thing_manager) => (&snapshot, &thing_manager),
             PipelineContext::Owned(snapshot, thing_manager) => (&snapshot, &thing_manager),
+        }
+    }
+
+    pub(crate) fn try_into_owned(self) -> Result<PipelineContext<Snapshot>, ()> {
+
+        match self {
+            PipelineContext::Owned(snapshot, thing_manager) => {
+                Ok(PipelineContext::Owned(snapshot, thing_manager))
+            }
+            PipelineContext::Shared(mut shared_snapshot, mut shared_thing_manager) => {
+                match (Arc::into_inner(shared_snapshot), Arc::into_inner(shared_thing_manager)) {
+                    (Some(snapshot), Some(thing_manager)) => {
+                        Ok(PipelineContext::Owned(snapshot, thing_manager))
+                    }
+                    (_, _) => {
+                        Err(())
+                    }
+                }
+            }
         }
     }
 }
@@ -42,7 +61,7 @@ impl<Snapshot: ReadableSnapshot> PipelineContext<Snapshot> {
 impl<Snapshot: WritableSnapshot> PipelineContext<Snapshot> {
     pub fn borrow_parts_mut(&mut self) -> (&mut Snapshot, &mut ThingManager) {
         match self {
-            PipelineContext::Arced(snapshot, thing_manager) => todo!("illegal"),
+            PipelineContext::Shared(snapshot, thing_manager) => todo!("illegal"),
             PipelineContext::Owned(snapshot, thing_manager) => (snapshot, thing_manager),
         }
     }
@@ -51,7 +70,9 @@ impl<Snapshot: WritableSnapshot> PipelineContext<Snapshot> {
 pub trait PipelineStageAPI<Snapshot: ReadableSnapshot>:
     for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, PipelineError>>
 {
-    fn finalise(self) -> PipelineContext<Snapshot>;
+    fn try_finalise_and_get_owned_context(self) -> Result<PipelineContext<Snapshot>, PipelineError>;
+    // fn try_get_shared_reference(self) -> Result<PipelineContext<Snapshot>, ()>;
+    // fn try_finalise_and_drop_shared_context(mut self) -> Result<(), PipelineError>;
 }
 
 pub enum ReadablePipelineStage<Snapshot: ReadableSnapshot + 'static> {
@@ -71,13 +92,27 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadablePipelineS
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for ReadablePipelineStage<Snapshot> {
-    fn finalise(self) -> PipelineContext<Snapshot> {
+    fn try_finalise_and_get_owned_context(self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         // TODO: Ensure the stages are done somehow
         match self {
-            ReadablePipelineStage::Match(match_) => match_.finalise(),
-            ReadablePipelineStage::Initial(initial) => initial.finalise(),
+            ReadablePipelineStage::Match(match_) => match_.try_finalise_and_get_owned_context(),
+            ReadablePipelineStage::Initial(initial) => initial.try_finalise_and_get_owned_context(),
         }
     }
+
+    // fn try_get_shared_reference(self) -> Result<PipelineContext<Snapshot>, ()> {
+    //     match self {
+    //         ReadablePipelineStage::Match(match_) => match_.try_get_shared_reference(),
+    //         ReadablePipelineStage::Initial(initial) => initial.try_get_shared_reference(),
+    //     }
+    // }
+    //
+    // fn try_finalise_and_drop_shared_context(self) -> Result<(), PipelineError> {
+    //     match self {
+    //         ReadablePipelineStage::Match(match_) => match_.try_finalise_and_drop_shared_context(),
+    //         ReadablePipelineStage::Initial(initial) => initial.try_finalise_and_drop_shared_context(),
+    //     }
+    // }
 }
 
 pub enum WritablePipelineStage<Snapshot: WritableSnapshot + 'static> {
@@ -99,12 +134,12 @@ impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WritablePipelineS
 }
 
 impl<Snapshot: WritableSnapshot + 'static> PipelineStageAPI<Snapshot> for WritablePipelineStage<Snapshot> {
-    fn finalise(self) -> PipelineContext<Snapshot> {
+    fn try_finalise_and_get_owned_context(self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         // TODO: Ensure the stages are done somehow
         match self {
-            WritablePipelineStage::Match(match_) => match_.finalise(),
-            WritablePipelineStage::Initial(initial) => initial.finalise(),
-            WritablePipelineStage::Insert(insert) => insert.finalise(),
+            WritablePipelineStage::Match(match_) => match_.try_finalise_and_get_owned_context(),
+            WritablePipelineStage::Initial(initial) => initial.try_finalise_and_get_owned_context(),
+            WritablePipelineStage::Insert(insert) => insert.try_finalise_and_get_owned_context(),
         }
     }
 }
@@ -114,6 +149,8 @@ impl<Snapshot: WritableSnapshot + 'static> PipelineStageAPI<Snapshot> for Writab
 pub enum PipelineError {
     ConceptRead(ConceptReadError),
     WriteError(WriteError),
+    FinalisedUnconsumedStage,
+    CouldNotGetOwnedContext,
 }
 
 impl Display for PipelineError {

@@ -38,9 +38,10 @@ impl<Snapshot: ReadableSnapshot, PipelineStage: PipelineStageAPI<Snapshot>> Lend
         if self.inner.is_some() && self.inner.as_ref().unwrap().is_left() {
             let Either::Left(lazy_stage) = self.inner.take().unwrap() else { unreachable!() };
             let LazyMatchStage { upstream, program_plan, .. } = lazy_stage;
-            let (snapshot, thing_manager) = match upstream.finalise() {
-                PipelineContext::Arced(snapshot, thing_manager) => (snapshot, thing_manager),
-                PipelineContext::Owned(snapshot, thing_manager) => (Arc::new(snapshot), Arc::new(thing_manager)),
+            let (snapshot, thing_manager) = match upstream.try_finalise_and_get_owned_context() {
+                Ok(PipelineContext::Shared(snapshot, thing_manager)) => (snapshot, thing_manager),
+                Ok(PipelineContext::Owned(snapshot, thing_manager)) => (Arc::new(snapshot), Arc::new(thing_manager)),
+                Err(error) => return Some(Err(error)),
             };
             let snapshot_borrowed: &Snapshot = &snapshot;
             match PatternExecutor::new(program_plan.entry(), snapshot_borrowed, &thing_manager) {
@@ -68,16 +69,24 @@ impl<Snapshot: ReadableSnapshot, PipelineStage: PipelineStageAPI<Snapshot>> Lend
 impl<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> PipelineStageAPI<Snapshot>
     for MatchStage<Snapshot, PipelineStageType>
 {
-    fn finalise(self) -> PipelineContext<Snapshot> {
+    fn try_finalise_and_get_owned_context(self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         match self.inner {
             Some(Either::Left(lazy)) => todo!("Illegal, but unhandled"),
             Some(Either::Right(iterator)) => {
                 // TODO: If we're here, we should have pulled atleast once, right?
-                iterator.renameme__finalise()
+                Ok(iterator.renameme__finalise())
             }
             None => todo!("Illegal again, but I don't prevent it?"),
         }
     }
+
+    // fn try_get_shared_reference(self) -> Result<PipelineContext<Snapshot>, ()> {
+    //     todo!()
+    // }
+    //
+    // fn try_finalise_and_drop_shared_context(self) -> Result<(), PipelineError> {
+    //     todo!()
+    // }
 }
 
 pub struct LazyMatchStage<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> {

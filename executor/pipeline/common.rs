@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -31,7 +32,35 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for InitialStage<Snap
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for InitialStage<Snapshot> {
-    fn finalise(self) -> PipelineContext<Snapshot> {
-        self.context
+    fn try_finalise_and_get_owned_context(mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
+        if self.next().is_some() { // This changes the state, but we're going to error anyway
+            Err(PipelineError::FinalisedUnconsumedStage)
+        } else {
+            self.context.try_into_owned().map_err(|_| {
+                PipelineError::CouldNotGetOwnedContext
+            })
+        }
     }
+
+    // fn try_get_shared_reference(mut self) -> Result<PipelineContext<Snapshot>, ()> {
+    //     match self.context {
+    //         PipelineContext::Shared(arc_snapshot, arc_thing_manager) => {
+    //             Ok(PipelineContext::Shared(arc_snapshot.clone(), arc_thing_manager.clone()))
+    //         }
+    //         PipelineContext::Owned(snapshot, thing_manager) => {
+    //             let arc_snapshot = Arc::new(snapshot);
+    //             let arc_thing_manager = Arc::new(thing_manager);
+    //             self.context = PipelineContext::Shared(arc_snapshot.clone(), arc_thing_manager.clone());
+    //             Ok(PipelineContext::Shared(arc_snapshot.clone(), arc_thing_manager.clone()))
+    //         }
+    //     }
+    // }
+    //
+    // fn try_finalise_and_drop_shared_context(mut self) -> Result<(), PipelineError> {
+    //     if self.next().is_some() { // This changes the state, but we're going to error anyway
+    //         Err(PipelineError::FinalisedUnconsumedStage)
+    //     }
+    //     Ok(())
+    //     // dropping self at the end should be enough
+    // }
 }

@@ -96,7 +96,7 @@ fn test_insert() {
 
     assert!(pipeline.next().is_some());
     assert!(pipeline.next().is_none());
-    let PipelineContext::Owned(mut snapshot, mut thing_manager) = pipeline.finalise() else { unreachable!() };
+    let PipelineContext::Owned(mut snapshot, mut thing_manager) = pipeline.try_finalise_and_get_owned_context().unwrap() else { unreachable!() };
     snapshot.commit().unwrap();
 
     {
@@ -168,7 +168,7 @@ fn test_match_as_pipeline() {
         assert!(result.is_ok(), "{:?}", result);
         count += 1;
     }
-    let PipelineContext::Owned(mut snapshot, mut thing_manager) = insert_pipeline.finalise() else { unreachable!() };
+    let PipelineContext::Owned(mut snapshot, mut thing_manager) = insert_pipeline.try_finalise_and_get_owned_context().unwrap() else { unreachable!() };
     let inserted_seq = snapshot.commit().unwrap();
 
     let mut newer_statistics = Statistics::new(inserted_seq.unwrap());

@@ -56,11 +56,19 @@ impl<Snapshot: WritableSnapshot> LendingIterator for InsertStage<Snapshot> {
 }
 
 impl<Snapshot: WritableSnapshot> PipelineStageAPI<Snapshot> for InsertStage<Snapshot> {
-    fn finalise(self) -> PipelineContext<Snapshot> {
+    fn try_finalise_and_get_owned_context(self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         match self.inner {
             Some(Either::Left(accumulator)) => todo!("Illegal, but unhandled"),
-            Some(Either::Right(iterator)) => iterator.finalise(),
+            Some(Either::Right(iterator)) => Ok(iterator.finalise()),
             None => todo!("Illegal again, but I don't prevent it?"),
         }
     }
+    //
+    // fn try_get_shared_reference(self) -> Result<PipelineContext<Snapshot>, ()> {
+    //     todo!()
+    // }
+    //
+    // fn try_finalise_and_drop_shared_context(self) -> Result<(), PipelineError> {
+    //     todo!()
+    // }
 }

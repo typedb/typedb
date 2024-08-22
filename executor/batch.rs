@@ -177,12 +177,6 @@ pub struct ImmutableRow<'a> {
 }
 
 impl<'a> ImmutableRow<'a> {
-    pub fn TODO__REMOVE__get(&self, i: u32) -> &VariableValue<'_> {
-        self.get(VariablePosition::new(i))
-    }
-}
-
-impl<'a> ImmutableRow<'a> {
     pub(crate) fn new(row: &'a [VariableValue<'static>], multiplicity: u64) -> Self {
         Self { row: Cow::Borrowed(row), multiplicity }
     }
