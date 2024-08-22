@@ -40,16 +40,25 @@
     - [Satisfying value expression patterns](#satisfying-value-expression-patterns)
     - [Satisfying function patterns](#satisfying-function-patterns)
     - [Satisfying composite patterns](#satisfying-composite-patterns)
+    - [Answer sets](#answer-sets)
   - [Function semantics](#function-semantics)
-    - [Function body and operators](#function-body-and-operators)
+    - [Function signature, body, operators](#function-signature-body-operators)
     - [Stream-return](#stream-return)
     - [Single-return](#single-return)
     - [Recursion](#recursion)
   - [Insert semantics](#insert-semantics)
+    - [Basics of inserting](#basics-of-inserting)
+    - [Insert statement](#insert-statement)
     - [Leaf attribute system constraint](#leaf-attribute-system-constraint)
   - [Delete semantics](#delete-semantics)
+    - [Basics of deleting](#basics-of-deleting)
+    - [Delete statements](#delete-statements)
   - [Update semantics](#update-semantics)
+    - [Basics of updating](#basics-of-updating)
+    - [Update statements](#update-statements)
   - [Put semantics](#put-semantics)
+    - [Basics of updating](#basics-of-updating-1)
+    - [Update statements](#update-statements-1)
 - [Pipelines](#pipelines)
   - [Basics of streams](#basics-of-streams)
   - [Clauses](#clauses)
@@ -80,7 +89,10 @@
     - [Attribute instance value / attribute value](#attribute-instance-value--attribute-value)
     - [Data element / element](#data-element--element)
     - [Concept](#concept)
-    - [Type kind](#type-kind)
+    - [Concept map](#concept-map)
+    - [Stream](#stream)
+    - [Answer set](#answer-set)
+    - [Answer](#answer)
   - [TypeQL syntax](#typeql-syntax)
     - [Schema query](#schema-query)
     - [Data query](#data-query)
@@ -88,6 +100,7 @@
     - [Operators / Stream operator](#operators--stream-operator)
     - [Functions](#functions)
     - [Statement](#statement)
+    - [Pattern](#pattern)
     - [Stream reduction / reduction](#stream-reduction--reduction)
     - [Clause](#clause)
     - [Block](#block)
@@ -1057,18 +1070,50 @@ Functions can be called recursively, as long as negation can be stratified. The 
 
 ## Insert semantics
 
-### 
+### Basics of inserting
+
+Can be fed 
+
+### Insert statement
+
+**Case ISA_INS**
+* `$x isa A` 
+* `$x isa $T`
+
+**Case LINKS_INS** 
+* `$x links (I: $y)` 
+* `$x links ($I: $y)`
+
+**Case HAS_INS**
+* `$x has A $y` 
+* `$x has $A $y`
 
 ### Leaf attribute system constraint
 
-TODO: Remove this constraint!
+Currently we have:
+
+***System property***:
+
+1. ...
+
 
 ## Delete semantics
 
+### Basics of deleting
+
+### Delete statements
+
 ## Update semantics
+
+### Basics of updating
+
+### Update statements
 
 ## Put semantics
 
+### Basics of updating
+
+### Update statements
 
 # Pipelines
 
