@@ -832,19 +832,21 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
         if let Some(supertype) = attribute_type.get_supertype(snapshot, type_manager)? {
-            if let Some(supertype_value_type) = supertype.get_value_type(snapshot, type_manager)?
-            {
+            if let Some(supertype_value_type) = supertype.get_value_type(snapshot, type_manager)? {
                 if let Some(declared_value_type) =
                     TypeReader::get_value_type_declared(snapshot, attribute_type.clone())?
                 {
-                    let declared_value_type_annotations = attribute_type.get_value_type_annotations_declared(snapshot, type_manager)?;
+                    let declared_value_type_annotations =
+                        attribute_type.get_value_type_annotations_declared(snapshot, type_manager)?;
                     if declared_value_type_annotations.is_empty() {
-                        validation_errors.push(SchemaValidationError::CannotRedeclareInheritedValueTypeWithoutSpecialization(
-                            get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
-                            get_label_or_concept_read_err(snapshot, supertype)?,
-                            declared_value_type,
-                            supertype_value_type,
-                        ));
+                        validation_errors.push(
+                            SchemaValidationError::CannotRedeclareInheritedValueTypeWithoutSpecialization(
+                                get_label_or_concept_read_err(snapshot, attribute_type.clone())?,
+                                get_label_or_concept_read_err(snapshot, supertype)?,
+                                declared_value_type,
+                                supertype_value_type,
+                            ),
+                        );
                     }
                 }
             }

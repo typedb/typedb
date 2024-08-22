@@ -12,14 +12,11 @@ use concept::{
     thing::thing_manager::ThingManager,
     type_::{
         annotation::{Annotation, AnnotationError},
-        attribute_type::AttributeTypeAnnotation,
-        entity_type::EntityTypeAnnotation,
+        attribute_type::AttributeType,
         object_type::ObjectType,
-        owns::{Owns, OwnsAnnotation},
-        plays::{Plays, PlaysAnnotation},
+        owns::Owns,
+        plays::Plays,
         relates::{Relates, RelatesAnnotation},
-        relation_type::RelationTypeAnnotation,
-        role_type::RoleTypeAnnotation,
         type_manager::TypeManager,
         Ordering, OwnerAPI, PlayerAPI,
     },
@@ -45,10 +42,12 @@ use typeql::{
     type_::Optional,
     Definable, ScopedLabel, TypeRef, TypeRefAny,
 };
-use concept::type_::attribute_type::AttributeType;
 
 use crate::{
-    util::{resolve_type, resolve_value_type, type_ref_to_label_and_ordering},
+    util::{
+        capability_convert_and_validate_annotation_definition_need, resolve_type, resolve_value_type,
+        type_convert_and_validate_annotation_definition_need, type_ref_to_label_and_ordering,
+    },
     SymbolResolutionError,
 };
 
@@ -68,6 +67,8 @@ macro_rules! filter_variants {
     };
 }
 pub(crate) use filter_variants;
+
+use crate::util::{check_can_and_need_define_override, check_can_and_need_define_supertype};
 
 macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path) => {
@@ -258,28 +259,48 @@ fn define_type_annotations(
             translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
         match type_.clone() {
             TypeEnum::Entity(entity) => {
-                let converted = EntityTypeAnnotation::try_from(annotation.clone())
-                    .map_err(|source| DefineError::IllegalAnnotation { source })?;
-                entity
-                    .set_annotation(snapshot, type_manager, thing_manager, converted)
-                    .map_err(|source| DefineError::SetAnnotation { source, label: label.to_owned(), annotation })?;
+                if let Some(converted) = type_convert_and_validate_annotation_definition_need(
+                    snapshot,
+                    type_manager,
+                    &label,
+                    entity.clone(),
+                    annotation.clone(),
+                )? {
+                    entity
+                        .set_annotation(snapshot, type_manager, thing_manager, converted)
+                        .map_err(|source| DefineError::SetAnnotation { source, label: label.to_owned(), annotation })?;
+                }
             }
             TypeEnum::Relation(relation) => {
-                let converted: RelationTypeAnnotation = RelationTypeAnnotation::try_from(annotation.clone())
-                    .map_err(|source| DefineError::IllegalAnnotation { source })?;
-                relation
-                    .set_annotation(snapshot, type_manager, thing_manager, converted)
-                    .map_err(|source| DefineError::SetAnnotation { source, label: label.to_owned(), annotation })?;
+                if let Some(converted) = type_convert_and_validate_annotation_definition_need(
+                    snapshot,
+                    type_manager,
+                    &label,
+                    relation.clone(),
+                    annotation.clone(),
+                )? {
+                    relation
+                        .set_annotation(snapshot, type_manager, thing_manager, converted)
+                        .map_err(|source| DefineError::SetAnnotation { source, label: label.to_owned(), annotation })?;
+                }
             }
             TypeEnum::Attribute(attribute) => {
-                let converted: AttributeTypeAnnotation = AttributeTypeAnnotation::try_from(annotation.clone())
-                    .map_err(|source| DefineError::IllegalAnnotation { source })?;
-                if converted.is_value_type_annotation() {
-                    return Err(DefineError::IllegalAnnotation { source: AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()) });
+                if let Some(converted) = type_convert_and_validate_annotation_definition_need(
+                    snapshot,
+                    type_manager,
+                    &label,
+                    attribute.clone(),
+                    annotation.clone(),
+                )? {
+                    if converted.is_value_type_annotation() {
+                        return Err(DefineError::IllegalAnnotation {
+                            source: AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()),
+                        });
+                    }
+                    attribute
+                        .set_annotation(snapshot, type_manager, thing_manager, converted)
+                        .map_err(|source| DefineError::SetAnnotation { source, label: label.to_owned(), annotation })?;
                 }
-                attribute
-                    .set_annotation(snapshot, type_manager, thing_manager, converted)
-                    .map_err(|source| DefineError::SetAnnotation { source, label: label.to_owned(), annotation })?;
             }
             TypeEnum::RoleType(_) => unreachable!("Role annotations are syntactically on relates"),
         }
@@ -304,9 +325,7 @@ fn define_alias(
     Ok(())
 }
 
-fn define_alias_annotations(
-    typeql_capability: &Capability,
-) -> Result<(), DefineError> {
+fn define_alias_annotations(typeql_capability: &Capability) -> Result<(), DefineError> {
     verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForAlias)
 }
 
@@ -338,29 +357,59 @@ fn define_sub(
 
         match (&type_, supertype) {
             (TypeEnum::Entity(type_), TypeEnum::Entity(supertype)) => {
-                type_.set_supertype(snapshot, type_manager, thing_manager, supertype)
+                let need_define = check_can_and_need_define_supertype(
+                    snapshot,
+                    type_manager,
+                    &label,
+                    type_.clone(),
+                    supertype.clone(),
+                )?;
+                if need_define {
+                    type_
+                        .set_supertype(snapshot, type_manager, thing_manager, supertype)
+                        .map_err(|source| DefineError::SetSupertype { sub: sub.clone(), source })?;
+                }
             }
             (TypeEnum::Relation(type_), TypeEnum::Relation(supertype)) => {
-                type_.set_supertype(snapshot, type_manager, thing_manager, supertype)
+                let need_define = check_can_and_need_define_supertype(
+                    snapshot,
+                    type_manager,
+                    &label,
+                    type_.clone(),
+                    supertype.clone(),
+                )?;
+                if need_define {
+                    type_
+                        .set_supertype(snapshot, type_manager, thing_manager, supertype)
+                        .map_err(|source| DefineError::SetSupertype { sub: sub.clone(), source })?;
+                }
             }
             (TypeEnum::Attribute(type_), TypeEnum::Attribute(supertype)) => {
-                type_.set_supertype(snapshot, type_manager, thing_manager, supertype)
+                let need_define = check_can_and_need_define_supertype(
+                    snapshot,
+                    type_manager,
+                    &label,
+                    type_.clone(),
+                    supertype.clone(),
+                )?;
+                if need_define {
+                    type_
+                        .set_supertype(snapshot, type_manager, thing_manager, supertype)
+                        .map_err(|source| DefineError::SetSupertype { sub: sub.clone(), source })?;
+                }
             }
             (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => {
                 return Err(err_unsupported_capability(&label, Kind::Role, capability));
             }
             _ => unreachable!(),
         }
-        .map_err(|source| DefineError::SetSupertype { sub: sub.clone(), source })?;
 
         define_sub_annotations(capability)?;
     }
     Ok(())
 }
 
-fn define_sub_annotations(
-    typeql_capability: &Capability,
-) -> Result<(), DefineError> {
+fn define_sub_annotations(typeql_capability: &Capability) -> Result<(), DefineError> {
     verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub)
 }
 
@@ -381,11 +430,34 @@ fn define_value_type(
         };
         let value_type = resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
             .map_err(|source| DefineError::AttributeTypeBadValueType { source })?;
-        attribute_type
-            .set_value_type(snapshot, type_manager, thing_manager, value_type.clone())
-            .map_err(|source| DefineError::SetValueType { label: label.to_owned(), value_type, source })?;
 
-        define_value_type_annotations(snapshot, type_manager, thing_manager, attribute_type.clone(), &label, capability)?;
+        let existing_value_type_opt = attribute_type
+            .get_value_type_declared(snapshot, type_manager)
+            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+
+        match existing_value_type_opt {
+            None => attribute_type
+                .set_value_type(snapshot, type_manager, thing_manager, value_type.clone())
+                .map_err(|source| DefineError::SetValueType { label: label.to_owned(), value_type, source })?,
+            Some(existing_value_type) => {
+                if existing_value_type != value_type {
+                    return Err(DefineError::AttributeTypeAlreadyHasDifferentDefinedValueType {
+                        label: label.to_owned(),
+                        value_type,
+                        existing_value_type,
+                    });
+                }
+            }
+        }
+
+        define_value_type_annotations(
+            snapshot,
+            type_manager,
+            thing_manager,
+            attribute_type.clone(),
+            &label,
+            capability,
+        )?;
     }
     Ok(())
 }
@@ -401,14 +473,22 @@ fn define_value_type_annotations<'a>(
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
-        let converted: AttributeTypeAnnotation = AttributeTypeAnnotation::try_from(annotation.clone())
-            .map_err(|source| DefineError::IllegalAnnotation { source })?;
-        if !converted.is_value_type_annotation() {
-            return Err(DefineError::IllegalAnnotation { source: AnnotationError::UnsupportedAnnotationForValueType(annotation.category()) });
+        if let Some(converted) = type_convert_and_validate_annotation_definition_need(
+            snapshot,
+            type_manager,
+            &attribute_type_label,
+            attribute_type.clone(),
+            annotation.clone(),
+        )? {
+            if !converted.is_value_type_annotation() {
+                return Err(DefineError::IllegalAnnotation {
+                    source: AnnotationError::UnsupportedAnnotationForValueType(annotation.category()),
+                });
+            }
+            attribute_type.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
+                DefineError::SetAnnotation { source, label: attribute_type_label.clone().into_owned(), annotation }
+            })?;
         }
-        attribute_type
-            .set_annotation(snapshot, type_manager, thing_manager, converted)
-            .map_err(|source| DefineError::SetAnnotation { source, label: attribute_type_label.clone().into_owned(), annotation })?;
     }
     Ok(())
 }
@@ -510,12 +590,23 @@ fn define_relates_overridden<'a>(
             .relation()
             .get_relates_role_name(snapshot, type_manager, overridden_label.ident.as_str())
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        if let Some(overridden_relates) = overridden_relates_opt {
+        let overridden_relates = if let Some(overridden_relates) = overridden_relates_opt {
+            overridden_relates
+        } else {
+            return Err(DefineError::OverriddenRelatesNotFound { relates: typeql_relates.clone() });
+        };
+
+        let need_define = check_can_and_need_define_override(
+            snapshot,
+            type_manager,
+            &relation_label,
+            relates.clone(),
+            overridden_relates.clone(),
+        )?;
+        if need_define {
             relates
                 .set_override(snapshot, type_manager, thing_manager, overridden_relates)
                 .map_err(|source| DefineError::SetOverride { label: relation_label.clone().into_owned(), source })?
-        } else {
-            return Err(DefineError::OverriddenRelatesNotFound { relates: typeql_relates.clone() });
         }
     }
     Ok(())
@@ -533,8 +624,15 @@ fn define_relates_annotations<'a>(
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
-        match RelatesAnnotation::try_from(annotation.clone()) {
-            Ok(relates_annotation) => {
+        let converted_for_relates = capability_convert_and_validate_annotation_definition_need(
+            snapshot,
+            type_manager,
+            &relation_label,
+            relates.clone(),
+            annotation.clone(),
+        );
+        match converted_for_relates {
+            Ok(Some(relates_annotation)) => {
                 // New relates should set Cardinality on initialization
                 if matches!(relates_annotation, RelatesAnnotation::Cardinality(_)) && is_new {
                     continue;
@@ -547,19 +645,24 @@ fn define_relates_annotations<'a>(
                     },
                 )?;
             }
-            Err(_) => match RoleTypeAnnotation::try_from(annotation.clone()) {
-                Ok(role_type_annotation) => {
-                    relates
-                        .role()
-                        .set_annotation(snapshot, type_manager, thing_manager, role_type_annotation)
-                        .map_err(|source| DefineError::SetAnnotation {
+            Ok(None) => {}
+            Err(_) => {
+                if let Some(converted_for_role) = type_convert_and_validate_annotation_definition_need(
+                    snapshot,
+                    type_manager,
+                    &relation_label,
+                    relates.role(),
+                    annotation.clone(),
+                )? {
+                    relates.role().set_annotation(snapshot, type_manager, thing_manager, converted_for_role).map_err(
+                        |source| DefineError::SetAnnotation {
                             label: relation_label.clone().into_owned(),
                             source,
                             annotation,
-                        })?;
+                        },
+                    )?;
                 }
-                Err(source) => return Err(DefineError::IllegalAnnotation { source }),
-            },
+            }
         }
     }
     Ok(())
@@ -629,11 +732,22 @@ fn define_owns_overridden<'a>(
             .owner()
             .get_owns_attribute(snapshot, type_manager, overridden_attribute_type)
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        if let Some(overridden_owns) = overridden_owns_opt {
-            owns.set_override(snapshot, type_manager, thing_manager, overridden_owns)
-                .map_err(|source| DefineError::SetOverride { label: owner_label.clone().into_owned(), source })?
+        let overridden_owns = if let Some(overridden_owns) = overridden_owns_opt {
+            overridden_owns
         } else {
             return Err(DefineError::OverriddenOwnsNotFound { owns: typeql_owns.clone() });
+        };
+
+        let need_define = check_can_and_need_define_override(
+            snapshot,
+            type_manager,
+            &owner_label,
+            owns.clone(),
+            overridden_owns.clone(),
+        )?;
+        if need_define {
+            owns.set_override(snapshot, type_manager, thing_manager, overridden_owns)
+                .map_err(|source| DefineError::SetOverride { label: owner_label.clone().into_owned(), source })?
         }
     }
     Ok(())
@@ -650,11 +764,17 @@ fn define_owns_annotations<'a>(
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
-        let owns_annotation =
-            OwnsAnnotation::try_from(annotation.clone()).map_err(|source| DefineError::IllegalAnnotation { source })?;
-        owns.set_annotation(snapshot, type_manager, thing_manager, owns_annotation).map_err(|source| {
-            DefineError::SetAnnotation { label: owner_label.clone().into_owned(), source, annotation }
-        })?;
+        if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
+            snapshot,
+            type_manager,
+            &owner_label,
+            owns.clone(),
+            annotation.clone(),
+        )? {
+            owns.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
+                DefineError::SetAnnotation { label: owner_label.clone().into_owned(), source, annotation }
+            })?;
+        }
     }
     Ok(())
 }
@@ -719,12 +839,23 @@ fn define_plays_overridden<'a>(
             .player()
             .get_plays_role(snapshot, type_manager, overridden_role_type)
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        if let Some(overridden_plays) = overridden_plays_opt {
+        let overridden_plays = if let Some(overridden_plays) = overridden_plays_opt {
+            overridden_plays
+        } else {
+            return Err(DefineError::OverriddenPlaysNotFound { plays: typeql_plays.clone() });
+        };
+
+        let need_define = check_can_and_need_define_override(
+            snapshot,
+            type_manager,
+            &player_label,
+            plays.clone(),
+            overridden_plays.clone(),
+        )?;
+        if need_define {
             plays
                 .set_override(snapshot, type_manager, thing_manager, overridden_plays)
                 .map_err(|source| DefineError::SetOverride { label: player_label.clone().into_owned(), source })?
-        } else {
-            return Err(DefineError::OverriddenPlaysNotFound { plays: typeql_plays.clone() });
         }
     }
     Ok(())
@@ -741,11 +872,17 @@ fn define_plays_annotations<'a>(
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
-        let plays_annotation = PlaysAnnotation::try_from(annotation.clone())
-            .map_err(|source| DefineError::IllegalAnnotation { source })?;
-        plays.set_annotation(snapshot, type_manager, thing_manager, plays_annotation).map_err(|source| {
-            DefineError::SetAnnotation { label: player_label.clone().into_owned(), source, annotation }
-        })?;
+        if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
+            snapshot,
+            type_manager,
+            &player_label,
+            plays.clone(),
+            annotation.clone(),
+        )? {
+            plays.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
+                DefineError::SetAnnotation { label: player_label.clone().into_owned(), source, annotation }
+            })?;
+        }
     }
     Ok(())
 }
@@ -827,6 +964,32 @@ pub enum DefineError {
     },
     AttributeTypeBadValueType {
         source: SymbolResolutionError,
+    },
+    TypeAlreadyHasDifferentDefinedSub {
+        label: Label<'static>,
+        supertype: Label<'static>,
+        existing_supertype: Label<'static>,
+    },
+    CapabilityAlreadyHasDifferentDefinedOverride {
+        label: Label<'static>,
+        overridden_interface: Label<'static>,
+        existing_overridden_interface: Label<'static>,
+    },
+    AttributeTypeAlreadyHasDifferentDefinedValueType {
+        label: Label<'static>,
+        value_type: ValueType,
+        existing_value_type: ValueType,
+    },
+    // Careful with the error message as it is also used for value types (stored on their attribute type)!
+    TypeAnnotationIsAlreadyDefinedWithDifferentArguments {
+        label: Label<'static>,
+        annotation: Annotation,
+        existing_annotation: Annotation,
+    },
+    CapabilityAnnotationIsAlreadyDefinedWithDifferentArguments {
+        label: Label<'static>,
+        annotation: Annotation,
+        existing_annotation: Annotation,
     },
     SetValueType {
         label: Label<'static>,

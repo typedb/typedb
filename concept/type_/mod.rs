@@ -360,6 +360,7 @@ impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
 pub trait Capability<'a>:
     TypeEdgeEncoding<'a, From = Self::ObjectType, To = Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
 {
+    // TODO: Can create a trait "Annotatable" and implement it for KindAPI and Capability. Might merge some methods and would be ideologically correct.
     type AnnotationType: Hash + Eq + Clone + TryFrom<Annotation, Error = AnnotationError> + Into<Annotation>;
     type ObjectType: TypeAPI<'a>;
     type InterfaceType: KindAPI<'a>;

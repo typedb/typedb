@@ -55,14 +55,20 @@ impl MayError {
     where
         T: fmt::Debug + Clone,
         E1: fmt::Debug + Clone,
-        E2: fmt::Debug + Clone
+        E2: fmt::Debug + Clone,
     {
         match res {
-            Ok(res) => { self.check(&Ok::<T, E1>(res.clone())); }
-            Err(either_err) => match either_err {
-                Either::First(err) => { self.check(&Err::<T, E1>(err.clone())); }
-                Either::Second(err) => { self.check(&Err::<T, E2>(err.clone())); }
+            Ok(res) => {
+                self.check(&Ok::<T, E1>(res.clone()));
             }
+            Err(either_err) => match either_err {
+                Either::First(err) => {
+                    self.check(&Err::<T, E1>(err.clone()));
+                }
+                Either::Second(err) => {
+                    self.check(&Err::<T, E2>(err.clone()));
+                }
+            },
         }
     }
 
@@ -404,10 +410,7 @@ impl FromStr for RootLabelExtended {
 }
 
 #[derive(Debug, Parameter)]
-#[param(
-    name = "value_type",
-    regex = "(boolean|long|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)"
-)]
+#[param(name = "value_type", regex = "(boolean|long|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)")]
 pub(crate) enum ValueType {
     Boolean,
     Long,
@@ -758,7 +761,7 @@ impl FromStr for Annotations {
                 // TODO: Refactor parsing to support passing ValueTypes into anno.into_typedb
             }
         })
-            .try_collect()?;
+        .try_collect()?;
 
         Ok(Self { typedb_annotations })
     }

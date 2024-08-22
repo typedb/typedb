@@ -40,10 +40,8 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{
-        relation_type::RelationType,
-        role_type::RoleType,
-        type_manager::TypeManager,
-        Capability, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
+        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, Capability, ObjectTypeAPI,
+        Ordering, OwnerAPI, TypeAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };

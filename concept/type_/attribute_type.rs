@@ -219,7 +219,12 @@ impl<'a> AttributeType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<AttributeTypeAnnotation>, ConceptReadError> {
-        Ok(self.get_annotations_declared(snapshot, type_manager)?.into_iter().filter(|annotation| annotation.is_value_type_annotation()).map(|annotation| annotation.clone()).collect())
+        Ok(self
+            .get_annotations_declared(snapshot, type_manager)?
+            .into_iter()
+            .filter(|annotation| annotation.is_value_type_annotation())
+            .map(|annotation| annotation.clone())
+            .collect())
     }
 
     pub fn get_value_type_annotations(
@@ -227,7 +232,12 @@ impl<'a> AttributeType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashMap<AttributeTypeAnnotation, AttributeType<'static>>, ConceptReadError> {
-        Ok(self.get_annotations(snapshot, type_manager)?.into_iter().filter(|(annotation, _)| annotation.is_value_type_annotation()).map(|(annotation, source)| (annotation.clone(), source.clone().into_owned())).collect())
+        Ok(self
+            .get_annotations(snapshot, type_manager)?
+            .into_iter()
+            .filter(|(annotation, _)| annotation.is_value_type_annotation())
+            .map(|(annotation, source)| (annotation.clone(), source.clone().into_owned()))
+            .collect())
     }
 
     pub fn set_label(
@@ -398,8 +408,7 @@ impl AttributeTypeAnnotation {
             | AttributeTypeAnnotation::Range(_)
             | AttributeTypeAnnotation::Values(_) => true,
 
-            | AttributeTypeAnnotation::Abstract(_)
-            | AttributeTypeAnnotation::Independent(_) => false,
+            | AttributeTypeAnnotation::Abstract(_) | AttributeTypeAnnotation::Independent(_) => false,
         }
     }
 }
