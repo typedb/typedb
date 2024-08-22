@@ -101,7 +101,6 @@ impl<Snapshot: WritableSnapshot> PipelineContext<Snapshot> {
     }
 }
 
-// Errors
 #[derive(Debug, Clone)]
 pub enum PipelineError {
     ConceptRead(ConceptReadError),

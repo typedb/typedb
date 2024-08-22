@@ -7,6 +7,7 @@
 use std::marker::PhantomData;
 
 use answer::variable_value::VariableValue;
+use compiler::VariablePosition;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -21,7 +22,13 @@ pub(crate) trait AccumulatingStageAPI<Snapshot: ReadableSnapshot + 'static>: 'st
         context: &mut PipelineContext<Snapshot>,
         row: &mut Box<[(Box<[VariableValue<'static>]>, u64)]>,
     ) -> Result<(), PipelineError>;
-    fn store_incoming_row_into(&self, incoming: &ImmutableRow<'_>, stored_row: &mut Box<[VariableValue<'static>]>);
+
+    fn store_incoming_row_into(&self, incoming: &ImmutableRow<'_>, stored_row: &mut Box<[VariableValue<'static>]>) {
+        (0..incoming.width()).for_each(|i| {
+            stored_row[i] = incoming.get(VariablePosition::new(i as u32)).clone().into_owned();
+        });
+    }
+
     fn must_deduplicate_incoming_rows(&self) -> bool;
     fn row_width(&self) -> usize;
 }

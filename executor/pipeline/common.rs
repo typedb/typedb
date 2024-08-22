@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 
 use itertools::Either;
 use lending_iterator::LendingIterator;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::ImmutableRow,

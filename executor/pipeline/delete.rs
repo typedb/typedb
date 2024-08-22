@@ -5,18 +5,17 @@
  */
 
 use answer::variable_value::VariableValue;
-use compiler::VariablePosition;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
-    batch::{ImmutableRow, Row},
+    batch::Row,
     pipeline::{
         accumulator::{AccumulatedRowIterator, AccumulatingStageAPI, Accumulator},
         common::PipelineStageCommon,
         stage_wrappers::WritablePipelineStage,
         PipelineContext, PipelineError,
     },
-    write::{delete::DeleteExecutor, insert::InsertExecutor},
+    write::delete::DeleteExecutor,
 };
 
 pub type DeleteAccumulator<Snapshot: WritableSnapshot + 'static> =
@@ -46,12 +45,6 @@ impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for De
                 .map_err(|source| PipelineError::WriteError(source))?;
         }
         Ok(())
-    }
-
-    fn store_incoming_row_into(&self, incoming: &ImmutableRow<'_>, stored_row: &mut Box<[VariableValue<'static>]>) {
-        (0..incoming.width()).for_each(|i| {
-            stored_row[i] = incoming.get(VariablePosition::new(i as u32)).clone().into_owned();
-        });
     }
 
     fn must_deduplicate_incoming_rows(&self) -> bool {
