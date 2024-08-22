@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+
 use concept::type_::{annotation, plays::PlaysAnnotation, Capability, PlayerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
@@ -30,8 +31,14 @@ pub async fn set_plays(
 ) {
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
-        let res = object_type.set_plays(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, role_type);
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let res = object_type.set_plays(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            &tx.thing_manager,
+            role_type,
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -47,8 +54,14 @@ pub async fn unset_plays(
 ) {
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
-        let res = object_type.unset_plays(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, role_type);
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let res = object_type.unset_plays(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            &tx.thing_manager,
+            role_type,
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -70,7 +83,13 @@ pub async fn get_plays_contain(
             .unwrap()
             .iter()
             .map(|plays| {
-                plays.role().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                plays
+                    .role()
+                    .get_label(tx.snapshot.as_ref(), &tx.type_manager)
+                    .unwrap()
+                    .scoped_name()
+                    .as_str()
+                    .to_owned()
             })
             .collect_vec();
         contains.check(&expected_labels, &actual_labels);
@@ -94,7 +113,13 @@ pub async fn get_declared_plays_contain(
             .unwrap()
             .iter()
             .map(|plays| {
-                plays.role().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                plays
+                    .role()
+                    .get_label(tx.snapshot.as_ref(), &tx.type_manager)
+                    .unwrap()
+                    .scoped_name()
+                    .as_str()
+                    .to_owned()
             })
             .collect_vec();
         contains.check(&expected_labels, &actual_labels);
@@ -128,17 +153,26 @@ pub async fn get_plays_set_override(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
 
         if let Some(player_supertype) = player_type.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap() {
-            let overridden_role_type =
-                tx.type_manager.get_role_type(tx.snapshot.as_ref(), &overridden_role_label.into_typedb()).unwrap().unwrap();
+            let overridden_role_type = tx
+                .type_manager
+                .get_role_type(tx.snapshot.as_ref(), &overridden_role_label.into_typedb())
+                .unwrap()
+                .unwrap();
             let overridden_plays_opt =
                 player_supertype.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, overridden_role_type).unwrap();
 
             if let Some(overridden_plays) = overridden_plays_opt {
-                let res = plays.set_override(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, overridden_plays);
+                let res = plays.set_override(
+                    Arc::get_mut(&mut tx.snapshot).unwrap(),
+                    &tx.type_manager,
+                    &tx.thing_manager,
+                    overridden_plays,
+                );
                 may_error.check_concept_write_without_read_errors(&res);
                 return;
             }
@@ -161,7 +195,8 @@ pub async fn get_plays_unset_override(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let res = plays.unset_override(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
@@ -179,7 +214,8 @@ pub async fn get_plays_overridden_exists(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let plays_override_opt = plays.get_override(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         exists.check(
@@ -200,7 +236,8 @@ pub async fn get_plays_overridden_get_label(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let actual_overridden_opt = plays.get_override(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let actual_overridden = actual_overridden_opt.as_ref().unwrap();
@@ -228,7 +265,8 @@ pub async fn get_plays_set_annotation(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let res = plays.set_annotation(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
@@ -254,7 +292,8 @@ pub async fn get_plays_unset_annotation(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let res = plays.unset_annotation(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
@@ -280,7 +319,8 @@ pub async fn get_plays_annotations_contains(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let actual_contains = plays
             .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
@@ -304,7 +344,8 @@ pub async fn get_plays_annotation_categories_contains(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let actual_contains = plays
             .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
@@ -332,7 +373,8 @@ pub async fn get_plays_declared_annotations_contains(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let actual_contains = plays
             .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
@@ -353,7 +395,8 @@ pub async fn get_owns_annotations_is_empty(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let actual_is_empty = plays.get_annotations(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
@@ -371,9 +414,11 @@ pub async fn get_owns_declared_annotations_is_empty(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
-        let actual_is_empty = plays.get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+        let actual_is_empty =
+            plays.get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
     });
 }
@@ -389,7 +434,8 @@ pub async fn get_plays_cardinality(
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let actual_cardinality = plays.get_cardinality(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {

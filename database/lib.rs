@@ -8,7 +8,7 @@
 #![deny(elided_lifetimes_in_paths)]
 
 pub mod database;
-pub mod transaction;
 pub mod database_manager;
+pub mod transaction;
 
 pub use self::database::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};

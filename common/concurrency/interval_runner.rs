@@ -25,7 +25,7 @@ impl IntervalRunner {
                         drop(action);
                         done_sender.send(()).unwrap();
                         break;
-                    },
+                    }
                     Err(RecvTimeoutError::Timeout) => (),
                     Err(RecvTimeoutError::Disconnected) => break, // TODO log?
                 }

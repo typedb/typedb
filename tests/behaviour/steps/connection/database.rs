@@ -67,7 +67,10 @@ async fn connection_delete_databases_throws_exception(context: &mut Context, ste
 #[apply(generic_step)]
 #[step(expr = "connection has database: {word}")]
 async fn connection_has_database(context: &mut Context, name: String) {
-    assert!(context.server().unwrap().lock().unwrap().database_manager().database(&name).is_some(), "Connection doesn't contain database {name}.",);
+    assert!(
+        context.server().unwrap().lock().unwrap().database_manager().database(&name).is_some(),
+        "Connection doesn't contain database {name}.",
+    );
 }
 
 #[apply(generic_step)]
@@ -81,7 +84,10 @@ async fn connection_has_databases(context: &mut Context, step: &Step) {
 #[apply(generic_step)]
 #[step(expr = "connection does not have database: {word}")]
 async fn connection_does_not_have_database(context: &mut Context, name: String) {
-    assert!(context.server().unwrap().lock().unwrap().database_manager().database(&name).is_none(), "Connection doesn't contain database {name}.",);
+    assert!(
+        context.server().unwrap().lock().unwrap().database_manager().database(&name).is_none(),
+        "Connection doesn't contain database {name}.",
+    );
 }
 
 #[apply(generic_step)]

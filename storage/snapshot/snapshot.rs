@@ -373,8 +373,6 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
         }
     }
 
-
-
     fn into_commit_record(self) -> CommitRecord {
         CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Data)
     }

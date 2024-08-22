@@ -7,5 +7,5 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-pub mod typedb;
 mod service;
+pub mod typedb;

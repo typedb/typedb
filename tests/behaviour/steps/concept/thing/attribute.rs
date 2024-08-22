@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{attribute::Attribute, ThingAPI},
@@ -28,7 +29,8 @@ pub fn attribute_put_instance_with_value_impl(
     with_write_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
-        let value = value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
+        let value =
+            value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
         tx.thing_manager.create_attribute(Arc::get_mut(&mut tx.snapshot).unwrap(), attribute_type, value)
     })
 }
@@ -89,7 +91,8 @@ async fn attribute_has_value(context: &mut Context, var: params::Var, value: par
     let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
     let attribute_type = attribute.type_();
     with_read_tx!(context, |tx| {
-        let value = value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
+        let value =
+            value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
         assert_eq!(attribute.get_value(tx.snapshot.as_ref(), &tx.thing_manager).unwrap(), value);
     });
 }
@@ -115,7 +118,8 @@ pub fn get_attribute_by_value(
     with_read_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
-        let value = value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
+        let value =
+            value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
         tx.thing_manager.get_attribute_with_value(tx.snapshot.as_ref(), attribute_type, value)
     })
 }
@@ -136,7 +140,11 @@ async fn attribute_get_instance_with_value(
 #[step(expr = r"delete attribute: {var}")]
 async fn delete_attribute(context: &mut Context, var: params::Var) {
     with_write_tx!(context, |tx| {
-        context.attributes[&var.name].clone().unwrap().delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap()
+        context.attributes[&var.name]
+            .clone()
+            .unwrap()
+            .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager)
+            .unwrap()
     })
 }
 

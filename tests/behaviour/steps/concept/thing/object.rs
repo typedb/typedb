@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+
 use concept::{
     error::ConceptWriteError,
     thing::{object::Object, ThingAPI},
@@ -37,9 +38,10 @@ fn object_create_instance_impl(
             ObjectType::Entity(entity_type) => {
                 tx.thing_manager.create_entity(Arc::get_mut(&mut tx.snapshot).unwrap(), entity_type).map(Object::Entity)
             }
-            ObjectType::Relation(relation_type) => {
-                tx.thing_manager.create_relation(Arc::get_mut(&mut tx.snapshot).unwrap(), relation_type).map(Object::Relation)
-            }
+            ObjectType::Relation(relation_type) => tx
+                .thing_manager
+                .create_relation(Arc::get_mut(&mut tx.snapshot).unwrap(), relation_type)
+                .map(Object::Relation),
         }
     })
 }
@@ -111,7 +113,8 @@ async fn delete_objects_of_type(
     type_label: params::Label,
 ) {
     with_write_tx!(context, |tx| {
-        let object_type = tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        let object_type =
+            tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         object_root_label.assert(&object_type);
         match object_type {
             ObjectType::Entity(entity_type) => {
@@ -205,7 +208,8 @@ async fn object_instances_is_empty(
     is_empty_or_not: IsEmptyOrNot,
 ) {
     with_read_tx!(context, |tx| {
-        let object_type = tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        let object_type =
+            tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         object_root.assert(&object_type);
         is_empty_or_not.check(tx.thing_manager.get_objects_in(tx.snapshot.as_ref(), object_type).next().is_none());
     });
@@ -223,7 +227,8 @@ async fn object_instances_contain(
     let object = &context.objects.get(&var.name).expect("no variable {} in context.").as_ref().unwrap().object;
     object_root.assert(&object.type_());
     with_read_tx!(context, |tx| {
-        let object_type = tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        let object_type =
+            tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let actuals: Vec<Object<'static>> = tx
             .thing_manager
             .get_objects_in(tx.snapshot.as_ref(), object_type)
