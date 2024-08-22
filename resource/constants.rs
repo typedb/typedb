@@ -5,7 +5,14 @@
  */
 
 pub mod server {
+    use std::time::Duration;
+
     pub const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
+
+    pub const DEFAULT_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(5 * 60).as_millis() as u64;
+    pub const DEFAULT_PREFETCH_SIZE: u64 = 10;
+    pub const DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
+    pub const DEFAULT_TRANSACTION_PARALLEL: bool = true;
 }
 
 pub mod traversal {

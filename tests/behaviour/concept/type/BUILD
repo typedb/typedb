@@ -14,6 +14,7 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["@vaticle_typedb_behaviour//concept/type:attributetype.feature"],
+    crate_features = ["bazel"],
 )
 
 rust_test(
@@ -24,6 +25,7 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["@vaticle_typedb_behaviour//concept/type:entitytype.feature"],
+    crate_features = ["bazel"],
 )
 
 rust_test(
@@ -34,6 +36,7 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["@vaticle_typedb_behaviour//concept/type:relationtype.feature"],
+    crate_features = ["bazel"],
 )
 
 rust_test(
@@ -44,6 +47,7 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["@vaticle_typedb_behaviour//concept/type:plays.feature"],
+    crate_features = ["bazel"],
 )
 
 rust_test(
@@ -55,6 +59,7 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["@vaticle_typedb_behaviour//concept/type:owns.feature"],
+    crate_features = ["bazel"],
 )
 
 rust_test(
@@ -66,6 +71,7 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["@vaticle_typedb_behaviour//concept/type:owns-annotations.feature"],
+    crate_features = ["bazel"],
 )
 
 checkstyle_test(

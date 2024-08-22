@@ -37,5 +37,5 @@ pub async fn connection_ignore(_: &mut Context) {}
 #[apply(generic_step)]
 #[step("connection does not have any database")]
 pub async fn connection_does_not_have_any_database(context: &mut Context) {
-    assert!(context.server.as_ref().unwrap().lock().unwrap().databases().is_empty())
+    assert!(context.server().unwrap().lock().unwrap().database_manager().database_names().is_empty())
 }

@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
 use concept::type_::{object_type::ObjectType, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
@@ -25,10 +26,10 @@ pub async fn attribute_type_set_value_type(
 ) {
     with_schema_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        let parsed_value_type = value_type.into_typedb(&tx.type_manager, &tx.snapshot);
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        let parsed_value_type = value_type.into_typedb(&tx.type_manager, tx.snapshot.as_ref());
         let res =
-            attribute_type.set_value_type(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager, parsed_value_type);
+            attribute_type.set_value_type(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, parsed_value_type);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -42,8 +43,8 @@ pub async fn attribute_type_unset_value_type(
 ) {
     with_schema_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        let res = attribute_type.unset_value_type(&mut tx.snapshot, &tx.type_manager, &tx.thing_manager);
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        let res = attribute_type.unset_value_type(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -57,10 +58,10 @@ pub async fn attribute_type_get_value_type(
 ) {
     with_read_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         assert_eq!(
-            value_type.into_typedb(&tx.type_manager, &tx.snapshot),
-            attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap()
+            value_type.into_typedb(&tx.type_manager, tx.snapshot.as_ref()),
+            attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap()
         );
     });
 }
@@ -70,8 +71,8 @@ pub async fn attribute_type_get_value_type(
 pub async fn attribute_type_get_value_type_is_null(context: &mut Context, type_label: params::Label) {
     with_read_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        assert_eq!(None, attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap());
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        assert_eq!(None, attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap());
     });
 }
 
@@ -84,10 +85,10 @@ pub async fn attribute_type_get_value_type_declared(
 ) {
     with_read_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         assert_eq!(
-            value_type.into_typedb(&tx.type_manager, &tx.snapshot),
-            attribute_type.get_value_type_declared(&tx.snapshot, &tx.type_manager).unwrap().unwrap()
+            value_type.into_typedb(&tx.type_manager, tx.snapshot.as_ref()),
+            attribute_type.get_value_type_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap()
         );
     });
 }
@@ -97,8 +98,8 @@ pub async fn attribute_type_get_value_type_declared(
 pub async fn attribute_type_get_value_type_declared_is_null(context: &mut Context, type_label: params::Label) {
     with_read_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
-        assert_eq!(None, attribute_type.get_value_type_declared(&tx.snapshot, &tx.type_manager).unwrap());
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        assert_eq!(None, attribute_type.get_value_type_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap());
     });
 }
 
@@ -113,16 +114,16 @@ pub async fn get_owners_contain(
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     with_read_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
 
         let mut actual_labels = Vec::new();
-        attribute_type.get_owns(&tx.snapshot, &tx.type_manager).unwrap().iter().for_each(|(owner, _owns)| {
+        attribute_type.get_owns(tx.snapshot.as_ref(), &tx.type_manager).unwrap().iter().for_each(|(owner, _owns)| {
             let owner_label = match owner {
                 ObjectType::Entity(owner) => {
-                    owner.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    owner.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 }
                 ObjectType::Relation(owner) => {
-                    owner.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    owner.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 }
             };
             actual_labels.push(owner_label);
@@ -142,16 +143,16 @@ pub async fn get_declaring_owners_contain(
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     with_read_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
 
         let mut actual_labels = Vec::new();
-        attribute_type.get_owns_declared(&tx.snapshot, &tx.type_manager).unwrap().iter().for_each(|owns| {
+        attribute_type.get_owns_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().iter().for_each(|owns| {
             let owner_label = match owns.owner() {
                 ObjectType::Entity(owner) => {
-                    owner.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    owner.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 }
                 ObjectType::Relation(owner) => {
-                    owner.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    owner.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 }
             };
             actual_labels.push(owner_label);

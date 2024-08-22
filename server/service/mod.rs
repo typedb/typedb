@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#![deny(unused_must_use)]
-#![deny(elided_lifetimes_in_paths)]
+pub(crate) mod typedb_service;
+pub(crate) mod transaction_service;
+mod error;
 
-pub mod typedb;
-mod service;
+pub(crate) type RequestID = [u8; 16];

@@ -6,10 +6,11 @@
 
 use core::fmt;
 use std::{
-    error::Error,
-    mem::transmute,
-    sync::{Arc, RwLockReadGuard, RwLockWriteGuard},
+    error::Error
+    ,
+    sync::Arc,
 };
+use std::fmt::{Debug, Display, Formatter};
 
 use concept::{
     error::ConceptWriteError,
@@ -20,24 +21,28 @@ use concept::{
     },
 };
 use function::{function_manager::FunctionManager, FunctionError};
+use options::TransactionOptions;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot},
 };
+use storage::snapshot::SnapshotError;
 
 use crate::Database;
+use crate::transaction::SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
 
+#[derive(Debug)]
 pub struct TransactionRead<D> {
-    pub snapshot: ReadSnapshot<D>,
+    pub snapshot: Arc<ReadSnapshot<D>>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: FunctionManager,
-    // TODO: krishnan: Should this be an arc or direct ownership?
     _database: Arc<Database<D>>,
+    transaction_options: TransactionOptions,
 }
 
 impl<D: DurabilityClient> TransactionRead<D> {
-    pub fn open(database: Arc<Database<D>>) -> Self {
+    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Self {
         // TODO: when we implement constructor `open_at`, to open a transaction in the past by
         //      time/sequence number, we need to check whether
         //       the statistics that is available is "too far" ahead of the version we're opening (100-1000?)
@@ -57,41 +62,42 @@ impl<D: DurabilityClient> TransactionRead<D> {
 
         drop(schema);
 
-        Self { snapshot, type_manager, thing_manager, function_manager, _database: database }
+        Self {
+            snapshot: Arc::new(snapshot),
+            type_manager,
+            thing_manager,
+            function_manager,
+            _database: database,
+            transaction_options,
+        }
+    }
+
+    pub fn snapshot(&self) -> &ReadSnapshot<D> {
+        &self.snapshot
     }
 
     pub fn close(self) {
         drop(self.thing_manager);
         drop(self.type_manager);
-        self.snapshot.close_resources()
+        Arc::into_inner(self.snapshot).unwrap().close_resources()
     }
 }
 
+#[derive(Debug)]
 pub struct TransactionWrite<D> {
-    pub snapshot: WriteSnapshot<D>,
+    pub snapshot: Arc<WriteSnapshot<D>>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: FunctionManager, // TODO: krishnan: Should this be an arc or direct ownership?
-
-    // NOTE: The fields of a struct are dropped in declaration order. `_schema_txn_guard`
-    // conceptually borrows `_database`, so it _must_ be dropped before `_database`,
-    // and therefore _must_ be declared before `_database`.
-    // See https://doc.rust-lang.org/reference/destructors.html
-    _schema_txn_guard: RwLockReadGuard<'static, ()>,
-    // prevents opening new schema txns while this txn is alive
-    _database: Arc<Database<D>>,
+    pub database: Arc<Database<D>>,
+    pub transaction_options: TransactionOptions,
 }
 
 impl<D: DurabilityClient> TransactionWrite<D> {
-    pub fn open(database: Arc<Database<D>>) -> Self {
-        let schema_txn_guard = unsafe {
-            // SAFETY: `TransactionWrite` owns `Arc<Database>`, so the `schema_txn_lock`
-            // is valid for the lifetime of the struct. The ordering of the fields
-            // ensures that the lock is released before the database pointer is dropped.
-            transmute::<RwLockReadGuard<'_, ()>, RwLockReadGuard<'static, ()>>(database.schema_txn_lock.read().unwrap())
-        };
-        let schema = database.schema.read().unwrap();
+    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Self {
+        database.reserve_write_transaction(transaction_options.schema_lock_acquire_timeout_millis);
 
+        let schema = database.schema.read().unwrap();
         let snapshot: WriteSnapshot<D> = database.storage.clone().open_snapshot_write();
         let type_manager = Arc::new(TypeManager::new(
             database.definition_key_generator.clone(),
@@ -101,60 +107,95 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         let thing_manager = Arc::new(ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone()));
         let function_manager =
             FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
-
         drop(schema);
 
+        Self {
+            snapshot: Arc::new(snapshot),
+            type_manager,
+            thing_manager,
+            function_manager,
+            database,
+            transaction_options,
+        }
+    }
+
+    pub fn from(
+        snapshot: Arc<WriteSnapshot<D>>,
+        type_manager: Arc<TypeManager>,
+        thing_manager: Arc<ThingManager>,
+        function_manager: FunctionManager,
+        database: Arc<Database<D>>,
+        transaction_options: TransactionOptions,
+    ) -> Self {
         Self {
             snapshot,
             type_manager,
             thing_manager,
             function_manager,
-            _schema_txn_guard: schema_txn_guard,
-            _database: database,
+            database,
+            transaction_options,
         }
     }
 
-    pub fn commit(mut self) -> Result<(), Vec<ConceptWriteError>> {
-        self.thing_manager.finalise(&mut self.snapshot)?;
+    pub fn commit(mut self) -> Result<(), DataCommitError> {
+        let database = self.database.clone(); // TODO: can we get away without cloning the database before?
+        let result = self.try_commit();
+        database.release_write_transaction();
+        result
+    }
+
+    pub fn try_commit(mut self) -> Result<(), DataCommitError> {
+        let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
+        self.thing_manager.finalise(&mut snapshot)
+            .map_err(|errs| DataCommitError::ConceptWriteErrors { source: errs })?;
         drop(self.type_manager);
-        // TODO: pass error up
-        self.snapshot.commit().unwrap_or_else(|_| panic!("Failed to commit snapshot"));
+        snapshot.commit().map_err(|err| DataCommitError::SnapshotError { source: err })?;
         Ok(())
     }
 
+    pub fn rollback(&mut self) {
+        Arc::get_mut(&mut self.snapshot).unwrap().clear()
+    }
+
     pub fn close(self) {
+        self.database.release_write_transaction();
         drop(self.thing_manager);
         drop(self.type_manager);
-        self.snapshot.close_resources();
+        Arc::into_inner(self.snapshot).unwrap().close_resources()
     }
 }
 
-pub struct TransactionSchema<D> {
-    pub snapshot: SchemaSnapshot<D>,
-    pub type_manager: Arc<TypeManager>,
-    // TODO: krishnan: Should this be an arc or direct ownership?
-    pub thing_manager: ThingManager,
-    pub function_manager: FunctionManager, // TODO: krishnan: Should this be an arc or direct ownership?
+// TODO this should be a TypeDB error, although it can contain many errors!?
+#[derive(Debug)]
+pub enum DataCommitError {
+    ConceptWriteErrors { source: Vec<ConceptWriteError> },
+    SnapshotError { source: SnapshotError },
+}
 
-    // NOTE: The fields of a struct are dropped in declaration order. `_schema_guard` conceptually
-    // borrows `_database`, so it _must_ be dropped before `_database`, and therefore _must_ be
-    // declared before `_database`.
-    // See https://doc.rust-lang.org/reference/destructors.html
-    _schema_txn_guard: RwLockWriteGuard<'static, ()>,
-    // prevents write txns while a schema txns running
-    database: Arc<Database<D>>,
+impl Display for DataCommitError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(self, f)
+    }
+}
+
+impl Error for DataCommitError {}
+
+// TODO: when we use typedb_error!, how do we pring stack trace? If we use the stack trace of each of these, we'll end up with a tree!
+//       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?
+
+#[derive(Debug)]
+pub struct TransactionSchema<D> {
+    pub snapshot: Arc<SchemaSnapshot<D>>,
+    pub type_manager: Arc<TypeManager>,
+    pub thing_manager: Arc<ThingManager>,
+    pub function_manager: FunctionManager,
+    pub database: Arc<Database<D>>,
+    pub transaction_options: TransactionOptions,
 }
 
 impl<D: DurabilityClient> TransactionSchema<D> {
-    pub fn open(database: Arc<Database<D>>) -> Self {
-        let schema_txn_guard = unsafe {
-            // SAFETY: `TransactionSchema` owns `Arc<Database>`, so the `schema_lock` os valid for
-            // the lifetime of the struct. The ordering of the fields ensures that the lock is
-            // released before the database pointer is dropped.
-            transmute::<RwLockWriteGuard<'_, ()>, RwLockWriteGuard<'static, ()>>(
-                database.schema_txn_lock.write().unwrap(),
-            )
-        };
+    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Self {
+        database.reserve_schema_transaction(transaction_options.schema_lock_acquire_timeout_millis);
 
         let snapshot: SchemaSnapshot<D> = database.storage.clone().open_snapshot_schema();
         let type_manager = Arc::new(TypeManager::new(
@@ -164,19 +205,51 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         ));
         let thing_manager = ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
         let function_manager = FunctionManager::new(database.definition_key_generator.clone(), None);
-        Self { snapshot, type_manager, thing_manager, function_manager, _schema_txn_guard: schema_txn_guard, database }
+        Self {
+            snapshot: Arc::new(snapshot),
+            type_manager,
+            thing_manager: Arc::new(thing_manager),
+            function_manager,
+            database,
+            transaction_options,
+        }
+    }
+
+    pub fn from(
+        snapshot: SchemaSnapshot<D>,
+        type_manager: Arc<TypeManager>,
+        thing_manager: Arc<ThingManager>,
+        function_manager: FunctionManager,
+        database: Arc<Database<D>>,
+        transaction_options: TransactionOptions,
+    ) -> Self {
+        Self {
+            snapshot: Arc::new(snapshot),
+            type_manager,
+            thing_manager,
+            function_manager,
+            database,
+            transaction_options,
+        }
     }
 
     pub fn commit(mut self) -> Result<(), SchemaCommitError> {
+        let database = self.database.clone(); // TODO: can we get away without cloning the database before?
+        let result = self.try_commit();
+        database.release_schema_transaction();
+        result
+    }
+
+    fn try_commit(mut self) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
+        let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
+        self.type_manager.validate(&mut snapshot).map_err(|errors| ConceptWrite { errors })?;
 
-        self.type_manager.validate(&self.snapshot).map_err(|errors| ConceptWrite { errors })?;
-
-        self.thing_manager.finalise(&mut self.snapshot).map_err(|errors| ConceptWrite { errors })?;
+        self.thing_manager.finalise(&mut snapshot).map_err(|errors| ConceptWrite { errors })?;
         drop(self.thing_manager);
 
         self.function_manager
-            .finalise(&self.snapshot, &self.type_manager)
+            .finalise(&snapshot, &self.type_manager)
             .map_err(|source| SchemaCommitError::FunctionError { source })?;
 
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap type_manager Arc");
@@ -194,7 +267,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         // 2. flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
         thing_statistics.durably_write(&self.database.storage).map_err(|error| Statistics { source: error })?;
 
-        let sequence_number = self.snapshot.commit().expect("Failed to commit snapshot");
+        let sequence_number = snapshot.commit()
+            .map_err(|err| SchemaCommitError::SnapshotError { source: err })?;
 
         // `None` means empty commit
         if let Some(sequence_number) = sequence_number {
@@ -207,18 +281,21 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
         // replace statistics
         thing_statistics.may_synchronise(&self.database.storage).map_err(|error| Statistics { source: error })?;
-
         schema.thing_statistics = Arc::new(thing_statistics);
 
         *schema_commit_guard = schema;
-
         Ok(())
     }
 
+    pub fn rollback(&mut self) {
+        Arc::get_mut(&mut self.snapshot).unwrap().clear()
+    }
+
     pub fn close(self) {
+        self.database.release_schema_transaction();
         drop(self.thing_manager);
         drop(self.type_manager);
-        self.snapshot.close_resources();
+        Arc::into_inner(self.snapshot).unwrap().close_resources();
     }
 }
 
@@ -228,6 +305,7 @@ pub enum SchemaCommitError {
     TypeCacheUpdate { source: TypeCacheCreateError },
     Statistics { source: StatisticsError },
     FunctionError { source: FunctionError },
+    SnapshotError { source: SnapshotError },
 }
 
 impl fmt::Display for SchemaCommitError {
@@ -241,3 +319,5 @@ impl Error for SchemaCommitError {
         todo!()
     }
 }
+
+// TODO: TypeDB Error

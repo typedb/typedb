@@ -164,6 +164,10 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.operations_mut().lock_add(key, LockType::Exclusive)
     }
 
+    fn clear(&mut self) {
+        self.operations_mut().clear()
+    }
+
     fn close_resources(&self);
 }
 
@@ -368,6 +372,8 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
             }
         }
     }
+
+
 
     fn into_commit_record(self) -> CommitRecord {
         CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Data)

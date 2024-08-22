@@ -13,6 +13,7 @@ rust_library(
     deps = [
         "//common/concurrency",
         "//common/logger",
+        "//common/options",
         "//concept",
         "//encoding",
         "//function",

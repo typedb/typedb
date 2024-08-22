@@ -5,6 +5,7 @@
  */
 
 use cucumber::gherkin::Step;
+use futures::future::join_all;
 use macro_rules_attribute::apply;
 
 use crate::{generic_step, util, Context};
@@ -12,7 +13,7 @@ use crate::{generic_step, util, Context};
 #[apply(generic_step)]
 #[step(expr = "connection create database: {word}")]
 pub async fn connection_create_database(context: &mut Context, name: String) {
-    context.server().unwrap().lock().unwrap().create_database(name);
+    context.server().unwrap().lock().unwrap().database_manager().create_database(&name);
 }
 
 #[apply(generic_step)]
@@ -24,26 +25,18 @@ async fn connection_create_databases(context: &mut Context, step: &Step) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection create databases in parallel:")]
-async fn connection_create_databases_in_parallel(context: &mut Context, step: &Step) {
-    todo!()
-    // join_all(util::iter_table(step).map(|name| create_database(&context.databases, name.to_string()))).await;
-}
-
-#[apply(generic_step)]
 #[step(expr = "connection reset database: {word}")]
 pub async fn connection_reset_database(context: &mut Context, name: String) {
     if context.active_transaction.is_some() {
         context.close_transaction();
     }
-    context.server().unwrap().lock().unwrap().reset_else_recreate_database(name).unwrap();
+    context.server().unwrap().lock().unwrap().database_manager().reset_else_recreate_database(&name).unwrap();
 }
 
 #[apply(generic_step)]
 #[step(expr = "connection delete database: {word}")]
 pub async fn connection_delete_database(context: &mut Context, name: String) {
-    todo!()
-    // context.databases.get(name).and_then(Database::delete).await.unwrap();
+    context.server().unwrap().lock().unwrap().database_manager().delete_database(&name).unwrap()
 }
 
 #[apply(generic_step)]
@@ -53,15 +46,6 @@ async fn connection_delete_databases(context: &mut Context, step: &Step) {
     // for name in util::iter_table(step) {
     // context.databases.get(name).and_then(Database::delete).await.unwrap();
     // }
-}
-
-#[apply(generic_step)]
-#[step(expr = "connection delete databases in parallel:")]
-async fn connection_delete_databases_in_parallel(context: &mut Context, step: &Step) {
-    todo!()
-    // try_join_all(util::iter_table(step).map(|name| context.databases.get(name).and_then(Database::delete)))
-    // .await
-    // .unwrap();
 }
 
 #[apply(generic_step)]
@@ -83,7 +67,7 @@ async fn connection_delete_databases_throws_exception(context: &mut Context, ste
 #[apply(generic_step)]
 #[step(expr = "connection has database: {word}")]
 async fn connection_has_database(context: &mut Context, name: String) {
-    assert!(context.databases().contains_key(&name), "Connection doesn't contain database {name}.",);
+    assert!(context.server().unwrap().lock().unwrap().database_manager().database(&name).is_some(), "Connection doesn't contain database {name}.",);
 }
 
 #[apply(generic_step)]
@@ -97,7 +81,7 @@ async fn connection_has_databases(context: &mut Context, step: &Step) {
 #[apply(generic_step)]
 #[step(expr = "connection does not have database: {word}")]
 async fn connection_does_not_have_database(context: &mut Context, name: String) {
-    assert!(!context.databases().contains_key(&name), "Connection doesn't contain database {name}.",);
+    assert!(context.server().unwrap().lock().unwrap().database_manager().database(&name).is_none(), "Connection doesn't contain database {name}.",);
 }
 
 #[apply(generic_step)]

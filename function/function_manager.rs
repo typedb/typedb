@@ -39,6 +39,7 @@ use storage::{
 use crate::{function::SchemaFunction, function_cache::FunctionCache, FunctionError};
 
 /// Analogy to TypeManager, but specialised just for Functions
+#[derive(Debug)]
 pub struct FunctionManager {
     definition_key_generator: Arc<DefinitionKeyGenerator>,
     function_cache: Option<Arc<FunctionCache>>,

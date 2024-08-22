@@ -12,6 +12,10 @@ use std::{
     sync::{Arc, RwLock},
     time::Duration,
 };
+use std::collections::VecDeque;
+use std::sync::{Mutex, MutexGuard};
+use std::sync::atomic::AtomicU64;
+use std::sync::mpsc::{sync_channel, SyncSender};
 
 use concept::{
     error::ConceptWriteError,
@@ -22,22 +26,17 @@ use concept::{
     },
 };
 use concurrency::IntervalRunner;
-use durability::wal::{WALError, WAL};
+use durability::wal::{WAL, WALError};
 use encoding::{
+    EncodingKeyspace,
     error::EncodingError,
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
-    EncodingKeyspace,
 };
 use function::{function_cache::FunctionCache, FunctionError};
-use storage::{
-    durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
-    sequence_number::SequenceNumber,
-    MVCCStorage, StorageOpenError, StorageResetError,
-};
+use storage::{durability_client::{DurabilityClient, DurabilityClientError, WALClient}, MVCCStorage, recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError}, sequence_number::SequenceNumber, StorageDeleteError, StorageOpenError, StorageResetError};
 
 use crate::DatabaseOpenError::FunctionCacheInitialise;
 
@@ -57,9 +56,13 @@ pub struct Database<D> {
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
 
     pub(super) schema: Arc<RwLock<Schema>>,
-    pub(super) schema_txn_lock: Arc<RwLock<()>>,
-
+    schema_write_transaction_exclusivity: Mutex<(bool, usize, VecDeque<TransactionReservationRequest>)>,
     _statistics_updater: IntervalRunner,
+}
+
+enum TransactionReservationRequest {
+    Write(SyncSender<()>),
+    Schema(SyncSender<()>),
 }
 
 impl<D> fmt::Debug for Database<D> {
@@ -71,6 +74,72 @@ impl<D> fmt::Debug for Database<D> {
 impl<D> Database<D> {
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub(super) fn reserve_write_transaction(&self, timeout_millis: u64)  { // TODO: TransactionError
+        let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
+        let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
+        if has_schema_transaction || !notify_queue.is_empty() {
+            let (sender, receiver) = sync_channel::<()>(0);
+            notify_queue.push_back(TransactionReservationRequest::Write(sender));
+            drop(guard);
+            receiver.recv().unwrap();
+            // TODO: turn into TransactionError on timeout
+        } else {
+            guard.1 = running_write_transactions + 1;
+            drop(guard);
+        }
+    }
+
+    pub(super) fn reserve_schema_transaction(&self, timeout_millis: u64) {
+        let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
+        let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
+        if has_schema_transaction || running_write_transactions > 0 || !notify_queue.is_empty() {
+            let (sender, receiver) = sync_channel::<()>(0);
+            notify_queue.push_back(TransactionReservationRequest::Schema(sender));
+            drop(guard);
+            receiver.recv().unwrap();
+            // TODO: turn into TransactionError on timeout
+        } else {
+            guard.0 = true;
+            drop(guard);
+        }
+    }
+
+    pub(super) fn release_write_transaction(&self) {
+        let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
+        guard.1 = guard.1 - 1;
+        if guard.1 == 0 {
+            Self::fulfill_reservation_requests(&mut guard)
+        }
+    }
+
+    pub(super) fn release_schema_transaction(&self) {
+        let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
+        guard.0 = false;
+        Self::fulfill_reservation_requests(&mut guard)
+    }
+
+    fn fulfill_reservation_requests(guard: &mut MutexGuard<'_, (bool, usize, VecDeque<TransactionReservationRequest>)>) {
+        let (has_schema_transaction, running_write_transactions, notify_queue) = &mut **guard;
+        if notify_queue.is_empty() {
+            return;
+        }
+        let head = notify_queue.pop_front().unwrap();
+        if let TransactionReservationRequest::Schema(notifier) = head {
+            // fulfill exactly 1 schema request
+            *has_schema_transaction = true;
+            notifier.send(()).unwrap();
+
+            // TODO: if get disconnect error, skip!
+        } else {
+            // fulfill as many write requests as possible
+            while let Some(TransactionReservationRequest::Write(notifier)) = notify_queue.pop_front() {
+                *running_write_transactions += 1;
+                notifier.send(()).unwrap();
+                // TODO: if get disconnect error, skip!
+            }
+        }
     }
 }
 
@@ -124,7 +193,7 @@ impl Database<WALClient> {
                 &TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None),
                 SequenceNumber::MIN,
             )
-            .map_err(|error| FunctionCacheInitialise { source: error })?,
+                .map_err(|error| FunctionCacheInitialise { source: error })?,
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
@@ -140,7 +209,7 @@ impl Database<WALClient> {
             type_vertex_generator,
             thing_vertex_generator,
             schema,
-            schema_txn_lock,
+            schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         })
     }
@@ -186,7 +255,7 @@ impl Database<WALClient> {
                 &TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None),
                 SequenceNumber::MIN,
             )
-            .map_err(|error| FunctionCacheInitialise { source: error })?,
+                .map_err(|error| FunctionCacheInitialise { source: error })?,
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
@@ -202,7 +271,7 @@ impl Database<WALClient> {
             type_vertex_generator,
             thing_vertex_generator,
             schema,
-            schema_txn_lock,
+            schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         };
 
@@ -229,6 +298,13 @@ impl Database<WALClient> {
 
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
         drop(self._statistics_updater);
+        drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
+        drop(Arc::into_inner(self.type_vertex_generator).expect("Cannot get exclusive ownership of inner of Arc<TypeVertexGenerator>"));
+        drop(Arc::into_inner(self.thing_vertex_generator).expect("Cannot get exclusive ownership of inner of Arc<ThingVertexGenerator>"));
+        drop(Arc::into_inner(self.definition_key_generator).expect("Cannot get exclusive ownership of inner of Arc<DefinitionKeyGenerator>"));
+        Arc::into_inner(self.storage).expect("Cannot get exclusive ownership of inner of Arc<MVCCStorage>.")
+            .delete_storage()
+            .map_err(|err| DatabaseDeleteError::StorageDelete { source: err })?;
         let path = self.path;
         fs::remove_dir_all(path).map_err(|err| DatabaseDeleteError::DirectoryDelete { source: err })?;
         Ok(())
@@ -240,8 +316,8 @@ impl Database<WALClient> {
             TypeVertexGeneratorInUse,
         };
 
+        self.reserve_schema_transaction(Duration::from_secs(60).as_millis() as u64); // exclusively lock out other write or schema transactions;
         let mut locked_schema = self.schema.write().unwrap();
-        let _schema_write_lock = self.schema_txn_lock.write().unwrap();
 
         match Arc::get_mut(&mut self.storage) {
             None => return Err(DatabaseResetError::StorageInUse {}),
@@ -263,6 +339,7 @@ impl Database<WALClient> {
         let thing_statistics = Arc::get_mut(&mut locked_schema.thing_statistics).unwrap();
         thing_statistics.reset(self.storage.read_watermark());
 
+        self.release_schema_transaction();
         Ok(())
     }
 }
@@ -273,7 +350,7 @@ fn make_update_statistics_fn(
     schema_txn_lock: Arc<RwLock<()>>,
 ) -> impl Fn() {
     move || {
-        let mut _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
+        let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
         let mut thing_statistics = (*schema.read().unwrap().thing_statistics).clone();
         thing_statistics.may_synchronise(&storage).ok();
         schema.write().unwrap().thing_statistics = Arc::new(thing_statistics);
@@ -283,6 +360,7 @@ fn make_update_statistics_fn(
 #[derive(Debug)]
 pub enum DatabaseOpenError {
     InvalidUnicodeName { name: OsString },
+    CouldNotReadDataDirectory { path: PathBuf, source: io::Error },
     DirectoryCreate { path: PathBuf, source: io::Error },
     StorageOpen { source: StorageOpenError },
     WALOpen { source: WALError },
@@ -307,6 +385,7 @@ impl Error for DatabaseOpenError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::InvalidUnicodeName { .. } => None,
+            Self::CouldNotReadDataDirectory { source, .. } => Some(source),
             Self::DirectoryCreate { source, .. } => Some(source),
             Self::StorageOpen { source } => Some(source),
             Self::WALOpen { source } => Some(source),
@@ -344,6 +423,7 @@ impl Error for DatabaseCheckpointError {
 
 #[derive(Debug)]
 pub enum DatabaseDeleteError {
+    StorageDelete { source: StorageDeleteError },
     DirectoryDelete { source: io::Error },
     InUse {},
 }
@@ -357,6 +437,7 @@ impl fmt::Display for DatabaseDeleteError {
 impl Error for DatabaseDeleteError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
+            Self::StorageDelete { source, .. } => Some(source),
             Self::DirectoryDelete { source } => Some(source),
             Self::InUse { .. } => None,
         }

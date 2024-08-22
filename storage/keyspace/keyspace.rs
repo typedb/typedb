@@ -280,6 +280,7 @@ impl Keyspace {
     }
 
     pub(crate) fn delete(self) -> Result<(), KeyspaceDeleteError> {
+        drop(self.kv_storage);
         fs::remove_dir_all(self.path.clone())
             .map_err(|error| KeyspaceDeleteError::DirectoryRemove { name: self.name, source: error })?;
         Ok(())

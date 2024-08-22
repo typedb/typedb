@@ -65,6 +65,7 @@ pub mod validation;
 // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
 
+#[derive(Debug)]
 pub struct TypeManager {
     vertex_generator: Arc<TypeVertexGenerator>,
     definition_key_generator: Arc<DefinitionKeyGenerator>,

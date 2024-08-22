@@ -16,7 +16,7 @@ use std::{
 
 use ::concept::thing::{attribute::Attribute, object::Object};
 use cucumber::{gherkin::Feature, StatsWriter, World};
-use database::Database;
+use database::{Database, DatabaseDeleteError};
 use futures::{
     future::Either,
     stream::{self, StreamExt},
@@ -140,9 +140,9 @@ impl Context {
         }
 
         if clean_databases {
-            let database_names = self.database_names();
+            let database_names = self.server().unwrap().lock().unwrap().database_manager().database_names();
             for database_name in database_names {
-                self.server().unwrap().lock().unwrap().delete_database(database_name).unwrap();
+                self.server().unwrap().lock().unwrap().database_manager().delete_database(&database_name).unwrap();
             }
         }
 
@@ -161,12 +161,8 @@ impl Context {
         self.server.as_deref()
     }
 
-    pub fn databases(&self) -> HashMap<String, Arc<Database<WALClient>>> {
-        self.server().unwrap().lock().unwrap().databases().clone()
-    }
-
-    pub fn database_names(&self) -> HashSet<String> {
-        self.server().unwrap().lock().unwrap().databases().keys().map(|name| name.to_owned()).collect()
+    pub fn database(&self, name: &str) -> Arc<Database<WALClient>> {
+        self.server().unwrap().lock().unwrap().database_manager().database(name).unwrap()
     }
 
     pub fn set_transaction(&mut self, txn: ActiveTransaction) {

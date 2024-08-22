@@ -92,6 +92,7 @@ use crate::{
 
 pub mod validation;
 
+#[derive(Debug)]
 pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
     type_manager: Arc<TypeManager>,
@@ -1964,10 +1965,8 @@ impl ThingManager {
     /// set cardinality annotation, unset cardinality annotation)
     ///
 
-    ///
     /// Clean up all parts of a relation index to do with a specific role player
     /// after the player has been deleted.
-    ///
     pub(crate) fn relation_index_player_deleted<'a>(
         &self,
         snapshot: &mut impl WritableSnapshot,

@@ -10,12 +10,28 @@ rust_library(
     name = "server",
     srcs = glob([
         "*.rs",
+        "service/*.rs",
     ]),
     deps = [
+        "//common/bytes",
+        "//common/error",
+        "//common/options",
         "//database",
+        "//query",
         "//storage",
+        "//resource",
+
+        "@vaticle_typeql//rust:typeql",
+        "@vaticle_typedb_protocol//grpc/rust:typedb_protocol",
 
         "@crates//:itertools",
+        "@crates//:prost",
+        "@crates//:tokio",
+        "@crates//:tokio-stream",
+        "@crates//:tonic",
+        "@crates//:tonic-types",
+        "@crates//:tracing",
+        "@crates//:uuid",
     ]
 )
 

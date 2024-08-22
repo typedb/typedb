@@ -13,6 +13,7 @@ use crate::{
     Keyable,
 };
 
+#[derive(Debug)]
 pub struct TypeVertexGenerator {
     next_entity: TypeVertexAllocator,
     next_relation: TypeVertexAllocator,
