@@ -5,17 +5,18 @@
  */
 
 use std::{
+    collections::VecDeque,
     error::Error,
     ffi::OsString,
     fmt, fs, io,
     path::{Path, PathBuf},
-    sync::{Arc, RwLock},
+    sync::{
+        atomic::AtomicU64,
+        mpsc::{sync_channel, SyncSender},
+        Arc, Mutex, MutexGuard, RwLock,
+    },
     time::Duration,
 };
-use std::collections::VecDeque;
-use std::sync::{Mutex, MutexGuard};
-use std::sync::atomic::AtomicU64;
-use std::sync::mpsc::{sync_channel, SyncSender};
 
 use concept::{
     error::ConceptWriteError,
@@ -26,17 +27,22 @@ use concept::{
     },
 };
 use concurrency::IntervalRunner;
-use durability::wal::{WAL, WALError};
+use durability::wal::{WALError, WAL};
 use encoding::{
-    EncodingKeyspace,
     error::EncodingError,
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
+    EncodingKeyspace,
 };
 use function::{function_cache::FunctionCache, FunctionError};
-use storage::{durability_client::{DurabilityClient, DurabilityClientError, WALClient}, MVCCStorage, recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError}, sequence_number::SequenceNumber, StorageDeleteError, StorageOpenError, StorageResetError};
+use storage::{
+    durability_client::{DurabilityClient, DurabilityClientError, WALClient},
+    recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
+    sequence_number::SequenceNumber,
+    MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
+};
 
 use crate::DatabaseOpenError::FunctionCacheInitialise;
 
@@ -76,7 +82,8 @@ impl<D> Database<D> {
         &self.name
     }
 
-    pub(super) fn reserve_write_transaction(&self, timeout_millis: u64)  { // TODO: TransactionError
+    pub(super) fn reserve_write_transaction(&self, timeout_millis: u64) {
+        // TODO: TransactionError
         let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
         let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
         if has_schema_transaction || !notify_queue.is_empty() {
@@ -120,7 +127,9 @@ impl<D> Database<D> {
         Self::fulfill_reservation_requests(&mut guard)
     }
 
-    fn fulfill_reservation_requests(guard: &mut MutexGuard<'_, (bool, usize, VecDeque<TransactionReservationRequest>)>) {
+    fn fulfill_reservation_requests(
+        guard: &mut MutexGuard<'_, (bool, usize, VecDeque<TransactionReservationRequest>)>,
+    ) {
         let (has_schema_transaction, running_write_transactions, notify_queue) = &mut **guard;
         if notify_queue.is_empty() {
             return;
@@ -193,7 +202,7 @@ impl Database<WALClient> {
                 &TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None),
                 SequenceNumber::MIN,
             )
-                .map_err(|error| FunctionCacheInitialise { source: error })?,
+            .map_err(|error| FunctionCacheInitialise { source: error })?,
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
@@ -255,7 +264,7 @@ impl Database<WALClient> {
                 &TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None),
                 SequenceNumber::MIN,
             )
-                .map_err(|error| FunctionCacheInitialise { source: error })?,
+            .map_err(|error| FunctionCacheInitialise { source: error })?,
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
@@ -299,10 +308,20 @@ impl Database<WALClient> {
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
         drop(self._statistics_updater);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
-        drop(Arc::into_inner(self.type_vertex_generator).expect("Cannot get exclusive ownership of inner of Arc<TypeVertexGenerator>"));
-        drop(Arc::into_inner(self.thing_vertex_generator).expect("Cannot get exclusive ownership of inner of Arc<ThingVertexGenerator>"));
-        drop(Arc::into_inner(self.definition_key_generator).expect("Cannot get exclusive ownership of inner of Arc<DefinitionKeyGenerator>"));
-        Arc::into_inner(self.storage).expect("Cannot get exclusive ownership of inner of Arc<MVCCStorage>.")
+        drop(
+            Arc::into_inner(self.type_vertex_generator)
+                .expect("Cannot get exclusive ownership of inner of Arc<TypeVertexGenerator>"),
+        );
+        drop(
+            Arc::into_inner(self.thing_vertex_generator)
+                .expect("Cannot get exclusive ownership of inner of Arc<ThingVertexGenerator>"),
+        );
+        drop(
+            Arc::into_inner(self.definition_key_generator)
+                .expect("Cannot get exclusive ownership of inner of Arc<DefinitionKeyGenerator>"),
+        );
+        Arc::into_inner(self.storage)
+            .expect("Cannot get exclusive ownership of inner of Arc<MVCCStorage>.")
             .delete_storage()
             .map_err(|err| DatabaseDeleteError::StorageDelete { source: err })?;
         let path = self.path;

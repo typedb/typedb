@@ -4,38 +4,52 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::future::Future;
-use std::ops::ControlFlow;
-use std::ops::ControlFlow::{Break, Continue};
-use std::ptr::write;
-use std::sync::Arc;
-use tokio::sync::broadcast;
+use std::{
+    collections::HashMap,
+    future::Future,
+    ops::{
+        ControlFlow,
+        ControlFlow::{Break, Continue},
+    },
+    ptr::write,
+    sync::Arc,
+};
 
-use tokio::sync::mpsc::Sender;
-use tokio::task::{JoinHandle, spawn_blocking};
+use bytes::util::HexBytesFormatter;
+use database::{
+    database_manager::DatabaseManager,
+    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+};
+use error::typedb_error;
+use options::TransactionOptions;
+use query::{error::QueryError, query_manager::QueryManager};
+use resource::constants::server::{
+    DEFAULT_PREFETCH_SIZE, DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL,
+    DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
+};
+use storage::{
+    durability_client::WALClient,
+    snapshot::{ReadableSnapshot, WritableSnapshot},
+};
+use tokio::{
+    sync::{broadcast, mpsc::Sender},
+    task::{spawn_blocking, JoinHandle},
+};
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
 use typedb_protocol::transaction::{Client, Req, Type};
-use typeql::{parse_query, Query};
-use typeql::query::{Pipeline, SchemaQuery};
-use typeql::query::stage::Stage;
+use typeql::{
+    parse_query,
+    query::{stage::Stage, Pipeline, SchemaQuery},
+    Query,
+};
 use uuid::Uuid;
 
-use bytes::util::HexBytesFormatter;
-use database::database_manager::DatabaseManager;
-use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
-use error::typedb_error;
-use options::TransactionOptions;
-use query::error::QueryError;
-use query::query_manager::QueryManager;
-use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
-use storage::durability_client::WALClient;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-
-use crate::service::error::{ProtocolError, StatusConvertible};
-use crate::service::RequestID;
+use crate::service::{
+    error::{ProtocolError, StatusConvertible},
+    RequestID,
+};
 
 // TODO: where does this belong?
 #[derive(Debug)]
@@ -96,7 +110,9 @@ enum Responder {
 }
 
 macro_rules! close_service {
-    () => {return;};
+    () => {
+        return;
+    };
 }
 
 impl TransactionService {
@@ -149,14 +165,17 @@ impl TransactionService {
                         let metadata = request.metadata;
                         match request.req {
                             None => {
-                                self.send_err(ProtocolError::MissingField {
-                                    name: "req",
-                                    description: "Transaction message must contain a request.",
-                                }.into_status()).await;
+                                self.send_err(
+                                    ProtocolError::MissingField {
+                                        name: "req",
+                                        description: "Transaction message must contain a request.",
+                                    }
+                                    .into_status(),
+                                )
+                                .await;
                                 close_service!();
                             }
                             Some(req) => {
-
                                 // TODO:
                                 //  If we get a Write query,
                                 //      if the queue is non-empty, we queue request, and check if we need to execute from the queue
@@ -211,8 +230,7 @@ impl TransactionService {
                 Ok(Continue(()))
             }
             (true, typedb_protocol::transaction::req::Req::StreamReq(stream_req)) => {
-                self.handle_stream_continue(request_id, stream_req).await
-                    .map(|_| Continue(()))
+                self.handle_stream_continue(request_id, stream_req).await.map(|_| Continue(()))
             }
             (true, typedb_protocol::transaction::req::Req::CommitReq(commit_req)) => {
                 // Eagerly executed in main loop
@@ -239,19 +257,24 @@ impl TransactionService {
         if let Some(options) = open_req.options {
             // transaction options
             options.parallel.map(|parallel| transaction_options.parallel = parallel);
-            options.schema_lock_acquire_timeout_millis
+            options
+                .schema_lock_acquire_timeout_millis
                 .map(|timeout| transaction_options.schema_lock_acquire_timeout_millis = timeout);
 
             // service options
             self.prefetch_size = options.prefetch_size.or(Some(DEFAULT_PREFETCH_SIZE));
-            self.transaction_timeout_millis = options.transaction_timeout_millis.or(Some(DEFAULT_TRANSACTION_TIMEOUT_MILLIS));
+            self.transaction_timeout_millis =
+                options.transaction_timeout_millis.or(Some(DEFAULT_TRANSACTION_TIMEOUT_MILLIS));
         }
 
-        let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type)
-            .map_err(|err| ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status())?;
+        let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type).map_err(|err| {
+            ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status()
+        })?;
 
         let database_name = open_req.database;
-        let database = self.database_manager.database(database_name.as_ref())
+        let database = self
+            .database_manager
+            .database(database_name.as_ref())
             .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name }.into_status())?;
 
         let transaction = match transaction_type {
@@ -274,16 +297,16 @@ impl TransactionService {
         // TODO: take mut
         let result = match self.transaction.take().unwrap() {
             Transaction::Read(_) => Err(TransactionServiceError::CannotCommitReadTransaction {}.into_status()),
-            Transaction::Write(transaction) => {
-                spawn_blocking(move || {
-                    transaction.commit()
-                        .map_err(|err| TransactionServiceError::DataCommitFailed { source: err }.into_status())
-                }).await.unwrap()
-            }
-            Transaction::Schema(transaction) => {
-                transaction.commit()
-                    .map_err(|err| TransactionServiceError::SchemaCommitFailed { source: err }.into_status())
-            }
+            Transaction::Write(transaction) => spawn_blocking(move || {
+                transaction
+                    .commit()
+                    .map_err(|err| TransactionServiceError::DataCommitFailed { source: err }.into_status())
+            })
+            .await
+            .unwrap(),
+            Transaction::Schema(transaction) => transaction
+                .commit()
+                .map_err(|err| TransactionServiceError::SchemaCommitFailed { source: err }.into_status()),
         };
         result
     }
@@ -329,7 +352,10 @@ impl TransactionService {
             Query::Pipeline(pipeline) => {
                 let is_write = pipeline.stages.iter().any(Self::is_write_stage);
                 if is_write {
-                    if !self.request_queue.is_empty() || !self.read_responders.is_empty() || self.active_write_query.is_some() {
+                    if !self.request_queue.is_empty()
+                        || !self.read_responders.is_empty()
+                        || self.active_write_query.is_some()
+                    {
                         self.request_queue.push(query_req);
                         Ok(())
                     } else {
@@ -345,21 +371,30 @@ impl TransactionService {
     async fn handle_query_schema(&mut self, query: SchemaQuery) -> Result<(), Status> {
         if let Some(Transaction::Schema(schema_transaction)) = self.transaction.take() {
             let TransactionSchema {
-                snapshot, type_manager, thing_manager, function_manager, database, transaction_options,
+                snapshot,
+                type_manager,
+                thing_manager,
+                function_manager,
+                database,
+                transaction_options,
             } = schema_transaction;
             let mut snapshot = Arc::into_inner(snapshot).unwrap();
             let (snapshot, type_manager, thing_manager, result) = spawn_blocking(move || {
-                let result = QueryManager::new().execute_schema(
-                    &mut snapshot,
-                    &type_manager,
-                    &thing_manager,
-                    query,
-                ).map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
+                let result = QueryManager::new()
+                    .execute_schema(&mut snapshot, &type_manager, &thing_manager, query)
+                    .map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
                 (snapshot, type_manager, thing_manager, result)
-            }).await.unwrap();
+            })
+            .await
+            .unwrap();
             result?;
             let transaction = TransactionSchema::from(
-                snapshot, type_manager, thing_manager, function_manager, database, transaction_options,
+                snapshot,
+                type_manager,
+                thing_manager,
+                function_manager,
+                database,
+                transaction_options,
             );
             self.transaction = Some(Transaction::Schema(transaction));
             return Ok(());
@@ -370,28 +405,38 @@ impl TransactionService {
 
     async fn execute_write_query(&mut self, pipeline: Pipeline) -> Result<(), Status> {
         debug_assert!(
-            self.request_queue.is_empty() &&
-                self.read_responders.is_empty() &&
-                self.active_write_query.is_none() &&
-                self.transaction.is_some()
+            self.request_queue.is_empty()
+                && self.read_responders.is_empty()
+                && self.active_write_query.is_none()
+                && self.transaction.is_some()
         );
 
         if let Some(Transaction::Schema(schema_transaction)) = self.transaction.take() {
             let (transaction, result) = spawn_blocking(move || {
                 // TODO: pass in Interrupt Receiver
                 let TransactionSchema {
-                    snapshot, type_manager, thing_manager, function_manager, database, transaction_options,
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    database,
+                    transaction_options,
                 } = schema_transaction;
                 let mut snapshot = Arc::into_inner(snapshot).unwrap();
-                let result = Self::execute_write_pipeline(
-                    &mut snapshot,
-                    pipeline,
-                ).map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
+                let result = Self::execute_write_pipeline(&mut snapshot, pipeline)
+                    .map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
                 let transaction = TransactionSchema::from(
-                    snapshot, type_manager, thing_manager, function_manager, database, transaction_options,
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    database,
+                    transaction_options,
                 );
                 (transaction, result)
-            }).await.unwrap();
+            })
+            .await
+            .unwrap();
             result?;
             self.transaction = Some(Transaction::Schema(transaction));
             return Ok(());
@@ -399,18 +444,28 @@ impl TransactionService {
             let (transaction, result) = spawn_blocking(move || {
                 // TODO: pass in Interrupt Receiver
                 let TransactionWrite {
-                    snapshot, type_manager, thing_manager, function_manager, database, transaction_options,
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    database,
+                    transaction_options,
                 } = write_transaction;
                 let mut snapshot = Arc::into_inner(snapshot).unwrap();
-                let result = Self::execute_write_pipeline(
-                    &mut snapshot,
-                    pipeline,
-                ).map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
+                let result = Self::execute_write_pipeline(&mut snapshot, pipeline)
+                    .map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
                 let transaction = TransactionWrite::from(
-                    Arc::new(snapshot), type_manager, thing_manager, function_manager, database, transaction_options,
+                    Arc::new(snapshot),
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    database,
+                    transaction_options,
                 );
                 (transaction, result)
-            }).await.unwrap();
+            })
+            .await
+            .unwrap();
             result?;
             self.transaction = Some(Transaction::Write(transaction));
             return Ok(());
@@ -438,10 +493,10 @@ impl TransactionService {
                 Responder::Active(handle) => {
                     if !handle.is_finished() {
                         event!(
-                                Level::DEBUG,
-                                "Responder is already active, and received a Stream Continue request.\
+                            Level::DEBUG,
+                            "Responder is already active, and received a Stream Continue request.\
                                  Unexpected behaviour, but not an error state."
-                            );
+                        );
                     } else {
                         let iterator = handle.await.unwrap();
                         // TODO: recreate a task to stream back out from the iterator and set the handle
@@ -482,21 +537,13 @@ impl TransactionService {
 
     fn is_write_stage(stage: &Stage) -> bool {
         match stage {
-            Stage::Insert(_)
-            | Stage::Put(_)
-            | Stage::Delete(_)
-            | Stage::Update(_) => true,
-            Stage::Fetch(_)
-            | Stage::Reduce(_)
-            | Stage::Modifier(_)
-            | Stage::Match(_) => false,
+            Stage::Insert(_) | Stage::Put(_) | Stage::Delete(_) | Stage::Update(_) => true,
+            Stage::Fetch(_) | Stage::Reduce(_) | Stage::Modifier(_) | Stage::Match(_) => false,
         }
     }
 
     async fn send_err(&mut self, err: Status) {
-        let result = self.response_sender.send(
-            Err(err)
-        ).await;
+        let result = self.response_sender.send(Err(err)).await;
         if let Err(send_error) = result {
             event!(Level::DEBUG, ?send_error, "Failed to send error to client");
         }

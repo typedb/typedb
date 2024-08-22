@@ -12,11 +12,10 @@ async fn test() {
     // @vaticle_typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
     #[cfg(feature = "bazel")]
-        let path = "../vaticle_typedb_behaviour/concept/type/relationtype.feature";
+    let path = "../vaticle_typedb_behaviour/concept/type/relationtype.feature";
 
     #[cfg(not(feature = "bazel"))]
-        let path = "bazel-typedb/external/vaticle_typedb_behaviour/concept/type/relationtype.feature";
+    let path = "bazel-typedb/external/vaticle_typedb_behaviour/concept/type/relationtype.feature";
 
     assert!(Context::test(path, true).await);
-
 }

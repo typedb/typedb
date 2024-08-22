@@ -306,9 +306,7 @@ impl<Durability> MVCCStorage<Durability> {
     {
         use StorageDeleteError::{DirectoryDelete, DurabilityDelete, KeyspaceDelete};
 
-        self.keyspaces.delete().map_err(|errs| {
-            KeyspaceDelete { name: self.name.clone(), source: errs }
-        })?;
+        self.keyspaces.delete().map_err(|errs| KeyspaceDelete { name: self.name.clone(), source: errs })?;
 
         self.durability_client
             .delete_durability()

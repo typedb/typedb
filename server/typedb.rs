@@ -7,12 +7,10 @@
 use std::{
     error::Error,
     fmt, fs, io,
-    path::{Path, PathBuf}
-    ,
+    path::{Path, PathBuf},
 };
 
-use database::database_manager::DatabaseManager;
-use database::DatabaseOpenError;
+use database::{database_manager::DatabaseManager, DatabaseOpenError};
 
 use crate::service::typedb_service::TypeDBService;
 
@@ -34,8 +32,8 @@ impl Server {
             return Err(NotADirectory { path: data_directory.to_owned() });
         }
 
-        let database_manager = DatabaseManager::new(data_directory)
-            .map_err(|err| ServerOpenError::DatabaseOpenError { source: err })?;
+        let database_manager =
+            DatabaseManager::new(data_directory).map_err(|err| ServerOpenError::DatabaseOpenError { source: err })?;
         let data_directory = data_directory.to_owned();
 
         let typedb_service = TypeDBService::new(database_manager);
@@ -52,10 +50,10 @@ impl Server {
 
         // TODO: could also construct in Server and await here only
         // Server::builder()
-            // .http2_keepalive_interval()
-            // .add_service(self.typedb_service.take().unwrap())
-            // .serve(address)
-            // .await?;
+        // .http2_keepalive_interval()
+        // .add_service(self.typedb_service.take().unwrap())
+        // .serve(address)
+        // .await?;
         Ok(())
     }
 }
@@ -64,7 +62,7 @@ impl Server {
 pub enum ServerOpenError {
     NotADirectory { path: PathBuf },
     CouldNotCreateDataDirectory { path: PathBuf, source: io::Error },
-    DatabaseOpenError { source: DatabaseOpenError }
+    DatabaseOpenError { source: DatabaseOpenError },
 }
 
 impl Error for ServerOpenError {}

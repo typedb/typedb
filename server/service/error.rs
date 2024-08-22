@@ -6,11 +6,10 @@
 
 use std::collections::HashMap;
 
+use error::TypeDBError;
 use tonic::{Code, Status};
 use tonic_types::{ErrorDetails, StatusExt};
 use uuid::Uuid;
-
-use error::TypeDBError;
 
 pub(crate) enum ProtocolError {
     MissingField { name: &'static str, description: &'static str },
@@ -23,42 +22,36 @@ pub(crate) enum ProtocolError {
 impl StatusConvertible for ProtocolError {
     fn into_status(self) -> Status {
         match self {
-            Self::MissingField { name, description } => {
-                Status::with_error_details(
-                    Code::InvalidArgument,
-                    "Bad request",
-                    ErrorDetails::with_bad_request_violation(
-                        name,
-                        format!("{}. Check client-server compatibility?", description),
-                    ),
-                )
-            }
-            Self::TransactionAlreadyOpen {} => {
-                Status::already_exists("Transaction already open.")
-            }
+            Self::MissingField { name, description } => Status::with_error_details(
+                Code::InvalidArgument,
+                "Bad request",
+                ErrorDetails::with_bad_request_violation(
+                    name,
+                    format!("{}. Check client-server compatibility?", description),
+                ),
+            ),
+            Self::TransactionAlreadyOpen {} => Status::already_exists("Transaction already open."),
             Self::TransactionClosed {} => {
                 Status::new(Code::InvalidArgument, "Transaction already closed, no further operations possible.")
             }
-            ProtocolError::UnrecognisedTransactionType { enum_variant, .. } => {
-                Status::with_error_details(
-                    Code::InvalidArgument,
-                    "Bad request",
-                    ErrorDetails::with_bad_request_violation(
-                        "transaction_type",
-                        format!("Unrecognised transaction type variant: {enum_variant}. Check client-server compatibility?"),
-                    ),
-                )
-            }
-            ProtocolError::QueryStreamNotFound { query_request_id } => {
-                Status::new(
-                    Code::NotFound,
+            ProtocolError::UnrecognisedTransactionType { enum_variant, .. } => Status::with_error_details(
+                Code::InvalidArgument,
+                "Bad request",
+                ErrorDetails::with_bad_request_violation(
+                    "transaction_type",
                     format!(
-                        "Query stream with protocol id '{:?}' was not found in the transaction. \
-                    The transaction could be closed, committed, rolled back, or this is an error state.",
-                        query_request_id
+                        "Unrecognised transaction type variant: {enum_variant}. Check client-server compatibility?"
                     ),
-                )
-            }
+                ),
+            ),
+            ProtocolError::QueryStreamNotFound { query_request_id } => Status::new(
+                Code::NotFound,
+                format!(
+                    "Query stream with protocol id '{:?}' was not found in the transaction. \
+                    The transaction could be closed, committed, rolled back, or this is an error state.",
+                    query_request_id
+                ),
+            ),
         }
     }
 }

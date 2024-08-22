@@ -6,11 +6,10 @@
 
 use core::fmt;
 use std::{
-    error::Error
-    ,
+    error::Error,
+    fmt::{Debug, Display, Formatter},
     sync::Arc,
 };
-use std::fmt::{Debug, Display, Formatter};
 
 use concept::{
     error::ConceptWriteError,
@@ -24,12 +23,13 @@ use function::{function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
 use storage::{
     durability_client::DurabilityClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
 };
-use storage::snapshot::SnapshotError;
 
-use crate::Database;
-use crate::transaction::SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
+use crate::{
+    transaction::SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate},
+    Database,
+};
 
 #[derive(Debug)]
 pub struct TransactionRead<D> {
@@ -127,14 +127,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         database: Arc<Database<D>>,
         transaction_options: TransactionOptions,
     ) -> Self {
-        Self {
-            snapshot,
-            type_manager,
-            thing_manager,
-            function_manager,
-            database,
-            transaction_options,
-        }
+        Self { snapshot, type_manager, thing_manager, function_manager, database, transaction_options }
     }
 
     pub fn commit(mut self) -> Result<(), DataCommitError> {
@@ -146,7 +139,8 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
     pub fn try_commit(mut self) -> Result<(), DataCommitError> {
         let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
-        self.thing_manager.finalise(&mut snapshot)
+        self.thing_manager
+            .finalise(&mut snapshot)
             .map_err(|errs| DataCommitError::ConceptWriteErrors { source: errs })?;
         drop(self.type_manager);
         snapshot.commit().map_err(|err| DataCommitError::SnapshotError { source: err })?;
@@ -267,8 +261,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         // 2. flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
         thing_statistics.durably_write(&self.database.storage).map_err(|error| Statistics { source: error })?;
 
-        let sequence_number = snapshot.commit()
-            .map_err(|err| SchemaCommitError::SnapshotError { source: err })?;
+        let sequence_number = snapshot.commit().map_err(|err| SchemaCommitError::SnapshotError { source: err })?;
 
         // `None` means empty commit
         if let Some(sequence_number) = sequence_number {

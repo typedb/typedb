@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::slice;
-use std::sync::Arc;
+use std::{slice, sync::Arc};
 
 use concept::{
     thing::object::{Object, ObjectAPI},
@@ -42,7 +41,8 @@ async fn relation_add_player_for_role(
             .unwrap()
         {
             let role_type = relates.role();
-            let res = relation.add_player(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player);
+            let res =
+                relation.add_player(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player);
             may_error.check_concept_write_without_read_errors(&res);
             return;
         }
@@ -93,7 +93,9 @@ async fn relation_remove_player_for_role(
             .unwrap()
             .unwrap()
             .role();
-        relation.remove_player_single(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player).unwrap();
+        relation
+            .remove_player_single(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player)
+            .unwrap();
     });
 }
 
@@ -115,7 +117,9 @@ async fn relation_remove_count_players_for_role(
             .unwrap()
             .unwrap()
             .role();
-        relation.remove_player_many(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player, count).unwrap();
+        relation
+            .remove_player_many(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player, count)
+            .unwrap();
     });
 }
 
@@ -325,8 +329,11 @@ async fn object_get_relations_of_type_with_role_contain(
     let player = &context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
     object_root.assert(&player.type_());
     let relations = with_read_tx!(context, |tx| {
-        let relation_type =
-            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_type_label.into_typedb()).unwrap().unwrap();
+        let relation_type = tx
+            .type_manager
+            .get_relation_type(tx.snapshot.as_ref(), &relation_type_label.into_typedb())
+            .unwrap()
+            .unwrap();
         let role_type = relation_type
             .get_relates_role_name(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name().as_str())
             .unwrap()

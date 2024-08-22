@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+
 use concept::{
     error::ConceptWriteError,
     thing::{
@@ -55,7 +56,11 @@ fn object_unset_has_impl(
     object: &Object<'static>,
     key: &Attribute<'static>,
 ) -> Result<(), ConceptWriteError> {
-    with_write_tx!(context, |tx| object.unset_has_unordered(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, key.as_reference()))
+    with_write_tx!(context, |tx| object.unset_has_unordered(
+        Arc::get_mut(&mut tx.snapshot).unwrap(),
+        &tx.thing_manager,
+        key.as_reference()
+    ))
 }
 
 fn object_unset_has_ordered_impl(
@@ -64,8 +69,11 @@ fn object_unset_has_ordered_impl(
     attribute_type_label: params::Label,
 ) -> Result<(), ConceptWriteError> {
     with_write_tx!(context, |tx| {
-        let attribute_type =
-            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
+        let attribute_type = tx
+            .type_manager
+            .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
+            .unwrap()
+            .unwrap();
         object.unset_has_ordered(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, attribute_type)
     })
 }
@@ -155,8 +163,11 @@ async fn object_get_has_list(
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
     object_root.assert(&object.type_());
     let attributes = with_read_tx!(context, |tx| {
-        let attribute_type =
-            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
+        let attribute_type = tx
+            .type_manager
+            .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
+            .unwrap()
+            .unwrap();
         object
             .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
             .unwrap()
@@ -180,8 +191,11 @@ async fn object_get_has_list_is(
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
     object_root.assert(&object.type_());
     let actuals = with_read_tx!(context, |tx| {
-        let attribute_type =
-            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
+        let attribute_type = tx
+            .type_manager
+            .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
+            .unwrap()
+            .unwrap();
         object
             .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
             .unwrap()
@@ -258,8 +272,11 @@ async fn object_get_has_type(
     object_root.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let actuals = with_read_tx!(context, |tx| {
-        let attribute_type =
-            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
+        let attribute_type = tx
+            .type_manager
+            .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
+            .unwrap()
+            .unwrap();
         object
             .get_has_type_unordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
             .unwrap()
@@ -293,9 +310,9 @@ async fn object_get_has_with_annotations(
             .unwrap()
             .into_iter()
             .filter(|owns| {
-                annotations
-                    .iter()
-                    .all(|anno| owns.get_annotations(tx.snapshot.as_ref(), &tx.type_manager).unwrap().contains_key(anno))
+                annotations.iter().all(|anno| {
+                    owns.get_annotations(tx.snapshot.as_ref(), &tx.type_manager).unwrap().contains_key(anno)
+                })
             })
             .map(|owns| owns.attribute())
             .collect_vec();

@@ -16,10 +16,7 @@ async fn main() {
 
     let _guard = initialise_logging();
 
-    server::typedb::Server::open("runtimedata/server/data").unwrap()
-        .serve()
-        .await
-        .unwrap()
+    server::typedb::Server::open("runtimedata/server/data").unwrap().serve().await.unwrap()
 }
 
 fn print_ascii_logo() {

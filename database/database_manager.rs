@@ -4,13 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+    sync::{Arc, RwLock},
+};
 
 use itertools::Itertools;
-
 use storage::durability_client::WALClient;
 
 use crate::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
@@ -24,10 +25,15 @@ pub struct DatabaseManager {
 impl DatabaseManager {
     pub fn new(data_directory: &Path) -> Result<Self, DatabaseOpenError> {
         let databases = fs::read_dir(data_directory)
-            .map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory { path: data_directory.to_owned(), source: error })?
+            .map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
+                path: data_directory.to_owned(),
+                source: error,
+            })?
             .map(|entry| {
-                let entry = entry
-                    .map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory { path: data_directory.to_owned(), source: error })?;
+                let entry = entry.map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
+                    path: data_directory.to_owned(),
+                    source: error,
+                })?;
                 let database = Database::<WALClient>::open(&entry.path())?;
                 Ok((database.name().to_owned(), Arc::new(database)))
             })

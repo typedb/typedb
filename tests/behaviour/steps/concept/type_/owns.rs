@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+
 use concept::type_::{annotation, owns::OwnsAnnotation, Capability, Ordering, OwnerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
@@ -29,10 +30,18 @@ pub async fn set_owns(
 ) {
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
-        let attr_type =
-            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
-        let res =
-            object_type.set_owns(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, attr_type, Ordering::Unordered);
+        let attr_type = tx
+            .type_manager
+            .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
+            .unwrap()
+            .unwrap();
+        let res = object_type.set_owns(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            &tx.thing_manager,
+            attr_type,
+            Ordering::Unordered,
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -48,10 +57,18 @@ pub async fn set_owns_ordered(
 ) {
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
-        let attr_type =
-            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
-        let res =
-            object_type.set_owns(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, attr_type, Ordering::Ordered);
+        let attr_type = tx
+            .type_manager
+            .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
+            .unwrap()
+            .unwrap();
+        let res = object_type.set_owns(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            &tx.thing_manager,
+            attr_type,
+            Ordering::Ordered,
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -67,9 +84,17 @@ pub async fn unset_owns(
 ) {
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
-        let attr_type =
-            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb()).unwrap().unwrap();
-        let res = object_type.unset_owns(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, attr_type);
+        let attr_type = tx
+            .type_manager
+            .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
+            .unwrap()
+            .unwrap();
+        let res = object_type.unset_owns(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            &tx.thing_manager,
+            attr_type,
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -96,11 +121,17 @@ pub async fn get_owns_set_override(
                 .get_attribute_type(tx.snapshot.as_ref(), &overridden_type_label.into_typedb())
                 .unwrap()
                 .unwrap();
-            let overridden_owns_opt =
-                owner_supertype.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, overridden_attr_type).unwrap();
+            let overridden_owns_opt = owner_supertype
+                .get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, overridden_attr_type)
+                .unwrap();
 
             if let Some(overridden_owns) = overridden_owns_opt {
-                let res = owns.set_override(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, overridden_owns);
+                let res = owns.set_override(
+                    Arc::get_mut(&mut tx.snapshot).unwrap(),
+                    &tx.type_manager,
+                    &tx.thing_manager,
+                    overridden_owns,
+                );
                 may_error.check_concept_write_without_read_errors(&res);
                 return;
             }
@@ -145,7 +176,8 @@ pub async fn get_owns_set_annotation(
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type.clone()).unwrap().unwrap();
+        let owns =
+            object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type.clone()).unwrap().unwrap();
         let value_type = attr_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let res = owns.set_annotation(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
@@ -345,7 +377,12 @@ pub async fn get_owns_contain(
             .unwrap()
             .iter()
             .map(|owns| {
-                owns.attribute().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                owns.attribute()
+                    .get_label(tx.snapshot.as_ref(), &tx.type_manager)
+                    .unwrap()
+                    .scoped_name()
+                    .as_str()
+                    .to_owned()
             })
             .collect_vec();
         contains.check(&expected_labels, &actual_labels);
@@ -384,7 +421,12 @@ pub async fn get_declared_owns_contain(
             .unwrap()
             .iter()
             .map(|owns| {
-                owns.attribute().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                owns.attribute()
+                    .get_label(tx.snapshot.as_ref(), &tx.type_manager)
+                    .unwrap()
+                    .scoped_name()
+                    .as_str()
+                    .to_owned()
             })
             .collect_vec();
         contains.check(&expected_labels, &actual_labels);
@@ -427,8 +469,13 @@ pub async fn get_owns_get_label(
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = owner.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
-        let actual_type_label =
-            owns.attribute().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned();
+        let actual_type_label = owns
+            .attribute()
+            .get_label(tx.snapshot.as_ref(), &tx.type_manager)
+            .unwrap()
+            .scoped_name()
+            .as_str()
+            .to_owned();
         assert_eq!(expected_label.into_typedb().scoped_name().as_str().to_owned(), actual_type_label);
     });
 }
@@ -475,7 +522,12 @@ pub async fn get_owns_set_ordering(
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
-        let res = owns.set_ordering(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, ordering.into_typedb());
+        let res = owns.set_ordering(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            &tx.thing_manager,
+            ordering.into_typedb(),
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
