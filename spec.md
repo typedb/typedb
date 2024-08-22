@@ -193,15 +193,15 @@ _Remark for nerds: list types are neither sums, nor products, nor polynomials ..
 
 # Schema
 
-This section describes valid declarations of types, axioms relating types (dependencies, subtyping), and constraints that can be further imposed on the type system. It also describe how such declarations can be further manipulated (define, undefine).
+This section describes valid declarations of _types_ and axioms relating types (_dependencies and _type castings_) for the user's data model, as well as _model constraints_ that can be further imposed. These declarations are subject to a set of _type system properties_ as listed in this section. The section also describes how such declarations can be manipulated after being first declared (undefine, redefine).
 
 ## Basics
 
-* Categories of definition clauses:
-  * `define`: always adds type axioms or conditions
-  * `undefine`: removes type axioms or conditions
-  * `redefine`: always both removes and (re-)adds
-* Schema components:
+* Kinds of definition clauses:
+  * `define`: adds type axioms or model constraints
+  * `undefine`: removes type axioms or model constraints
+  * `redefine`: both removes and adds axioms or model constraints (remove is never no-op)
+* Suggested distinciton of schema components:
   * **Schema type defs**: data-capturing types and type dependencies.
   * **Constraints**: postulate conditions that the system satisfies.
   * **Triggers**: actions to be executed based on certain conditions.
@@ -209,7 +209,7 @@ This section describes valid declarations of types, axioms relating types (depen
   * **Function defs**: composite data-capturing types
 * For execution and validation of definitions see "Transactionality" section
 * Definition clauses can be chained:
-  * _Example_ 
+  * _Example_: 
   ```
   define A; 
   define B; 
@@ -222,17 +222,15 @@ This section describes valid declarations of types, axioms relating types (depen
 
 ## Define semantics
 
-Define adds axioms, as described below. Th
-
 ### Type defs
 
 **Case ENT**
 * `entity A` adds $`A : \mathbf{Ent}`$
 * `(entity) A sub B` adds $`A : \mathbf{Ent}, A <_! B`$
 
-*Model constraints*: 
+***System property***: 
 
-1. Cannot have $A <_! B`$ and $A <_! C \neq B$
+1. Single inheritance: Cannot have $A <_! B`$ and $A <_! C \neq B$
 
 **Case REL**
 * `relation A` adds $`A : \mathbf{Rel}`$
@@ -242,20 +240,21 @@ Define adds axioms, as described below. Th
 * `(relation) A relates I[]` adds $`A : \mathbf{Rel}([I])$
 * `(relation) A relates I[] as J[]` adds $`A : \mathbf{Rel}([I])`$, $`I <_! J`$ (**require**: $`B : \mathbf{Rel}([J])`$ and $A <_! B$)
 
-*Model constraints*: 
+***System property***: 
 
-1. Cannot have $A <_! B`$ and $A <_! C \neq B$
-2. Cannot have $I <_! J`$ and $I <_! K \neq J$
-3. Cannot have both $`A : \mathbf{Rel}(I)`$ and $`A : \mathbf{Rel}(I)]`$ (in other words, cannot have both `A relates I` and `A relates I[]`).
+1. Single inheritance: Cannot have $`A <_! B`$ and $A <_! C \neq B$
+2. Single inheritance (for interfaces): Cannot have $`I <_! J`$ and $I <_! K \neq J$
+3. Exclusive interface kind: Cannot have both $`A : \mathbf{Rel}(I)`$ and $`A : \mathbf{Rel}([I])`$ (in other words, cannot have both `A relates I` and `A relates I[]`).
+4. Implicit inheritance: Cannot redeclare inherited interface (i.e. when `B relates I`, `A sub B` we cannot re-declare `A relates I`... this is automatically inherited!)
 
 **Case ATT**
 * `attribute A` adds $`A : \mathbf{Att}`$ and $`A : \mathbf{Att}(O_A)`$ ($O_A$ being automatically generated ownership interface)
 * `(attribute) A value V` adds $`A < V`$ (**require**: $V$ a primitive or struct value type)
 * `(attribute) A sub B` adds $`A : \mathbf{A}`$, $`A : \mathbf{Att}(O_A)`$, $`A <_! B`$ and $`O_A <_! O_B`$ (**require**: $`B : \mathbf{Att}(O_A)`$ and not $A <_! C \neq B$)
 
-*Model constraints*: 
+***System property***: 
 
-1. Cannot have $A <_! B`$ and $A <_! C \neq B$
+1. Single inheritance: Cannot have $A <_! B`$ and $A <_! C \neq B$
 
 **Case PLAYS**
 * `A plays B:I` adds $`A <_! I`$ (**require**: $B: \mathbf{Rel}(I)$, $`A :\mathbf{Obj}`$)
@@ -266,26 +265,31 @@ Define adds axioms, as described below. Th
 
 _Note: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract` (abstractness is crucial here, see `abstract` constraint below). See **match semantics**._
 
-*Model constraint*: 
+***System property***: 
 
 1. If set, at least one of `A owns B` and `A owns B[]` need to be `@abstract`.
 
 ### Constraints
 
 **Case CARD**
-* `A relates I @card(n..m)` postulates $n \leq k \leq m$ whenever $a : A(\{...\} : I^k)$ (for maximal $k$, fixed $a : A$)
+* `A relates I @card(n..m)` postulates $n \leq k \leq m$ whenever $`a : A'(\{...\} : I^k)`$, $`A' \leq A`$, $`A' : \mathbf{Rel}(I)`$, and $k$ is _maximal_ (for fixed $a : A$).
   * **defaults** to `@card(1..1)` if omitted ("one")
 * `A plays B:I @card(n..m)` postulates $n \leq |B(a:I)| \leq m$ for all $a : A$
   * **defaults** to `@card(0..)` if omitted ("many")
 * `A owns B @card(n...m)` postulates $n \leq |B(a:I)| \leq m$ for all $a : A$
   * **defaults** to `@card(0..1)` if omitted ("one or null")
+
+***System property***:
+
+1. For inherited interfaces, we cannot redeclare cardinality (this is actually a consequence of "Implicit inheritance" above). 
+2. When we have direct subinterfaces $I_i <_! J$, for $i = 1,...,n$, and each $I_i$ has `card(`$`n_i,m_i`$`)` while J has $card(n,m)$ then we must have $`n \leq \sum_i n_i \leq \sum_i m_i \leq m`$.
   
 _Note 1: Upper bounds can be omitted, writing `@card(2..)`, to allow for arbitrary large cardinalities_
 
 _Note 2: For cardinality, and for most other constraints, we should reject redundant conditions, such as `A owns B card(0..3);` when `A sub A'` and `A' owns B card(1..2);`_
 
 **Case CARD_LIST**
-* `A relates I[] @card(n..m)` postulates $n \leq \mathrm{len}(l) \leq m$ whenever $a : A(l : [I])$
+* `A relates I[] @card(n..m)` postulates $n \leq \mathrm{len}(l) \leq m$ whenever $a : A'(l : [I])$, $A' \leq A$, $A' : \mathbf{Rel}([I])$, and $k$ is _maximal_ (for fixed $a : A$).
   * **defaults** to `@card(0..)` if omitted ("many")
 * `A owns B[] @card(n...m)` postulates $n \leq \mathrm{len}(l) \leq m$ whenever $`l : [B](a:O_B)`$ for $`a : A`$
   * **defaults** to `@card(0..)` if omitted ("many")
@@ -777,18 +781,79 @@ _Remark: these two are still not a natural constraint, as foreshadowed by a prev
 * `$x isa! $T` satisfied if $`\gamma(x) :_! \gamma(T)`$ for $`\gamma(T) : \mathbf{ERA}`$
 
 **Case LINKS_PATT**
+* `$x links ($I: $y)` satisfied if $`\gamma(x) : A(\gamma(y):\gamma(I))`$ for some $`A : \mathbf{Rel}(\gamma(I))`$.
 
 **Case HAS_PATT**
+* `$x has $B $y` satisfied if $`\gamma(y) : \gamma(B)(\gamma(x):O_{\gamma(B)})`$ for some $`B : \mathbf{Att}`$.
 
 **Case IS_PATT**
+* `$x is $y` satisfied if $`\gamma(x) :_! A`$, $`\gamma(y) :_! A`$, $`\gamma(x) = \gamma(y)`$, for $`A : \mathbf{ERA}`$
+* `$A is $B` satisfied if $`A = B`$ for $`A : \mathbf{ERA}`$, $`B : \mathbf{ERA}`$
+
+***System property***
+
+1. In the `is` pattern, left or right variable are **not bound**.
+
+_Remark_: In the `is` pattern we cannot syntactically distinguish whether we are in the "type" or "element" case, but this is alleviated by the pattern being non-binding: statements which bind these variables determine which case we are in.
 
 ### Satisfying value expression patterns
 
+_Expression grammar_
+
+```
+<BOOL>      ::= VAR | true | false | BOOL_LIST[INT]
+<INT>       ::= VAR | int | ( INT ) | INT + INT | INT - INT | INT_LIST[INT]
+<STRING>    ::= VAR | string | string + string | STRING_LIST[INT]
+<T_LIST>    ::= VAR | [T,...,T] | T_LIST + T_LIST    // note: includes empty list []
+<INT_LIST>  ::= VAR | INT_LIST | [INT..INT]
+<DATETIME>  ::= ...
+<TIME>      ::= ...
+<LIST_EXPR> ::= T_LIST     // for any T
+<EXPR>      ::= BOOL | INT | STRING | T_LIST | ...
+```
+
+**Case ASS_PATT**
+* `$x = <EXPR>` is satisfied if $`\gamma(x)`$ equals the expression on the right-hand side, evaluated after substituting answer for all its variables.
+
+***System property***
+
+1. Any variable appearing `<EXPR>` is **not bound** by the pattern (and must be bound elsewhere). The left-hand variable is bound by the pattern.
+2. It must be possibly to determine answers of all variables in `<EXPR>` before answering `$x` — this avoids cyclic assignments (like `$x = $x + $y; $y = $y - $x;`)
+
 **Case IN_LIST_PATT**
+* `$x in $l` is satisfied if $`\gamma(l) : [A]`$ for $`A : \mathbf{Type}`$ and $`\gamma(x) \in \gamma(l)`$
+* `$x in <LIST_EXPR>` is equivalent to `$l = <LIST_EXPR>; $x in $l` 
+
+***System property***
+
+1. The right-hand side variable(s) of the pattern are **not bound**. (The left-hand side variable is bound.)
 
 **Case EQ_PATT**
+* `$x == $y` is satisfied if $`\gamma(x) : V`$, $`\gamma(y) : V`$ for a value type $`V`$ (either primitive or struct), and $`\gamma(x) = \gamma(y)`$
+* `$x != $y` is equivalent to `not { $x == $y }` (see "Satisfying composite patterns")
+
+***System property***
+
+1. In the `==` pattern left or right variable are **not bound**.
 
 **Case COMP_PATT**
+
+The following are all kind of obvious.
+
+* `<INT> < <INT>` 
+* `<INT> <= <INT>` 
+* `<INT> > <INT>` 
+* `<INT> >= <INT>`
+* `<STRING> < <STRING>` (lexicographic comparison)
+* `<STRING> <= <STRING>` (lexicographic comparison)
+* `<STRING> > <STRING>`  (lexicographic comparison)
+* `<STRING> >= <STRING>` (lexicographic comparison)
+* `<STRING> contains <STRING>` 
+* `<STRING> like <REGEX>` (where `<REGEX>` is a regex string without variables)
+
+***System property***
+
+1. None of the above pattern bind any of their variables are **not bound**.
 
 ### Satisfying function patterns
 
@@ -796,11 +861,20 @@ _Remark: these two are still not a natural constraint, as foreshadowed by a prev
 
 Refer to section on Function semantics
 
+**Case ASS_FUN_PATT**
+* 
+
+Refer to section on Function semantics
+
+
+
 ### Satisfying Optionality patterns
+
+### Satisfying composite patterns
 
 ## Insert semantics
 
-### Leaf attribute model constraint
+### Leaf attribute system constraint
 
 TODO: Remove this constraint!
 
@@ -811,6 +885,21 @@ TODO: Remove this constraint!
 ## Put semantics
 
 ## Function semantics
+
+### Basics about streams
+
+### Stream-return
+
+
+
+### Single-return
+
+check, sum, first
+
+### Recursion
+
+
+
 
 # Pipelines
 
