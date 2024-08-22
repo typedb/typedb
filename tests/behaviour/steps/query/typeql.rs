@@ -21,12 +21,13 @@ use itertools::Itertools;
 use macro_rules_attribute::apply;
 use executor::write::insert::InsertExecutor;
 use executor::write::WriteError;
+use typeql::Query;
 use primitive::either::Either;
 use query::query_manager::QueryManager;
 
 use crate::{
     generic_step,
-    params::{check_boolean, MayError},
+    params::{self, check_boolean},
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     Context,
 };
@@ -86,16 +87,21 @@ fn execute_insert_plan(
 
 fn execute_insert_query(
     context: &mut Context,
-    query: &str,
+    query: Query,
 ) -> Result<Vec<VariableValue<'static>>, Either<WriteCompilationError, WriteError>> {
     let insert_plan = create_insert_plan(context, query).map_err(Either::First)?;
     execute_insert_plan(context, insert_plan).map_err(Either::Second)
 }
 
 #[apply(generic_step)]
-#[step(expr = r"typeql define{may_error}")]
-async fn typeql_define(context: &mut Context, may_error: MayError, step: &Step) {
-    let typeql_define = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap().into_schema();
+#[step(expr = r"typeql define{typeql_may_error}")]
+async fn typeql_define(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+    let query_parsed = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
+    if may_error.check_parsing(&query_parsed).is_some() {
+        return;
+    }
+
+    let typeql_define = query_parsed.unwrap().into_schema();
     with_schema_tx!(context, |tx| {
         let result = QueryManager::new().execute_schema(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
@@ -103,21 +109,31 @@ async fn typeql_define(context: &mut Context, may_error: MayError, step: &Step) 
             &tx.thing_manager,
             typeql_define,
         );
-        may_error.check(&result);
+        may_error.check_logic(&result);
     });
 }
 
 #[apply(generic_step)]
-#[step(expr = r"typeql insert{may_error}")]
-async fn typeql_insert(context: &mut Context, may_error: MayError, step: &Step) {
-    let result = execute_insert_query(context, step.docstring.as_ref().unwrap().as_str());
-    may_error.check_either_err(&result);
+#[step(expr = r"typeql insert{typeql_may_error}")]
+async fn typeql_insert(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+    let parsed_query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
+    if may_error.check_parsing(&parsed_query).is_some() {
+        return;
+    }
+
+    let result = execute_insert_query(context, parsed_query.unwrap());
+    may_error.check_either_err_logic(&result);
 }
 
 #[apply(generic_step)]
-#[step(expr = r"get answers of typeql insert")]
-async fn get_answers_of_typeql_insert(context: &mut Context, step: &Step) {
-    let result = execute_insert_query(context, step.docstring.as_ref().unwrap().as_str());
+#[step(expr = r"get answers of typeql insert{typeql_may_error}")]
+async fn get_answers_of_typeql_insert(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+    let parsed_query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
+    if may_error.check_parsing(&parsed_query).is_some() {
+        return;
+    }
+
+    let result = execute_insert_query(context, parsed_query.unwrap());
     match result {
         Err(Either::First(err)) => panic!("{:?}", err),
         Err(Either::Second(err)) => panic!("{:?}", err),
