@@ -19,8 +19,27 @@ use typeql::{
     type_::{BuiltinValueType, NamedType},
     TypeRef, TypeRefAny,
 };
+use typeql::schema::definable::Struct;
 
 use crate::{define::DefineError, SymbolResolutionError};
+
+macro_rules! try_unwrap {
+    ($variant:path = $item:expr) => {
+        if let $variant(inner) = $item {
+            Some(inner)
+        } else {
+            None
+        }
+    };
+}
+pub(crate) use try_unwrap;
+
+macro_rules! filter_variants {
+    ($variant:path : $iterable:expr) => {
+        $iterable.iter().filter_map(|item| if let $variant(inner) = item { Some(inner) } else { None })
+    };
+}
+pub(crate) use filter_variants;
 
 pub(crate) fn type_ref_to_label_and_ordering(type_ref: &TypeRefAny) -> Result<(Label<'static>, Ordering), ()> {
     match type_ref {
@@ -115,7 +134,7 @@ pub(crate) fn check_can_and_need_define_supertype<'a, T: TypeAPI<'a>>(
         type_.get_supertype(snapshot, type_manager).map_err(|source| DefineError::UnexpectedConceptRead { source })?
     {
         if existing_supertype != new_supertype {
-            Err(DefineError::TypeAlreadyHasDifferentDefinedSub {
+            Err(DefineError::TypeSubAlreadyDefinedButDifferent {
                 label: label.clone().into_owned(),
                 supertype: new_supertype
                     .get_label_cloned(snapshot, type_manager)
@@ -146,7 +165,7 @@ pub(crate) fn check_can_and_need_define_override<'a, CAP: Capability<'a>>(
         .map_err(|source| DefineError::UnexpectedConceptRead { source })?
     {
         if existing_override != &new_override {
-            Err(DefineError::CapabilityAlreadyHasDifferentDefinedOverride {
+            Err(DefineError::CapabilityOverrideAlreadyDefinedButDifferent {
                 label: label.clone().into_owned(),
                 overridden_interface: new_override
                     .interface()
@@ -185,7 +204,7 @@ pub(crate) fn type_convert_and_validate_annotation_definition_need<'a, T: KindAP
         .find(|existing_annotation| (*existing_annotation).clone().into().category() == annotation.category())
     {
         if existing_of_category != &converted {
-            return Err(DefineError::TypeAnnotationIsAlreadyDefinedWithDifferentArguments {
+            return Err(DefineError::TypeAnnotationAlreadyDefinedButDifferent {
                 label: label.clone().into_owned(),
                 annotation,
                 existing_annotation: existing_of_category.clone().into(),
@@ -214,7 +233,7 @@ pub(crate) fn capability_convert_and_validate_annotation_definition_need<'a, CAP
         .find(|existing_annotation| (*existing_annotation).clone().into().category() == annotation.category())
     {
         if existing_of_category != &converted {
-            return Err(DefineError::CapabilityAnnotationIsAlreadyDefinedWithDifferentArguments {
+            return Err(DefineError::CapabilityAnnotationAlreadyDefinedButDifferent {
                 label: label.clone().into_owned(),
                 annotation,
                 existing_annotation: existing_of_category.clone().into(),

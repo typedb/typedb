@@ -1277,7 +1277,7 @@ fn test_struct_definition_updates() {
         );
 
         type_manager
-            .delete_struct_field(&mut snapshot, &thing_manager, struct_key.clone(), f_long.clone().0.to_owned())
+            .delete_struct_field(&mut snapshot, &thing_manager, struct_key.clone(), f_long.clone().0)
             .unwrap();
         assert_eq!(
             HashMap::from([f_string.clone()]),

@@ -42,6 +42,7 @@ use typeql::{
     type_::Optional,
     Definable, ScopedLabel, TypeRef, TypeRefAny,
 };
+use encoding::graph::definition::r#struct::StructDefinitionField;
 
 use crate::{
     util::{
@@ -50,25 +51,9 @@ use crate::{
     },
     SymbolResolutionError,
 };
+use crate::definition_status::{DefinitionStatus, get_struct_field_status, get_struct_status};
 
-macro_rules! try_unwrap {
-    ($variant:path = $item:expr) => {
-        if let $variant(inner) = $item {
-            Some(inner)
-        } else {
-            None
-        }
-    };
-}
-
-macro_rules! filter_variants {
-    ($variant:path : $iterable:expr) => {
-        $iterable.iter().filter_map(|item| if let $variant(inner) = item { Some(inner) } else { None })
-    };
-}
-pub(crate) use filter_variants;
-
-use crate::util::{check_can_and_need_define_override, check_can_and_need_define_supertype};
+use crate::util::{check_can_and_need_define_override, check_can_and_need_define_supertype, filter_variants, try_unwrap};
 
 macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path) => {
@@ -89,8 +74,8 @@ pub(crate) fn execute(
     define: Define,
 ) -> Result<(), DefineError> {
     process_struct_definitions(snapshot, type_manager, &define.definables)?;
-    process_type_declarations(snapshot, type_manager, thing_manager, &define.definables)?;
-    process_functions(snapshot, type_manager, &define.definables)?;
+    process_type_definitions(snapshot, type_manager, thing_manager, &define.definables)?;
+    process_function_definitions(snapshot, type_manager, &define.definables)?;
     Ok(())
 }
 
@@ -102,11 +87,11 @@ fn process_struct_definitions(
     filter_variants!(Definable::Struct : definables)
         .try_for_each(|struct_| define_struct(snapshot, type_manager, struct_))?;
     filter_variants!(Definable::Struct : definables)
-        .try_for_each(|struct_| define_struct_fields(snapshot, type_manager, &struct_))?;
+        .try_for_each(|struct_| define_struct_fields(snapshot, type_manager, struct_))?;
     Ok(())
 }
 
-fn process_type_declarations(
+fn process_type_definitions(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -132,7 +117,7 @@ fn process_type_declarations(
     Ok(())
 }
 
-fn process_functions(
+fn process_function_definitions(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     definables: &[Definable],
@@ -148,6 +133,14 @@ fn define_struct(
     struct_definable: &Struct,
 ) -> Result<(), DefineError> {
     let name = struct_definable.ident.as_str();
+
+    let definable_status = get_struct_status(snapshot, type_manager, name).map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+    match definable_status {
+        DefinitionStatus::DoesNotExist => {}
+        DefinitionStatus::ExistsSame => return Ok(()),
+        DefinitionStatus::ExistsDifferent(_) => unreachable!("Structs cannot differ"),
+    }
+
     type_manager
         .create_struct(snapshot, name.to_owned())
         .map_err(|err| DefineError::StructCreateError { source: err, struct_declaration: struct_definable.clone() })?;
@@ -164,8 +157,17 @@ fn define_struct_fields(
         .get_struct_definition_key(snapshot, name)
         .map_err(|err| DefineError::UnexpectedConceptRead { source: err })?
         .unwrap();
+
     for field in &struct_definable.fields {
         let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)?;
+
+        let definable_status = get_struct_field_status(snapshot, type_manager, struct_key.clone(), field.key.as_str(), value_type.clone(), optional).map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        match definable_status {
+            DefinitionStatus::DoesNotExist => {}
+            DefinitionStatus::ExistsSame => return Ok(()),
+            DefinitionStatus::ExistsDifferent(existing_field) => return Err(DefineError::StructFieldAlreadyDefinedButDifferent { field: field.to_owned(), existing_field }),
+        }
+
         type_manager
             .create_struct_field(snapshot, struct_key.clone(), field.key.as_str(), value_type, optional)
             .map_err(|err| DefineError::StructFieldCreateError {
@@ -441,7 +443,7 @@ fn define_value_type(
                 .map_err(|source| DefineError::SetValueType { label: label.to_owned(), value_type, source })?,
             Some(existing_value_type) => {
                 if existing_value_type != value_type {
-                    return Err(DefineError::AttributeTypeAlreadyHasDifferentDefinedValueType {
+                    return Err(DefineError::AttributeTypeValueTypeAlreadyDefinedButDifferent {
                         label: label.to_owned(),
                         value_type,
                         existing_value_type,
@@ -913,6 +915,7 @@ fn err_capability_kind_mismatch(
 
 #[derive(Debug)]
 pub enum DefineError {
+    Unimplemented,
     UnexpectedConceptRead {
         source: ConceptReadError,
     },
@@ -950,9 +953,10 @@ pub enum DefineError {
     StructFieldCouldNotResolveValueType {
         source: SymbolResolutionError,
     },
-
-    Unimplemented,
-
+    StructFieldAlreadyDefinedButDifferent {
+        field: Field,
+        existing_field: StructDefinitionField,
+    },
     SetSupertype {
         sub: typeql::schema::definable::type_::capability::Sub,
         source: ConceptWriteError,
@@ -965,28 +969,28 @@ pub enum DefineError {
     AttributeTypeBadValueType {
         source: SymbolResolutionError,
     },
-    TypeAlreadyHasDifferentDefinedSub {
+    TypeSubAlreadyDefinedButDifferent {
         label: Label<'static>,
         supertype: Label<'static>,
         existing_supertype: Label<'static>,
     },
-    CapabilityAlreadyHasDifferentDefinedOverride {
+    CapabilityOverrideAlreadyDefinedButDifferent {
         label: Label<'static>,
         overridden_interface: Label<'static>,
         existing_overridden_interface: Label<'static>,
     },
-    AttributeTypeAlreadyHasDifferentDefinedValueType {
+    AttributeTypeValueTypeAlreadyDefinedButDifferent {
         label: Label<'static>,
         value_type: ValueType,
         existing_value_type: ValueType,
     },
     // Careful with the error message as it is also used for value types (stored on their attribute type)!
-    TypeAnnotationIsAlreadyDefinedWithDifferentArguments {
+    TypeAnnotationAlreadyDefinedButDifferent {
         label: Label<'static>,
         annotation: Annotation,
         existing_annotation: Annotation,
     },
-    CapabilityAnnotationIsAlreadyDefinedWithDifferentArguments {
+    CapabilityAnnotationAlreadyDefinedButDifferent {
         label: Label<'static>,
         annotation: Annotation,
         existing_annotation: Annotation,

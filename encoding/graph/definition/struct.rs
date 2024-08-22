@@ -57,14 +57,23 @@ impl StructDefinition {
         }
     }
 
-    pub fn delete_field(&mut self, field_name: String) -> Result<(), EncodingError> {
-        if !self.field_names.contains_key(&field_name) {
-            Err(EncodingError::StructFieldUnresolvable { struct_name: self.name.clone(), field_path: vec![field_name] })
+    pub fn delete_field(&mut self, field_name: &str) -> Result<(), EncodingError> {
+        if !self.field_names.contains_key(field_name) {
+            Err(EncodingError::StructFieldUnresolvable { struct_name: self.name.clone(), field_path: vec![field_name.to_string()] })
         } else {
-            let field_idx = self.field_names.remove(&field_name).unwrap();
+            let field_idx = self.field_names.remove(field_name).unwrap();
             self.fields.remove(&field_idx).unwrap();
             Ok(())
         }
+    }
+
+    pub fn get_field(&self, field_name: &str) -> Option<&StructDefinitionField> {
+        let field_idx = if let Some(id) = self.field_names.get(field_name) {
+            id
+        } else {
+            return None;
+        };
+        self.fields.get(field_idx)
     }
 }
 
@@ -75,5 +84,15 @@ impl DefinitionValueEncoding for StructDefinition {
 
     fn into_bytes(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    }
+}
+
+impl StructDefinitionField {
+    pub fn same(
+        &self,
+        optional: bool,
+        value_type: ValueType,
+    ) -> bool {
+        self.optional == optional && self.value_type == value_type
     }
 }

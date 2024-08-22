@@ -1231,8 +1231,11 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         definition_key: DefinitionKey<'static>,
-        field_name: String,
+        field_name: &str,
     ) -> Result<(), ConceptWriteError> {
+
+        // TODO: Somehow check instances?
+
         let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())?;
         struct_definition.delete_field(field_name).map_err(|source| ConceptWriteError::Encoding { source })?;
 

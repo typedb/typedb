@@ -14,6 +14,9 @@ pub mod query_manager;
 mod translation;
 mod annotation;
 mod util;
+mod redefine;
+mod definition_status;
+mod undefine;
 
 #[derive(Debug)]
 pub enum SymbolResolutionError {

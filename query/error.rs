@@ -12,11 +12,15 @@ use compiler::{
 use ir::{program::FunctionDefinitionError, PatternDefinitionError};
 
 use crate::define::DefineError;
+use crate::redefine::RedefineError;
+use crate::undefine::UndefineError;
 
 #[derive(Debug)]
 pub enum QueryError {
     ParseError { typeql_query: String, source: typeql::common::Error },
     Define { source: DefineError },
+    Redefine { source: RedefineError },
+    Undefine { source: UndefineError },
     FunctionDefinition { source: FunctionDefinitionError },
     PatternDefinition { source: PatternDefinitionError },
     TypeInference { source: TypeInferenceError },
@@ -35,6 +39,8 @@ impl Error for QueryError {
         match self {
             QueryError::ParseError { source, .. } => Some(source),
             QueryError::Define { source, .. } => Some(source),
+            QueryError::Redefine { source, .. } => Some(source),
+            QueryError::Undefine { source, .. } => Some(source),
             QueryError::FunctionDefinition { source, .. } => Some(source),
             QueryError::PatternDefinition { source, .. } => Some(source),
             QueryError::TypeInference { source } => Some(source),
