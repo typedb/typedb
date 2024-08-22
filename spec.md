@@ -208,7 +208,7 @@ _Remark for nerds: list types are neither sums, nor products, nor polynomials ..
 
 # Schema
 
-This section describes valid declarations of _types_ and axioms relating types (_dependencies and _type castings_) for the user's data model, as well as _model constraints_ that can be further imposed. These declarations are subject to a set of _type system properties_ as listed in this section. The section also describes how such declarations can be manipulated after being first declared (undefine, redefine).
+This section describes valid declarations of _types_ and axioms relating types (_dependencies_ and _type castings_) for the user's data model, as well as _model constraints_ that can be further imposed. These declarations are subject to a set of _type system properties_ as listed in this section. The section also describes how such declarations can be manipulated after being first declared (undefine, redefine).
 
 ## Basics of schemas
 
