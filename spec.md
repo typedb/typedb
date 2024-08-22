@@ -1072,7 +1072,12 @@ Functions can be called recursively, as long as negation can be stratified. The 
 
 ### Basics of inserting
 
-Can be fed 
+* `insert` clause comprises collection of _insert statements_
+* the clause can take as input a concept map `m` (or a stream thereof, in which case the clause is executed for each map `m` in the stream individually)
+* Variables `$x` in insert statement can be _bound_ to a concept, `bnd($x) = c`, or they can be _free_ (not bound to a concept yet).
+* Bindings can happen in two ways:
+  * an `isa` statement in the `insert` clause
+  * variables can be bound in the concept maps: `bnd($x) = m($x)`
 
 ### Insert statement
 
@@ -1088,6 +1093,8 @@ Can be fed
 * `$x has A $y` 
 * `$x has $A $y`
 
+### Optional inserts
+
 ### Leaf attribute system constraint
 
 Currently we have:
@@ -1101,19 +1108,37 @@ Currently we have:
 
 ### Basics of deleting
 
+* `delete` clause comprises collection of _delete statements_
+* the clause can take as input a concept map `m` (or a stream thereof, in which case the clause is executed for each map `m` in the stream individually)
+* Variables `$x` in delete statement can be _bound_ to a concept, `bnd($x) = c`, or they can be _free_ (not bound to a concept yet).
+* Bindings can happen in two ways:
+  * an `isa` statement in the `delete` clause
+  * variables can be bound in the concept maps 
+
 ### Delete statements
+
+### Optional deletes
 
 ## Update semantics
 
 ### Basics of updating
 
+* `update` clause comprises collection of _update statements_
+* the clause must take as input a concept map `m` (or a stream thereof, in which case the clause is executed for each map `m` in the stream individually)
+* All variables `$x` in delete statement have to be _bound_ to in the concept, `bnd($x) = c`, in the concept maps 
+
 ### Update statements
+
+(keep cardinality in mind)
 
 ## Put semantics
 
-### Basics of updating
-
-### Update statements
+* the `put` clause can take as input a concept map `m` (or a stream thereof, in which case the clause is executed for each map `m` in the stream individually)
+* `put <PUT>` is equivalent to 
+  ```
+  if (match <PUT>; check;) then (match <PUT>;) else (insert <PUT>)
+  ```
+  In particular, `<PUT>` needs to be an `insert` compatible set of statements. 
 
 # Pipelines
 
