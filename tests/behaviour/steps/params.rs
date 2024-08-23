@@ -90,6 +90,58 @@ impl FromStr for MayError {
     }
 }
 
+#[derive(Debug, Copy, Clone, Parameter)]
+#[param(name = "typeql_may_error", regex = "(; fails|; parsing fails|)")]
+pub(crate) enum TypeQLMayError {
+    False,
+    Parsing,
+    Logic,
+}
+
+impl TypeQLMayError {
+    pub fn check_parsing<'a, T: fmt::Debug, E: fmt::Debug>(&self, res: &'a Result<T, E>) -> Option<&'a E> {
+        self.as_may_error_parsing().check(res)
+    }
+
+    pub fn check_logic<'a, T: fmt::Debug, E: fmt::Debug>(&self, res: &'a Result<T, E>) -> Option<&'a E> {
+        self.as_may_error_logic().check(res)
+    }
+
+    pub fn expects_parsing_error(&self) -> bool {
+        self.as_may_error_parsing().expects_error()
+    }
+
+    pub fn expects_logic_error(&self) -> bool {
+        self.as_may_error_logic().expects_error()
+    }
+
+    fn as_may_error_parsing(&self) -> MayError {
+        match self {
+            TypeQLMayError::Parsing => MayError::True,
+            | TypeQLMayError::False | TypeQLMayError::Logic => MayError::False,
+        }
+    }
+
+    fn as_may_error_logic(&self) -> MayError {
+        match self {
+            TypeQLMayError::Logic => MayError::True,
+            | TypeQLMayError::False | TypeQLMayError::Parsing => MayError::False,
+        }
+    }
+}
+
+impl FromStr for TypeQLMayError {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "; fails" => Self::Logic,
+            "; parsing fails" => Self::Parsing,
+            "" => Self::False,
+            invalid => return Err(format!("Invalid `TypeQLMayError`: {invalid}")),
+        })
+    }
+}
+
 #[derive(Debug, Parameter)]
 #[param(name = "boolean", regex = "(true|false)")]
 pub(crate) enum Boolean {
@@ -106,6 +158,7 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
+use primitive::either::Either;
 
 impl FromStr for Boolean {
     type Err = String;
