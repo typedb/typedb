@@ -799,15 +799,7 @@ impl BinaryConstraint for Isa<Variable> {
                             collector.insert(subtype);
                         });
                 }
-                TypeAnnotation::RoleType(role_type) => {
-                    role_type
-                        .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone().into_owned()))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
+                TypeAnnotation::RoleType(_) => unreachable!("Cannot get instances of role types."),
             }
         }
         collector.insert(left_type.clone());
@@ -849,15 +841,7 @@ impl BinaryConstraint for Isa<Variable> {
                             collector.insert(subtype);
                         });
                 }
-                TypeAnnotation::RoleType(role_type) => {
-                    role_type
-                        .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone().into_owned()))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
+                TypeAnnotation::RoleType(_) => unreachable!("Cannot get instances of role types."),
             }
         }
         collector.insert(right_type.clone());

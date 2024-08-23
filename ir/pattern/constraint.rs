@@ -99,7 +99,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     ) -> Result<&RoleName<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let role_name = RoleName::new(variable, name.to_owned());
-        self.context.set_variable_category(variable, VariableCategory::Type, role_name.clone().into())?;
+        self.context.set_variable_category(variable, VariableCategory::RoleType, role_name.clone().into())?;
         let as_ref = self.constraints.add_constraint(role_name);
         Ok(as_ref.as_role_name().unwrap())
     }
@@ -130,7 +130,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         );
         let isa = Isa::new(kind, thing, type_);
         self.context.set_variable_category(thing, VariableCategory::Thing, isa.clone().into())?;
-        self.context.set_variable_category(type_, VariableCategory::Type, isa.clone().into())?;
+        self.context.set_variable_category(type_, VariableCategory::ThingType, isa.clone().into())?;
         let constraint = self.constraints.add_constraint(isa);
         Ok(constraint.as_isa().unwrap())
     }
