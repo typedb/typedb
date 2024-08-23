@@ -541,7 +541,7 @@ fn define_relates(
             }
         })?;
 
-        let definition_status = get_relates_status(snapshot, type_manager, relation_type.clone(), &label, ordering)
+        let definition_status = get_relates_status(snapshot, type_manager, relation_type.clone(), &role_label, ordering)
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let (defined, is_new) = match definition_status {
             DefinitionStatus::DoesNotExist => {
