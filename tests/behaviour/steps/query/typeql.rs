@@ -4,16 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
-use answer::variable_value::VariableValue;
+use answer::{answer_map::AnswerMap, variable_value::VariableValue};
 use compiler::{
     insert::WriteCompilationError,
     match_::{
+        build_match_plan,
         inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-        planner::{pattern_plan::PatternPlan, program_plan::ProgramPlan},
+        planner::program_plan::ProgramPlan,
     },
 };
+use concept::error::ConceptReadError;
 use cucumber::gherkin::Step;
 use executor::{
     batch::Row,
@@ -52,38 +54,27 @@ fn execute_match_query(
     .unwrap()
     .finish();
 
-    let (type_annotations, _) = with_read_tx!(context, |tx| {
-        infer_types(
+    let rows = with_read_tx!(context, |tx| {
+        let (type_annotations, _) = infer_types(
             &block,
             Vec::new(),
-            &tx.snapshot,
+            &*tx.snapshot,
             &tx.type_manager,
             &IndexedAnnotatedFunctions::empty(),
             &translation_context.variable_registry,
         )
-        .unwrap()
+        .unwrap();
+        let match_plan = build_match_plan(&block, &type_annotations, &HashMap::new(), &tx.thing_manager);
+        let program_plan = ProgramPlan::new(match_plan, HashMap::new(), HashMap::new());
+        let executor = ProgramExecutor::new(&program_plan, &*tx.snapshot, &tx.thing_manager).map_err(Either::Second)?;
+        executor
+            .into_iterator(tx.snapshot.clone(), tx.thing_manager.clone())
+            .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+            .into_iter()
+            .try_collect::<_, Vec<_>, _>()
+            .map_err(Either::Second)?
     });
-
-    let insert_plan = compiler::insert::insert::build_insert_plan(
-        block.conjunction().constraints(),
-        &HashMap::new(),
-        &type_annotations,
-    )
-    .map_err(Either::First)?;
-
-    let mut output_vec = vec![VariableValue::Empty; insert_plan.n_created_concepts];
-    with_write_tx!(context, |tx| {
-        executor::write::insert_executor::execute_insert(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
-            &tx.thing_manager,
-            &insert_plan,
-            &Row::new(&mut [], &mut 1),
-            Row::new(&mut output_vec, &mut 1),
-        )
-        .map_err(Either::Second)?;
-    });
-
-    Ok(output_vec)
+    Ok(Vec::new())
 }
 
 fn execute_insert_query(
@@ -114,8 +105,8 @@ fn execute_insert_query(
         compiler::match_::inference::type_inference::infer_types(
             &block,
             vec![],
-            tx.snapshot.as_ref(),
-            tx.type_manager.as_ref(),
+            &tx.snapshot,
+            &tx.type_manager,
             &IndexedAnnotatedFunctions::empty(),
             &translation_context.variable_registry,
         )
@@ -179,8 +170,12 @@ async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
 #[apply(generic_step)]
 #[step(expr = r"get answers of typeql read query")]
 async fn get_answers_of_typeql_read(context: &mut Context, step: &Step) {
-    let typeql_get = step.docstring.as_ref().unwrap().as_str();
-    with_read_tx!(context, |tx| { todo!() });
+    let query = step.docstring.as_ref().unwrap().as_str();
+    execute_match_query(context, query).unwrap();
+    with_read_tx!(context, |tx| {
+        //
+        todo!()
+    });
 }
 
 #[apply(generic_step)]

@@ -26,10 +26,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
 };
 
-use crate::{
-    transaction::SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate},
-    Database,
-};
+use crate::Database;
 
 #[derive(Debug)]
 pub struct TransactionRead<D> {
@@ -138,14 +135,14 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         Self { snapshot, type_manager, thing_manager, function_manager, database, transaction_options }
     }
 
-    pub fn commit(mut self) -> Result<(), DataCommitError> {
+    pub fn commit(self) -> Result<(), DataCommitError> {
         let database = self.database.clone(); // TODO: can we get away without cloning the database before?
         let result = self.try_commit();
         database.release_write_transaction();
         result
     }
 
-    pub fn try_commit(mut self) -> Result<(), DataCommitError> {
+    pub fn try_commit(self) -> Result<(), DataCommitError> {
         let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
         self.thing_manager
             .finalise(&mut snapshot)
@@ -242,17 +239,17 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
     }
 
-    pub fn commit(mut self) -> Result<(), SchemaCommitError> {
+    pub fn commit(self) -> Result<(), SchemaCommitError> {
         let database = self.database.clone(); // TODO: can we get away without cloning the database before?
         let result = self.try_commit();
         database.release_schema_transaction();
         result
     }
 
-    fn try_commit(mut self) -> Result<(), SchemaCommitError> {
+    fn try_commit(self) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
         let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
-        self.type_manager.validate(&mut snapshot).map_err(|errors| ConceptWrite { errors })?;
+        self.type_manager.validate(&snapshot).map_err(|errors| ConceptWrite { errors })?;
 
         self.thing_manager.finalise(&mut snapshot).map_err(|errors| ConceptWrite { errors })?;
         drop(self.thing_manager);

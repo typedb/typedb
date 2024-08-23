@@ -25,6 +25,8 @@ rust_library(
         "//storage",
 
         "@vaticle_typeql//rust:typeql",
+
+        "@crates//:itertools",
     ],
 )
 
