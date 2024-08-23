@@ -214,53 +214,48 @@ fn define_struct_fields(
 fn define_types(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    thing_manager: &ThingManager,
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let existing =
+        try_resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
     match type_declaration.kind {
         None => {
-            resolve_typeql_type(snapshot, type_manager, &label)
-                .map_err(|source| DefineError::DefinitionResolution { source })?;
+            if existing.is_none() {
+                return Err(DefineError::DefinitionResolution {
+                    source: SymbolResolutionError::TypeNotFound { label },
+                });
+            }
         }
         Some(token::Kind::Role) => {
             return Err(DefineError::RoleTypeDirectCreate { type_declaration: type_declaration.clone() });
         }
         Some(token::Kind::Entity) => {
-            let definition_status = get_entity_type_status(snapshot, type_manager, &label)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-            match definition_status {
-                DefinableStatus::DoesNotExist => {}
-                DefinableStatus::ExistsSame(_) => return Ok(()),
-                DefinableStatus::ExistsDifferent(_) => unreachable!("Entity types cannot differ"),
+            if matches!(existing, Some(TypeEnum::Entity(_))) {
+                return Ok(());
             }
-            type_manager.create_entity_type(snapshot, &label).map(answer::Type::Entity).map_err(|err| {
-                DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
+            type_manager.create_entity_type(snapshot, &label).map_err(|err| DefineError::TypeCreateError {
+                source: err,
+                type_declaration: type_declaration.clone(),
             })?;
         }
         Some(token::Kind::Relation) => {
-            let definition_status = get_relation_type_status(snapshot, type_manager, &label)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-            match definition_status {
-                DefinableStatus::DoesNotExist => {}
-                DefinableStatus::ExistsSame(_) => return Ok(()),
-                DefinableStatus::ExistsDifferent(_) => unreachable!("Relation types cannot differ"),
+            if matches!(existing, Some(TypeEnum::Relation(_))) {
+                return Ok(());
             }
-            type_manager.create_relation_type(snapshot, &label).map(answer::Type::Relation).map_err(|err| {
-                DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
+            type_manager.create_relation_type(snapshot, &label).map_err(|err| DefineError::TypeCreateError {
+                source: err,
+                type_declaration: type_declaration.clone(),
             })?;
         }
         Some(token::Kind::Attribute) => {
-            let definition_status = get_attribute_type_status(snapshot, type_manager, &label)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-            match definition_status {
-                DefinableStatus::DoesNotExist => {}
-                DefinableStatus::ExistsSame(_) => return Ok(()),
-                DefinableStatus::ExistsDifferent(_) => unreachable!("Attribute types cannot differ"),
+            if matches!(existing, Some(TypeEnum::Attribute(_))) {
+                return Ok(());
             }
-            type_manager.create_attribute_type(snapshot, &label).map(answer::Type::Attribute).map_err(
-                |err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() },
-            )?;
+            type_manager.create_attribute_type(snapshot, &label).map_err(|err| DefineError::TypeCreateError {
+                source: err,
+                type_declaration: type_declaration.clone(),
+            })?;
         }
     }
     Ok(())
