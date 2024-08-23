@@ -448,7 +448,7 @@ pub enum UndefineError {
         plays: TypeQLPlays,
         source: ConceptWriteError,
     },
-    CreatePlaysRoleTypeNotFound {
+    PlaysRoleTypeNotFound {
         plays: TypeQLPlays,
     },
     OverriddenPlaysNotFound {
@@ -464,7 +464,7 @@ pub enum UndefineError {
         owns: TypeQLOwns,
         source: ConceptWriteError,
     },
-    CreateOwnsAttributeTypeNotFound {
+    OwnsAttributeTypeNotFound {
         owns: TypeQLOwns,
     },
     OverriddenOwnsNotFound {

@@ -67,7 +67,7 @@ pub(crate) fn resolve_type(
     snapshot: &impl WritableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<answer::Type, SymbolResolutionError> {
+) -> Result<Type, SymbolResolutionError> {
     match try_resolve_type(snapshot, type_manager, label) {
         Ok(Some(type_)) => Ok(type_),
         Ok(None) => Err(SymbolResolutionError::TypeNotFound { label: label.clone().into_owned() }),
@@ -79,17 +79,17 @@ pub(crate) fn try_resolve_type(
     snapshot: &impl WritableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<answer::Type>, ConceptReadError> {
+) -> Result<Option<Type>, ConceptReadError> {
     // TODO: Introduce a method on type_manager that does this in one step
     let type_ = if let Some(object_type) = type_manager.get_object_type(snapshot, label)? {
         match object_type {
-            ObjectType::Entity(entity_type) => Some(answer::Type::Entity(entity_type)),
-            ObjectType::Relation(relation_type) => Some(answer::Type::Relation(relation_type)),
+            ObjectType::Entity(entity_type) => Some(Type::Entity(entity_type)),
+            ObjectType::Relation(relation_type) => Some(Type::Relation(relation_type)),
         }
     } else if let Some(attribute_type) = type_manager.get_attribute_type(snapshot, label)? {
-        Some(answer::Type::Attribute(attribute_type))
+        Some(Type::Attribute(attribute_type))
     } else if let Some(role_type) = type_manager.get_role_type(snapshot, label)? {
-        Some(answer::Type::RoleType(role_type))
+        Some(Type::RoleType(role_type))
     } else {
         None
     };
