@@ -193,7 +193,7 @@ async fn object_get_instance_with_value(
             assert_eq!(count, 1, "found {count} keys owned by the same object, expected 1");
             owner.into_owned()
         });
-        assert!(owners.next().is_none(), "multiple objects found with key {:?}", key);
+        assert_matches!(owners.next(), None, "multiple objects found with key {:?}", key);
         owner
     });
     context.objects.insert(var.name, owner.clone().map(|owner| ObjectWithKey::new_with_key(owner, key)));

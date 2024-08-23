@@ -4,9 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use core::panic;
+use std::{collections::HashMap, str::FromStr, sync::Arc};
 
-use answer::{answer_map::AnswerMap, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing};
 use compiler::{
     insert::WriteCompilationError,
     match_::{
@@ -15,8 +16,9 @@ use compiler::{
         planner::program_plan::ProgramPlan,
     },
 };
-use concept::error::ConceptReadError;
+use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::TypeAPI};
 use cucumber::gherkin::Step;
+use encoding::value::label::Label;
 use executor::{
     batch::Row,
     program_executor::ProgramExecutor,
@@ -26,7 +28,7 @@ use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, TranslationContext},
 };
-use itertools::Itertools;
+use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 use primitive::either::Either;
@@ -34,16 +36,18 @@ use query::query_manager::QueryManager;
 use typeql::Query;
 
 use crate::{
+    assert::assert_matches,
     generic_step,
     params::{self, check_boolean, MayError},
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
+    util::iter_table_map,
     Context,
 };
 
 fn execute_match_query(
     context: &mut Context,
     query: &str,
-) -> Result<Vec<VariableValue<'static>>, Either<WriteCompilationError, WriteError>> {
+) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Either<WriteCompilationError, ConceptReadError>> {
     let mut translation_context = TranslationContext::new();
     let typeql_match = typeql::parse_query(query).unwrap().into_pipeline().stages.pop().unwrap().into_match();
     let block = ir::translation::match_::translate_match(
@@ -54,6 +58,7 @@ fn execute_match_query(
     .unwrap()
     .finish();
 
+    let variable_position_index;
     let rows = with_read_tx!(context, |tx| {
         let (type_annotations, _) = infer_types(
             &block,
@@ -67,6 +72,7 @@ fn execute_match_query(
         let match_plan = build_match_plan(&block, &type_annotations, &HashMap::new(), &tx.thing_manager);
         let program_plan = ProgramPlan::new(match_plan, HashMap::new(), HashMap::new());
         let executor = ProgramExecutor::new(&program_plan, &*tx.snapshot, &tx.thing_manager).map_err(Either::Second)?;
+        variable_position_index = executor.entry_variable_positions_index().to_owned();
         executor
             .into_iterator(tx.snapshot.clone(), tx.thing_manager.clone())
             .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -74,7 +80,19 @@ fn execute_match_query(
             .try_collect::<_, Vec<_>, _>()
             .map_err(Either::Second)?
     });
-    Ok(Vec::new())
+
+    let variable_names = block.context().variable_names();
+
+    let answers = rows
+        .into_iter()
+        .map(|row| {
+            izip!(&variable_position_index, row)
+                .filter_map(|(var, value)| Some((variable_names.get(var).cloned()?, value)))
+                .collect()
+        })
+        .collect();
+
+    Ok(answers)
 }
 
 fn execute_insert_query(
@@ -130,7 +148,7 @@ fn execute_insert_query(
         .map_err(Either::Second)?;
     });
 
-    Ok(output_vec)
+    Ok(Vec::new()) // FIXME
 }
 
 #[apply(generic_step)]
@@ -163,39 +181,124 @@ async fn typeql_write(context: &mut Context, may_error: MayError, step: &Step) {
 #[apply(generic_step)]
 #[step(expr = r"get answers of typeql write query")]
 async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
-    execute_insert_query(context, step.docstring.as_ref().unwrap().as_str()).unwrap();
-    todo!()
+    let query = step.docstring.as_ref().unwrap().as_str();
+    context.answers = execute_insert_query(context, query).unwrap();
 }
 
 #[apply(generic_step)]
 #[step(expr = r"get answers of typeql read query")]
 async fn get_answers_of_typeql_read(context: &mut Context, step: &Step) {
     let query = step.docstring.as_ref().unwrap().as_str();
-    execute_match_query(context, query).unwrap();
-    with_read_tx!(context, |tx| {
-        //
-        todo!()
-    });
+    context.answers = execute_match_query(context, query).unwrap();
 }
 
 #[apply(generic_step)]
 #[step(expr = r"uniquely identify answer concepts")]
 async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
-    let table = step.table.as_ref().unwrap();
+    for row in iter_table_map(step) {
+        let mut num_matches = 0;
+        for answer_row in &context.answers {
+            let is_a_match = row.iter().all(|(&var, &spec)| {
+                let (kind, id) =
+                    spec.split_once(':').expect("answer concept specifier must be of the form `<kind>:<id>`");
+                let var_value = answer_row
+                    .get(var)
+                    .unwrap_or_else(|| panic!("no answer found for {var} in one of the answer rows"));
+                match kind {
+                    "label" => does_type_match(context, var_value, id),
+                    "key" => does_key_match(var, id, var_value, context),
+                    "attr" => does_attribute_match(id, var_value, context),
+                    "value" => todo!(),
+                    _ => panic!("unrecognised concept kind: {kind}"),
+                }
+            });
+            if is_a_match {
+                num_matches += 1;
+            }
+        }
+        assert_eq!(
+            num_matches, 1,
+            "each identifier row must match exactly one answer map; found {num_matches} for row {row:?}"
+        )
+    }
+}
+
+fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &Context) -> bool {
+    let VariableValue::Thing(thing) = var_value else { return false };
+    let (key_label, key_value) =
+        id.split_once(':').expect("key concept specifier must be of the form `key:<type>:<value>`");
     with_read_tx!(context, |tx| {
-        // Can't read_tx because execute always takes a mut snapshot
-        todo!()
+        let key_type = tx
+            .type_manager
+            .get_attribute_type(&*tx.snapshot, &Label::build(key_label))
+            .unwrap()
+            .unwrap_or_else(|| panic!("attribute type {key_label} not found"));
+        let expected = params::Value::from_str(key_value).unwrap().into_typedb(
+            key_type
+                .get_value_type(&*tx.snapshot, &tx.type_manager)
+                .unwrap()
+                .unwrap_or_else(|| panic!("expected the key type {key_label} to have a value type")),
+        );
+        let mut has_iter = match thing {
+            Thing::Entity(entity) => entity.get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type).unwrap(),
+            Thing::Relation(relation) => {
+                relation.get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type).unwrap()
+            }
+            Thing::Attribute(_) => return false,
+        };
+        let (mut attr, count) = has_iter
+            .next()
+            .unwrap_or_else(|| panic!("no attributes of type {key_label} found for {var}: {thing}"))
+            .unwrap();
+        assert_eq!(count, 1, "expected exactly one {key_label} for {var}, found {count}");
+        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager);
+        if actual.unwrap() != expected {
+            return false;
+        }
+        assert_matches!(has_iter.next(), None, "multiple keys found for {}", var);
     });
+    true
+}
+
+fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Context) -> bool {
+    let (label, value) = id.split_once(':').expect("attribute specifier must be of the form `attr:<type>:<value>`");
+    let VariableValue::Thing(Thing::Attribute(attr)) = var_value else {
+        return false;
+    };
+    with_read_tx!(context, |tx| {
+        let attr_type = tx
+            .type_manager
+            .get_attribute_type(&*tx.snapshot, &Label::build(label))
+            .unwrap()
+            .unwrap_or_else(|| panic!("attribute type {label} not found"));
+        let expected = params::Value::from_str(value).unwrap().into_typedb(
+            attr_type
+                .get_value_type(&*tx.snapshot, &tx.type_manager)
+                .unwrap()
+                .unwrap_or_else(|| panic!("expected the key type {label} to have a value type")),
+        );
+        let mut attr = attr.as_reference();
+        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager);
+        actual.unwrap() == expected
+    })
+}
+
+fn does_type_match(context: &Context, var_value: &VariableValue<'_>, expected: &str) -> bool {
+    let VariableValue::Type(type_) = var_value else { return false };
+    let label = with_read_tx!(context, |tx| {
+        match type_ {
+            answer::Type::Entity(type_) => type_.get_label(&*tx.snapshot, &tx.type_manager),
+            answer::Type::Relation(type_) => type_.get_label(&*tx.snapshot, &tx.type_manager),
+            answer::Type::Attribute(type_) => type_.get_label(&*tx.snapshot, &tx.type_manager),
+            answer::Type::RoleType(type_) => type_.get_label(&*tx.snapshot, &tx.type_manager),
+        }
+        .unwrap()
+    });
+    label.scoped_name().as_str() == expected
 }
 
 #[apply(generic_step)]
-#[step(expr = r"set time-zone is: {word}\/{word}")] // TODO: Maybe make time-zone a param
-async fn set_timezone_is(context: &mut Context, step: &Step) {
-    todo!()
-}
-
-#[apply(generic_step)]
-#[step(expr = r"answer size is: {int}")] // TODO: Maybe make time-zone a param
-async fn answer_size_is(context: &mut Context, answer_size: i32, step: &Step) {
-    todo!()
+#[step(expr = r"answer size is: {int}")]
+async fn answer_size_is(context: &mut Context, answer_size: i32) {
+    assert_eq!(context.answers.len(), answer_size as usize)
 }

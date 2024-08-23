@@ -8,15 +8,16 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     iter, mem,
     path::Path,
     sync::{Arc, Mutex},
 };
 
+use answer::variable_value::VariableValue;
 use ::concept::thing::{attribute::Attribute, object::Object};
 use cucumber::{gherkin::Feature, StatsWriter, World};
-use database::{Database, DatabaseDeleteError};
+use database::Database;
 use futures::{
     future::Either,
     stream::{self, StreamExt},
@@ -102,6 +103,7 @@ pub struct Context {
     server: Option<Arc<Mutex<typedb::Server>>>,
     active_transaction: Option<ActiveTransaction>,
 
+    answers: Vec<HashMap<String, VariableValue<'static>>>,
     objects: HashMap<String, Option<ObjectWithKey>>,
     object_lists: HashMap<String, Vec<Object<'static>>>,
     attributes: HashMap<String, Option<Attribute<'static>>>,
