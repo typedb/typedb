@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use core::fmt;
-use std::{
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-    sync::Arc,
-};
+use std::{error::Error, fmt, sync::Arc};
 
 use concept::{
     error::ConceptWriteError,
@@ -171,9 +166,9 @@ pub enum DataCommitError {
     SnapshotError { source: SnapshotError },
 }
 
-impl Display for DataCommitError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(self, f)
+impl fmt::Display for DataCommitError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
     }
 }
 
