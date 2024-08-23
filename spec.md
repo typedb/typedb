@@ -179,7 +179,7 @@ _Remark_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
   * _Reflexivity rule_: If $`A : \mathbf{Type}`$ then this **implies** $A < A$ (notation: we sometimes write $`A \leq B`$ to put extra emphasis on the case $`A = B`$ being possible ... but this is also the case for $`A < B`$.)
 
   * _Direct castings_: We write $`A <_! B`$ to mean:
-    > A cast from A to B was declared by user (we spak of a ***direct casting*** from A to B).
+    > A cast from A to B was declared by user (we speak of a ***direct casting*** from A to B).
 
     * _Direct-to-general rule_: $`A <_! B`$ ***implies*** $`A < B`$.
     * _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
