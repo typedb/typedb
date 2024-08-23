@@ -4,9 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt};
+use std::{collections::HashMap, error::Error, fmt};
 
-use crate::{expression::ExpressionCompileError, match_::inference::TypeInferenceError};
+use answer::variable::Variable;
+use concept::thing::thing_manager::ThingManager;
+use ir::program::block::FunctionalBlock;
+
+use self::{inference::type_annotations::TypeAnnotations, planner::pattern_plan::PatternPlan};
+use crate::{
+    expression::{compiled_expression::CompiledExpression, ExpressionCompileError},
+    match_::inference::TypeInferenceError,
+};
 
 pub mod inference;
 pub mod instructions;

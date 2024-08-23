@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, ops::Deref};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -16,15 +19,32 @@ use crate::match_::inference::type_annotations::TypeAnnotations;
 const OPEN_ITERATOR_RELATIVE_COST: f64 = 5.0;
 const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
 
+const REGEX_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
+const CONTAINS_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
+
 // FIXME name
 #[derive(Debug)]
 pub(super) enum PlannerVertex {
+    Constant,
+    Value(ValuePlanner),
     Thing(ThingPlanner),
     Has(HasPlanner),
     Links(LinksPlanner),
+    Expression(()),
 }
 
 impl PlannerVertex {
+    pub(super) fn is_valid(&self, _ordered: &[usize]) -> bool {
+        match self {
+            Self::Constant => true,         // always valid: comes from query
+            Self::Thing(_) => true,         // always valid: isa iterator
+            Self::Has(_) => true,           // always valid: has iterator
+            Self::Links(_) => true,         // always valid: links iterator
+            Self::Value(_) => todo!(),      // may be invalid: has to be from an attribute or a expression
+            Self::Expression(_) => todo!(), // may be invalid: inputs must be bound
+        }
+    }
+
     fn as_thing(&self) -> Option<&ThingPlanner> {
         match self {
             Self::Thing(v) => Some(v),
@@ -54,24 +74,51 @@ pub(super) struct VertexCost {
     pub branching_factor: f64,
 }
 
+impl Default for VertexCost {
+    fn default() -> Self {
+        Self { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
 pub(super) trait Costed {
     fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost;
 }
 
-// TODO delegate
 impl Costed for PlannerVertex {
     fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
         match self {
+            Self::Constant => VertexCost::default(),
+            Self::Value(inner) => inner.cost(inputs, elements),
             Self::Thing(inner) => inner.cost(inputs, elements),
             Self::Has(inner) => inner.cost(inputs, elements),
             Self::Links(inner) => inner.cost(inputs, elements),
+            Self::Expression(_) => todo!(),
         }
     }
 }
 
 #[derive(Debug)]
+pub(super) struct ValuePlanner;
+
+impl Costed for ValuePlanner {
+    fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        if inputs.is_empty() {
+            VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+        } else {
+            VertexCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
+        }
+    }
+}
+
+#[derive(Debug, Default /* todo remove */)]
 pub(super) struct ThingPlanner {
     expected_size: f64,
+
+    bound_exact: HashSet<usize>, // IID or exact Type + Value
+
+    bound_value_equal: HashSet<usize>,
+    bound_value_below: HashSet<usize>,
+    bound_value_above: HashSet<usize>,
 }
 
 impl ThingPlanner {
@@ -93,25 +140,51 @@ impl ThingPlanner {
                 }
             })
             .sum::<u64>() as f64;
-        Self { expected_size }
+        Self { expected_size, ..Default::default() }
     }
 }
 
 impl Costed for ThingPlanner {
-    fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        if inputs.is_empty() {
-            VertexCost {
-                per_input: OPEN_ITERATOR_RELATIVE_COST,
-                per_output: ADVANCE_ITERATOR_RELATIVE_COST,
-                branching_factor: self.expected_size,
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        let mut per_input = OPEN_ITERATOR_RELATIVE_COST;
+        let mut per_output = ADVANCE_ITERATOR_RELATIVE_COST;
+        let mut branching_factor = self.expected_size;
+
+        let mut is_bounded_below = false;
+        let mut is_bounded_above = false;
+
+        for &input in inputs {
+            if self.bound_exact.contains(&input) {
+                if matches!(elements[input], PlannerVertex::Constant) {
+                } else {
+                    // comes from a previous step, must be in the DB?
+                    // TODO verify this assumption
+                    per_input = 0.0;
+                    per_output = 0.0;
+                    branching_factor /= self.expected_size;
+                }
             }
-        } else {
-            VertexCost {
-                per_input: 0.0,
-                per_output: 0.0,
-                branching_factor: 1.0, // assumes deconstruction; TODO consider intersection
+
+            if self.bound_value_equal.contains(&input) {
+                branching_factor = elements[input].as_thing().unwrap().expected_size;
+            }
+
+            if self.bound_value_below.contains(&input) {
+                is_bounded_below = true;
+            }
+
+            if self.bound_value_above.contains(&input) {
+                is_bounded_above = true;
             }
         }
+
+        if is_bounded_below ^ is_bounded_above {
+            branching_factor /= 2.0
+        } else if is_bounded_below && is_bounded_above {
+            branching_factor /= 3.0
+        }
+
+        VertexCost { per_input, per_output, branching_factor }
     }
 }
 

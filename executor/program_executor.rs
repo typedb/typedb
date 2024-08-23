@@ -43,6 +43,10 @@ impl ProgramExecutor {
         self.entry.variable_positions()
     }
 
+    pub fn entry_variable_positions_index(&self) -> &[Variable] {
+        self.entry.variable_positions_index()
+    }
+
     pub fn into_iterator(
         self,
         snapshot: Arc<impl ReadableSnapshot + 'static>,
