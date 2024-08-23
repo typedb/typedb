@@ -27,29 +27,28 @@ use encoding::{
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    schema::definable::{
-        struct_::Field,
-        type_::{
-            capability::{Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates}}},
     common::token,
     query::schema::Undefine,
+    schema::{
+        definable::{
+            struct_::Field,
+            type_::{
+                capability::{Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates},
+                Capability, CapabilityBase,
+            },
+            Type,
+        },
+        undefinable::{Struct, Undefinable},
+    },
     type_::Optional,
     ScopedLabel, TypeRef, TypeRefAny,
 };
-use typeql::schema::definable::Type;
-use typeql::schema::definable::type_::{Capability, CapabilityBase};
-use typeql::schema::undefinable::{Struct, Undefinable};
 
 use crate::{
-    util::{
-        capability_convert_and_validate_annotation_definition_need, resolve_type, resolve_value_type,
-        type_convert_and_validate_annotation_definition_need, type_ref_to_label_and_ordering,
-    },
+    definition_status::{get_struct_field_status, DefinitionStatus},
+    util::{filter_variants, resolve_type, resolve_value_type, try_unwrap, type_ref_to_label_and_ordering},
     SymbolResolutionError,
 };
-use crate::definition_status::{DefinitionStatus, get_struct_field_status};
-
-use crate::util::{check_can_and_need_define_override, check_can_and_need_define_supertype, filter_variants, try_unwrap};
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,
@@ -111,9 +110,7 @@ fn process_function_redefinitions(
     Ok(())
 }
 
-fn undefine_struct(
-    struct_definable: &Struct,
-) -> Result<(), UndefineError> {
+fn undefine_struct(struct_definable: &Struct) -> Result<(), UndefineError> {
     Ok(())
 }
 

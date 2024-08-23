@@ -150,7 +150,6 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-        ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError>;
 
     fn unset_owns(
@@ -219,18 +218,16 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         let self_owns = self.get_owns_attribute(snapshot, type_manager, attribute_type.clone())?;
         Ok(match self_owns {
             Some(owns) => Some(owns),
-            None => {
-                match self.get_supertype(snapshot, type_manager)? {
-                    Some(supertype) => {
-                        let supertype_owns = supertype.get_owns_attribute(snapshot, type_manager, attribute_type)?;
-                        match supertype_owns {
-                            Some(supertype_owns) => Some(supertype_owns),
-                            None => None,
-                        }
+            None => match self.get_supertype(snapshot, type_manager)? {
+                Some(supertype) => {
+                    let supertype_owns = supertype.get_owns_attribute(snapshot, type_manager, attribute_type)?;
+                    match supertype_owns {
+                        Some(supertype_owns) => Some(supertype_owns),
+                        None => None,
                     }
-                    None => None,
                 }
-            }
+                None => None,
+            },
         })
     }
 
@@ -334,18 +331,16 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         let self_plays = self.get_plays_role(snapshot, type_manager, role_type.clone())?;
         Ok(match self_plays {
             Some(plays) => Some(plays),
-            None => {
-                match self.get_supertype(snapshot, type_manager)? {
-                    Some(supertype) => {
-                        let supertype_plays = supertype.get_plays_role(snapshot, type_manager, role_type)?;
-                        match supertype_plays {
-                            Some(supertype_plays) => Some(supertype_plays),
-                            None => None,
-                        }
+            None => match self.get_supertype(snapshot, type_manager)? {
+                Some(supertype) => {
+                    let supertype_plays = supertype.get_plays_role(snapshot, type_manager, role_type)?;
+                    match supertype_plays {
+                        Some(supertype_plays) => Some(supertype_plays),
+                        None => None,
                     }
-                    None => None,
                 }
-            }
+                None => None,
+            },
         })
     }
 
@@ -408,7 +403,6 @@ impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
 pub trait Capability<'a>:
     TypeEdgeEncoding<'a, From = Self::ObjectType, To = Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
 {
-    // TODO: Can create a trait "Annotatable" and implement it for KindAPI and Capability. Might merge some methods and would be ideologically correct.
     type AnnotationType: Hash + Eq + Clone + TryFrom<Annotation, Error = AnnotationError> + Into<Annotation>;
     type ObjectType: TypeAPI<'a>;
     type InterfaceType: KindAPI<'a>;

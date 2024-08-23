@@ -328,18 +328,16 @@ impl<'a> RelationType<'a> {
         let self_relates = self.get_relates_role(snapshot, type_manager, role_type.clone())?;
         Ok(match self_relates {
             Some(relates) => Some(relates),
-            None => {
-                match self.get_supertype(snapshot, type_manager)? {
-                    Some(supertype) => {
-                        let supertype_relates = supertype.get_relates_role(snapshot, type_manager, role_type)?;
-                        match supertype_relates {
-                            Some(supertype_relates) => Some(supertype_relates),
-                            None => None,
-                        }
+            None => match self.get_supertype(snapshot, type_manager)? {
+                Some(supertype) => {
+                    let supertype_relates = supertype.get_relates_role(snapshot, type_manager, role_type)?;
+                    match supertype_relates {
+                        Some(supertype_relates) => Some(supertype_relates),
+                        None => None,
                     }
-                    None => None,
                 }
-            }
+                None => None,
+            },
         })
     }
 
@@ -383,18 +381,16 @@ impl<'a> RelationType<'a> {
         let self_relates = self.get_relates_role_name(snapshot, type_manager, role_name)?;
         Ok(match self_relates {
             Some(relates) => Some(relates),
-            None => {
-                match self.get_supertype(snapshot, type_manager)? {
-                    Some(supertype) => {
-                        let supertype_relates = supertype.get_relates_role_name(snapshot, type_manager, role_name)?;
-                        match supertype_relates {
-                            Some(supertype_relates) => Some(supertype_relates),
-                            None => None,
-                        }
+            None => match self.get_supertype(snapshot, type_manager)? {
+                Some(supertype) => {
+                    let supertype_relates = supertype.get_relates_role_name(snapshot, type_manager, role_name)?;
+                    match supertype_relates {
+                        Some(supertype_relates) => Some(supertype_relates),
+                        None => None,
                     }
-                    None => None,
                 }
-            }
+                None => None,
+            },
         })
     }
 
@@ -426,14 +422,12 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-        ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
         type_manager.set_owns(
             snapshot,
             &thing_manager,
             self.clone().into_owned_object_type(),
             attribute_type.clone(),
-            ordering,
         )?;
         Ok(Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type))
     }

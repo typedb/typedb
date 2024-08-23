@@ -15,14 +15,13 @@ use std::{
 
 use answer::variable::Variable;
 use typeql::{
-    common::token,
+    common::{error::TypeQLError, token},
     statement::{
         thing::{Relation, RolePlayer},
         InIterable, StructDeconstruct,
     },
+    value::StringLiteral,
 };
-use typeql::common::error::TypeQLError;
-use typeql::value::StringLiteral;
 
 use crate::{
     pattern::{constraint::Constraint, expression::ExpressionDefinitionError, variable_category::VariableCategory},

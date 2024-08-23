@@ -251,14 +251,12 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-        ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
         type_manager.set_owns(
             snapshot,
             thing_manager,
             self.clone().into_owned_object_type(),
             attribute_type.clone(),
-            ordering,
         )?;
         Ok(Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type))
     }

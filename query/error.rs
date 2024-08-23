@@ -11,9 +11,7 @@ use compiler::{
 };
 use ir::{program::FunctionDefinitionError, PatternDefinitionError};
 
-use crate::define::DefineError;
-use crate::redefine::RedefineError;
-use crate::undefine::UndefineError;
+use crate::{define::DefineError, redefine::RedefineError, undefine::UndefineError};
 
 #[derive(Debug)]
 pub enum QueryError {

@@ -18,7 +18,7 @@ use concept::{
         plays::Plays,
         relates::{Relates, RelatesAnnotation},
         type_manager::TypeManager,
-        Ordering, OwnerAPI, PlayerAPI,
+        KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 use encoding::{
@@ -44,15 +44,14 @@ use typeql::{
 };
 
 use crate::{
-    util::{
-        capability_convert_and_validate_annotation_definition_need, resolve_type, resolve_value_type,
-        type_convert_and_validate_annotation_definition_need, type_ref_to_label_and_ordering,
+    define::DefineError,
+    definition_status::{
+        get_capability_annotation_status, get_override_status, get_struct_field_status, get_sub_status,
+        get_type_annotation_status, DefinitionStatus,
     },
+    util::{filter_variants, resolve_type, resolve_value_type, try_unwrap, type_ref_to_label_and_ordering},
     SymbolResolutionError,
 };
-use crate::definition_status::{DefinitionStatus, get_struct_field_status};
-
-use crate::util::{check_can_and_need_define_override, check_can_and_need_define_supertype, filter_variants, try_unwrap};
 
 // TODO: DefinableStatus::ExistsSame for types/structs (they are unchangeable) results in error. However, ExistsSame for AnnotationAbstract (and any property without values) is Ok for now (because it's easier for now)... Discuss.
 
@@ -87,11 +86,13 @@ fn process_type_redefinitions(
     definables: &[Definable],
 ) -> Result<(), RedefineError> {
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
-    declarations.clone().try_for_each(|declaration| redefine_types(snapshot, type_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| redefine_types(declaration))?;
     declarations
         .clone()
         .try_for_each(|declaration| redefine_type_annotations(snapshot, type_manager, thing_manager, declaration))?;
-    declarations.clone().try_for_each(|declaration| redefine_sub(snapshot, type_manager, thing_manager, declaration))?;
+    declarations
+        .clone()
+        .try_for_each(|declaration| redefine_sub(snapshot, type_manager, thing_manager, declaration))?;
     declarations
         .clone()
         .try_for_each(|declaration| redefine_value_type(snapshot, type_manager, thing_manager, declaration))?;
@@ -99,7 +100,9 @@ fn process_type_redefinitions(
     declarations
         .clone()
         .try_for_each(|declaration| redefine_relates(snapshot, type_manager, thing_manager, declaration))?;
-    declarations.clone().try_for_each(|declaration| redefine_owns(snapshot, type_manager, thing_manager, declaration))?;
+    declarations
+        .clone()
+        .try_for_each(|declaration| redefine_owns(snapshot, type_manager, thing_manager, declaration))?;
     declarations
         .clone()
         .try_for_each(|declaration| redefine_plays(snapshot, type_manager, thing_manager, declaration))?;
@@ -116,9 +119,7 @@ fn process_function_redefinitions(
     Ok(())
 }
 
-fn redefine_struct(
-    struct_definable: &Struct,
-) -> Result<(), RedefineError> {
+fn redefine_struct(struct_definable: &Struct) -> Result<(), RedefineError> {
     Err(RedefineError::StructRedefinitionIsNotSupported { struct_declaration: struct_definable.clone() })
 }
 
@@ -137,19 +138,32 @@ fn redefine_struct_fields(
     for field in &struct_definable.fields {
         let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)?;
 
-        let definable_status = get_struct_field_status(snapshot, type_manager, struct_key.clone(), field.key.as_str(), value_type.clone(), optional).map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
-        match definable_status {
-            DefinitionStatus::DoesNotExist => return Err(RedefineError::StructFieldDoesNotExist { field: field.to_owned() }),
-            DefinitionStatus::ExistsSame => return Err(RedefineError::StructFieldRedefinitionDoesNotChangeAnything { field: field.to_owned() }), // TODO: Should error?
+        let definition_status = get_struct_field_status(
+            snapshot,
+            type_manager,
+            struct_key.clone(),
+            field.key.as_str(),
+            value_type.clone(),
+            optional,
+        )
+        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+        match definition_status {
+            DefinitionStatus::DoesNotExist => {
+                return Err(RedefineError::StructFieldDoesNotExist { field: field.to_owned() })
+            }
+            DefinitionStatus::ExistsSame(_) => {
+                return Err(RedefineError::StructFieldRedefinitionDoesNotChangeAnything { field: field.to_owned() })
+            } // TODO: Should error?
             DefinitionStatus::ExistsDifferent(_) => {}
         }
 
-        type_manager.delete_struct_field(snapshot, thing_manager, struct_key.clone(), field.key.as_str())
-            .map_err(|err| RedefineError::StructFieldDeleteError {
+        type_manager.delete_struct_field(snapshot, thing_manager, struct_key.clone(), field.key.as_str()).map_err(
+            |err| RedefineError::StructFieldDeleteError {
                 source: err,
                 struct_name: name.to_owned(),
                 struct_field: field.clone(),
-            })?;
+            },
+        )?;
 
         type_manager
             .create_struct_field(snapshot, struct_key.clone(), field.key.as_str(), value_type, optional)
@@ -185,11 +199,7 @@ fn get_struct_field_value_type_optionality(
     }
 }
 
-fn redefine_types(
-    snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
-    type_declaration: &Type,
-) -> Result<(), RedefineError> {
+fn redefine_types(type_declaration: &Type) -> Result<(), RedefineError> {
     Err(RedefineError::TypeRedefinitionIsNotSupported { type_declaration: type_declaration.clone() })
 }
 
@@ -360,6 +370,95 @@ fn redefine_functions(
     Ok(())
 }
 
+pub(crate) fn check_can_and_need_redefine_supertype<'a, T: TypeAPI<'a>>(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label<'a>,
+    type_: T,
+    new_supertype: T,
+) -> Result<bool, RedefineError> {
+    let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype.clone())
+        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+    match definition_status {
+        DefinitionStatus::DoesNotExist => Err(RedefineError::TypeSubIsNotDefined {
+            label: label.clone().into_owned(),
+            supertype: new_supertype
+                .get_label_cloned(snapshot, type_manager)
+                .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                .into_owned(),
+        }),
+        DefinitionStatus::ExistsSame(_) => Ok(false),
+        DefinitionStatus::ExistsDifferent(_) => Ok(true),
+    }
+}
+
+pub(crate) fn check_can_and_need_redefine_override<'a, CAP: concept::type_::Capability<'a>>(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label<'a>,
+    capability: CAP,
+    new_override: CAP,
+) -> Result<bool, RedefineError> {
+    let definition_status = get_override_status(snapshot, type_manager, capability, new_override.clone())
+        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+    match definition_status {
+        DefinitionStatus::DoesNotExist => Err(RedefineError::CapabilityOverrideIsNotDefined {
+            label: label.clone().into_owned(),
+            overridden_interface: new_override
+                .interface()
+                .get_label_cloned(snapshot, type_manager)
+                .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                .into_owned(),
+        }),
+        DefinitionStatus::ExistsSame(_) => Ok(false),
+        DefinitionStatus::ExistsDifferent(_) => Ok(true),
+    }
+}
+
+pub(crate) fn type_convert_and_validate_annotation_redefinition_need<'a, T: KindAPI<'a>>(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label<'a>,
+    type_: T,
+    annotation: Annotation,
+) -> Result<Option<T::AnnotationType>, RedefineError> {
+    let converted = T::AnnotationType::try_from(annotation.clone())
+        .map_err(|source| RedefineError::IllegalAnnotation { source })?;
+
+    let definition_status =
+        get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
+            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+    match definition_status {
+        DefinitionStatus::DoesNotExist => {
+            Err(RedefineError::TypeAnnotationIsNotDefined { label: label.clone().into_owned(), annotation })
+        }
+        DefinitionStatus::ExistsSame(_) => Ok(None),
+        DefinitionStatus::ExistsDifferent(_) => Ok(Some(converted)),
+    }
+}
+
+pub(crate) fn capability_convert_and_validate_annotation_redefinition_need<'a, CAP: concept::type_::Capability<'a>>(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label<'a>,
+    capability: CAP,
+    annotation: Annotation,
+) -> Result<Option<CAP::AnnotationType>, RedefineError> {
+    let converted = CAP::AnnotationType::try_from(annotation.clone())
+        .map_err(|source| RedefineError::IllegalAnnotation { source })?;
+
+    let definition_status =
+        get_capability_annotation_status(snapshot, type_manager, capability, &converted, annotation.category())
+            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+    match definition_status {
+        DefinitionStatus::DoesNotExist => {
+            Err(RedefineError::CapabilityAnnotationIsNotDefined { label: label.clone().into_owned(), annotation })
+        }
+        DefinitionStatus::ExistsSame(_) => Ok(None),
+        DefinitionStatus::ExistsDifferent(_) => Ok(Some(converted)),
+    }
+}
+
 fn err_capability_kind_mismatch(
     capability_receiver: &Label<'_>,
     capability_provider: &Label<'_>,
@@ -441,31 +540,26 @@ pub enum RedefineError {
     AttributeTypeBadValueType {
         source: SymbolResolutionError,
     },
-    TypeAlreadyHasDifferentRedefinedSub {
+    TypeSubIsNotDefined {
         label: Label<'static>,
         supertype: Label<'static>,
-        existing_supertype: Label<'static>,
     },
-    CapabilityAlreadyHasDifferentRedefinedOverride {
+    CapabilityOverrideIsNotDefined {
         label: Label<'static>,
         overridden_interface: Label<'static>,
-        existing_overridden_interface: Label<'static>,
     },
-    AttributeTypeAlreadyHasDifferentRedefinedValueType {
+    AttributeTypeValueTypeIsNotDefined {
         label: Label<'static>,
         value_type: ValueType,
-        existing_value_type: ValueType,
     },
     // Careful with the error message as it is also used for value types (stored on their attribute type)!
-    TypeAnnotationIsAlreadyRedefinedWithDifferentArguments {
+    TypeAnnotationIsNotDefined {
         label: Label<'static>,
         annotation: Annotation,
-        existing_annotation: Annotation,
     },
-    CapabilityAnnotationIsAlreadyRedefinedWithDifferentArguments {
+    CapabilityAnnotationIsNotDefined {
         label: Label<'static>,
         annotation: Annotation,
-        existing_annotation: Annotation,
     },
     SetValueType {
         label: Label<'static>,

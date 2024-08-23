@@ -129,19 +129,19 @@ impl TypeQLMayError {
     }
 
     pub fn check_either_err_parsing<T, E1, E2>(&self, res: &Result<T, Either<E1, E2>>)
-        where
-            T: fmt::Debug + Clone,
-            E1: fmt::Debug + Clone,
-            E2: fmt::Debug + Clone,
+    where
+        T: fmt::Debug + Clone,
+        E1: fmt::Debug + Clone,
+        E2: fmt::Debug + Clone,
     {
         self.as_may_error_parsing().check_either_err(res)
     }
 
     pub fn check_either_err_logic<T, E1, E2>(&self, res: &Result<T, Either<E1, E2>>)
-        where
-            T: fmt::Debug + Clone,
-            E1: fmt::Debug + Clone,
-            E2: fmt::Debug + Clone,
+    where
+        T: fmt::Debug + Clone,
+        E1: fmt::Debug + Clone,
+        E2: fmt::Debug + Clone,
     {
         self.as_may_error_logic().check_either_err(res)
     }

@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::{
+    error::Error,
+    fmt::{Debug, Display, Formatter},
+};
 
 pub trait TypeDBError {
-
     fn variant_name(&self) -> &'static str;
 
     fn domain(&self) -> &'static str;
@@ -25,7 +26,10 @@ pub trait TypeDBError {
 
     fn source_typedb_error(&self) -> Option<&dyn TypeDBError>;
 
-    fn root_source_typedb_error(&self) -> &dyn TypeDBError where Self: Sized {
+    fn root_source_typedb_error(&self) -> &dyn TypeDBError
+    where
+        Self: Sized,
+    {
         let mut error: &dyn TypeDBError = self;
         while let Some(source) = error.source_typedb_error() {
             error = source;
@@ -57,7 +61,6 @@ impl Display for dyn TypeDBError {
         }
     }
 }
-
 
 // ***USAGE WARNING***: We should not set both Source and TypeDBSource, TypeDBSource has precedence!
 #[macro_export]

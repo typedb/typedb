@@ -1233,7 +1233,6 @@ impl TypeManager {
         definition_key: DefinitionKey<'static>,
         field_name: &str,
     ) -> Result<(), ConceptWriteError> {
-
         // TODO: Somehow check instances?
 
         let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())?;
@@ -2072,7 +2071,6 @@ impl TypeManager {
         thing_manager: &ThingManager,
         owner: ObjectType<'static>,
         attribute: AttributeType<'static>,
-        ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_capability_abstractness::<Owns<'static>>(
             snapshot,
@@ -2091,10 +2089,12 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
+        let default_ordering = Ordering::default();
 
-        if !owner.get_owns(snapshot, self)?.contains(&owns) {
+        let exists = owner.get_owns(snapshot, self)?.contains(&owns);
+        if !exists {
             let initial_annotations =
-                HashSet::from([Annotation::Cardinality(self.get_owns_default_cardinality(ordering.clone()))]);
+                HashSet::from([Annotation::Cardinality(self.get_owns_default_cardinality(default_ordering))]);
             OperationTimeValidation::validate_new_acquired_owns_compatible_with_instances(
                 snapshot,
                 self,
@@ -2102,11 +2102,13 @@ impl TypeManager {
                 owns.clone().into_owned(),
                 initial_annotations,
             )
-                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
         TypeWriter::storage_put_edge(snapshot, owns.clone());
-        TypeWriter::storage_put_type_edge_property(snapshot, owns, Some(ordering));
+        if !exists {
+            TypeWriter::storage_put_type_edge_property(snapshot, owns, Some(default_ordering));
+        }
         Ok(())
     }
 

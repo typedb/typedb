@@ -59,7 +59,10 @@ impl StructDefinition {
 
     pub fn delete_field(&mut self, field_name: &str) -> Result<(), EncodingError> {
         if !self.field_names.contains_key(field_name) {
-            Err(EncodingError::StructFieldUnresolvable { struct_name: self.name.clone(), field_path: vec![field_name.to_string()] })
+            Err(EncodingError::StructFieldUnresolvable {
+                struct_name: self.name.clone(),
+                field_path: vec![field_name.to_string()],
+            })
         } else {
             let field_idx = self.field_names.remove(field_name).unwrap();
             self.fields.remove(&field_idx).unwrap();
@@ -88,11 +91,7 @@ impl DefinitionValueEncoding for StructDefinition {
 }
 
 impl StructDefinitionField {
-    pub fn same(
-        &self,
-        optional: bool,
-        value_type: ValueType,
-    ) -> bool {
+    pub fn same(&self, optional: bool, value_type: ValueType) -> bool {
         self.optional == optional && self.value_type == value_type
     }
 }

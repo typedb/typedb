@@ -16,7 +16,7 @@ impl Default for TransactionOptions {
     fn default() -> Self {
         Self {
             parallel: DEFAULT_TRANSACTION_PARALLEL,
-            schema_lock_acquire_timeout_millis: DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS
+            schema_lock_acquire_timeout_millis: DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS,
         }
     }
 }

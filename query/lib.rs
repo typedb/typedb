@@ -9,14 +9,14 @@ use typeql::schema::definable::type_::Capability;
 
 mod compilation;
 mod define;
+mod redefine;
+mod undefine;
+mod definition_status;
 pub mod error;
 pub mod query_manager;
 mod translation;
 mod annotation;
 mod util;
-mod redefine;
-mod definition_status;
-mod undefine;
 
 #[derive(Debug)]
 pub enum SymbolResolutionError {

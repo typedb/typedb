@@ -36,7 +36,8 @@ pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, Lit
 }
 
 pub(crate) fn extract_string_literal(literal: &StringLiteral) -> Result<String, LiteralParseError> {
-    Ok(StringLiteral::unescape(literal.value.as_str()).map_err(|_| LiteralParseError::CannotUnescapeString { literal: literal.clone() })?)
+    Ok(StringLiteral::unescape(literal.value.as_str())
+        .map_err(|_| LiteralParseError::CannotUnescapeString { literal: literal.clone() })?)
 }
 
 pub trait FromTypeQLLiteral: Sized {

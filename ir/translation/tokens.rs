@@ -14,7 +14,10 @@ use typeql::{
     common::token::{Kind as TypeQLKind, ValueType as TypeQLValueType},
 };
 
-use crate::{translation::literal::{translate_literal, extract_string_literal}, LiteralParseError};
+use crate::{
+    translation::literal::{extract_string_literal, translate_literal},
+    LiteralParseError,
+};
 
 pub fn translate_annotation(typeql_kind: &TypeQLAnnotation) -> Result<Annotation, LiteralParseError> {
     Ok(match typeql_kind {
@@ -39,7 +42,9 @@ pub fn translate_annotation(typeql_kind: &TypeQLAnnotation) -> Result<Annotation
             range.min.as_ref().map(translate_literal).transpose()?,
             range.max.as_ref().map(translate_literal).transpose()?,
         )),
-        TypeQLAnnotation::Regex(regex) => Annotation::Regex(AnnotationRegex::new(extract_string_literal(&regex.regex)?)),
+        TypeQLAnnotation::Regex(regex) => {
+            Annotation::Regex(AnnotationRegex::new(extract_string_literal(&regex.regex)?))
+        }
         TypeQLAnnotation::Subkey(_) => {
             todo!()
         }

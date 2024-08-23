@@ -18,11 +18,11 @@ use concept::{
         plays::Plays,
         relates::{Relates, RelatesAnnotation},
         type_manager::TypeManager,
-        Ordering, OwnerAPI, PlayerAPI,
+        KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 use encoding::{
-    graph::type_::Kind,
+    graph::{definition::r#struct::StructDefinitionField, type_::Kind},
     value::{label::Label, value_type::ValueType},
 };
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
@@ -42,18 +42,19 @@ use typeql::{
     type_::Optional,
     Definable, ScopedLabel, TypeRef, TypeRefAny,
 };
-use encoding::graph::definition::r#struct::StructDefinitionField;
 
 use crate::{
+    definition_status::{
+        get_attribute_type_status, get_capability_annotation_status, get_entity_type_status, get_override_status,
+        get_owns_status, get_plays_status, get_relates_status, get_relation_type_status, get_struct_field_status,
+        get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinitionStatus,
+    },
     util::{
-        capability_convert_and_validate_annotation_definition_need, resolve_type, resolve_value_type,
-        type_convert_and_validate_annotation_definition_need, type_ref_to_label_and_ordering,
+        filter_variants, resolve_type, resolve_value_type, try_unwrap, type_ref_to_label_and_ordering,
+        type_to_object_type,
     },
     SymbolResolutionError,
 };
-use crate::definition_status::{DefinitionStatus, get_struct_field_status, get_struct_status};
-
-use crate::util::{check_can_and_need_define_override, check_can_and_need_define_supertype, filter_variants, try_unwrap};
 
 macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path) => {
@@ -134,10 +135,11 @@ fn define_struct(
 ) -> Result<(), DefineError> {
     let name = struct_definable.ident.as_str();
 
-    let definable_status = get_struct_status(snapshot, type_manager, name).map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-    match definable_status {
+    let definition_status = get_struct_status(snapshot, type_manager, name)
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+    match definition_status {
         DefinitionStatus::DoesNotExist => {}
-        DefinitionStatus::ExistsSame => return Ok(()),
+        DefinitionStatus::ExistsSame(_) => return Ok(()),
         DefinitionStatus::ExistsDifferent(_) => unreachable!("Structs cannot differ"),
     }
 
@@ -161,11 +163,24 @@ fn define_struct_fields(
     for field in &struct_definable.fields {
         let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)?;
 
-        let definable_status = get_struct_field_status(snapshot, type_manager, struct_key.clone(), field.key.as_str(), value_type.clone(), optional).map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        match definable_status {
+        let definition_status = get_struct_field_status(
+            snapshot,
+            type_manager,
+            struct_key.clone(),
+            field.key.as_str(),
+            value_type.clone(),
+            optional,
+        )
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        match definition_status {
             DefinitionStatus::DoesNotExist => {}
-            DefinitionStatus::ExistsSame => return Ok(()),
-            DefinitionStatus::ExistsDifferent(existing_field) => return Err(DefineError::StructFieldAlreadyDefinedButDifferent { field: field.to_owned(), existing_field }),
+            DefinitionStatus::ExistsSame(_) => return Ok(()),
+            DefinitionStatus::ExistsDifferent(existing_field) => {
+                return Err(DefineError::StructFieldAlreadyDefinedButDifferent {
+                    field: field.to_owned(),
+                    existing_field,
+                })
+            }
         }
 
         type_manager
@@ -215,34 +230,40 @@ fn define_types(
             return Err(DefineError::RoleTypeDirectCreate { type_declaration: type_declaration.clone() })?;
         }
         Some(token::Kind::Entity) => {
-            let existing = type_manager
-                .get_entity_type(snapshot, &label)
+            let definition_status = get_entity_type_status(snapshot, type_manager, &label)
                 .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-            if existing.is_none() {
-                type_manager.create_entity_type(snapshot, &label).map(|x| answer::Type::Entity(x)).map_err(|err| {
-                    DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
-                })?;
+            match definition_status {
+                DefinitionStatus::DoesNotExist => {}
+                DefinitionStatus::ExistsSame(_) => return Ok(()),
+                DefinitionStatus::ExistsDifferent(_) => unreachable!("Entity types cannot differ"),
             }
+            type_manager.create_entity_type(snapshot, &label).map(|x| answer::Type::Entity(x)).map_err(|err| {
+                DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
+            })?;
         }
         Some(token::Kind::Relation) => {
-            let existing = type_manager
-                .get_relation_type(snapshot, &label)
+            let definition_status = get_relation_type_status(snapshot, type_manager, &label)
                 .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-            if existing.is_none() {
-                type_manager.create_relation_type(snapshot, &label).map(|x| answer::Type::Relation(x)).map_err(
-                    |err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() },
-                )?;
+            match definition_status {
+                DefinitionStatus::DoesNotExist => {}
+                DefinitionStatus::ExistsSame(_) => return Ok(()),
+                DefinitionStatus::ExistsDifferent(_) => unreachable!("Relation types cannot differ"),
             }
+            type_manager.create_relation_type(snapshot, &label).map(|x| answer::Type::Relation(x)).map_err(|err| {
+                DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() }
+            })?;
         }
         Some(token::Kind::Attribute) => {
-            let existing = type_manager
-                .get_attribute_type(snapshot, &label)
+            let definition_status = get_attribute_type_status(snapshot, type_manager, &label)
                 .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-            if existing.is_none() {
-                type_manager.create_attribute_type(snapshot, &label).map(|x| answer::Type::Attribute(x)).map_err(
-                    |err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() },
-                )?;
+            match definition_status {
+                DefinitionStatus::DoesNotExist => {}
+                DefinitionStatus::ExistsSame(_) => return Ok(()),
+                DefinitionStatus::ExistsDifferent(_) => unreachable!("Attribute types cannot differ"),
             }
+            type_manager.create_attribute_type(snapshot, &label).map(|x| answer::Type::Attribute(x)).map_err(
+                |err| DefineError::TypeCreateError { source: err, type_declaration: type_declaration.clone() },
+            )?;
         }
     }
     Ok(())
@@ -433,23 +454,25 @@ fn define_value_type(
         let value_type = resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
             .map_err(|source| DefineError::AttributeTypeBadValueType { source })?;
 
-        let existing_value_type_opt = attribute_type
-            .get_value_type_declared(snapshot, type_manager)
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-
-        match existing_value_type_opt {
-            None => attribute_type
-                .set_value_type(snapshot, type_manager, thing_manager, value_type.clone())
-                .map_err(|source| DefineError::SetValueType { label: label.to_owned(), value_type, source })?,
-            Some(existing_value_type) => {
-                if existing_value_type != value_type {
-                    return Err(DefineError::AttributeTypeValueTypeAlreadyDefinedButDifferent {
-                        label: label.to_owned(),
-                        value_type,
-                        existing_value_type,
-                    });
-                }
+        let definition_status =
+            get_value_type_status(snapshot, type_manager, attribute_type.clone(), value_type.clone())
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let define_needed = match definition_status {
+            DefinitionStatus::DoesNotExist => true,
+            DefinitionStatus::ExistsSame(_) => false,
+            DefinitionStatus::ExistsDifferent(existing_value_type) => {
+                return Err(DefineError::AttributeTypeValueTypeAlreadyDefinedButDifferent {
+                    label: label.to_owned(),
+                    value_type,
+                    existing_value_type,
+                })
             }
+        };
+
+        if define_needed {
+            attribute_type
+                .set_value_type(snapshot, type_manager, thing_manager, value_type.clone())
+                .map_err(|source| DefineError::SetValueType { label: label.to_owned(), value_type, source })?;
         }
 
         define_value_type_annotations(
@@ -518,51 +541,51 @@ fn define_relates(
             }
         })?;
 
-        let existing_opt = relation_type
-            .get_relates_role_name(snapshot, type_manager, role_label.name.as_str())
+        let definition_status = get_relates_status(snapshot, type_manager, relation_type.clone(), &label, ordering)
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let is_new;
-        let created = if let Some(existing_relates) = existing_opt {
-            let existing_ordering = existing_relates
-                .role()
-                .get_ordering(snapshot, type_manager)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-            if ordering != existing_ordering {
-                Err(DefineError::CreateRelatesModifiesExistingOrdering {
-                    label: label.clone(),
-                    existing_ordering,
-                    new_ordering: ordering,
-                })?;
-            }
-            is_new = false;
-            existing_relates
-        } else {
-            let init_cardinality = if let Some(typeql_cardinality) =
-                capability.annotations.iter().find(|annotation| matches!(annotation, TypeQLAnnotation::Cardinality(_)))
-            {
-                let annotation = translate_annotation(typeql_cardinality)
-                    .map_err(|source| DefineError::LiteralParseError { source })?;
-                match annotation {
-                    Annotation::Cardinality(card) => Some(card),
-                    other => {
-                        debug_assert!(false, "Expected to translate found typeql annotation for relates to Cardinality. Got {:?} instead", other);
-                        None
+        let (defined, is_new) = match definition_status {
+            DefinitionStatus::DoesNotExist => {
+                let init_cardinality = if let Some(typeql_cardinality) = capability
+                    .annotations
+                    .iter()
+                    .find(|annotation| matches!(annotation, TypeQLAnnotation::Cardinality(_)))
+                {
+                    let annotation = translate_annotation(typeql_cardinality)
+                        .map_err(|source| DefineError::LiteralParseError { source })?;
+                    match annotation {
+                        Annotation::Cardinality(card) => Some(card),
+                        other => {
+                            debug_assert!(false, "Expected to translate found typeql annotation for relates to Cardinality. Got {:?} instead", other);
+                            None
+                        }
                     }
-                }
-            } else {
-                None
-            };
-            is_new = true;
-            relation_type
-                .create_relates(
-                    snapshot,
-                    type_manager,
-                    thing_manager,
-                    role_label.name.as_str(),
+                } else {
+                    None
+                };
+
+                let relates = relation_type
+                    .create_relates(
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        role_label.name.as_str(),
+                        ordering,
+                        init_cardinality,
+                    )
+                    .map_err(|source| DefineError::CreateRelates { source, relates: relates.to_owned() })?;
+                (relates, true)
+            }
+            DefinitionStatus::ExistsSame(Some((existing_relates, _))) => (existing_relates, false),
+            DefinitionStatus::ExistsSame(None) => unreachable!("Existing relates concept expected"),
+            DefinitionStatus::ExistsDifferent((existing_relates, existing_ordering)) => {
+                return Err(DefineError::RelatesAlreadyDefinedButDifferent {
+                    label: label.clone(),
+                    declaration: capability.to_owned(),
                     ordering,
-                    init_cardinality,
-                )
-                .map_err(|source| DefineError::CreateRelates { source, relates: relates.to_owned() })?
+                    existing_relates,
+                    existing_ordering,
+                })
+            }
         };
 
         define_relates_annotations(
@@ -570,11 +593,11 @@ fn define_relates(
             type_manager,
             thing_manager,
             &label,
-            created.clone(),
+            defined.clone(),
             &capability,
             is_new,
         )?;
-        define_relates_overridden(snapshot, type_manager, thing_manager, &label, created, relates)?;
+        define_relates_overridden(snapshot, type_manager, thing_manager, &label, defined, relates)?;
     }
     Ok(())
 }
@@ -608,7 +631,7 @@ fn define_relates_overridden<'a>(
         if need_define {
             relates
                 .set_override(snapshot, type_manager, thing_manager, overridden_relates)
-                .map_err(|source| DefineError::SetOverride { label: relation_label.clone().into_owned(), source })?
+                .map_err(|source| DefineError::SetOverride { label: relation_label.clone().into_owned(), source })?;
         }
     }
     Ok(())
@@ -687,26 +710,44 @@ fn define_owns(
         let attribute_type_opt = type_manager
             .get_attribute_type(snapshot, &attr_label)
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let attribute_type = if let Some(type_) = attribute_type_opt {
-            type_
+        let attribute_type = if let Some(attribute_type) = attribute_type_opt {
+            attribute_type
         } else {
             return Err(DefineError::CreateOwnsAttributeTypeNotFound { owns: owns.clone() })?;
         };
 
-        let created = match &type_ {
-            TypeEnum::Entity(entity_type) => ObjectType::Entity(entity_type.clone())
-                .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
-                .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), source })?,
-            TypeEnum::Relation(relation_type) => ObjectType::Relation(relation_type.clone())
-                .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
-                .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), source })?,
-            _ => {
-                return Err(err_unsupported_capability(&label, type_.kind(), capability));
+        let object_type =
+            type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
+
+        let definition_status =
+            get_owns_status(snapshot, type_manager, object_type.clone(), attribute_type.clone(), ordering)
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let (defined, is_new) = match definition_status {
+            DefinitionStatus::DoesNotExist => {
+                let owns = object_type
+                    .set_owns(snapshot, type_manager, thing_manager, attribute_type)
+                    .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), source })?;
+                (owns, true)
+            }
+            DefinitionStatus::ExistsSame(Some((existing_owns, _))) => (existing_owns, false),
+            DefinitionStatus::ExistsSame(None) => unreachable!("Existing owns concept expected"),
+            DefinitionStatus::ExistsDifferent((existing_owns, existing_ordering)) => {
+                return Err(DefineError::OwnsAlreadyDefinedButDifferent {
+                    label: label.clone(),
+                    declaration: capability.to_owned(),
+                    ordering,
+                    existing_owns,
+                    existing_ordering,
+                })
             }
         };
 
-        define_owns_annotations(snapshot, type_manager, thing_manager, &label, created.clone(), &capability)?;
-        define_owns_overridden(snapshot, type_manager, thing_manager, &label, created, owns)?;
+        if is_new {
+            defined.set_ordering(snapshot, type_manager, thing_manager, ordering);
+        }
+
+        define_owns_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), &capability)?;
+        define_owns_overridden(snapshot, type_manager, thing_manager, &label, defined, owns)?;
     }
     Ok(())
 }
@@ -797,23 +838,29 @@ fn define_plays(
         let role_type_opt = type_manager
             .get_role_type(snapshot, &role_label)
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let created = if let Some(role_type) = role_type_opt {
-            let as_object_type = match &type_ {
-                TypeEnum::Entity(entity_type) => ObjectType::Entity(entity_type.clone()),
-                TypeEnum::Relation(relation_type) => ObjectType::Relation(relation_type.clone()),
-                _ => {
-                    return Err(err_unsupported_capability(&label, type_.kind(), capability));
-                }
-            };
-            as_object_type
-                .set_plays(snapshot, type_manager, thing_manager, role_type)
-                .map_err(|source| DefineError::CreatePlays { plays: plays.clone(), source })?
+        let role_type = if let Some(role_type) = role_type_opt {
+            role_type
         } else {
             return Err(DefineError::CreatePlaysRoleTypeNotFound { plays: plays.clone() })?;
         };
 
-        define_plays_annotations(snapshot, type_manager, thing_manager, &label, created.clone(), &capability)?;
-        define_plays_overridden(snapshot, type_manager, thing_manager, &label, created, plays)?;
+        let object_type =
+            type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
+
+        let definition_status = get_plays_status(snapshot, type_manager, object_type.clone(), role_type.clone())
+            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let defined =
+            match definition_status {
+                DefinitionStatus::DoesNotExist => object_type
+                    .set_plays(snapshot, type_manager, thing_manager, role_type)
+                    .map_err(|source| DefineError::CreatePlays { plays: plays.clone(), source })?,
+                DefinitionStatus::ExistsSame(Some(existing_plays)) => existing_plays,
+                DefinitionStatus::ExistsSame(None) => unreachable!("Existing owns concept expected"),
+                DefinitionStatus::ExistsDifferent(existing_owns) => unreachable!("Plays cannot differ"),
+            };
+
+        define_plays_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), &capability)?;
+        define_plays_overridden(snapshot, type_manager, thing_manager, &label, defined, plays)?;
     }
     Ok(())
 }
@@ -895,6 +942,110 @@ fn define_functions(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     Ok(())
+}
+
+pub(crate) fn check_can_and_need_define_supertype<'a, T: TypeAPI<'a>>(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label<'a>,
+    type_: T,
+    new_supertype: T,
+) -> Result<bool, DefineError> {
+    let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype.clone())
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+    match definition_status {
+        DefinitionStatus::DoesNotExist => Ok(true),
+        DefinitionStatus::ExistsSame(_) => Ok(false),
+        DefinitionStatus::ExistsDifferent(existing) => Err(DefineError::TypeSubAlreadyDefinedButDifferent {
+            label: label.clone().into_owned(),
+            supertype: new_supertype
+                .get_label_cloned(snapshot, type_manager)
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                .into_owned(),
+            existing_supertype: existing
+                .get_label_cloned(snapshot, type_manager)
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                .into_owned(),
+        }),
+    }
+}
+
+pub(crate) fn check_can_and_need_define_override<'a, CAP: concept::type_::Capability<'a>>(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label<'a>,
+    capability: CAP,
+    new_override: CAP,
+) -> Result<bool, DefineError> {
+    let definition_status = get_override_status(snapshot, type_manager, capability, new_override.clone())
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+    match definition_status {
+        DefinitionStatus::DoesNotExist => Ok(true),
+        DefinitionStatus::ExistsSame(_) => Ok(false),
+        DefinitionStatus::ExistsDifferent(existing) => Err(DefineError::CapabilityOverrideAlreadyDefinedButDifferent {
+            label: label.clone().into_owned(),
+            overridden_interface: new_override
+                .interface()
+                .get_label_cloned(snapshot, type_manager)
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                .into_owned(),
+            existing_overridden_interface: existing
+                .interface()
+                .get_label_cloned(snapshot, type_manager)
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                .into_owned(),
+        }),
+    }
+}
+
+pub(crate) fn type_convert_and_validate_annotation_definition_need<'a, T: KindAPI<'a>>(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label<'a>,
+    type_: T,
+    annotation: Annotation,
+) -> Result<Option<T::AnnotationType>, DefineError> {
+    let converted =
+        T::AnnotationType::try_from(annotation.clone()).map_err(|source| DefineError::IllegalAnnotation { source })?;
+
+    let definition_status =
+        get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
+            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+    match definition_status {
+        DefinitionStatus::DoesNotExist => Ok(Some(converted)),
+        DefinitionStatus::ExistsSame(_) => Ok(None),
+        DefinitionStatus::ExistsDifferent(existing) => Err(DefineError::TypeAnnotationAlreadyDefinedButDifferent {
+            label: label.clone().into_owned(),
+            annotation,
+            existing_annotation: existing.clone().into(),
+        }),
+    }
+}
+
+pub(crate) fn capability_convert_and_validate_annotation_definition_need<'a, CAP: concept::type_::Capability<'a>>(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label<'a>,
+    capability: CAP,
+    annotation: Annotation,
+) -> Result<Option<CAP::AnnotationType>, DefineError> {
+    let converted = CAP::AnnotationType::try_from(annotation.clone())
+        .map_err(|source| DefineError::IllegalAnnotation { source })?;
+
+    let definition_status =
+        get_capability_annotation_status(snapshot, type_manager, capability, &converted, annotation.category())
+            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+    match definition_status {
+        DefinitionStatus::DoesNotExist => Ok(Some(converted)),
+        DefinitionStatus::ExistsSame(_) => Ok(None),
+        DefinitionStatus::ExistsDifferent(existing) => {
+            Err(DefineError::CapabilityAnnotationAlreadyDefinedButDifferent {
+                label: label.clone().into_owned(),
+                annotation,
+                existing_annotation: existing.clone().into(),
+            })
+        }
+    }
 }
 
 fn err_capability_kind_mismatch(
@@ -1040,10 +1191,19 @@ pub enum DefineError {
     OverriddenOwnsAttributeTypeNotFound {
         owns: TypeQLOwns,
     },
-    CreateRelatesModifiesExistingOrdering {
+    RelatesAlreadyDefinedButDifferent {
         label: Label<'static>,
+        declaration: Capability,
+        ordering: Ordering,
+        existing_relates: Relates<'static>,
         existing_ordering: Ordering,
-        new_ordering: Ordering,
+    },
+    OwnsAlreadyDefinedButDifferent {
+        label: Label<'static>,
+        declaration: Capability,
+        ordering: Ordering,
+        existing_owns: Owns<'static>,
+        existing_ordering: Ordering,
     },
     IllegalAnnotation {
         source: AnnotationError,

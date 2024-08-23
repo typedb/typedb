@@ -21,9 +21,9 @@ use itertools::Itertools;
 use macro_rules_attribute::apply;
 use executor::write::insert::InsertExecutor;
 use executor::write::WriteError;
-use typeql::Query;
 use primitive::either::Either;
 use query::query_manager::QueryManager;
+use typeql::Query;
 
 use crate::{
     generic_step,
