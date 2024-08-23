@@ -258,7 +258,7 @@ This section describes valid declarations of _types_ and axioms relating types (
 
 ***System property***: 
 
-1. _Single inheritance_: Cannot have $A <_! B`$ and $A <_! C \neq B$
+1. _Single inheritance_: Cannot have $`A <_! B`$ and $`A <_! C \neq B`$
 
 **Case REL**
 * `relation A` adds $`A : \mathbf{Rel}`$
