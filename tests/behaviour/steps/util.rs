@@ -23,5 +23,11 @@ pub(crate) fn iter_table_map(step: &Step) -> impl Iterator<Item = HashMap<&str, 
 #[apply(generic_step)]
 #[step(expr = "set time zone: {word}")]
 async fn set_time_zone(_: &mut Context, time_zone: String) {
-    env::set_var("TZ", time_zone);
+    unsafe {
+        // SAFETY: must ensure that there are no other threads concurrently writing or
+        // reading(!) the environment through functions or global variables other than the ones in
+        // this module
+        // (currently not upheld)
+        env::set_var("TZ", time_zone);
+    }
 }
