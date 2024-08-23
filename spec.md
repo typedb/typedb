@@ -109,23 +109,23 @@
 
 # Foundations
 
-_(For reference only)_
-
 ## Terminology
+
+This section collects useful abbrevations. See "Glossary" for other commonly used terms.
 
 * **TT** — transaction time
   * _Interpretation_: any time within transaction
 * **CT** — commit time
   * _Interpretation_: time of committing a transaction to DB
-* **tvar** — type variable
-* **evar** - data variable
-
-_Remark_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
+* **tvar** — type variable (representing some type)
+* **evar** - element variable (representing some element in some type)
 
 ## The type system
 
+This section describes the basic **statements** that comprise our type system, and the **rules** that govern the interaction of these statements.
+
 * **Types**. We write 
-  $`A : \mathbf{Type}`$ to mean:
+  $`A : \mathbf{Type}`$ to mean the statement:
   > $A$ is a type. 
 
   * _Variations_: in general, may replace $\textbf{Type}$ by: 
@@ -141,10 +141,16 @@ _Remark_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
   If $A$ is a type, then we may write $`a : A`$ to mean:
   > $a$ is an element in type $A$.
 
-  * _Direct typing_: We write $a :_! A$ to mean:
+  * _Example_: $p : \mathsf{Person}$ means $p$ is of type $\mathsf{Person}$
+
+  * _Direct typing_: We write $`a :_! A`$ to mean:
     > $a$ was declared as an element of $A$ by the user (we speak of a ***direct typing***).
 
-  * _Example_: $p : \mathsf{Person}$ means $p$ is of type $\mathsf{Person}$
+    _Remark_. The notion of direct typing might be confusing at first. Mathematically, it is merely an additional statement in our type system. Intuively, you can think of it as a way of keeping track of the _user-provided_ information. A similar remark applies to direct subtyping ($`<_!`$) below.
+
+    * _Direct typing rule_. The statement $`a :_! A`$ implies the statement $`a : A`$. (The converse is not true!)
+    * _Example_. $p :_! \mathsf{Child}$ means the user has inserted $p$ into the type $`\mathsf{Child}`$. Our type system may derive $`p : \mathsf{Person}`$ from this (but _not_ $`p :_! \mathsf{Person}`$)
+
 * **Dependent types**. We write $`A : \mathbf{Type}(I,J,...)`$ to mean:
   > $A$ is a type with interface types $`I, J, ...`$.
   
@@ -161,12 +167,12 @@ _Remark_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
   * _Combining dependencies_: Given $A : \mathbf{Type}(I)$ and $A : \mathbf{Type}(J)$, this ***implies*** $A : \mathbf{Type}(I,J)$. In words:
     > If a type separately depends on $I$ and on $J$, then it may jointly depend on $I$ and $J$! 
 
-    * _Remark_: This applies recursively to types with $k$ interfaces.
+    _Remark_: This applies recursively to types with $k$ interfaces.
     * _Example_: $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband})`$ and $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Wife})`$ then $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband},\mathsf{Wife})`$
   * _Weakening dependencies_: Given $A : \mathbf{Type}(I,J)$, this ***implies*** $A : \mathbf{Type}(I)$. In words:
     > Dependencies can be simply ignored (note: this is a coarse rule — we later discuss more fine-grained constraints, e.g. cardinality).
 
-    * _Remark_: This applies recursively to types with $k$ interfaces.
+    _Remark_: This applies recursively to types with $k$ interfaces.
     * _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
   * _Inheriting dependencies_: If $A : \mathbf{Type}$, $B : \mathbf{Type}(I)$, $A < B$ and _not_ $A : \mathbf{Type}(J)$ with $J < I$, then $A : \mathbf{Type}(I)$. In words:
     > Dependencies that are not overwritten are inherited
@@ -188,13 +194,13 @@ _Remark_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
   * _"Weakening dependencies" casting_: If $`a : A(x:I, y:J)`$ then $`a : A(x:I)`$. In other words:
     > Elements in $`A(I,J)`$ casts into elements of $`A(I)`$.
 
-    * _Remark_: This applies recursively for types with $k$ interfaces.
+    _Remark_: This applies recursively for types with $k$ interfaces.
     * _Remark 2_: This casting preserves direct typings! I.e. when $`a :_! A(x:I, y:J)`$ then $`a :_! A(x:I)`$
     * _Example_: If $m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)$ then both $m : \mathsf{Marriage}(x:\mathsf{Spouse})$ and $m : \mathsf{Marriage}(y:\mathsf{Spouse})$
   * _"Covariance of dependencies" casting_: Given $`A < B`$, $`I < J`$ such that $`A : \mathbf{Type}(I)`$ $`B : \mathbf{Type}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$. In other words:
     > When $A$ casts to $B$, and $I$ to $J$, then $`A(I)`$ casts to $`B(J)`$.
 
-    * _Remark_: This applies recursively for types with $k$ interfaces.
+    _Remark_: This applies recursively for types with $k$ interfaces.
     * _Example_: If $m : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})$ then $m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)$
 * **List types**. We write $`[A] : \mathbf{Type}`$ to mean
   > the type of $A$-lists, i.e. the type which contains lists $`[a_0, a_1, ...]`$ of elements $`a_i : A`$.
@@ -263,7 +269,7 @@ This section describes valid declarations of _types_ and axioms relating types (
 **Case REL**
 * `relation A` adds $`A : \mathbf{Rel}`$
 * `(relation) A sub B` adds $`A : \mathbf{Rel}, A <_! B`$, ***requiring*** that $`B : \mathbf{Rel}`$ 
-* `(relation) A relates I` adds $`A : \mathbf{Rel}(I)$
+* `(relation) A relates I` adds $`A : \mathbf{Rel}(I)$ and $I : \mathbf{Itf}$.
 * `(relation) A relates I as J` adds $`A : \mathbf{Rel}(I)`$, $`I <_! J`$, ***requiring*** that $`B : \mathbf{Rel}(J)`$ and $A <_! B$
 * `(relation) A relates I[]` adds $`A : \mathbf{Rel}([I])$
 * `(relation) A relates I[] as J[]` adds $`A : \mathbf{Rel}([I])`$, $`I <_! J`$, ***requiring*** that $`B : \mathbf{Rel}([J])`$ and $A <_! B$
@@ -271,18 +277,18 @@ This section describes valid declarations of _types_ and axioms relating types (
 ***System property***: 
 
 1. _Single inheritance_: Cannot have $`A <_! B`$ and $A <_! C \neq B$
-2. _Single inheritance (for interfaces)_: Cannot have $`I <_! J`$ and $I <_! K \neq J$
+2. _Single inheritance (for interfaces)_: Cannot have $`I <_! J`$ and $I <_! K \neq J$ for $`I,J,K :\mathbf{Itf}`$
 3. _Exclusive interface modes_: Cannot have both $`A : \mathbf{Rel}(I)`$ and $`A : \mathbf{Rel}([I])`$ (in other words, cannot have both `A relates I` and `A relates I[]`).
 4. _Implicit inheritance_: Cannot redeclare inherited interface (i.e. when `B relates I`, `A sub B` we cannot re-declare `A relates I`... this is automatically inherited!)
 
 **Case ATT**
-* `attribute A` adds $`A : \mathbf{Att}`$ and $`A : \mathbf{Att}(O_A)`$ ($O_A$ being automatically generated ownership interface)
-* `(attribute) A value V` adds $`A < V`$, ***requiring*** that $V$ is a primitive or struct value type
+* `attribute A` adds $`A : \mathbf{Att}(O_A)`$ and $`O_A : \mathbf{Itf}`$ ($O_A$ being automatically generated ownership interface)
+* `(attribute) A value V` adds $`A <_! V`$, ***requiring*** that $V$ is a primitive or struct value type
 * `(attribute) A sub B` adds $`A : \mathbf{Att}(O_A)`$, $`A <_! B`$ and $`O_A <_! O_B`$, ***requiring*** that $`B : \mathbf{Att}(O_A)`$
 
 ***System property***: 
 
-1. _Single inheritance_: Cannot have $A <_! B`$ and $A <_! C \neq B$
+1. _Single inheritance_: Cannot have $A <_! B`$ and $A <_! C \neq B$ for $A, B, C : \mathbf{Att}$.
 
 **Case PLAYS**
 
@@ -305,7 +311,7 @@ _Remark: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract`
 ### Constraints
 
 **Case CARD**
-* `A relates I @card(n..m)` postulates $n \leq k \leq m$ whenever $`a : A'(\{...\} : I^k)`$, $`A' \leq A`$, $`A' : \mathbf{Rel}(I)`$, and $k$ is _maximal_ (for fixed $a : A$).
+* `A relates I @card(n..m)` postulates $n \leq k \leq m$ whenever $`a :_! A'(\{...\} : I^k)`$, $`A' \leq A`$, $`A' : \mathbf{Rel}(I)`$.
   * **defaults** to `@card(1..1)` if omitted ("one")
 * `A plays B:I @card(n..m)` postulates $n \leq |B(a:I)| \leq m$ for all $a : A$
   * **defaults** to `@card(0..)` if omitted ("many")
@@ -328,10 +334,12 @@ _Remark 2: For cardinality, and for most other constraints, we should reject red
   * **defaults** to `@card(0..)` if omitted ("many")
 
 **Case PLAYS_AS**
-* `A plays B as C` postulates $`|C(x:O_C)| - |B(x:O_B)| = 0`$ for all $`x:A`$, ***requiring*** that $B \lneq C$, $A < D$, $`D <_! C`$. **Invalidated** when $A <_! C'$ for $B \lneq C' \leq C$.
+* `A plays B:I as C:J` postulates $`c :_! C(a:J)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $A < D$, $`D <_! J`$.
+  * **Invalidated** when $A <_! J'$ for $B(I) \lneq C'(J') \leq C(J)$.
 
 **Case OWNS_AS**
-* `A owns B as C` postulates $`|C(x:O_C)| - |B(x:O_B)| = 0`$ for all $`x:A`$, ***requiring*** that $B \lneq C$, $A < D$, $`D <_! O_C`$. **Invalidated** when $A <_! O_{C'}$ for $B \lneq C' \leq C$.
+* `A owns B as C` postulates $`c :_! C(a:O_C)$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $A < D$, $`D <_! O_C`$.
+  * **Invalidated** when $A <_! O_{C'}$ for $B \lneq C' \leq C$.
 
 _Comment: both preceding cases are kinda complicated/unnatural ... as reflected by the math._
 
