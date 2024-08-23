@@ -179,7 +179,7 @@ _Remark_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
   * _Reflexivity rule_: If $`A : \mathbf{Type}`$ then this **implies** $A < A$ (notation: we sometimes write $`A \leq B`$ to put extra emphasis on the case $`A = B`$ being possible ... but this is also the case for $`A < B`$.)
 
   * _Direct castings_: We write $`A <_! B`$ to mean:
-    > A cast from A to B was declared by user (we spak of a ***direct casting*** from A to B).
+    > A cast from A to B was declared by user (we speak of a ***direct casting*** from A to B).
 
     * _Direct-to-general rule_: $`A <_! B`$ ***implies*** $`A < B`$.
     * _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
@@ -211,7 +211,7 @@ _Remark_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
 
     * _Example_: $`[a,b,c] : [\mathsf{MiddleName}](x : \mathsf{MiddleNameListOwner})`$
   * _List length_: for list $l : [A]$ the term $\mathrm{len}(l) : \mathbb{N}$ represents $l$'s length
-  * _Abstractness_: all list types are abstract by default, i.e. their terms cannot be explicitly declared (a la $`l :_! [A](x:I)`$)
+  * _Abstractness_: all list types are abstract by default, i.e. their terms cannot be explicitly declared, as in $`l :_! [A](x:I)`$.
 * **Sum types**. $`A + B`$ — Sum type
 * **Product types**. $`A \times B`$ — Product type
 * **Type cardinality**.$`|A| : \mathbb{N}`$ — Cardinality of $A$
@@ -258,7 +258,7 @@ This section describes valid declarations of _types_ and axioms relating types (
 
 ***System property***: 
 
-1. _Single inheritance_: Cannot have $A <_! B`$ and $A <_! C \neq B$
+1. _Single inheritance_: Cannot have $`A <_! B`$ and $`A <_! C \neq B`$
 
 **Case REL**
 * `relation A` adds $`A : \mathbf{Rel}`$
