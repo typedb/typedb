@@ -211,7 +211,7 @@ _Remark_: **tvar**s and **evar**s are uniquely distinguish everywhere in TypeQL
 
     * _Example_: $`[a,b,c] : [\mathsf{MiddleName}](x : \mathsf{MiddleNameListOwner})`$
   * _List length_: for list $l : [A]$ the term $\mathrm{len}(l) : \mathbb{N}$ represents $l$'s length
-  * _Abstractness_: all list types are abstract by default, i.e. their terms cannot be explicitly declared (a la $`l :_! [A](x:I)`$)
+  * _Abstractness_: all list types are abstract by default, i.e. their terms cannot be explicitly declared, as in $`l :_! [A](x:I)`$.
 * **Sum types**. $`A + B`$ — Sum type
 * **Product types**. $`A \times B`$ — Product type
 * **Type cardinality**.$`|A| : \mathbb{N}`$ — Cardinality of $A$
