@@ -12,22 +12,20 @@ use concept::{
     type_::{
         annotation::{Annotation, AnnotationError},
         attribute_type::AttributeType,
-        object_type::ObjectType,
         owns::Owns,
         plays::Plays,
-        relates::{Relates, RelatesAnnotation},
+        relates::Relates,
         type_manager::TypeManager,
-        Ordering, OwnerAPI, PlayerAPI,
+        Ordering,
     },
 };
 use encoding::{
     graph::type_::Kind,
     value::{label::Label, value_type::ValueType},
 };
-use ir::{translation::tokens::translate_annotation, LiteralParseError};
+use ir::LiteralParseError;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    common::token,
     query::schema::Undefine,
     schema::{
         definable::{
@@ -44,11 +42,7 @@ use typeql::{
     ScopedLabel, TypeRef, TypeRefAny,
 };
 
-use crate::{
-    definition_status::{get_struct_field_status, DefinitionStatus},
-    util::{filter_variants, resolve_type, resolve_value_type, try_unwrap, type_ref_to_label_and_ordering},
-    SymbolResolutionError,
-};
+use crate::definition_resolution::{filter_variants, resolve_value_type, try_unwrap, SymbolResolutionError};
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,
@@ -121,29 +115,6 @@ fn undefine_struct_fields(
     struct_definable: &Struct,
 ) -> Result<(), UndefineError> {
     Ok(())
-}
-
-// TODO: Make a method with one source of these errors for Define, Undefine
-fn get_struct_field_value_type_optionality(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    field: &Field,
-) -> Result<(ValueType, bool), UndefineError> {
-    let optional = matches!(&field.type_, TypeRefAny::Optional(_));
-    match &field.type_ {
-        TypeRefAny::Type(TypeRef::Named(named))
-        | TypeRefAny::Optional(Optional { inner: TypeRef::Named(named), .. }) => {
-            let value_type = resolve_value_type(snapshot, type_manager, named)
-                .map_err(|source| UndefineError::StructFieldCouldNotResolveValueType { source })?;
-            Ok((value_type, optional))
-        }
-        TypeRefAny::Type(TypeRef::Variable(_)) | TypeRefAny::Optional(Optional { inner: TypeRef::Variable(_), .. }) => {
-            return Err(UndefineError::StructFieldIllegalVariable { field_declaration: field.clone() });
-        }
-        TypeRefAny::List(_) => {
-            return Err(UndefineError::StructFieldIllegalList { field_declaration: field.clone() });
-        }
-    }
 }
 
 fn undefine_types(
@@ -374,18 +345,6 @@ pub enum UndefineError {
         source: ConceptWriteError,
         struct_name: String,
         struct_field: Field,
-    },
-    StructFieldIllegalList {
-        field_declaration: Field,
-    },
-    StructFieldIllegalVariable {
-        field_declaration: Field,
-    },
-    StructFieldIllegalNotValueType {
-        scoped_label: ScopedLabel,
-    },
-    StructFieldCouldNotResolveValueType {
-        source: SymbolResolutionError,
     },
     TypeRedefinitionIsNotSupported {
         type_declaration: Type,

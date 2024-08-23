@@ -11,12 +11,12 @@ mod compilation;
 mod define;
 mod redefine;
 mod undefine;
+mod definition_resolution;
 mod definition_status;
 pub mod error;
 pub mod query_manager;
 mod translation;
 mod annotation;
-mod util;
 
 #[derive(Debug)]
 pub enum SymbolResolutionError {

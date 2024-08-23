@@ -26,7 +26,9 @@ use encoding::{
 };
 use storage::snapshot::ReadableSnapshot;
 
-use crate::define::DefineError;
+use crate::definition_resolution::{
+    try_resolve_owns, try_resolve_plays, try_resolve_relates, try_resolve_struct_definition_key,
+};
 
 pub(crate) enum DefinitionStatus<T> {
     DoesNotExist,
@@ -97,7 +99,7 @@ pub(crate) fn get_struct_status(
     type_manager: &TypeManager,
     name: &str,
 ) -> Result<DefinitionStatus<DefinitionKey<'static>>, ConceptReadError> {
-    let definition_key_opt = type_manager.get_struct_definition_key(snapshot, name)?;
+    let definition_key_opt = try_resolve_struct_definition_key(snapshot, type_manager, name)?;
     get_some_or_return_does_not_exist!(_ = definition_key_opt);
     Ok(DefinitionStatus::ExistsSame(None))
 }
@@ -121,7 +123,6 @@ pub(crate) fn get_struct_field_status(
     }
 }
 
-// TODO: Could be one method for get_annotation_status if we had trait Annotatable
 pub(crate) fn get_type_annotation_status<'a, T: KindAPI<'a>>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
@@ -219,8 +220,7 @@ pub(crate) fn get_relates_status<'a>(
     role_label: &Label<'a>,
     new_ordering: Ordering,
 ) -> Result<DefinitionStatus<(Relates<'static>, Ordering)>, ConceptReadError> {
-    let existing_relates_opt =
-        relation_type.get_relates_role_name_declared(snapshot, type_manager, role_label.name.as_str())?;
+    let existing_relates_opt = try_resolve_relates(snapshot, type_manager, relation_type, role_label)?;
     get_some_or_return_does_not_exist!(existing_relates = existing_relates_opt);
 
     let existing_ordering = existing_relates.role().get_ordering(snapshot, type_manager)?;
@@ -231,14 +231,14 @@ pub(crate) fn get_relates_status<'a>(
     })
 }
 
-pub(crate) fn get_owns_status<'a>(
+pub(crate) fn get_owns_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'a>,
+    object_type: ObjectType<'static>,
     attribute_type: AttributeType<'static>,
     new_ordering: Ordering,
 ) -> Result<DefinitionStatus<(Owns<'static>, Ordering)>, ConceptReadError> {
-    let existing_owns_opt = object_type.get_owns_attribute_declared(snapshot, type_manager, attribute_type.clone())?;
+    let existing_owns_opt = try_resolve_owns(snapshot, type_manager, object_type, attribute_type)?;
     get_some_or_return_does_not_exist!(existing_owns = existing_owns_opt);
 
     let existing_ordering = existing_owns.get_ordering(snapshot, type_manager)?;
@@ -249,13 +249,13 @@ pub(crate) fn get_owns_status<'a>(
     })
 }
 
-pub(crate) fn get_plays_status<'a>(
+pub(crate) fn get_plays_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'a>,
+    object_type: ObjectType<'static>,
     role_type: RoleType<'static>,
 ) -> Result<DefinitionStatus<Plays<'static>>, ConceptReadError> {
-    let existing_plays_opt = object_type.get_plays_role_declared(snapshot, type_manager, role_type.clone())?;
+    let existing_plays_opt = try_resolve_plays(snapshot, type_manager, object_type, role_type)?;
     get_some_or_return_does_not_exist!(existing_plays = existing_plays_opt);
 
     Ok(DefinitionStatus::ExistsSame(Some(existing_plays)))

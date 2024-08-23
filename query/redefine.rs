@@ -13,10 +13,9 @@ use concept::{
     type_::{
         annotation::{Annotation, AnnotationError},
         attribute_type::AttributeType,
-        object_type::ObjectType,
         owns::Owns,
         plays::Plays,
-        relates::{Relates, RelatesAnnotation},
+        relates::Relates,
         type_manager::TypeManager,
         KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
@@ -28,8 +27,6 @@ use encoding::{
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    annotation::Annotation as TypeQLAnnotation,
-    common::token,
     query::schema::Redefine,
     schema::definable::{
         struct_::Field,
@@ -44,30 +41,28 @@ use typeql::{
 };
 
 use crate::{
+    define::DefineError,
+    definition_resolution::{
+        filter_variants, get_struct_field_value_type_optionality, resolve_struct_definition_key, resolve_type,
+        resolve_value_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type, SymbolResolutionError,
+    },
     definition_status::{
         get_capability_annotation_status, get_override_status, get_owns_status, get_plays_status, get_relates_status,
         get_struct_field_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinitionStatus,
     },
-    util::{
-        filter_variants, resolve_type, resolve_value_type, try_unwrap, type_ref_to_label_and_ordering,
-        type_to_object_type,
-    },
-    SymbolResolutionError,
 };
-use crate::define::DefineError;
 
 macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path) => {
         if let Some(typeql_annotation) = &$capability.annotations.first() {
-            let annotation =
-                translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
+            let annotation = translate_annotation(typeql_annotation)
+                .map_err(|source| RedefineError::LiteralParseError { source })?;
             Err(RedefineError::IllegalAnnotation { source: $annotation_error(annotation.category()) })
         } else {
             Ok(())
         }
     };
 }
-
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,
@@ -138,14 +133,12 @@ fn redefine_struct_fields(
     struct_definable: &Struct,
 ) -> Result<(), RedefineError> {
     let name = struct_definable.ident.as_str();
-    let struct_key = type_manager
-        .get_struct_definition_key(snapshot, name)
-        .map_err(|err| RedefineError::UnexpectedConceptRead { source: err })?
-        .unwrap();
-    // TODO: Should be a good error instead of unwrap!
+    let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
+        .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
     for field in &struct_definable.fields {
-        let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)?;
+        let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
         let definition_status = get_struct_field_status(
             snapshot,
@@ -186,29 +179,6 @@ fn redefine_struct_fields(
     Ok(())
 }
 
-// TODO: Make a method with one source of these errors for Define, Redefine
-fn get_struct_field_value_type_optionality(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    field: &Field,
-) -> Result<(ValueType, bool), RedefineError> {
-    let optional = matches!(&field.type_, TypeRefAny::Optional(_));
-    match &field.type_ {
-        TypeRefAny::Type(TypeRef::Named(named))
-        | TypeRefAny::Optional(Optional { inner: TypeRef::Named(named), .. }) => {
-            let value_type = resolve_value_type(snapshot, type_manager, named)
-                .map_err(|source| RedefineError::StructFieldCouldNotResolveValueType { source })?;
-            Ok((value_type, optional))
-        }
-        TypeRefAny::Type(TypeRef::Variable(_)) | TypeRefAny::Optional(Optional { inner: TypeRef::Variable(_), .. }) => {
-            return Err(RedefineError::StructFieldIllegalVariable { field_declaration: field.clone() });
-        }
-        TypeRefAny::List(_) => {
-            return Err(RedefineError::StructFieldIllegalList { field_declaration: field.clone() });
-        }
-    }
-}
-
 fn redefine_type_annotations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
@@ -216,7 +186,8 @@ fn redefine_type_annotations(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| RedefineError::TypeLookup { source })?;
+    let type_ = resolve_type(snapshot, type_manager, &label)
+        .map_err(|source| RedefineError::DefinitionResolution { source })?;
     for typeql_annotation in &type_declaration.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
@@ -289,10 +260,7 @@ fn redefine_alias(
 }
 
 fn redefine_alias_annotations(typeql_capability: &Capability) -> Result<(), RedefineError> {
-    verify_empty_annotations_for_capability!(
-        typeql_capability,
-        AnnotationError::UnsupportedAnnotationForAlias
-    )
+    verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForAlias)
 }
 
 fn redefine_sub(
@@ -302,7 +270,8 @@ fn redefine_sub(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| RedefineError::TypeLookup { source })?;
+    let type_ = resolve_type(snapshot, type_manager, &label)
+        .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Sub(sub) = &capability.base else {
@@ -310,7 +279,7 @@ fn redefine_sub(
         };
         let supertype_label = Label::parse_from(&sub.supertype_label.ident.as_str());
         let supertype = resolve_type(snapshot, type_manager, &supertype_label)
-            .map_err(|source| RedefineError::TypeLookup { source })?;
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
         if type_.kind() != supertype.kind() {
             return Err(err_capability_kind_mismatch(
                 &label,
@@ -361,10 +330,7 @@ fn redefine_sub(
 }
 
 fn redefine_sub_annotations(typeql_capability: &Capability) -> Result<(), RedefineError> {
-    verify_empty_annotations_for_capability!(
-        typeql_capability,
-        AnnotationError::UnsupportedAnnotationForSub
-    )
+    verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub)
 }
 
 fn redefine_value_type(
@@ -374,7 +340,8 @@ fn redefine_value_type(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| RedefineError::TypeLookup { source })?;
+    let type_ = resolve_type(snapshot, type_manager, &label)
+        .map_err(|source| RedefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::ValueType(value_type_statement) = &capability.base else {
             continue;
@@ -452,7 +419,8 @@ fn redefine_relates(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| RedefineError::TypeLookup { source })?;
+    let type_ = resolve_type(snapshot, type_manager, &label)
+        .map_err(|source| RedefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Relates(relates) = &capability.base else {
             continue;
@@ -461,12 +429,8 @@ fn redefine_relates(
             return Err(err_unsupported_capability(&label, type_.kind(), capability));
         };
 
-        let (role_label, ordering) = type_ref_to_label_and_ordering(&relates.related).map_err(|_| {
-            RedefineError::RelatesRoleMustBeLabelAndNotOptional {
-                relation: label.to_owned(),
-                role_label: relates.related.clone(),
-            }
-        })?;
+        let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &relates.related)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
         let definition_status =
             get_relates_status(snapshot, type_manager, relation_type.clone(), &role_label, ordering)
@@ -589,13 +553,14 @@ fn redefine_owns(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| RedefineError::TypeLookup { source })?;
+    let type_ = resolve_type(snapshot, type_manager, &label)
+        .map_err(|source| RedefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Owns(owns) = &capability.base else {
             continue;
         };
-        let (attr_label, ordering) = type_ref_to_label_and_ordering(&owns.owned)
-            .map_err(|_| RedefineError::OwnsAttributeMustBeLabelOrList { owns: owns.clone() })?;
+        let (attr_label, ordering) = type_ref_to_label_and_ordering(&label, &owns.owned)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
         let attribute_type_opt = type_manager
             .get_attribute_type(snapshot, &attr_label)
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
@@ -622,7 +587,8 @@ fn redefine_owns(
             DefinitionStatus::ExistsSame(None) => unreachable!("Existing owns concept expected"),
             DefinitionStatus::ExistsSame(Some((existing_owns, _))) => existing_owns,
             DefinitionStatus::ExistsDifferent((existing_owns, _)) => {
-                existing_owns.set_ordering(snapshot, type_manager, thing_manager, ordering)
+                existing_owns
+                    .set_ordering(snapshot, type_manager, thing_manager, ordering)
                     .map_err(|source| RedefineError::SetOwnsOrdering { owns: owns.clone(), source })?;
                 existing_owns
             }
@@ -711,7 +677,8 @@ fn redefine_plays(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label).map_err(|source| RedefineError::TypeLookup { source })?;
+    let type_ = resolve_type(snapshot, type_manager, &label)
+        .map_err(|source| RedefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Plays(plays) = &capability.base else {
             continue;
@@ -940,7 +907,7 @@ pub enum RedefineError {
     UnexpectedConceptRead {
         source: ConceptReadError,
     },
-    TypeLookup {
+    DefinitionResolution {
         source: SymbolResolutionError,
     },
     TypeCreateRequiresKind {
@@ -968,18 +935,6 @@ pub enum RedefineError {
         source: ConceptWriteError,
         struct_name: String,
         struct_field: Field,
-    },
-    StructFieldIllegalList {
-        field_declaration: Field,
-    },
-    StructFieldIllegalVariable {
-        field_declaration: Field,
-    },
-    StructFieldIllegalNotValueType {
-        scoped_label: ScopedLabel,
-    },
-    StructFieldCouldNotResolveValueType {
-        source: SymbolResolutionError,
     },
     SetSupertype {
         sub: typeql::schema::definable::type_::capability::Sub,
