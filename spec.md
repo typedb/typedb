@@ -1,9 +1,6 @@
 # TypeDB - Behaviour Specification
 
 <!-- TODO 
-* \mathsf{ev} -> \mathsf{ans}
-* concept(..) -> ans(...)
-* \mathsf{ty} -> \mathsf{typ}
 -->
 
 **Table of contents**
@@ -14,51 +11,53 @@
 - [Schema](#schema)
   - [Basics of schemas](#basics-of-schemas)
   - [Define semantics](#define-semantics)
-    - [Type axioms](#types-subtypes-dependencies)
+    - [Type axioms](#type-axioms)
     - [Constraints](#constraints)
     - [Triggers](#triggers)
     - [Value types](#value-types)
     - [Functions defs](#functions-defs)
   - [Undefine semantics](#undefine-semantics)
-    - [Type axioms](#types-subtypes-dependencies-1)
+    - [Type axioms](#type-axioms-1)
     - [Constraints](#constraints-1)
     - [Triggers](#triggers-1)
     - [Value types](#value-types-1)
     - [Functions defs](#functions-defs-1)
   - [Redefine semantics](#redefine-semantics)
-    - [Type axioms](#types-subtypes-dependencies-2)
+    - [Type axioms](#type-axioms-2)
     - [Constraints](#constraints-2)
     - [Triggers](#triggers-2)
     - [Value types](#value-types-2)
     - [Functions defs](#functions-defs-2)
 - [Data instance languages](#data-instance-languages)
+  - [Pattern semantics](#pattern-semantics)
+    - [Basics: Variables, concept maps, satisfaction](#basics-variables-concept-maps-satisfaction)
+    - [Concept satisfaction for patterns of ...](#concept-satisfaction-for-patterns-of-)
+    - [... Types](#-types)
+    - [... Constraints](#-constraints)
+    - [... Data](#-data)
+    - [... Expressions](#-expressions)
+    - [... Functions](#-functions)
+    - [... Patterns](#-patterns)
   - [Match semantics](#match-semantics)
-    - [Basics: Variables and Answers](#basics-variables-and-answers)
-    - [Satisfying type patterns](#satisfying-type-patterns)
-    - [Satisfying constraint patterns](#satisfying-constraint-patterns)
-    - [Satisfying data patterns](#satisfying-data-patterns)
-    - [Satisfying value expression patterns](#satisfying-value-expression-patterns)
-    - [Satisfying function patterns](#satisfying-function-patterns)
-    - [Satisfying composite patterns](#satisfying-composite-patterns)
-    - [Answer sets](#answer-sets)
-  - [Function semantics](#function-semantics)
+  - [Functions semantics](#functions-semantics)
     - [Function signature, body, operators](#function-signature-body-operators)
     - [Stream-return](#stream-return)
     - [Single-return](#single-return)
-    - [Recursion](#recursion)
+    - [Recursion and recursive semantics](#recursion-and-recursive-semantics)
   - [Insert semantics](#insert-semantics)
     - [Basics of inserting](#basics-of-inserting)
-    - [Insert statement](#insert-statement)
+    - [Insert statements](#insert-statements)
+    - [Optional inserts](#optional-inserts)
     - [Leaf attribute system constraint](#leaf-attribute-system-constraint)
   - [Delete semantics](#delete-semantics)
     - [Basics of deleting](#basics-of-deleting)
     - [Delete statements](#delete-statements)
+    - [Clean-up](#clean-up)
   - [Update semantics](#update-semantics)
     - [Basics of updating](#basics-of-updating)
     - [Update statements](#update-statements)
+    - [Clean-up](#clean-up-1)
   - [Put semantics](#put-semantics)
-    - [Basics of updating](#basics-of-updating-1)
-    - [Update statements](#update-statements-1)
 - [Pipelines](#pipelines)
   - [Basics of streams](#basics-of-streams)
   - [Clauses](#clauses)
@@ -69,6 +68,7 @@
     - [Fetch](#fetch)
   - [Operators](#operators)
     - [Select](#select)
+    - [Deselect](#deselect)
     - [Sort](#sort)
     - [Limit](#limit)
     - [Offset](#offset)
@@ -105,6 +105,8 @@
     - [Clause](#clause)
     - [Block](#block)
     - [Suffix](#suffix)
+  - [Syntactic Sugar](#syntactic-sugar)
+  - [Typing of operators](#typing-of-operators)
 
 
 # Foundations
@@ -113,12 +115,17 @@
 
 This section collects useful abbrevations. See "Glossary" for other commonly used terms.
 
-* **TT** — transaction time
-  * _Interpretation_: any time within transaction
-* **CT** — commit time
-  * _Interpretation_: time of committing a transaction to DB
-* **tvar** — type variable (representing some type)
-* **evar** - element variable (representing some element in some type)
+* **TT** — transaction time (any time within transaction)
+* **CT** — commit time (time of committing a transaction to DB)
+* **tvar** — type variable (var representing some type)
+* **evar** - element variable (var representing some element in some type). 
+
+  Can further distinguish:
+  * **svar** - sized variable (element of sized type)
+  * **lvar** — list variable (element of list type)
+
+  _Remark_. A key principle of TypeQL declarative language design is that for any a patterns of variable it can be uniquely inferred whether a var is a **tvar** or **evar**, and whether an evar is an **svar** or **lvar**.
+
 
 ## The type system
 
@@ -202,6 +209,9 @@ This section describes the basic **statements** that comprise our type system, a
 
     _Remark_: This applies recursively for types with $k$ interfaces.
     * _Example_: If $m : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})$ then $m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)$
+
+  _Notation_: Write $X(I) < Y(J)$ to mean $X : \mathbf{Type}(I)$, $Y : \mathbf{Type}(J)$ and $X < Y$, $I < J$.
+
 * **List types**. We write $`[A] : \mathbf{Type}`$ to mean
   > the type of $A$-lists, i.e. the type which contains lists $`[a_0, a_1, ...]`$ of elements $`a_i : A`$.
 
@@ -321,7 +331,7 @@ _Remark: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract`
 ***System property***:
 
 1. For inherited interfaces, we cannot redeclare cardinality (this is actually a consequence of "Implicit inheritance" above). 
-2. When we have direct subinterfaces $I_i <_! J$, for $i = 1,...,n$, and each $I_i$ has `card(`$`n_i,m_i`$`)` while J has $card(n,m)$ then we must have $`n \leq \sum_i n_i \leq \sum_i m_i \leq m`$.
+2. When we have direct subinterfaces $`I_i <_! J`$, for $i = 1,...,n$, and each $`I_i`$ has `card(`$`n_i,m_i`$`)` while J has $card(n,m)$ then we must have $`n \leq \sum_i n_i \leq \sum_i m_i \leq m`$.
   
 _Remark 1: Upper bounds can be omitted, writing `@card(2..)`, to allow for arbitrary large cardinalities_
 
@@ -350,7 +360,7 @@ _Comment: both preceding cases are kinda complicated/unnatural ... as reflected 
 * `A owns B @key` postulates that if $`b : B(a:O_B)`$ for some $a : A$ then this $a$ is unique, and also $|B(a:O_B) = 1$.
 
 **Case SUBKEY**
-* `A owns B1 @subkey(<LABEL>); A owns B2 @subkey(<LABEL>)` postulates that if $b : B_1(a:O_{B_1}) \times B_2(a:O_{B_2})`$ for some $a : A$ then this $a$ is unique, and also $|B_1(a:O_{B_1}) \times B_2(a:O_{B_2})| = 1$. **Generalizes** to $n$ subkeys.
+* `A owns B1 @subkey(<LABEL>); A owns B2 @subkey(<LABEL>)` postulates that if $`b : B_1(a:O_{B_1}) \times B_2(a:O_{B_2})`$ for some $a : A$ then this $a$ is unique, and also $`|B_1(a:O_{B_1}) \times B_2(a:O_{B_2})| = 1`$. **Generalizes** to $n$ subkeys.
 
 **Case ABSTRACT**
 * `(type) A @abstract` postulates $`a :_! A(...)`$ to be impossible
@@ -367,8 +377,6 @@ _Comment: both preceding cases are kinda complicated/unnatural ... as reflected 
 ***System property***:
 
 > _The following properties capture that parents of abstract things are meant to be abstract too. But this is not really a crucial condition. (TODO: discuss!)_ 
-
-_Notation_: Write $X(I) < Y(J)$ to mean $X < Y$, $I < J$, $X : \mathbf{Type}(I)$, $Y : \mathbf{Type}(J)$.
 
 1. If `(type) A @abstract` and $A < B$ then `(type) B` cannot be non-abstract.
 2. If `A relates I @abstract` and $A(I) < B(J)$ then `B relates J` cannot be non-abstract.
@@ -428,10 +436,10 @@ struct S:
 ```
 adds
 * _Struct type_ $S : \mathbf{Type}$
-* _Struct components_ $`C_1 : \mathbf{Type}`$, $`C_2 : \mathbf{Type}`$, and identify $S = C_1 \times C_2$
-* _Component value casting_: $C_1 < V_1$, $C_2 < V_2$
-* _Component value terms_: whenever $v : V_i$ then $v : C_i$ if $v$ conforms with `<EXPR>`
-  * **defaults** to: whenever $v : V_i$ then $v : C_i$ (no condition)
+* _Struct components_ $`C_1 : \mathbf{Type}`$, $`C_2 : \mathbf{Type}`$, and identify $`S = C_1 \times C_2`$
+* _Component value casting_: $`C_1 < V_1`$, $`C_2 < V_2`$
+* _Component value terms_: whenever $`v : V_i`$ then $`v : C_i`$ if $v$ conforms with `<EXPR>`
+  * **defaults** to: whenever $`v : V_i`$ then $`v : C_i`$ (no condition)
 * **Generalizes** to $n$ components
 
 ### Functions defs
@@ -475,7 +483,7 @@ _Comment: notice difference in capitalization between the two cases!_
 **Case REL**
 * `relation A` removes $`A : \mathbf{Rel}`$
 * `sub B from (relation) A` removes $`A < B`$
-* `relates I from (relation) A` removes $`A : \mathbf{Rel}(I)$
+* `relates I from (relation) A` removes $`A : \mathbf{Rel}(I)`$
 * `as J from (relation) A relates I` removes $`I <_! J`$ 
 * `relates I[] from (relation) A` removes $`A : \mathbf{Rel}([I])$
 * `as J[] from (relation) A relates I[]` removes $`I <_! J`$
@@ -695,13 +703,14 @@ cannot redefine single-return functions.
 
 This section first describes the satisfication semantics of match queries, obtained by substituting _variables_ in _patterns_ by concepts (_answers_) such that these patterns are _satisfied_. It is then described how instance in ERA types can be declared and further manipulated. Finally, the section describes the semantics of functions (the novelty over match semantics is the ability to declared functions recursively).
 
-## Match semantics
+## Pattern semantics
 
-### Basics: Variables, cmaps, satisfaction
+### Basics: Variables, concept maps, satisfaction
 
 **Variables**
 
 * _Syntax_: vars start with `$`
+  * _Examples_: `$x`, `$y`, `$person`
 * _Usage_: vars appear as part of 
   * statements: syntactic units of TypeQL (see Glossary)
   * patterns: collection of statements, combined with logical connectives:
@@ -713,184 +722,238 @@ This section first describes the satisfication semantics of match queries, obtai
   * type variables (**tvar**, uppercase convention in this spec)
   * data instance variables (**evar**, lowercase convention in this spec)
 * _Anon vars_: anon vars start with `$_`. They behave like normal variables, but are automatically discarded (see "Deselect") at the end of the pattern.
-  * Writing `$_` by itself leaves the name of the anon variable implicit—in this case, a unique name is implicitly chosen (in other words: two `$_` appearing in the same pattern represent different variables)
-  * Anon vars can be both **tvar**s and **evar**s
+  * _Examples_: `$_x`, `$_y`, `$_person`
+  * _Implicit naming_. Writing `$_` by itself leaves the name of the anon variable implicit—in this case, a unique name is implicitly chosen (in other words: two `$_` appearing in the same pattern represent different variables)
+  * _Remark_: Anon vars can be both **tvar**s and **evar**s
 
-_Remark_. The code variable `$x` will be written as $x$ in math notation (without $`\$`$).
+_Remark 1_. The code variable `$x` will be written as $x$ in math notation (without $`\$`$).
 
-**Concept maps**
+_Remark 2_. Currently, only implicit named anon vars (`$_`) can be used by the user (under the hood, general anon vars do exist though!). (TODO)
 
-* _Concepts_. A **concept** is a type or a element in a type.
-* _Cmaps_. An **concept map** (cmap) $m$ is a mapping variables to concepts
+**Typed concept maps**
+
+* _Concepts_. A **concept** is a type or an element in a type.
+* _Typed concept maps_. An **typed concept map** (cmap) $m$ is a mapping variables to non-dependently typed concepts
   ```
-  m = ($x -> a, $y -> b, ...)
+  m = ($x->a:T, $y->b:S, ...)
   ```
-  (or mathematically: $(x \mapsto a, y \mapsto b)$).
-  * _Evaluations_. Write `m($x)` (math. notation $m(x)$) for the concept that `m` maps `$x` to.
+  (math. notation: $(x \mapsto a:T, y \mapsto b:S, ...)$).
 
-**Pattern satisfaction**
+  To emphasize: **Types are non-dependent** (i.e. dissallow `$x -> a:T($y:I)`, only allow `$x -> a:T`). 
+  * _Assigned concepts_. Write `m($x)` (math. notation $m(x)$) for the concept that `m` assigns to `$x`.
+  * _Assigned types_. Write `T($x)` (math. notation $`T_m(x)`$) for the type that `m` assigns to `$x`.
+    * _Special case: assigned kinds_. Note that `T($x)` may be `Ent`, `Rel`, `Att`, `Itf` (`Rol`), or `Val` (for value types) when `$x` is assigned a type as a concept — we speak of `T($x)` as the **type kind** of `m($x)` in this case.
 
-A concept map can **satisfy** a pattern — we define this construction between maps and pattern over the next few sections.
+**Pattern satisfaction and answers**
+
+* _Pattern satisfaction_. A cmap `m` may **satisfy** a pattern `P`: 
+  > Intuitively, this means substituting the variables in `P` with the concepts assigned in `m` yields statements that are true in our type system.
   
-* _Type certificate_. When a cmap `m` satisfies a pattern `P`, this is witnessed also by a **type certificate** mapping **evar**s `$x` to types `ty($x)` (math. notation $x \mapsto \mathsf{ty}(x)$), subject to the following condition:
-  * `$x isa $A` in `P` then $`ty(x) < m(A)`$
-  * `$x links ($B: $y)` in `P` then $`ty(x) < m(A)`$
-  * `$x links[] ($B: $y)` in `P` then $`ty(x) < m(A)`$
-  * `$x has $B $y` in `P` then $`ty(x) < m(A)`$
-  * `$x has $B[] $y` in `P` then $`ty(x) < m(A)`$
+  * _Definition_. Satisfication has two requirements: 
+    * **concept satisfaction** ("concepts assigned by `m` must conform with pattern `P`)
+    * **type satisfication** ("type assigned by `m` must conform with pattern `P`")
 
-* _Theorem_: There is a unique minimal certificate subject to the condition outlined in the next sections.
+    We define concept satisfaction in the _next section_, and only spell out _type satisfaction_ for now:
+    1. For any var `$x` we require $`m(x) : T_m(x)`$ to be true in the type system
+    1. If `$x isa $A` in `P` then require $`T_m(x) \leq m(A)`$
+    1. If `$x links ($B: $y)` in `P` then require $`T_m(y) < m(B)`$ and $`T_m(x) : \mathbf{Rel}(m(B))`$
+    1. If `$x links ($B[]: $y)` in `P` then require $`T_m(y) < m(B)`$ and $`T_m(x) : \mathbf{Rel}([m(B)])`$
+    1. If `$x has $B $y` in `P` then require $`T_m(x) < O_{m(B)}`$ and
+        * either $`T_m(y) < m(B)`$
+        * or $`T_m(y) = V$ for $V : \mathbf{Val}`$ and $`m(B) <_! V`$
+    1. If `$x has $B[] $y` in `P` then require $`T_m(x) < O_{m(B)}`$ and
+        * either $`T_m(y) < [m(B)]`$
+        * or $`T_m(y) = [V]`$ for $`V : \mathbf{Val}`$ and $`m(B) <_! V`$
+    1. If `$x in $y` in `P` then require $`[T_m(x)] \leq T_m(y)`$
+    1. If `$x = <EXPR>` in `P`, then require $`T(\mathrm{expr}) \leq T_m(x)`$ where $`T(\mathrm{expr})`$ is the type of the expression 
+        * _Note_: types of expressions can be computed recursively since assignments are acyclic.
+    1. If `$x = fun(<VARS>)` or `$x in fun(<VARS>)` in `P`, then require $`T(\mathrm{fun}) \leq T_m(y)`$ where $`T(\mathrm{fun})`$ is the output type of the function 
+  
+    _Remark_ 
+      * In the last to cases, we can replace $\leq$ with $=$ to compute the **minimal type assignment** (see "Answers" below).
+      * For **tvar**s `$x` we also pick $`m(x) : T_m(x)`$ as minimal as possible by default (e.g. `person : Ent` instead of `person : Type`).
+      * The extra cases for `has` are introduced to facilate working with computed values (of potentially non-attribute type) to match attributes.
 
-* _Some properties_: If `m` satisfies `P` then:
-  * **tvar**s `$T` always map to types
-  * **evar**s `$x` always map to elements
-  * **tvar**s `$T` never map to list types
-  * **evar**s `$x` may map to lists, but this is always indicated in the pattern `P` as we will see.
+   * _Replacing **var**s with concepts_. When discussing pattern satisfaction, we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). This also determines satisfaction of **partially assigned** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`, or `x isa $A`).
+<!-- Examples for the typing algorithm:
+fun a($x: person) -> name[]:
+match
+  $x has firstname $f;
+  $x has lastname $l;
+  $namelist = [$f, $l]; // type as `[$f] + [$l]`
+return $namelist;
+
+match
+  $x has color $y;
+  $x has name $y; // "violet"
+  $y isa color;
+
+// 2x2 matrix:
+// no:
+$y isa name;
+$y isa color;
+// no:
+$x has name $y;
+$y isa color;
+// no:
+$y isa name;
+$x has color $y;
+// yes:
+$x has name $y;
+$x has color $y;
+// TODO: are we happy with this?
+-->
+
+* _Answers_. A cmap `m` that satisfies a pattern `P` is an **answer** to the pattern if:
+  * **The map is minimal** in that no concept map with less variables satisfies `P`
+  * **Types are assigned minimally** in that no assignment with more specific types satisfies `P`
+  * All variables in `m` are **bound outside a negation** in `P`
+
+_Example_: Consider the pattern `$x isa Person;` (this pattern comprises a single statement). Than `($x -> p)` satisfies the pattern if `p` is an element of the type `Person` (i.e. $p : \mathsf{Person}$). The answer `($x -> p, $y -> p)` also satisfies the pattern, but it is not proper minimal.
 
 **Optional variables**
 
 _Key principle_:
 
 * If variables are used only in specific positions (called **optional positions**) of patterns, then they are optional variables.
-* Only **evar**s can be optional
-* A optional variable `$x` is allowed to have the empty concept assigned to it in an answer: $\mathsf{ev}(x) = \emptyset$.
+  * if a var is used in _any_ non-optional position, then the var become non-optional!
+* A optional variable `$x` is allowed to have the empty concept assigned to it in an answer: $m(x) = \emptyset$.
 
-**Partial answers convention**
-
-In the next section, we describe the answer satisfying statement. By convention (and for brevity), we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). Indeed, this also determines valid answers to **partially answered** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`) by assigning this partial answers to the variables in the fully variablized statement versions.
-
-**Variable bindings convention**
+**Variable boundedness condition**
 
 _Key principle_:
 
-* A pattern will only be accepted by TypeDB if all variables are **bound**. (Otherwise, we may encounter unbounded/literally impossible computations of answers.)
+* A pattern `P` will only be accepted by TypeDB if all variables are **bound**. 
+  * (Fun fact: otherwise, we may encounter unbounded/literally impossible computations of answers.)
 * A variable is bound if it appears in a _binding position_ of at least one statement. 
-(Most statements bind their variables: in the next section we highlight non-binding positions)
+  * Most statements bind their variables: in the next section we highlight _non-bound positions_
 
-**Type checking**
+### Concept satisfaction for patterns of ...
 
-_Remark_: _Type Checking_ preceeds answer computation. Type checking failure (**TCF**) will occur when a variables cannot possibly have an assigned type.
+Given a cmap `m` and pattern `P` we say `m` ***satisfies*** `P` if:
+* it's type assignment satisfies `P` as described in the previous section.
+* it's concept assignment satisfies `P` by satisfying _each statement in `P`_ ... as we now describe.
 
-### Satisfying type patterns
+### ... Types
 
 **Case TYPE_DEF**
-* `type $A` (for `type` in `{entity, relation, attribute}`) satisfied if $`\mathsf{ev}(A) : \mathbf{Type}`$
+* `Kind $A` (for `Kind` in `{entity, relation, attribute}`) is satisfied if $`m(A) : \mathbf{Kind}`$
 
-* `(type) $A sub $B` satisfied if $`\mathsf{ev}(A) : \mathbf{Type}`$, $`\mathsf{ev}(B) : \mathbf{Type}`$, $`\mathsf{ev}(A) \lneq \mathsf{ev}(B)$
-* `(type) $A sub! $B` satisfied if $`\mathsf{ev}(A) : \mathbf{Type}`$, $`\mathsf{ev}(B) : \mathbf{Type}`$, $`\mathsf{ev}(A) <_! \mathsf{ev}(B)$
+* `(Kind) $A sub $B` is satisfied if $`m(A) : \mathbf{Kind}`$, $`m(B) : \mathbf{Kind}`$, $`m(A) \lneq m(B)`$
+* `(Kind) $A sub! $B` is satisfied if $`m(A) : \mathbf{Kind}`$, $`m(B) : \mathbf{Kind}`$, $`m(A) <_! m(B)`$
 
 _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not`, and `is`. Similar remarks apply to **all** other `!`-variations of TypeQL key words below.
 
 **Case REL_PATT**
-* `$A relates $I` satisfied if $`\mathsf{ev}(A) : \mathbf{Rel}(\mathsf{ev}(I))`$
+* `$A relates $I` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$
 
-* `$A relates! $I` satisfied if $`\mathsf{ev}(A) : \mathbf{Rel}(\mathsf{ev}(I))`$ and **not** $`\mathsf{ev}(A) \lneq \mathsf{ev}(B) : \mathbf{Rel}(\mathsf{ev}(I))`$
-* `$A relates $I as $J` satisfied if $`\mathsf{ev}(A) : \mathbf{Rel}(\mathsf{ev}(I))`$, $`B : \mathbf{Rel}(\mathsf{ev}(J))`$, $`A < B`$, $\mathsf{ev}(I) < \mathsf{ev}(J)$.
-* `$A relates $I[]` satisfied if $`\mathsf{ev}(A) : \mathbf{Rel}(\mathsf{ev}([I]))`$
-* `$A relates! $I[]` satisfied if $`\mathsf{ev}(A) : \mathbf{Rel}(\mathsf{ev}([I]))`$ and **not** $`\mathsf{ev}(A) \lneq \mathsf{ev}(B) : \mathbf{Rel}(\mathsf{ev}([I]))`$
-* `$A relates $I[] as $J[]` satisfied if $`\mathsf{ev}(A) : \mathbf{Rel}(\mathsf{ev}([I]))`$, $`B : \mathbf{Rel}(\mathsf{ev}([J]))`$, $`A < B`$, $\mathsf{ev}(I) < \mathsf{ev}(J)$.
+* `$A relates! $I` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$ and **not** $`m(A) \lneq m(B) : \mathbf{Rel}(m(I))`$
+* `$A relates $I as $J` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$, $`B : \mathbf{Rel}(m(J))`$, $`A < B`$, $m(I) < m(J)$.
+* `$A relates $I[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$
+* `$A relates! $I[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$ and **not** $`m(A) \lneq m(B) : \mathbf{Rel}(m([I]))`$
+* `$A relates $I[] as $J[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$, $`B : \mathbf{Rel}(m([J]))`$, $`A < B`$, $m(I) < m(J)$.
 
 **Case PLAY_PATT**
-* `$A plays $I` satisfied if $`\mathsf{ev}(A) < A' <_! \mathsf{ev}(I)`$ (for $A'$ **not** an interface type)
-* `$A plays! $I` satisfied if $`\mathsf{ev}(A) <_! \mathsf{ev}(I)`$
+* `$A plays $I` is satisfied if $`m(A) < A' <_! m(I)`$ (for $A'$ **not** an interface type)
+* `$A plays! $I` is satisfied if $`m(A) <_! m(I)`$
 
 **Case OWNS_PATT**
-* `$A owns $B` satisfied if $`\mathsf{ev}(A) < A' <_! \mathsf{ev}(O_B)`$ (for $A'$ **not** an interface type)
-* `$A owns! $B` satisfied if $`\mathsf{ev}(A) <_! \mathsf{ev}(O_B)`$ 
+* `$A owns $B` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $A'$ **not** an interface type)
+* `$A owns! $B` is satisfied if $`m(A) <_! m(O_B)`$ 
 
 _Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` will match the answer `ans($X) = A`.
 
-### Satisfying constraint patterns
+### ... Constraints
 
 _Remark: the usefulness of constraint patterns seems overall low, could think of a different way to retrieve full schema or at least annotations (this would be more useful than, say,having to find cardinalities by "trialing and erroring" through matching). TODO: discuss!_
 
 **Case CARD_PATT**
 * cannot match `@card(n..m)` (TODO: discuss! `@card($n..$m)`??)
 <!-- 
-* `A relates I @card(n..m)` satisfied if $`\mathsf{ev}(A) : \mathbf{Rel}(\mathsf{ev}(I))`$ and schema allows $|a|_I$ to be any number in range `n..m`.
-* `A plays B:I @card(n..m)` satisfied if ...
-* `A owns B @card(n...m)` satisfied if ...
-* `$A relates $I[] @card(n..m)` satisfied if ...
-* `$A owns $B[] @card(n...m)` satisfied if ...
+* `A relates I @card(n..m)` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$ and schema allows $|a|_I$ to be any number in range `n..m`.
+* `A plays B:I @card(n..m)` is satisfied if ...
+* `A owns B @card(n...m)` is satisfied if ...
+* `$A relates $I[] @card(n..m)` is satisfied if ...
+* `$A owns $B[] @card(n...m)` is satisfied if ...
 -->
 
 **Case PLAYS_AS_PATT**
 
-_Notation: for readability, we simply write $X$ in place of $\mathsf{ev}(X)$ in this case and the next._
+_Notation: for readability, we simply write $X$ in place of $m(X)$ in this case and the next._
 
-* `$A plays $B:$I as $C:$J` satisfied if $A \leq A' <_! D' \leq D$ for some $D$s, and $I \leq I' <_! J' \leq J$, with $`A^{(')} < {I^{(')}}`$, $`D^{(')} < {J^{(')}}`$, and schema directly contains the constraint `A' plays B':I' as C':J'` for relation types $B \leq B' \leq_! C' \leq C$.
+* `$A plays $B:$I as $C:$J` is satisfied if $A \leq A' <_! D' \leq D$ for some $D$s, and $I \leq I' <_! J' \leq J$, with $`A^{(')} < {I^{(')}}`$, $`D^{(')} < {J^{(')}}`$, and schema directly contains the constraint `A' plays B':I' as C':J'` for relation types $B \leq B' \leq_! C' \leq C$.
 
 **Case OWNS_AS_PATT**
-* `$A owns $B as $C` satisfied if $A \leq A' <_! D' \leq D$ for some $D$s, and $B \leq B' <_! C' \leq C$, with $`A^{(')} < O_{B^{(')}}`$, $`D^{(')} < O_{C^{(')}}`$, and schema directly contains the constraint `A' owns B' as C'`.
+* `$A owns $B as $C` is satisfied if $A \leq A' <_! D' \leq D$ for some $D$s, and $B \leq B' <_! C' \leq C$, with $`A^{(')} < O_{B^{(')}}`$, $`D^{(')} < O_{C^{(')}}`$, and schema directly contains the constraint `A' owns B' as C'`.
 
 _Remark: these two are still not a natural constraint, as foreshadowed by a previous remark!_
 
 **Case UNIQUE_PATT**
-* `$A owns $B @unique` satisfied if $`\mathsf{ev}(A) < A' <_! \mathsf{ev}(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B) @key`.
+* `$A owns $B @unique` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B) @key`.
 
-* `$A owns! $B @unique` satisfied if $`\mathsf{ev}(A) <_! \mathsf{ev}(O_B)`$, and schema directly contains constraint `ans($A) owns ans($B) @unique`.
+* `$A owns! $B @unique` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `ans($A) owns ans($B) @unique`.
 
 **Case KEY_PATT**
-* `$A owns $B @key` satisfied if $`\mathsf{ev}(A) < A' <_! \mathsf{ev}(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B) @key`.
+* `$A owns $B @key` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B) @key`.
 
-* `$A owns! $B @key` satisfied if $`\mathsf{ev}(A) <_! \mathsf{ev}(O_B)`$, and schema directly contains constraint `ans($A) owns ans($B) @key`.
+* `$A owns! $B @key` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `ans($A) owns ans($B) @key`.
 
 **Case SUBKEY_PATT**
-* `$A owns $B @subkey(<LABEL>)` satisfied if $`\mathsf{ev}(A) < A' <_! \mathsf{ev}(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B) @subkey(<LABEL>)`.
+* `$A owns $B @subkey(<LABEL>)` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B) @subkey(<LABEL>)`.
 
 **Case ABSTRACT_PATT**
-* `(type) $B @abstract` satisfied if schema directly contains `(type) ans($B) @abstract`.
-* `$A plays $B:$I @abstract` satisfied if $`\mathsf{ev}(A) < A'`$, $`\mathsf{ev}(B) : \mathbf{Rel}(\mathsf{ev}(I))`$, $`\mathsf{ev}(B) < B' : \mathbf{Rel}(\mathsf{ev}(I))`$ and schema directly contains constraint `A' plays B':ans($I) @abstract`.
-* `$A owns $B @abstract` satisfied if $`\mathsf{ev}(A) < A'`$ and schema directly contains one of the constraints
+* `(type) $B @abstract` is satisfied if schema directly contains `(type) ans($B) @abstract`.
+* `$A plays $B:$I @abstract` is satisfied if $`m(A) < A'`$, $`m(B) : \mathbf{Rel}(m(I))`$, $`m(B) < B' : \mathbf{Rel}(m(I))`$ and schema directly contains constraint `A' plays B':ans($I) @abstract`.
+* `$A owns $B @abstract` is satisfied if $`m(A) < A'`$ and schema directly contains one of the constraints
   * `A' owns ans($B) @abstract`
   * `A' owns ans($B)[]`
 
-* `$A owns $B[] @abstract` satisfied if $`\mathsf{ev}(A) < A'`$ and schema directly contains constraint `A' owns ans($B)[] @abstract`.
-* `$B relates $I @abstract` satisfied if $`B : \mathbf{Rel}(I)`$, $`\mathsf{ev}(B) < B'`$, and schema directly contains constraint `B' relates ans($I) @abstract`.
-* `$B relates $I[] @abstract` satisfied if $`B : \mathbf{Rel}([I])`$, $`\mathsf{ev}(B) < B'`$, and schema directly contains constraint `B' relates ans($I)[] @abstract`.
+* `$A owns $B[] @abstract` is satisfied if $`m(A) < A'`$ and schema directly contains constraint `A' owns ans($B)[] @abstract`.
+* `$B relates $I @abstract` is satisfied if $`B : \mathbf{Rel}(I)`$, $`m(B) < B'`$, and schema directly contains constraint `B' relates ans($I) @abstract`.
+* `$B relates $I[] @abstract` is satisfied if $`B : \mathbf{Rel}([I])`$, $`m(B) < B'`$, and schema directly contains constraint `B' relates ans($I)[] @abstract`.
 
 **Case VALUES_PATT**
 * cannot match `@values/@regex/@range` (TODO: discuss!)
 <!--
-* `A owns B @values(v1, v2)` satisfied if 
-* `A owns B @regex(<EXPR>)` satisfied if 
-* `A owns B @range(v1..v2)` satisfied if 
-* `A value B @values(v1, v2)` satisfied if 
-* `A value B @regex(<EXPR>)` satisfied if 
-* `A value B @range(v1..v2)` satisfied if 
+* `A owns B @values(v1, v2)` is satisfied if 
+* `A owns B @regex(<EXPR>)` is satisfied if 
+* `A owns B @range(v1..v2)` is satisfied if 
+* `A value B @values(v1, v2)` is satisfied if 
+* `A value B @regex(<EXPR>)` is satisfied if 
+* `A value B @range(v1..v2)` is satisfied if 
 -->
 
 **Case DISTINCT_PATT**
-* `A owns B[] @distinct` satisfied if $`\mathsf{ev}(A) < A' <_! \mathsf{ev}(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B)[] @distinct`.
-* `B relates I[] @distinct` satisfied if $`\mathsf{ev}(B) : \mathbf{Rel}(\mathsf{ev}([I]))`$, $`B < B'`$ and schema directly contains `B' relates I[] @distinct`.
+* `A owns B[] @distinct` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns ans($B)[] @distinct`.
+* `B relates I[] @distinct` is satisfied if $`m(B) : \mathbf{Rel}(m([I]))`$, $`B < B'`$ and schema directly contains `B' relates I[] @distinct`.
 
-### Satisfying data patterns
+### ... Data
 
 **Case ISA_PATT**
-* `$x isa $T` satisfied if $`\mathsf{ev}(x) : \mathsf{ev}(T)`$ for $`\mathsf{ev}(T) : \mathbf{ERA}`$
-* `$x isa! $T` satisfied if $`\mathsf{ev}(x) :_! \mathsf{ev}(T)`$ for $`\mathsf{ev}(T) : \mathbf{ERA}`$
+* `$x isa $T` is satisfied if $`m(x) : m(T)`$ for $`m(T) : \mathbf{ERA}`$
+* `$x isa! $T` is satisfied if $`m(x) :_! m(T)`$ for $`m(T) : \mathbf{ERA}`$
 
 **Case LINKS_PATT**
-* `$x links ($I: $y)` satisfied if $`\mathsf{ev}(x) : A(\mathsf{ev}(y):\mathsf{ev}(I))`$ for some $`A : \mathbf{Rel}(\mathsf{ev}(I))`$.
-* `$x links ($I[]: $y)` satisfied if $`\mathsf{ev}(x) : A(\mathsf{ev}(y):[\mathsf{ev}(I)])`$ for some $`A : \mathbf{Rel}([\mathsf{ev}(I)])`$.
-* `$x links ($y)` is equivalent to `$x links ($_: $y)` for anonymous `$_`
+* `$x links ($I: $y)` is satisfied if $`m(x) : A(m(y):m(I))`$ for some $`A : \mathbf{Rel}(m(I))`$.
+* `$x links ($I[]: $y)` is satisfied if $`m(x) : A(m(y):[m(I)])`$ for some $`A : \mathbf{Rel}([m(I)])`$.
+* `$x links ($y)` is equivalent to `$x links ($_: $y)` for anonymous `$_` (See "Syntactic Sugar")
 
 **Case HAS_PATT**
-* `$x has $B $y` satisfied if $`\mathsf{ev}(y) : \mathsf{ev}(B)(\mathsf{ev}(x):O_{\mathsf{ev}(B)})`$ for some $`\mathsf{ev}(B) : \mathbf{Att}`$.
-* `$x has $B[] $y` satisfied if $`\mathsf{ev}(y) : [\mathsf{ev}(B)](\mathsf{ev}(x):O_{\mathsf{ev}(B)})`$ for some $`\mathsf{ev}(B) : \mathbf{Att}`$.
+* `$x has $B $y` is satisfied if $`m(y) : m(B)(m(x):O_{m(B)})`$ for some $`m(B) : \mathbf{Att}`$.
+* `$x has $B[] $y` is satisfied if $`m(y) : [m(B)](m(x):O_{m(B)})`$ for some $`m(B) : \mathbf{Att}`$.
 * `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
 
 **Case IS_PATT**
-* `$x is $y` satisfied if $`\mathsf{ev}(x) :_! A`$, $`\mathsf{ev}(y) :_! A`$, $`\mathsf{ev}(x) = \mathsf{ev}(y)`$, for $`A : \mathbf{ERA}`$
-* `$A is $B` satisfied if $`A = B`$ for $`A : \mathbf{ERA}`$, $`B : \mathbf{ERA}`$
+* `$x is $y` is satisfied if $`m(x) :_! A`$, $`m(y) :_! A`$, $`m(x) = m(y)`$, for $`A : \mathbf{ERA}`$
+* `$A is $B` is satisfied if $`A = B`$ for $`A : \mathbf{ERA}`$, $`B : \mathbf{ERA}`$
 
 ***System property***
 
-1. In the `is` pattern, left or right variable are **not bound**.
+1. In the `is` pattern, left or right variables are **not bound**.
 
-_Remark_: In the `is` pattern we cannot syntactically distinguish whether we are in the "type" or "element" case, but this is alleviated by the pattern being non-binding: statements which bind these variables determine which case we are in.
+_Remark_: In the `is` pattern we cannot syntactically distinguish whether we are in the "type" or "element" case (it's the only such pattern where tvars and evars can be in the same position!) but this is alleviated by the pattern being non-binding, i.e. we require further statements which bind these variables, which then determines them to be tvars are evars.
 
-### Satisfying value expression patterns
+### ... Expressions
 
 Expression are part of some patterns, which we discuss in this section under the name "expression patterns". First, we briefly touch on the definition of the grammar for expressions itself. 
 
@@ -902,7 +965,7 @@ INT       ::= VAR | long | ( INT ) | INT (+|-|*|/|%) INT | INT_LIST[ INT ]
               | (ceil|floor|round)( DBL ) | abs( INT ) | len( T_LIST )
               | (max|min) ( INT ,..., INT )
 DBL       ::= VAR | double | ( DBL ) | DBL (+|-|*|/) DBL | DBL_LIST[ INT ]
-              | (max|min) ( INT ,..., INT ) | // TODO: convert INT to DBL??
+              | (max|min) ( DBL ,..., DBL ) | // TODO: convert INT to DBL??
 STRING    ::= VAR | string | string + string | STRING_LIST[INT]
 DATETIME  ::= VAR | datetime | DATETIME (+|-) TIME | DATETIME_LIST[ INT ]
 TIME      ::= VAR | time | TIME (+|-) TIME | TIME_LIST[ INT ]
@@ -917,27 +980,28 @@ EXPR      ::= BOOL | INT | STRING | DATETIME | TIME | LIST_EXPR
 1. Generally, variables in expressions `<EXPR>` are **never bound**, except ...
 2. The exception are **single-variable list indices**, i.e. `$list[$index]`; in this case `$index` is bound. (This makes sense, since `$list` must be bound elsewhere, and then `$index` is bound to range over the length of the list)
 
-_Remark_: The exception for 2. is mainly for convenience. Indeed, you could always explicitly bind `$index` with the pattern `$index in [0..len($list)-1];`. See "Case IN_LIST_PATT" below.
+_Remark_: The exception for 2. is mainly for convenience. Indeed, you could always explicitly bind `$index` with the pattern `$index in [0..len($list)-1];`. See "Case **IN_LIST_PATT**" below.
 
 
 **Case ASS_PATT**
-* `$x = <EXPR>` is satisfied if $`\mathsf{ev}(x)`$ equals the expression on the right-hand side, evaluated after substituting answer for all its variables.
+* `$x = <EXPR>` is satisfied if $`m(x)`$ equals the expression on the right-hand side, evaluated after substituting answer for all its variables.
 
 ***System property***
 
-1. _Assignemnts bind_. The left-hand variable is bound by the pattern.
-2. _Acyclicity_. It must be possibly to determine answers of all variables in `<EXPR>` before answering `$x` — this avoids cyclic assignments (like `$x = $x + $y; $y = $y - $x;`)
+1. _Assignments bind_. The left-hand variable is bound by the pattern.
+2. _Assign once, to vars only_. Any variable can be assigned only once within a pattern—importantly, the left hand side _must be_ a variable (replacing it with a concept will throw an error; this implicitly applies to "Match semantics").
+3. _Acyclicity_. It must be possibly to determine answers of all variables in `<EXPR>` before answering `$x` — this avoids cyclic assignments (like `$x = $x + $y; $y = $y - $x;`)
 
 **Case IN_LIST_PATT**
-* `$x in $l` is satisfied if $`\mathsf{ev}(l) : [A]`$ for $`A : \mathbf{Type}`$ and $`\mathsf{ev}(x) \in \mathsf{ev}(l)`$
-* `$x in <LIST_EXPR>` is equivalent to `$l = <LIST_EXPR>; $x in $l` 
+* `$x in $l` is satisfied if $`m(l) : [A]`$ for $`A : \mathbf{Type}`$ and $`m(x) \in m(l)`$
+* `$x in <LIST_EXPR>` is equivalent to `$l = <LIST_EXPR>; $x in $l` (see "Syntactic Sugar") 
 
 ***System property***
 
 1. The right-hand side variable(s) of the pattern are **not bound**. (The left-hand side variable is bound.)
 
 **Case EQ_PATT**
-* `$x == $y` is satisfied if $`\mathsf{ev}(x) : V`$, $`\mathsf{ev}(y) : V`$ for a value type $`V`$ (either primitive or struct), and $`\mathsf{ev}(x) = \mathsf{ev}(y)`$
+* `$x == $y` is satisfied if $`m(x) : V`$, $`m(y) : V`$ for a value type $`V`$ (either primitive or struct), and $`m(x) = m(y)`$
 * `$x != $y` is equivalent to `not { $x == $y }` (see "Satisfying composite patterns")
 
 ***System property***
@@ -960,28 +1024,28 @@ The following are all kind of obvious.
 
 1. In all the above patterns all their variables are **not bound**.
 
-### Satisfying function patterns
+### ... Functions
 
 **Case IN_FUN_PATT**
 * `$x, $y?, ... = <FUN_CALL>` is satisfied if substituting answers in `<FUN_CALL>` yields a **function answer set** $F$ (see "Function semantics") of tuples $t$, and for some tuple $t \in F$ we have:
-  * for the $i$th variable `$z`, which is non-optional, we have $`\mathsf{ev}(z) = t_i`$
+  * for the $i$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
   * for the $i$th variable `$z`, which is marked as optional using `?`, we have either
-    * $\mathsf{ev}(z) = t_i$ and $t_i \neq \emptyset$
-    * $\mathsf{ev}(z) = t_i$ and $t_i = \emptyset$
+    * $`m(z) = t_i$ and $t_i \neq \emptyset`$
+    * $`m(z) = t_i$ and $t_i = \emptyset`$
 
 **Case ASS_FUN_PATT**
 * `$x, $y?, ... = <FUN_CALL>` is satisfied if substituting answers in `<FUN_CALL>` yields a **function answer tuple** $f$ (see "Function semantics") and we have:
-  * for the $i$th variable `$z`, which is non-optional, we have $`\mathsf{ev}(z) = t_i`$
+  * for the $i$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
   * for the $i$th variable `$z`, which is marked as optional using `?`, we have either
-    * $\mathsf{ev}(z) = t_i$ and $t_i \neq \emptyset$
-    * $\mathsf{ev}(z) = t_i$ and $t_i = \emptyset$
+    * $`m(z) = t_i$ and $t_i \neq \emptyset`$
+    * $`m(z) = t_i$ and $t_i = \emptyset`$
 
 _Remark_: variables marked with `?` in function assignments are the first example of **optional variables**. We will meet other pattern yielding optional variables in the following section.
 
 
-### Satisfying composite patterns
+### ... Patterns
 
-Now that we have seen how to determine when answers satisfy individual statements, we can extend our discussion of match semantics to full pattern.
+Now that we have seen how to determine when answers satisfy individual statements, we can extend our discussion of match semantics to composite patterns (patterns of patterns).
 
 **Case AND_PATT**
 * An answer satisfies the pattern `<PATT1>; <PATT2>;` that simultaneously satisfies both `<PATT1>` and `<PATT2>`.
@@ -998,20 +1062,20 @@ _Remark_: this generalize to a chain of $k$ `or` clauses.
 **Case TRY_PATT**
 * The pattern `try { <PATT> };` is equivalent to the pattern `{ <PATT> } or { not { <PATT>}; };`.
 
-### Answer sets
 
-Given a database (data model + data), define the _answer set_ `ans(<PATT>)` to be the set of **proper minimal** answers that satisfy the pattern `<PATT>`.
+## Match semantics
 
-_Definition_. Here, "proper minimal" means 
-* we cannot remove variables from the answer concept map without dissatisfying `<PATT>`
-* all variables in the answer concept map appear outside of a `not` block at least once. 
+A `match` clause comprises a pattern `P`.
 
-_Example_: Consider the pattern `$x isa Person;` (this pattern comprises a single statement). Than `($x -> p)` satisfies the pattern if `p` is an element of the type `Person` (i.e. $p : \mathsf{Person}$). The answer `($x -> p, $y -> p)` also satisfies the pattern, but it is not proper minimal.
+* _Input cmaps_: The clause can take as input a stream `{ m }` of concept maps `m`.
 
-_Note: we will discuss the insertion of data and relevant system properties in "Insert semantics"._
+* _Output cmaps_: For each `m`: 
+  * replace all patterns in `P` with concepts from `m`. 
+  * Compute the stream of answert `{ m' }`. 
+  * The final output stream will be `{ (m,m') }`.
 
 
-## Function semantics
+## Functions semantics
 
 ### Function signature, body, operators
 
@@ -1105,17 +1169,27 @@ _Syntax_:
 * Each `<AGG>` reduces the final concept map set to a single value
   * These reduction operations are described in "Reduce"
 
-### Recursion
+### Recursion and recursive semantics
 
-Functions can be called recursively, as long as negation can be stratified. The semantics in this case is computed "stratum by stratum".
+Functions can be called recursively, as long as negation can be stratified:
+* The set of all defined functions is divided into groups called "strata" which are ordered
+* If a function `F` calls a function `G` if must be a in an equal or higher stratum. Moreover, if `G` appears behind an odd number of `not { ... }` in the body of `F`, then `F` must be in a strictly strictly stratum.
+
+The semantics in this case is computed "stratum by stratum" from lower strata to higher strata. New facts in our type systems ($`t : T`$) are derived in a bottom-up fashion for each stratum separately.
+
 
 ## Insert semantics
 
 ### Basics of inserting
 
-* `insert` clause comprises collection of _insert statements_
-* _Input_: The clause can take as input a stream `{ m }` of concept maps `m`, in which case 
+An `insert` clause comprises collection of _insert statements_
+
+* _Input cmap_: The clause can take as input a stream `{ m }` of concept maps `m`, in which case 
   * the clause is **executed** for each map `m` in the stream individually
+
+* _Extending input map_: Insert clauses can extend bindings of the input concept map `m` in two ways
+  * `$x` is the subject of an `isa` statement in the `insert` clause, in which case $m(x) =$ _newly-inserted-concept_ (see "Case **ISA_INS**")
+  * `$x` is the subject of an `=` assignment statement in the `insert` clause, in which case $m(x) =$ _assigned-value_ (see "Case **ASS_INS**")
 
 * _Execution_: An `insert` clause is executed by executing its statements individually.
   * Not all statement need to execute (see Optionality below)
@@ -1126,17 +1200,11 @@ Functions can be called recursively, as long as negation can be stratified. The 
     2. We then execute all runnable `isa` statements.
     3. Finally, we execute remaining runnable statements.
   * Executions of statements will modify the database state by 
-    * adding or refining elements in the type system (as described in the next sections)
-    * extending variable bindings (see "Bindings" below)
+    * adding elements
+    * refining dependencies
+  * (Execution can also affect the state of concept map `m` as mentioned above)
   * Modification are buffered in transaction (see "Transactions")
   * Violation of system properties or schema constraints will lead to failing transactions (see "Transactions")
-
-* _Bindings_: Insert-bindings in an `insert` clause map variables to concepts (similar to answers of a `match` clause).
-  * Write $`\mathsf{ev}(x)`$ for the concept that `$x` is mapped to.
-  * There are two ways in which $`\mathsf{ev}(x)`$ is defined:
-    * `$x` is the subject of an `isa` statement in the `insert` clause, in which case $\mathsf{ev}(x) =$ _newly-inserted-concept_ (see "Case ISA_INS")
-    * `$x` is the subject of an `=` assignment statement in the `insert` clause, in which case $\mathsf{ev}(x) =$ _assigned-value_ (see "Case ASS_INS")
-    * in the input map `m`, `m($x)` is non-empty in which case $\mathsf{ev}(x) =$ `m(x)`
 
 * _Optionality_: Optional variables are those exclusively appearing in a `try` block
   * `try` blocks in `insert` clauses cannot be nested
@@ -1150,15 +1218,15 @@ Functions can be called recursively, as long as negation can be stratified. The 
 ### Insert statements
 
 **Case ISA_INS**
-* `$x isa A` adds new $`a :_! A`$ for $`A : \mathbf{ERA}`$ and sets $\mathsf{ev}(x) = a$
-* `$x isa $T` adds new $`a :_! \mathsf{ev}(T)`$ ($T$ must be bound) and sets $\mathsf{ev}(x) = a$
+* `$x isa A` adds new $`a :_! A`$ for $`A : \mathbf{ERA}`$ and sets $m(x) = a$
+* `$x isa $T` adds new $`a :_! m(T)`$ ($T$ must be bound) and sets $m(x) = a$
 
 ***System property***:
 
 1. `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input map `m` nor in other `isa` or `=` statements).
 
 **Case ISA_INS**
-* `$x = <EXPR>` adds nothing, and sets $\mathsf{ev}(x) = v$ where $v$ is the value that `<EXPR>` evaluates to.
+* `$x = <EXPR>` adds nothing, and sets $m(x) = v$ where $v$ is the value that `<EXPR>` evaluates to.
 
 ***System property***:
 
@@ -1167,12 +1235,12 @@ Functions can be called recursively, as long as negation can be stratified. The 
 3. `<EXPR>` cannot contain function calls.
 
 **Case LINKS_INS** 
-* `$x links (I: $y)` refines $`x :_! A(a : J, b : K, ...)`$ to $`x :_! A(\mathsf{ev}(y)a : J, b : K, ...)`$ 
-* `$x links ($I: $y)` refines $`x :_! A(a : J, b : K, ...)`$ to $`x :_! A(\mathsf{ev}(y)a : \mathsf{ev}(I), b : K, ...)`$ 
+* `$x links (I: $y)` refines $`x :_! A(a : J, b : K, ...)`$ to $`x :_! A(m(y)a : J, b : K, ...)`$ 
+* `$x links ($I: $y)` refines $`x :_! A(a : J, b : K, ...)`$ to $`x :_! A(m(y)a : m(I), b : K, ...)`$ 
 
 **Case HAS_INS**
-* `$x has A $y` adds new $`\mathsf{ev}(y) :_! A(\mathsf{ev}(x) : O_A)`$
-* `$x has $A $y` adds new $`\mathsf{ev}(y) :_! \mathsf{ev}(A)(\mathsf{ev}(x) : O_{\mathsf{ev}(A)})`$
+* `$x has A $y` adds new $`m(y) :_! A(m(x) : O_A)`$
+* `$x has $A $y` adds new $`m(y) :_! m(A)(m(x) : O_{m(A)})`$
 
 ### Optional inserts
 
@@ -1185,9 +1253,10 @@ Functions can be called recursively, as long as negation can be stratified. The 
 
 ***System property***:
 
-1. Cannot add $`\mathsf{ev}(y) :_! A(\mathsf{ev}(x) : O_A)`$ if there exists $B < A$.
+1. Cannot add $`m(y) :_! A(m(x) : O_A)`$ if there exists $B < A$.
 
 _Remark_. We want to get rid of this constraint (TODO).
+
 
 
 ## Delete semantics
@@ -1195,102 +1264,147 @@ _Remark_. We want to get rid of this constraint (TODO).
 ### Basics of deleting
 
 
-* `delete` clause comprises collection of _delete statements_
-* _Input_: The clause can take as input a stream `{ m }` of concept maps `m`, in which case 
+A `delete` clause comprises collection of _delete statements_.
+
+* _Input cmaps_: The clause can take as input a stream `{ m }` of concept maps `m`: 
   * the clause is **executed** for each map `m` in the stream individually
+
+* _Updating input maps_: Delete clauses can update bindings of their input concept map `m`
+  * Executing `delete $x;` will remove `$x` from `m` (but `$x` may still appear in other cmaps `m'` of the input stream)
+
+_Remark_: Previously, it was suggested: if `$x` is in `m` and $`m(x)`$ is deleted from $`T_m(x)`$ by the end of the execution of the clause (for _all_ input maps of the input stream) then we set $`m(x) = \emptyset`$ and $`T_m(x) = \emptyset`$.
+Fundamental question: **is it better to silently remove vars? Or throw an error if vars pointing to deleted concepts are used?** (TODO)
+* Only for `delete $x;` can we statically say that `$x` must not be re-used
+* Other question: would this interact with try? idea: take $`m(x) = \emptyset`$ if it points to a previously deleted concept
+
+<!--
+match 
+  $x isa Thing, has Property $p;
+delete 
+  Property $p of $x;
+... // can still use $p
+
+match
+  $x isa Thing, has Id "id", has Property $p;
+  $y isa Bool; try { $y == true; $x has Property $q; }
+delete
+  try { Property $q of $x; }
+... // output could be:
+($x -> "id", $p -> EMPTY, $y -> false)
+($x -> "id", $p -> EMPTY, $y -> true, $q -> EMPTY)
+
+... removing attributes tells us NOTHING about how many "has" references were actually deleted!!
+-->
 
 * _Execution_: An `delete` clause is executed by executing its statements individually.
   * Not all statement need to execute (see Optionality below)
     * **runnable** statements will be executed
     * **skipped** statements will not be executed
-  * The order of execution is arbitrary except for:
-    1. We execute all runnable `=` assignments first.
-    2. We then execute delete runnable `isa` statements.
-    3. Finally, we execute remaining runnable statements.
+  * The order of execution is arbitrary order.
   * Executions of statements will modify the database state by 
-    * adding or refining elements in the type system (as described in the next sections)
-    * extending variable bindings (see "Bindings" below)
+    * removing elements 
+    * coarsening dependencies
   * Modification are buffered in transaction (see "Transactions")
   * Violation of system properties or schema constraints will lead to failing transactions (see "Transactions")
 
-* _Deletion_: delete-bindings in an `delete` clause map variables to concepts (similar to answers of a `match` clause).
-  * Write $`\mathsf{ev}(x)`$ for the concept that `$x` is mapped to.
-  * There are two ways in which $`\mathsf{ev}(x)`$ is defined:
-    * `$x` is the subject of an `isa` statement in the `delete` clause, in which case $\mathsf{ev}(x) =$ _newly-deleted-concept_ (see "Case ISA_INS")
-    * `$x` is the subject of an `=` assignment statement in the `delete` clause, in which case $\mathsf{ev}(x) =$ _assigned-value_ (see "Case ASS_INS")
-    * in the input map `m`, `m($x)` is non-empty in which case $\mathsf{ev}(x) =$ `m(x)`
-
 * _Optionality_: Optional variables are those exclusively appearing in a `try` block
   * `try` blocks in `delete` clauses cannot be nested
-  * `try` blocks variables are **block-level bound** if
-    * they are bound outside the block
-    * they are bound by an `isa` or `=` statement in the block
-  * If any variable is not block-level bound, the `try` block statements are skipped.
-  * If all variables are block-level bound, the `try` block statements are runnable.
-  * All variables outside of a `try` block must be bound outside of that try block (in other words, variable in a block bound with `isa` cannot be used outside of the block)
+  * `try` blocks variables are **block-level bound** if they are bound in `m`
+  * If any variable is not block-level bound, the `try` block statements are **skipped**.
+  * If all variables are block-level bound, the `try` block statements are **runnable**.
 
 ### Delete statements
 
 **case CONCEPT_DEL**
-* `$x;` removes $`\mathsf{ev}(x) :_! A(...)$, and removes $`\mathsf{ev}(x)`$ from all dependent types:
-  * coarsen $`b :_! B(\mathsf{ev}(x) : I, z : J, ...)`$ to $`b :_! B(z : J, ...)`$
+* `$x;` removes $`m(x) :_! A(...)`$. If $`m(x)`$ is an object, we also:
+  * coarsen $`b :_! B(m(x) : I, z : J, ...)`$ to $`b :_! B(z : J, ...)`$ for any such dependency on $`m(x)`$
 
 _Remark 1_. This applies both to $`B : \mathbf{Rel}`$ and $`B : \mathbf{Att}`$.
 
-_Remark 2_. The resulting $`\mathsf{ev}(x) :_! \mathsf{ev}(A)(z : J, ...)`$ must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
+_Remark 2_. The resulting $`m(x) :_! m(A)(z : J, ...)`$ must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
 
 ***System property***:
 
-1. If $`\mathsf{ev}(x)`$  
+1. If $`m(x) : A : \mathbf{Att}`$ and $`A`$ is _non_ marked `@independent` then the transaction will fail.
 
 
 **case CONCEPT_CASC_DEL**
-* `$x @cascade(C, D, ...)` removes $`\mathsf{ev}(x) :_! A(...)$, and removes $`\mathsf{ev}(x)`$ from all dependent types:
-  * coarsen $`b :_! B(\mathsf{ev}(x) : I, z : J, ...)`$ to $`b :_! B(z : J, ...)`$. Next:
+* `$x @cascade(C, D, ...)` removes $`m(x) :_! A(...)`$. If $`m(x)`$ is an object, we also:
+  * coarsen $`b :_! B(m(x) : I, z : J, ...)`$ to $`b :_! B(z : J, ...)`$. Next:
     * if the following are _both_ satisfied:
       1. the coarsened axiom $`b :_! B(...)`$ violates interface cardinality of $B$,
       2. $B$ is among the listed types `C, D, ...`
 
-      then: recursively execute delete statement `b isa B @cascade(C, D, ...)`
+      then: **recursively execute** delete statement `b isa B @cascade(C, D, ...)`
 
 _Remark_. In an earlier version of the spec, condition (1.) for the recursive delete was omitted—however, there are two good reasons to include it:
 
 1. The extra condition only makes a difference when non-default interface cardinalities are imposed, in which case it is arguably useful to adhere to those custom constraints.
 2. The extra condition ensure that deletes cannot interfere with one another, i.e. the order of deletion does not matter.
 
-**case LINKS_DEL**
-* `$x links ($I: $y)` coarsens $`\mathsf{ev}(x) :_! \mathsf{ev}(A)(\mathsf{ev}(y) : \mathsf{ev}(I), z : J, ...)`$ to $`\mathsf{ev}(x) :_! \mathsf{ev}(A)(z : J, ...)`$
+**case ROL_OF_DEL**
+* `($I: $y) of $x` coarsens $`m(x) :_! m(A)(m(y) : m(I), z : J, ...)`$ to $`m(x) :_! m(A)(z : J, ...)`$
 
-_Remark_. The resulting $`\mathsf{ev}(x) :_! \mathsf{ev}(A)(z : J, ...)`$ must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
+_Remark_. The resulting $`m(x) :_! m(A)(z : J, ...)`$ must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
 
-**case HAS_DEL**
-* `$x has $B $y` removes all direct typing axioms $`\mathsf{ev}(y) :_! B'(\mathsf{ev}(x) : O_{\mathsf{ev}(B)})`$ for all possible $`B' < \mathsf{ev}(B)`$
+**case ATT_OF_DEL**
+* `$B $y of $x` coarsens $`m(y) :_! B'(m(x) : O_{m(B)})`$ to $`m(y) :_! B'()`$ for all possible $`B' < m(B)`$
 
-_Remark_. Note the subtyping here! It only makes sens for attribute.
+_Remark_. Note the subtyping here! It only makes sense in this case though since the same value `$y` may have been inserted in multiple attribute subtypes (this is not the case for **LINKS_DEL**)—at least if we lift the "Leaf attribute system constraint".
 
+### Clean-up
 
-### Optional deletes
+Orphaned relation and attribute instance (i.e. those with insufficient dependencies) are cleaned up at the end of a delete  clause.
 
 ## Update semantics
 
 ### Basics of updating
 
-* `update` clause comprises collection of _update statements_
-* the clause must take as input a concept map `m` (or a stream thereof, in which case the clause is executed for each map `m` in the stream individually)
-* All variables `$x` in delete statement have to be _bound_ to in the concept, `bnd($x) = c`, in the concept maps 
+A `update` clause comprises collection of _update statements_.
+
+* _Input cmap_: The clause can take as input a stream `{ m }` of concept maps `m`, in which case 
+  * the clause is **executed** for each map `m` in the stream individually
+
+* _Updating input maps_: Update clauses do not update bindings of their input cmap `m`
+
+* _Execution_: An `update` clause is executed by executing its statements individually in any order.
+  * TODO: this might be non-deterministic if the same thing is updated multiple times, solution outlined here: throw error if that's the case!
+
+* _Optionality_: Optional variables are those exclusively appearing in a `try` block
+  * `try` blocks in `delete` clauses cannot be nested
+  * `try` blocks variables are **block-level bound** if they are supplied by `m`
+  * If any variable is not block-level bound, the `try` block statements are **skipped**.
+  * If all variables are block-level bound, the `try` block statements are **runnable**.
 
 ### Update statements
 
-(keep cardinality in mind)
+**case LINKS_UP**
+* `$x links ($I: $y);` updates $`m(x) :_! A(b:J)`$ to $`m(x) :_! A(m(x) : m(I))`$
+
+***System property***:
+
+1. Require there to be exactly one present roleplayer for update to succeed.
+1. Require that each update happens at most once, or fail the transaction.
+
+**case HAS_UP**
+* `$x has $B: $y;` updates $`b :_! m(B)(x:O_{m(B)})`$ to $`m(y) :_! m(B)(x:O_{m(B)})`$
+
+***System property***:
+
+1. Require there to be exactly one present attribute for update to succeed.
+1. Require that each update happens at most once, or fail the transaction.
+
+### Clean-up
+
+Orphaned relation and attribute instance (i.e. those with insufficient dependencies) are cleaned up at the end of a delete  clause.
 
 ## Put semantics
 
-* the `put` clause can take as input a concept map `m` (or a stream thereof, in which case the clause is executed for each map `m` in the stream individually)
-* `put <PUT>` is equivalent to 
-  ```
-  if (match <PUT>; check;) then (match <PUT>;) else (insert <PUT>)
-  ```
-  In particular, `<PUT>` needs to be an `insert` compatible set of statements. 
+`put <PUT>` is equivalent to 
+```
+if (match <PUT>; check;) then (match <PUT>;) else (insert <PUT>)
+```
+In particular, `<PUT>` needs to be an `insert` compatible set of statements. 
 
 # Pipelines
 
@@ -1463,3 +1577,21 @@ part of a query pipeline
 ### Suffix
 
 `[]` and `?`.
+
+
+## Syntactic Sugar
+
+* `$x in <LIST_EXPR>` is equivalent to `$l = <LIST_EXPR>; $x in $l` (see "Syntactic Sugar") 
+* `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
+* `$x links ($y)` is equivalent to `$x links ($_: $y)` for anonymous `$_` (See "Syntactic Sugar")
+* `$x has $B <EXPR>` - `$x has $B $y; $y = <EXPR>`
+* `$x has $B <COMP>` - `$x has $B $y; $y <COMP>`
+* `$x has $y` - `$x has $_Y $y;` (_not_: `$_Y[]` !)
+
+## Typing of operators
+
+```
++ : T_LIST x T_LIST -> T_LIST
++ : STRING x STRING -> STRING
++ : DBL x DBL -> DBL
+```
