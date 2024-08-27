@@ -39,14 +39,12 @@ macro_rules! filter_variants {
     };
 }
 use concept::type_::{
-    attribute_type::AttributeType, owns::Owns, plays::Plays, relates::Relates, relation_type::RelationType,
-    role_type::RoleType, OwnerAPI, PlayerAPI,
+    attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relates::Relates,
+    relation_type::RelationType, role_type::RoleType, OwnerAPI, PlayerAPI,
 };
-use encoding::graph::definition::definition_key::DefinitionKey;
+use encoding::{graph::definition::definition_key::DefinitionKey, value::string_bytes::StringBytes};
 pub(crate) use filter_variants;
 use typeql::{schema::definable::type_, type_::Optional};
-use concept::type_::entity_type::EntityType;
-use encoding::value::string_bytes::StringBytes;
 
 use crate::{define::DefineError, definition_status::DefinitionStatus};
 
@@ -68,13 +66,15 @@ pub(crate) fn type_ref_to_label_and_ordering(
     }
 }
 
-pub(crate) fn named_type_to_label(
-    named_type: &NamedType,
-) -> Result<Label<'static>, SymbolResolutionError> {
+pub(crate) fn named_type_to_label(named_type: &NamedType) -> Result<Label<'static>, SymbolResolutionError> {
     match named_type {
         NamedType::Label(label) => Ok(Label::build(label.ident.as_str())),
-        NamedType::Role(scoped_label) => Ok(Label::build_scoped(scoped_label.name.ident.as_str(), scoped_label.scope.ident.as_str())),
-        NamedType::BuiltinValueType(_) => Err(SymbolResolutionError::ExpectedLabelButGotBuiltinValueType { named_type: named_type.clone() }),
+        NamedType::Role(scoped_label) => {
+            Ok(Label::build_scoped(scoped_label.name.ident.as_str(), scoped_label.scope.ident.as_str()))
+        }
+        NamedType::BuiltinValueType(_) => {
+            Err(SymbolResolutionError::ExpectedLabelButGotBuiltinValueType { named_type: named_type.clone() })
+        }
     }
 }
 
@@ -425,7 +425,9 @@ pub(crate) fn resolve_plays_role_label<'a>(
 ) -> Result<Plays<'static>, SymbolResolutionError> {
     match try_resolve_plays_role_label(snapshot, type_manager, object_type.clone(), label) {
         Ok(Some(plays)) => Ok(plays),
-        Ok(None) => Err(SymbolResolutionError::PlaysForLabelNotFound { object_type, role_label: label.clone().into_owned() }),
+        Ok(None) => {
+            Err(SymbolResolutionError::PlaysForLabelNotFound { object_type, role_label: label.clone().into_owned() })
+        }
         Err(source) => Err(SymbolResolutionError::UnexpectedConceptRead { source }),
     }
 }
@@ -441,7 +443,7 @@ pub(crate) fn try_resolve_plays_role_label<'a>(
             let role_type = try_resolve_role_type(snapshot, type_manager, label)?;
             match role_type {
                 Some(role_type) => try_resolve_plays(snapshot, type_manager, object_type, role_type),
-                None => Ok(None)
+                None => Ok(None),
             }
         }
         None => object_type.get_plays_role_name_with_overridden(snapshot, type_manager, label.name.as_str()),

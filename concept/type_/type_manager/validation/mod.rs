@@ -44,7 +44,7 @@ pub enum SchemaValidationError {
     StructCannotBeDeletedAsItsUsedAsValueTypeForStructs(String, usize),
     RoleNameShouldBeUniqueForRelationTypeHierarchy(Label<'static>, Label<'static>),
     CycleFoundInTypeHierarchy(Label<'static>, Label<'static>),
-    ChangingAttributeTypeSupertypeWillImplicitlyChangeItsValueType(Label<'static>, Option<ValueType>),
+    ChangingAttributeTypeSupertypeWillLeadToConflictingValueTypes(Label<'static>, Option<ValueType>, ValueType),
     CannotUnsetAbstractnessOfAttributeTypeAsItHasSubtypes(Label<'static>),
     CannotDeleteTypeWithExistingSubtypes(Label<'static>),
     CannotUnsetCapabilityWithExistingOverridingCapabilities(
@@ -280,7 +280,7 @@ impl Error for SchemaValidationError {
             Self::StructCannotBeDeletedAsItsUsedAsValueTypeForStructs(_, _) => None,
             Self::RoleNameShouldBeUniqueForRelationTypeHierarchy(_, _) => None,
             Self::CycleFoundInTypeHierarchy(_, _) => None,
-            Self::ChangingAttributeTypeSupertypeWillImplicitlyChangeItsValueType(_, _) => None,
+            Self::ChangingAttributeTypeSupertypeWillLeadToConflictingValueTypes(_, _, _) => None,
             Self::CannotUnsetAbstractnessOfAttributeTypeAsItHasSubtypes(_) => None,
             Self::CannotDeleteTypeWithExistingSubtypes(_) => None,
             Self::CannotUnsetCapabilityWithExistingOverridingCapabilities(_, _, _, _, _) => None,

@@ -44,9 +44,11 @@ use typeql::{
 
 use crate::{
     definition_resolution::{
-        filter_variants, get_struct_field_value_type_optionality, resolve_owns_declared, resolve_plays_declared, resolve_relates_declared,
-        resolve_struct_definition_key, resolve_typeql_type, resolve_value_type, try_unwrap, type_ref_to_label_and_ordering,
-        type_to_object_type, SymbolResolutionError,
+        filter_variants, get_struct_field_value_type_optionality, named_type_to_label, resolve_attribute_type,
+        resolve_owns, resolve_owns_declared, resolve_plays, resolve_plays_declared, resolve_plays_role_label,
+        resolve_relates, resolve_relates_declared, resolve_role_type, resolve_struct_definition_key,
+        resolve_typeql_type, resolve_value_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type,
+        SymbolResolutionError,
     },
     definition_status::{
         get_attribute_type_status, get_capability_annotation_status, get_entity_type_status, get_override_status,
@@ -54,7 +56,6 @@ use crate::{
         get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinitionStatus,
     },
 };
-use crate::definition_resolution::{named_type_to_label, resolve_attribute_type, resolve_owns, resolve_plays, resolve_plays_role_label, resolve_relates, resolve_role_type};
 
 macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path) => {
@@ -99,14 +100,16 @@ fn process_type_definitions(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
-    declarations.clone().try_for_each(|declaration| define_types(snapshot, type_manager, declaration))?;
+    declarations
+        .clone()
+        .try_for_each(|declaration| define_types(snapshot, type_manager, thing_manager, declaration))?;
+    declarations
+        .clone()
+        .try_for_each(|declaration| define_value_type(snapshot, type_manager, thing_manager, declaration))?;
     declarations
         .clone()
         .try_for_each(|declaration| define_type_annotations(snapshot, type_manager, thing_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| define_sub(snapshot, type_manager, thing_manager, declaration))?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| define_value_type(snapshot, type_manager, thing_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| define_alias(snapshot, type_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| {
         define_relates_with_annotations(snapshot, type_manager, thing_manager, declaration)
@@ -207,6 +210,7 @@ fn define_struct_fields(
 fn define_types(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
+    thing_manager: &ThingManager,
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
@@ -265,8 +269,8 @@ fn define_type_annotations(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ =
-        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| DefineError::DefinitionResolution { source })?;
     for typeql_annotation in &type_declaration.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
@@ -349,8 +353,8 @@ fn define_sub(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ =
-        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| DefineError::DefinitionResolution { source })?;
 
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Sub(sub) = &capability.base else {
@@ -419,8 +423,8 @@ fn define_value_type(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ =
-        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::ValueType(value_type_statement) = &capability.base else {
             continue;
@@ -502,8 +506,8 @@ fn define_relates_with_annotations(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ =
-        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Relates(relates) = &capability.base else {
             continue;
@@ -643,8 +647,8 @@ fn define_relates_overrides(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ =
-        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Relates(typeql_relates) = &capability.base else {
             continue;
@@ -655,8 +659,9 @@ fn define_relates_overrides(
 
         let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
             .map_err(|source| DefineError::DefinitionResolution { source })?;
-        let relates = resolve_relates_declared(snapshot, type_manager, relation_type.clone(), &role_label.name.as_str())
-            .map_err(|source| DefineError::DefinitionResolution { source })?;
+        let relates =
+            resolve_relates_declared(snapshot, type_manager, relation_type.clone(), &role_label.name.as_str())
+                .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         define_relates_override(snapshot, type_manager, thing_manager, &label, relates, typeql_relates)?;
     }
@@ -672,8 +677,9 @@ fn define_relates_override<'a>(
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), DefineError> {
     if let Some(overridden_label) = &typeql_relates.overridden {
-        let overridden_relates = resolve_relates(snapshot, type_manager, relates.relation(), &overridden_label.ident.as_str())
-            .map_err(|source| DefineError::DefinitionResolution { source })?;
+        let overridden_relates =
+            resolve_relates(snapshot, type_manager, relates.relation(), &overridden_label.ident.as_str())
+                .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         let need_define = check_can_and_need_define_override(
             snapshot,
@@ -698,8 +704,8 @@ fn define_owns_with_annotations(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ =
-        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Owns(owns) = &capability.base else {
             continue;
@@ -779,13 +785,13 @@ fn define_owns_overrides(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ =
-        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Owns(typeql_owns) = &capability.base else {
             continue;
         };
-        let (attr_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_owns.owned)
+        let (attr_label, _) = type_ref_to_label_and_ordering(&label, &typeql_owns.owned)
             .map_err(|source| DefineError::DefinitionResolution { source })?;
         let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
             .map_err(|source| DefineError::DefinitionResolution { source })?;
@@ -837,8 +843,8 @@ fn define_plays_with_annotations(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ =
-        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Plays(plays) = &capability.base else {
             continue;
@@ -900,8 +906,8 @@ fn define_plays_overrides(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ =
-        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Plays(typeql_plays) = &capability.base else {
             continue;
@@ -930,8 +936,8 @@ fn define_plays_override<'a>(
     typeql_plays: &TypeQLPlays,
 ) -> Result<(), DefineError> {
     if let Some(overridden_type_name) = &typeql_plays.overridden {
-        let overridden_label = named_type_to_label(overridden_type_name)
-            .map_err(|source| DefineError::DefinitionResolution { source })?;
+        let overridden_label =
+            named_type_to_label(overridden_type_name).map_err(|source| DefineError::DefinitionResolution { source })?;
         let overridden_plays = resolve_plays_role_label(snapshot, type_manager, plays.player(), &overridden_label)
             .map_err(|source| DefineError::DefinitionResolution { source })?;
 
@@ -956,7 +962,7 @@ fn define_functions(
     type_manager: &TypeManager,
     declaration: &Function,
 ) -> Result<(), DefineError> {
-    todo!()
+    Err(DefineError::Unimplemented)
 }
 
 pub(crate) fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(

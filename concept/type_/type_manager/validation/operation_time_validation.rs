@@ -1281,9 +1281,10 @@ impl OperationTimeValidation {
                 if old_value_type == new_value_type {
                     Ok(())
                 } else {
-                    Err(SchemaValidationError::ChangingAttributeTypeSupertypeWillImplicitlyChangeItsValueType(
+                    Err(SchemaValidationError::ChangingAttributeTypeSupertypeWillLeadToConflictingValueTypes(
                         get_label_or_schema_err(snapshot, subtype)?,
                         subtype_declared_value_type,
+                        new_value_type.clone(),
                     ))
                 }
             }

@@ -40,6 +40,7 @@ use crate::{
             AnnotationError, DefaultFrom,
         },
         attribute_type::AttributeType,
+        get_with_overridden,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
@@ -50,7 +51,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::type_::get_with_overridden;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {

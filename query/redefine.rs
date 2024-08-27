@@ -17,7 +17,7 @@ use concept::{
         plays::Plays,
         relates::Relates,
         type_manager::TypeManager,
-        KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        KindAPI, Ordering, TypeAPI,
     },
 };
 use encoding::{
@@ -36,14 +36,14 @@ use typeql::{
         },
         Struct, Type,
     },
-    type_::Optional,
-    Definable, ScopedLabel, TypeRef, TypeRefAny,
+    Definable, TypeRefAny,
 };
 
 use crate::{
-    define::DefineError,
     definition_resolution::{
-        filter_variants, get_struct_field_value_type_optionality, resolve_struct_definition_key, resolve_typeql_type,
+        filter_variants, get_struct_field_value_type_optionality, named_type_to_label, resolve_attribute_type,
+        resolve_owns, resolve_owns_declared, resolve_plays_declared, resolve_plays_role_label, resolve_relates,
+        resolve_relates_declared, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type,
         resolve_value_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type, SymbolResolutionError,
     },
     definition_status::{
@@ -51,7 +51,6 @@ use crate::{
         get_struct_field_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinitionStatus,
     },
 };
-use crate::definition_resolution::named_type_to_label;
 
 macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path) => {
@@ -97,23 +96,30 @@ fn process_type_redefinitions(
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
     declarations
         .clone()
+        .try_for_each(|declaration| redefine_value_type(snapshot, type_manager, thing_manager, declaration))?;
+    declarations
+        .clone()
         .try_for_each(|declaration| redefine_type_annotations(snapshot, type_manager, thing_manager, declaration))?;
     declarations
         .clone()
         .try_for_each(|declaration| redefine_sub(snapshot, type_manager, thing_manager, declaration))?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| redefine_value_type(snapshot, type_manager, thing_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| redefine_alias(snapshot, type_manager, declaration))?;
     declarations
         .clone()
         .try_for_each(|declaration| redefine_relates(snapshot, type_manager, thing_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| {
+        redefine_relates_capabilities(snapshot, type_manager, thing_manager, declaration)
+    })?;
     declarations
         .clone()
         .try_for_each(|declaration| redefine_owns(snapshot, type_manager, thing_manager, declaration))?;
     declarations
         .clone()
-        .try_for_each(|declaration| redefine_plays(snapshot, type_manager, thing_manager, declaration))?;
+        .try_for_each(|declaration| redefine_owns_capabilities(snapshot, type_manager, thing_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| redefine_plays(snapshot, type_manager, declaration))?;
+    declarations
+        .clone()
+        .try_for_each(|declaration| redefine_plays_capabilities(snapshot, type_manager, thing_manager, declaration))?;
     Ok(())
 }
 
@@ -436,7 +442,7 @@ fn redefine_relates(
         let definition_status =
             get_relates_status(snapshot, type_manager, relation_type.clone(), &role_label, ordering)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
-        let defined = match definition_status {
+        match definition_status {
             DefinitionStatus::DoesNotExist => {
                 return Err(RedefineError::RelatesIsNotDefined {
                     label: label.clone(),
@@ -445,18 +451,43 @@ fn redefine_relates(
                 })
             }
             DefinitionStatus::ExistsSame(None) => unreachable!("Existing relates concept expected"),
-            DefinitionStatus::ExistsSame(Some((existing_relates, _))) => existing_relates,
+            DefinitionStatus::ExistsSame(Some(_)) => {}
             DefinitionStatus::ExistsDifferent((existing_relates, _)) => {
                 existing_relates
                     .role()
                     .set_ordering(snapshot, type_manager, thing_manager, ordering)
                     .map_err(|source| RedefineError::CreateRelates { source, relates: relates.to_owned() })?;
-                existing_relates
             }
+        }
+    }
+    Ok(())
+}
+
+fn redefine_relates_capabilities<'a>(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    type_declaration: &Type,
+) -> Result<(), RedefineError> {
+    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| RedefineError::DefinitionResolution { source })?;
+    for capability in &type_declaration.capabilities {
+        let CapabilityBase::Relates(typeql_relates) = &capability.base else {
+            continue;
+        };
+        let TypeEnum::Relation(relation_type) = &type_ else {
+            return Err(err_unsupported_capability(&label, type_.kind(), capability));
         };
 
-        redefine_relates_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), &capability)?;
-        redefine_relates_overridden(snapshot, type_manager, thing_manager, &label, defined, relates)?;
+        let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+        let relates =
+            resolve_relates_declared(snapshot, type_manager, relation_type.clone(), &role_label.name.as_str())
+                .map_err(|source| RedefineError::DefinitionResolution { source })?;
+
+        redefine_relates_annotations(snapshot, type_manager, thing_manager, &label, relates.clone(), capability)?;
+        redefine_relates_override(snapshot, type_manager, thing_manager, &label, relates, typeql_relates)?;
     }
     Ok(())
 }
@@ -466,7 +497,7 @@ fn redefine_relates_annotations<'a>(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     relation_label: &Label<'a>,
-    relates: Relates<'a>,
+    relates: Relates<'static>,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
@@ -512,33 +543,27 @@ fn redefine_relates_annotations<'a>(
     Ok(())
 }
 
-fn redefine_relates_overridden<'a>(
+fn redefine_relates_override<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     relation_label: &Label<'a>,
-    relates: Relates<'a>,
+    relates: Relates<'static>,
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), RedefineError> {
     if let Some(overridden_label) = &typeql_relates.overridden {
-        let overridden_relates_opt = relates
-            .relation()
-            .get_relates_role_name_with_overridden(snapshot, type_manager, overridden_label.ident.as_str())
-            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
-        let overridden_relates = if let Some(overridden_relates) = overridden_relates_opt {
-            overridden_relates
-        } else {
-            return Err(RedefineError::OverriddenRelatesNotFound { relates: typeql_relates.clone() });
-        };
+        let overridden_relates =
+            resolve_relates(snapshot, type_manager, relates.relation(), &overridden_label.ident.as_str())
+                .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
-        let need_define = check_can_and_need_redefine_override(
+        let need_redefine = check_can_and_need_redefine_override(
             snapshot,
             type_manager,
             &relation_label,
             relates.clone(),
             overridden_relates.clone(),
         )?;
-        if need_define {
+        if need_redefine {
             relates
                 .set_override(snapshot, type_manager, thing_manager, overridden_relates)
                 .map_err(|source| RedefineError::SetOverride { label: relation_label.clone().into_owned(), source })?;
@@ -562,14 +587,8 @@ fn redefine_owns(
         };
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&label, &owns.owned)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
-        let attribute_type_opt = type_manager
-            .get_attribute_type(snapshot, &attr_label)
-            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
-        let attribute_type = if let Some(attribute_type) = attribute_type_opt {
-            attribute_type
-        } else {
-            return Err(RedefineError::OwnsAttributeTypeNotFound { owns: owns.clone() })?;
-        };
+        let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
@@ -577,7 +596,7 @@ fn redefine_owns(
         let definition_status =
             get_owns_status(snapshot, type_manager, object_type.clone(), attribute_type.clone(), ordering)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
-        let defined = match definition_status {
+        match definition_status {
             DefinitionStatus::DoesNotExist => {
                 return Err(RedefineError::OwnsIsNotDefined {
                     label: label.clone(),
@@ -586,17 +605,42 @@ fn redefine_owns(
                 })
             }
             DefinitionStatus::ExistsSame(None) => unreachable!("Existing owns concept expected"),
-            DefinitionStatus::ExistsSame(Some((existing_owns, _))) => existing_owns,
+            DefinitionStatus::ExistsSame(Some(_)) => {}
             DefinitionStatus::ExistsDifferent((existing_owns, _)) => {
                 existing_owns
                     .set_ordering(snapshot, type_manager, thing_manager, ordering)
                     .map_err(|source| RedefineError::SetOwnsOrdering { owns: owns.clone(), source })?;
-                existing_owns
             }
-        };
+        }
+    }
+    Ok(())
+}
 
-        redefine_owns_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), &capability)?;
-        redefine_owns_overridden(snapshot, type_manager, thing_manager, &label, defined, owns)?;
+fn redefine_owns_capabilities(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    type_declaration: &Type,
+) -> Result<(), RedefineError> {
+    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| RedefineError::DefinitionResolution { source })?;
+    for capability in &type_declaration.capabilities {
+        let CapabilityBase::Owns(typeql_owns) = &capability.base else {
+            continue;
+        };
+        let (attr_label, _) = type_ref_to_label_and_ordering(&label, &typeql_owns.owned)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+        let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+
+        let object_type =
+            type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
+        let owns = resolve_owns_declared(snapshot, type_manager, object_type.clone(), attribute_type.clone())
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+
+        redefine_owns_annotations(snapshot, type_manager, thing_manager, &label, owns.clone(), capability)?;
+        redefine_owns_override(snapshot, type_manager, thing_manager, &label, owns, typeql_owns)?;
     }
     Ok(())
 }
@@ -606,7 +650,7 @@ fn redefine_owns_annotations<'a>(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     owner_label: &Label<'a>,
-    owns: Owns<'a>,
+    owns: Owns<'static>,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
@@ -627,43 +671,29 @@ fn redefine_owns_annotations<'a>(
     Ok(())
 }
 
-fn redefine_owns_overridden<'a>(
+fn redefine_owns_override<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     owner_label: &Label<'a>,
-    owns: Owns<'a>,
+    owns: Owns<'static>,
     typeql_owns: &TypeQLOwns,
 ) -> Result<(), RedefineError> {
     if let Some(overridden_label) = &typeql_owns.overridden {
         let overridden_label = Label::parse_from(overridden_label.ident.as_str());
-        let overridden_attribute_type_opt = type_manager
-            .get_attribute_type(snapshot, &overridden_label)
-            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
-        let overridden_attribute_type = if let Some(type_) = overridden_attribute_type_opt {
-            type_
-        } else {
-            return Err(RedefineError::OverriddenOwnsAttributeTypeNotFound { owns: typeql_owns.clone() })?;
-        };
+        let overridden_attribute_type = resolve_attribute_type(snapshot, type_manager, &overridden_label)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+        let overridden_owns = resolve_owns(snapshot, type_manager, owns.owner(), overridden_attribute_type)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
-        let overridden_owns_opt = owns
-            .owner()
-            .get_owns_attribute_with_overridden(snapshot, type_manager, overridden_attribute_type.clone())
-            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
-        let overridden_owns = if let Some(overridden_owns) = overridden_owns_opt {
-            overridden_owns
-        } else {
-            return Err(RedefineError::OverriddenOwnsNotFound { owns: typeql_owns.clone() });
-        };
-
-        let need_define = check_can_and_need_redefine_override(
+        let need_redefine = check_can_and_need_redefine_override(
             snapshot,
             type_manager,
             &owner_label,
             owns.clone(),
             overridden_owns.clone(),
         )?;
-        if need_define {
+        if need_redefine {
             owns.set_override(snapshot, type_manager, thing_manager, overridden_owns)
                 .map_err(|source| RedefineError::SetOverride { label: owner_label.clone().into_owned(), source })?
         }
@@ -674,7 +704,6 @@ fn redefine_owns_overridden<'a>(
 fn redefine_plays(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
-    thing_manager: &ThingManager,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
@@ -685,34 +714,54 @@ fn redefine_plays(
             continue;
         };
         let role_label = Label::build_scoped(plays.role.name.ident.as_str(), plays.role.scope.ident.as_str());
-        let role_type_opt = type_manager
-            .get_role_type(snapshot, &role_label)
-            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
-        let role_type = if let Some(role_type) = role_type_opt {
-            role_type
-        } else {
-            return Err(RedefineError::PlaysRoleTypeNotFound { plays: plays.clone() })?;
-        };
+        let role_type = resolve_role_type(snapshot, type_manager, &role_label)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
 
         let definition_status = get_plays_status(snapshot, type_manager, object_type.clone(), role_type.clone())
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
-        let defined = match definition_status {
+        match definition_status {
             DefinitionStatus::DoesNotExist => {
                 return Err(RedefineError::PlaysIsNotDefined {
                     label: label.clone(),
                     declaration: capability.to_owned(),
                 })
             }
-            DefinitionStatus::ExistsSame(Some(existing_plays)) => existing_plays,
+            DefinitionStatus::ExistsSame(Some(_)) => {}
             DefinitionStatus::ExistsSame(None) => unreachable!("Existing plays concept expected"),
             DefinitionStatus::ExistsDifferent(_) => unreachable!("Plays cannot differ"),
-        };
+        }
+    }
+    Ok(())
+}
 
-        redefine_plays_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), &capability)?;
-        redefine_plays_overridden(snapshot, type_manager, thing_manager, &label, defined, plays)?;
+fn redefine_plays_capabilities(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    type_declaration: &Type,
+) -> Result<(), RedefineError> {
+    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
+        .map_err(|source| RedefineError::DefinitionResolution { source })?;
+    for capability in &type_declaration.capabilities {
+        let CapabilityBase::Plays(typeql_plays) = &capability.base else {
+            continue;
+        };
+        let role_label =
+            Label::build_scoped(typeql_plays.role.name.ident.as_str(), typeql_plays.role.scope.ident.as_str());
+        let role_type = resolve_role_type(snapshot, type_manager, &role_label)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+
+        let object_type =
+            type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
+        let plays = resolve_plays_declared(snapshot, type_manager, object_type.clone(), role_type.clone())
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+
+        redefine_plays_annotations(snapshot, type_manager, thing_manager, &label, plays.clone(), capability)?;
+        redefine_plays_override(snapshot, type_manager, thing_manager, &label, plays, typeql_plays)?;
     }
     Ok(())
 }
@@ -722,7 +771,7 @@ fn redefine_plays_annotations<'a>(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     player_label: &Label<'a>,
-    plays: Plays<'a>,
+    plays: Plays<'static>,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
@@ -743,44 +792,28 @@ fn redefine_plays_annotations<'a>(
     Ok(())
 }
 
-fn redefine_plays_overridden<'a>(
+fn redefine_plays_override<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     player_label: &Label<'a>,
-    plays: Plays<'a>,
+    plays: Plays<'static>,
     typeql_plays: &TypeQLPlays,
 ) -> Result<(), RedefineError> {
     if let Some(overridden_type_name) = &typeql_plays.overridden {
         let overridden_label = named_type_to_label(overridden_type_name)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
-        let overridden_role_type_opt = type_manager
-            .get_role_type(snapshot, &overridden_label)
-            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
-        let overridden_role_type = if let Some(type_) = overridden_role_type_opt {
-            type_
-        } else {
-            return Err(RedefineError::OverriddenPlaysRoleTypeNotFound { plays: typeql_plays.clone() })?;
-        };
+        let overridden_plays = resolve_plays_role_label(snapshot, type_manager, plays.player(), &overridden_label)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
-        let overridden_plays_opt = plays
-            .player()
-            .get_plays_role_with_overridden(snapshot, type_manager, overridden_role_type)
-            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
-        let overridden_plays = if let Some(overridden_plays) = overridden_plays_opt {
-            overridden_plays
-        } else {
-            return Err(RedefineError::OverriddenPlaysNotFound { plays: typeql_plays.clone() });
-        };
-
-        let need_define = check_can_and_need_redefine_override(
+        let need_redefine = check_can_and_need_redefine_override(
             snapshot,
             type_manager,
             &player_label,
             plays.clone(),
             overridden_plays.clone(),
         )?;
-        if need_define {
+        if need_redefine {
             plays
                 .set_override(snapshot, type_manager, thing_manager, overridden_plays)
                 .map_err(|source| RedefineError::SetOverride { label: player_label.clone().into_owned(), source })?
@@ -794,7 +827,7 @@ fn redefine_functions(
     type_manager: &TypeManager,
     definables: &[Definable],
 ) -> Result<(), RedefineError> {
-    Ok(())
+    Err(RedefineError::Unimplemented)
 }
 
 pub(crate) fn check_can_and_need_redefine_sub<'a, T: TypeAPI<'a>>(
@@ -905,7 +938,6 @@ fn err_capability_kind_mismatch(
 #[derive(Debug)]
 pub enum RedefineError {
     Unimplemented,
-    // TODO: DefineError as source to reuse them!
     UnexpectedConceptRead {
         source: ConceptReadError,
     },

@@ -56,7 +56,6 @@ pub(crate) fn execute(
 #[derive(Debug)]
 pub enum UndefineError {
     Unimplemented,
-
 }
 
 impl fmt::Display for UndefineError {

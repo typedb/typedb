@@ -27,7 +27,8 @@ use encoding::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::definition_resolution::{
-    try_resolve_owns_declared, try_resolve_plays_declared, try_resolve_relates_declared, try_resolve_struct_definition_key,
+    try_resolve_owns_declared, try_resolve_plays_declared, try_resolve_relates_declared,
+    try_resolve_struct_definition_key,
 };
 
 pub(crate) enum DefinitionStatus<T> {
@@ -220,7 +221,8 @@ pub(crate) fn get_relates_status<'a>(
     role_label: &Label<'a>,
     new_ordering: Ordering,
 ) -> Result<DefinitionStatus<(Relates<'static>, Ordering)>, ConceptReadError> {
-    let existing_relates_opt = try_resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str())?;
+    let existing_relates_opt =
+        try_resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str())?;
     get_some_or_return_does_not_exist!(existing_relates = existing_relates_opt);
 
     let existing_ordering = existing_relates.role().get_ordering(snapshot, type_manager)?;
