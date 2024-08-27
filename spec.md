@@ -285,6 +285,12 @@ This section describes valid declarations of _types_ and axioms relating types (
 
 ## Define semantics
 
+`define` clauses comprise _define statements_ which are described in this section.
+
+_Principles._
+
+1. `define` **can be a no-op**: defining the same statement twice is a no-op.
+
 ### Type axioms
 
 **Case ENT**
@@ -493,6 +499,13 @@ _Comment: notice difference in capitalization between the two cases!_
 
 ## Undefine semantics
 
+`undefine` clauses comprise _undefine statements_ which are described in this section.
+
+_Principles._
+
+* `undefine` removes axiom, constraints, triggers, value types, or functions
+* `undefine` **can be a no-op**
+
 ### Type axioms
 
 **Case ENT**
@@ -606,14 +619,19 @@ _Comment: notice difference in capitalization between the two cases!_
 
 ## Redefine semantics
 
-_In each case, redefine acts like an undefine (which cannot be a no-op) and a define of the given axiom_
+`redefine` clauses comprise _redefine statements_ which are described in this section.
 
-**Redefine principles**: 
+_Principles._
 
-1. Can only redefine one thing at a time
-2. We disallow redefining boolean properties:
+1. `redefine` redefines type axioms, constraints, triggers, structs, or functions
+2. Except for few cases (`sub`), `redefine` **cannot be a no-op**, i.e. it always redefines something!
+3. _Design principle_: We disallow redefining boolean properties:
   * _Example 1_: a type can either exists or not. we cannot "redefine" it's existence, but only define or undefine it.
   * _Example 2_: a type is either abstract or not. we can only define or undefine `@abstract`.
+
+***System property***: 
+1. within a single `redefine` clause we cannot both redefine type axioms _and_ constraint affecting those type axioms
+2. _Example_. (TODO)
 
 ### Type axioms
 
@@ -623,10 +641,16 @@ _In each case, redefine acts like an undefine (which cannot be a no-op) and a de
 
 **Case REL**
 * cannot redefine `relation A` 
-* `(relation) A sub B` redefines $`A \leq B`$
-* cannot redefine `(relation) A relates I`
+* `(relation) A sub B` redefines $`A \leq B`$, ***requiring*** 
+  * either $`A <_! B' \neq B`$ (to be redefined)
+  * or $`A`$ has no direct super-type
+* `(relation) A relates I` redefines $`A : \mathbf{Rel}(I)`$, ***requiring*** that $`A : \mathbf{Rel}([I])`$ (to be redefined)
+  * _inherited cardinality_: inherits card (default: `@card(0..)`) 
+  * _data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I^k`$
 * `(relation) A relates I as J$` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
-* cannot redefine `(relation) A relates I[]`
+* `(relation) A relates I[]` redefines $`A : \mathbf{Rel}([I])`$, ***requiring*** that $`A : \mathbf{Rel}(I)`$ (to be redefined)
+  * _inherited cardinality_: inherits card (default: `@card(1..1)`) (STICKY)
+  * _data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I^k`$
 * `(relation) A relates I[] as J[]` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
 
 **Case ATT**
@@ -706,13 +730,13 @@ cannot redefine primitives
 
 **Case STRUCT**
 
-cannot redefine structs
+`redefine struct A: ...` replaces the previous definition of `A` with a new on. 
 
 ### Functions defs
 
 **Case STREAM_RET_FUN**
 
-cannot redefine stream-return functions.
+`redefine fun F: ...` replaces the previous definition of `F` with a new on. 
 
 **Case SINGLE_RET_FUN**
 
