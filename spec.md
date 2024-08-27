@@ -143,12 +143,12 @@ This section describes the basic **statements** that comprise our type system, a
   > $`A`$ is a type. 
 
   * _Variations_: in general, may replace $`\textbf{Type}`$ by: 
-    *$\mathbf{Ent}$ (collection of entity types)
-    * $\mathbf{Rel}$ (collection of relation types)
+    * $`\mathbf{Ent}`$ (collection of entity types)
+    * $`\mathbf{Rel}`$ (collection of relation types)
     * $`\mathbf{Att}`$ (collection of attribute types)
     * $`\mathbf{Itf}`$ (collection of interface types)
   * _Useful abbreviations_:
-    * $\mathbf{Obj} = \mathbf{Ent} + \mathbf{Rel}$ (collection of object types)
+    * $`\mathbf{Obj} = \mathbf{Ent} + \mathbf{Rel}`$ (collection of object types)
     * $`\mathbf{ERA} = \mathbf{Ent} + \mathbf{Rel} + \mathbf{Att}`$ (collection of ERA types)
   * _Example_: $`\mathsf{Person} : \mathbf{Ent}`$ means $`\mathsf{Person}`$ an entity type.
 * **Typing**
@@ -238,8 +238,8 @@ This section describes the basic **statements** that comprise our type system, a
     * _Example_: $`[a,b,c] : [\mathsf{MiddleName}](x : \mathsf{MiddleNameListOwner})`$
   
   * _Direct typing rules_. Two rules relating to user intention/direct typing. 
-    * _Direct typing list rule_: Given $`l - [l_0,l_1,...] :_! [A]`$ this implies $`l_i : A`$. In other words:
-      > If the user intends a list typing $`l :_! [A]`$ then the entries $`l_i`$ of $`l = [l_0, l_1,...]`$ will be elements in $`A`$.
+    * _Direct typing list rule_: Given $`l = [l_0,l_1,...] :_! [A]`$ this implies $`l_i : A`$. In other words:
+      > If the user intends a list typing $`l :_! [A]`$ then the list entries $`l_i`$ will be elements in $`A`$.
     * _Direct dependency list rule_: Given $`l = [l_0,l_1,...] : [I]`$ and $`a :_! A(l : [I])`$ implies $`a : A(l_i : I)`$. In other words:
       > If the user intends dependency on a list $`l`$ then this implies dependency on the list's entries $`l_i`$.
 
@@ -266,11 +266,11 @@ This section describes valid declarations of _types_ and axioms relating types (
   * `undefine`: removes axioms or constraints
   * `redefine`: both removes and adds axioms or constraints
 * Loose categories for the main schema components:
-  * **Type axioms**: comprises the type-systematic axioms of the user's schema.
+  * **Type axioms**: comprises user-defined axioms for the type system (types, subtypes, dependencies).
   * **Constraints**: postulated constraints that the database needs to satisfy.
-  * **Triggers**: actions to be executed based on data/model changes.
+  * **Triggers**: actions to be executed based on database changes.
   * **Value types**: types for primitive and structured values.
-  * **Functions**: parametrized query templates/pre-defined "model logic"
+  * **Functions**: parametrized query templates ("pre-defined logic")
 * For execution and validation of definitions see "Transactionality" section
 * Definition clauses can be chained:
   * _Example_: 
