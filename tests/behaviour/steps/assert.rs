@@ -13,7 +13,7 @@ macro_rules! assert_matches {
                     concat!(
                         "assertion `matches!(expression, ",
                         stringify!($pattern $(if $guard)?),
-                        ")` failed", 
+                        ")` failed",
                         $(": ", $message,)?
                         "\n",
                         "expression evaluated to: {:?}"

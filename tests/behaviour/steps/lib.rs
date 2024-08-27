@@ -14,8 +14,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use answer::variable_value::VariableValue;
 use ::concept::thing::{attribute::Attribute, object::Object};
+use answer::variable_value::VariableValue;
 use cucumber::{gherkin::Feature, StatsWriter, World};
 use database::Database;
 use futures::{
