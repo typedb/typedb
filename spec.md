@@ -243,8 +243,7 @@ This section describes the basic **statements** that comprise our type system, a
     * _Direct dependency list rule_: Given $`l = [l_0,l_1,...] : [I]`$ and $`a :_! A(l : [I])`$ implies $`a : A(l_i : I)`$. In other words:
       > If the user intends dependency on a list $`l`$ then this implies dependency on the list's entries $`l_i`$.
 
-  * _List length_: for list $`l : [A]`$ the term $\mathrm{len}(l) : \mathbb{N}$ represents $`l`$'s length
-  * _Abstractness_: all list types are abstract by default, i.e. their terms cannot be explicitly declared, as in $`l :_! [A](x:I)`$.
+  * _List length_: for list $`l : [A]`$ the term $\mathrm{len}(l) : \mathbb{N}$ represents $`l`$'s length.
 
 ### Type operators
 
