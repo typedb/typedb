@@ -114,6 +114,26 @@ async fn typeql_define(context: &mut Context, may_error: params::TypeQLMayError,
 }
 
 #[apply(generic_step)]
+#[step(expr = r"typeql redefine{typeql_may_error}")]
+async fn typeql_redefine(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+    let query_parsed = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
+    if may_error.check_parsing(&query_parsed).is_some() {
+        return;
+    }
+
+    let typeql_redefine = query_parsed.unwrap().into_schema();
+    with_schema_tx!(context, |tx| {
+        let result = QueryManager::new().execute_schema(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            &tx.thing_manager,
+            typeql_redefine,
+        );
+        may_error.check_logic(&result);
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = r"typeql insert{typeql_may_error}")]
 async fn typeql_insert(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let parsed_query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());

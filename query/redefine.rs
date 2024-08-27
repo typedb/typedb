@@ -5,6 +5,8 @@
  */
 
 use std::{error::Error, fmt};
+use std::cmp::PartialEq;
+use std::collections::HashMap;
 
 use answer::Type as TypeEnum;
 use concept::{
@@ -29,6 +31,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     query::schema::Redefine,
     schema::definable::{
+        function::Function,
         struct_::Field,
         type_::{
             capability::{Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates},
@@ -64,16 +67,33 @@ macro_rules! verify_empty_annotations_for_capability {
     };
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+enum RedefinitionLevel {
+    TypeAxioms,
+    ConstraintsAndTriggers,
+    Structs,
+    Functions,
+}
+
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     redefine: Redefine,
 ) -> Result<(), RedefineError> {
-    process_struct_redefinitions(snapshot, type_manager, thing_manager, &redefine.definables)?;
-    process_type_redefinitions(snapshot, type_manager, thing_manager, &redefine.definables)?;
-    process_function_redefinitions(snapshot, type_manager, &redefine.definables)?;
-    Ok(())
+    let redefined_structs = process_struct_redefinitions(snapshot, type_manager, thing_manager, &redefine.definables)?;
+    let redefined_types = process_type_redefinitions(snapshot, type_manager, thing_manager, &redefine.definables)?;
+    let redefined_functions = process_function_redefinitions(snapshot, type_manager, &redefine.definables)?;
+
+    // TODO: In the current implementation, it returns error for `redefine entity person`,
+    // but does not for `redefine entity person owns name` (because `name` could be ordered and we could change it)`.
+    // We want to error only if the query is built the way there is no possibility to redefine anything.
+    // However, if we just
+    if !redefined_structs && !redefined_types && !redefined_functions {
+        Err(RedefineError::RedefinedNothing {})
+    } else {
+        Ok(())
+    }
 }
 
 fn process_struct_redefinitions(
@@ -81,10 +101,11 @@ fn process_struct_redefinitions(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     definables: &[Definable],
-) -> Result<(), RedefineError> {
+) -> Result<bool, RedefineError> {
+    let mut redefinition_levels: HashMap<String, RedefinitionLevel> = HashMap::new();
     filter_variants!(Definable::Struct : definables)
-        .try_for_each(|struct_| redefine_struct_fields(snapshot, type_manager, thing_manager, &struct_))?;
-    Ok(())
+        .try_for_each(|struct_| redefine_struct_fields(snapshot, type_manager, thing_manager, &mut redefinition_levels, struct_))?;
+    Ok(!redefinition_levels.is_empty())
 }
 
 fn process_type_redefinitions(
@@ -92,58 +113,65 @@ fn process_type_redefinitions(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     definables: &[Definable],
-) -> Result<(), RedefineError> {
+) -> Result<bool, RedefineError> {
+    let mut redefinition_levels: HashMap<String, RedefinitionLevel> = HashMap::new();
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
     declarations
         .clone()
-        .try_for_each(|declaration| redefine_value_type(snapshot, type_manager, thing_manager, declaration))?;
+        .try_for_each(|declaration| redefine_value_type(snapshot, type_manager, thing_manager, &mut redefinition_levels, declaration))?;
     declarations
         .clone()
-        .try_for_each(|declaration| redefine_type_annotations(snapshot, type_manager, thing_manager, declaration))?;
+        .try_for_each(|declaration| redefine_type_annotations(snapshot, type_manager, thing_manager, &mut redefinition_levels, declaration))?;
     declarations
         .clone()
-        .try_for_each(|declaration| redefine_sub(snapshot, type_manager, thing_manager, declaration))?;
-    declarations.clone().try_for_each(|declaration| redefine_alias(snapshot, type_manager, declaration))?;
+        .try_for_each(|declaration| redefine_sub(snapshot, type_manager, thing_manager, &mut redefinition_levels, declaration))?;
+    declarations.clone().try_for_each(|declaration| redefine_alias(snapshot, type_manager, &mut redefinition_levels, declaration))?;
     declarations
         .clone()
-        .try_for_each(|declaration| redefine_relates(snapshot, type_manager, thing_manager, declaration))?;
+        .try_for_each(|declaration| redefine_relates(snapshot, type_manager, thing_manager, &mut redefinition_levels, declaration))?;
     declarations.clone().try_for_each(|declaration| {
-        redefine_relates_capabilities(snapshot, type_manager, thing_manager, declaration)
+        redefine_relates_capabilities(snapshot, type_manager, thing_manager, &mut redefinition_levels, declaration)
     })?;
     declarations
         .clone()
-        .try_for_each(|declaration| redefine_owns(snapshot, type_manager, thing_manager, declaration))?;
+        .try_for_each(|declaration| redefine_owns(snapshot, type_manager, thing_manager, &mut redefinition_levels, declaration))?;
     declarations
         .clone()
-        .try_for_each(|declaration| redefine_owns_capabilities(snapshot, type_manager, thing_manager, declaration))?;
-    declarations.clone().try_for_each(|declaration| redefine_plays(snapshot, type_manager, declaration))?;
+        .try_for_each(|declaration| redefine_owns_capabilities(snapshot, type_manager, thing_manager, &mut redefinition_levels, declaration))?;
+    declarations.clone().try_for_each(|declaration| redefine_plays(snapshot, type_manager, &mut redefinition_levels, declaration))?;
     declarations
         .clone()
-        .try_for_each(|declaration| redefine_plays_capabilities(snapshot, type_manager, thing_manager, declaration))?;
-    Ok(())
+        .try_for_each(|declaration| redefine_plays_capabilities(snapshot, type_manager, thing_manager, &mut redefinition_levels, declaration))?;
+    Ok(!redefinition_levels.is_empty())
 }
 
 fn process_function_redefinitions(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     definables: &[Definable],
-) -> Result<(), RedefineError> {
+) -> Result<bool, RedefineError> {
+    let mut redefinition_levels: HashMap<String, RedefinitionLevel> = HashMap::new();
     filter_variants!(Definable::Function : definables)
-        .try_for_each(|declaration| redefine_functions(snapshot, type_manager, definables))?;
-    Ok(())
+        .try_for_each(|function| redefine_functions(snapshot, type_manager, &mut redefinition_levels, function))?;
+    Ok(!redefinition_levels.is_empty())
 }
 
 fn redefine_struct_fields(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     struct_definable: &Struct,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::Structs;
+
     let name = struct_definable.ident.as_str();
     let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
     for field in &struct_definable.fields {
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, name, REDEFINITION_LEVEL)?;
+
         let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
@@ -190,12 +218,17 @@ fn redefine_type_annotations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::ConstraintsAndTriggers;
+
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
     for typeql_annotation in &type_declaration.annotations {
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
+
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
         match type_.clone() {
@@ -252,8 +285,11 @@ fn redefine_type_annotations(
 fn redefine_alias(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::TypeAxioms;
+
     &type_declaration
         .capabilities
         .iter()
@@ -274,8 +310,11 @@ fn redefine_sub(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::TypeAxioms;
+
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
@@ -284,6 +323,8 @@ fn redefine_sub(
         let CapabilityBase::Sub(sub) = &capability.base else {
             continue;
         };
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
+
         let supertype_label = Label::parse_from(&sub.supertype_label.ident.as_str());
         let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
@@ -344,8 +385,11 @@ fn redefine_value_type(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::TypeAxioms;
+
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
@@ -356,6 +400,8 @@ fn redefine_value_type(
         let TypeEnum::Attribute(attribute_type) = &type_ else {
             return Err(err_unsupported_capability(&label, type_.kind(), capability));
         };
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
+
         let value_type = resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
             .map_err(|source| RedefineError::AttributeTypeBadValueType { source })?;
 
@@ -379,7 +425,8 @@ fn redefine_value_type(
         redefine_value_type_annotations(
             snapshot,
             type_manager,
-            thing_manager,
+            thing_manager, 
+            redefinition_levels,
             attribute_type.clone(),
             &label,
             capability,
@@ -392,11 +439,16 @@ fn redefine_value_type_annotations<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     attribute_type: AttributeType<'a>,
     attribute_type_label: &Label<'a>,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::ConstraintsAndTriggers;
+
     for typeql_annotation in &typeql_capability.annotations {
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, attribute_type_label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
+
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
         if let Some(converted) = type_convert_and_validate_annotation_redefinition_need(
@@ -423,8 +475,11 @@ fn redefine_relates(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::TypeAxioms;
+
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
@@ -435,6 +490,7 @@ fn redefine_relates(
         let TypeEnum::Relation(relation_type) = &type_ else {
             return Err(err_unsupported_capability(&label, type_.kind(), capability));
         };
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
 
         let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &relates.related)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
@@ -467,6 +523,7 @@ fn redefine_relates_capabilities<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
@@ -486,8 +543,8 @@ fn redefine_relates_capabilities<'a>(
             resolve_relates_declared(snapshot, type_manager, relation_type.clone(), &role_label.name.as_str())
                 .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
-        redefine_relates_annotations(snapshot, type_manager, thing_manager, &label, relates.clone(), capability)?;
-        redefine_relates_override(snapshot, type_manager, thing_manager, &label, relates, typeql_relates)?;
+        redefine_relates_annotations(snapshot, type_manager, thing_manager, redefinition_levels, &label, relates.clone(), capability)?;
+        redefine_relates_override(snapshot, type_manager, thing_manager, redefinition_levels, &label, relates, typeql_relates)?;
     }
     Ok(())
 }
@@ -496,11 +553,16 @@ fn redefine_relates_annotations<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     relation_label: &Label<'a>,
     relates: Relates<'static>,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::ConstraintsAndTriggers;
+
     for typeql_annotation in &typeql_capability.annotations {
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, relation_label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
+
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
         let converted_for_relates = capability_convert_and_validate_annotation_redefinition_need(
@@ -547,11 +609,16 @@ fn redefine_relates_override<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     relation_label: &Label<'a>,
     relates: Relates<'static>,
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::ConstraintsAndTriggers;
+
     if let Some(overridden_label) = &typeql_relates.overridden {
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, relation_label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
+
         let overridden_relates =
             resolve_relates(snapshot, type_manager, relates.relation(), &overridden_label.ident.as_str())
                 .map_err(|source| RedefineError::DefinitionResolution { source })?;
@@ -576,8 +643,11 @@ fn redefine_owns(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::TypeAxioms;
+
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
@@ -585,6 +655,8 @@ fn redefine_owns(
         let CapabilityBase::Owns(owns) = &capability.base else {
             continue;
         };
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, label.scoped_name().as_str(), REDEFINITION_LEVEL)?; // TODO: Set it only when we change something!
+
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&label, &owns.owned)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
         let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
@@ -620,6 +692,7 @@ fn redefine_owns_capabilities(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
@@ -639,8 +712,8 @@ fn redefine_owns_capabilities(
         let owns = resolve_owns_declared(snapshot, type_manager, object_type.clone(), attribute_type.clone())
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
-        redefine_owns_annotations(snapshot, type_manager, thing_manager, &label, owns.clone(), capability)?;
-        redefine_owns_override(snapshot, type_manager, thing_manager, &label, owns, typeql_owns)?;
+        redefine_owns_annotations(snapshot, type_manager, thing_manager, redefinition_levels, &label, owns.clone(), capability)?;
+        redefine_owns_override(snapshot, type_manager, thing_manager, redefinition_levels, &label, owns, typeql_owns)?;
     }
     Ok(())
 }
@@ -649,11 +722,16 @@ fn redefine_owns_annotations<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     owner_label: &Label<'a>,
     owns: Owns<'static>,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::ConstraintsAndTriggers;
+
     for typeql_annotation in &typeql_capability.annotations {
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, owner_label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
+
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_redefinition_need(
@@ -675,11 +753,16 @@ fn redefine_owns_override<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     owner_label: &Label<'a>,
     owns: Owns<'static>,
     typeql_owns: &TypeQLOwns,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::ConstraintsAndTriggers;
+
     if let Some(overridden_label) = &typeql_owns.overridden {
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, owner_label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
+
         let overridden_label = Label::parse_from(overridden_label.ident.as_str());
         let overridden_attribute_type = resolve_attribute_type(snapshot, type_manager, &overridden_label)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
@@ -704,8 +787,11 @@ fn redefine_owns_override<'a>(
 fn redefine_plays(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::TypeAxioms;
+
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
@@ -713,6 +799,8 @@ fn redefine_plays(
         let CapabilityBase::Plays(plays) = &capability.base else {
             continue;
         };
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
+
         let role_label = Label::build_scoped(plays.role.name.ident.as_str(), plays.role.scope.ident.as_str());
         let role_type = resolve_role_type(snapshot, type_manager, &role_label)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
@@ -741,6 +829,7 @@ fn redefine_plays_capabilities(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
@@ -760,8 +849,8 @@ fn redefine_plays_capabilities(
         let plays = resolve_plays_declared(snapshot, type_manager, object_type.clone(), role_type.clone())
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
-        redefine_plays_annotations(snapshot, type_manager, thing_manager, &label, plays.clone(), capability)?;
-        redefine_plays_override(snapshot, type_manager, thing_manager, &label, plays, typeql_plays)?;
+        redefine_plays_annotations(snapshot, type_manager, thing_manager, redefinition_levels, &label, plays.clone(), capability)?;
+        redefine_plays_override(snapshot, type_manager, thing_manager, redefinition_levels, &label, plays, typeql_plays)?;
     }
     Ok(())
 }
@@ -770,11 +859,16 @@ fn redefine_plays_annotations<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     player_label: &Label<'a>,
     plays: Plays<'static>,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::ConstraintsAndTriggers;
+
     for typeql_annotation in &typeql_capability.annotations {
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, player_label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
+
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_redefinition_need(
@@ -796,11 +890,16 @@ fn redefine_plays_override<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
     player_label: &Label<'a>,
     plays: Plays<'static>,
     typeql_plays: &TypeQLPlays,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::ConstraintsAndTriggers;
+
     if let Some(overridden_type_name) = &typeql_plays.overridden {
+        set_redefinition_level_and_error_if_mixed(redefinition_levels, player_label.scoped_name().as_str(), REDEFINITION_LEVEL)?;
+
         let overridden_label = named_type_to_label(overridden_type_name)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
         let overridden_plays = resolve_plays_role_label(snapshot, type_manager, plays.player(), &overridden_label)
@@ -825,8 +924,10 @@ fn redefine_plays_override<'a>(
 fn redefine_functions(
     snapshot: &impl WritableSnapshot,
     type_manager: &TypeManager,
-    definables: &[Definable],
+    redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
+    function_declaration: &Function,
 ) -> Result<(), RedefineError> {
+    static REDEFINITION_LEVEL: RedefinitionLevel = RedefinitionLevel::Functions;
     Err(RedefineError::Unimplemented)
 }
 
@@ -935,6 +1036,26 @@ fn err_capability_kind_mismatch(
     }
 }
 
+fn set_redefinition_level_and_error_if_mixed(
+    current_redefinition_levels: &mut HashMap<String, RedefinitionLevel>,
+    target: &str,
+    target_level: RedefinitionLevel,
+) -> Result<(), RedefineError> {
+    match current_redefinition_levels.get(target) {
+        Some(current_level) if current_level != &target_level => Err(RedefineError::RedefiningMixedRedefinitionLevelsInOneQuery {
+            target: target.to_string(),
+            first_redefinition_level: current_level.clone(),
+            second_redefinition_level: target_level.clone(),
+        }),
+        Some(_) => Ok(()),
+        None => {
+            current_redefinition_levels.insert(target.to_string(), target_level);
+            Ok(())
+        },
+        
+    }
+}
+
 #[derive(Debug)]
 pub enum RedefineError {
     Unimplemented,
@@ -944,6 +1065,12 @@ pub enum RedefineError {
     DefinitionResolution {
         source: SymbolResolutionError,
     },
+    RedefiningMixedRedefinitionLevelsInOneQuery {
+        target: String,
+        first_redefinition_level: RedefinitionLevel,
+        second_redefinition_level: RedefinitionLevel,
+    },
+    RedefinedNothing {},
     TypeCreateRequiresKind {
         type_declaration: Type,
     },

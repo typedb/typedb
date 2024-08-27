@@ -138,7 +138,7 @@ fn process_function_definitions(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     filter_variants!(Definable::Function : definables)
-        .try_for_each(|declaration| define_functions(snapshot, type_manager, declaration))?;
+        .try_for_each(|function| define_functions(snapshot, type_manager, function))?;
     Ok(())
 }
 
