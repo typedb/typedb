@@ -962,6 +962,10 @@ impl<ID: IrID> Comparison<ID> {
         self.rhs
     }
 
+    pub fn comparator(&self) -> Comparator {
+        self.comparator
+    }
+
     pub fn ids(&self) -> impl Iterator<Item = ID> {
         [self.lhs, self.rhs].into_iter()
     }

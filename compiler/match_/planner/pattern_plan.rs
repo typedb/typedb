@@ -13,10 +13,10 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
     pattern::{
-        constraint::{Constraint, ExpressionBinding},
+        constraint::{Comparator, Constraint, ExpressionBinding},
         variable_category::VariableCategory,
     },
-    program::block::{FunctionalBlock, VariableRegistry},
+    program::block::{BlockContext, FunctionalBlock},
 };
 use itertools::Itertools;
 
@@ -28,32 +28,31 @@ use crate::{
             ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs, IsaReverseInstruction,
             LinksInstruction, LinksReverseInstruction,
         },
-        planner::vertex::{Costed, HasPlanner, LinksPlanner, PlannerVertex, ThingPlanner, VertexCost},
+        planner::vertex::{Costed, HasPlanner, LinksPlanner, PlannerVertex, ThingPlanner, ValuePlanner, VertexCost},
     },
 };
 
-pub struct MatchProgram {
+pub struct PatternPlan {
     pub(crate) programs: Vec<Program>,
-    pub(crate) context: VariableRegistry,
+    pub(crate) context: BlockContext,
 }
 
 /*
-1. Named variables that are not returned or reused beyond a step can simply be counted, and not outputted
-2. Anonymous variables that are not reused beyond a step can just be checked for a single answer
+1. Named variables that are not returned or reused beyond a program can simply be counted, and not outputted
+2. Anonymous variables that are not reused beyond a program can just be checked for a single answer
 
 Planner outputs an ordering over variables, with directions over which edges should be traversed.
 If we know this we can:
-  1. group edges intersecting into the same variable as one Step.
+  1. group edges intersecting into the same variable as one Program.
   2. if the ordering implies it, we may need to perform Storage/Comparison checks, if the variables are visited disconnected and then joined
   3. some checks are fully bound, while others are not... when do we decide? What is a Check versus an Iterate instructions? Do we need to differentiate?
  */
 
-impl MatchProgram {
-    pub fn new(programs: Vec<Program>, context: VariableRegistry) -> Self {
+impl PatternPlan {
+    pub fn new(programs: Vec<Program>, context: BlockContext) -> Self {
         Self { programs, context }
     }
 
-    // TODO: rename to 'compile'
     pub fn from_block(
         block: &FunctionalBlock,
         type_annotations: &TypeAnnotations,
@@ -64,99 +63,21 @@ impl MatchProgram {
         assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
         let conjunction = block.conjunction();
         assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
-
-        let mut variable_index = HashMap::new();
-        let mut variable_isa = HashMap::new();
-        let mut elements = Vec::new();
-        let mut adjacency: HashMap<usize, HashSet<usize>> = HashMap::new();
-
-        // TODO: Consider block.input_variables()
-        for variable in block.block_variables() {
-            match variable_registry.get_variable_category(variable).unwrap() {
-                VariableCategory::Type | VariableCategory::ThingType => (), // ignore for now
-                VariableCategory::RoleType => {
-                    variable_index.insert(variable, elements.len());
-                }
-                VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
-                    let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
-                    variable_index.insert(variable, elements.len());
-                    elements.push(PlannerVertex::Thing(planner));
-                }
-                VariableCategory::Value => todo!(),
-                | VariableCategory::ObjectList
-                | VariableCategory::ThingList
-                | VariableCategory::AttributeList
-                | VariableCategory::ValueList => todo!(),
-            }
-        }
-
-        let mut index_to_constraint = HashMap::new();
-
-        for constraint in conjunction.constraints() {
-            match constraint {
-                Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) => (), // ignore for now
-                Constraint::Isa(isa) => {
-                    variable_isa.insert(isa.thing(), isa.clone());
-                }
-                Constraint::Links(links) => {
-                    let planner = LinksPlanner::from_constraint(links, &variable_index, type_annotations, statistics);
-
-                    let index = elements.len();
-
-                    index_to_constraint.insert(index, constraint);
-
-                    adjacency.entry(index).or_default().extend([planner.relation, planner.player, planner.role]);
-
-                    adjacency.entry(planner.relation).or_default().insert(index);
-                    adjacency.entry(planner.player).or_default().insert(index);
-                    adjacency.entry(planner.role).or_default().insert(index);
-
-                    elements.push(PlannerVertex::Links(planner));
-                }
-                Constraint::Has(has) => {
-                    let planner = HasPlanner::from_constraint(has, &variable_index, type_annotations, statistics);
-
-                    let index = elements.len();
-
-                    index_to_constraint.insert(index, constraint);
-
-                    adjacency.entry(index).or_default().extend([planner.owner, planner.attribute]);
-
-                    adjacency.entry(planner.owner).or_default().insert(index);
-                    adjacency.entry(planner.attribute).or_default().insert(index);
-
-                    elements.push(PlannerVertex::Has(planner));
-                }
-                Constraint::ExpressionBinding(_) => todo!(),
-                Constraint::FunctionCallBinding(_) => todo!(),
-                Constraint::Comparison(_) => todo!(),
-                Constraint::Owns(_) => todo!(),
-                Constraint::Relates(_) => todo!(),
-                Constraint::Plays(_) => todo!(),
-            }
-        }
-=======
         let context = block.context();
         let mut elements = Vec::new();
         let variable_index = register_variables(context, &mut elements, type_annotations, statistics);
         let (index_to_constraint, variable_isa, adjacency) =
             register_constraints(conjunction, &variable_index, &mut elements, type_annotations, statistics);
 
->>>>>>> 1ffdd1c1d (check aware pattern planer wip)
         let ordering = initialise_plan_greedy(&elements, &adjacency);
 
         let index_to_variable: HashMap<_, _> =
             variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
-<<<<<<< HEAD
-        let mut programs = Vec::with_capacity(index_to_constraint.len());
-        for (i, &index) in ordering.iter().enumerate().rev() {
-            let adjacent = &adjacency[&index];
-=======
 
-        let mut steps = Vec::with_capacity(index_to_constraint.len());
+        let mut programs = Vec::with_capacity(index_to_constraint.len());
         let mut outputs = Vec::with_capacity(variable_index.len());
 
-        let mut step_instructions = Vec::new();
+        let mut program_instructions = Vec::new();
         let mut sort_variable = None;
 
         for (i, &index) in ordering.iter().enumerate() {
@@ -164,33 +85,25 @@ impl MatchProgram {
                 Some(adj) => adj,
                 None => &HashSet::new(),
             };
->>>>>>> 1ffdd1c1d (check aware pattern planer wip)
             if let Some(&var) = index_to_variable.get(&index) {
-                let is_starting = !adjacent.iter().any(|adj| ordering[..i].contains(adj));
-                if is_starting {
-                    let isa = &variable_isa[&var];
-<<<<<<< HEAD
-                    programs.push(Program::Intersection(IntersectionProgram::new(
-                        var,
-                        vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                if let PlannerVertex::Thing(_) = &elements[index] {
+                    let needs_isa = !adjacent
+                        .iter()
+                        .filter(|&&adj| elements[adj].is_iterator())
+                        .any(|adj| ordering[..i].contains(adj));
+                    if needs_isa {
+                        let isa = &variable_isa[&var];
+                        outputs.push(var);
+                        if sort_variable.is_none() {
+                            sort_variable = Some(var);
+                        }
+                        program_instructions.push(ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                             isa.clone(),
                             Inputs::None([]),
                             type_annotations,
                             Vec::new(),
-                        ))],
-                        &[var],
-=======
-                    outputs.push(var);
-                    if sort_variable.is_none() {
-                        sort_variable = Some(var);
+                        )));
                     }
-                    step_instructions.push(ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                        isa.clone(),
-                        Inputs::None([]),
-                        type_annotations,
-                        Vec::new(),
->>>>>>> 1ffdd1c1d (check aware pattern planer wip)
-                    )));
                 }
             } else {
                 let inputs = adjacent
@@ -200,20 +113,22 @@ impl MatchProgram {
                     .collect::<HashSet<_>>();
 
                 if !inputs.is_empty() {
-                    steps.push(Step::Intersection(IntersectionStep::new(
+                    programs.push(Program::Intersection(IntersectionStep::new(
                         sort_variable.take().unwrap(),
-                        mem::take(&mut step_instructions),
+                        mem::take(&mut program_instructions),
                         &outputs,
                     )));
                 }
 
                 let constraint = index_to_constraint[&index];
                 match constraint {
-                    Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_) => todo!(),
+                    Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_) => {
+                        todo!("type constraint")
+                    }
 
                     Constraint::Links(links) => {
                         if inputs.len() >= 2 {
-                            todo!()
+                            todo!("fully bound links")
                         }
 
                         for var in &[links.relation(), links.player(), links.role_type()] {
@@ -249,21 +164,7 @@ impl MatchProgram {
                                 type_annotations,
                             ))
                         };
-<<<<<<< HEAD
-                        let sort_variable = if bound_variables.is_empty() && planner.unbound_is_forward
-                            || bound_variables.contains(&rp.player())
-                        {
-                            rp.relation()
-                        } else {
-                            rp.player()
-                        };
-                        programs.push(Program::Intersection(IntersectionProgram::new(
-                            sort_variable,
-                            vec![instruction],
-                            selected_variables,
-                        )));
-=======
-                        step_instructions.push(instruction);
+                        program_instructions.push(instruction);
 
                         if sort_variable.is_none() {
                             sort_variable = if inputs.is_empty() && planner.unbound_is_forward
@@ -274,12 +175,11 @@ impl MatchProgram {
                                 Some(links.player())
                             };
                         }
->>>>>>> 1ffdd1c1d (check aware pattern planer wip)
                     }
 
                     Constraint::Has(has) => {
                         if inputs.len() == 2 {
-                            todo!()
+                            todo!("fully bound has")
                         }
 
                         let planner = elements[index].as_has().unwrap();
@@ -314,21 +214,7 @@ impl MatchProgram {
                                 type_annotations,
                             ))
                         };
-<<<<<<< HEAD
-                        let sort_variable = if bound_variables.is_empty() && planner.unbound_is_forward
-                            || bound_variables.contains(&has.attribute())
-                        {
-                            has.owner()
-                        } else {
-                            has.attribute()
-                        };
-                        programs.push(Program::Intersection(IntersectionProgram::new(
-                            sort_variable,
-                            vec![instruction],
-                            selected_variables,
-                        )));
-=======
-                        step_instructions.push(instruction);
+                        program_instructions.push(instruction);
 
                         if sort_variable.is_none() {
                             sort_variable = if inputs.is_empty() && planner.unbound_is_forward
@@ -339,42 +225,33 @@ impl MatchProgram {
                                 Some(has.attribute())
                             };
                         }
->>>>>>> 1ffdd1c1d (check aware pattern planer wip)
                     }
 
-                    Constraint::ExpressionBinding(_) => todo!(),
-                    Constraint::FunctionCallBinding(_) => todo!(),
-                    Constraint::Comparison(_) => todo!(),
-                    Constraint::Owns(_) => todo!(),
-                    Constraint::Relates(_) => todo!(),
-                    Constraint::Plays(_) => todo!(),
+                    Constraint::ExpressionBinding(_) => todo!("expression binding"),
+                    Constraint::FunctionCallBinding(_) => todo!("function call binding"),
+                    Constraint::Comparison(_) => todo!("comparison"),
+                    Constraint::Owns(_) => todo!("owns"),
+                    Constraint::Relates(_) => todo!("relates"),
+                    Constraint::Plays(_) => todo!("plays"),
                 }
             }
         }
-<<<<<<< HEAD
-        programs.reverse();
-        Self { programs: programs, context: variable_registry.clone() }
-=======
-        steps.push(Step::Intersection(IntersectionStep::new(sort_variable.unwrap(), step_instructions, &outputs)));
-        Self { steps, context: context.clone() }
->>>>>>> 1ffdd1c1d (check aware pattern planer wip)
+        programs.push(Program::Intersection(IntersectionStep::new(sort_variable.unwrap(), program_instructions, &outputs)));
+        Self { programs, context: context.clone() }
     }
 
     pub fn programs(&self) -> &[Program] {
         &self.programs
     }
 
-<<<<<<< HEAD
-    pub fn outputs(&self) -> &[Variable] {
-        self.programs.last().unwrap().selected_variables()
-    }
-
     pub(crate) fn into_programs(self) -> impl Iterator<Item = Program> {
         self.programs.into_iter()
     }
 
-    pub fn variable_registry(&self) -> &VariableRegistry {
-=======
+    pub fn outputs(&self) -> &[Variable] {
+        self.programs.last().unwrap().selected_variables()
+    }
+
     pub(crate) fn into_steps(self) -> impl Iterator<Item = Step> {
         self.steps.into_iter()
     }
@@ -383,8 +260,8 @@ impl MatchProgram {
         self.steps.last().unwrap().selected_variables()
     }
 
+=======
     pub fn context(&self) -> &BlockContext {
->>>>>>> 1ffdd1c1d (check aware pattern planer wip)
         &self.context
     }
 }
@@ -407,11 +284,16 @@ fn register_variables(
                     elements.push(PlannerVertex::Thing(planner));
                     Some((variable, index))
                 }
-                VariableCategory::Value => todo!(),
+                VariableCategory::Value => {
+                    let planner = ValuePlanner::from_variable(variable);
+                    let index = elements.len();
+                    elements.push(PlannerVertex::Value(planner));
+                    Some((variable, index))
+                }
                 | VariableCategory::ObjectList
                 | VariableCategory::ThingList
                 | VariableCategory::AttributeList
-                | VariableCategory::ValueList => todo!(),
+                | VariableCategory::ValueList => todo!("list variable planning"),
             }
         })
         .collect()
@@ -435,6 +317,10 @@ fn register_constraints<'a>(
     for constraint in conjunction.constraints() {
         match constraint {
             Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) => (), // ignore for now
+
+            Constraint::Owns(_) => todo!("owns"),
+            Constraint::Relates(_) => todo!("relates"),
+            Constraint::Plays(_) => todo!("plays"),
 
             Constraint::Isa(isa) => {
                 variable_isa.insert(isa.thing(), isa.clone());
@@ -472,24 +358,44 @@ fn register_constraints<'a>(
             }
 
             Constraint::ExpressionBinding(expression) => {
-                let planner_index = elements.len();
                 let lhs = variable_index[&expression.left()];
-                adjacency.entry(lhs).or_default().insert(planner_index);
-                elements.push(PlannerVertex::Expression(todo!()));
+                if expression.expression().is_constant() {
+                    if matches!(elements[lhs], PlannerVertex::Value(_)) {
+                        elements[lhs] = PlannerVertex::Constant
+                    } else {
+                        todo!("non-value var assignment?")
+                    }
+                } else {
+                    let planner_index = elements.len();
+                    adjacency.entry(lhs).or_default().insert(planner_index);
+                    elements.push(PlannerVertex::Expression(todo!("expression = {expression:?}")));
+                }
             }
 
-            Constraint::FunctionCallBinding(_) => todo!(),
+            Constraint::FunctionCallBinding(_) => todo!("function call"),
 
             Constraint::Comparison(comparison) => {
                 let lhs = variable_index[&comparison.lhs()];
                 let rhs = variable_index[&comparison.rhs()];
                 adjacency.entry(lhs).or_default().insert(rhs);
                 adjacency.entry(rhs).or_default().insert(lhs);
+                match comparison.comparator() {
+                    Comparator::Equal => {
+                        elements[lhs].add_equal(rhs);
+                        elements[rhs].add_equal(lhs);
+                    }
+                    Comparator::Less | Comparator::LessOrEqual => {
+                        elements[lhs].add_upper_bound(rhs);
+                        elements[rhs].add_lower_bound(lhs);
+                    }
+                    Comparator::Greater | Comparator::GreaterOrEqual => {
+                        elements[lhs].add_lower_bound(rhs);
+                        elements[rhs].add_upper_bound(lhs);
+                    }
+                    Comparator::Like => todo!("like operator"),
+                    Comparator::Cointains => todo!("contains operator"),
+                }
             }
-
-            Constraint::Owns(_) => todo!(),
-            Constraint::Relates(_) => todo!(),
-            Constraint::Plays(_) => todo!(),
         }
     }
     (index_to_constraint, variable_isa, adjacency)
@@ -537,8 +443,8 @@ pub enum Program {
 impl Program {
     pub fn selected_variables(&self) -> &[Variable] {
         match self {
-            Program::Intersection(step) => &step.selected_variables,
-            Program::UnsortedJoin(step) => &step.selected_variables,
+            Program::Intersection(program) => &program.selected_variables,
+            Program::UnsortedJoin(program) => &program.selected_variables,
             Program::Assignment(_) => todo!(),
             Program::Disjunction(_) => todo!(),
             Program::Negation(_) => todo!(),
@@ -548,9 +454,9 @@ impl Program {
 
     pub fn new_variables(&self) -> &[Variable] {
         match self {
-            Program::Intersection(step) => step.new_variables(),
-            Program::UnsortedJoin(step) => step.new_variables(),
-            Program::Assignment(step) => step.new_variables(),
+            Program::Intersection(program) => program.new_variables(),
+            Program::UnsortedJoin(program) => program.new_variables(),
+            Program::Assignment(program) => program.new_variables(),
             Program::Disjunction(_) => todo!(),
             Program::Negation(_) => &[],
             Program::Optional(_) => todo!(),
@@ -660,15 +566,15 @@ impl AssignmentProgram {
 }
 
 pub struct DisjunctionProgram {
-    pub disjunction: Vec<MatchProgram>,
+    pub disjunction: Vec<PatternPlan>,
 }
 
 pub struct NegationProgram {
-    pub negation: MatchProgram,
+    pub negation: PatternPlan,
 }
 
 pub struct OptionalProgram {
-    pub optional: MatchProgram,
+    pub optional: PatternPlan,
 }
 
 pub trait InstructionAPI {

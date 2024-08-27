@@ -34,15 +34,23 @@ pub(super) enum PlannerVertex {
 }
 
 impl PlannerVertex {
-    pub(super) fn is_valid(&self, _ordered: &[usize]) -> bool {
+    pub(super) fn is_valid(&self, ordered: &[usize]) -> bool {
         match self {
-            Self::Constant => true,         // always valid: comes from query
-            Self::Thing(_) => true,         // always valid: isa iterator
-            Self::Has(_) => true,           // always valid: has iterator
-            Self::Links(_) => true,         // always valid: links iterator
-            Self::Value(_) => todo!(),      // may be invalid: has to be from an attribute or a expression
-            Self::Expression(_) => todo!(), // may be invalid: inputs must be bound
+            Self::Constant => true,                        // always valid: comes from query
+            Self::Thing(_) => true,                        // always valid: isa iterator
+            Self::Has(_) => true,                          // always valid: has iterator
+            Self::Links(_) => true,                        // always valid: links iterator
+            Self::Value(value) => value.is_valid(ordered), // may be invalid: has to be from an attribute or a expression
+            Self::Expression(_) => todo!(),                // may be invalid: inputs must be bound
         }
+    }
+
+    pub(super) fn is_constant(&self) -> bool {
+        matches!(self, Self::Constant)
+    }
+
+    pub(crate) fn is_iterator(&self) -> bool {
+        matches!(self, Self::Has(_) | Self::Links(_))
     }
 
     fn as_thing(&self) -> Option<&ThingPlanner> {
@@ -63,6 +71,50 @@ impl PlannerVertex {
         match self {
             Self::Links(v) => Some(v),
             _ => None,
+        }
+    }
+
+    pub(super) fn add_is(&mut self, other: usize) {
+        match self {
+            PlannerVertex::Constant => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Thing(inner) => inner.add_is(other),
+            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+        }
+    }
+
+    pub(super) fn add_equal(&mut self, other: usize) {
+        match self {
+            PlannerVertex::Constant => (),
+            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Thing(inner) => inner.add_equal(other),
+            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+        }
+    }
+
+    pub(super) fn add_lower_bound(&mut self, other: usize) {
+        match self {
+            PlannerVertex::Constant => (),
+            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Thing(inner) => inner.add_lower_bound(other),
+            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+        }
+    }
+
+    pub(super) fn add_upper_bound(&mut self, other: usize) {
+        match self {
+            PlannerVertex::Constant => (),
+            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Thing(inner) => inner.add_upper_bound(other),
+            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
         }
     }
 }
@@ -92,13 +144,27 @@ impl Costed for PlannerVertex {
             Self::Thing(inner) => inner.cost(inputs, elements),
             Self::Has(inner) => inner.cost(inputs, elements),
             Self::Links(inner) => inner.cost(inputs, elements),
-            Self::Expression(_) => todo!(),
+            Self::Expression(_) => todo!("expression cost"),
         }
     }
 }
 
 #[derive(Debug)]
 pub(super) struct ValuePlanner;
+
+impl ValuePlanner {
+    pub(crate) fn from_variable(_: Variable) -> Self {
+        Self
+    }
+
+    pub(crate) fn is_valid(&self, _ordered: &[usize]) -> bool {
+        todo!("value planner is valid")
+    }
+
+    fn expected_size(&self, _inputs: &[usize]) -> f64 {
+        todo!("value planner expected size")
+    }
+}
 
 impl Costed for ValuePlanner {
     fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
@@ -142,6 +208,22 @@ impl ThingPlanner {
             .sum::<u64>() as f64;
         Self { expected_size, ..Default::default() }
     }
+
+    pub(super) fn add_is(&mut self, other: usize) {
+        self.bound_exact.insert(other);
+    }
+
+    pub(super) fn add_equal(&mut self, other: usize) {
+        self.bound_value_equal.insert(other);
+    }
+
+    pub(super) fn add_lower_bound(&mut self, other: usize) {
+        self.bound_value_below.insert(other);
+    }
+
+    pub(super) fn add_upper_bound(&mut self, other: usize) {
+        self.bound_value_above.insert(other);
+    }
 }
 
 impl Costed for ThingPlanner {
@@ -166,7 +248,13 @@ impl Costed for ThingPlanner {
             }
 
             if self.bound_value_equal.contains(&input) {
-                branching_factor = elements[input].as_thing().unwrap().expected_size;
+                let b = match &elements[input] {
+                    PlannerVertex::Constant => 1.0,
+                    PlannerVertex::Value(value) => 1.0 / value.expected_size(inputs),
+                    PlannerVertex::Thing(thing) => 1.0 / thing.expected_size,
+                    _ => unreachable!("equality with an edge"),
+                };
+                branching_factor = f64::min(branching_factor, b);
             }
 
             if self.bound_value_below.contains(&input) {

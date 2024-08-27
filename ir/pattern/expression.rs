@@ -39,6 +39,10 @@ impl<ID: IrID> ExpressionTree<ID> {
         self.preorder_tree.is_empty()
     }
 
+    pub fn is_constant(&self) -> bool {
+        matches!(&*self.preorder_tree, [Expression::Constant(_)])
+    }
+
     pub fn expression_tree_preorder(&self) -> impl Iterator<Item = &Expression<ID>> {
         self.preorder_tree.iter()
     }

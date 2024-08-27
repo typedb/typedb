@@ -11,7 +11,10 @@ use encoding::value::{
     decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
     value::Value,
 };
-use typeql::value::{DateTimeTZLiteral, Literal, Sign, SignedDecimalLiteral, StringLiteral, TimeZone, ValueLiteral};
+use typeql::value::{
+    BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, Literal, Sign, SignedDecimalLiteral,
+    SignedIntegerLiteral, StringLiteral, TimeFragment, TimeZone, ValueLiteral,
+};
 
 use crate::LiteralParseError;
 
@@ -30,15 +33,9 @@ pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, Lit
             Value::DateTimeTZ(chrono::DateTime::<chrono_tz::Tz>::from_typeql_literal(datetime_tz)?)
         }
         ValueLiteral::Duration(_) => todo!(),
-        ValueLiteral::String(string) => Value::String(Cow::Owned(extract_string_literal(string)?)),
+        ValueLiteral::String(string) => Value::String(Cow::Owned(String::from_typeql_literal(string)?)),
         ValueLiteral::Struct(_) => todo!(),
     })
-}
-
-pub(crate) fn extract_string_literal(literal: &StringLiteral) -> Result<String, LiteralParseError> {
-    Ok(literal
-        .unescape()
-        .map_err(|err| LiteralParseError::CannotUnescapeString { literal: literal.clone(), source: err })?)
 }
 
 pub trait FromTypeQLLiteral: Sized {
@@ -51,7 +48,7 @@ pub trait FromTypeQLLiteral: Sized {
 }
 
 impl FromTypeQLLiteral for bool {
-    type TypeQLLiteral = typeql::value::BooleanLiteral;
+    type TypeQLLiteral = BooleanLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         Self::parse_primitive(literal.value.as_str())
@@ -59,7 +56,7 @@ impl FromTypeQLLiteral for bool {
 }
 
 impl FromTypeQLLiteral for i64 {
-    type TypeQLLiteral = typeql::value::SignedIntegerLiteral;
+    type TypeQLLiteral = SignedIntegerLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let unsigned: i64 = Self::parse_primitive(literal.integral.as_str())?;
@@ -102,7 +99,7 @@ impl FromTypeQLLiteral for Decimal {
 }
 
 impl FromTypeQLLiteral for NaiveDate {
-    type TypeQLLiteral = typeql::value::DateFragment;
+    type TypeQLLiteral = DateFragment;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let (year, month, day) = (
@@ -115,7 +112,7 @@ impl FromTypeQLLiteral for NaiveDate {
 }
 
 impl FromTypeQLLiteral for NaiveTime {
-    type TypeQLLiteral = typeql::value::TimeFragment;
+    type TypeQLLiteral = TimeFragment;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let hour = Self::parse_primitive(literal.hour.as_str())?;
@@ -136,7 +133,7 @@ impl FromTypeQLLiteral for NaiveTime {
 }
 
 impl FromTypeQLLiteral for TimeZone {
-    type TypeQLLiteral = typeql::value::TimeZone;
+    type TypeQLLiteral = TimeZone;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         match literal {
@@ -147,7 +144,7 @@ impl FromTypeQLLiteral for TimeZone {
 }
 
 impl FromTypeQLLiteral for NaiveDateTime {
-    type TypeQLLiteral = typeql::value::DateTimeLiteral;
+    type TypeQLLiteral = DateTimeLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let date = NaiveDate::from_typeql_literal(&literal.date)?;
@@ -163,6 +160,16 @@ impl FromTypeQLLiteral for chrono::DateTime<chrono_tz::Tz> {
         let date = NaiveDate::from_typeql_literal(&literal.date)?;
         let time = NaiveTime::from_typeql_literal(&literal.time)?;
         let tz: chrono_tz::Tz = todo!();
+    }
+}
+
+impl FromTypeQLLiteral for String {
+    type TypeQLLiteral = StringLiteral;
+
+    fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
+        literal
+            .unescape()
+            .map_err(|err| LiteralParseError::CannotUnescapeString { literal: literal.clone(), source: err })
     }
 }
 
