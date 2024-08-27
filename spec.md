@@ -8,6 +8,11 @@
 - [Foundations](#foundations)
   - [Terminology](#terminology)
   - [The type system](#the-type-system)
+    - [Simple (non-dependent) types](#simple-non-dependent-types)
+    - [Dependendent types](#dependendent-types)
+    - [Castings / Subtypes](#castings--subtypes)
+    - [Lists](#lists)
+    - [Type operators](#type-operators)
 - [Schema](#schema)
   - [Basics of schemas](#basics-of-schemas)
   - [Define semantics](#define-semantics)
@@ -135,10 +140,10 @@ This section describes the basic **statements** that comprise our type system, a
 
 * **Types**. We write 
   $`A : \mathbf{Type}`$ to mean the statement:
-  > $A$ is a type. 
+  > $`A`$ is a type. 
 
-  * _Variations_: in general, may replace $\textbf{Type}$ by: 
-    * $\mathbf{Ent}$ (collection of entity types)
+  * _Variations_: in general, may replace $`\textbf{Type}`$ by: 
+    *$\mathbf{Ent}$ (collection of entity types)
     * $\mathbf{Rel}$ (collection of relation types)
     * $`\mathbf{Att}`$ (collection of attribute types)
     * $`\mathbf{Itf}`$ (collection of interface types)
@@ -147,55 +152,55 @@ This section describes the basic **statements** that comprise our type system, a
     * $`\mathbf{ERA} = \mathbf{Ent} + \mathbf{Rel} + \mathbf{Att}`$ (collection of ERA types)
   * _Example_: $`\mathsf{Person} : \mathbf{Ent}`$ means $`\mathsf{Person}`$ an entity type.
 * **Typing**
-  If $A$ is a type, then we may write $`a : A`$ to mean:
-  > $a$ is an element in type $A$.
+  If $`A`$ is a type, then we may write $`a : A`$ to mean:
+  > $`a`$ is an element in type $`A`$.
 
-  * _Example_: $p : \mathsf{Person}$ means $p$ is of type $\mathsf{Person}$
+  * _Example_: $`p : \mathsf{Person}`$ means $`p`$ is of type $`\mathsf{Person}`$
 
   * _Direct typing_: We write $`a :_! A`$ to mean:
-    > $a$ was declared as an element of $A$ by the user (we speak of a ***direct typing***).
+    > $`a`$ was declared as an element of $`A`$ by the user (we speak of a ***direct typing***).
 
     _Remark_. The notion of direct typing might be confusing at first. Mathematically, it is merely an additional statement in our type system. Intuively, you can think of it as a way of keeping track of the _user-provided_ information. A similar remark applies to direct subtyping ($`<_!`$) below.
 
     * _Direct typing rule_. The statement $`a :_! A`$ implies the statement $`a : A`$. (The converse is not true!)
-    * _Example_. $p :_! \mathsf{Child}$ means the user has inserted $p$ into the type $`\mathsf{Child}`$. Our type system may derive $`p : \mathsf{Person}`$ from this (but _not_ $`p :_! \mathsf{Person}`$)
+    * _Example_. $p :_! \mathsf{Child}$ means the user has inserted $`p`$ into the type $`\mathsf{Child}`$. Our type system may derive $`p : \mathsf{Person}`$ from this (but _not_ $`p :_! \mathsf{Person}`$)
 
 ### Dependendent types
 
 * **Dependent types**. We write $`A : \mathbf{Type}(I,J,...)`$ to mean:
-  > $A$ is a type with interface types $`I, J, ...`$.
+  > $`A`$ is a type with interface types $`I, J, ...`$.
   
-  * _Application_: Writing $A : \mathbf{Type}(I,J,...)$ ***implies*** $`A(x:I, y:J, ...) : \mathbf{Type}`$ whenever we have $x: I, y: J, ...$.
+  * _Application_: Writing $A : \mathbf{Type}(I,J,...)$ ***implies*** $`A(x:I, y:J, ...) : \mathbf{Type}`$ whenever we have $`x: I, y: J, ...`$.
   * _Variations_: We may replace $`\mathbf{Type}`$ by $`\mathbf{Rel}`$ or $`\mathbf{Att}`$.
   * _Example_: $`\mathsf{Marriage : \mathbf{Rel}(Spouse)}`$ is a relation type with interface type $`\mathsf{Spouse} : \mathbf{Itf}`$.
 * **Dependent typing**.  We write $`a : A(x : I, y : J,...)`$ to mean:
-  > The element $a$ lives in the type "$`A`$ of $`x`$ (cast as $`I`$), and $`y`$ (cast as $`J`$), and ...".
+  > The element $`a`$ lives in the type "$`A`$ of $`x`$ (cast as $`I`$), and $`y`$ (cast as $`J`$), and ...".
 
-  * _Notation for grouping interfaces_: We write $`a : A(x : I, y : I)`$ as $`A : A(\{x,y\}:I^2)`$. (Similarly, when $I$ appears $k$ times in $`A(...)`$, write $I^k$)
-  * _Role cardinality_: $|a|_I$ counts elements in $\{x_1,...,x_k\} :I^k$
-  * **Example**: $m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)$. Then $|m|_{\mathsf{Spouse}} = 2$.
+  * _Notation for grouping interfaces_: We write $`a : A(x : I, y : I)`$ as $`A : A(\{x,y\}:I^2)`$. (Similarly, when $`I`$ appears $`k`$ times in $`A(...)`$, write $`I^k`$)
+  * _Role cardinality_: $`|a|_I`$ counts elements in $`\{x_1,...,x_k\} :I^k`$
+  * **Example**: $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$. Then $`|m|_{\mathsf{Spouse}} = 2`$.
 * **Key properties of dependencies**. (These are some key rules of the type system!)
-  * _Combining dependencies_: Given $A : \mathbf{Type}(I)$ and $A : \mathbf{Type}(J)$, this ***implies*** $A : \mathbf{Type}(I,J)$. In words:
-    > If a type separately depends on $I$ and on $J$, then it may jointly depend on $I$ and $J$! 
+  * _Combining dependencies_: Given $A : \mathbf{Type}(I)$ and $`A : \mathbf{Type}(J)`$, this ***implies*** $`A : \mathbf{Type}(I,J)`$. In words:
+    > If a type separately depends on $`I`$ and on $`J`$, then it may jointly depend on $`I`$ and $`J`$! 
 
-    _Remark_: This applies recursively to types with $k$ interfaces.
+    _Remark_: This applies recursively to types with $`k`$ interfaces.
     * _Example_: $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband})`$ and $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Wife})`$ then $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband},\mathsf{Wife})`$
-  * _Weakening dependencies_: Given $A : \mathbf{Type}(I,J)$, this ***implies*** $A : \mathbf{Type}(I)$. In words:
+  * _Weakening dependencies_: Given $`A : \mathbf{Type}(I,J)`$, this ***implies*** $`A : \mathbf{Type}(I)`$. In words:
     > Dependencies can be simply ignored (note: this is a coarse rule — we later discuss more fine-grained constraints, e.g. cardinality).
 
-    _Remark_: This applies recursively to types with $k$ interfaces.
+    _Remark_: This applies recursively to types with $`k`$ interfaces.
     * _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
-  * _Inheriting dependencies_: If $A : \mathbf{Type}$, $B : \mathbf{Type}(I)$, $A < B$ and _not_ $A : \mathbf{Type}(J)$ with $J < I$, then $A : \mathbf{Type}(I)$. In words:
+  * _Inheriting dependencies_: If $`A : \mathbf{Type}`$, $`B : \mathbf{Type}(I)`$, $`A < B`$ and _not_ $A : \mathbf{Type}(J)$ with $`J < I`$, then $`A : \mathbf{Type}(I)`$. In words:
     > Dependencies that are not overwritten are inherited
 
 ### Castings / Subtypes
 
 * **Casting**. We write $`A < B`$ to mean:
-  > type casts from $A$ to $B$ are possible: 
+  > type casts from $`A`$ to $`B`$ are possible: 
   
-  * _Casting rule_: If $`A < B`$ and $a : A$, then this ***implies*** $a : B$.
-  * _Transitivity rule_: If $`A < B`$ and $B < C$, then this ***implies*** $A < C$.
-  * _Reflexivity rule_: If $`A : \mathbf{Type}`$ then this **implies** $A < A$ (notation: we sometimes write $`A \leq B`$ to put extra emphasis on the case $`A = B`$ being possible ... but this is also the case for $`A < B`$.)
+  * _Casting rule_: If $`A < B`$ and $`a : A`$, then this ***implies*** $`a : B`$.
+  * _Transitivity rule_: If $`A < B`$ and $`B < C`$, then this ***implies*** $`A < C`$.
+  * _Reflexivity rule_: If $`A : \mathbf{Type}`$ then this **implies** $`A < A`$ (notation: we sometimes write $`A \leq B`$ to put extra emphasis on the case $`A = B`$ being possible ... but this is also the case for $`A < B`$.)
 
   * _Direct castings_: We write $`A <_! B`$ to mean:
     > A cast from A to B was declared by user (we speak of a ***direct casting*** from A to B).
@@ -204,34 +209,31 @@ This section describes the basic **statements** that comprise our type system, a
     * _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
     * _Example_: $`\mathsf{Child} <_! \mathsf{Nameowner}`$
     * _Example_: $`\mathsf{Person} <_! \mathsf{Spouse}`$
-  * _"Weakening dependencies" casting_: If $`a : A(x:I, y:J)`$ then $`a : A(x:I)`$. In other words:
+  * _Weakening dependencies of terms rule_: If $`a : A(x:I, y:J)`$ then $`a : A(x:I)`$, equivalently: $`A(x:I, y:J) < A(x:I)`$. In other words:
     > Elements in $`A(I,J)`$ casts into elements of $`A(I)`$.
 
-    _Remark_: This applies recursively for types with $k$ interfaces.
-    * _Remark 2_: This casting preserves direct typings! I.e. when $`a :_! A(x:I, y:J)`$ then $`a :_! A(x:I)`$
-    * _Example_: If $m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)$ then both $m : \mathsf{Marriage}(x:\mathsf{Spouse})$ and $m : \mathsf{Marriage}(y:\mathsf{Spouse})$
+    * _Remark_: More generally, this applies for types with $k \leq 0$ interfaces. (In particular, $`A(x:I) < A() = A`$)
+    * _Example_: If $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$ then both $`m : \mathsf{Marriage}(x:\mathsf{Spouse})`$ and $`m : \mathsf{Marriage}(y:\mathsf{Spouse})`$
+
   * _"Covariance of dependencies" casting_: Given $`A < B`$, $`I < J`$ such that $`A : \mathbf{Type}(I)`$ $`B : \mathbf{Type}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$. In other words:
-    > When $A$ casts to $B$, and $I$ to $J$, then $`A(I)`$ casts to $`B(J)`$.
+    > When $`A`$ casts to $`B`$, and $`I`$ to $`J`$, then $`A(I)`$ casts to $`B(J)`$.
 
-    _Remark_: This applies recursively for types with $k$ interfaces.
-    * _Example_: If $m : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})$ then $m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)$
+    _Remark_: This applies recursively for types with $`k`$ interfaces.
+    * _Example_: If $`m : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$
 
-  _Notation_: Write $X(I) < Y(J)$ to mean $X : \mathbf{Type}(I)$, $Y : \mathbf{Type}(J)$ and $X < Y$, $I < J$.
+  _Notation_: Write $`X(I) < Y(J)`$ to mean $`X : \mathbf{Type}(I)`$, $Y : \mathbf{Type}(J)$ and $`X < Y`$, $`I < J`$.
 
 ### Lists
 
 * **List types**. We write $`[A] : \mathbf{Type}`$ to mean
-  > the type of $A$-lists, i.e. the type which contains lists $`[a_0, a_1, ...]`$ of elements $`a_i : A`$.
+  > the type of $`A`$-lists, i.e. the type which contains lists $`[a_0, a_1, ...]`$ of elements $`a_i : A`$.
 
   * _Dependency on list types_: We allow $`A : \mathbf{Type}([I])`$, and thus our type system has types $`A(x:[I]) : \mathbf{Type}`$.
     > $`A(x:[I])`$ is a type depending on lists $`x : [I]`$.
 
     * _Example_: $`\mathsf{FlightPath} : \mathbf{Rel}([\mathsf{Flight}])`$
   * _Dependent list types_: We allow $`[A] : \mathbf{Type}(I)`$, and thus our type system has types $`[A](x:I) : \mathbf{Type}`$.
-    > $`[A](x:I)`$ is a type of $A$-lists depending on interface $I$.
-
-    * _Dependent list type rule_: We ***postulate*** $`[A](x:I) < [A]`$. This reflects that:
-       > Every element $l$ of $`[A](x:I)`$ is actually an $A$-list $`l : [A]`$.
+    > $`[A](x:I)`$ is a type of $`A`$-lists depending on interface $`I`$.
 
     * _Example_: $`[a,b,c] : [\mathsf{MiddleName}](x : \mathsf{MiddleNameListOwner})`$
   
@@ -241,14 +243,14 @@ This section describes the basic **statements** that comprise our type system, a
     * _Direct dependency list rule_: Given $`l = [l_0,l_1,...] : [I]`$ and $`a :_! A(l : [I])`$ implies $`a : A(l_i : I)`$. In other words:
       > If the user intends dependency on a list $`l`$ then this implies dependency on the list's entries $`l_i`$.
 
-  * _List length_: for list $l : [A]$ the term $\mathrm{len}(l) : \mathbb{N}$ represents $l$'s length
+  * _List length_: for list $`l : [A]`$ the term $\mathrm{len}(l) : \mathbb{N}$ represents $`l`$'s length
   * _Abstractness_: all list types are abstract by default, i.e. their terms cannot be explicitly declared, as in $`l :_! [A](x:I)`$.
 
 ### Type operators
 
 * **Sum types**. $`A + B`$ — Sum type
 * **Product types**. $`A \times B`$ — Product type
-* **Type cardinality**.$`|A| : \mathbb{N}`$ — Cardinality of $A$
+* **Type cardinality**.$`|A| : \mathbb{N}`$ — Cardinality of $`A`$
 
 _Remark for nerds: list types are neither sums, nor products, nor polynomials ... they are so-called _inductive_ types!_
 
@@ -297,10 +299,10 @@ This section describes valid declarations of _types_ and axioms relating types (
 **Case REL**
 * `relation A` adds $`A : \mathbf{Rel}`$
 * `(relation) A sub B` adds $`A : \mathbf{Rel}, A <_! B`$, ***requiring*** that $`B : \mathbf{Rel}`$ 
-* `(relation) A relates I` adds $`A : \mathbf{Rel}(I)$ and $I : \mathbf{Itf}$.
-* `(relation) A relates I as J` adds $`A : \mathbf{Rel}(I)`$, $`I <_! J`$, ***requiring*** that $`B : \mathbf{Rel}(J)`$ and $A <_! B$
-* `(relation) A relates I[]` adds $`A : \mathbf{Rel}([I])$
-* `(relation) A relates I[] as J[]` adds $`A : \mathbf{Rel}([I])`$, $`I <_! J`$, ***requiring*** that $`B : \mathbf{Rel}([J])`$ and $A <_! B$
+* `(relation) A relates I` adds $`A : \mathbf{Rel}(I)`$ and $`I : \mathbf{Itf}`$.
+* `(relation) A relates I as J` adds $`A : \mathbf{Rel}(I)`$, $`I <_! J`$, ***requiring*** that $`B : \mathbf{Rel}(J)`$ and $`A <_! B`$
+* `(relation) A relates I[]` adds $`A : \mathbf{Rel}([I])`$
+* `(relation) A relates I[] as J[]` adds $`A : \mathbf{Rel}([I])`$, $`I <_! J`$, ***requiring*** that $`B : \mathbf{Rel}([J])`$ and $`A <_! B`$
 
 ***System property***: 
 
@@ -310,114 +312,114 @@ This section describes valid declarations of _types_ and axioms relating types (
 4. _Implicit inheritance_: Cannot redeclare inherited interface (i.e. when `B relates I`, `A sub B` we cannot re-declare `A relates I`... this is automatically inherited!)
 
 **Case ATT**
-* `attribute A` adds $`A : \mathbf{Att}(O_A)`$ and $`O_A : \mathbf{Itf}`$ ($O_A$ being automatically generated ownership interface)
-* `(attribute) A value V` adds $`A <_! V`$, ***requiring*** that $V$ is a primitive or struct value type
+* `attribute A` adds $`A : \mathbf{Att}(O_A)`$ and $`O_A : \mathbf{Itf}`$ ($`O_A`$ being automatically generated ownership interface)
+* `(attribute) A value V` adds $`A <_! V`$, ***requiring*** that $`V`$ is a primitive or struct value type
 * `(attribute) A sub B` adds $`A : \mathbf{Att}(O_A)`$, $`A <_! B`$ and $`O_A <_! O_B`$, ***requiring*** that $`B : \mathbf{Att}(O_A)`$
 
 ***System property***: 
 
-1. _Single inheritance_: Cannot have $A <_! B`$ and $A <_! C \neq B$ for $A, B, C : \mathbf{Att}$.
+1. _Single inheritance_: Cannot have $A <_! B`$ and $A <_! C \neq B$ for $`A, B, C : \mathbf{Att}`$.
 
 **Case PLAYS**
 
-* `A plays B:I` adds $`A <_! I`$, ***requiring*** that $B: \mathbf{Rel}(I)$, $`A :\mathbf{Obj}`$ and not $B \lneq B'$ with $B': \mathbf{Rel}(I)$
+* `A plays B:I` adds $`A <_! I`$, ***requiring*** that $`B: \mathbf{Rel}(I)`$, $`A :\mathbf{Obj}`$ and not $B \lneq B'$ with $`B': \mathbf{Rel}(I)`$
 
 _Remark_. The last part of the condition ensure that we can only declare `A plays B:I` if `I` is a role directly declared for `B`, and not an inherited role.
 
 **Case OWNS**
-* `A owns B` adds $`A <_! O_B`$, ***requiring*** that $B: \mathbf{Att}(O_B)$, $`A :\mathbf{Obj}`$
-* `A owns B[]` adds $`A <_! O_B`$, ***requiring*** that $B: \mathbf{Att}(O_B)$, **puts B[] to be non-abstract**: i.e. allows declaring terms $`l :_! [B](x:O_B)`$, see earlier discussion of list types
+* `A owns B` adds $`A <_! O_B`$, ***requiring*** that $`B: \mathbf{Att}(O_B)`$, $`A :\mathbf{Obj}`$
+* `A owns B[]` adds $`A <_! O_B`$, ***requiring*** that $`B: \mathbf{Att}(O_B)`$, **puts B[] to be non-abstract**: i.e. allows declaring terms $`l :_! [B](x:O_B)`$, see earlier discussion of list types
 
 _Remark: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract` (abstractness is crucial here, see `abstract` constraint below). See also the remark in "Satisfying type patterns"._
 
 ***System property***: 
 
 1. _Exclusive interface modes_: Only one of `A owns B` or `A owns B[]` can be declared in the model.
-2. _Consistent interface modes_: If `A owns B`, and $A' < A$, $B' < B$, then disallow declaring `A' owns B'[]`.
-3. _Consistent interface modes (list case)_: If `A owns B[]`, and $A' < A$, $B' < B$, then disallow declaring `A' owns B'`.
+2. _Consistent interface modes_: If `A owns B`, and $`A' < A`$, $`B' < B`$, then disallow declaring `A' owns B'[]`.
+3. _Consistent interface modes (list case)_: If `A owns B[]`, and $`A' < A`$, $`B' < B`$, then disallow declaring `A' owns B'`.
 
 ### Constraints
 
 **Case CARD**
 * `A relates I @card(n..m)` postulates $n \leq k \leq m$ whenever $`a :_! A'(\{...\} : I^k)`$, $`A' \leq A`$, $`A' : \mathbf{Rel}(I)`$.
   * **defaults** to `@card(1..1)` if omitted ("one")
-* `A plays B:I @card(n..m)` postulates $n \leq |B(a:I)| \leq m$ for all $a : A$
+* `A plays B:I @card(n..m)` postulates $n \leq |B(a:I)| \leq m$ for all $`a : A`$
   * **defaults** to `@card(0..)` if omitted ("many")
-* `A owns B @card(n...m)` postulates $n \leq |B(a:I)| \leq m$ for all $a : A$
+* `A owns B @card(n...m)` postulates $n \leq |B(a:I)| \leq m$ for all $`a : A`$
   * **defaults** to `@card(0..1)` if omitted ("one or null")
 
 ***System property***:
 
 1. For inherited interfaces, we cannot redeclare cardinality (this is actually a consequence of "Implicit inheritance" above). 
-2. When we have direct subinterfaces $`I_i <_! J`$, for $i = 1,...,n$, and each $`I_i`$ has `card(`$`n_i,m_i`$`)` while J has $card(n,m)$ then we must have $`n \leq \sum_i n_i \leq \sum_i m_i \leq m`$.
+2. When we have direct subinterfaces $`I_i <_! J`$, for $`i = 1,...,n`$, and each $`I_i`$ has `card(`$`n_i,m_i`$`)` while J has $`card(n,m)`$ then we must have $`n \leq \sum_i n_i \leq \sum_i m_i \leq m`$.
   
 _Remark 1: Upper bounds can be omitted, writing `@card(2..)`, to allow for arbitrary large cardinalities_
 
 _Remark 2: For cardinality, and for most other constraints, we should reject redundant conditions, such as `A owns B card(0..3);` when `A sub A'` and `A' owns B card(1..2);`_
 
 **Case CARD_LIST**
-* `A relates I[] @card(n..m)` postulates $n \leq \mathrm{len}(l) \leq m$ whenever $a : A'(l : [I])$, $A' \leq A$, $A' : \mathbf{Rel}([I])$, and $k$ is _maximal_ (for fixed $a : A$).
+* `A relates I[] @card(n..m)` postulates $n \leq \mathrm{len}(l) \leq m$ whenever $`a : A'(l : [I])`$, $A' \leq A$, $`A' : \mathbf{Rel}([I])`$, and $`k`$ is _maximal_ (for fixed $a : A$).
   * **defaults** to `@card(0..)` if omitted ("many")
 * `A owns B[] @card(n...m)` postulates $n \leq \mathrm{len}(l) \leq m$ whenever $`l : [B](a:O_B)`$ for $`a : A`$
   * **defaults** to `@card(0..)` if omitted ("many")
 
 **Case PLAYS_AS**
-* `A plays B:I as C:J` postulates $`c :_! C(a:J)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $A < D$, $`D <_! J`$.
+* `A plays B:I as C:J` postulates $`c :_! C(a:J)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $`A < D`$, $`D <_! J`$.
   * **Invalidated** when $`A <_! J'`$ for $`B(I) \lneq C'(J') \leq C(J)`$.
 
 **Case OWNS_AS**
-* `A owns B as C` postulates $`c :_! C(a:O_C)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $A < D$, $`D <_! O_C`$.
+* `A owns B as C` postulates $`c :_! C(a:O_C)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $`A < D`$, $`D <_! O_C`$.
   * **Invalidated** when $`A <_! O_{C'}`$ for $`B \lneq C' \leq C`$.
 
 _Comment: both preceding cases are kinda complicated/unnatural ... as reflected by the math._
 
 **Case UNIQUE**
-* `A owns B @unique` postulates that if $`b : B(a:O_B)`$ for some $a : A$ then this $a$ is unique (for fixed $b$).
+* `A owns B @unique` postulates that if $`b : B(a:O_B)`$ for some $`a : A`$ then this $`a`$ is unique (for fixed $`b`$).
 
 **Case KEY**
-* `A owns B @key` postulates that if $`b : B(a:O_B)`$ for some $a : A$ then this $a$ is unique, and also $`|B(a:O_B) = 1`$.
+* `A owns B @key` postulates that if $`b : B(a:O_B)`$ for some $`a : A`$ then this $`a`$ is unique, and also $`|B(a:O_B) = 1`$.
 
 **Case SUBKEY**
-* `A owns B1 @subkey(<LABEL>); A owns B2 @subkey(<LABEL>)` postulates that if $`b : B_1(a:O_{B_1}) \times B_2(a:O_{B_2})`$ for some $a : A$ then this $a$ is unique, and also $`|B_1(a:O_{B_1}) \times B_2(a:O_{B_2})| = 1`$. **Generalizes** to $n$ subkeys.
+* `A owns B1 @subkey(<LABEL>); A owns B2 @subkey(<LABEL>)` postulates that if $`b : B_1(a:O_{B_1}) \times B_2(a:O_{B_2})`$ for some $`a : A`$ then this $`a`$ is unique, and also $`|B_1(a:O_{B_1}) \times B_2(a:O_{B_2})| = 1`$. **Generalizes** to $`n`$ subkeys.
 
 **Case ABSTRACT**
 * `(type) A @abstract` postulates $`a :_! A(...)`$ to be impossible
-* `B relates I @abstract` postulates $`A <_! I`$ to be impossible for $A : \mathbf{Obj}$
-* `B relates I[] @abstract` postulates $`A <_! I`$ to be impossible for $A : \mathbf{Obj}$
+* `B relates I @abstract` postulates $`A <_! I`$ to be impossible for $`A : \mathbf{Obj}`$
+* `B relates I[] @abstract` postulates $`A <_! I`$ to be impossible for $`A : \mathbf{Obj}`$
 * `A plays B:I @abstract` postulates that
-  *  (if $I$ is used as a plain role:) $`b :_! B'(a:I)`$ 
-  *  (if $I$ is used as a list role:) $`b :_! B'(l:[I])`$, $a \in l$ 
+  *  (if $`I`$ is used as a plain role:) $`b :_! B'(a:I)`$ 
+  *  (if $`I`$ is used as a list role:) $`b :_! B'(l:[I])`$, $a \in l$ 
   
-  is impossible whenever $a : A$, $B' \leq B$ (_note_: $B' < B$ is needed here, since the interface $I$ may be inherited to some subtypes)
-* `A owns B @abstract` postulates $`b :_! B(a:I)`$ to be impossible for $a : A$ 
-* `A owns B[] @abstract` postulates $`b :_! [B](a:I)`$ to be impossible for $a : A$ 
+  is impossible whenever $`a : A`$, $B' \leq B$ (_note_: $`B' < B`$ is needed here, since the interface $`I`$ may be inherited to some subtypes)
+* `A owns B @abstract` postulates $`b :_! B(a:I)`$ to be impossible for $`a : A`$ 
+* `A owns B[] @abstract` postulates $`b :_! [B](a:I)`$ to be impossible for $`a : A`$ 
 
 ***System property***:
 
 > _The following properties capture that parents of abstract things are meant to be abstract too. But this is not really a crucial condition. (STICKY: discuss!)_ 
 
-1. If `(type) A @abstract` and $A < B$ then `(type) B` cannot be non-abstract.
-2. If `A relates I @abstract` and $A(I) < B(J)$ then `B relates J` cannot be non-abstract.
-3. If `A relates I[] @abstract` and $A([I]) < B([J])$ then `B relates J[]` cannot be non-abstract.
-4. If `A plays B:I @abstract` and $A < A'$, $B'(I) < B'(I')$ then `A' plays B':J'` cannot be non-abstract.
-5. If `A owns B @abstract` and $A < A'$, $B < B'$ then `A' owns B'` cannot be non-abstract. 
-6. If `A owns B[] @abstract` and $A < A'$, $B < B'$ then `A' owns B'[]` cannot be non-abstract. 
+1. If `(type) A @abstract` and $`A < B`$ then `(type) B` cannot be non-abstract.
+2. If `A relates I @abstract` and $`A(I) < B(J)`$ then `B relates J` cannot be non-abstract.
+3. If `A relates I[] @abstract` and $`A([I]) < B([J])`$ then `B relates J[]` cannot be non-abstract.
+4. If `A plays B:I @abstract` and $`A < A'`$, $`B'(I) < B'(I')`$ then `A' plays B':J'` cannot be non-abstract.
+5. If `A owns B @abstract` and $`A < A'`$, $`B < B'`$ then `A' owns B'` cannot be non-abstract. 
+6. If `A owns B[] @abstract` and $`A < A'`$, $`B < B'`$ then `A' owns B'[]` cannot be non-abstract. 
 
 **Case VALUES**
-* `A owns B @values(v1, v2)` postulates if $a : A$ then $`a \in \{v_1, v_2\}`$ , ***requiring*** that 
+* `A owns B @values(v1, v2)` postulates if $`a : A`$ then $`a \in \{v_1, v_2\}`$ , ***requiring*** that 
   * either $`A : \mathbf{Att}`$, $`A < V`$, $`v_i : V`$, 
   * or $`A`$ is the component of a struct, see section on struct defs. 
   
-  **Generalizes** to $n$ values.
-* `A owns B @regex(v1..v2)` postulates if $a : A$ then $`a`$ conforms with regex `<EXPR>`.
-* `A owns B @range(v1..v2)` postulates if $a : A$ then $`a \in [v_1,v_2]`$ (conditions as before).
-* `A value B @values(v1, v2)` postulates if $a : A$ then $`a \in \{v_1, v_2\}`$ , ***requiring*** that: 
+  **Generalizes** to $`n`$ values.
+* `A owns B @regex(v1..v2)` postulates if $`a : A`$ then $`a`$ conforms with regex `<EXPR>`.
+* `A owns B @range(v1..v2)` postulates if $`a : A`$ then $`a \in [v_1,v_2]`$ (conditions as before).
+* `A value B @values(v1, v2)` postulates if $`a : A`$ then $`a \in \{v_1, v_2\}`$ , ***requiring*** that: 
   * either $`A : \mathbf{Att}`$, $`A < V`$, $`v_i : V`$, 
   * or $`A`$ is the component of a struct, see section on struct defs.
   
-  **Generalizes** to $n$ values.
-* `A value B @regex(v1..v2)` postulates if $a : A$ then $`a`$ conforms with regex `<EXPR>`.
-* `A value B @range(v1..v2)` postulates if $a : A$ then $`a \in [v_1,v_2]`$ (conditions as before).
+  **Generalizes** to $`n`$ values.
+* `A value B @regex(v1..v2)` postulates if $`a : A`$ then $`a`$ conforms with regex `<EXPR>`.
+* `A value B @range(v1..v2)` postulates if $`a : A`$ then $`a \in [v_1,v_2]`$ (conditions as before).
 
 **Case DISTINCT**
 * `A owns B[] @distinct` postulates that when $`[b_1, ..., b_n] : [B]`$ then all $`b_i`$ are distinct. 
@@ -426,12 +428,12 @@ _Comment: both preceding cases are kinda complicated/unnatural ... as reflected 
 ### Triggers
 
 **Case DEP_DEL (CASCADE/INDEPEDENT)**
-* `(relation) B relates I @cascade`: deleting $`a : A`$ with existing $`b :_! B(a:I,...)`$, such that $`b :_! B(...)`$ violates $B$'s cardinality for $I$, triggers deletion of $b$.
+* `(relation) B relates I @cascade`: deleting $`a : A`$ with existing $`b :_! B(a:I,...)`$, such that $`b :_! B(...)`$ violates $`B`$'s cardinality for $`I`$, triggers deletion of $`b`$.
   * **defaults** to **TT** error
-* `(relation) B @cascade`: deleting $`a : A`$ with existing $`b :_! B(a:I,...)`$, such that $`b :_! B(...)`$ violates $B$'s cardinality _for any role_ of $B$, triggers deletion of $b$.
+* `(relation) B @cascade`: deleting $`a : A`$ with existing $`b :_! B(a:I,...)`$, such that $`b :_! B(...)`$ violates $`B`$'s cardinality _for any role_ of $`B`$, triggers deletion of $`b`$.
   * **defaults** to **TT** error
 * `(attribute) B @independent`. When deleting $`a : A`$ with existing $`b :_! B(a:O_B)`$, update the latter to $`b :_! B`$.
-  * **defaults** to: deleting $`a : A`$ with existing $`b :_! B(a:O_B)`$ triggers deletion of $b$.
+  * **defaults** to: deleting $`a : A`$ with existing $`b :_! B(a:O_B)`$ triggers deletion of $`b`$.
 
 
 ### Value types
@@ -453,12 +455,12 @@ struct S:
   C2 value V2? (@values(<EXPR>));
 ```
 adds
-* _Struct type_ $S : \mathbf{Type}$
+* _Struct type_ $`S : \mathbf{Type}`$
 * _Struct components_ $`C_1 : \mathbf{Type}`$, $`C_2 : \mathbf{Type}`$, and identify $`S = C_1 \times \mathsf{Opt}(C_2)`$ where $`\mathsf{Opt}`$ denotes the optionality type operator ($`\mathsf{Opt}(T) = T + \{\emptyset\}`$)
     * _Component value casting rule_: $`C_1 < V_1`$, $`C_2 < \mathsf{Opt}(V_2)`$
-    * _Component value constraint rule_: whenever $`v : V_i`$ and $v$ conforms with `<EXPR>` then $`v : C_i`$
+    * _Component value constraint rule_: whenever $`v : V_i`$ and $`v`$ conforms with `<EXPR>` then $`v : C_i`$
       * **defaults** to: whenever $`v : V_i`$ then $`v : C_i`$ (no condition)
-* **Generalizes** to $n$ components
+* **Generalizes** to $`n`$ components
 
 ### Functions defs
 
@@ -470,11 +472,11 @@ fun F (x: T, y: S) -> { A, B }:
   return { z, w };
 ```
 adds the following to our type system:
-* _Function symbol_: $F : \mathbf{Type}(T,S)$.
-* _Function type_: when $`x : T`$ and $y: S$ then $F(x:T, y:S) : \mathbf{Type}$
-* _Output cast_: $F(x:T, y:S) < A \times B$
+* _Function symbol_: $`F : \mathbf{Type}(T,S)`$.
+* _Function type_: when $`x : T`$ and $`y: S`$ then $`F(x:T, y:S) : \mathbf{Type}`$
+* _Output cast_: $`F(x:T, y:S) < A \times B`$
 * _Function terms_: $`(z,w) : F(x:T, y:S)`$ are discussed in section "Function semantics"
-* **Generalizes** to $n$ inputs and $m$ outputs
+* **Generalizes** to $`n`$ inputs and $`m`$ outputs
 
 **Case SINGLE_RET_FUN**
 ```
@@ -484,9 +486,9 @@ fun f (x: T, y: S) -> A, B:
   return <AGG>, <AGG>;
 ```
 adds the following to our type system:
-* _Function symbol_: when $`x : T`$ and $y: S$ then $f(x:T, y:S) : A \times B$
+* _Function symbol_: when $`x : T`$ and $`y: S`$ then $`f(x:T, y:S) : A \times B`$
 * _Function terms_: $`(z,w) : f(x:T, y:S)`$ are discussed in section "Function semantics"
-* **Generalizes** to $n$ inputs and $m$ outputs
+* **Generalizes** to $`n`$ inputs and $`m`$ outputs
 
 _Comment: notice difference in capitalization between the two cases!_
 
@@ -583,23 +585,23 @@ cannot undefine primitives
 * `struct S;`
   removes $S : \mathbf{Type}$ and all associated defs.
   * **TT** error if
-    * $S$ is used in another struct
-    * $S$ is used as value type of an attribute
+    * $`S`$ is used in another struct
+    * $`S`$ is used as value type of an attribute
 
 ### Functions defs
 
 **Case STREAM_RET_FUN**
 * `fun F;`
-  removes $F$ and all associated defs.
+  removes $`F`$ and all associated defs.
   * **TT** error if
-    * $S$ is used in another function
+    * $`S`$ is used in another function
 
 
 **Case SINGLE_RET_FUN**
 * `fun f;`
-  removes $f$ and all associated defs.
+  removes $`f`$ and all associated defs.
   * **TT** error if
-    * $S$ is used in another function
+    * $`S`$ is used in another function
 
 _Comment: notice difference in capitalization between the two cases!_
 
@@ -744,14 +746,14 @@ This section first describes the satisfication semantics of match queries, obtai
   * _Implicit naming_. Writing `$_` by itself leaves the name of the anon variable implicit—in this case, a unique name is implicitly chosen (in other words: two `$_` appearing in the same pattern represent different variables)
   * _Remark_: Anon vars can be both **tvar**s and **evar**s
 
-_Remark 1_. The code variable `$x` will be written as $x$ in math notation (without $`\$`$).
+_Remark 1_. The code variable `$x` will be written as $`x`$ in math notation (without $`\$`$).
 
 _Remark 2_. Currently, only implicit named anon vars (`$_`) can be used by the user (under the hood, general anon vars do exist though!). (STICKY)
 
 **Typed concept maps**
 
 * _Concepts_. A **concept** is a type or an element in a type.
-* _Typed concept maps_. An **typed concept map** (cmap) $m$ is a mapping variables to non-dependently typed concepts
+* _Typed concept maps_. An **typed concept map** (cmap) $`m`$ is a mapping variables to non-dependently typed concepts
   ```
   m = ($x->a:T, $y->b:S, ...)
   ```
@@ -788,7 +790,7 @@ _Remark 2_. Currently, only implicit named anon vars (`$_`) can be used by the u
     1. If `$x = fun(<VARS>)` or `$x in fun(<VARS>)` in `P`, then require $`T(\mathrm{fun}) \leq T_m(y)`$ where $`T(\mathrm{fun})`$ is the output type of the function 
   
     _Remark_ 
-      * In the last to cases, we can replace $\leq$ with $=$ to compute the **minimal type assignment** (see "Answers" below).
+      * In the last to cases, we can replace $\leq$ with $`=`$ to compute the **minimal type assignment** (see "Answers" below).
       * For **tvar**s `$x` we also pick $`m(x) : T_m(x)`$ as minimal as possible by default (e.g. `person : Ent` instead of `person : Type`).
       * The extra cases for `has` are introduced to facilate working with computed values (of potentially non-attribute type) to match attributes.
 
@@ -835,7 +837,7 @@ _Key principle_:
 
 * If variables are used only in specific positions (called **optional positions**) of patterns, then they are optional variables.
   * if a var is used in _any_ non-optional position, then the var become non-optional!
-* A optional variable `$x` is allowed to have the empty concept assigned to it in an answer: $m(x) = \emptyset$.
+* A optional variable `$x` is allowed to have the empty concept assigned to it in an answer: $`m(x) = \emptyset`$.
 
 **Variable boundedness condition**
 
@@ -866,17 +868,17 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
 * `$A relates $I` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$
 
 * `$A relates! $I` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$ and **not** $`m(A) \lneq m(B) : \mathbf{Rel}(m(I))`$
-* `$A relates $I as $J` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$, $`B : \mathbf{Rel}(m(J))`$, $`A < B`$, $m(I) < m(J)$.
+* `$A relates $I as $J` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$, $`B : \mathbf{Rel}(m(J))`$, $`A < B`$, $`m(I) < m(J)`$.
 * `$A relates $I[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$
 * `$A relates! $I[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$ and **not** $`m(A) \lneq m(B) : \mathbf{Rel}(m([I]))`$
-* `$A relates $I[] as $J[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$, $`B : \mathbf{Rel}(m([J]))`$, $`A < B`$, $m(I) < m(J)$.
+* `$A relates $I[] as $J[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$, $`B : \mathbf{Rel}(m([J]))`$, $`A < B`$, $`m(I) < m(J)`$.
 
 **Case PLAY_PATT**
-* `$A plays $I` is satisfied if $`m(A) < A' <_! m(I)`$ (for $A'$ **not** an interface type)
+* `$A plays $I` is satisfied if $`m(A) < A' <_! m(I)`$ (for $`A'`$ **not** an interface type)
 * `$A plays! $I` is satisfied if $`m(A) <_! m(I)`$
 
 **Case OWNS_PATT**
-* `$A owns $B` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $A'$ **not** an interface type)
+* `$A owns $B` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type)
 * `$A owns! $B` is satisfied if $`m(A) <_! m(O_B)`$ 
 
 _Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` will match the answer `m($X) = A`.
@@ -888,7 +890,7 @@ _Remark: the usefulness of constraint patterns seems overall low, could think of
 **Case CARD_PATT**
 * cannot match `@card(n..m)` (STICKY: discuss! `@card($n..$m)`??)
 <!-- 
-* `A relates I @card(n..m)` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$ and schema allows $|a|_I$ to be any number in range `n..m`.
+* `A relates I @card(n..m)` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$ and schema allows $`|a|_I`$ to be any number in range `n..m`.
 * `A plays B:I @card(n..m)` is satisfied if ...
 * `A owns B @card(n...m)` is satisfied if ...
 * `$A relates $I[] @card(n..m)` is satisfied if ...
@@ -897,27 +899,27 @@ _Remark: the usefulness of constraint patterns seems overall low, could think of
 
 **Case PLAYS_AS_PATT**
 
-_Notation: for readability, we simply write $X$ in place of $m(X)$ in this case and the next._
+_Notation: for readability, we simply write $`X`$ in place of $`m(X)`$ in this case and the next._
 
-* `$A plays $B:$I as $C:$J` is satisfied if $A \leq A' <_! D' \leq D$ for some $D$s, and $I \leq I' <_! J' \leq J$, with $`A^{(')} < {I^{(')}}`$, $`D^{(')} < {J^{(')}}`$, and schema directly contains the constraint `A' plays B':I' as C':J'` for relation types $B \leq B' \leq_! C' \leq C$.
+* `$A plays $B:$I as $C:$J` is satisfied if $A \leq A' <_! D' \leq D$ for some $`D`$s, and $I \leq I' <_! J' \leq J$, with $`A^{(')} < {I^{(')}}`$, $`D^{(')} < {J^{(')}}`$, and schema directly contains the constraint `A' plays B':I' as C':J'` for relation types $B \leq B' \leq_! C' \leq C$.
 
 **Case OWNS_AS_PATT**
-* `$A owns $B as $C` is satisfied if $A \leq A' <_! D' \leq D$ for some $D$s, and $B \leq B' <_! C' \leq C$, with $`A^{(')} < O_{B^{(')}}`$, $`D^{(')} < O_{C^{(')}}`$, and schema directly contains the constraint `A' owns B' as C'`.
+* `$A owns $B as $C` is satisfied if $A \leq A' <_! D' \leq D$ for some $`D`$s, and $B \leq B' <_! C' \leq C$, with $`A^{(')} < O_{B^{(')}}`$, $`D^{(')} < O_{C^{(')}}`$, and schema directly contains the constraint `A' owns B' as C'`.
 
 _Remark: these two are still not a natural constraint, as foreshadowed by a previous remark!_
 
 **Case UNIQUE_PATT**
-* `$A owns $B @unique` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
+* `$A owns $B @unique` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
 
 * `$A owns! $B @unique` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `m($A) owns m($B) @unique`.
 
 **Case KEY_PATT**
-* `$A owns $B @key` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
+* `$A owns $B @key` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
 
 * `$A owns! $B @key` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `m($A) owns m($B) @key`.
 
 **Case SUBKEY_PATT**
-* `$A owns $B @subkey(<LABEL>)` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @subkey(<LABEL>)`.
+* `$A owns $B @subkey(<LABEL>)` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @subkey(<LABEL>)`.
 
 **Case ABSTRACT_PATT**
 * `(type) $B @abstract` is satisfied if schema directly contains `(type) m($B) @abstract`.
@@ -942,7 +944,7 @@ _Remark: these two are still not a natural constraint, as foreshadowed by a prev
 -->
 
 **Case DISTINCT_PATT**
-* `A owns B[] @distinct` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $A'$ **not** an interface type), and schema directly contains constraint `A' owns m($B)[] @distinct`.
+* `A owns B[] @distinct` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B)[] @distinct`.
 * `B relates I[] @distinct` is satisfied if $`m(B) : \mathbf{Rel}(m([I]))`$, $`B < B'`$ and schema directly contains `B' relates I[] @distinct`.
 
 #### Data
@@ -1061,16 +1063,16 @@ The following are all kind of obvious (for `<COMP>` one of `<`,`<=`,`>`,`>=`):
 #### Functions
 
 **Case IN_FUN_PATT**
-* `$x, $y?, ... in <FUN_CALL>` is satisfied, after substituting concepts, the left hand side is an element of the **function answer set** $F$ of evaluated `<FUN_CALL>` on the right (see "Function semantics") meaning that: for some tuple $t \in F$ we have
-  * for the $i$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
-  * for the $i$th variable `$z`, which is marked as optional using `?`, we have either
+* `$x, $y?, ... in <FUN_CALL>` is satisfied, after substituting concepts, the left hand side is an element of the **function answer set** $`F`$ of evaluated `<FUN_CALL>` on the right (see "Function semantics") meaning that: for some tuple $t \in F$ we have
+  * for the $`i`$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
+  * for the $`i`$th variable `$z`, which is marked as optional using `?`, we have either
     * $`m(z) = t_i`$ and $`t_i \neq \emptyset`$
     * $`m(z) = t_i`$ and $`t_i = \emptyset`$
 
 **Case ASS_FUN_PATT**
-* `$x, $y?, ... = <FUN_CALL>` is satisfied, after substituting concepts, the left hand side complies with the **function answer tuple** $t$ of `<FUN_CALL>` on the right (see "Function semantics") meaning that:
-  * for the $i$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
-  * for the $i$th variable `$z`, which is marked as optional using `?`, we have either
+* `$x, $y?, ... = <FUN_CALL>` is satisfied, after substituting concepts, the left hand side complies with the **function answer tuple** $`t`$ of `<FUN_CALL>` on the right (see "Function semantics") meaning that:
+  * for the $`i`$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
+  * for the $`i`$th variable `$z`, which is marked as optional using `?`, we have either
     * $`m(z) = t_i`$ and $`t_i \neq \emptyset`$
     * $`m(z) = t_i`$ and $`t_i = \emptyset`$
 
@@ -1088,7 +1090,7 @@ Now that we have seen how to determine when answers satisfy individual statement
 **Case OR_PATT**
 * An answer for the pattern `{ <PATT1> } or { <PATT2> };` is an answer that satisfies either `<PATT1>` or `<PATT2>`.
 
-_Remark_: this generalize to a chain of $k$ `or` clauses.
+_Remark_: this generalize to a chain of $`k`$ `or` clauses.
 
 **Case NOT_PATT**
 * An answer satisfying the pattern `not { <PATT> };` is any answer which _cannot_ be completed to a answer satisfying `<PATT>`.
@@ -1225,8 +1227,8 @@ An `insert` clause comprises collection of _insert statements_
   * the clause is **executed** for each map `m` in the stream individually
 
 * _Extending input map_: Insert clauses can extend bindings of the input concept map `m` in two ways
-  * `$x` is the subject of an `isa` statement in the `insert` clause, in which case $m(x) =$ _newly-inserted-concept_ (see "Case **ISA_INS**")
-  * `$x` is the subject of an `=` assignment statement in the `insert` clause, in which case $m(x) =$ _assigned-value_ (see "Case **ASS_INS**")
+  * `$x` is the subject of an `isa` statement in the `insert` clause, in which case $`m(x) =`$ _newly-inserted-concept_ (see "Case **ISA_INS**")
+  * `$x` is the subject of an `=` assignment statement in the `insert` clause, in which case $`m(x) =`$ _assigned-value_ (see "Case **ASS_INS**")
 
 * _Execution_: An `insert` clause is executed by executing its statements individually.
   * Not all statement need to execute (see Optionality below)
@@ -1255,15 +1257,15 @@ An `insert` clause comprises collection of _insert statements_
 ### Insert statements
 
 **Case ISA_INS**
-* `$x isa A` adds new $`a :_! A`$ for $`A : \mathbf{ERA}`$ and sets $m(x) = a$
-* `$x isa $T` adds new $`a :_! m(T)`$ ($T$ must be bound) and sets $m(x) = a$
+* `$x isa A` adds new $`a :_! A`$ for $`A : \mathbf{ERA}`$ and sets $`m(x) = a`$
+* `$x isa $T` adds new $`a :_! m(T)`$ ($T$ must be bound) and sets $`m(x) = a`$
 
 ***System property***:
 
 1. `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input map `m` nor in other `isa` or `=` statements).
 
 **Case ISA_INS**
-* `$x = <EXPR>` adds nothing, and sets $m(x) = v$ where $v$ is the value that `<EXPR>` evaluates to.
+* `$x = <EXPR>` adds nothing, and sets $`m(x) = v`$ where $`v`$ is the value that `<EXPR>` evaluates to.
 
 ***System property***:
 
@@ -1304,7 +1306,7 @@ An `insert` clause comprises collection of _insert statements_
 
 ***System property***:
 
-1. Cannot add $`m(y) :_! A(m(x) : O_A)`$ if there exists $B < A$.
+1. Cannot add $`m(y) :_! A(m(x) : O_A)`$ if there exists $`B < A`$.
 
 _Remark_. We want to get rid of this constraint (STICKY).
 
@@ -1383,8 +1385,8 @@ _Remark 2_. The resulting $`m(x) :_! m(A)(z : J, ...)`$ must be within schema co
 * `$x @cascade(C, D, ...)` removes $`m(x) :_! A(...)`$. If $`m(x)`$ is an object, we also:
   * coarsen $`b :_! B(m(x) : I, z : J, ...)`$ to $`b :_! B(z : J, ...)`$. Next:
     * if the following are _both_ satisfied:
-      1. the coarsened axiom $`b :_! B(...)`$ violates interface cardinality of $B$,
-      2. $B$ is among the listed types `C, D, ...`
+      1. the coarsened axiom $`b :_! B(...)`$ violates interface cardinality of $`B`$,
+      2. $`B`$ is among the listed types `C, D, ...`
 
       then: **recursively execute** delete statement `b isa B @cascade(C, D, ...)`
 
