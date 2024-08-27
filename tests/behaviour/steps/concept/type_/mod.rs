@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt,
-    fmt::{Display, Formatter},
-};
+use std::{error::Error, fmt};
 
 pub mod attribute_type;
 mod owns;
@@ -26,8 +22,8 @@ pub enum BehaviourConceptTestExecutionError {
     CannotFindStructDefinition,
 }
 
-impl Display for BehaviourConceptTestExecutionError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for BehaviourConceptTestExecutionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }
