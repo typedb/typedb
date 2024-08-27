@@ -13,10 +13,7 @@ use std::{error::Error, fmt};
 
 use answer::variable::Variable;
 use typeql::{
-    statement::{
-        thing::{Relation, RolePlayer},
-        InIterable, StructDeconstruct,
-    },
+    statement::{thing::RolePlayer, InIterable, StructDeconstruct},
     token,
     value::StringLiteral,
 };
@@ -131,7 +128,7 @@ pub enum LiteralParseError {
     ScientificNotationNotAllowedForDecimal { literal: String },
     InvalidDate { year: i32, month: u32, day: u32 },
     InvalidTime { hour: u32, minute: u32, second: u32, nano: u32 },
-    CannotUnescapeString { literal: StringLiteral },
+    CannotUnescapeString { literal: StringLiteral, source: typeql::Error },
 }
 
 impl fmt::Display for LiteralParseError {
@@ -147,7 +144,7 @@ impl Error for LiteralParseError {
             LiteralParseError::ScientificNotationNotAllowedForDecimal { .. } => None,
             LiteralParseError::InvalidDate { .. } => None,
             LiteralParseError::InvalidTime { .. } => None,
-            LiteralParseError::CannotUnescapeString { .. } => None,
+            LiteralParseError::CannotUnescapeString { source, .. } => Some(source),
         }
     }
 }

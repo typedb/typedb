@@ -36,7 +36,9 @@ pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, Lit
 }
 
 pub(crate) fn extract_string_literal(literal: &StringLiteral) -> Result<String, LiteralParseError> {
-    Ok(literal.unescape().map_err(|_| LiteralParseError::CannotUnescapeString { literal: literal.clone() })?)
+    Ok(literal
+        .unescape()
+        .map_err(|err| LiteralParseError::CannotUnescapeString { literal: literal.clone(), source: err })?)
 }
 
 pub trait FromTypeQLLiteral: Sized {
@@ -174,7 +176,7 @@ pub mod tests {
 
     use crate::{
         pattern::expression::Expression,
-        program::{block::BlockContext, function_signature::HashMapFunctionSignatureIndex},
+        program::function_signature::HashMapFunctionSignatureIndex,
         translation::{match_::translate_match, TranslationContext},
         PatternDefinitionError,
     };
