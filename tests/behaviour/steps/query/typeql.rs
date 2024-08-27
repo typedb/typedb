@@ -8,17 +8,17 @@ use std::{collections::HashMap, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{
-    insert::{insert::InsertPlan, WriteCompilationError},
+    insert::{program::InsertProgram, WriteCompilationError},
     match_::inference::annotated_functions::IndexedAnnotatedFunctions,
 };
 use cucumber::gherkin::Step;
+use executor::{batch::Row};
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
 use macro_rules_attribute::apply;
-use executor::batch::Row;
 use executor::write::insert::InsertExecutor;
 use executor::write::WriteError;
 use primitive::either::Either;
@@ -31,8 +31,9 @@ use crate::{
     Context,
 };
 
-fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPlan, WriteCompilationError> {
+fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertProgram, WriteCompilationError> {
     with_write_tx!(context, |tx| {
+        // TODO: this needs to handle match-insert pipelines
         let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
         let mut translation_context = TranslationContext::new();
         let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
@@ -63,15 +64,15 @@ fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPl
             .unwrap()
             .0
         };
-        compiler::insert::insert::build_insert_plan(block.conjunction().constraints(), &HashMap::new(), &mock_annotations)
+        compiler::insert::program::compile(block.conjunction().constraints(), &HashMap::new(), &mock_annotations)
     })
 }
 
 fn execute_insert_plan(
     context: &mut Context,
-    insert_plan: InsertPlan,
+    insert_plan: InsertProgram,
 ) -> Result<Vec<VariableValue<'static>>, WriteError> {
-    let mut output_vec = (0..insert_plan.output_row_plan.len()).map(|_| VariableValue::Empty).collect_vec();
+    let mut output_vec = (0..insert_plan.output_row_schema.len()).map(|_| VariableValue::Empty).collect_vec();
 
     with_write_tx!(context, |tx| {
         InsertExecutor::new(insert_plan).execute_insert(

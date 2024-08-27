@@ -7,8 +7,7 @@
 use crate::insert::{ThingSource, TypeSource};
 
 #[derive(Debug)]
-pub enum DeleteEdge {
-    // TODO: Just replace this with regular `Constraint`s and use a mapped-row?
+pub enum DeleteConnection {
     Has(Has),               // TODO: Ordering
     RolePlayer(RolePlayer), // TODO: Ordering
 }

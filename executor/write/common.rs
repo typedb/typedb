@@ -13,7 +13,7 @@ use crate::{batch::Row, VariablePosition};
 fn get_type<'a>(input: &'a Row<'a>, source: &'a TypeSource) -> &'a answer::Type {
     match source {
         TypeSource::InputVariable(position) => input.get(position.clone()).as_type(),
-        TypeSource::TypeConstant(type_) => type_,
+        TypeSource::Constant(type_) => type_,
     }
 }
 

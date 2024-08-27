@@ -9,29 +9,22 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
-use encoding::value::label::Label;
-use ir::{
-    pattern::constraint::{Constraint, Constraints},
-    program::{
-        block::{BlockContext, FunctionalBlock, VariableRegistry},
-        function::Function,
-    },
+use ir::program::{
+    block::{FunctionalBlock, VariableRegistry},
+    function::Function,
 };
 use storage::snapshot::ReadableSnapshot;
 
-use super::pattern_type_inference::infer_types_for_block;
-use crate::{
-    filter_variants,
-    insert::WriteCompilationError,
-    match_::inference::{
-        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        type_annotations::{FunctionAnnotations, TypeAnnotations},
-        type_seeder::get_type_annotation_from_label,
-        TypeInferenceError,
-    },
+use crate::match_::inference::{
+    annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    type_annotations::{FunctionAnnotations, TypeAnnotations}
+    ,
+    TypeInferenceError,
 };
+
+use super::pattern_type_inference::infer_types_for_block;
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
@@ -145,7 +138,9 @@ pub mod tests {
         sync::Arc,
     };
 
-    use answer::{variable::Variable, Type};
+    use itertools::Itertools;
+
+    use answer::{Type, variable::Variable};
     use concept::type_::{entity_type::EntityType, relation_type::RelationType, role_type::RoleType};
     use encoding::{
         graph::{
@@ -160,22 +155,21 @@ pub mod tests {
             variable_category::{VariableCategory, VariableOptionality},
         },
         program::{
-            block::{BlockContext, FunctionalBlock, VariableRegistry},
+            block::{FunctionalBlock, VariableRegistry},
             function::{Function, ReturnOperation},
             function_signature::{FunctionID, FunctionSignature},
         },
         translation::TranslationContext,
     };
-    use itertools::Itertools;
 
     use crate::match_::inference::{
         annotated_functions::IndexedAnnotatedFunctions,
         pattern_type_inference::{
-            infer_types_for_block, tests::expected_edge, NestedTypeInferenceGraphDisjunction, TypeInferenceGraph,
+            infer_types_for_block, NestedTypeInferenceGraphDisjunction, tests::expected_edge, TypeInferenceGraph,
         },
         tests::{
             managers,
-            schema_consts::{setup_types, LABEL_CAT},
+            schema_consts::{LABEL_CAT, setup_types},
             setup_storage,
         },
         type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},

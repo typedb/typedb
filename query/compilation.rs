@@ -7,15 +7,16 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use compiler::{
-    delete::delete::{build_delete_plan, DeletePlan},
-    insert::insert::{build_insert_plan, InsertPlan},
+    delete::program::{DeleteProgram},
+    insert::program::{InsertProgram},
     match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::PatternPlan},
     VariablePosition,
 };
 use concept::thing::statistics::Statistics;
 use ir::program::{block::VariableRegistry, function::Function};
 
-use crate::{error::QueryError, type_inference::AnnotatedStage};
+use crate::{error::QueryError};
+use crate::annotation::AnnotatedStage;
 
 pub struct CompiledPipeline {
     pub(super) compiled_functions: Vec<CompiledFunction>,
@@ -29,8 +30,8 @@ pub struct CompiledFunction {
 
 pub enum CompiledStage {
     Match(PatternPlan),
-    Insert(InsertPlan),
-    Delete(DeletePlan),
+    Insert(InsertProgram),
+    Delete(DeleteProgram),
 }
 
 impl CompiledStage {
@@ -38,13 +39,13 @@ impl CompiledStage {
         match self {
             CompiledStage::Match(_) => HashMap::new(), // TODO
             CompiledStage::Insert(plan) => plan
-                .output_row_plan
+                .output_row_schema
                 .iter()
                 .enumerate()
                 .map(|(i, (v, _))| (v.clone(), VariablePosition::new(i as u32)))
                 .collect(),
             CompiledStage::Delete(plan) => plan
-                .output_row_plan
+                .output_row_schema
                 .iter()
                 .enumerate()
                 .map(|(i, (v, _))| (v.clone(), VariablePosition::new(i as u32)))
@@ -96,13 +97,12 @@ fn compile_stage(
             Ok(CompiledStage::Match(plan))
         }
         AnnotatedStage::Insert { block, annotations } => {
-            let plan = build_insert_plan(block.conjunction().constraints(), input_variables, &annotations)
+            let plan = compiler::insert::program::compile(block.conjunction().constraints(), input_variables, &annotations)
                 .map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Insert(plan))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations } => {
-            let plan =
-                build_delete_plan(input_variables, annotations, block.conjunction().constraints(), deleted_variables)
+            let plan = compiler::delete::program::compile(input_variables, annotations, block.conjunction().constraints(), deleted_variables)
                     .map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Delete(plan))
         }

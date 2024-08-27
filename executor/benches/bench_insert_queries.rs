@@ -18,7 +18,6 @@ use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler, 
 use pprof::ProfilerGuard;
 
 use answer::variable_value::VariableValue;
-use compiler::insert::insert::build_insert_plan;
 use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
 use compiler::match_::inference::type_inference::infer_types;
 use compiler::VariablePosition;
@@ -106,7 +105,7 @@ fn execute_insert(
     let mut translation_context = TranslationContext::new();
     let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
     let input_row_format = input_row_var_names
-        .iter()
+        .into_iter()
         .enumerate()
         .map(|(i, v)| (translation_context.visible_variables.get(*v).unwrap().clone(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
@@ -119,12 +118,12 @@ fn execute_insert(
         &translation_context.variable_registry,
     ).unwrap();
 
-    let mut insert_plan = build_insert_plan(
+    let mut insert_plan = compiler::insert::program::compile(
         block.conjunction().constraints(), &input_row_format, &entry_annotations
     ).unwrap();
 
     let mut output_rows = Vec::with_capacity(input_rows.len());
-    let output_width = insert_plan.output_row_plan.len();
+    let output_width = insert_plan.output_row_schema.len();
     let mut insert_executor = InsertExecutor::new(insert_plan);
     for mut input_row in input_rows {
         let mut output_multiplicity = 1;

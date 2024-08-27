@@ -34,7 +34,7 @@ use crate::{
     define,
     error::QueryError,
     translation::{translate_pipeline, TranslatedPipeline},
-    type_inference::{infer_types_for_pipeline, AnnotatedPipeline},
+    annotation::{infer_types_for_pipeline, AnnotatedPipeline},
 };
 
 pub struct QueryManager {}
@@ -89,9 +89,8 @@ impl QueryManager {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         let mut snapshot = snapshot;
         // 1: Translate
-        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry } =
+        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } =
             translate_pipeline(&snapshot, function_manager, query)?;
-        // TODO: Do we optimise here or after type-inference?
 
         // 2: Annotate
         let AnnotatedPipeline { annotated_preamble, annotated_stages } = infer_types_for_pipeline(

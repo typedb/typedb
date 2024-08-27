@@ -52,6 +52,6 @@ impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for In
     }
 
     fn row_width(&self) -> usize {
-        self.plan().output_row_plan.len()
+        self.plan().output_row_schema.len()
     }
 }

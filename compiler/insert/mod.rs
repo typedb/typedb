@@ -17,7 +17,7 @@ use itertools::Itertools;
 
 use crate::VariablePosition;
 
-pub mod insert;
+pub mod program;
 pub mod instructions;
 pub mod validate;
 
@@ -30,7 +30,7 @@ pub enum VariableSource {
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum TypeSource {
     InputVariable(VariablePosition),
-    TypeConstant(answer::Type),
+    Constant(answer::Type),
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]

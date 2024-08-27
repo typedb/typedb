@@ -50,6 +50,7 @@ impl PatternPlan {
         Self { steps, context }
     }
 
+    // TODO: rename to 'compile'
     pub fn from_block(
         block: &FunctionalBlock,
         type_annotations: &TypeAnnotations,

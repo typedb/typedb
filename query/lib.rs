@@ -12,7 +12,7 @@ mod define;
 pub mod error;
 pub mod query_manager;
 mod translation;
-mod type_inference;
+mod annotation;
 mod util;
 
 #[derive(Debug)]

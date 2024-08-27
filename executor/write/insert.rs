@@ -6,8 +6,8 @@
 use std::fmt::{Debug, Display};
 
 use compiler::insert::{
-    insert::InsertPlan,
-    instructions::{InsertEdgeInstruction, InsertVertexInstruction},
+    program::InsertProgram,
+    instructions::{ConnectionInstruction, ConceptInstruction},
 };
 use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
@@ -18,15 +18,15 @@ use crate::{
 };
 
 pub struct InsertExecutor {
-    plan: InsertPlan,
+    plan: InsertProgram,
 }
 
 impl InsertExecutor {
-    pub fn new(plan: InsertPlan) -> Self {
+    pub fn new(plan: InsertProgram) -> Self {
         Self { plan }
     }
 
-    pub(crate) fn plan(&self) -> &InsertPlan {
+    pub(crate) fn plan(&self) -> &InsertProgram {
         &self.plan
     }
 
@@ -38,22 +38,22 @@ impl InsertExecutor {
     ) -> Result<(), WriteError> {
         debug_assert!(row.multiplicity() == 1); // The accumulator should de-duplicate for insert
         let Self { plan } = self;
-        for instruction in &plan.vertex_instructions {
+        for instruction in &plan.concepts {
             match instruction {
-                InsertVertexInstruction::PutAttribute(isa_attr) => {
+                ConceptInstruction::PutAttribute(isa_attr) => {
                     isa_attr.execute(snapshot, thing_manager, row)?;
                 }
-                InsertVertexInstruction::PutObject(isa_object) => {
+                ConceptInstruction::PutObject(isa_object) => {
                     isa_object.execute(snapshot, thing_manager, row)?;
                 }
             }
         }
-        for instruction in &plan.edge_instructions {
+        for instruction in &plan.connections {
             match instruction {
-                InsertEdgeInstruction::Has(has) => {
+                ConnectionInstruction::Has(has) => {
                     has.execute(snapshot, thing_manager, row)?;
                 }
-                InsertEdgeInstruction::RolePlayer(role_player) => {
+                ConnectionInstruction::RolePlayer(role_player) => {
                     role_player.execute(snapshot, thing_manager, row)?;
                 }
             };

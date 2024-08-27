@@ -15,5 +15,5 @@ use itertools::Itertools;
 
 use crate::insert::{ThingSource, TypeSource};
 
-pub mod delete;
+pub mod program;
 pub mod instructions;

@@ -8,8 +8,6 @@ use std::{collections::HashMap, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{
-    delete::delete::build_delete_plan,
-    insert::insert::build_insert_plan,
     match_::inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     VariablePosition,
 };
@@ -20,8 +18,9 @@ use concept::{
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
     batch::Row,
+    pipeline::{PipelineStageAPI },
     write::{
-        insert::{InsertExecutor},
+        insert::InsertExecutor,
         WriteError,
     },
 };
@@ -120,19 +119,18 @@ fn execute_insert(
     )
     .unwrap();
 
-    let mut insert_plan =
-        build_insert_plan(block.conjunction().constraints(), &input_row_format, &entry_annotations).unwrap();
+    let mut insert_plan = compiler::insert::program::compile(block.conjunction().constraints(), &input_row_format, &entry_annotations).unwrap();
 
-    println!("Insert Vertex:\n{:?}", &insert_plan.vertex_instructions);
-    println!("Insert Edges:\n{:?}", &insert_plan.edge_instructions);
+    println!("Insert Vertex:\n{:?}", &insert_plan.concepts);
+    println!("Insert Edges:\n{:?}", &insert_plan.connections);
     insert_plan.debug_info.iter().for_each(|(k, v)| {
         println!("{:?} -> {:?}", k, translation_context.variable_registry.get_variables_named().get(v))
     });
 
     // TODO: Replace with accumulator
     let mut output_rows = Vec::with_capacity(input_rows.len());
-    println!("Insert OutputPlan: {:?}", &insert_plan.output_row_plan);
-    let output_width = insert_plan.output_row_plan.len();
+    println!("Insert output row schema: {:?}", &insert_plan.output_row_schema);
+    let output_width = insert_plan.output_row_schema.len();
     let mut insert_executor = InsertExecutor::new(insert_plan);
     for mut input_row in input_rows {
         let mut output_multiplicity = 1;
@@ -196,8 +194,7 @@ fn execute_delete(
         .map(|(i, v)| (translation_context.visible_variables.get(*v).unwrap().clone(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
-    let delete_plan =
-        build_delete_plan(&input_row_format, &entry_annotations, block.conjunction().constraints(), &deleted_concepts)
+    let delete_plan = compiler::delete::program::compile(&input_row_format, &entry_annotations, block.conjunction().constraints(), &deleted_concepts)
             .unwrap();
     let delete_executor = DeleteExecutor::new(delete_plan);
     let mut output_rows = Vec::with_capacity(input_rows.len());
@@ -209,7 +206,7 @@ fn execute_delete(
         delete_executor.execute_delete(snapshot, thing_manager, &mut output);
         output_rows.push(output_vec);
     }
-    println!("{:?}", &delete_executor.plan().output_row_plan);
+    println!("{:?}", &delete_executor.plan().output_row_schema);
     Ok(output_rows)
 }
 
