@@ -120,11 +120,11 @@ pub(crate) enum TypeQLMayError {
 }
 
 impl TypeQLMayError {
-    pub fn check_parsing<'a, T: fmt::Debug, E: fmt::Debug>(&self, res: &'a Result<T, E>) -> Option<&'a E> {
+    pub fn check_parsing<T: fmt::Debug, E: fmt::Debug>(&self, res: Result<T, E>) -> Option<E> {
         self.as_may_error_parsing().check(res)
     }
 
-    pub fn check_logic<'a, T: fmt::Debug, E: fmt::Debug>(&self, res: &'a Result<T, E>) -> Option<&'a E> {
+    pub fn check_logic<T: fmt::Debug, E: fmt::Debug>(&self, res: Result<T, E>) -> Option<E> {
         self.as_may_error_logic().check(res)
     }
 

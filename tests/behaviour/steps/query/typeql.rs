@@ -33,12 +33,10 @@ use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 use primitive::either::Either;
 use query::query_manager::QueryManager;
-use typeql::Query;
 
 use crate::{
     assert::assert_matches,
-    generic_step,
-    params::{self, check_boolean, MayError},
+    generic_step, params,
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     util::iter_table_map,
     Context,
@@ -46,17 +44,13 @@ use crate::{
 
 fn execute_match_query(
     context: &mut Context,
-    query: &str,
+    query: typeql::Query,
 ) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Either<WriteCompilationError, ConceptReadError>> {
     let mut translation_context = TranslationContext::new();
-    let typeql_match = typeql::parse_query(query).unwrap().into_pipeline().stages.pop().unwrap().into_match();
-    let block = ir::translation::match_::translate_match(
-        &mut translation_context,
-        &HashMapFunctionSignatureIndex::empty(),
-        &typeql_match,
-    )
-    .unwrap()
-    .finish();
+    let typeql_match = query.into_pipeline().stages.pop().unwrap().into_match();
+    let block = translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &typeql_match)
+        .unwrap()
+        .finish();
 
     let variable_position_index;
     let rows = with_read_tx!(context, |tx| {
@@ -97,8 +91,8 @@ fn execute_match_query(
 
 fn execute_insert_query(
     context: &mut Context,
-    query: Query,
-) -> Result<Vec<VariableValue<'static>>, Either<WriteCompilationError, WriteError>> {
+    query: typeql::Query,
+) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Either<WriteCompilationError, WriteError>> {
     // TODO: this needs to handle match-insert pipelines
     let typeql_insert = typeql::parse_query(query).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
     let mut translation_context = TranslationContext::new();
@@ -154,12 +148,13 @@ fn execute_insert_query(
 #[apply(generic_step)]
 #[step(expr = r"typeql define{typeql_may_error}")]
 async fn typeql_define(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
-    let query_parsed = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
-    if may_error.check_parsing(&query_parsed).is_some() {
+    let query = step.docstring.as_ref().unwrap().as_str();
+    let parse_result = typeql::parse_query(query);
+    if may_error.check_parsing(parse_result.as_ref()).is_some() {
+        context.close_transaction();
         return;
     }
-
-    let typeql_define = query_parsed.unwrap().into_schema();
+    let typeql_define = parse_result.unwrap().into_schema();
     with_schema_tx!(context, |tx| {
         let result = QueryManager::new().execute_schema(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
@@ -167,28 +162,34 @@ async fn typeql_define(context: &mut Context, may_error: params::TypeQLMayError,
             &tx.thing_manager,
             typeql_define,
         );
-        may_error.check_logic(&result);
+        may_error.check_logic(result);
     });
 }
 
 #[apply(generic_step)]
-#[step(expr = r"typeql write query{may_error}")]
-async fn typeql_write(context: &mut Context, may_error: MayError, step: &Step) {
-    let result = execute_insert_query(context, step.docstring.as_ref().unwrap().as_str());
-    assert_eq!(may_error.expects_error(), result.is_err());
+#[step(expr = r"typeql write query{typeql_may_error}")]
+async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+    let parse_result = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
+    if may_error.check_parsing(parse_result.as_ref()).is_some() {
+        context.close_transaction();
+        return;
+    }
+    let query = parse_result.unwrap();
+    let result = execute_insert_query(context, query);
+    may_error.check_logic(result);
 }
 
 #[apply(generic_step)]
 #[step(expr = r"get answers of typeql write query")]
 async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
-    let query = step.docstring.as_ref().unwrap().as_str();
+    let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
     context.answers = execute_insert_query(context, query).unwrap();
 }
 
 #[apply(generic_step)]
 #[step(expr = r"get answers of typeql read query")]
 async fn get_answers_of_typeql_read(context: &mut Context, step: &Step) {
-    let query = step.docstring.as_ref().unwrap().as_str();
+    let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
     context.answers = execute_match_query(context, query).unwrap();
 }
 
@@ -208,7 +209,7 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
                     "label" => does_type_match(context, var_value, id),
                     "key" => does_key_match(var, id, var_value, context),
                     "attr" => does_attribute_match(id, var_value, context),
-                    "value" => todo!(),
+                    "value" => todo!("value: {spec}"),
                     _ => panic!("unrecognised concept kind: {kind}"),
                 }
             });
@@ -278,8 +279,8 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
                 .unwrap_or_else(|| panic!("expected the key type {label} to have a value type")),
         );
         let mut attr = attr.as_reference();
-        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager);
-        actual.unwrap() == expected
+        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager).unwrap();
+        actual == expected
     })
 }
 
