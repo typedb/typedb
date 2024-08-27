@@ -190,38 +190,38 @@ This section describes the basic **statements** that comprise our type system, a
 
     _Remark_: This applies recursively to types with $`k`$ interfaces.
     * _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
-  * _Inheriting dependencies_: If $`A : \mathbf{Type}`$, $`B : \mathbf{Type}(I)`$, $`A < B`$ and _not_ $A : \mathbf{Type}(J)$ with $`J < I`$, then $`A : \mathbf{Type}(I)`$. In words:
+  * _Inheriting dependencies_: If $`A : \mathbf{Type}`$, $`B : \mathbf{Type}(I)`$, $`A \leq B`$ and _not_ $A : \mathbf{Type}(J)$ with $`J \leq I`$, then $`A : \mathbf{Type}(I)`$. In words:
     > Dependencies that are not overwritten are inherited
 
 ### Castings / Subtypes
 
-* **Casting**. We write $`A < B`$ to mean:
+* **Casting**. We write $`A \leq B`$ to mean:
   > type casts from $`A`$ to $`B`$ are possible: 
   
-  * _Casting rule_: If $`A < B`$ and $`a : A`$, then this ***implies*** $`a : B`$.
-  * _Transitivity rule_: If $`A < B`$ and $`B < C`$, then this ***implies*** $`A < C`$.
-  * _Reflexivity rule_: If $`A : \mathbf{Type}`$ then this **implies** $`A < A`$ (notation: we sometimes write $`A \leq B`$ to put extra emphasis on the case $`A = B`$ being possible ... but this is also the case for $`A < B`$.)
+  * _Casting rule_: If $`A \leq B`$ and $`a : A`$, then this ***implies*** $`a : B`$.
+  * _Transitivity rule_: If $`A \leq B`$ and $`B \leq C`$, then this ***implies*** $`A \leq C`$.
+  * _Reflexivity rule_: If $`A : \mathbf{Type}`$ then this **implies** $`A \leq A`$ 
 
   * _Direct castings_: We write $`A <_! B`$ to mean:
     > A cast from A to B was declared by user (we speak of a ***direct casting*** from A to B).
 
-    * _Direct-to-general rule_: $`A <_! B`$ ***implies*** $`A < B`$.
+    * _Direct-to-general rule_: $`A <_! B`$ ***implies*** $`A \leq B`$.
     * _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
     * _Example_: $`\mathsf{Child} <_! \mathsf{Nameowner}`$
     * _Example_: $`\mathsf{Person} <_! \mathsf{Spouse}`$
-  * _Weakening dependencies of terms rule_: If $`a : A(x:I, y:J)`$ then $`a : A(x:I)`$, equivalently: $`A(x:I, y:J) < A(x:I)`$. In other words:
+  * _Weakening dependencies of terms rule_: If $`a : A(x:I, y:J)`$ then $`a : A(x:I)`$, equivalently: $`A(x:I, y:J) \leq A(x:I)`$. In other words:
     > Elements in $`A(I,J)`$ casts into elements of $`A(I)`$.
 
-    * _Remark_: More generally, this applies for types with $k \leq 0$ interfaces. (In particular, $`A(x:I) < A() = A`$)
+    * _Remark_: More generally, this applies for types with $k \leq 0$ interfaces. (In particular, $`A(x:I) \leq A() = A`$)
     * _Example_: If $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$ then both $`m : \mathsf{Marriage}(x:\mathsf{Spouse})`$ and $`m : \mathsf{Marriage}(y:\mathsf{Spouse})`$
 
-  * _"Covariance of dependencies" casting_: Given $`A < B`$, $`I < J`$ such that $`A : \mathbf{Type}(I)`$ $`B : \mathbf{Type}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$. In other words:
+  * _"Covariance of dependencies" casting_: Given $`A \leq B`$, $`I \leq J`$ such that $`A : \mathbf{Type}(I)`$ $`B : \mathbf{Type}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$. In other words:
     > When $`A`$ casts to $`B`$, and $`I`$ to $`J`$, then $`A(I)`$ casts to $`B(J)`$.
 
     _Remark_: This applies recursively for types with $`k`$ interfaces.
     * _Example_: If $`m : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$
 
-  _Notation_: Write $`X(I) < Y(J)`$ to mean $`X : \mathbf{Type}(I)`$, $Y : \mathbf{Type}(J)$ and $`X < Y`$, $`I < J`$.
+  _Notation_: Write $`X(I) \leq Y(J)`$ to mean $`X : \mathbf{Type}(I)`$, $Y : \mathbf{Type}(J)$ and $`X \leq Y`$, $`I \leq J`$.
 
 ### Lists
 
@@ -335,8 +335,8 @@ _Remark: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract`
 ***System property***: 
 
 1. _Exclusive interface modes_: Only one of `A owns B` or `A owns B[]` can be declared in the model.
-2. _Consistent interface modes_: If `A owns B`, and $`A' < A`$, $`B' < B`$, then disallow declaring `A' owns B'[]`.
-3. _Consistent interface modes (list case)_: If `A owns B[]`, and $`A' < A`$, $`B' < B`$, then disallow declaring `A' owns B'`.
+2. _Consistent interface modes_: If `A owns B`, and $`A' \leq A`$, $`B' \leq B`$, then disallow declaring `A' owns B'[]`.
+3. _Consistent interface modes (list case)_: If `A owns B[]`, and $`A' \leq A`$, $`B' \leq B`$, then disallow declaring `A' owns B'`.
 
 ### Constraints
 
@@ -364,11 +364,11 @@ _Remark 2: For cardinality, and for most other constraints, we should reject red
   * **defaults** to `@card(0..)` if omitted ("many")
 
 **Case PLAYS_AS**
-* `A plays B:I as C:J` postulates $`c :_! C(a:J)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $`A < D`$, $`D <_! J`$.
+* `A plays B:I as C:J` postulates $`c :_! C(a:J)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $`A \leq D`$, $`D <_! J`$.
   * **Invalidated** when $`A <_! J'`$ for $`B(I) \lneq C'(J') \leq C(J)`$.
 
 **Case OWNS_AS**
-* `A owns B as C` postulates $`c :_! C(a:O_C)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $`A < D`$, $`D <_! O_C`$.
+* `A owns B as C` postulates $`c :_! C(a:O_C)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $`A \leq D`$, $`D <_! O_C`$.
   * **Invalidated** when $`A <_! O_{C'}`$ for $`B \lneq C' \leq C`$.
 
 _Comment: both preceding cases are kinda complicated/unnatural ... as reflected by the math._
@@ -390,7 +390,7 @@ _Comment: both preceding cases are kinda complicated/unnatural ... as reflected 
   *  (if $`I`$ is used as a plain role:) $`b :_! B'(a:I)`$ 
   *  (if $`I`$ is used as a list role:) $`b :_! B'(l:[I])`$, $a \in l$ 
   
-  is impossible whenever $`a : A`$, $B' \leq B$ (_note_: $`B' < B`$ is needed here, since the interface $`I`$ may be inherited to some subtypes)
+  is impossible whenever $`a : A`$, $B' \leq B$ (_note_: $`B' \leq B`$ is needed here, since the interface $`I`$ may be inherited to some subtypes)
 * `A owns B @abstract` postulates $`b :_! B(a:I)`$ to be impossible for $`a : A`$ 
 * `A owns B[] @abstract` postulates $`b :_! [B](a:I)`$ to be impossible for $`a : A`$ 
 
@@ -398,23 +398,23 @@ _Comment: both preceding cases are kinda complicated/unnatural ... as reflected 
 
 > _The following properties capture that parents of abstract things are meant to be abstract too. But this is not really a crucial condition. (STICKY: discuss!)_ 
 
-1. If `(type) A @abstract` and $`A < B`$ then `(type) B` cannot be non-abstract.
-2. If `A relates I @abstract` and $`A(I) < B(J)`$ then `B relates J` cannot be non-abstract.
-3. If `A relates I[] @abstract` and $`A([I]) < B([J])`$ then `B relates J[]` cannot be non-abstract.
-4. If `A plays B:I @abstract` and $`A < A'`$, $`B'(I) < B'(I')`$ then `A' plays B':J'` cannot be non-abstract.
-5. If `A owns B @abstract` and $`A < A'`$, $`B < B'`$ then `A' owns B'` cannot be non-abstract. 
-6. If `A owns B[] @abstract` and $`A < A'`$, $`B < B'`$ then `A' owns B'[]` cannot be non-abstract. 
+1. If `(type) A @abstract` and $`A \leq B`$ then `(type) B` cannot be non-abstract.
+2. If `A relates I @abstract` and $`A(I) \leq B(J)`$ then `B relates J` cannot be non-abstract.
+3. If `A relates I[] @abstract` and $`A([I]) \leq B([J])`$ then `B relates J[]` cannot be non-abstract.
+4. If `A plays B:I @abstract` and $`A \leq A'`$, $`B'(I) \leq B'(I')`$ then `A' plays B':J'` cannot be non-abstract.
+5. If `A owns B @abstract` and $`A \leq A'`$, $`B \leq B'`$ then `A' owns B'` cannot be non-abstract. 
+6. If `A owns B[] @abstract` and $`A \leq A'`$, $`B \leq B'`$ then `A' owns B'[]` cannot be non-abstract. 
 
 **Case VALUES**
 * `A owns B @values(v1, v2)` postulates if $`a : A`$ then $`a \in \{v_1, v_2\}`$ , ***requiring*** that 
-  * either $`A : \mathbf{Att}`$, $`A < V`$, $`v_i : V`$, 
+  * either $`A : \mathbf{Att}`$, $`A \leq V`$, $`v_i : V`$, 
   * or $`A`$ is the component of a struct, see section on struct defs. 
   
   **Generalizes** to $`n`$ values.
 * `A owns B @regex(v1..v2)` postulates if $`a : A`$ then $`a`$ conforms with regex `<EXPR>`.
 * `A owns B @range(v1..v2)` postulates if $`a : A`$ then $`a \in [v_1,v_2]`$ (conditions as before).
 * `A value B @values(v1, v2)` postulates if $`a : A`$ then $`a \in \{v_1, v_2\}`$ , ***requiring*** that: 
-  * either $`A : \mathbf{Att}`$, $`A < V`$, $`v_i : V`$, 
+  * either $`A : \mathbf{Att}`$, $`A \leq V`$, $`v_i : V`$, 
   * or $`A`$ is the component of a struct, see section on struct defs.
   
   **Generalizes** to $`n`$ values.
@@ -457,7 +457,7 @@ struct S:
 adds
 * _Struct type_ $`S : \mathbf{Type}`$
 * _Struct components_ $`C_1 : \mathbf{Type}`$, $`C_2 : \mathbf{Type}`$, and identify $`S = C_1 \times \mathsf{Opt}(C_2)`$ where $`\mathsf{Opt}`$ denotes the optionality type operator ($`\mathsf{Opt}(T) = T + \{\emptyset\}`$)
-    * _Component value casting rule_: $`C_1 < V_1`$, $`C_2 < \mathsf{Opt}(V_2)`$
+    * _Component value casting rule_: $`C_1 \leq V_1`$, $`C_2 \leq \mathsf{Opt}(V_2)`$
     * _Component value constraint rule_: whenever $`v : V_i`$ and $`v`$ conforms with `<EXPR>` then $`v : C_i`$
       * **defaults** to: whenever $`v : V_i`$ then $`v : C_i`$ (no condition)
 * **Generalizes** to $`n`$ components
@@ -474,7 +474,7 @@ fun F (x: T, y: S) -> { A, B }:
 adds the following to our type system:
 * _Function symbol_: $`F : \mathbf{Type}(T,S)`$.
 * _Function type_: when $`x : T`$ and $`y: S`$ then $`F(x:T, y:S) : \mathbf{Type}`$
-* _Output cast_: $`F(x:T, y:S) < A \times B`$
+* _Output cast_: $`F(x:T, y:S) \leq A \times B`$
 * _Function terms_: $`(z,w) : F(x:T, y:S)`$ are discussed in section "Function semantics"
 * **Generalizes** to $`n`$ inputs and $`m`$ outputs
 
@@ -498,11 +498,11 @@ _Comment: notice difference in capitalization between the two cases!_
 
 **Case ENT**
 * `entity A` removes $`A : \mathbf{Ent}`$
-* `sub B from (entity) A` removes $`A < B`$
+* `sub B from (entity) A` removes $`A \leq B`$
 
 **Case REL**
 * `relation A` removes $`A : \mathbf{Rel}`$
-* `sub B from (relation) A` removes $`A < B`$
+* `sub B from (relation) A` removes $`A \leq B`$
 * `relates I from (relation) A` removes $`A : \mathbf{Rel}(I)`$
 * `as J from (relation) A relates I` removes $`I <_! J`$ 
 * `relates I[] from (relation) A` removes $`A : \mathbf{Rel}([I])$
@@ -510,7 +510,7 @@ _Comment: notice difference in capitalization between the two cases!_
 
 **Case ATT**
 * `attribute A` removes $`A : \mathbf{Att}`$ and $`A : \mathbf{Att}(O_A)`$
-* `value V from (attribute) A value V` removes $`A < V`$
+* `value V from (attribute) A value V` removes $`A \leq V`$
 * `sub B from (attribute) A` removes $`A <_! B`$ and $`O_A <_! O_B`$
 
 **Case PLAYS**
@@ -620,11 +620,11 @@ _In each case, redefine acts like an undefine (which cannot be a no-op) and a de
 
 **Case ENT**
 * cannot redefine `entity A`
-* `(entity) A sub B` redefines $`A < B`$
+* `(entity) A sub B` redefines $`A \leq B`$
 
 **Case REL**
 * cannot redefine `relation A` 
-* `(relation) A sub B` redefines $`A < B`$
+* `(relation) A sub B` redefines $`A \leq B`$
 * cannot redefine `(relation) A relates I`
 * `(relation) A relates I as J$` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
 * cannot redefine `(relation) A relates I[]`
@@ -632,7 +632,7 @@ _In each case, redefine acts like an undefine (which cannot be a no-op) and a de
 
 **Case ATT**
 * cannot redefine `attribute A`
-* `(attribute) A value V` redefines $`A < V`$
+* `(attribute) A value V` redefines $`A \leq V`$
 * cannot redefine `(attribute) A sub B`
 
 **Case PLAYS**
@@ -776,13 +776,13 @@ _Remark 2_. Currently, only implicit named anon vars (`$_`) can be used by the u
     We define concept satisfaction in the _next section_, and only spell out _type satisfaction_ for now:
     1. For any var `$x` we require $`m(x) : T_m(x)`$ to be true in the type system
     1. If `$x isa $A` in `P` then require $`T_m(x) \leq m(A)`$
-    1. If `$x links ($B: $y)` in `P` then require $`T_m(y) < m(B)`$ and $`T_m(x) : \mathbf{Rel}(m(B))`$
-    1. If `$x links ($B[]: $y)` in `P` then require $`T_m(y) < m(B)`$ and $`T_m(x) : \mathbf{Rel}([m(B)])`$
-    1. If `$x has $B $y` in `P` then require $`T_m(x) < O_{m(B)}`$ and
-        * either $`T_m(y) < m(B)`$
+    1. If `$x links ($B: $y)` in `P` then require $`T_m(y) \leq m(B)`$ and $`T_m(x) : \mathbf{Rel}(m(B))`$
+    1. If `$x links ($B[]: $y)` in `P` then require $`T_m(y) \leq m(B)`$ and $`T_m(x) : \mathbf{Rel}([m(B)])`$
+    1. If `$x has $B $y` in `P` then require $`T_m(x) \leq O_{m(B)}`$ and
+        * either $`T_m(y) \leq m(B)`$
         * or $`T_m(y) = V$ for $V : \mathbf{Val}`$ and $`m(B) <_! V`$
-    1. If `$x has $B[] $y` in `P` then require $`T_m(x) < O_{m(B)}`$ and
-        * either $`T_m(y) < [m(B)]`$
+    1. If `$x has $B[] $y` in `P` then require $`T_m(x) \leq O_{m(B)}`$ and
+        * either $`T_m(y) \leq [m(B)]`$
         * or $`T_m(y) = [V]`$ for $`V : \mathbf{Val}`$ and $`m(B) <_! V`$
     1. If `$x in $y` in `P` then require $`[T_m(x)] \leq T_m(y)`$
     1. If `$x = <EXPR>` in `P`, then require $`T(\mathrm{expr}) \leq T_m(x)`$ where $`T(\mathrm{expr})`$ is the type of the expression 
@@ -868,17 +868,17 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
 * `$A relates $I` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$
 
 * `$A relates! $I` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$ and **not** $`m(A) \lneq m(B) : \mathbf{Rel}(m(I))`$
-* `$A relates $I as $J` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$, $`B : \mathbf{Rel}(m(J))`$, $`A < B`$, $`m(I) < m(J)`$.
+* `$A relates $I as $J` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$, $`B : \mathbf{Rel}(m(J))`$, $`A \leq B`$, $`m(I) \leq m(J)`$.
 * `$A relates $I[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$
 * `$A relates! $I[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$ and **not** $`m(A) \lneq m(B) : \mathbf{Rel}(m([I]))`$
-* `$A relates $I[] as $J[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$, $`B : \mathbf{Rel}(m([J]))`$, $`A < B`$, $`m(I) < m(J)`$.
+* `$A relates $I[] as $J[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$, $`B : \mathbf{Rel}(m([J]))`$, $`A \leq B`$, $`m(I) \leq m(J)`$.
 
 **Case PLAY_PATT**
-* `$A plays $I` is satisfied if $`m(A) < A' <_! m(I)`$ (for $`A'`$ **not** an interface type)
+* `$A plays $I` is satisfied if $`m(A) \leq A' <_! m(I)`$ (for $`A'`$ **not** an interface type)
 * `$A plays! $I` is satisfied if $`m(A) <_! m(I)`$
 
 **Case OWNS_PATT**
-* `$A owns $B` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type)
+* `$A owns $B` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type)
 * `$A owns! $B` is satisfied if $`m(A) <_! m(O_B)`$ 
 
 _Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` will match the answer `m($X) = A`.
@@ -901,36 +901,36 @@ _Remark: the usefulness of constraint patterns seems overall low, could think of
 
 _Notation: for readability, we simply write $`X`$ in place of $`m(X)`$ in this case and the next._
 
-* `$A plays $B:$I as $C:$J` is satisfied if $A \leq A' <_! D' \leq D$ for some $`D`$s, and $I \leq I' <_! J' \leq J$, with $`A^{(')} < {I^{(')}}`$, $`D^{(')} < {J^{(')}}`$, and schema directly contains the constraint `A' plays B':I' as C':J'` for relation types $B \leq B' \leq_! C' \leq C$.
+* `$A plays $B:$I as $C:$J` is satisfied if $A \leq A' <_! D' \leq D$ for some $`D`$s, and $I \leq I' <_! J' \leq J$, with $`A^{(')} \leq {I^{(')}}`$, $`D^{(')} \leq {J^{(')}}`$, and schema directly contains the constraint `A' plays B':I' as C':J'` for relation types $B \leq B' \leq_! C' \leq C$.
 
 **Case OWNS_AS_PATT**
-* `$A owns $B as $C` is satisfied if $A \leq A' <_! D' \leq D$ for some $`D`$s, and $B \leq B' <_! C' \leq C$, with $`A^{(')} < O_{B^{(')}}`$, $`D^{(')} < O_{C^{(')}}`$, and schema directly contains the constraint `A' owns B' as C'`.
+* `$A owns $B as $C` is satisfied if $A \leq A' <_! D' \leq D$ for some $`D`$s, and $B \leq B' <_! C' \leq C$, with $`A^{(')} \leq O_{B^{(')}}`$, $`D^{(')} \leq O_{C^{(')}}`$, and schema directly contains the constraint `A' owns B' as C'`.
 
 _Remark: these two are still not a natural constraint, as foreshadowed by a previous remark!_
 
 **Case UNIQUE_PATT**
-* `$A owns $B @unique` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
+* `$A owns $B @unique` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
 
 * `$A owns! $B @unique` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `m($A) owns m($B) @unique`.
 
 **Case KEY_PATT**
-* `$A owns $B @key` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
+* `$A owns $B @key` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
 
 * `$A owns! $B @key` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `m($A) owns m($B) @key`.
 
 **Case SUBKEY_PATT**
-* `$A owns $B @subkey(<LABEL>)` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @subkey(<LABEL>)`.
+* `$A owns $B @subkey(<LABEL>)` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @subkey(<LABEL>)`.
 
 **Case ABSTRACT_PATT**
 * `(type) $B @abstract` is satisfied if schema directly contains `(type) m($B) @abstract`.
-* `$A plays $B:$I @abstract` is satisfied if $`m(A) < A'`$, $`m(B) : \mathbf{Rel}(m(I))`$, $`m(B) < B' : \mathbf{Rel}(m(I))`$ and schema directly contains constraint `A' plays B':m($I) @abstract`.
-* `$A owns $B @abstract` is satisfied if $`m(A) < A'`$ and schema directly contains one of the constraints
+* `$A plays $B:$I @abstract` is satisfied if $`m(A) \leq A'`$, $`m(B) : \mathbf{Rel}(m(I))`$, $`m(B) \leq B' : \mathbf{Rel}(m(I))`$ and schema directly contains constraint `A' plays B':m($I) @abstract`.
+* `$A owns $B @abstract` is satisfied if $`m(A) \leq A'`$ and schema directly contains one of the constraints
   * `A' owns m($B) @abstract`
   * `A' owns m($B)[]`
 
-* `$A owns $B[] @abstract` is satisfied if $`m(A) < A'`$ and schema directly contains constraint `A' owns m($B)[] @abstract`.
-* `$B relates $I @abstract` is satisfied if $`B : \mathbf{Rel}(I)`$, $`m(B) < B'`$, and schema directly contains constraint `B' relates m($I) @abstract`.
-* `$B relates $I[] @abstract` is satisfied if $`B : \mathbf{Rel}([I])`$, $`m(B) < B'`$, and schema directly contains constraint `B' relates m($I)[] @abstract`.
+* `$A owns $B[] @abstract` is satisfied if $`m(A) \leq A'`$ and schema directly contains constraint `A' owns m($B)[] @abstract`.
+* `$B relates $I @abstract` is satisfied if $`B : \mathbf{Rel}(I)`$, $`m(B) \leq B'`$, and schema directly contains constraint `B' relates m($I) @abstract`.
+* `$B relates $I[] @abstract` is satisfied if $`B : \mathbf{Rel}([I])`$, $`m(B) \leq B'`$, and schema directly contains constraint `B' relates m($I)[] @abstract`.
 
 **Case VALUES_PATT**
 * cannot match `@values/@regex/@range` (STICKY: discuss!)
@@ -944,8 +944,8 @@ _Remark: these two are still not a natural constraint, as foreshadowed by a prev
 -->
 
 **Case DISTINCT_PATT**
-* `A owns B[] @distinct` is satisfied if $`m(A) < A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B)[] @distinct`.
-* `B relates I[] @distinct` is satisfied if $`m(B) : \mathbf{Rel}(m([I]))`$, $`B < B'`$ and schema directly contains `B' relates I[] @distinct`.
+* `A owns B[] @distinct` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B)[] @distinct`.
+* `B relates I[] @distinct` is satisfied if $`m(B) : \mathbf{Rel}(m([I]))`$, $`B \leq B'`$ and schema directly contains `B' relates I[] @distinct`.
 
 #### Data
 
@@ -1048,7 +1048,7 @@ _Remark_: The exception for 2. is mainly for convenience. Indeed, you could alwa
 The following are all kind of obvious (for `<COMP>` one of `<`,`<=`,`>`,`>=`):
 
 * `<INT> <COMP> <INT>` 
-* `<BOOl> <COMP> <BOOL>` (`false` < `true`)
+* `<BOOl> <COMP> <BOOL>` (`false`<`true`)
 * `<STRING> <COMP> <STRING>` (lexicographic comparison)
 * `<DATETIME> <COMP> <DATETIME>` (usual datetime order)
 * `<TIME> <COMP> <TIME>` (usual time order)
@@ -1306,7 +1306,7 @@ An `insert` clause comprises collection of _insert statements_
 
 ***System property***:
 
-1. Cannot add $`m(y) :_! A(m(x) : O_A)`$ if there exists $`B < A`$.
+1. Cannot add $`m(y) :_! A(m(x) : O_A)`$ if there exists $`B \leq A`$.
 
 _Remark_. We want to get rid of this constraint (STICKY).
 
@@ -1404,12 +1404,12 @@ _Remark_. The resulting $`m(x) :_! m(A)(z : J, ...)`$ must be within schema cons
 * `($I[]: <T_LIST>) of $x` coarsens $`m(x) :_! m(A)(l : m(I))`$ to $`m(x) :_! m(A)()`$ for $`l`$ being the evaluation of `T_LIST`.
 
 **case ATT_OF_DEL**
-* `$B $y of $x` coarsens $`m(y) :_! B'(m(x) : O_{m(B)})`$ to $`m(y) :_! B'()`$ for all possible $`B' < m(B)`$
+* `$B $y of $x` coarsens $`m(y) :_! B'(m(x) : O_{m(B)})`$ to $`m(y) :_! B'()`$ for all possible $`B' \leq m(B)`$
 
 _Remark_. Note the subtyping here! It only makes sense in this case though since the same value `$y` may have been inserted in multiple attribute subtypes (this is not the case for **LINKS_DEL**)—at least if we lift the "Leaf attribute system constraint".
 
 **case ATT_LIST_OF_DEL**
-* `$B[] <T_LIST> of $x` deletes $`l :_! B'(m(x) : O_{m(B)})`$ for all possible $`B' < m(B)`$ and $`l`$ being the evaluation of `T_LIST`. (STICKY: discuss! Suggestion: we do not retain list elements as independent attributes.)
+* `$B[] <T_LIST> of $x` deletes $`l :_! B'(m(x) : O_{m(B)})`$ for all possible $`B' \leq m(B)`$ and $`l`$ being the evaluation of `T_LIST`. (STICKY: discuss! Suggestion: we do not retain list elements as independent attributes.)
 
 
 ### Clean-up
