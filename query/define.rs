@@ -31,6 +31,7 @@ use typeql::{
     common::token,
     query::schema::Define,
     schema::definable::{
+        function::Function,
         struct_::Field,
         type_::{
             capability::{Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates},
@@ -43,8 +44,8 @@ use typeql::{
 
 use crate::{
     definition_resolution::{
-        filter_variants, get_struct_field_value_type_optionality, resolve_owns, resolve_plays, resolve_relates,
-        resolve_struct_definition_key, resolve_type, resolve_value_type, try_unwrap, type_ref_to_label_and_ordering,
+        filter_variants, get_struct_field_value_type_optionality, resolve_owns_declared, resolve_plays_declared, resolve_relates_declared,
+        resolve_struct_definition_key, resolve_typeql_type, resolve_value_type, try_unwrap, type_ref_to_label_and_ordering,
         type_to_object_type, SymbolResolutionError,
     },
     definition_status::{
@@ -53,6 +54,7 @@ use crate::{
         get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinitionStatus,
     },
 };
+use crate::definition_resolution::{named_type_to_label, resolve_attribute_type, resolve_owns, resolve_plays, resolve_plays_role_label, resolve_relates, resolve_role_type};
 
 macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path) => {
@@ -133,7 +135,7 @@ fn process_function_definitions(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     filter_variants!(Definable::Function : definables)
-        .try_for_each(|declaration| define_functions(snapshot, type_manager, definables))?;
+        .try_for_each(|declaration| define_functions(snapshot, type_manager, declaration))?;
     Ok(())
 }
 
@@ -210,7 +212,7 @@ fn define_types(
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     match type_declaration.kind {
         None => {
-            resolve_type(snapshot, type_manager, &label)
+            resolve_typeql_type(snapshot, type_manager, &label)
                 .map_err(|source| DefineError::DefinitionResolution { source })?;
         }
         Some(token::Kind::Role) => {
@@ -264,7 +266,7 @@ fn define_type_annotations(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ =
-        resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
     for typeql_annotation in &type_declaration.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
@@ -348,14 +350,14 @@ fn define_sub(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ =
-        resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
 
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Sub(sub) = &capability.base else {
             continue;
         };
         let supertype_label = Label::parse_from(&sub.supertype_label.ident.as_str());
-        let supertype = resolve_type(snapshot, type_manager, &supertype_label)
+        let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
             .map_err(|source| DefineError::DefinitionResolution { source })?;
         if type_.kind() != supertype.kind() {
             return Err(err_capability_kind_mismatch(
@@ -418,7 +420,7 @@ fn define_value_type(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ =
-        resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::ValueType(value_type_statement) = &capability.base else {
             continue;
@@ -501,7 +503,7 @@ fn define_relates_with_annotations(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ =
-        resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Relates(relates) = &capability.base else {
             continue;
@@ -642,7 +644,7 @@ fn define_relates_overrides(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ =
-        resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Relates(typeql_relates) = &capability.base else {
             continue;
@@ -653,7 +655,7 @@ fn define_relates_overrides(
 
         let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
             .map_err(|source| DefineError::DefinitionResolution { source })?;
-        let relates = resolve_relates(snapshot, type_manager, relation_type.clone(), &role_label)
+        let relates = resolve_relates_declared(snapshot, type_manager, relation_type.clone(), &role_label.name.as_str())
             .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         define_relates_override(snapshot, type_manager, thing_manager, &label, relates, typeql_relates)?;
@@ -666,19 +668,12 @@ fn define_relates_override<'a>(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     relation_label: &Label<'a>,
-    relates: Relates<'a>,
+    relates: Relates<'static>,
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), DefineError> {
     if let Some(overridden_label) = &typeql_relates.overridden {
-        let overridden_relates_opt = relates
-            .relation()
-            .get_relates_role_name_with_overridden(snapshot, type_manager, overridden_label.ident.as_str())
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let overridden_relates = if let Some(overridden_relates) = overridden_relates_opt {
-            overridden_relates
-        } else {
-            return Err(DefineError::OverriddenRelatesNotFound { relates: typeql_relates.clone() });
-        };
+        let overridden_relates = resolve_relates(snapshot, type_manager, relates.relation(), &overridden_label.ident.as_str())
+            .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         let need_define = check_can_and_need_define_override(
             snapshot,
@@ -704,22 +699,15 @@ fn define_owns_with_annotations(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ =
-        resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Owns(owns) = &capability.base else {
             continue;
         };
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&label, &owns.owned)
             .map_err(|source| DefineError::DefinitionResolution { source })?;
-        let attribute_type_opt = type_manager
-            .get_attribute_type(snapshot, &attr_label)
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let attribute_type = if let Some(attribute_type) = attribute_type_opt {
-            attribute_type
-        } else {
-            return Err(DefineError::OwnsAttributeTypeNotFound { owns: owns.clone() })?;
-            // TODO: Into definition_resolution!
-        };
+        let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
+            .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
@@ -792,26 +780,19 @@ fn define_owns_overrides(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ =
-        resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Owns(typeql_owns) = &capability.base else {
             continue;
         };
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_owns.owned)
             .map_err(|source| DefineError::DefinitionResolution { source })?;
-        let attribute_type_opt = type_manager
-            .get_attribute_type(snapshot, &attr_label)
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let attribute_type = if let Some(attribute_type) = attribute_type_opt {
-            attribute_type
-        } else {
-            return Err(DefineError::OwnsAttributeTypeNotFound { owns: typeql_owns.clone() })?;
-            // TODO: Into definition_resolution!
-        };
+        let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
+            .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
-        let owns = resolve_owns(snapshot, type_manager, object_type.clone(), attribute_type.clone())
+        let owns = resolve_owns_declared(snapshot, type_manager, object_type.clone(), attribute_type.clone())
             .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         define_owns_override(snapshot, type_manager, thing_manager, &label, owns, typeql_owns)?;
@@ -824,29 +805,15 @@ fn define_owns_override<'a>(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     owner_label: &Label<'a>,
-    owns: Owns<'a>,
+    owns: Owns<'static>,
     typeql_owns: &TypeQLOwns,
 ) -> Result<(), DefineError> {
     if let Some(overridden_label) = &typeql_owns.overridden {
         let overridden_label = Label::parse_from(overridden_label.ident.as_str());
-        let overridden_attribute_type_opt = type_manager
-            .get_attribute_type(snapshot, &overridden_label)
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let overridden_attribute_type = if let Some(type_) = overridden_attribute_type_opt {
-            type_
-        } else {
-            return Err(DefineError::OverriddenOwnsAttributeTypeNotFound { owns: typeql_owns.clone() })?;
-        };
-
-        let overridden_owns_opt = owns
-            .owner()
-            .get_owns_attribute_with_overridden(snapshot, type_manager, overridden_attribute_type.clone())
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let overridden_owns = if let Some(overridden_owns) = overridden_owns_opt {
-            overridden_owns
-        } else {
-            return Err(DefineError::OverriddenOwnsNotFound { owns: typeql_owns.clone() });
-        };
+        let overridden_attribute_type = resolve_attribute_type(snapshot, type_manager, &overridden_label)
+            .map_err(|source| DefineError::DefinitionResolution { source })?;
+        let overridden_owns = resolve_owns(snapshot, type_manager, owns.owner(), overridden_attribute_type)
+            .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         let need_define = check_can_and_need_define_override(
             snapshot,
@@ -871,21 +838,14 @@ fn define_plays_with_annotations(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ =
-        resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Plays(plays) = &capability.base else {
             continue;
         };
         let role_label = Label::build_scoped(plays.role.name.ident.as_str(), plays.role.scope.ident.as_str());
-        let role_type_opt = type_manager
-            .get_role_type(snapshot, &role_label)
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let role_type = if let Some(role_type) = role_type_opt {
-            role_type
-        } else {
-            return Err(DefineError::PlaysRoleTypeNotFound { plays: plays.clone() })?;
-            // TODO: Into definition_resolution!
-        };
+        let role_type = resolve_role_type(snapshot, type_manager, &role_label)
+            .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
@@ -941,26 +901,19 @@ fn define_plays_overrides(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ =
-        resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
+        resolve_typeql_type(snapshot, type_manager, &label).map_err(|source| DefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Plays(typeql_plays) = &capability.base else {
             continue;
         };
         let role_label =
             Label::build_scoped(typeql_plays.role.name.ident.as_str(), typeql_plays.role.scope.ident.as_str());
-        let role_type_opt = type_manager
-            .get_role_type(snapshot, &role_label)
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let role_type = if let Some(role_type) = role_type_opt {
-            role_type
-        } else {
-            return Err(DefineError::PlaysRoleTypeNotFound { plays: typeql_plays.clone() })?;
-            // TODO: Into definition_resolution!
-        };
+        let role_type = resolve_role_type(snapshot, type_manager, &role_label)
+            .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
-        let plays = resolve_plays(snapshot, type_manager, object_type.clone(), role_type.clone())
+        let plays = resolve_plays_declared(snapshot, type_manager, object_type.clone(), role_type.clone())
             .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         define_plays_override(snapshot, type_manager, thing_manager, &label, plays, typeql_plays)?;
@@ -973,29 +926,14 @@ fn define_plays_override<'a>(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     player_label: &Label<'a>,
-    plays: Plays<'a>,
+    plays: Plays<'static>,
     typeql_plays: &TypeQLPlays,
 ) -> Result<(), DefineError> {
-    if let Some(overridden_label) = &typeql_plays.overridden {
-        let overridden_label = Label::parse_from(overridden_label.ident.as_str());
-        let overridden_role_type_opt = type_manager
-            .get_role_type(snapshot, &overridden_label)
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let overridden_role_type = if let Some(type_) = overridden_role_type_opt {
-            type_
-        } else {
-            return Err(DefineError::OverriddenPlaysRoleTypeNotFound { plays: typeql_plays.clone() })?;
-        };
-
-        let overridden_plays_opt = plays
-            .player()
-            .get_plays_role_with_overridden(snapshot, type_manager, overridden_role_type)
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let overridden_plays = if let Some(overridden_plays) = overridden_plays_opt {
-            overridden_plays
-        } else {
-            return Err(DefineError::OverriddenPlaysNotFound { plays: typeql_plays.clone() });
-        };
+    if let Some(overridden_type_name) = &typeql_plays.overridden {
+        let overridden_label = named_type_to_label(overridden_type_name)
+            .map_err(|source| DefineError::DefinitionResolution { source })?;
+        let overridden_plays = resolve_plays_role_label(snapshot, type_manager, plays.player(), &overridden_label)
+            .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         let need_define = check_can_and_need_define_override(
             snapshot,
@@ -1016,9 +954,9 @@ fn define_plays_override<'a>(
 fn define_functions(
     snapshot: &impl WritableSnapshot,
     type_manager: &TypeManager,
-    definables: &[Definable],
+    declaration: &Function,
 ) -> Result<(), DefineError> {
-    Ok(())
+    todo!()
 }
 
 pub(crate) fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
@@ -1220,21 +1158,9 @@ pub enum DefineError {
         relates: TypeQLRelates,
         source: ConceptWriteError,
     },
-    OverriddenRelatesNotFound {
-        relates: TypeQLRelates,
-    },
     CreatePlays {
         plays: TypeQLPlays,
         source: ConceptWriteError,
-    },
-    PlaysRoleTypeNotFound {
-        plays: TypeQLPlays,
-    },
-    OverriddenPlaysNotFound {
-        plays: TypeQLPlays,
-    },
-    OverriddenPlaysRoleTypeNotFound {
-        plays: TypeQLPlays,
     },
     OwnsAttributeMustBeLabelOrList {
         owns: TypeQLOwns,
@@ -1246,15 +1172,6 @@ pub enum DefineError {
     SetOwnsOrdering {
         owns: TypeQLOwns,
         source: ConceptWriteError,
-    },
-    OwnsAttributeTypeNotFound {
-        owns: TypeQLOwns,
-    },
-    OverriddenOwnsNotFound {
-        owns: TypeQLOwns,
-    },
-    OverriddenOwnsAttributeTypeNotFound {
-        owns: TypeQLOwns,
     },
     RelatesAlreadyDefinedButDifferent {
         label: Label<'static>,

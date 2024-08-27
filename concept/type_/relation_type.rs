@@ -50,6 +50,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::get_with_overridden;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
@@ -319,28 +320,6 @@ impl<'a> RelationType<'a> {
         }
     }
 
-    pub fn get_relates_role_with_overridden(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        let self_relates = self.get_relates_role(snapshot, type_manager, role_type.clone())?;
-        Ok(match self_relates {
-            Some(relates) => Some(relates),
-            None => match self.get_supertype(snapshot, type_manager)? {
-                Some(supertype) => {
-                    let supertype_relates = supertype.get_relates_role(snapshot, type_manager, role_type)?;
-                    match supertype_relates {
-                        Some(supertype_relates) => Some(supertype_relates),
-                        None => None,
-                    }
-                }
-                None => None,
-            },
-        })
-    }
-
     pub fn get_relates_role_name_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -372,26 +351,9 @@ impl<'a> RelationType<'a> {
         Ok(None)
     }
 
-    pub fn get_relates_role_name_with_overridden(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        role_name: &str,
-    ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        let self_relates = self.get_relates_role_name(snapshot, type_manager, role_name)?;
-        Ok(match self_relates {
-            Some(relates) => Some(relates),
-            None => match self.get_supertype(snapshot, type_manager)? {
-                Some(supertype) => {
-                    let supertype_relates = supertype.get_relates_role_name(snapshot, type_manager, role_name)?;
-                    match supertype_relates {
-                        Some(supertype_relates) => Some(supertype_relates),
-                        None => None,
-                    }
-                }
-                None => None,
-            },
-        })
+    get_with_overridden! {
+        pub fn get_relates_role_with_overridden() -> Relates = RoleType<'static> | get_relates_role;
+        pub fn get_relates_role_name_with_overridden() -> Relates = &str | get_relates_role_name;
     }
 
     pub fn into_owned(self) -> RelationType<'static> {

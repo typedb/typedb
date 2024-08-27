@@ -27,7 +27,7 @@ use encoding::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::definition_resolution::{
-    try_resolve_owns, try_resolve_plays, try_resolve_relates, try_resolve_struct_definition_key,
+    try_resolve_owns_declared, try_resolve_plays_declared, try_resolve_relates_declared, try_resolve_struct_definition_key,
 };
 
 pub(crate) enum DefinitionStatus<T> {
@@ -220,7 +220,7 @@ pub(crate) fn get_relates_status<'a>(
     role_label: &Label<'a>,
     new_ordering: Ordering,
 ) -> Result<DefinitionStatus<(Relates<'static>, Ordering)>, ConceptReadError> {
-    let existing_relates_opt = try_resolve_relates(snapshot, type_manager, relation_type, role_label)?;
+    let existing_relates_opt = try_resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str())?;
     get_some_or_return_does_not_exist!(existing_relates = existing_relates_opt);
 
     let existing_ordering = existing_relates.role().get_ordering(snapshot, type_manager)?;
@@ -238,7 +238,7 @@ pub(crate) fn get_owns_status(
     attribute_type: AttributeType<'static>,
     new_ordering: Ordering,
 ) -> Result<DefinitionStatus<(Owns<'static>, Ordering)>, ConceptReadError> {
-    let existing_owns_opt = try_resolve_owns(snapshot, type_manager, object_type, attribute_type)?;
+    let existing_owns_opt = try_resolve_owns_declared(snapshot, type_manager, object_type, attribute_type)?;
     get_some_or_return_does_not_exist!(existing_owns = existing_owns_opt);
 
     let existing_ordering = existing_owns.get_ordering(snapshot, type_manager)?;
@@ -255,7 +255,7 @@ pub(crate) fn get_plays_status(
     object_type: ObjectType<'static>,
     role_type: RoleType<'static>,
 ) -> Result<DefinitionStatus<Plays<'static>>, ConceptReadError> {
-    let existing_plays_opt = try_resolve_plays(snapshot, type_manager, object_type, role_type)?;
+    let existing_plays_opt = try_resolve_plays_declared(snapshot, type_manager, object_type, role_type)?;
     get_some_or_return_does_not_exist!(existing_plays = existing_plays_opt);
 
     Ok(DefinitionStatus::ExistsSame(Some(existing_plays)))

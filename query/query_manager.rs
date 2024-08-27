@@ -31,7 +31,7 @@ use typeql::query::SchemaQuery;
 
 use crate::{
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
-    define,
+    define, redefine, undefine,
     error::QueryError,
     translation::{translate_pipeline, TranslatedPipeline},
     annotation::{infer_types_for_pipeline, AnnotatedPipeline},
@@ -55,12 +55,10 @@ impl QueryManager {
         match query {
             SchemaQuery::Define(define) => define::execute(snapshot, type_manager, thing_manager, define)
                 .map_err(|err| QueryError::Define { source: err }),
-            SchemaQuery::Redefine(redefine) => {
-                todo!()
-            }
-            SchemaQuery::Undefine(undefine) => {
-                todo!()
-            }
+            SchemaQuery::Redefine(redefine) => redefine::execute(snapshot, type_manager, thing_manager, redefine)
+                .map_err(|err| QueryError::Redefine { source: err }),
+            SchemaQuery::Undefine(undefine) => undefine::execute(snapshot, type_manager, thing_manager, undefine)
+                .map_err(|err| QueryError::Undefine { source: err }),
         }
     }
 

@@ -43,7 +43,7 @@ use typeql::{
 use crate::{
     define::DefineError,
     definition_resolution::{
-        filter_variants, get_struct_field_value_type_optionality, resolve_struct_definition_key, resolve_type,
+        filter_variants, get_struct_field_value_type_optionality, resolve_struct_definition_key, resolve_typeql_type,
         resolve_value_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type, SymbolResolutionError,
     },
     definition_status::{
@@ -51,6 +51,7 @@ use crate::{
         get_struct_field_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinitionStatus,
     },
 };
+use crate::definition_resolution::named_type_to_label;
 
 macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path) => {
@@ -186,7 +187,7 @@ fn redefine_type_annotations(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label)
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
     for typeql_annotation in &type_declaration.annotations {
         let annotation =
@@ -270,7 +271,7 @@ fn redefine_sub(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label)
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
     for capability in &type_declaration.capabilities {
@@ -278,7 +279,7 @@ fn redefine_sub(
             continue;
         };
         let supertype_label = Label::parse_from(&sub.supertype_label.ident.as_str());
-        let supertype = resolve_type(snapshot, type_manager, &supertype_label)
+        let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
         if type_.kind() != supertype.kind() {
             return Err(err_capability_kind_mismatch(
@@ -340,7 +341,7 @@ fn redefine_value_type(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label)
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::ValueType(value_type_statement) = &capability.base else {
@@ -419,7 +420,7 @@ fn redefine_relates(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label)
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Relates(relates) = &capability.base else {
@@ -553,7 +554,7 @@ fn redefine_owns(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label)
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Owns(owns) = &capability.base else {
@@ -677,7 +678,7 @@ fn redefine_plays(
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_type(snapshot, type_manager, &label)
+    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Plays(plays) = &capability.base else {
@@ -750,8 +751,9 @@ fn redefine_plays_overridden<'a>(
     plays: Plays<'a>,
     typeql_plays: &TypeQLPlays,
 ) -> Result<(), RedefineError> {
-    if let Some(overridden_label) = &typeql_plays.overridden {
-        let overridden_label = Label::parse_from(overridden_label.ident.as_str());
+    if let Some(overridden_type_name) = &typeql_plays.overridden {
+        let overridden_label = named_type_to_label(overridden_type_name)
+            .map_err(|source| RedefineError::DefinitionResolution { source })?;
         let overridden_role_type_opt = type_manager
             .get_role_type(snapshot, &overridden_label)
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
