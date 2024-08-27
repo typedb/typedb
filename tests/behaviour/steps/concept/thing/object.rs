@@ -103,8 +103,6 @@ async fn delete_object(context: &mut Context, object_kind: params::ObjectKind, v
     let object = context.objects[&var.name].as_ref().unwrap().object.clone();
     object_kind.assert(&object.type_());
     with_write_tx!(context, |tx| { object.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap() })
-    object_kind.assert(&object.type_());
-    with_write_tx!(context, |tx| { object.delete(&mut tx.snapshot, &tx.thing_manager).unwrap() })
 }
 
 #[apply(generic_step)]
