@@ -709,12 +709,8 @@ pub async fn get_types_empty(context: &mut Context, kind: params::KindExtended, 
         use params::KindExtended;
         match kind {
             KindExtended::Entity => &tx.type_manager.get_entity_types(tx.snapshot.as_ref()).unwrap().is_empty(),
-            KindExtended::Relation => {
-                &tx.type_manager.get_relation_types(tx.snapshot.as_ref()).unwrap().is_empty()
-            }
-            KindExtended::Attribute => {
-                &tx.type_manager.get_attribute_types(tx.snapshot.as_ref()).unwrap().is_empty()
-            }
+            KindExtended::Relation => &tx.type_manager.get_relation_types(tx.snapshot.as_ref()).unwrap().is_empty(),
+            KindExtended::Attribute => &tx.type_manager.get_attribute_types(tx.snapshot.as_ref()).unwrap().is_empty(),
             KindExtended::Role => &tx.type_manager.get_role_types(tx.snapshot.as_ref()).unwrap().is_empty(),
             KindExtended::Object => &tx.type_manager.get_object_types(tx.snapshot.as_ref()).unwrap().is_empty(),
         }
