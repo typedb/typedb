@@ -15,6 +15,7 @@ deps = [
     "//durability",
     "//encoding",
     "//executor",
+    "//function",
     "//ir",
     "//query:query",
     "//storage",

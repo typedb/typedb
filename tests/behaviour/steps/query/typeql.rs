@@ -12,20 +12,21 @@ use compiler::{
     match_::inference::annotated_functions::IndexedAnnotatedFunctions,
 };
 use cucumber::gherkin::Step;
-use executor::{batch::Row, write::insert::WriteError};
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
 use macro_rules_attribute::apply;
+use executor::batch::Row;
 use executor::write::insert::InsertExecutor;
+use executor::write::WriteError;
 use primitive::either::Either;
 use query::query_manager::QueryManager;
 
 use crate::{
     generic_step,
-    params::{self, check_boolean, MayError},
+    params::{check_boolean, MayError},
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     Context,
 };
@@ -34,7 +35,7 @@ fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPl
     with_write_tx!(context, |tx| {
         let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
         let mut translation_context = TranslationContext::new();
-        let constraints = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
+        let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
         let mock_annotations = {
             let mut dummy_for_annotations = query_str.clone().replace("insert", "match");
             let mut ctx = TranslationContext::new();
@@ -62,7 +63,7 @@ fn create_insert_plan(context: &mut Context, query_str: &str) -> Result<InsertPl
             .unwrap()
             .0
         };
-        compiler::insert::insert::build_insert_plan(constraints.constraints(), &HashMap::new(), &mock_annotations)
+        compiler::insert::insert::build_insert_plan(block.conjunction().constraints(), &HashMap::new(), &mock_annotations)
     })
 }
 

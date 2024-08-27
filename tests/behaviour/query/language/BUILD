@@ -14,6 +14,7 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["@vaticle_typedb_behaviour//query/language:expression.feature"],
+    crate_features = ["bazel"],
 )
 
 rust_test(

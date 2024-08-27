@@ -15,26 +15,26 @@ use compiler::{
 };
 use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
-    type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
+    type_::{object_type::ObjectType, Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    batch::{ImmutableRow, Row},
-    pipeline::{InitialStage, PipelineContext, PipelineStageAPI, WritablePipelineStage},
+    batch::Row,
     write::{
-        insert::{InsertExecutor, InsertStage},
+        insert::{InsertExecutor},
         WriteError,
     },
 };
+use executor::write::delete::DeleteExecutor;
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
-    translation::{match_::translate_match, TranslationContext},
+    translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
 };
 
 use crate::common::{load_managers, setup_storage};
@@ -51,7 +51,7 @@ const NAME_LABEL: Label = Label::new_static("name");
 
 fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-    let (type_manager, _) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
     let group_type = type_manager.create_entity_type(&mut snapshot, &GROUP_LABEL).unwrap();
@@ -199,16 +199,17 @@ fn execute_delete(
     let delete_plan =
         build_delete_plan(&input_row_format, &entry_annotations, block.conjunction().constraints(), &deleted_concepts)
             .unwrap();
+    let delete_executor = DeleteExecutor::new(delete_plan);
     let mut output_rows = Vec::with_capacity(input_rows.len());
     for mut input_row in input_rows {
         let mut output_vec = Vec::with_capacity(input_row.len());
-        output_vec.extend_from_slice(input_row.as_mut_slice());
+        output_vec.extend_from_slice(input_row.as_mut_slice()); // copy from input
         let mut output_multiplicity = 1;
         let mut output = Row::new(&mut output_vec, &mut output_multiplicity);
-        executor::write::delete::execute_delete(snapshot, &thing_manager, &delete_plan, &mut output)?;
+        delete_executor.execute_delete(snapshot, thing_manager, &mut output);
         output_rows.push(output_vec);
     }
-    println!("{:?}", &delete_plan.output_row_plan);
+    println!("{:?}", &delete_executor.plan().output_row_plan);
     Ok(output_rows)
 }
 

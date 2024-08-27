@@ -10,10 +10,11 @@ use storage::snapshot::CommittableSnapshot;
 use crate::common::{load_managers, setup_storage};
 
 mod common;
+
 #[test]
 fn basic() {
     let (_tmp_dir, storage) = setup_storage();
-    let (type_manager, _thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager, _) = load_managers(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_schema();
     let query_manager = QueryManager::new();
 
@@ -23,6 +24,6 @@ fn basic() {
     entity person owns name;
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, &type_manager, schema_query).unwrap();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, schema_query).unwrap();
     snapshot.commit().unwrap();
 }

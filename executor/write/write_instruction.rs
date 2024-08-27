@@ -157,7 +157,7 @@ impl AsWriteInstruction for compiler::delete::instructions::DeleteThing {
             }
         }
         let ThingSource(position) = &self.thing;
-        row.set(position.clone(), VariableValue::Empty);
+        row.set(*position, VariableValue::Empty);
         Ok(())
     }
 }
