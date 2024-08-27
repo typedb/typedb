@@ -1574,7 +1574,7 @@ _Note_: (STICKY:) what to do if type inference for function args fails based on 
 
 **case FETCH_FETCH**
 ```
-"key"`: [ 
+"key": [ 
   match <PATTERN>;
   fetch { <FETCH> }
 ]
