@@ -230,7 +230,7 @@ pub mod tests {
     fn get_named_variable(translation_context: &TranslationContext, name: &str) -> Variable {
         translation_context
             .variable_registry
-            .get_variables_named()
+            .variable_names()
             .iter()
             .find(|(k, v)| v.as_str() == name)
             .unwrap()

@@ -373,9 +373,10 @@ pub mod tests {
 
             let function_annotations = cache.get_function_annotations(expected_function_id.clone()).unwrap();
             let function_ir = cache.get_function_ir(expected_function_id.clone()).unwrap();
-            let var_c = *function_ir.block().context().get_variable_named("c", function_ir.block().scope_id()).unwrap();
-            let var_c_annotations = function_annotations.body_annotations().variable_annotations_of(var_c).unwrap();
-            assert_eq!(&Arc::new(HashSet::from([type_cat.clone()])), var_c_annotations);
+            todo!("the following lines no longer compile")
+            // let var_c = *function_ir.block().context().get_variable_named("c", function_ir.block().scope_id()).unwrap();
+            // let var_c_annotations = function_annotations.body_annotations().variable_annotations_of(var_c).unwrap();
+            // assert_eq!(&Arc::new(HashSet::from([type_cat.clone()])), var_c_annotations);
         }
     }
 

@@ -25,7 +25,7 @@ use crate::{
 
 pub(super) fn add_statement(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_, '_>,
+    conjunction: &mut ConjunctionBuilder<'_, '_>,
     stmt: &typeql::Statement,
 ) -> Result<(), PatternDefinitionError> {
     let constraints = &mut conjunction.constraints_mut();

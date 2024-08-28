@@ -96,9 +96,7 @@ fn test_insert() {
     pipeline.initialise().unwrap();
     assert!(matches!(pipeline.next(), Some(Ok(_))));
     assert!(pipeline.next().is_none());
-    let PipelineContext::Owned(mut snapshot, mut thing_manager) = pipeline.finalise_and_into_context().unwrap() else {
-        unreachable!()
-    };
+    let (snapshot, thing_manager) = pipeline.finalise_and_into_context().unwrap().into_owned_parts();
     snapshot.commit().unwrap();
 
     {
@@ -170,10 +168,7 @@ fn test_match_as_pipeline() {
         assert!(result.is_ok(), "{:?}", result);
         count += 1;
     }
-    let PipelineContext::Owned(mut snapshot, mut thing_manager) = insert_pipeline.finalise_and_into_context().unwrap()
-    else {
-        unreachable!()
-    };
+    let (snapshot, thing_manager) = insert_pipeline.finalise_and_into_context().unwrap().into_owned_parts();
     let inserted_seq = snapshot.commit().unwrap();
 
     let mut newer_statistics = Statistics::new(inserted_seq.unwrap());
@@ -331,13 +326,10 @@ fn delete_has() {
 
     assert!(matches!(insert_pipeline.next(), Some(Ok(_))));
     assert!(insert_pipeline.next().is_none());
-    let PipelineContext::Owned(mut snapshot, mut thing_manager) = insert_pipeline.finalise_and_into_context().unwrap()
-    else {
-        unreachable!()
-    };
+    let (snapshot, thing_manager) = insert_pipeline.finalise_and_into_context().unwrap().into_owned_parts();
     snapshot.commit().unwrap();
 
-    let mut snapshot = context.storage.clone().open_snapshot_write();
+    let snapshot = context.storage.clone().open_snapshot_write();
     let delete_query_str = r#"
         match $p isa person, has age $a;
         delete has $a of $p;
@@ -360,9 +352,6 @@ fn delete_has() {
 
     assert!(matches!(insert_pipeline.next(), Some(Ok(_))));
     assert!(insert_pipeline.next().is_none());
-    let PipelineContext::Owned(mut snapshot, mut thing_manager) = insert_pipeline.finalise_and_into_context().unwrap()
-    else {
-        unreachable!()
-    };
+    let (snapshot, thing_manager) = insert_pipeline.finalise_and_into_context().unwrap().into_owned_parts();
     snapshot.commit().unwrap();
 }

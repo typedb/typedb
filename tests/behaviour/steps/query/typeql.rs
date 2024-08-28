@@ -11,7 +11,6 @@ use answer::{variable_value::VariableValue, Thing};
 use compiler::{
     insert::WriteCompilationError,
     match_::{
-        build_match_plan,
         inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
         planner::program_plan::ProgramPlan,
     },
@@ -26,7 +25,8 @@ use executor::{
 };
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
-    translation::{match_::translate_match, TranslationContext},
+    translation::{match_::translate_match, writes::translate_insert, TranslationContext},
+    write::{insert::InsertExecutor, WriteError},
 };
 use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
@@ -63,7 +63,15 @@ fn execute_match_query(
             &translation_context.variable_registry,
         )
         .unwrap();
-        let match_plan = build_match_plan(&block, &type_annotations, &HashMap::new(), &tx.thing_manager);
+
+        let match_plan = compiler::match_::compile(
+            &block,
+            &type_annotations,
+            &translation_context.variable_registry,
+            &HashMap::new(),
+            tx.thing_manager.statistics(),
+        );
+
         let program_plan = ProgramPlan::new(match_plan, HashMap::new(), HashMap::new());
         let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager).map_err(Either::Second)?;
         variable_position_index = executor.entry_variable_positions_index().to_owned();
@@ -75,7 +83,7 @@ fn execute_match_query(
             .map_err(Either::Second)?
     });
 
-    let variable_names = block.context().variable_names();
+    let variable_names = &translation_context.variable_registry.variable_names();
 
     let answers = rows
         .into_iter()
@@ -94,12 +102,12 @@ fn execute_insert_query(
     query: typeql::Query,
 ) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Either<WriteCompilationError, WriteError>> {
     // TODO: this needs to handle match-insert pipelines
-    let typeql_insert = typeql::parse_query(query).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
     let mut translation_context = TranslationContext::new();
-    let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
+    let typeql_insert = query.into_pipeline().stages.pop().unwrap().into_insert();
+    let block = translate_insert(&mut translation_context, &typeql_insert).unwrap();
 
-    let mock_annotations = with_read_tx!(context, |tx| {
-        let dummy_for_annotations = query.to_string().replacen("insert", "match", 1);
+    let (mock_annotations, _) = with_read_tx!(context, |tx| {
+        let dummy_for_annotations = typeql_insert.to_string().replacen("insert", "match", 1);
         let mut ctx = TranslationContext::new();
         let block = translate_match(
             &mut ctx,
@@ -114,32 +122,30 @@ fn execute_insert_query(
         )
         .unwrap()
         .finish();
-        compiler::match_::inference::type_inference::infer_types(
+        infer_types(
             &block,
-            vec![],
-            &tx.snapshot,
+            Vec::new(),
+            &*tx.snapshot,
             &tx.type_manager,
             &IndexedAnnotatedFunctions::empty(),
             &translation_context.variable_registry,
         )
         .unwrap()
-        .0
     });
 
     let insert_plan =
         compiler::insert::program::compile(block.conjunction().constraints(), &HashMap::new(), &mock_annotations)
             .map_err(Either::First)?;
 
-    let mut output_vec = vec![VariableValue::Empty; insert_plan.n_created_concepts];
+    let mut output_vec = vec![VariableValue::Empty; insert_plan.output_row_schema.len()];
     with_write_tx!(context, |tx| {
-        executor::write::insert_executor::execute_insert(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
-            &tx.thing_manager,
-            &insert_plan,
-            &Row::new(&mut [], &mut 1),
-            Row::new(&mut output_vec, &mut 1),
-        )
-        .map_err(Either::Second)?;
+        InsertExecutor::new(insert_plan)
+            .execute_insert(
+                Arc::get_mut(&mut tx.snapshot).unwrap(),
+                &tx.thing_manager,
+                &mut Row::new(output_vec.as_mut_slice(), &mut 1),
+            )
+            .map_err(Either::Second)?;
     });
 
     Ok(Vec::new()) // FIXME

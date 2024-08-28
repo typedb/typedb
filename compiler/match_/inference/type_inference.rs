@@ -431,7 +431,7 @@ pub mod tests {
         }
 
         fn var_from_registry(registry: &VariableRegistry, name: &str) -> Option<Variable> {
-            registry.get_variables_named().iter().find(|(_, n)| n.as_str() == name).map(|(v, _)| v.clone())
+            registry.variable_names().iter().find(|(_, n)| n.as_str() == name).map(|(v, _)| v.clone())
         }
     }
 }

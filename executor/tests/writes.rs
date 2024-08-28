@@ -118,9 +118,10 @@ fn execute_insert(
 
     println!("Insert Vertex:\n{:?}", &insert_plan.concepts);
     println!("Insert Edges:\n{:?}", &insert_plan.connections);
-    insert_plan.debug_info.iter().for_each(|(k, v)| {
-        println!("{:?} -> {:?}", k, translation_context.variable_registry.get_variables_named().get(v))
-    });
+    insert_plan
+        .debug_info
+        .iter()
+        .for_each(|(k, v)| println!("{:?} -> {:?}", k, translation_context.variable_registry.variable_names().get(v)));
 
     // TODO: Replace with accumulator
     let mut output_rows = Vec::with_capacity(input_rows.len());

@@ -21,7 +21,7 @@ use executor::{
     },
     write::insert::InsertExecutor,
 };
-use function::{function::Function, function_manager::FunctionManager};
+use function::function_manager::FunctionManager;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
 
@@ -107,7 +107,7 @@ impl QueryManager {
         let CompiledPipeline { compiled_functions, compiled_stages } =
             compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
 
-        let context = PipelineContext::Shared(Arc::new(snapshot), Arc::new(thing_manager));
+        let context = PipelineContext::shared(Arc::new(snapshot), Arc::new(thing_manager));
         let mut latest_stage = ReadPipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
@@ -140,12 +140,12 @@ impl QueryManager {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         let mut snapshot = snapshot;
         // 1: Translate
-        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry } =
+        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } =
             translate_pipeline(&snapshot, function_manager, query)?;
 
         // 2: Annotate
         let AnnotatedPipeline { annotated_preamble, annotated_stages } = infer_types_for_pipeline(
-            &mut snapshot,
+            &snapshot,
             type_manager,
             schema_function_annotations,
             &variable_registry,
@@ -174,7 +174,7 @@ impl QueryManager {
         let CompiledPipeline { compiled_functions, compiled_stages } =
             compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
 
-        let context = PipelineContext::Owned(snapshot, thing_manager);
+        let context = PipelineContext::owned(snapshot, thing_manager);
         let mut latest_stage = WritePipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {

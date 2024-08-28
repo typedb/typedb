@@ -31,7 +31,7 @@ impl Conjunction {
     }
 
     pub fn constraints(&self) -> &[Constraint<Variable>] {
-        &self.constraints.constraints()
+        self.constraints.constraints()
     }
 
     pub fn nested_patterns(&self) -> &[NestedPattern] {

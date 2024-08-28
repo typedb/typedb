@@ -10,7 +10,7 @@ use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     instructions::{CheckInstruction, ConstraintInstruction, Inputs, IsaInstruction},
     planner::{
-        pattern_plan::{IntersectionStep, PatternPlan, Step},
+        pattern_plan::{IntersectionProgram, MatchProgram, Program},
         program_plan::ProgramPlan,
     },
 };
@@ -23,13 +23,10 @@ use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
 use ir::{
     pattern::constraint::{Comparator, IsaKind},
     program::block::FunctionalBlock,
+    translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
-use storage::{
-    durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
-    MVCCStorage,
-};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 
 use crate::common::{load_managers, setup_storage};
 
@@ -41,7 +38,7 @@ const NAME_LABEL: Label = Label::new_static("name");
 const ATTRIBUTE_INDEPENDENT: AttributeTypeAnnotation = AttributeTypeAnnotation::Independent(AnnotationIndependent);
 
 fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
-    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    let mut snapshot = storage.clone().open_snapshot_write();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
@@ -71,8 +68,9 @@ fn attribute_equality() {
     //     $a isa age; $b isa age; $a == $b;
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_age_a = conjunction.get_or_declare_variable("a").unwrap();
     let var_age_b = conjunction.get_or_declare_variable("b").unwrap();
     let var_age_type_a = conjunction.get_or_declare_variable("age-a").unwrap();
@@ -82,16 +80,23 @@ fn attribute_equality() {
     let isa_b = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_b, var_age_type_b).unwrap().clone();
     conjunction.constraints_mut().add_label(var_age_type_a, AGE_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type_b, AGE_LABEL.scoped_name().as_str()).unwrap();
-    let entry = block.finish();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, _) =
-        infer_types(&entry, Vec::new(), &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, _) = infer_types(
+        &entry,
+        Vec::new(),
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_age_a,
             vec![ConstraintInstruction::Isa(IsaInstruction::new(
                 isa_a,
@@ -101,7 +106,7 @@ fn attribute_equality() {
             ))],
             &[var_age_a],
         )),
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_age_b,
             vec![ConstraintInstruction::Isa(IsaInstruction::new(
                 isa_b,
@@ -113,7 +118,7 @@ fn attribute_equality() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor

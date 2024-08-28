@@ -16,7 +16,7 @@ use ir::{
         constraint::{Comparator, Constraint, ExpressionBinding},
         variable_category::VariableCategory,
     },
-    program::block::{BlockContext, FunctionalBlock},
+    program::block::{BlockContext, FunctionalBlock, VariableRegistry},
 };
 use itertools::Itertools;
 
@@ -32,9 +32,9 @@ use crate::{
     },
 };
 
-pub struct PatternPlan {
+pub struct MatchProgram {
     pub(crate) programs: Vec<Program>,
-    pub(crate) context: BlockContext,
+    pub(crate) variable_registry: VariableRegistry,
 }
 
 /*
@@ -48,9 +48,9 @@ If we know this we can:
   3. some checks are fully bound, while others are not... when do we decide? What is a Check versus an Iterate instructions? Do we need to differentiate?
  */
 
-impl PatternPlan {
-    pub fn new(programs: Vec<Program>, context: BlockContext) -> Self {
-        Self { programs, context }
+impl MatchProgram {
+    pub fn new(programs: Vec<Program>, context: VariableRegistry) -> Self {
+        Self { programs, variable_registry: context }
     }
 
     pub fn from_block(
@@ -63,9 +63,9 @@ impl PatternPlan {
         assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
         let conjunction = block.conjunction();
         assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
-        let context = block.context();
         let mut elements = Vec::new();
-        let variable_index = register_variables(context, &mut elements, type_annotations, statistics);
+
+        let variable_index = register_variables(variable_registry, &mut elements, type_annotations, statistics);
         let (index_to_constraint, variable_isa, adjacency) =
             register_constraints(conjunction, &variable_index, &mut elements, type_annotations, statistics);
 
@@ -277,42 +277,29 @@ impl PatternPlan {
             program_instructions,
             &outputs,
         )));
-        Self { programs, context: context.clone() }
+        Self { programs, variable_registry: variable_registry.clone() }
     }
 
     pub fn programs(&self) -> &[Program] {
         &self.programs
     }
 
-    pub(crate) fn into_programs(self) -> impl Iterator<Item = Program> {
-        self.programs.into_iter()
-    }
-
     pub fn outputs(&self) -> &[Variable] {
         self.programs.last().unwrap().selected_variables()
     }
 
-    pub(crate) fn into_steps(self) -> impl Iterator<Item = Step> {
-        self.steps.into_iter()
-    }
-
-    pub fn outputs(&self) -> &[Variable] {
-        self.steps.last().unwrap().selected_variables()
-    }
-
-=======
-    pub fn context(&self) -> &BlockContext {
-        &self.context
+    pub fn variable_registry(&self) -> &VariableRegistry {
+        &self.variable_registry
     }
 }
 
 fn register_variables(
-    context: &BlockContext,
+    variable_registry: &VariableRegistry,
     elements: &mut Vec<PlannerVertex>,
     type_annotations: &TypeAnnotations,
     statistics: &Statistics,
 ) -> HashMap<Variable, usize> {
-    context
+    variable_registry
         .variable_categories()
         .filter_map(|(variable, category)| {
             match category {
@@ -606,15 +593,15 @@ impl AssignmentProgram {
 }
 
 pub struct DisjunctionProgram {
-    pub disjunction: Vec<PatternPlan>,
+    pub disjunction: Vec<MatchProgram>,
 }
 
 pub struct NegationProgram {
-    pub negation: PatternPlan,
+    pub negation: MatchProgram,
 }
 
 pub struct OptionalProgram {
-    pub optional: PatternPlan,
+    pub optional: MatchProgram,
 }
 
 pub trait InstructionAPI {

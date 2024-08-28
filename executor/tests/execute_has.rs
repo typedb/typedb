@@ -131,7 +131,7 @@ fn traverse_has_unbounded_sorted_from() {
     let (entry_annotations, annotated_functions) = infer_types(
         &entry,
         vec![],
-        &snapshot,
+        &*snapshot,
         &type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
@@ -203,7 +203,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let (entry_annotations, annotated_functions) = infer_types(
         &entry,
         vec![],
-        &snapshot,
+        &*snapshot,
         &type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,

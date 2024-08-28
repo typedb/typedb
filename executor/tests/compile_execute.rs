@@ -20,7 +20,7 @@ use concept::{
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::program_executor::ProgramExecutor;
 use ir::{
-    program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
+    program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
@@ -105,10 +105,10 @@ fn test_has_planning_traversal() {
     let (type_manager, thing_manager) = load_managers(storage.clone());
     let thing_manager = Arc::new(thing_manager);
 
-    let (entry_annotations, annotated_functions) = infer_types(
+    let (entry_annotations, _) = infer_types(
         &block,
         vec![],
-        &snapshot,
+        &*snapshot,
         &type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
@@ -243,7 +243,7 @@ fn test_links_planning_traversal() {
     let (entry_annotations, _) = infer_types(
         &block,
         vec![],
-        &snapshot,
+        &*snapshot,
         &type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,

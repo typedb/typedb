@@ -614,7 +614,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
-        &snapshot,
+        &*snapshot,
         &type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
@@ -704,7 +704,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
-        &snapshot,
+        &*snapshot,
         &type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
