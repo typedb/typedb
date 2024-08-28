@@ -18,7 +18,6 @@ pub struct ProgramPlan {
     // TODO: Update 'Program' to refer to the whole pipeline & to
     // TODO: krishnan: Revert pub
     pub entry: MatchProgram,
-    // TODO: this should have ValueType not ValueTypeCategory
     pub entry_value_type_annotations: HashMap<Variable, ExpressionValueType>,
     pub functions: HashMap<DefinitionKey<'static>, FunctionPlan>,
 }

@@ -107,7 +107,7 @@ impl QueryManager {
         //     })
         // }).unwrap();
 
-        // // 3: Compile
+        // 3: Compile
         let CompiledPipeline { compiled_functions, compiled_stages } =
             compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
 
