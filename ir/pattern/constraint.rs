@@ -74,13 +74,13 @@ impl fmt::Display for Constraints {
     }
 }
 
-pub struct ConstraintsBuilder<'cx> {
-    context: &'cx mut BlockContext,
+pub struct ConstraintsBuilder<'cx, 'reg> {
+    context: &'cx mut BlockContext<'reg>,
     constraints: &'cx mut Constraints,
 }
 
-impl<'cx> ConstraintsBuilder<'cx> {
-    pub fn new(context: &'cx mut BlockContext, constraints: &'cx mut Constraints) -> Self {
+impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
+    pub fn new(context: &'cx mut BlockContext<'reg>, constraints: &'cx mut Constraints) -> Self {
         Self { context, constraints }
     }
 
@@ -178,6 +178,9 @@ impl<'cx> ConstraintsBuilder<'cx> {
         let comparison = Comparison::new(lhs, rhs);
         self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
         self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
+        // todo!("The above lines were the two lines below");
+        // self.context.set_variable_category(lhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
+        // self.context.set_variable_category(rhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
 
         let as_ref = self.constraints.add_constraint(comparison);
         Ok(as_ref.as_comparison().unwrap())
@@ -834,7 +837,7 @@ impl ExpressionBinding<Variable> {
         &self.expression
     }
 
-    pub(crate) fn validate(&self, context: &mut BlockContext) -> Result<(), ExpressionDefinitionError> {
+    pub(crate) fn validate<'cx>(&self, context: &mut BlockContext<'cx>) -> Result<(), ExpressionDefinitionError> {
         if self.expression().is_empty() {
             Err(ExpressionDefinitionError::EmptyExpressionTree {})
         } else {

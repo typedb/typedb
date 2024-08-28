@@ -7,15 +7,13 @@
 use crate::insert::{ThingSource, TypeSource};
 
 #[derive(Debug)]
-pub enum DeleteInstruction {
-    // TODO: Just replace this with regular `Constraint`s and use a mapped-row?
-    Thing(DeleteThing),
+pub enum DeleteConnectionInstruction {
     Has(Has),               // TODO: Ordering
     RolePlayer(RolePlayer), // TODO: Ordering
 }
 
 #[derive(Debug)]
-pub struct DeleteThing {
+pub struct DeleteThingInstruction {
     pub thing: ThingSource,
 }
 

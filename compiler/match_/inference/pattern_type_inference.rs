@@ -13,7 +13,7 @@ use answer::{variable::Variable, Type as TypeAnnotation, Type};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint},
-    program::block::{BlockContext, FunctionalBlock},
+    program::block::{BlockContext, FunctionalBlock, VariableRegistry},
 };
 use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
@@ -30,13 +30,14 @@ pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 pub(crate) fn infer_types_for_block<'graph>(
     snapshot: &impl ReadableSnapshot,
     block: &'graph FunctionalBlock,
-    block_context: &BlockContext,
+    variable_registry: &VariableRegistry,
     type_manager: &TypeManager,
+    previous_stage_variable_annotations: &HashMap<Variable, Arc<HashSet<TypeAnnotation>>>,
     schema_functions: &IndexedAnnotatedFunctions,
     local_function_cache: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
-    let mut tig = TypeSeeder::new(snapshot, type_manager, schema_functions, local_function_cache)
-        .seed_types(block_context, block.conjunction())?;
+    let mut tig = TypeSeeder::new(snapshot, type_manager, schema_functions, local_function_cache, variable_registry)
+        .seed_types(block.scope_context(), previous_stage_variable_annotations, block.conjunction())?;
     run_type_inference(&mut tig);
     Ok(tig)
 }
@@ -291,6 +292,7 @@ pub mod tests {
             block::{BlockContext, FunctionalBlock},
             function_signature::HashMapFunctionSignatureIndex,
         },
+        translation::TranslationContext,
     };
     use itertools::Itertools;
 
@@ -345,7 +347,8 @@ pub mod tests {
         {
             // Case 1: $a isa cat, has animal-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -364,8 +367,9 @@ pub mod tests {
             let tig = infer_types_for_block(
                 &snapshot,
                 &block,
-                &block.context(),
+                &translation_context.variable_registry,
                 &type_manager,
+                &HashMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
             )
@@ -410,7 +414,8 @@ pub mod tests {
         {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -430,8 +435,9 @@ pub mod tests {
             let tig = infer_types_for_block(
                 &snapshot,
                 &block,
-                &block.context(),
+                &translation_context.variable_registry,
                 &type_manager,
+                &HashMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
             )
@@ -475,7 +481,8 @@ pub mod tests {
         {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -494,8 +501,9 @@ pub mod tests {
             let tig = infer_types_for_block(
                 &snapshot,
                 &block,
-                &block.context(),
+                &translation_context.variable_registry,
                 &type_manager,
+                &HashMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
             )
@@ -526,7 +534,8 @@ pub mod tests {
             let types_a = all_animals.clone();
             let types_n = all_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -545,8 +554,9 @@ pub mod tests {
             let tig = infer_types_for_block(
                 &snapshot,
                 &block,
-                &block.context(),
+                &translation_context.variable_registry,
                 &type_manager,
+                &HashMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
             )
@@ -612,8 +622,8 @@ pub mod tests {
 
         let all_animals = BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]);
         let all_names = BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()]);
-
-        let mut builder = FunctionalBlock::builder();
+        let mut translation_context = TranslationContext::new();
+        let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
         let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name, var_name_type) = ["animal", "name", "name_type"]
             .into_iter()
@@ -648,8 +658,9 @@ pub mod tests {
             let tig = infer_types_for_block(
                 &snapshot,
                 &block,
-                &block.context(),
+                &translation_context.variable_registry,
                 &type_manager,
+                &HashMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
             )
@@ -743,7 +754,8 @@ pub mod tests {
         {
             // Case 1: $a has $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name) = ["animal", "name"]
                 .into_iter()
@@ -759,8 +771,9 @@ pub mod tests {
             let tig = infer_types_for_block(
                 &snapshot,
                 &block,
-                &block.context(),
+                &translation_context.variable_registry,
                 &type_manager,
+                &HashMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
             )
@@ -803,8 +816,8 @@ pub mod tests {
         {
             // With roles specified
             let snapshot = storage.clone().open_snapshot_write();
-
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (
                 var_has_fear,
@@ -847,8 +860,9 @@ pub mod tests {
             let tig = infer_types_for_block(
                 &snapshot,
                 &block,
-                &block.context(),
+                &translation_context.variable_registry,
                 &type_manager,
+                &HashMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
             )
@@ -938,7 +952,8 @@ pub mod tests {
         {
             // Case 1: $a isa $at; $at type cat; $n isa $nt; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_owned_type) =
                 ["animal", "name", "animal_type", "name_type"]
@@ -957,8 +972,9 @@ pub mod tests {
             let tig = infer_types_for_block(
                 &snapshot,
                 &block,
-                &block.context(),
+                &translation_context.variable_registry,
                 &type_manager,
+                &HashMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
             )
@@ -1003,7 +1019,9 @@ pub mod tests {
         {
             // Case 2: $a isa $at; $n isa $nt; $nt type catname; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut builder = FunctionalBlock::builder();
+
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_owner_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1022,8 +1040,9 @@ pub mod tests {
             let tig = infer_types_for_block(
                 &snapshot,
                 &block,
-                &block.context(),
+                &translation_context.variable_registry,
                 &type_manager,
+                &HashMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
             )
@@ -1067,7 +1086,8 @@ pub mod tests {
         {
             // Case 3: $a isa $at; $at type cat; $n isa $nt; $nt type dogname; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1086,8 +1106,9 @@ pub mod tests {
             let tig = infer_types_for_block(
                 &snapshot,
                 &block,
-                &block.context(),
+                &translation_context.variable_registry,
                 &type_manager,
+                &HashMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
             )
@@ -1118,7 +1139,8 @@ pub mod tests {
             let types_a = all_animals.clone();
             let types_n = all_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1135,8 +1157,9 @@ pub mod tests {
             let tig = infer_types_for_block(
                 &snapshot,
                 &block,
-                &block.context(),
+                &translation_context.variable_registry,
                 &type_manager,
+                &HashMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
             )

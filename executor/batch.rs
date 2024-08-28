@@ -28,8 +28,11 @@ pub struct Batch {
 
 impl Batch {
     pub(crate) const INIT_MULTIPLICITIES: [u64; BATCH_ROWS_MAX as usize] = [1; BATCH_ROWS_MAX as usize];
-    pub(crate) const EMPTY_SINGLE_ROW: Batch =
+    pub(crate) const SINGLE_EMPTY_ROW: Batch =
         Batch { width: 0, entries: 1, data: Vec::new(), multiplicities: Batch::INIT_MULTIPLICITIES };
+
+    pub(crate) const EMPTY: Batch =
+        Batch { width: 0, entries: 0, data: Vec::new(), multiplicities: Batch::INIT_MULTIPLICITIES };
 
     pub(crate) fn new(width: u32) -> Self {
         let size = width * BATCH_ROWS_MAX;
@@ -41,7 +44,7 @@ impl Batch {
         }
     }
 
-    fn rows_count(&self) -> u32 {
+    pub(crate) fn rows_count(&self) -> u32 {
         self.entries
     }
 
@@ -49,7 +52,7 @@ impl Batch {
         (self.entries * self.width) as usize == self.data.len()
     }
 
-    fn get_row(&self, index: u32) -> ImmutableRow<'_> {
+    pub(crate) fn get_row(&self, index: u32) -> ImmutableRow<'_> {
         debug_assert!(index <= self.entries);
         let start = (index * self.width) as usize;
         let end = ((index + 1) * self.width) as usize;
@@ -57,7 +60,7 @@ impl Batch {
         ImmutableRow::new(slice, self.multiplicities[index as usize])
     }
 
-    fn get_row_mut(&mut self, index: u32) -> Row<'_> {
+    pub(crate) fn get_row_mut(&mut self, index: u32) -> Row<'_> {
         debug_assert!(index <= self.entries);
         self.row_internal_mut(index)
     }

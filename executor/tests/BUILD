@@ -76,6 +76,17 @@ rust_test(
     ],
 )
 
+rust_test(
+    name = "test_pipelines",
+    crate_root = "pipelines.rs",
+    srcs = ["pipelines.rs", "common.rs"],
+    deps = deps + [
+        "//function",
+        "//query:query",
+        "@crates//:itertools"
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

@@ -6,12 +6,22 @@
 
 use std::{error::Error, fmt};
 
+use compiler::{
+    expression::ExpressionCompileError, insert::WriteCompilationError, match_::inference::TypeInferenceError,
+};
+use ir::{program::FunctionDefinitionError, PatternDefinitionError};
+
 use crate::define::DefineError;
 
 #[derive(Debug)]
 pub enum QueryError {
     ParseError { typeql_query: String, source: typeql::common::Error },
     Define { source: DefineError },
+    FunctionDefinition { source: FunctionDefinitionError },
+    PatternDefinition { source: PatternDefinitionError },
+    TypeInference { source: TypeInferenceError },
+    WriteCompilation { source: WriteCompilationError },
+    ExpressionCompilation { source: ExpressionCompileError },
 }
 
 impl fmt::Display for QueryError {
@@ -25,6 +35,11 @@ impl Error for QueryError {
         match self {
             QueryError::ParseError { source, .. } => Some(source),
             QueryError::Define { source, .. } => Some(source),
+            QueryError::FunctionDefinition { source, .. } => Some(source),
+            QueryError::PatternDefinition { source, .. } => Some(source),
+            QueryError::TypeInference { source } => Some(source),
+            QueryError::WriteCompilation { source } => Some(source),
+            QueryError::ExpressionCompilation { source } => Some(source),
         }
     }
 }

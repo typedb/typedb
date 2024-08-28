@@ -11,24 +11,3 @@ pub mod inference;
 pub mod instructions;
 mod optimisation;
 pub mod planner;
-
-#[derive(Debug)]
-pub enum MatchCompileError {
-    ProgramTypeInference { source: TypeInferenceError },
-    ExpressionCompile { source: ExpressionCompileError },
-}
-
-impl fmt::Display for MatchCompileError {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for MatchCompileError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            MatchCompileError::ProgramTypeInference { source, .. } => Some(source),
-            MatchCompileError::ExpressionCompile { source, .. } => Some(source),
-        }
-    }
-}

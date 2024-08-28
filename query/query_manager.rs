@@ -4,12 +4,38 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use function::function::Function;
-use storage::snapshot::WritableSnapshot;
-use typeql::{query::SchemaQuery, Query};
+use std::{collections::HashMap, sync::Arc};
+use compiler::{
+    match_::{
+        inference::annotated_functions::IndexedAnnotatedFunctions,
+        planner::program_plan::ProgramPlan,
+    },
+};
+use concept::{
+    thing::{statistics::Statistics, thing_manager::ThingManager},
+    type_::type_manager::TypeManager,
+};
+use executor::{
+    pipeline::{
+        initial::InitialStage,
+        insert::InsertStage,
+        match_::MatchStage,
+        stage_wrappers::{ReadPipelineStage, WritePipelineStage},
+        PipelineContext,
+    },
+    write::insert::InsertExecutor,
+};
+use function::{function::Function, function_manager::FunctionManager};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use typeql::query::SchemaQuery;
 
-use crate::{define, error::QueryError};
+use crate::{
+    compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
+    define,
+    error::QueryError,
+    translation::{translate_pipeline, TranslatedPipeline},
+    annotation::{infer_types_for_pipeline, AnnotatedPipeline},
+};
 
 pub struct QueryManager {}
 
@@ -38,31 +64,139 @@ impl QueryManager {
         }
     }
 
-    // TODO: take in parsed TypeQL clause
-    fn create_executor(&self, clause: &str) {
-        // match clause
+    pub fn prepare_read_pipeline<Snapshot: ReadableSnapshot + 'static>(
+        &self,
+        snapshot: Snapshot,
+        thing_manager: ThingManager,
+        type_manager: &TypeManager,
+        function_manager: &FunctionManager,
+        statistics: &Statistics,
+        schema_function_annotations: &IndexedAnnotatedFunctions,
+        query: &typeql::query::Pipeline,
+    ) -> Result<ReadPipelineStage<Snapshot>, QueryError> {
+        // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
+        let mut snapshot = snapshot;
+        // 1: Translate
+        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } =
+            translate_pipeline(&snapshot, function_manager, query)?;
+
+        // 2: Annotate
+        let AnnotatedPipeline { annotated_preamble, annotated_stages } = infer_types_for_pipeline(
+            &mut snapshot,
+            type_manager,
+            schema_function_annotations,
+            &variable_registry,
+            translated_preamble,
+            translated_stages,
+        )?;
+        // // TODO: Improve how we do this. This is a temporary workaround
+        // annotated_stages.iter().filter_map(|stage| {
+        //     if let AnnotatedStage::Match { block, variable_value_types, .. }  = stage {
+        //         Some((block, variable_value_types))
+        //     } else { None }
+        // }).try_for_each(|(block, expr) | {
+        //     expr.iter().try_for_each(|(var, type_)| {
+        //         // TODO: May be in a nested pattern
+        //         let source = block.conjunction().constraints().iter().find(|constraint| Some(var.clone()) == constraint.as_expression_binding().map(|expr| expr.left())).unwrap().clone();
+        //         let category = match type_ {
+        //             ExpressionValueType::Single(_) => VariableCategory::Value,
+        //             ExpressionValueType::List(_) => VariableCategory::ValueList,
+        //         };
+        //         variable_registry.set_assigned_value_variable_category(var.clone(), category, source)?;
+        //         Ok::<(), PatternDefinitionError>(())
+        //     })
+        // }).unwrap();
+
+        // 3: Compile
+        let CompiledPipeline { compiled_functions, compiled_stages } =
+            compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
+
+        let context = PipelineContext::Shared(Arc::new(snapshot), Arc::new(thing_manager));
+        let mut latest_stage = ReadPipelineStage::Initial(InitialStage::new(context));
+        for compiled_stage in compiled_stages {
+            match compiled_stage {
+                CompiledStage::Match(pattern_plan) => {
+                    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new()); // TODO: Pass expressions & functions
+                    let match_stage = MatchStage::new(Box::new(latest_stage), program_plan);
+                    latest_stage = ReadPipelineStage::Match(match_stage);
+                }
+                CompiledStage::Insert(insert_plan) => {
+                    todo!("Illegal, return error")
+                }
+                CompiledStage::Delete(delete) => {
+                    todo!("Illegal, return error")
+                }
+            }
+        }
+        Ok(latest_stage)
     }
 
-    fn create_match_executor(&self, query_functions: Vec<Function<usize>>) {
-        // let conjunction = Conjunction::new();
-        // ... build conjunction...
+    pub fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: Snapshot,
+        type_manager: &TypeManager,
+        thing_manager: ThingManager,
+        function_manager: &FunctionManager,
+        statistics: &Statistics,
+        schema_function_annotations: &IndexedAnnotatedFunctions,
+        query: &typeql::query::Pipeline,
+    ) -> Result<WritePipelineStage<Snapshot>, QueryError> {
+        // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
+        let mut snapshot = snapshot;
+        // 1: Translate
+        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry } =
+            translate_pipeline(&snapshot, function_manager, query)?;
+
+        // 2: Annotate
+        let AnnotatedPipeline { annotated_preamble, annotated_stages } = infer_types_for_pipeline(
+            &mut snapshot,
+            type_manager,
+            schema_function_annotations,
+            &variable_registry,
+            translated_preamble,
+            translated_stages,
+        )?;
+        // // TODO: Improve how we do this. This is a temporary workaround
+        // annotated_stages.iter().filter_map(|stage| {
+        //     if let AnnotatedStage::Match { block, variable_value_types, .. }  = stage {
+        //         Some((block, variable_value_types))
+        //     } else { None }
+        // }).try_for_each(|(block, expr) | {
+        //     expr.iter().try_for_each(|(var, type_)| {
+        //         // TODO: May be in a nested pattern
+        //         let source = block.conjunction().constraints().iter().find(|constraint| Some(var.clone()) == constraint.as_expression_binding().map(|expr| expr.left())).unwrap().clone();
+        //         let category = match type_ {
+        //             ExpressionValueType::Single(_) => VariableCategory::Value,
+        //             ExpressionValueType::List(_) => VariableCategory::ValueList,
+        //         };
+        //         variable_registry.set_assigned_value_variable_category(var.clone(), category, source)?;
+        //         Ok::<(), PatternDefinitionError>(())
+        //     })
+        // }).unwrap();
+
+        // // 3: Compile
+        let CompiledPipeline { compiled_functions, compiled_stages } =
+            compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
+
+        let context = PipelineContext::Owned(snapshot, thing_manager);
+        let mut latest_stage = WritePipelineStage::Initial(InitialStage::new(context));
+        for compiled_stage in compiled_stages {
+            match compiled_stage {
+                CompiledStage::Match(match_plan) => {
+                    todo!()
+                }
+                CompiledStage::Insert(insert_plan) => {
+                    let insert_stage = InsertStage::new(Box::new(latest_stage), InsertExecutor::new(insert_plan));
+                    latest_stage = WritePipelineStage::Insert(insert_stage);
+                }
+                CompiledStage::Delete(delete) => {
+                    todo!()
+                }
+            }
+        }
+        Ok(latest_stage)
     }
 }
-
-enum Stage {
-    Match,
-    Insert,
-    Delete,
-    Put,
-    Fetch,
-    Assert,
-    Select,
-    Sort,
-    Offset,
-    Limit,
-}
-
-trait PipelineStage {}
 
 enum QueryReturn {
     MapStream,

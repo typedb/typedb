@@ -15,8 +15,11 @@ use encoding::{graph::type_::Kind, value::value::Value};
 use ir::pattern::constraint::Isa;
 use itertools::Itertools;
 
-pub mod insert;
+use crate::VariablePosition;
+
+pub mod program;
 pub mod instructions;
+pub mod type_check;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum VariableSource {
@@ -24,11 +27,10 @@ pub enum VariableSource {
     InsertedThing(usize),
 }
 
-type VariablePosition = u32;
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum TypeSource {
     InputVariable(VariablePosition),
-    TypeConstant(answer::Type),
+    Constant(answer::Type),
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -38,21 +40,15 @@ pub enum ValueSource {
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum ThingSource {
-    InputVariable(VariablePosition),
-    InsertedThing(usize),
-}
+pub struct ThingSource(pub VariablePosition);
 
 pub(crate) fn get_thing_source(
-    input_variables: &HashMap<Variable, usize>,
-    inserted_concepts: &HashMap<Variable, usize>,
+    input_variables: &HashMap<Variable, VariablePosition>,
     variable: Variable,
 ) -> Result<ThingSource, WriteCompilationError> {
-    match (input_variables.get(&variable), inserted_concepts.get(&variable)) {
-        (Some(input), None) => Ok(ThingSource::InputVariable(*input as u32)),
-        (None, Some(inserted)) => Ok(ThingSource::InsertedThing(*inserted)),
-        (Some(_), Some(_)) => Err(WriteCompilationError::VariableIsBothInsertedAndInput { variable }), // TODO: I think this is unreachable
-        (None, None) => Err(WriteCompilationError::CouldNotDetermineThingVariableSource { variable }),
+    match input_variables.get(&variable) {
+        Some(input) => Ok(ThingSource(input.clone())),
+        None => Err(WriteCompilationError::CouldNotDetermineThingVariableSource { variable }),
     }
 }
 
@@ -62,7 +58,7 @@ pub(crate) fn get_kinds_from_annotations(annotations: &HashSet<Type>) -> Vec<Kin
 
 #[derive(Debug, Clone)]
 pub enum WriteCompilationError {
-    VariableIsBothInsertedAndInput { variable: Variable },
+    IsaStatementForInputVariable { variable: Variable },
     IsaStatementForRoleType { isa: Isa<Variable> },
     IsaTypeMayBeAttributeOrObject { isa: Isa<Variable> },
     CouldNotDetermineTypeOfInsertedVariable { variable: Variable },
@@ -74,6 +70,7 @@ pub enum WriteCompilationError {
     IllegalRoleDelete { variable: Variable },
     DeleteHasMultipleKinds { isa: Isa<Variable> },
     IllegalInsertForRole { isa: Isa<Variable> },
+    DeletedThingWasNotInInput { variable: Variable },
 }
 
 impl Display for WriteCompilationError {

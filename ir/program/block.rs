@@ -27,18 +27,14 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct FunctionalBlock {
-    context: BlockContext,
+    scope_context: ScopeContext, // TODO: We only need this for type annotations
     conjunction: Conjunction,
     modifiers: Vec<Modifier>,
 }
 
 impl FunctionalBlock {
-    pub fn builder() -> FunctionalBlockBuilder {
-        FunctionalBlockBuilder::new()
-    }
-
-    pub fn context(&self) -> &BlockContext {
-        &self.context
+    pub fn builder<'a>(context: BlockContext<'a>) -> FunctionalBlockBuilder<'a> {
+        FunctionalBlockBuilder::new(context)
     }
 
     pub fn conjunction(&self) -> &Conjunction {
@@ -49,8 +45,23 @@ impl FunctionalBlock {
         &self.modifiers
     }
 
+    pub fn scope_context(&self) -> &ScopeContext {
+        &self.scope_context
+    }
+
     pub fn scope_id(&self) -> ScopeId {
         Scope::scope_id(self)
+    }
+
+    pub fn variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
+        self.scope_context.variable_declaration.iter()
+    }
+    pub fn block_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_scopes().filter_map(|(v, scope)| if scope != &ScopeId::INPUT { Some(v.clone()) } else { None })
+    }
+
+    pub fn input_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_scopes().filter_map(|(v, scope)| if scope == &ScopeId::INPUT { Some(v.clone()) } else { None })
     }
 }
 
@@ -60,27 +71,29 @@ impl Scope for FunctionalBlock {
     }
 }
 
-pub struct FunctionalBlockBuilder {
-    context: BlockContext,
+pub struct FunctionalBlockBuilder<'reg> {
+    context: BlockContext<'reg>,
     conjunction: Conjunction,
     modifiers: Vec<Modifier>,
 }
 
-impl FunctionalBlockBuilder {
-    fn new() -> Self {
-        Self { conjunction: Conjunction::new(ScopeId::ROOT), modifiers: Vec::new(), context: BlockContext::new() }
+impl<'reg> FunctionalBlockBuilder<'reg> {
+    fn new(context: BlockContext<'reg>) -> Self {
+        Self { conjunction: Conjunction::new(ScopeId::ROOT), modifiers: Vec::new(), context }
     }
 
     pub fn finish(self) -> FunctionalBlock {
-        let Self { context, conjunction, modifiers, .. } = self;
-        FunctionalBlock { context, conjunction, modifiers }
+        let Self { conjunction, modifiers, context: block_context } = self;
+        let BlockContext { variable_declaration, scope_parents, .. } = block_context;
+        let scope_context = ScopeContext { variable_declaration, scope_parents };
+        FunctionalBlock { conjunction, modifiers, scope_context }
     }
 
-    pub fn conjunction_mut(&mut self) -> ConjunctionBuilder<'_> {
+    pub fn conjunction_mut(&mut self) -> ConjunctionBuilder<'_, 'reg> {
         ConjunctionBuilder::new(&mut self.context, &mut self.conjunction)
     }
 
-    pub fn context_mut(&mut self) -> &mut BlockContext {
+    pub fn context_mut(&mut self) -> &mut BlockContext<'reg> {
         &mut self.context
     }
 
@@ -106,94 +119,32 @@ impl FunctionalBlockBuilder {
 }
 
 #[derive(Debug, Clone)]
-pub struct BlockContext {
+pub struct VariableRegistry {
     variable_names: HashMap<Variable, String>,
-    variable_declaration: HashMap<Variable, ScopeId>,
-    variable_names_index: HashMap<String, Variable>,
     variable_id_allocator: u16,
-
-    scope_id_allocator: u16,
-    scope_parents: HashMap<ScopeId, ScopeId>,
-
     variable_categories: HashMap<Variable, (VariableCategory, Constraint<Variable>)>,
     variable_optionality: HashMap<Variable, VariableOptionality>,
 }
 
-impl BlockContext {
-    pub fn new() -> BlockContext {
+impl VariableRegistry {
+    pub(crate) fn new() -> VariableRegistry {
         Self {
             variable_names: HashMap::new(),
-            variable_declaration: HashMap::new(),
-            variable_names_index: HashMap::new(),
             variable_id_allocator: 0,
-            scope_id_allocator: 1, // `0` is reserved for ROOT
-            scope_parents: HashMap::new(),
             variable_categories: HashMap::new(),
             variable_optionality: HashMap::new(),
         }
     }
 
-    pub fn get_variables_named(&self) -> &HashMap<Variable, String> {
-        &self.variable_names
-    }
-
-    pub fn get_variable_named(&self, name: &str, scope: ScopeId) -> Option<&Variable> {
-        self.variable_names_index.get(name)
-    }
-
-    pub(crate) fn get_or_declare_variable(
-        &mut self,
-        name: &str,
-        scope: ScopeId,
-    ) -> Result<Variable, PatternDefinitionError> {
-        match self.variable_names_index.get(name) {
-            None => {
-                let variable = self.allocate_variable();
-                self.variable_names.insert(variable, name.to_string());
-                self.variable_declaration.insert(variable, scope);
-                self.variable_names_index.insert(name.to_string(), variable);
-                Ok(variable)
-            }
-            Some(existing_variable) => {
-                let existing_scope = self.variable_declaration.get_mut(existing_variable).unwrap();
-                if is_equal_or_parent_scope(&self.scope_parents, scope, *existing_scope) {
-                    // Parent defines same name: ok, reuse the variable
-                    Ok(*existing_variable)
-                } else if is_child_scope(&self.scope_parents, scope, *existing_scope) {
-                    // Child defines the same name: ok, reuse the variable, and change the declaration scope to the current one
-                    *existing_scope = scope;
-                    Ok(*existing_variable)
-                } else {
-                    Err(PatternDefinitionError::DisjointVariableReuse { variable_name: name.to_string() })
-                }
-            }
-        }
-    }
-
-    pub(crate) fn create_anonymous_variable(&mut self, scope: ScopeId) -> Result<Variable, PatternDefinitionError> {
+    fn register_variable_named(&mut self, name: String) -> Variable {
         let variable = self.allocate_variable();
-        self.variable_declaration.insert(variable, scope);
-        Ok(variable)
+        println!("Registered variable {} to {}", name.clone(), variable);
+        self.variable_names.insert(variable, name);
+        variable
     }
 
-    pub fn get_variable(&self, name: &str) -> Option<Variable> {
-        self.variable_names_index.get(name).cloned()
-    }
-
-    pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_declaration.keys().cloned()
-    }
-
-    pub fn variable_categories(&self) -> impl Iterator<Item = (Variable, VariableCategory)> + '_ {
-        self.variable_categories.iter().map(|(&variable, &(category, _))| (variable, category))
-    }
-
-    pub fn get_variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
-        self.variable_declaration.iter()
-    }
-
-    pub fn named_variable_mapping(&self) -> &HashMap<String, Variable> {
-        &self.variable_names_index
+    fn register_anonymous_variable(&mut self) -> Variable {
+        self.allocate_variable()
     }
 
     fn allocate_variable(&mut self) -> Variable {
@@ -202,31 +153,17 @@ impl BlockContext {
         variable
     }
 
-    pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
-        let variable_scope = self.variable_declaration.get(&variable);
-        match variable_scope {
-            None => false,
-            Some(variable_scope) => is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope),
-        }
+    // TODO: pub(crate)
+    pub fn set_assigned_value_variable_category(
+        &mut self,
+        variable: Variable,
+        category: VariableCategory,
+        source: Constraint<Variable>,
+    ) -> Result<(), PatternDefinitionError> {
+        self.set_variable_category(variable, category, source)
     }
 
-    pub(crate) fn create_child_scope(&mut self, parent: ScopeId) -> ScopeId {
-        let scope = ScopeId::new(self.scope_id_allocator);
-        debug_assert_ne!(scope, ScopeId::ROOT);
-        self.scope_id_allocator += 1;
-        self.scope_parents.insert(scope, parent);
-        scope
-    }
-
-    pub fn get_variable_category(&self, variable: Variable) -> Option<VariableCategory> {
-        self.variable_categories.get(&variable).map(|(category, _constraint)| *category)
-    }
-
-    pub fn get_variable_optionality(&self, variable: Variable) -> Option<VariableOptionality> {
-        self.variable_optionality.get(&variable).cloned()
-    }
-
-    pub(crate) fn set_variable_category(
+    fn set_variable_category(
         &mut self,
         variable: Variable,
         category: VariableCategory,
@@ -263,11 +200,27 @@ impl BlockContext {
         }
     }
 
-    pub(crate) fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
+    fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
         match optional {
             true => self.variable_optionality.insert(variable, VariableOptionality::Optional),
             false => self.variable_optionality.remove(&variable),
         };
+    }
+
+    pub fn variable_categories(&self) -> impl Iterator<Item = (Variable, VariableCategory)> + '_ {
+        self.variable_categories.iter().map(|(&variable, &(category, _))| (variable, category))
+    }
+
+    pub fn get_variables_named(&self) -> &HashMap<Variable, String> {
+        &self.variable_names
+    }
+
+    pub fn get_variable_category(&self, variable: Variable) -> Option<VariableCategory> {
+        self.variable_categories.get(&variable).map(|(category, _constraint)| *category)
+    }
+
+    pub fn get_variable_optionality(&self, variable: Variable) -> Option<VariableOptionality> {
+        self.variable_optionality.get(&variable).cloned()
     }
 
     pub(crate) fn is_variable_optional(&self, variable: Variable) -> bool {
@@ -275,6 +228,139 @@ impl BlockContext {
             VariableOptionality::Required => false,
             VariableOptionality::Optional => true,
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ScopeContext {
+    variable_declaration: HashMap<Variable, ScopeId>,
+    scope_parents: HashMap<ScopeId, ScopeId>,
+}
+
+impl ScopeContext {
+    pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
+        let variable_scope = self.variable_declaration.get(&variable);
+        match variable_scope {
+            None => false,
+            Some(variable_scope) => is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope),
+        }
+    }
+    pub fn get_variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
+        self.variable_declaration.iter()
+    }
+}
+
+#[derive(Debug)]
+pub struct BlockContext<'a> {
+    variable_registry: &'a mut VariableRegistry,
+    variable_declaration: HashMap<Variable, ScopeId>,
+    variable_names_index: &'a mut HashMap<String, Variable>,
+
+    scope_id_allocator: u16,
+    scope_parents: HashMap<ScopeId, ScopeId>,
+}
+
+impl<'a> BlockContext<'a> {
+    pub(crate) fn new(
+        variable_registry: &'a mut VariableRegistry,
+        input_variable_names: &'a mut HashMap<String, Variable>,
+    ) -> BlockContext<'a> {
+        let mut variable_declaration = HashMap::new();
+        input_variable_names.values().for_each(|v| {
+            variable_declaration.insert(v.clone(), ScopeId::INPUT);
+        });
+        let mut scope_parents = HashMap::new();
+        scope_parents.insert(ScopeId::ROOT, ScopeId::INPUT);
+        Self {
+            variable_registry,
+            variable_declaration,
+            variable_names_index: input_variable_names,
+            scope_id_allocator: 2, // `0`, `1` are reserved for INPUT, ROOT respectively.
+            scope_parents,
+        }
+    }
+
+    pub fn variables_declared(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_declaration.keys().cloned()
+    }
+
+    pub fn get_variable_named(&self, name: &str, scope: ScopeId) -> Option<&Variable> {
+        self.variable_names_index.get(name)
+    }
+
+    pub(crate) fn get_or_declare_variable(
+        &mut self,
+        name: &str,
+        scope: ScopeId,
+    ) -> Result<Variable, PatternDefinitionError> {
+        match self.variable_names_index.get(name) {
+            None => {
+                let variable = self.variable_registry.register_variable_named(name.to_string());
+                self.variable_declaration.insert(variable, scope);
+                self.variable_names_index.insert(name.to_string(), variable);
+                Ok(variable)
+            }
+            Some(existing_variable) => {
+                let existing_scope = self.variable_declaration.get_mut(existing_variable).unwrap();
+                if is_equal_or_parent_scope(&self.scope_parents, scope, *existing_scope) {
+                    // Parent defines same name: ok, reuse the variable
+                    Ok(*existing_variable)
+                } else if is_child_scope(&self.scope_parents, scope, *existing_scope) {
+                    // Child defines the same name: ok, reuse the variable, and change the declaration scope to the current one
+                    *existing_scope = scope;
+                    Ok(*existing_variable)
+                } else {
+                    Err(PatternDefinitionError::DisjointVariableReuse { variable_name: name.to_string() })
+                }
+            }
+        }
+    }
+
+    pub(crate) fn create_anonymous_variable(&mut self, scope: ScopeId) -> Result<Variable, PatternDefinitionError> {
+        let variable = self.variable_registry.register_anonymous_variable();
+        self.variable_declaration.insert(variable, scope);
+        Ok(variable)
+    }
+
+    pub fn get_variable(&self, name: &str) -> Option<Variable> {
+        self.variable_names_index.get(name).cloned()
+    }
+
+    pub fn get_variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
+        self.variable_declaration.iter()
+    }
+
+    pub fn named_variable_mapping(&self) -> &HashMap<String, Variable> {
+        &self.variable_names_index
+    }
+
+    pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
+        let variable_scope = self.variable_declaration.get(&variable);
+        match variable_scope {
+            None => false,
+            Some(variable_scope) => is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope),
+        }
+    }
+
+    pub(crate) fn create_child_scope(&mut self, parent: ScopeId) -> ScopeId {
+        let scope = ScopeId::new(self.scope_id_allocator);
+        debug_assert_ne!(scope, ScopeId::ROOT);
+        self.scope_id_allocator += 1;
+        self.scope_parents.insert(scope, parent);
+        scope
+    }
+
+    pub(crate) fn set_variable_category(
+        &mut self,
+        variable: Variable,
+        category: VariableCategory,
+        source: Constraint<Variable>,
+    ) -> Result<(), PatternDefinitionError> {
+        self.variable_registry.set_variable_category(variable, category, source)
+    }
+
+    pub(crate) fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
+        self.variable_registry.set_variable_is_optional(variable, optional)
     }
 }
 
@@ -286,13 +372,7 @@ fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_chi
     parents.get(&maybe_child).is_some_and(|&c| c == scope || is_child_scope(parents, scope, c))
 }
 
-impl Default for BlockContext {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Display for BlockContext {
+impl Display for VariableRegistry {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Named variables:")?;
         for var in self.variable_names.keys().sorted_unstable() {

@@ -9,31 +9,35 @@ use typeql::query::stage::delete::DeletableKind;
 
 use crate::{
     program::{
-        block::{FunctionalBlock, FunctionalBlockBuilder},
+        block::{BlockContext, FunctionalBlock, FunctionalBlockBuilder},
         function_signature::HashMapFunctionSignatureIndex,
     },
-    translation::constraints::{add_statement, add_typeql_relation, register_typeql_var},
+    translation::{
+        constraints::{add_statement, add_typeql_relation, register_typeql_var},
+        TranslationContext,
+    },
     PatternDefinitionError,
 };
 
 pub fn translate_insert(
+    context: &mut TranslationContext,
     insert: &typeql::query::stage::Insert,
-) -> Result<FunctionalBlockBuilder, PatternDefinitionError> {
-    let mut builder = FunctionalBlock::builder();
+) -> Result<FunctionalBlock, PatternDefinitionError> {
+    let mut builder = FunctionalBlock::builder(context.next_block_context());
     let function_index = HashMapFunctionSignatureIndex::empty();
     for statement in &insert.statements {
         add_statement(&function_index, &mut builder.conjunction_mut().constraints_mut(), statement)?;
     }
-    Ok(builder)
+    Ok(builder.finish())
 }
-//
 
 pub fn translate_delete(
+    context: &mut TranslationContext,
     delete: &typeql::query::stage::Delete,
-) -> Result<(FunctionalBlockBuilder, Vec<Variable>), PatternDefinitionError> {
-    let mut builder = FunctionalBlock::builder();
-    let mut tmp_conjunction = builder.conjunction_mut();
-    let mut constraints = tmp_conjunction.constraints_mut();
+) -> Result<(FunctionalBlock, Vec<Variable>), PatternDefinitionError> {
+    let mut builder = FunctionalBlock::builder(context.next_block_context());
+    let mut _conjunction = builder.conjunction_mut();
+    let mut constraints = _conjunction.constraints_mut();
     let mut deleted_concepts = Vec::new();
     for deletable in &delete.deletables {
         match &deletable.kind {
@@ -52,11 +56,6 @@ pub fn translate_delete(
             }
         }
     }
-    deleted_concepts.iter().try_for_each(|variable| {
-        // We need a constraint to be able to set this:
-        // builder.context_mut().set_variable_category(variable.clone(), VariableCategory::Thing, <<HERE>>)?;
-        Ok(())
-    })?;
 
-    Ok((builder, deleted_concepts))
+    Ok((builder.finish(), deleted_concepts))
 }

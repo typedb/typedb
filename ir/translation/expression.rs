@@ -26,9 +26,9 @@ use crate::{
     PatternDefinitionError,
 };
 
-pub(crate) fn build_expression(
+pub(crate) fn build_expression<'cx, 'reg>(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     expression: &TypeQLExpression,
 ) -> Result<ExpressionTree<Variable>, PatternDefinitionError> {
     let mut tree = ExpressionTree::empty();
@@ -36,9 +36,9 @@ pub(crate) fn build_expression(
     Ok(tree)
 }
 
-fn build_recursive(
+fn build_recursive<'cx, 'reg>(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     expression: &TypeQLExpression,
     tree: &mut ExpressionTree<Variable>,
 ) -> Result<ExpressionTreeNodeId, PatternDefinitionError> {
@@ -81,9 +81,9 @@ fn build_recursive(
     Ok(tree.add(expression))
 }
 
-fn build_function(
+fn build_function<'cx, 'reg>(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_>,
+    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
     function_call: &typeql::expression::FunctionCall,
     tree: &mut ExpressionTree<Variable>,
 ) -> Result<Expression<Variable>, PatternDefinitionError> {
@@ -166,25 +166,34 @@ fn to_builtin_id(
 
 #[cfg(test)]
 pub mod tests {
+    use answer::variable::Variable;
     use encoding::value::value::Value;
     use itertools::Itertools;
 
     use crate::{
         pattern::expression::{Expression, Operation, Operator},
-        program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
-        translation::match_::translate_match,
+        program::{
+            block::{BlockContext, FunctionalBlock},
+            function_signature::HashMapFunctionSignatureIndex,
+        },
+        translation::{match_::translate_match, TranslationContext},
         PatternDefinitionError,
     };
 
-    fn parse_query_get_match(query_str: &str) -> Result<FunctionalBlock, PatternDefinitionError> {
+    fn parse_query_get_match(
+        context: &mut TranslationContext,
+        query_str: &str,
+    ) -> Result<FunctionalBlock, PatternDefinitionError> {
         let mut query = typeql::parse_query(query_str).unwrap().into_pipeline();
         let match_ = query.stages.remove(0).into_match();
-        translate_match(&HashMapFunctionSignatureIndex::empty(), &match_).map(|builder| builder.finish())
+        translate_match(context, &HashMapFunctionSignatureIndex::empty(), &match_).map(|builder| builder.finish())
     }
 
     #[test]
     fn basic() {
+        let mut context = TranslationContext::new();
         let block = parse_query_get_match(
+            &mut context,
             "
             match
                 $y = 5 + 9 * 6;
@@ -192,7 +201,7 @@ pub mod tests {
         ",
         )
         .unwrap();
-        let var_y = block.context().get_variable_named("y", block.scope_id()).unwrap();
+        let var_y = get_named_variable(&context, "y");
 
         let lhs = block.conjunction().constraints()[0].as_expression_binding().unwrap().left();
         let rhs = block.conjunction().constraints()[0]
@@ -202,7 +211,7 @@ pub mod tests {
             .expression_tree_preorder()
             .cloned()
             .collect_vec();
-        assert_eq!(lhs, *var_y);
+        assert_eq!(lhs, var_y);
         assert_eq!(
             rhs,
             vec![
@@ -213,5 +222,16 @@ pub mod tests {
                 Expression::Operation(Operation::new(Operator::Add, 0, 3)),
             ]
         );
+    }
+
+    fn get_named_variable(translation_context: &TranslationContext, name: &str) -> Variable {
+        translation_context
+            .variable_registry
+            .get_variables_named()
+            .iter()
+            .find(|(k, v)| v.as_str() == name)
+            .unwrap()
+            .0
+            .clone()
     }
 }

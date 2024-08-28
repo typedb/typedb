@@ -14,6 +14,7 @@ package(default_visibility = [
     "//executor:__subpackages__",
     "//function:__subpackages__",
     "//ir:__subpackages__",
+    "//query:__subpackages__",
     "//storage:__subpackages__",
     "//tests:__subpackages__",
 ])

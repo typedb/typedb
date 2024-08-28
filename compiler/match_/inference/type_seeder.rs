@@ -6,8 +6,9 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     iter::zip,
+    sync::Arc,
 };
 
 use answer::{variable::Variable, Type as TypeAnnotation};
@@ -28,7 +29,11 @@ use ir::{
         variable_category::VariableCategory,
         Scope, ScopeId,
     },
-    program::{block::BlockContext, function::Function, function_signature::FunctionID},
+    program::{
+        block::{BlockContext, ScopeContext, VariableRegistry},
+        function::Function,
+        function_signature::FunctionID,
+    },
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -47,6 +52,7 @@ pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
     type_manager: &'this TypeManager,
     schema_functions: &'this IndexedAnnotatedFunctions,
     local_functions: Option<&'this AnnotatedUnindexedFunctions>,
+    variable_registry: &'this VariableRegistry,
 }
 
 impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
@@ -55,8 +61,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         type_manager: &'this TypeManager,
         schema_functions: &'this IndexedAnnotatedFunctions,
         local_functions: Option<&'this AnnotatedUnindexedFunctions>,
+        variable_registry: &'this VariableRegistry,
     ) -> Self {
-        TypeSeeder { snapshot, type_manager, schema_functions, local_functions }
+        TypeSeeder { snapshot, type_manager, schema_functions, local_functions, variable_registry }
     }
 
     fn get_function_annotations(&self, function_id: FunctionID) -> Option<&FunctionAnnotations> {
@@ -81,10 +88,22 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
     pub(crate) fn seed_types<'graph>(
         &self,
-        context: &BlockContext,
+        context: &ScopeContext,
+        upstream_annotations: &HashMap<Variable, Arc<HashSet<TypeAnnotation>>>,
         conjunction: &'graph Conjunction,
     ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
         let mut tig = self.build_recursive(context, conjunction);
+        // Pre-seed with upstream variable annotations.
+        for (variable, _) in context.get_variable_scopes() {
+            if let Some(annotations) = upstream_annotations.get(variable) {
+                Self::add_or_intersect(
+                    &mut tig.vertices,
+                    variable.clone(),
+                    Cow::Owned(annotations.iter().map(|x| x.clone()).collect()),
+                );
+            }
+        }
+        // Advanced TODO: Copying upstream binary constraints as schema constraints.
         self.seed_types_impl(&mut tig, context, &BTreeMap::new())?;
         Ok(tig)
     }
@@ -92,7 +111,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     pub(crate) fn seed_types_impl(
         &self,
         tig: &mut TypeInferenceGraph<'_>,
-        context: &BlockContext,
+        context: &ScopeContext,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         self.get_local_variables(context, tig.conjunction.scope_id()).for_each(|v| {
@@ -132,7 +151,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
     fn build_recursive<'conj>(
         &self,
-        context: &BlockContext,
+        context: &ScopeContext,
         conjunction: &'conj Conjunction,
     ) -> TypeInferenceGraph<'conj> {
         let mut nested_disjunctions = Vec::new();
@@ -164,7 +183,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
     fn build_disjunction_recursive<'conj>(
         &self,
-        context: &BlockContext,
+        context: &ScopeContext,
         parent_conjunction: &'conj Conjunction,
         disjunction: &'conj Disjunction,
     ) -> NestedTypeInferenceGraphDisjunction<'conj> {
@@ -218,7 +237,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
     fn get_local_variables<'a>(
         &'a self,
-        context: &'a BlockContext,
+        context: &'a ScopeContext,
         conjunction_scope_id: ScopeId,
     ) -> impl Iterator<Item = Variable> + '_ {
         context.get_variable_scopes().filter(move |(v, scope)| **scope == conjunction_scope_id).map(|(v, _)| *v)
@@ -227,13 +246,14 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     fn annotate_some_unannotated_vertex(
         &self,
         tig: &mut TypeInferenceGraph<'_>,
-        context: &BlockContext,
+        context: &ScopeContext,
     ) -> Result<bool, ConceptReadError> {
         let unannotated_vars =
             self.get_local_variables(context, tig.conjunction.scope_id()).find(|v| !tig.vertices.contains_key(v));
         if let Some(v) = unannotated_vars {
-            let annotations = self
-                .get_unbounded_type_annotations(context.get_variable_category(v).unwrap_or(VariableCategory::Type))?;
+            let annotations = self.get_unbounded_type_annotations(
+                self.variable_registry.get_variable_category(v).unwrap_or(VariableCategory::Type),
+            )?;
             tig.vertices.insert(v, annotations);
             Ok(true)
         } else {
@@ -477,12 +497,11 @@ trait UnaryConstraint {
     ) -> Result<(), TypeInferenceError>;
 }
 
-fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
-    seeder: &TypeSeeder<'_, Snapshot>,
+pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
+    snapshot: &Snapshot,
+    type_manager: &TypeManager,
     label_value: &encoding::value::label::Label<'static>,
 ) -> Result<Option<TypeAnnotation>, ConceptReadError> {
-    let type_manager = seeder.type_manager;
-    let snapshot = seeder.snapshot;
     if let Some(t) = type_manager.get_attribute_type(snapshot, label_value)?.map(TypeAnnotation::Attribute) {
         Ok(Some(t))
     } else if let Some(t) = type_manager.get_entity_type(snapshot, label_value)?.map(TypeAnnotation::Entity) {
@@ -502,9 +521,12 @@ impl UnaryConstraint for Label<Variable> {
         seeder: &TypeSeeder<'_, Snapshot>,
         tig_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        let annotation_opt =
-            get_type_annotation_from_label(seeder, &encoding::value::label::Label::parse_from(self.type_label()))
-                .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+        let annotation_opt = get_type_annotation_from_label(
+            seeder.snapshot,
+            seeder.type_manager,
+            &encoding::value::label::Label::parse_from(self.type_label()),
+        )
+        .map_err(|source| TypeInferenceError::ConceptRead { source })?;
         if let Some(annotation) = annotation_opt {
             TypeSeeder::<Snapshot>::add_or_intersect(
                 tig_vertices,
@@ -1242,13 +1264,14 @@ impl BinaryConstraint for Relates<Variable> {
 
 #[cfg(test)]
 pub mod tests {
-    use std::collections::{BTreeMap, BTreeSet};
+    use std::collections::{BTreeMap, BTreeSet, HashMap};
 
     use answer::Type as TypeAnnotation;
     use encoding::value::{label::Label, value_type::ValueType};
     use ir::{
         pattern::constraint::IsaKind,
         program::block::{BlockContext, FunctionalBlock},
+        translation::TranslationContext,
     };
     use storage::snapshot::CommittableSnapshot;
 
@@ -1277,7 +1300,8 @@ pub mod tests {
 
         {
             // Case 1: $a isa cat, has animal-name $n;
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
             let var_name = conjunction.get_or_declare_variable("name").unwrap();
@@ -1343,8 +1367,14 @@ pub mod tests {
 
             let snapshot = storage.clone().open_snapshot_write();
             let empty_function_cache = IndexedAnnotatedFunctions::empty();
-            let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
-            let tig = seeder.seed_types(block.context(), conjunction).unwrap();
+            let seeder = TypeSeeder::new(
+                &snapshot,
+                &type_manager,
+                &empty_function_cache,
+                None,
+                &translation_context.variable_registry,
+            );
+            let tig = seeder.seed_types(block.scope_context(), &HashMap::new(), conjunction).unwrap();
             assert_eq!(expected_tig, tig);
         }
     }
@@ -1361,7 +1391,8 @@ pub mod tests {
 
         {
             // // Case 1: $a has $n;
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
             let var_name = conjunction.get_or_declare_variable("name").unwrap();
@@ -1399,8 +1430,14 @@ pub mod tests {
 
             let snapshot = storage.clone().open_snapshot_write();
             let empty_function_cache = IndexedAnnotatedFunctions::empty();
-            let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
-            let tig = seeder.seed_types(block.context(), conjunction).unwrap();
+            let seeder = TypeSeeder::new(
+                &snapshot,
+                &type_manager,
+                &empty_function_cache,
+                None,
+                &translation_context.variable_registry,
+            );
+            let tig = seeder.seed_types(block.scope_context(), &HashMap::new(), conjunction).unwrap();
             if expected_tig != tig {
                 // We need this because of non-determinism
                 expected_tig.vertices.get_mut(&var_animal).unwrap().insert(type_fears.clone());
@@ -1411,7 +1448,6 @@ pub mod tests {
 
     #[test]
     fn test_comparison() {
-        let mut context = BlockContext::new();
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
@@ -1426,7 +1462,8 @@ pub mod tests {
         };
         {
             // // Case 1: $a > $b;
-            let mut builder = FunctionalBlock::builder();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let var_a = conjunction.get_or_declare_variable("a").unwrap();
             let var_b = conjunction.get_or_declare_variable("b").unwrap();
@@ -1473,8 +1510,14 @@ pub mod tests {
 
             let snapshot = storage.clone().open_snapshot_write();
             let empty_function_cache = IndexedAnnotatedFunctions::empty();
-            let seeder = TypeSeeder::new(&snapshot, &type_manager, &empty_function_cache, None);
-            let tig = seeder.seed_types(&context, conjunction).unwrap();
+            let seeder = TypeSeeder::new(
+                &snapshot,
+                &type_manager,
+                &empty_function_cache,
+                None,
+                &translation_context.variable_registry,
+            );
+            let tig = seeder.seed_types(block.scope_context(), &HashMap::new(), conjunction).unwrap();
             assert_eq!(expected_tig.vertices, tig.vertices);
             assert_eq!(expected_tig, tig);
         }

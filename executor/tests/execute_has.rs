@@ -10,7 +10,7 @@ use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     instructions::{ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs, IsaReverseInstruction},
     planner::{
-        pattern_plan::{IntersectionStep, PatternPlan, Step},
+        pattern_plan::{IntersectionProgram, MatchProgram, Program},
         program_plan::ProgramPlan,
     },
 };
@@ -21,7 +21,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
-use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock};
+use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -108,8 +108,9 @@ fn traverse_has_unbounded_sorted_from() {
     //    $person isa person, has age $age;
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
@@ -122,24 +123,31 @@ fn traverse_has_unbounded_sorted_from() {
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
-    block.add_limit(3);
-    let filter = block.add_filter(vec!["person", "age"]).unwrap().clone();
-    let entry = block.finish();
+    builder.add_limit(3);
+    let filter = builder.add_filter(vec!["person", "age"]).unwrap().clone();
+    let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
-    let (entry_annotations, annotated_functions) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, annotated_functions) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_person,
         vec![ConstraintInstruction::Has(HasInstruction::new(has_age, Inputs::None([]), &entry_annotations))],
         &[var_person, var_age],
     ))];
     // TODO: incorporate the filter
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -170,8 +178,9 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     //    $person-2 has name $name; # reverse!
 
     // IR
-    let mut block = FunctionalBlock::builder();
-    let mut conjunction = block.conjunction_mut();
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
     let var_person_1 = conjunction.get_or_declare_variable("person-1").unwrap();
@@ -189,16 +198,23 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
-    block.add_limit(3);
+    builder.add_limit(3);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let entry = block.finish();
-    let (entry_annotations, annotated_functions) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let entry = builder.finish();
+    let (entry_annotations, annotated_functions) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
     let steps = vec![
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_person_1,
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_person_1,
@@ -207,7 +223,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
             ))],
             &[var_person_1],
         )),
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_name,
             vec![
                 ConstraintInstruction::Has(HasInstruction::new(
@@ -225,7 +241,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
         )),
     ];
     // TODO: incorporate the filter
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -255,7 +271,9 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     //    $person has name $name, has age $age;
 
     // IR
-    let mut builder = FunctionalBlock::builder();
+
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
@@ -281,11 +299,18 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, annotated_functions) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, annotated_functions) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_person,
         vec![
             ConstraintInstruction::Has(HasInstruction::new(has_age, Inputs::None([]), &entry_annotations)),
@@ -294,7 +319,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         &[var_person, var_name, var_age],
     ))];
     // TODO: incorporate the filter
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -324,7 +349,9 @@ fn traverse_has_unbounded_sorted_to_merged() {
     //    $person has $attribute;
 
     // IR
-    let mut builder = FunctionalBlock::builder();
+
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
@@ -336,16 +363,23 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, annotated_functions) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, annotated_functions) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_attribute,
         vec![ConstraintInstruction::Has(HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations))],
         &[var_person, var_attribute],
     ))];
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -391,7 +425,9 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     //    $person has age $age;
 
     // IR
-    let mut builder = FunctionalBlock::builder();
+
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
@@ -410,11 +446,18 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, annotated_functions) =
-        infer_types(&entry, vec![], &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty()).unwrap();
+    let (entry_annotations, annotated_functions) = infer_types(
+        &entry,
+        vec![],
+        &snapshot,
+        &type_manager,
+        &IndexedAnnotatedFunctions::empty(),
+        &translation_context.variable_registry,
+    )
+    .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_age,
         vec![ConstraintInstruction::HasReverse(HasReverseInstruction::new(
             has_age,
@@ -423,7 +466,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         ))],
         &[var_person, var_age],
     ))];
-    let pattern_plan = PatternPlan::new(steps, entry.context().clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor

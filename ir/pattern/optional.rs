@@ -26,10 +26,10 @@ impl Optional {
         Self { conjunction: Conjunction::new(scope_id) }
     }
 
-    pub(super) fn new_builder<'cx>(
-        context: &'cx mut BlockContext,
+    pub(super) fn new_builder<'cx, 'reg>(
+        context: &'cx mut BlockContext<'reg>,
         optional: &'cx mut Optional,
-    ) -> ConjunctionBuilder<'cx> {
+    ) -> ConjunctionBuilder<'cx, 'reg> {
         ConjunctionBuilder::new(context, &mut optional.conjunction)
     }
 

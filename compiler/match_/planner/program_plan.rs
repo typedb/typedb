@@ -11,21 +11,20 @@ use encoding::graph::definition::definition_key::DefinitionKey;
 
 use crate::{
     expression::compiled_expression::{CompiledExpression, ExpressionValueType},
-    match_::planner::{function_plan::FunctionPlan, pattern_plan::PatternPlan},
+    match_::planner::{function_plan::FunctionPlan, pattern_plan::MatchProgram},
 };
 
 pub struct ProgramPlan {
     // TODO: Update 'Program' to refer to the whole pipeline & to
     // TODO: krishnan: Revert pub
-    pub entry: PatternPlan,
-    // TODO: this should have ValueType not ValueTypeCategory
+    pub entry: MatchProgram,
     pub entry_value_type_annotations: HashMap<Variable, ExpressionValueType>,
     pub functions: HashMap<DefinitionKey<'static>, FunctionPlan>,
 }
 
 impl ProgramPlan {
     pub fn new(
-        entry_plan: PatternPlan,
+        entry_plan: MatchProgram,
         entry_expressions: HashMap<Variable, CompiledExpression>,
         functions: HashMap<DefinitionKey<'static>, FunctionPlan>,
     ) -> Self {
@@ -34,7 +33,7 @@ impl ProgramPlan {
         Self { entry: entry_plan, entry_value_type_annotations, functions }
     }
 
-    pub fn entry(&self) -> &PatternPlan {
+    pub fn entry(&self) -> &MatchProgram {
         &self.entry
     }
 
