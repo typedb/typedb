@@ -12,23 +12,23 @@ use crate::{
     pipeline::{
         accumulator::{AccumulatedRowIterator, AccumulatingStageAPI, Accumulator},
         common::PipelineStageCommon,
-        stage_wrappers::WritablePipelineStage,
+        stage_wrappers::WritePipelineStage,
         PipelineContext, PipelineError,
     },
     write::delete::DeleteExecutor,
 };
 
 pub type DeleteAccumulator<Snapshot: WritableSnapshot + 'static> =
-    Accumulator<Snapshot, WritablePipelineStage<Snapshot>, DeleteExecutor>;
+    Accumulator<Snapshot, WritePipelineStage<Snapshot>, DeleteExecutor>;
 
 pub type DeleteStage<Snapshot: WritableSnapshot + 'static> = PipelineStageCommon<
     Snapshot,
-    WritablePipelineStage<Snapshot>,
+    WritePipelineStage<Snapshot>,
     DeleteAccumulator<Snapshot>,
     AccumulatedRowIterator<Snapshot>,
 >;
 impl<Snapshot: WritableSnapshot + 'static> DeleteStage<Snapshot> {
-    pub fn new(upstream: Box<WritablePipelineStage<Snapshot>>, executor: DeleteExecutor) -> DeleteStage<Snapshot> {
+    pub fn new(upstream: Box<WritePipelineStage<Snapshot>>, executor: DeleteExecutor) -> DeleteStage<Snapshot> {
         Self::new_impl(Accumulator::new(upstream, executor))
     }
 }

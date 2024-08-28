@@ -57,7 +57,7 @@ fn insert_match_insert_pipeline() {
     .unwrap()
     .into_pipeline();
     query_manager
-        .prepare_writable_pipeline(
+        .prepare_write_pipeline(
             snapshot,
             &type_manager,
             thing_manager,
@@ -91,7 +91,7 @@ fn insert_insert_pipeline() {
     .unwrap()
     .into_pipeline();
     query_manager
-        .prepare_writable_pipeline(
+        .prepare_write_pipeline(
             snapshot,
             &type_manager,
             thing_manager,

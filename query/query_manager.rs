@@ -20,7 +20,7 @@ use executor::{
         initial::InitialStage,
         insert::InsertStage,
         match_::MatchStage,
-        stage_wrappers::{ReadablePipelineStage, WritablePipelineStage},
+        stage_wrappers::{ReadPipelineStage, WritePipelineStage},
         PipelineContext,
     },
     write::insert::InsertExecutor,
@@ -64,7 +64,7 @@ impl QueryManager {
         }
     }
 
-    pub fn prepare_readable_pipeline<Snapshot: ReadableSnapshot + 'static>(
+    pub fn prepare_read_pipeline<Snapshot: ReadableSnapshot + 'static>(
         &self,
         snapshot: Snapshot,
         thing_manager: ThingManager,
@@ -73,7 +73,7 @@ impl QueryManager {
         statistics: &Statistics,
         schema_function_annotations: &IndexedAnnotatedFunctions,
         query: &typeql::query::Pipeline,
-    ) -> Result<ReadablePipelineStage<Snapshot>, QueryError> {
+    ) -> Result<ReadPipelineStage<Snapshot>, QueryError> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         let mut snapshot = snapshot;
         // 1: Translate
@@ -112,13 +112,13 @@ impl QueryManager {
             compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
 
         let context = PipelineContext::Shared(Arc::new(snapshot), Arc::new(thing_manager));
-        let mut latest_stage = ReadablePipelineStage::Initial(InitialStage::new(context));
+        let mut latest_stage = ReadPipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
                 CompiledStage::Match(pattern_plan) => {
                     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new()); // TODO: Pass expressions & functions
                     let match_stage = MatchStage::new(Box::new(latest_stage), program_plan);
-                    latest_stage = ReadablePipelineStage::Match(match_stage);
+                    latest_stage = ReadPipelineStage::Match(match_stage);
                 }
                 CompiledStage::Insert(insert_plan) => {
                     todo!("Illegal, return error")
@@ -131,7 +131,7 @@ impl QueryManager {
         Ok(latest_stage)
     }
 
-    pub fn prepare_writable_pipeline<Snapshot: WritableSnapshot>(
+    pub fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
         &self,
         snapshot: Snapshot,
         type_manager: &TypeManager,
@@ -140,7 +140,7 @@ impl QueryManager {
         statistics: &Statistics,
         schema_function_annotations: &IndexedAnnotatedFunctions,
         query: &typeql::query::Pipeline,
-    ) -> Result<WritablePipelineStage<Snapshot>, QueryError> {
+    ) -> Result<WritePipelineStage<Snapshot>, QueryError> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         let mut snapshot = snapshot;
         // 1: Translate
@@ -179,7 +179,7 @@ impl QueryManager {
             compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
 
         let context = PipelineContext::Owned(snapshot, thing_manager);
-        let mut latest_stage = WritablePipelineStage::Initial(InitialStage::new(context));
+        let mut latest_stage = WritePipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
                 CompiledStage::Match(match_plan) => {
@@ -187,7 +187,7 @@ impl QueryManager {
                 }
                 CompiledStage::Insert(insert_plan) => {
                     let insert_stage = InsertStage::new(Box::new(latest_stage), InsertExecutor::new(insert_plan));
-                    latest_stage = WritablePipelineStage::Insert(insert_stage);
+                    latest_stage = WritePipelineStage::Insert(insert_stage);
                 }
                 CompiledStage::Delete(delete) => {
                     todo!()

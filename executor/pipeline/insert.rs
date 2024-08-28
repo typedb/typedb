@@ -12,23 +12,23 @@ use crate::{
     pipeline::{
         accumulator::{AccumulatedRowIterator, AccumulatingStageAPI, Accumulator},
         common::PipelineStageCommon,
-        stage_wrappers::WritablePipelineStage,
+        stage_wrappers::WritePipelineStage,
         PipelineContext, PipelineError,
     },
     write::insert::InsertExecutor,
 };
 
 pub type InsertAccumulator<Snapshot: WritableSnapshot + 'static> =
-    Accumulator<Snapshot, WritablePipelineStage<Snapshot>, InsertExecutor>;
+    Accumulator<Snapshot, WritePipelineStage<Snapshot>, InsertExecutor>;
 
 pub type InsertStage<Snapshot: WritableSnapshot + 'static> = PipelineStageCommon<
     Snapshot,
-    WritablePipelineStage<Snapshot>,
+    WritePipelineStage<Snapshot>,
     InsertAccumulator<Snapshot>,
     AccumulatedRowIterator<Snapshot>,
 >;
 impl<Snapshot: WritableSnapshot + 'static> InsertStage<Snapshot> {
-    pub fn new(upstream: Box<WritablePipelineStage<Snapshot>>, executor: InsertExecutor) -> InsertStage<Snapshot> {
+    pub fn new(upstream: Box<WritePipelineStage<Snapshot>>, executor: InsertExecutor) -> InsertStage<Snapshot> {
         Self::new_impl(Accumulator::new(upstream, executor))
     }
 }

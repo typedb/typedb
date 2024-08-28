@@ -15,89 +15,89 @@ use crate::{
     },
 };
 
-pub enum ReadablePipelineStage<Snapshot: ReadableSnapshot + 'static> {
+pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
-    Match(MatchStage<Snapshot, ReadablePipelineStage<Snapshot>>),
+    Match(MatchStage<Snapshot, ReadPipelineStage<Snapshot>>),
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadablePipelineStage<Snapshot> {
+impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadPipelineStage<Snapshot> {
     type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
-            ReadablePipelineStage::Initial(initial) => initial.next(),
-            ReadablePipelineStage::Match(match_) => match_.next(),
+            ReadPipelineStage::Initial(initial) => initial.next(),
+            ReadPipelineStage::Match(match_) => match_.next(),
         }
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for ReadablePipelineStage<Snapshot> {
+impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
     fn initialise(&mut self) -> Result<(), PipelineError> {
         match self {
-            ReadablePipelineStage::Match(match_) => match_.initialise(),
-            ReadablePipelineStage::Initial(initial) => initial.initialise(),
+            ReadPipelineStage::Match(match_) => match_.initialise(),
+            ReadPipelineStage::Initial(initial) => initial.initialise(),
         }
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> IteratingStageAPI<Snapshot> for ReadablePipelineStage<Snapshot> {
+impl<Snapshot: ReadableSnapshot + 'static> IteratingStageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
     fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         match self {
-            ReadablePipelineStage::Match(match_) => match_.try_get_shared_context(),
-            ReadablePipelineStage::Initial(initial) => initial.try_get_shared_context(),
+            ReadPipelineStage::Match(match_) => match_.try_get_shared_context(),
+            ReadPipelineStage::Initial(initial) => initial.try_get_shared_context(),
         }
     }
 
     fn finalise_and_into_context(self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         // TODO: Ensure the stages are done somehow
         match self {
-            ReadablePipelineStage::Match(match_) => match_.finalise_and_into_context(),
-            ReadablePipelineStage::Initial(initial) => initial.finalise_and_into_context(),
+            ReadPipelineStage::Match(match_) => match_.finalise_and_into_context(),
+            ReadPipelineStage::Initial(initial) => initial.finalise_and_into_context(),
         }
     }
 }
 
-pub enum WritablePipelineStage<Snapshot: WritableSnapshot + 'static> {
+pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
-    Match(MatchStage<Snapshot, WritablePipelineStage<Snapshot>>),
+    Match(MatchStage<Snapshot, WritePipelineStage<Snapshot>>),
     Insert(InsertStage<Snapshot>),
 }
 
-impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WritablePipelineStage<Snapshot> {
+impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WritePipelineStage<Snapshot> {
     type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
-            WritablePipelineStage::Initial(initial) => initial.next(),
-            WritablePipelineStage::Match(match_) => match_.next(),
-            WritablePipelineStage::Insert(insert) => insert.next(),
+            WritePipelineStage::Initial(initial) => initial.next(),
+            WritePipelineStage::Match(match_) => match_.next(),
+            WritePipelineStage::Insert(insert) => insert.next(),
         }
     }
 }
 
-impl<Snapshot: WritableSnapshot + 'static> PipelineStageAPI<Snapshot> for WritablePipelineStage<Snapshot> {
+impl<Snapshot: WritableSnapshot + 'static> PipelineStageAPI<Snapshot> for WritePipelineStage<Snapshot> {
     fn initialise(&mut self) -> Result<(), PipelineError> {
         match self {
-            WritablePipelineStage::Match(match_) => match_.initialise(),
-            WritablePipelineStage::Initial(initial) => initial.initialise(),
-            WritablePipelineStage::Insert(insert) => insert.initialise(),
+            WritePipelineStage::Match(match_) => match_.initialise(),
+            WritePipelineStage::Initial(initial) => initial.initialise(),
+            WritePipelineStage::Insert(insert) => insert.initialise(),
         }
     }
 }
-impl<Snapshot: WritableSnapshot + 'static> IteratingStageAPI<Snapshot> for WritablePipelineStage<Snapshot> {
+impl<Snapshot: WritableSnapshot + 'static> IteratingStageAPI<Snapshot> for WritePipelineStage<Snapshot> {
     fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         match self {
-            WritablePipelineStage::Match(match_) => match_.try_get_shared_context(),
-            WritablePipelineStage::Initial(initial) => initial.try_get_shared_context(),
-            WritablePipelineStage::Insert(insert) => insert.try_get_shared_context(),
+            WritePipelineStage::Match(match_) => match_.try_get_shared_context(),
+            WritePipelineStage::Initial(initial) => initial.try_get_shared_context(),
+            WritePipelineStage::Insert(insert) => insert.try_get_shared_context(),
         }
     }
 
     fn finalise_and_into_context(self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         match self {
-            WritablePipelineStage::Match(match_) => match_.finalise_and_into_context(),
-            WritablePipelineStage::Initial(initial) => initial.finalise_and_into_context(),
-            WritablePipelineStage::Insert(insert) => insert.finalise_and_into_context(),
+            WritePipelineStage::Match(match_) => match_.finalise_and_into_context(),
+            WritePipelineStage::Initial(initial) => initial.finalise_and_into_context(),
+            WritePipelineStage::Insert(insert) => insert.finalise_and_into_context(),
         }
     }
 }

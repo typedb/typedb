@@ -83,7 +83,7 @@ fn test_insert() {
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
     let mut pipeline = context
         .query_manager
-        .prepare_writable_pipeline(
+        .prepare_write_pipeline(
             snapshot,
             &context.type_manager,
             thing_manager,
@@ -123,7 +123,7 @@ fn test_dummy_match() {
     // // Executor
     let mut pipeline = context
         .query_manager
-        .prepare_writable_pipeline(
+        .prepare_write_pipeline(
             snapshot,
             &context.type_manager,
             thing_manager,
@@ -155,7 +155,7 @@ fn test_match_as_pipeline() {
     let insert = typeql::parse_query(query_str).unwrap().into_pipeline();
     let mut insert_pipeline = context
         .query_manager
-        .prepare_writable_pipeline(
+        .prepare_write_pipeline(
             snapshot,
             &context.type_manager,
             thing_manager,
@@ -184,7 +184,7 @@ fn test_match_as_pipeline() {
     // // Executor
     let mut pipeline = context
         .query_manager
-        .prepare_writable_pipeline(
+        .prepare_write_pipeline(
             snapshot,
             &context.type_manager,
             thing_manager,
@@ -285,7 +285,7 @@ fn test_has_planning_traversal() {
     let query = "match $person isa person, has name $name, has age $age;";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
     let mut pipeline = query_manager
-        .prepare_readable_pipeline(
+        .prepare_read_pipeline(
             snapshot,
             thing_manager,
             &type_manager,
@@ -318,7 +318,7 @@ fn delete_has() {
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
     let mut insert_pipeline = context
         .query_manager
-        .prepare_writable_pipeline(
+        .prepare_write_pipeline(
             snapshot,
             &context.type_manager,
             thing_manager,
@@ -347,7 +347,7 @@ fn delete_has() {
     let delete_query = typeql::parse_query(delete_query_str).unwrap().into_pipeline();
     let mut insert_pipeline = context
         .query_manager
-        .prepare_writable_pipeline(
+        .prepare_write_pipeline(
             snapshot,
             &context.type_manager,
             thing_manager,
