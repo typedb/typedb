@@ -103,6 +103,7 @@ fn process_type_definitions(
     declarations
         .clone()
         .try_for_each(|declaration| define_types(snapshot, type_manager, thing_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| define_alias(snapshot, type_manager, declaration))?;
     declarations
         .clone()
         .try_for_each(|declaration| define_value_type(snapshot, type_manager, thing_manager, declaration))?;
@@ -110,7 +111,6 @@ fn process_type_definitions(
         .clone()
         .try_for_each(|declaration| define_type_annotations(snapshot, type_manager, thing_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| define_sub(snapshot, type_manager, thing_manager, declaration))?;
-    declarations.clone().try_for_each(|declaration| define_alias(snapshot, type_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| {
         define_relates_with_annotations(snapshot, type_manager, thing_manager, declaration)
     })?;
