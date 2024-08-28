@@ -965,7 +965,7 @@ fn define_functions(
     Err(DefineError::Unimplemented)
 }
 
-pub(crate) fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
+fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'a>,
@@ -991,7 +991,7 @@ pub(crate) fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
     }
 }
 
-pub(crate) fn check_can_and_need_define_override<'a, CAP: Capability<'a>>(
+fn check_can_and_need_define_override<'a, CAP: Capability<'a>>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'a>,
@@ -1019,7 +1019,7 @@ pub(crate) fn check_can_and_need_define_override<'a, CAP: Capability<'a>>(
     }
 }
 
-pub(crate) fn type_convert_and_validate_annotation_definition_need<'a, T: KindAPI<'a>>(
+fn type_convert_and_validate_annotation_definition_need<'a, T: KindAPI<'a>>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'a>,
@@ -1043,7 +1043,7 @@ pub(crate) fn type_convert_and_validate_annotation_definition_need<'a, T: KindAP
     }
 }
 
-pub(crate) fn capability_convert_and_validate_annotation_definition_need<'a, CAP: Capability<'a>>(
+fn capability_convert_and_validate_annotation_definition_need<'a, CAP: Capability<'a>>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'a>,
@@ -1094,8 +1094,8 @@ pub enum DefineError {
     DefinitionResolution {
         source: SymbolResolutionError,
     },
-    TypeCreateRequiresKind {
-        type_declaration: Type,
+    LiteralParseError {
+        source: LiteralParseError,
     },
     TypeCreateError {
         source: ConceptWriteError,
@@ -1168,9 +1168,6 @@ pub enum DefineError {
         plays: TypeQLPlays,
         source: ConceptWriteError,
     },
-    OwnsAttributeMustBeLabelOrList {
-        owns: TypeQLOwns,
-    },
     CreateOwns {
         owns: TypeQLOwns,
         source: ConceptWriteError,
@@ -1211,9 +1208,6 @@ pub enum DefineError {
         capability: TypeQLCapability,
         expected_kind: Kind,
         actual_kind: Kind,
-    },
-    LiteralParseError {
-        source: LiteralParseError,
     },
 }
 

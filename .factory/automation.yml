@@ -59,7 +59,7 @@ build:
 #      command: |
 #        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
 #        bazel test //test/behaviour/connection/... --test_output=streamed
-#    test-behaviour-concept: # TODO: Turn it on before merge
+#    test-behaviour-concept: # TODO: Turn it on when concept api and its tests are refactored based on overrides deletion
 #      image: vaticle-ubuntu-22.04
 #      dependencies: [build]
 #      command: |

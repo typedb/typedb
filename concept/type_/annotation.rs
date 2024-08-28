@@ -555,6 +555,22 @@ impl AnnotationCategory {
             | AnnotationCategory::Values => true,
         }
     }
+
+    pub fn boolean(&self) -> bool {
+        match self {
+            | AnnotationCategory::Abstract
+            | AnnotationCategory::Key
+            | AnnotationCategory::Unique
+            | AnnotationCategory::Distinct
+            | AnnotationCategory::Independent
+            | AnnotationCategory::Cascade => true,
+
+            | AnnotationCategory::Cardinality
+            | AnnotationCategory::Regex
+            | AnnotationCategory::Range
+            | AnnotationCategory::Values => false,
+        }
+    }
 }
 
 pub trait DefaultFrom<FromType, ErrorType> {
