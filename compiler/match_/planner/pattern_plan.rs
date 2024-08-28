@@ -272,7 +272,11 @@ impl PatternPlan {
                 }
             }
         }
-        programs.push(Program::Intersection(IntersectionProgram::new(sort_variable.unwrap(), program_instructions, &outputs)));
+        programs.push(Program::Intersection(IntersectionProgram::new(
+            sort_variable.unwrap(),
+            program_instructions,
+            &outputs,
+        )));
         Self { programs, context: context.clone() }
     }
 
