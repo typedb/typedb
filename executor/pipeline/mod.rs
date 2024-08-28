@@ -28,8 +28,8 @@ pub mod match_;
 pub mod stage_wrappers;
 
 pub trait StageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
-    type AsIterator: StageIteratorAPI<Snapshot>;
-    fn into_iterator(self) -> Result<Self::AsIterator, PipelineError>;
+    type StageIterator: StageIteratorAPI<Snapshot>;
+    fn into_iterator(self) -> Result<Self::StageIterator, PipelineError>;
 }
 
 pub trait StageIteratorAPI<Snapshot: ReadableSnapshot>:

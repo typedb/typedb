@@ -84,6 +84,7 @@ impl<Snapshot: WritableSnapshot + 'static> PipelineStageAPI<Snapshot> for WriteP
         }
     }
 }
+
 impl<Snapshot: WritableSnapshot + 'static> StageIteratorAPI<Snapshot> for WritePipelineStage<Snapshot> {
     fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         match self {

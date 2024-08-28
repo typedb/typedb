@@ -21,7 +21,7 @@ where
     Snapshot: ReadableSnapshot + 'static,
     Stage: StageAPI<Snapshot>,
 {
-    stage_or_iterator: Option<Either<Stage, Stage::AsIterator>>,
+    stage_or_iterator: Option<Either<Stage, Stage::StageIterator>>,
     error: Option<PipelineError>,
     phantom: PhantomData<Snapshot>,
 }

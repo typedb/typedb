@@ -50,9 +50,9 @@ impl<Snapshot: ReadableSnapshot + 'static, PreviousStage: PipelineStageAPI<Snaps
 impl<Snapshot: ReadableSnapshot, PreviousStage: PipelineStageAPI<Snapshot>> StageAPI<Snapshot>
     for LazyMatchStage<Snapshot, PreviousStage>
 {
-    type AsIterator = MatchStageIterator<Snapshot>;
+    type StageIterator = MatchStageIterator<Snapshot>;
 
-    fn into_iterator(mut self) -> Result<Self::AsIterator, PipelineError> {
+    fn into_iterator(mut self) -> Result<Self::StageIterator, PipelineError> {
         self.previous.initialise()?;
         let LazyMatchStage { previous: mut previous, program_plan, .. } = self;
         let mut context = previous.try_get_shared_context()?;

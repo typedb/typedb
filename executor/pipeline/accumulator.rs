@@ -102,9 +102,9 @@ impl<Snapshot, PipelineStageType, Executor> StageAPI<Snapshot> for Accumulator<S
         PipelineStageType: PipelineStageAPI<Snapshot>,
         Executor: AccumulatingStageAPI<Snapshot>
 {
-    type AsIterator = AccumulatedRowIterator<Snapshot>;
+    type StageIterator = AccumulatedRowIterator<Snapshot>;
 
-    fn into_iterator(mut self) -> Result<Self::AsIterator, PipelineError> {
+    fn into_iterator(mut self) -> Result<Self::StageIterator, PipelineError> {
         self.previous.initialise()?;
         self.accumulate_process_and_into_iterator()
     }

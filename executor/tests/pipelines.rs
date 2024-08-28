@@ -315,7 +315,7 @@ fn delete_has() {
             &insert_query,
         )
         .unwrap();
-    insert_pipeline.initialise().unwrap();
+    let iterator = insert_pipeline.into_iterator();
 
     assert!(matches!(insert_pipeline.next(), Some(Ok(_))));
     assert!(insert_pipeline.next().is_none());
