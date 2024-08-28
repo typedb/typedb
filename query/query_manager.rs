@@ -64,18 +64,6 @@ impl QueryManager {
         }
     }
 
-    pub fn execute_pipeline<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: Snapshot,
-        type_manager: &TypeManager,
-        function_manager: &FunctionManager,
-        statistics: &Statistics,
-        schema_function_annotations: &IndexedAnnotatedFunctions,
-        query: &typeql::query::Pipeline,
-    ) -> Result<(), QueryError> {
-        todo!()
-    }
-
     pub fn prepare_readable_pipeline<Snapshot: ReadableSnapshot + 'static>(
         &self,
         snapshot: Snapshot,
@@ -146,8 +134,8 @@ impl QueryManager {
     pub fn prepare_writable_pipeline<Snapshot: WritableSnapshot>(
         &self,
         snapshot: Snapshot,
-        thing_manager: ThingManager,
         type_manager: &TypeManager,
+        thing_manager: ThingManager,
         function_manager: &FunctionManager,
         statistics: &Statistics,
         schema_function_annotations: &IndexedAnnotatedFunctions,
@@ -158,7 +146,6 @@ impl QueryManager {
         // 1: Translate
         let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry } =
             translate_pipeline(&snapshot, function_manager, query)?;
-        // TODO: Do we optimise here or after type-inference?
 
         // 2: Annotate
         let AnnotatedPipeline { annotated_preamble, annotated_stages } = infer_types_for_pipeline(
@@ -208,16 +195,6 @@ impl QueryManager {
             }
         }
         Ok(latest_stage)
-    }
-
-    // TODO: take in parsed TypeQL clause
-    fn create_executor(&self, clause: &str) {
-        // match clause
-    }
-
-    fn create_match_executor(&self, query_functions: Vec<Function<usize>>) {
-        // let conjunction = Conjunction::new();
-        // ... build conjunction...
     }
 }
 

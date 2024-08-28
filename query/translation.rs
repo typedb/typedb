@@ -63,8 +63,8 @@ pub(super) fn translate_pipeline(
 
     let mut translation_context = TranslationContext::new();
     let mut translated_stages: Vec<TranslatedStage> = Vec::with_capacity(query.stages.len());
-    for typeql_stage in &query.stages {
-        let translated = translate_stage(&mut translation_context, &all_function_signatures, typeql_stage)?;
+    for stage in &query.stages {
+        let translated = translate_stage(&mut translation_context, &all_function_signatures, stage)?;
         translated_stages.push(translated);
     }
     Ok(TranslatedPipeline {

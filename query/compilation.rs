@@ -9,7 +9,7 @@ use answer::variable::Variable;
 use compiler::{
     delete::program::{DeleteProgram},
     insert::program::{InsertProgram},
-    match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::PatternPlan},
+    match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
     VariablePosition,
 };
 use concept::thing::statistics::Statistics;
@@ -24,12 +24,12 @@ pub struct CompiledPipeline {
 }
 
 pub struct CompiledFunction {
-    plan: PatternPlan,
+    plan: MatchProgram,
     returns: HashMap<Variable, VariablePosition>,
 }
 
 pub enum CompiledStage {
-    Match(PatternPlan),
+    Match(MatchProgram),
     Insert(InsertProgram),
     Delete(DeleteProgram),
 }
@@ -93,7 +93,7 @@ fn compile_stage(
     match &annotated_stage {
         AnnotatedStage::Match { block, block_annotations, compiled_expressions, variable_value_types } => {
             let plan =
-                PatternPlan::from_block(block, block_annotations, variable_registry, compiled_expressions, statistics);
+                MatchProgram::from_block(block, block_annotations, variable_registry, compiled_expressions, statistics);
             Ok(CompiledStage::Match(plan))
         }
         AnnotatedStage::Insert { block, annotations } => {

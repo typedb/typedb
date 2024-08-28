@@ -10,7 +10,7 @@ use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     instructions::{ConstraintInstruction, HasInstruction, Inputs},
     planner::{
-        pattern_plan::{IntersectionStep, PatternPlan, Step},
+        pattern_plan::{IntersectionProgram, MatchProgram, Program},
         program_plan::ProgramPlan,
     },
 };
@@ -169,12 +169,12 @@ fn anonymous_vars_not_enumerated_or_counted() {
     };
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_person,
         vec![ConstraintInstruction::Has(HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations))],
         &vec![var_person],
     ))];
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -250,12 +250,12 @@ fn unselected_named_vars_counted() {
     };
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_person,
         vec![ConstraintInstruction::Has(HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations))],
         &vec![var_person],
     ))];
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -342,7 +342,7 @@ fn cartesian_named_counted_checked() {
     };
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_person,
         vec![
             ConstraintInstruction::Has(HasInstruction::new(has_name, Inputs::None([]), &entry_annotations)),
@@ -351,7 +351,7 @@ fn cartesian_named_counted_checked() {
         ],
         &vec![var_person, var_age],
     ))];
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor

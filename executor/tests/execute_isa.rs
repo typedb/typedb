@@ -10,7 +10,7 @@ use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     instructions::{ConstraintInstruction, Inputs, IsaInstruction, IsaReverseInstruction},
     planner::{
-        pattern_plan::{IntersectionStep, PatternPlan, Step},
+        pattern_plan::{IntersectionProgram, MatchProgram, Program},
         program_plan::ProgramPlan,
     },
 };
@@ -90,13 +90,13 @@ fn traverse_isa_unbounded_sorted_thing() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_dog,
         vec![ConstraintInstruction::Isa(IsaInstruction::new(isa, Inputs::None([]), &entry_annotations))],
         &[var_dog, var_dog_type],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -149,13 +149,13 @@ fn traverse_isa_unbounded_sorted_type() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_dog_type,
         vec![ConstraintInstruction::Isa(IsaInstruction::new(isa, Inputs::None([]), &entry_annotations))],
         &[var_dog, var_dog_type],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -211,7 +211,7 @@ fn traverse_isa_bounded_thing() {
 
     // Plan
     let steps = vec![
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_type_from,
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_from_type,
@@ -220,7 +220,7 @@ fn traverse_isa_bounded_thing() {
             ))],
             &[var_thing],
         )),
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_type_to,
             vec![ConstraintInstruction::Isa(IsaInstruction::new(
                 isa_to_type,
@@ -231,7 +231,7 @@ fn traverse_isa_bounded_thing() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -284,13 +284,13 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_dog,
         vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations))],
         &[var_dog, var_dog_type],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -343,13 +343,13 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_dog_type,
         vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations))],
         &[var_dog, var_dog_type],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -405,12 +405,12 @@ fn traverse_isa_reverse_bounded_type() {
 
     // Plan
     let steps = vec![
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_thing_from,
             vec![ConstraintInstruction::Isa(IsaInstruction::new(isa_from_thing, Inputs::None([]), &entry_annotations))],
             &[var_thing_from, var_type],
         )),
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_thing_to,
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_to_thing,
@@ -421,7 +421,7 @@ fn traverse_isa_reverse_bounded_type() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor

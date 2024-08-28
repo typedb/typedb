@@ -37,7 +37,7 @@ impl<'a> ValidCombinations<'a> {
     }
 }
 
-pub fn validate_insertable(
+pub fn check_annotations(
     block: &FunctionalBlock,
     input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -56,8 +56,6 @@ pub fn validate_insertable(
                     constraint,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    has.owner(),
-                    has.attribute(),
                     &ValidCombinations::Has(&valid_combinations),
                 )?;
             }
@@ -68,16 +66,12 @@ pub fn validate_insertable(
                     constraint,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    links.relation(),
-                    links.role_type(),
                     &ValidCombinations::Links(&links_annotations.filters_on_left()),
                 )?;
                 validate_input_combinations_insertable(
                     constraint,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    links.player(),
-                    links.role_type(),
                     &ValidCombinations::Links(&links_annotations.filters_on_right()),
                 )?;
             }
@@ -99,14 +93,12 @@ fn validate_input_combinations_insertable(
     constraint: &Constraint<Variable>,
     input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    first: Variable,
-    second: Variable,
     valid_combinations: &ValidCombinations,
 ) -> Result<(), TypeInferenceError> {
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.
-    let left = input_annotations_variables.get(&first).unwrap();
-    let right = input_annotations_variables.get(&second).unwrap();
+    let left = input_annotations_variables.get(&constraint.left_id()).unwrap();
+    let right = input_annotations_variables.get(&constraint.right_id()).unwrap();
 
     let mut invalid_iter = left.iter().flat_map(|left_type| {
         right
@@ -117,8 +109,6 @@ fn validate_input_combinations_insertable(
     if let Some((left_type, right_type)) = invalid_iter.find(|_| true) {
         Err(TypeInferenceError::IllegalInsertTypes {
             constraint: constraint.clone(),
-            left_variable: first,
-            right_variable: second,
             left_type: left_type.clone(),
             right_type: right_type.clone(),
         })?;

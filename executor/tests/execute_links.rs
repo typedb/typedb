@@ -10,7 +10,7 @@ use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     instructions::{ConstraintInstruction, Inputs, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction},
     planner::{
-        pattern_plan::{IntersectionStep, PatternPlan, Step},
+        pattern_plan::{IntersectionProgram, MatchProgram, Program},
         program_plan::ProgramPlan,
     },
 };
@@ -218,7 +218,7 @@ fn traverse_links_unbounded_sorted_from() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_membership,
         vec![
             ConstraintInstruction::Links(LinksInstruction::new(
@@ -235,7 +235,7 @@ fn traverse_links_unbounded_sorted_from() {
         &[var_membership, var_group, var_person],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -313,7 +313,7 @@ fn traverse_links_unbounded_sorted_to() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_person,
         vec![ConstraintInstruction::Links(LinksInstruction::new(
             links_membership_person,
@@ -323,7 +323,7 @@ fn traverse_links_unbounded_sorted_to() {
         &[var_membership, var_person],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -404,7 +404,7 @@ fn traverse_links_bounded_relation() {
 
     // Plan
     let steps = vec![
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_membership,
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_membership,
@@ -413,7 +413,7 @@ fn traverse_links_bounded_relation() {
             ))],
             &[var_membership],
         )),
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_person,
             vec![ConstraintInstruction::Links(LinksInstruction::new(
                 links_membership_person,
@@ -424,7 +424,7 @@ fn traverse_links_bounded_relation() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -506,7 +506,7 @@ fn traverse_links_bounded_relation_player() {
 
     // Plan
     let steps = vec![
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_membership,
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_membership,
@@ -515,7 +515,7 @@ fn traverse_links_bounded_relation_player() {
             ))],
             &[var_membership],
         )),
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_person,
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_person,
@@ -524,7 +524,7 @@ fn traverse_links_bounded_relation_player() {
             ))],
             &[var_membership, var_person],
         )),
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_membership_member_type,
             vec![ConstraintInstruction::Links(LinksInstruction::new(
                 links_membership_person,
@@ -535,7 +535,7 @@ fn traverse_links_bounded_relation_player() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -613,7 +613,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_person,
         vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
             links_membership_person,
@@ -623,7 +623,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         &[var_membership, var_person],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -702,7 +702,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_membership,
         vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
             links_membership_person,
@@ -712,7 +712,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         &[var_membership, var_person],
     ))];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -793,7 +793,7 @@ fn traverse_links_reverse_bounded_player() {
 
     // Plan
     let steps = vec![
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_person,
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_person,
@@ -802,7 +802,7 @@ fn traverse_links_reverse_bounded_player() {
             ))],
             &[var_person],
         )),
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_membership,
             vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
                 links_membership_person,
@@ -813,7 +813,7 @@ fn traverse_links_reverse_bounded_player() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -895,7 +895,7 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     // Plan
     let steps = vec![
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_person,
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_person,
@@ -904,7 +904,7 @@ fn traverse_links_reverse_bounded_player_relation() {
             ))],
             &[var_person],
         )),
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_membership,
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_membership,
@@ -913,7 +913,7 @@ fn traverse_links_reverse_bounded_player_relation() {
             ))],
             &[var_person, var_membership],
         )),
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_membership_member_type,
             vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
                 links_membership_person,
@@ -924,7 +924,7 @@ fn traverse_links_reverse_bounded_player_relation() {
         )),
     ];
 
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor

@@ -11,7 +11,7 @@ use encoding::graph::type_::Kind;
 use ir::pattern::constraint::Constraint;
 
 use crate::{
-    delete::instructions::{DeleteConnection, DeleteThing, Has, RolePlayer},
+    delete::instructions::{DeleteConnectionInstruction, DeleteThingInstruction, Has, RolePlayer},
     insert::{
         get_thing_source, program::collect_role_type_bindings, ThingSource, TypeSource, VariableSource,
         WriteCompilationError,
@@ -21,8 +21,8 @@ use crate::{
 };
 
 pub struct DeleteProgram {
-    pub concepts: Vec<DeleteThing>,
-    pub connections: Vec<DeleteConnection>,
+    pub concepts: Vec<DeleteThingInstruction>,
+    pub connections: Vec<DeleteConnectionInstruction>,
     pub output_row_schema: Vec<(Variable, VariableSource)>,
     // pub debug_info: HashMap<VariableSource, Variable>,
 }
@@ -38,7 +38,7 @@ pub fn compile(
     for constraint in constraints {
         match constraint {
             Constraint::Has(has) => {
-                connection_deletes.push(DeleteConnection::Has(Has {
+                connection_deletes.push(DeleteConnectionInstruction::Has(Has {
                     owner: get_thing_source(input_variables, has.owner())?,
                     attribute: get_thing_source(input_variables, has.attribute())?,
                 }));
@@ -62,7 +62,7 @@ pub fn compile(
                     }
                     (Some(_), Some(_)) => unreachable!(),
                 };
-                connection_deletes.push(DeleteConnection::RolePlayer(RolePlayer { relation, player, role }));
+                connection_deletes.push(DeleteConnectionInstruction::RolePlayer(RolePlayer { relation, player, role }));
             }
             Constraint::Isa(_)
             | Constraint::Label(_)
@@ -92,7 +92,7 @@ pub fn compile(
         {
             Err(WriteCompilationError::IllegalRoleDelete { variable: *variable })?;
         } else {
-            concept_deletes.push(DeleteThing { thing: ThingSource(*input_position) });
+            concept_deletes.push(DeleteThingInstruction { thing: ThingSource(*input_position) });
         };
     }
     // To produce the output stream, we remove the deleted concepts from each map in the stream.

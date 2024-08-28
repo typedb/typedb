@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use compiler::delete::{instructions::DeleteConnection, program::DeleteProgram};
+use compiler::delete::{instructions::DeleteConnectionInstruction, program::DeleteProgram};
 use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
 
@@ -34,8 +34,8 @@ impl DeleteExecutor {
         // Row multiplicity doesn't matter. You can't delete the same thing twice
         for instruction in &self.plan.connections {
             match instruction {
-                DeleteConnection::Has(has) => has.execute(snapshot, thing_manager, input_output_row)?,
-                DeleteConnection::RolePlayer(role_player) => role_player.execute(snapshot, thing_manager, input_output_row)?,
+                DeleteConnectionInstruction::Has(has) => has.execute(snapshot, thing_manager, input_output_row)?,
+                DeleteConnectionInstruction::RolePlayer(role_player) => role_player.execute(snapshot, thing_manager, input_output_row)?,
             }
         }
 

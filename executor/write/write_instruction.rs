@@ -137,7 +137,7 @@ impl AsWriteInstruction for compiler::insert::instructions::RolePlayer {
     }
 }
 
-impl AsWriteInstruction for compiler::delete::instructions::DeleteThing {
+impl AsWriteInstruction for compiler::delete::instructions::DeleteThingInstruction {
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,

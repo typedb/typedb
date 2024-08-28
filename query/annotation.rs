@@ -15,7 +15,7 @@ use compiler::{
         block_compiler::compile_expressions,
         compiled_expression::{CompiledExpression, ExpressionValueType},
     },
-    insert::validate::validate_insertable,
+    insert::type_check::check_annotations,
     match_::inference::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
@@ -163,7 +163,7 @@ fn annotate_stage(
                 _ => {}
             });
 
-            validate_insertable(
+            check_annotations(
                 &block,
                 running_variable_annotations,
                 running_constraint_annotations,
@@ -184,10 +184,10 @@ fn annotate_stage(
                 &AnnotatedUnindexedFunctions::empty(),
             )
             .map_err(|source| QueryError::TypeInference { source })?;
-            // TODO: Do we want to validate delete sanity?
             deleted_variables.iter().for_each(|v| {
                 running_variable_annotations.remove(v);
             });
+            // TODO: check_annotations on deletes. Can only delete links or has for types that actually are linked or owned
             Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations })
         }
         _ => todo!(),

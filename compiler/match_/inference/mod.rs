@@ -91,8 +91,6 @@ pub enum TypeInferenceError {
     },
     IllegalInsertTypes {
         constraint: Constraint<Variable>,
-        left_variable: Variable,
-        right_variable: Variable,
         left_type: Type,
         right_type: Type,
     },

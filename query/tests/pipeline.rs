@@ -57,15 +57,16 @@ fn insert_match_insert_pipeline() {
     .unwrap()
     .into_pipeline();
     query_manager
-        .execute_pipeline(
+        .prepare_writable_pipeline(
             snapshot,
             &type_manager,
+            thing_manager,
             &function_manager,
             &statistics,
             &IndexedAnnotatedFunctions::empty(),
             &query,
         )
-        .unwrap()
+        .unwrap();
 }
 
 #[test]
@@ -90,13 +91,14 @@ fn insert_insert_pipeline() {
     .unwrap()
     .into_pipeline();
     query_manager
-        .execute_pipeline(
+        .prepare_writable_pipeline(
             snapshot,
             &type_manager,
+            thing_manager,
             &function_manager,
             &statistics,
             &IndexedAnnotatedFunctions::empty(),
             &query,
         )
-        .unwrap()
+        .unwrap();
 }

@@ -10,7 +10,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    planner::{pattern_plan::PatternPlan, program_plan::ProgramPlan},
+    planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
 };
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
@@ -85,8 +85,8 @@ fn test_insert() {
         .query_manager
         .prepare_writable_pipeline(
             snapshot,
-            thing_manager,
             &context.type_manager,
+            thing_manager,
             &context.function_manager,
             &context.statistics,
             &IndexedAnnotatedFunctions::empty(),
@@ -125,8 +125,8 @@ fn test_dummy_match() {
         .query_manager
         .prepare_writable_pipeline(
             snapshot,
-            thing_manager,
             &context.type_manager,
+            thing_manager,
             &context.function_manager,
             &context.statistics,
             &IndexedAnnotatedFunctions::empty(),
@@ -157,8 +157,8 @@ fn test_match_as_pipeline() {
         .query_manager
         .prepare_writable_pipeline(
             snapshot,
-            thing_manager,
             &context.type_manager,
+            thing_manager,
             &context.function_manager,
             &context.statistics,
             &IndexedAnnotatedFunctions::empty(),
@@ -186,8 +186,8 @@ fn test_match_as_pipeline() {
         .query_manager
         .prepare_writable_pipeline(
             snapshot,
-            thing_manager,
             &context.type_manager,
+            thing_manager,
             &context.function_manager,
             &newer_statistics,
             &IndexedAnnotatedFunctions::empty(),
@@ -320,8 +320,8 @@ fn delete_has() {
         .query_manager
         .prepare_writable_pipeline(
             snapshot,
-            thing_manager,
             &context.type_manager,
+            thing_manager,
             &context.function_manager,
             &context.statistics,
             &IndexedAnnotatedFunctions::empty(),
@@ -349,8 +349,8 @@ fn delete_has() {
         .query_manager
         .prepare_writable_pipeline(
             snapshot,
-            thing_manager,
             &context.type_manager,
+            thing_manager,
             &context.function_manager,
             &context.statistics,
             &IndexedAnnotatedFunctions::empty(),

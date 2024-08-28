@@ -8,7 +8,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    planner::{pattern_plan::PatternPlan, program_plan::ProgramPlan},
+    planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
 };
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics},
@@ -130,7 +130,7 @@ fn test_has_planning_traversal() {
         &translation_context.variable_registry,
     )
     .unwrap();
-    let pattern_plan = PatternPlan::from_block(
+    let pattern_plan = MatchProgram::from_block(
         &block,
         &entry_annotations,
         &translation_context.variable_registry,
@@ -265,7 +265,7 @@ fn test_links_planning_traversal() {
         &translation_context.variable_registry,
     )
     .unwrap();
-    let pattern_plan = PatternPlan::from_block(
+    let pattern_plan = MatchProgram::from_block(
         &block,
         &entry_annotations,
         &translation_context.variable_registry,

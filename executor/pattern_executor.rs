@@ -10,8 +10,8 @@ use answer::{variable::Variable, variable_value::VariableValue};
 use compiler::match_::{
     instructions::ConstraintInstruction,
     planner::pattern_plan::{
-        AssignmentStep, DisjunctionStep, IntersectionStep, NegationStep, OptionalStep, PatternPlan, Step,
-        UnsortedJoinStep,
+        AssignmentProgram, DisjunctionProgram, IntersectionProgram, NegationProgram, OptionalProgram, MatchProgram, Program,
+        UnsortedJoinProgram,
     },
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
@@ -31,7 +31,7 @@ pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, VariablePosition>,
     variable_positions_index: Vec<Variable>,
 
-    step_executors: Vec<StepExecutor>,
+    program_executors: Vec<StepExecutor>,
     // modifiers: Modifier,
     initialised: bool,
     output: Option<Batch>,
@@ -39,21 +39,21 @@ pub(crate) struct PatternExecutor {
 
 impl PatternExecutor {
     pub(crate) fn new(
-        plan: &PatternPlan,
+        plan: &MatchProgram,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
-        let (steps, context) = (plan.steps(), plan.variable_registry());
+        let (programs, context) = (plan.programs(), plan.variable_registry());
         let mut variable_positions = HashMap::new();
-        let mut step_executors = Vec::with_capacity(steps.len());
-        for step in steps {
-            for variable in step.new_variables() {
+        let mut program_executors = Vec::with_capacity(programs.len());
+        for program in programs {
+            for variable in program.new_variables() {
                 let previous =
                     variable_positions.insert(*variable, VariablePosition::new(variable_positions.len() as u32));
                 debug_assert_eq!(previous, Option::None);
             }
-            let executor = StepExecutor::new(step, context, &variable_positions, snapshot, thing_manager)?;
-            step_executors.push(executor)
+            let executor = StepExecutor::new(program, context, &variable_positions, snapshot, thing_manager)?;
+            program_executors.push(executor)
         }
 
         let mut variable_positions_index = vec![Variable::new(0); variable_positions.len()];
@@ -64,7 +64,7 @@ impl PatternExecutor {
         Ok(PatternExecutor {
             variable_positions,
             variable_positions_index,
-            step_executors,
+            program_executors,
             // modifiers:
             initialised: false,
             output: None,
@@ -92,10 +92,10 @@ impl PatternExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
-        let steps_len = self.step_executors.len();
+        let programs_len = self.program_executors.len();
 
-        let (mut current_step, mut last_step_batch, mut direction) = if self.initialised {
-            (steps_len - 1, None, Direction::Backward)
+        let (mut current_program, mut last_program_batch, mut direction) = if self.initialised {
+            (programs_len - 1, None, Direction::Backward)
         } else {
             self.initialised = true;
             (0, Some(Batch::SINGLE_EMPTY_ROW), Direction::Forward)
@@ -104,44 +104,44 @@ impl PatternExecutor {
         loop {
             match direction {
                 Direction::Forward => {
-                    if current_step >= steps_len {
-                        return Ok(last_step_batch);
+                    if current_program >= programs_len {
+                        return Ok(last_program_batch);
                     } else {
-                        let batch = self.step_executors[current_step].batch_from(
-                            last_step_batch.take().unwrap(),
+                        let batch = self.program_executors[current_program].batch_from(
+                            last_program_batch.take().unwrap(),
                             snapshot,
                             thing_manager,
                         )?;
                         match batch {
                             None => {
                                 direction = Direction::Backward;
-                                if current_step == 0 {
+                                if current_program == 0 {
                                     return Ok(None);
                                 } else {
-                                    current_step -= 1;
+                                    current_program -= 1;
                                 }
                             }
                             Some(batch) => {
-                                last_step_batch = Some(batch);
-                                current_step += 1;
+                                last_program_batch = Some(batch);
+                                current_program += 1;
                             }
                         }
                     }
                 }
                 Direction::Backward => {
-                    let batch = self.step_executors[current_step].batch_continue(snapshot, thing_manager)?;
+                    let batch = self.program_executors[current_program].batch_continue(snapshot, thing_manager)?;
                     match batch {
                         None => {
-                            if current_step == 0 {
+                            if current_program == 0 {
                                 return Ok(None);
                             } else {
-                                current_step -= 1;
+                                current_program -= 1;
                             }
                         }
                         Some(batch) => {
                             direction = Direction::Forward;
-                            last_step_batch = Some(batch);
-                            current_step += 1;
+                            last_program_batch = Some(batch);
+                            current_program += 1;
                         }
                     }
                 }
@@ -202,15 +202,15 @@ enum StepExecutor {
 
 impl StepExecutor {
     fn new(
-        step: &Step,
+        program: &Program,
         variable_registry: &VariableRegistry,
         variable_positions: &HashMap<Variable, VariablePosition>,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         let row_width = variable_positions.len() as u32;
-        match step {
-            Step::Intersection(IntersectionStep { sort_variable, instructions, selected_variables, .. }) => {
+        match program {
+            Program::Intersection(IntersectionProgram { sort_variable, instructions, selected_variables, .. }) => {
                 let executor = IntersectionExecutor::new(
                     *sort_variable,
                     instructions.clone(),
@@ -223,7 +223,7 @@ impl StepExecutor {
                 )?;
                 Ok(Self::SortedJoin(executor))
             }
-            Step::UnsortedJoin(UnsortedJoinStep { iterate_instruction, check_instructions, .. }) => {
+            Program::UnsortedJoin(UnsortedJoinProgram { iterate_instruction, check_instructions, .. }) => {
                 let executor = UnsortedJoinExecutor::new(
                     iterate_instruction.clone(),
                     check_instructions.clone(),
@@ -232,20 +232,20 @@ impl StepExecutor {
                 );
                 Ok(Self::UnsortedJoin(executor))
             }
-            Step::Assignment(AssignmentStep { .. }) => {
+            Program::Assignment(AssignmentProgram { .. }) => {
                 todo!()
             }
-            Step::Disjunction(DisjunctionStep { disjunction: disjunction_plans, .. }) => {
+            Program::Disjunction(DisjunctionProgram { disjunction: disjunction_plans, .. }) => {
                 // let executors = plans.into_iter().map(|pattern_plan| PatternExecutor::new(pattern_plan, )).collect();
                 // Self::Disjunction(DisjunctionExecutor::new(executors, variable_positions))
                 todo!()
             }
-            Step::Negation(NegationStep { negation: negation_plan, .. }) => {
+            Program::Negation(NegationProgram { negation: negation_plan, .. }) => {
                 let executor = PatternExecutor::new(negation_plan, snapshot, thing_manager)?;
                 // // TODO: add limit 1, filters if they aren't there already?
                 Ok(Self::Negation(NegationExecutor::new(executor, variable_positions)))
             }
-            Step::Optional(OptionalStep { optional: optional_plan, .. }) => {
+            Program::Optional(OptionalProgram { optional: optional_plan, .. }) => {
                 let pattern_executor = PatternExecutor::new(optional_plan, snapshot, thing_manager)?;
                 Ok(Self::Optional(OptionalExecutor::new(pattern_executor)))
             }
@@ -285,7 +285,7 @@ impl StepExecutor {
 
 /// Performs an n-way intersection/join using sorted iterators.
 /// To avoid missing cartesian outputs when multiple variables are unbound, the executor can leverage a
-/// Cartesian sub-step, which generates all cartesian answers within one intersection, if there are any.
+/// Cartesian sub-program, which generates all cartesian answers within one intersection, if there are any.
 struct IntersectionExecutor {
     instruction_executors: Vec<InstructionExecutor>,
     sort_variable_position: VariablePosition,

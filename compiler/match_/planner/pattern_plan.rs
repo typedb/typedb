@@ -29,8 +29,8 @@ use crate::{
     },
 };
 
-pub struct PatternPlan {
-    pub(crate) steps: Vec<Step>,
+pub struct MatchProgram {
+    pub(crate) programs: Vec<Program>,
     pub(crate) context: VariableRegistry,
 }
 
@@ -45,9 +45,9 @@ If we know this we can:
   3. some checks are fully bound, while others are not... when do we decide? What is a Check versus an Iterate instructions? Do we need to differentiate?
  */
 
-impl PatternPlan {
-    pub fn new(steps: Vec<Step>, context: VariableRegistry) -> Self {
-        Self { steps, context }
+impl MatchProgram {
+    pub fn new(programs: Vec<Program>, context: VariableRegistry) -> Self {
+        Self { programs, context }
     }
 
     // TODO: rename to 'compile'
@@ -135,14 +135,14 @@ impl PatternPlan {
         let ordering = initialise_plan_greedy(&elements, &adjacency);
         let index_to_variable: HashMap<_, _> =
             variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
-        let mut steps = Vec::with_capacity(index_to_constraint.len());
+        let mut programs = Vec::with_capacity(index_to_constraint.len());
         for (i, &index) in ordering.iter().enumerate().rev() {
             let adjacent = &adjacency[&index];
             if let Some(&var) = index_to_variable.get(&index) {
                 let is_starting = !adjacent.iter().any(|adj| ordering[..i].contains(adj));
                 if is_starting {
                     let isa = &variable_isa[&var];
-                    steps.push(Step::Intersection(IntersectionStep::new(
+                    programs.push(Program::Intersection(IntersectionProgram::new(
                         var,
                         vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                             isa.clone(),
@@ -198,7 +198,7 @@ impl PatternPlan {
                         } else {
                             rp.player()
                         };
-                        steps.push(Step::Intersection(IntersectionStep::new(
+                        programs.push(Program::Intersection(IntersectionProgram::new(
                             sort_variable,
                             vec![instruction],
                             selected_variables,
@@ -242,7 +242,7 @@ impl PatternPlan {
                         } else {
                             has.attribute()
                         };
-                        steps.push(Step::Intersection(IntersectionStep::new(
+                        programs.push(Program::Intersection(IntersectionProgram::new(
                             sort_variable,
                             vec![instruction],
                             selected_variables,
@@ -257,20 +257,20 @@ impl PatternPlan {
                 }
             }
         }
-        steps.reverse();
-        Self { steps, context: variable_registry.clone() }
+        programs.reverse();
+        Self { programs: programs, context: variable_registry.clone() }
     }
 
-    pub fn steps(&self) -> &[Step] {
-        &self.steps
+    pub fn programs(&self) -> &[Program] {
+        &self.programs
     }
 
     pub fn outputs(&self) -> &[Variable] {
-        self.steps.last().unwrap().selected_variables()
+        self.programs.last().unwrap().selected_variables()
     }
 
-    pub(crate) fn into_steps(self) -> impl Iterator<Item = Step> {
-        self.steps.into_iter()
+    pub(crate) fn into_programs(self) -> impl Iterator<Item =Program> {
+        self.programs.into_iter()
     }
 
     pub fn variable_registry(&self) -> &VariableRegistry {
@@ -308,40 +308,40 @@ fn calculate_marginal_cost(
     per_input + branching_factor * per_output
 }
 
-pub enum Step {
-    Intersection(IntersectionStep),
-    UnsortedJoin(UnsortedJoinStep),
-    Assignment(AssignmentStep),
-    Disjunction(DisjunctionStep),
-    Negation(NegationStep),
-    Optional(OptionalStep),
+pub enum Program {
+    Intersection(IntersectionProgram),
+    UnsortedJoin(UnsortedJoinProgram),
+    Assignment(AssignmentProgram),
+    Disjunction(DisjunctionProgram),
+    Negation(NegationProgram),
+    Optional(OptionalProgram),
 }
 
-impl Step {
+impl Program {
     pub fn selected_variables(&self) -> &[Variable] {
         match self {
-            Step::Intersection(step) => &step.selected_variables,
-            Step::UnsortedJoin(step) => &step.selected_variables,
-            Step::Assignment(_) => todo!(),
-            Step::Disjunction(_) => todo!(),
-            Step::Negation(_) => todo!(),
-            Step::Optional(_) => todo!(),
+            Program::Intersection(step) => &step.selected_variables,
+            Program::UnsortedJoin(step) => &step.selected_variables,
+            Program::Assignment(_) => todo!(),
+            Program::Disjunction(_) => todo!(),
+            Program::Negation(_) => todo!(),
+            Program::Optional(_) => todo!(),
         }
     }
 
     pub fn new_variables(&self) -> &[Variable] {
         match self {
-            Step::Intersection(step) => step.new_variables(),
-            Step::UnsortedJoin(step) => step.new_variables(),
-            Step::Assignment(step) => step.new_variables(),
-            Step::Disjunction(_) => todo!(),
-            Step::Negation(_) => &[],
-            Step::Optional(_) => todo!(),
+            Program::Intersection(step) => step.new_variables(),
+            Program::UnsortedJoin(step) => step.new_variables(),
+            Program::Assignment(step) => step.new_variables(),
+            Program::Disjunction(_) => todo!(),
+            Program::Negation(_) => &[],
+            Program::Optional(_) => todo!(),
         }
     }
 }
 
-pub struct IntersectionStep {
+pub struct IntersectionProgram {
     pub sort_variable: Variable,
     pub instructions: Vec<ConstraintInstruction>,
     new_variables: Vec<Variable>,
@@ -349,7 +349,7 @@ pub struct IntersectionStep {
     pub selected_variables: Vec<Variable>,
 }
 
-impl IntersectionStep {
+impl IntersectionProgram {
     pub fn new(
         sort_variable: Variable,
         instructions: Vec<ConstraintInstruction>,
@@ -383,7 +383,7 @@ impl IntersectionStep {
     }
 }
 
-pub struct UnsortedJoinStep {
+pub struct UnsortedJoinProgram {
     pub iterate_instruction: ConstraintInstruction,
     pub check_instructions: Vec<ConstraintInstruction>,
     new_variables: Vec<Variable>,
@@ -391,7 +391,7 @@ pub struct UnsortedJoinStep {
     selected_variables: Vec<Variable>,
 }
 
-impl UnsortedJoinStep {
+impl UnsortedJoinProgram {
     pub fn new(
         iterate_instruction: ConstraintInstruction,
         check_instructions: Vec<ConstraintInstruction>,
@@ -430,28 +430,28 @@ impl UnsortedJoinStep {
     }
 }
 
-pub struct AssignmentStep {
+pub struct AssignmentProgram {
     assign_instruction: ExpressionBinding<Variable>,
     check_instructions: Vec<ConstraintInstruction>,
     unbound: [Variable; 1],
 }
 
-impl AssignmentStep {
+impl AssignmentProgram {
     fn new_variables(&self) -> &[Variable] {
         &self.unbound
     }
 }
 
-pub struct DisjunctionStep {
-    pub disjunction: Vec<PatternPlan>,
+pub struct DisjunctionProgram {
+    pub disjunction: Vec<MatchProgram>,
 }
 
-pub struct NegationStep {
-    pub negation: PatternPlan,
+pub struct NegationProgram {
+    pub negation: MatchProgram,
 }
 
-pub struct OptionalStep {
-    pub optional: PatternPlan,
+pub struct OptionalProgram {
+    pub optional: MatchProgram,
 }
 
 pub trait InstructionAPI {

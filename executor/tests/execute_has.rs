@@ -10,7 +10,7 @@ use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
     instructions::{ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs, IsaReverseInstruction},
     planner::{
-        pattern_plan::{IntersectionStep, PatternPlan, Step},
+        pattern_plan::{IntersectionProgram, MatchProgram, Program},
         program_plan::ProgramPlan,
     },
 };
@@ -141,13 +141,13 @@ fn traverse_has_unbounded_sorted_from() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_person,
         vec![ConstraintInstruction::Has(HasInstruction::new(has_age, Inputs::None([]), &entry_annotations))],
         &[var_person, var_age],
     ))];
     // TODO: incorporate the filter
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -214,7 +214,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     // Plan
     let steps = vec![
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_person_1,
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                 isa_person_1,
@@ -223,7 +223,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
             ))],
             &[var_person_1],
         )),
-        Step::Intersection(IntersectionStep::new(
+        Program::Intersection(IntersectionProgram::new(
             var_name,
             vec![
                 ConstraintInstruction::Has(HasInstruction::new(
@@ -241,7 +241,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
         )),
     ];
     // TODO: incorporate the filter
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -310,7 +310,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_person,
         vec![
             ConstraintInstruction::Has(HasInstruction::new(has_age, Inputs::None([]), &entry_annotations)),
@@ -319,7 +319,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         &[var_person, var_name, var_age],
     ))];
     // TODO: incorporate the filter
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -374,12 +374,12 @@ fn traverse_has_unbounded_sorted_to_merged() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_attribute,
         vec![ConstraintInstruction::Has(HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations))],
         &[var_person, var_attribute],
     ))];
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -457,7 +457,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     .unwrap();
 
     // Plan
-    let steps = vec![Step::Intersection(IntersectionStep::new(
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_age,
         vec![ConstraintInstruction::HasReverse(HasReverseInstruction::new(
             has_age,
@@ -466,7 +466,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         ))],
         &[var_person, var_age],
     ))];
-    let pattern_plan = PatternPlan::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
