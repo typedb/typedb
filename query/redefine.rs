@@ -4,9 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt};
-use std::cmp::PartialEq;
-use std::collections::HashMap;
+use std::{cmp::PartialEq, collections::HashMap, error::Error, fmt};
 
 use answer::Type as TypeEnum;
 use concept::{
@@ -91,8 +89,9 @@ fn process_struct_redefinitions(
     definables: &[Definable],
 ) -> Result<bool, RedefineError> {
     let mut anything_redefined = false;
-    filter_variants!(Definable::Struct : definables)
-        .try_for_each(|struct_| redefine_struct_fields(snapshot, type_manager, thing_manager, &mut anything_redefined, struct_))?;
+    filter_variants!(Definable::Struct : definables).try_for_each(|struct_| {
+        redefine_struct_fields(snapshot, type_manager, thing_manager, &mut anything_redefined, struct_)
+    })?;
     Ok(anything_redefined)
 }
 
@@ -104,23 +103,27 @@ fn process_type_redefinitions(
 ) -> Result<bool, RedefineError> {
     let mut anything_redefined = false;
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
-    declarations.clone().try_for_each(|declaration| redefine_alias(snapshot, type_manager, &mut anything_redefined, declaration))?;
     declarations
         .clone()
-        .try_for_each(|declaration| redefine_value_type(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration))?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| redefine_type_annotations(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration))?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| redefine_sub(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration))?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| redefine_relates(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration))?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| redefine_owns(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration))?;
-    declarations.clone().try_for_each(|declaration| redefine_plays(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration))?;
+        .try_for_each(|declaration| redefine_alias(snapshot, type_manager, &mut anything_redefined, declaration))?;
+    declarations.clone().try_for_each(|declaration| {
+        redefine_value_type(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration)
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        redefine_type_annotations(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration)
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        redefine_sub(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration)
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        redefine_relates(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration)
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        redefine_owns(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration)
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        redefine_plays(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration)
+    })?;
     Ok(anything_redefined)
 }
 
@@ -386,7 +389,7 @@ fn redefine_value_type(
         redefine_value_type_annotations(
             snapshot,
             type_manager,
-            thing_manager, 
+            thing_manager,
             anything_redefined,
             attribute_type.clone(),
             &label,
@@ -466,16 +469,31 @@ fn redefine_relates(
             DefinitionStatus::ExistsSame(Some((existing_relates, _))) => existing_relates, // is not a leaf of redefine query, don't error
             DefinitionStatus::ExistsDifferent((existing_relates, _)) => {
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
-                existing_relates
-                    .role()
-                    .set_ordering(snapshot, type_manager, thing_manager, ordering)
-                    .map_err(|source| RedefineError::SetRelatesOrdering { source, relates: typeql_relates.to_owned() })?;
+                existing_relates.role().set_ordering(snapshot, type_manager, thing_manager, ordering).map_err(
+                    |source| RedefineError::SetRelatesOrdering { source, relates: typeql_relates.to_owned() },
+                )?;
                 existing_relates
             }
         };
 
-        redefine_relates_annotations(snapshot, type_manager, thing_manager, anything_redefined, &label, relates.clone(), capability)?;
-        redefine_relates_override(snapshot, type_manager, thing_manager, anything_redefined, &label, relates, typeql_relates)?;
+        redefine_relates_annotations(
+            snapshot,
+            type_manager,
+            thing_manager,
+            anything_redefined,
+            &label,
+            relates.clone(),
+            capability,
+        )?;
+        redefine_relates_override(
+            snapshot,
+            type_manager,
+            thing_manager,
+            anything_redefined,
+            &label,
+            relates,
+            typeql_relates,
+        )?;
     }
     Ok(())
 }
@@ -608,7 +626,15 @@ fn redefine_owns(
             }
         };
 
-        redefine_owns_annotations(snapshot, type_manager, thing_manager, anything_redefined, &label, owns.clone(), capability)?;
+        redefine_owns_annotations(
+            snapshot,
+            type_manager,
+            thing_manager,
+            anything_redefined,
+            &label,
+            owns.clone(),
+            capability,
+        )?;
         redefine_owns_override(snapshot, type_manager, thing_manager, anything_redefined, &label, owns, typeql_owns)?;
     }
     Ok(())
@@ -658,13 +684,7 @@ fn redefine_owns_override<'a>(
         let overridden_owns = resolve_owns(snapshot, type_manager, owns.owner(), overridden_attribute_type)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
-        check_can_redefine_override(
-            snapshot,
-            type_manager,
-            &owner_label,
-            owns.clone(),
-            overridden_owns.clone(),
-        )?;
+        check_can_redefine_override(snapshot, type_manager, &owner_label, owns.clone(), overridden_owns.clone())?;
         error_if_anything_redefined_else_set_true(anything_redefined)?;
         owns.set_override(snapshot, type_manager, thing_manager, overridden_owns)
             .map_err(|source| RedefineError::SetOverride { label: owner_label.clone().into_owned(), source })?
@@ -687,7 +707,8 @@ fn redefine_plays(
             continue;
         };
 
-        let role_label = Label::build_scoped(typeql_plays.role.name.ident.as_str(), typeql_plays.role.scope.ident.as_str());
+        let role_label =
+            Label::build_scoped(typeql_plays.role.name.ident.as_str(), typeql_plays.role.scope.ident.as_str());
         let role_type = resolve_role_type(snapshot, type_manager, &role_label)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
@@ -708,8 +729,24 @@ fn redefine_plays(
             DefinitionStatus::ExistsDifferent(_) => unreachable!("Plays cannot differ"),
         };
 
-        redefine_plays_annotations(snapshot, type_manager, thing_manager, anything_redefined, &label, plays.clone(), capability)?;
-        redefine_plays_override(snapshot, type_manager, thing_manager, anything_redefined, &label, plays, typeql_plays)?;
+        redefine_plays_annotations(
+            snapshot,
+            type_manager,
+            thing_manager,
+            anything_redefined,
+            &label,
+            plays.clone(),
+            capability,
+        )?;
+        redefine_plays_override(
+            snapshot,
+            type_manager,
+            thing_manager,
+            anything_redefined,
+            &label,
+            plays,
+            typeql_plays,
+        )?;
     }
     Ok(())
 }
@@ -757,13 +794,7 @@ fn redefine_plays_override<'a>(
         let overridden_plays = resolve_plays_role_label(snapshot, type_manager, plays.player(), &overridden_label)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
-        check_can_redefine_override(
-            snapshot,
-            type_manager,
-            &player_label,
-            plays.clone(),
-            overridden_plays.clone(),
-        )?;
+        check_can_redefine_override(snapshot, type_manager, &player_label, plays.clone(), overridden_plays.clone())?;
         error_if_anything_redefined_else_set_true(anything_redefined)?;
         plays
             .set_override(snapshot, type_manager, thing_manager, overridden_plays)
@@ -798,7 +829,7 @@ fn check_can_redefine_sub<'a, T: TypeAPI<'a>>(
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
         }),
-        DefinitionStatus::ExistsSame(_) =>  Err(RedefineError::TypeSubRemainsSame {
+        DefinitionStatus::ExistsSame(_) => Err(RedefineError::TypeSubRemainsSame {
             label: label.clone().into_owned(),
             supertype: new_supertype
                 .get_label_cloned(snapshot, type_manager)
@@ -894,7 +925,7 @@ fn capability_convert_and_validate_annotation_redefinition_need<'a, CAP: concept
 fn error_if_not_redefinable<'a>(label: &Label<'a>, annotation: Annotation) -> Result<(), RedefineError> {
     match annotation.category().boolean() {
         true => Err(RedefineError::AnnotationCannotBeRedefined { label: label.clone().into_owned(), annotation }),
-        false => Ok(())
+        false => Ok(()),
     }
 }
 
