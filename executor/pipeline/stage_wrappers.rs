@@ -11,7 +11,7 @@ use crate::{
     batch::ImmutableRow,
     pipeline::{
         initial::InitialStage, insert::InsertStage, match_::MatchStageExecutor, StageIteratorAPI, PipelineContext,
-        PipelineError, PipelineStageAPI,
+        PipelineError,
     },
 };
 
@@ -27,15 +27,6 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadPipelineStage
         match self {
             ReadPipelineStage::Initial(initial) => initial.next(),
             ReadPipelineStage::Match(match_) => match_.next(),
-        }
-    }
-}
-
-impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
-    fn initialise(&mut self) -> Result<(), PipelineError> {
-        match self {
-            ReadPipelineStage::Match(match_) => match_.initialise(),
-            ReadPipelineStage::Initial(initial) => initial.initialise(),
         }
     }
 }
@@ -71,16 +62,6 @@ impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WritePipelineStag
             WritePipelineStage::Initial(initial) => initial.next(),
             WritePipelineStage::Match(match_) => match_.next(),
             WritePipelineStage::Insert(insert) => insert.next(),
-        }
-    }
-}
-
-impl<Snapshot: WritableSnapshot + 'static> PipelineStageAPI<Snapshot> for WritePipelineStage<Snapshot> {
-    fn initialise(&mut self) -> Result<(), PipelineError> {
-        match self {
-            WritePipelineStage::Match(match_) => match_.initialise(),
-            WritePipelineStage::Initial(initial) => initial.initialise(),
-            WritePipelineStage::Insert(insert) => insert.initialise(),
         }
     }
 }

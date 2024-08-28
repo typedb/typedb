@@ -30,12 +30,6 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for InitialStage<Snap
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for InitialStage<Snapshot> {
-    fn initialise(&mut self) -> Result<(), PipelineError> {
-        Ok(())
-    }
-}
-
 impl<Snapshot: ReadableSnapshot + 'static> StageIteratorAPI<Snapshot> for InitialStage<Snapshot> {
     fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         self.context.try_get_shared()

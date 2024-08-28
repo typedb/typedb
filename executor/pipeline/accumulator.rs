@@ -39,7 +39,7 @@ pub struct Accumulator<Snapshot, PipelineStageType, Executor>
 where
     Snapshot: ReadableSnapshot + 'static,
     Executor: AccumulatingStageAPI<Snapshot>,
-    PipelineStageType: PipelineStageAPI<Snapshot>,
+    PipelineStageType: StageAPI<Snapshot>,
 {
     previous: Box<PipelineStageType>,
     rows: Vec<(Box<[VariableValue<'static>]>, u64)>,
@@ -51,7 +51,7 @@ impl<PipelineStageType, Snapshot, Executor> Accumulator<Snapshot, PipelineStageT
 where
     Snapshot: ReadableSnapshot + 'static,
     Executor: AccumulatingStageAPI<Snapshot>,
-    PipelineStageType: PipelineStageAPI<Snapshot>,
+    PipelineStageType: StageAPI<Snapshot>,
 {
     pub(crate) fn new(previous: Box<PipelineStageType>, executor: Executor) -> Self {
         Self { previous, executor, rows: Vec::new(), phantom: PhantomData }
@@ -99,7 +99,7 @@ where
 impl<Snapshot, PipelineStageType, Executor> StageAPI<Snapshot> for Accumulator<Snapshot, PipelineStageType, Executor>
     where
         Snapshot: ReadableSnapshot + 'static,
-        PipelineStageType: PipelineStageAPI<Snapshot>,
+        PipelineStageType: StageAPI<Snapshot>,
         Executor: AccumulatingStageAPI<Snapshot>
 {
     type StageIterator = AccumulatedRowIterator<Snapshot>;

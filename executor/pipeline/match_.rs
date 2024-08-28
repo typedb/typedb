@@ -20,12 +20,12 @@ use crate::{
     },
 };
 
-pub type MatchStageExecutor<Snapshot: ReadableSnapshot, PreviousStage: PipelineStageAPI<Snapshot>> = PipelineStageExecutor<
+pub type MatchStageExecutor<Snapshot: ReadableSnapshot, PreviousStage: StageAPI<Snapshot>> = PipelineStageExecutor<
     Snapshot,
     LazyMatchStage<Snapshot, PreviousStage>,
 >;
 
-impl<Snapshot: ReadableSnapshot + 'static, PreviousStage: PipelineStageAPI<Snapshot>>
+impl<Snapshot: ReadableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>>
     MatchStageExecutor<Snapshot, PreviousStage>
 {
     pub fn new(previous: Box<PreviousStage>, program_plan: ProgramPlan) -> Self {
@@ -33,13 +33,13 @@ impl<Snapshot: ReadableSnapshot + 'static, PreviousStage: PipelineStageAPI<Snaps
     }
 }
 
-pub struct LazyMatchStage<Snapshot: ReadableSnapshot + 'static, PreviousStage: PipelineStageAPI<Snapshot>> {
+pub struct LazyMatchStage<Snapshot: ReadableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
     program_plan: ProgramPlan,
     previous: Box<PreviousStage>,
     phantom: PhantomData<Snapshot>,
 }
 
-impl<Snapshot: ReadableSnapshot + 'static, PreviousStage: PipelineStageAPI<Snapshot>>
+impl<Snapshot: ReadableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>>
     LazyMatchStage<Snapshot, PreviousStage>
 {
     pub fn new(previous: Box<PreviousStage>, program_plan: ProgramPlan) -> Self {
@@ -47,7 +47,7 @@ impl<Snapshot: ReadableSnapshot + 'static, PreviousStage: PipelineStageAPI<Snaps
     }
 }
 
-impl<Snapshot: ReadableSnapshot, PreviousStage: PipelineStageAPI<Snapshot>> StageAPI<Snapshot>
+impl<Snapshot: ReadableSnapshot, PreviousStage: StageAPI<Snapshot>> StageAPI<Snapshot>
     for LazyMatchStage<Snapshot, PreviousStage>
 {
     type StageIterator = MatchStageIterator<Snapshot>;
