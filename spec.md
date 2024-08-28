@@ -356,7 +356,7 @@ _Remark: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract`
 ***System property***:
 
 1. For inherited interfaces, we cannot redeclare cardinality (this is actually a consequence of "Implicit inheritance" above). 
-2. When we have direct subinterfaces $`I_i <_! J`$, for $`i = 1,...,n`$, and each $`I_i`$ has `card(`$`n_i,m_i`$`)` while J has $`card(n,m)`$ then we must have $`n \leq \sum_i n_i \leq \sum_i m_i \leq m`$.
+2. When we have direct subinterfaces $`I_i <_! J`$, for $`i = 1,...,n`$, and each $`I_i`$ has `card(`$`n_i`$`..`$`m_i`$`)` while J has `card(`$`n`$`..`$`m`$`)` then we must have $`n \leq \sum_i n_i \leq \sum_i m_i \leq m`$.
   
 _Remark 1: Upper bounds can be omitted, writing `@card(2..)`, to allow for arbitrary large cardinalities_
 
@@ -368,6 +368,7 @@ _Remark 2: For cardinality, and for most other constraints, we should reject red
 * `A owns B[] @card(n...m)` postulates $n \leq \mathrm{len}(l) \leq m$ whenever $`l : [B](a:O_B)`$ for $`a : A`$
   * **defaults** to `@card(0..)` if omitted ("many")
 
+<!--
 **Case PLAYS_AS**
 * `A plays B:I as C:J` postulates $`c :_! C(a:J)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $`A \leq D`$, $`D <_! J`$.
   * **Invalidated** when $`A <_! J'`$ for $`B(I) \lneq C'(J') \leq C(J)`$.
@@ -377,6 +378,7 @@ _Remark 2: For cardinality, and for most other constraints, we should reject red
   * **Invalidated** when $`A <_! O_{C'}`$ for $`B \lneq C' \leq C`$.
 
 _Comment: both preceding cases are kinda complicated/unnatural ... as reflected by the math._
+-->
 
 **Case UNIQUE**
 * `A owns B @unique` postulates that if $`b : B(a:O_B)`$ for some $`a : A`$ then this $`a`$ is unique (for fixed $`b`$).
@@ -389,27 +391,32 @@ _Comment: both preceding cases are kinda complicated/unnatural ... as reflected 
 
 **Case ABSTRACT**
 * `(type) A @abstract` postulates $`a :_! A(...)`$ to be impossible
-* `B relates I @abstract` postulates $`A <_! I`$ to be impossible for $`A : \mathbf{Obj}`$
-* `B relates I[] @abstract` postulates $`A <_! I`$ to be impossible for $`A : \mathbf{Obj}`$
 * `A plays B:I @abstract` postulates that
   *  (if $`I`$ is used as a plain role:) $`b :_! B'(a:I)`$ 
   *  (if $`I`$ is used as a list role:) $`b :_! B'(l:[I])`$, $a \in l$ 
   
   is impossible whenever $`a : A`$, $B' \leq B$ (_note_: $`B' \leq B`$ is needed here, since the interface $`I`$ may be inherited to some subtypes)
-* `A owns B @abstract` postulates $`b :_! B(a:I)`$ to be impossible for $`a : A`$ 
-* `A owns B[] @abstract` postulates $`b :_! [B](a:I)`$ to be impossible for $`a : A`$ 
+* `A owns B @abstract` postulates $`b :_! B'(a:I)`$ to be impossible for $`a : A`$  and $`B \leq B'`$
+* `A owns B[] @abstract` postulates $`b :_! [B'](a:I)`$ to be impossible for $`a : A`$ and $`B \leq B'`$ 
 
 ***System property***:
 
 > _The following properties capture that parents of abstract things are meant to be abstract too. But this is not really a crucial condition. (STICKY: discuss!)_ 
 
-1. If `(type) A @abstract` and $`A \leq B`$ then `(type) B` cannot be non-abstract.
-2. If `A relates I @abstract` and $`A(I) \leq B(J)`$ then `B relates J` cannot be non-abstract.
-3. If `A relates I[] @abstract` and $`A([I]) \leq B([J])`$ then `B relates J[]` cannot be non-abstract.
-4. If `A plays B:I @abstract` and $`A \leq A'`$, $`B'(I) \leq B'(I')`$ then `A' plays B':J'` cannot be non-abstract.
-5. If `A owns B @abstract` and $`A \leq A'`$, $`B \leq B'`$ then `A' owns B'` cannot be non-abstract. 
-6. If `A owns B[] @abstract` and $`A \leq A'`$, $`B \leq B'`$ then `A' owns B'[]` cannot be non-abstract. 
+1. If `(type) A @abstract` and $`A \leq B`$ then `(type) B (sub ...)`cannot be declared non-abstractly.
+1. If `A plays B:I @abstract` and $`B'(I) \leq B'(I')`$ then `A plays B':J'` cannot be declared non-abstractly.
+1. If `A owns B @abstract` and $`B \leq B'`$ then `A owns B'` cannot be declared non-abstractly. 
+1. If `A owns B[] @abstract` and $`B \leq B'`$ then `A' owns B'[]` cannot be declared non-abstractly. 
 
+
+<!--
+Relates abstract syntax
+* `B relates I @abstract` postulates $`A <_! I`$ to be impossible for $`A : \mathbf{Obj}`$
+* `B relates I[] @abstract` postulates $`A <_! I`$ to be impossible for $`A : \mathbf{Obj}`$
+
+1. If `A relates I @abstract` and $`A(I) \leq B(J)`$ then `B relates J` cannot be non-abstract.
+1. If `A relates I[] @abstract` and $`A([I]) \leq B([J])`$ then `B relates J[]` cannot be non-abstract.
+-->
 **Case VALUES**
 * `A owns B @values(v1, v2)` postulates if $`a : A`$ then $`a \in \{v_1, v_2\}`$ , ***requiring*** that 
   * either $`A : \mathbf{Att}`$, $`A \leq V`$, $`v_i : V`$, 
@@ -545,11 +552,13 @@ _In each case, `undefine` removes the postulated condition (restoring the defaul
 * `@card(n..m) from A relates I[]`
 * `@card(n...m) from A owns B[]`
 
+<!--
 **Case PLAYS_AS**
 * `as C from A plays B`
 
 **Case OWNS_AS**
 * `as C from A owns B`
+-->
 
 **Case UNIQUE**
 * `@unique from A owns B`
@@ -630,8 +639,19 @@ _Principles._
   * _Example 2_: a type is either abstract or not. we can only define or undefine `@abstract`.
 
 ***System property***: 
-1. within a single `redefine` clause we cannot both redefine type axioms _and_ constraint affecting those type axioms
-2. _Example_. (TODO)
+1. within a single `redefine` clause we cannot both redefine a type axiom _and_ constraints affecting that type axioms
+2. _Example_. We can redefine
+    ```
+    define person owns name @card(0..1);
+    // first clause: redefine name -> name[] 
+    redefine person owns name[];
+    // next clause: redefine annotations
+    redefine person owns name[] @card(0..3) @values("A", "B", "C");
+    ```
+    but we cannot redefine both in the same clause;
+    ```
+    redefine person owns name[] @card(0..3) @values("A", "B", "C");
+    ```
 
 ### Type axioms
 
@@ -645,12 +665,12 @@ _Principles._
   * either $`A <_! B' \neq B`$ (to be redefined)
   * or $`A`$ has no direct super-type
 * `(relation) A relates I` redefines $`A : \mathbf{Rel}(I)`$, ***requiring*** that $`A : \mathbf{Rel}([I])`$ (to be redefined)
-  * _inherited cardinality_: inherits card (default: `@card(0..)`) 
-  * _data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I^k`$
+  * _Inherited cardinality_: inherits card (default: `@card(0..)`) 
+  * _Data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I^k`$
 * `(relation) A relates I as J$` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
 * `(relation) A relates I[]` redefines $`A : \mathbf{Rel}([I])`$, ***requiring*** that $`A : \mathbf{Rel}(I)`$ (to be redefined)
-  * _inherited cardinality_: inherits card (default: `@card(1..1)`) (STICKY)
-  * _data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I^k`$
+  * _Inherited cardinality_: inherits card (default: `@card(1..1)`) (STICKY)
+  * _Data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I^k`$
 * `(relation) A relates I[] as J[]` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
 
 **Case ATT**
@@ -678,6 +698,7 @@ _In each case, `redefine` redefines the postulated condition._
 * `A relates I[] @card(n..m)`
 * `A owns B[] @card(n...m)`
 
+<!--
 **Case PLAYS_AS**
 * `A plays B as C`
 
@@ -741,6 +762,28 @@ cannot redefine primitives
 **Case SINGLE_RET_FUN**
 
 cannot redefine single-return functions.
+
+## Labels and aliases
+
+* Each type has a **label**, which is its primary identifier
+* In addition, the user may _define_ (and _undefine_) any number of aliases, which can be used in place of the primary label in pattern
+* Primary labels themselves can be _redefined_
+* Labels and aliases must be unique (e.g. one type's label cannot be another type's alias)
+
+### Define
+```
+define person alias p, q, r;
+```
+
+### Undefine
+```
+undefine alias p, q, r from person;
+```
+
+### Redefine 
+```
+redefine person label animal;
+```
 
 # Data instance languages
 
@@ -920,6 +963,7 @@ _Remark: the usefulness of constraint patterns seems overall low, could think of
 * `$A owns $B[] @card(n...m)` is satisfied if ...
 -->
 
+<!--
 **Case PLAYS_AS_PATT**
 
 _Notation: for readability, we simply write $`X`$ in place of $`m(X)`$ in this case and the next._
@@ -930,6 +974,7 @@ _Notation: for readability, we simply write $`X`$ in place of $`m(X)`$ in this c
 * `$A owns $B as $C` is satisfied if $A \leq A' <_! D' \leq D$ for some $`D`$s, and $B \leq B' <_! C' \leq C$, with $`A^{(')} \leq O_{B^{(')}}`$, $`D^{(')} \leq O_{C^{(')}}`$, and schema directly contains the constraint `A' owns B' as C'`.
 
 _Remark: these two are still not a natural constraint, as foreshadowed by a previous remark!_
+-->
 
 **Case UNIQUE_PATT**
 * `$A owns $B @unique` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
@@ -1822,12 +1867,21 @@ part of a query pipeline
 
 ## Syntactic Sugar
 
-* `$x in <LIST_EXPR>` is equivalent to `$l = <LIST_EXPR>; $x in $l` (see "Syntactic Sugar") 
-* `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
-* `$x links ($y)` is equivalent to `$x links ($_: $y)` for anonymous `$_` (See "Syntactic Sugar")
-* `$x has $B <EXPR>` - `$x has $B $y; $y = <EXPR>`
-* `$x has $B <COMP>` - `$x has $B $y; $y <COMP>`
+* General SVO shortening:
+  * `X <keyword> <expr>; X <keyword> <expr>;` shortens to `X <keyword> <expr>, <keyword> <expr>;`
+  * `<keyword>` can be `sub, relates, value, owns, plays, isa, links, has`
+* General OVS shortening
+  * `<expr> <keyword> X; <expr> <keyword>  X;` shortens to `<expr>, <expr> <keyword> X;`
+  * `<keyword>` can be `from, of`
+* `$x in <LIST_EXPR>;` is equivalent to `$l = <LIST_EXPR>; $x in $l;` 
+* `$x has $y;` is equivalent to `$x has $_ $y;` for anonymous `$_`
+* `$x links ($y);` is equivalent to `$x links ($_: $y)` for anonymous `$_`
+* `$x has $B <EXPR>;` abbreviates `$x has $B $y; $y = <EXPR>;`
+* `$x has $B <COMP> <EXPR>;` abbreviates `$x has $B $y; $y <COMP> <EXPR>;`
+  * `<COMP>` is a comparator (`>, <, >=, <=` etc.)
 * `$x has $y` - `$x has $_Y $y;` (_not_: `$_Y[]` !)
+* `$x has! $t $y` abbreviates `$x has $t $y; $y isa! $t;`
+* `$x links! ($t: $y);` abbreviates `$x isa! $s; $x links ($t: $y);`
 
 ## Typing of operators
 
