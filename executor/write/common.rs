@@ -29,15 +29,15 @@ fn get_value<'a>(input: &'a Row<'a>, source: &'a ValueSource) -> &'a Value<'stat
     }
 }
 
-pub fn populate_output_row<'input>(
+pub fn populate_output_row(
     output_row_plan: &[(Variable, VariableSource)],
-    input: &Row<'input>,
+    input: &Row<'_>,
     freshly_inserted: &[answer::Thing<'static>],
     output: &mut [VariableValue<'static>],
 ) {
     for (i, (_, source)) in output_row_plan.iter().enumerate() {
         let value = match source {
-            VariableSource::InputVariable(s) => input.get(s.clone()).clone(),
+            VariableSource::InputVariable(s) => input.get(*s).clone(),
             VariableSource::InsertedThing(s) => VariableValue::Thing(freshly_inserted.get(*s).unwrap().clone()),
         };
         output[i] = value;

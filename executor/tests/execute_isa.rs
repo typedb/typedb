@@ -19,11 +19,7 @@ use encoding::value::label::Label;
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
-use storage::{
-    durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
-    MVCCStorage,
-};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 
 use crate::common::{load_managers, setup_storage};
 
@@ -34,7 +30,7 @@ const CAT_LABEL: Label = Label::new_static("cat");
 const DOG_LABEL: Label = Label::new_static("dog");
 
 fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
-    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    let mut snapshot = storage.clone().open_snapshot_write();
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let animal_type = type_manager.create_entity_type(&mut snapshot, &ANIMAL_LABEL).unwrap();
@@ -100,10 +96,11 @@ fn traverse_isa_unbounded_sorted_thing() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
@@ -159,10 +156,11 @@ fn traverse_isa_unbounded_sorted_type() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
@@ -237,10 +235,11 @@ fn traverse_isa_bounded_thing() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
@@ -301,10 +300,11 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
@@ -365,10 +365,11 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
@@ -443,10 +444,11 @@ fn traverse_isa_reverse_bounded_type() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();

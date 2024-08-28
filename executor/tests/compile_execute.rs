@@ -101,8 +101,10 @@ fn test_has_planning_traversal() {
     let block = builder.finish();
 
     // Executor
-    let snapshot = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let thing_manager = Arc::new(thing_manager);
+
     let (entry_annotations, annotated_functions) = infer_types(
         &block,
         vec![],
@@ -121,7 +123,7 @@ fn test_has_planning_traversal() {
     );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -235,8 +237,9 @@ fn test_links_planning_traversal() {
     let block = builder.finish();
 
     // Executor
-    let snapshot = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let thing_manager = Arc::new(thing_manager);
     let (entry_annotations, _) = infer_types(
         &block,
         vec![],
@@ -255,7 +258,7 @@ fn test_links_planning_traversal() {
     );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))

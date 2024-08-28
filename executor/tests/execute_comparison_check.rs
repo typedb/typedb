@@ -107,7 +107,7 @@ fn attribute_equality() {
                 isa_b,
                 Inputs::None([]),
                 &entry_annotations,
-                vec![CheckInstruction::Range(var_age_b, var_age_a, Comparator::Equal)],
+                vec![CheckInstruction::Comparison { lhs: var_age_b, rhs: var_age_a, comparator: Comparator::Equal }],
             ))],
             &[var_age_a, var_age_b],
         )),
@@ -117,10 +117,11 @@ fn attribute_equality() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();

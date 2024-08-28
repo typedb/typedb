@@ -132,7 +132,7 @@ where
                             // to the borrow of `self` and immediately return.
                             // The underlying lending iterator cannot be advanced before self.next() is called again,
                             // which will force this borrow to be released.
-                            transmute::<Self::Item<'_>, Self::Item<'_>>(item)
+                            transmute::<I::Item<'_>, I::Item<'_>>(item)
                         });
                     }
                 }
@@ -145,6 +145,72 @@ impl<I, F, K> Seekable<K> for Filter<I, F>
 where
     I: Seekable<K>,
     F: Borrow<dyn for<'a, 'b> FnHktHelper<&'b I::Item<'a>, bool>> + 'static,
+{
+    fn seek(&mut self, key: &K) {
+        self.iter.seek(key)
+    }
+
+    fn compare_key(&self, item: &Self::Item<'_>, key: &K) -> Ordering {
+        self.iter.compare_key(item, key)
+    }
+}
+
+pub struct TryFilter<I, F, T, E> {
+    iter: I,
+    pred: F,
+    done: bool,
+    _res: PhantomData<Result<T, E>>,
+}
+
+impl<I, F, T, E> TryFilter<I, F, T, E> {
+    pub(crate) fn new(iter: I, pred: F) -> Self {
+        Self { iter, pred, done: false, _res: PhantomData }
+    }
+}
+
+impl<I, P, T, E> LendingIterator for TryFilter<I, P, T, E>
+where
+    T: Hkt,
+    E: 'static,
+    I: for<'a> LendingIterator<Item<'a> = Result<T::HktSelf<'a>, E>>,
+    P: Borrow<dyn for<'a, 'b> FnHktHelper<&'a I::Item<'b>, Result<bool, E>>> + 'static,
+{
+    type Item<'a> = I::Item<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        if self.done {
+            return None;
+        }
+        loop {
+            match self.iter.next() {
+                None => return None,
+                Some(item) => {
+                    match (self.pred.borrow())(&item) {
+                        Ok(true) => {
+                            return Some(unsafe {
+                                // SAFETY: this transmutes from Item to Item to extend the lifetime
+                                // to the borrow of `self` and immediately return.
+                                // The underlying lending iterator cannot be advanced before self.next() is called again,
+                                // which will force this borrow to be released.
+                                transmute::<I::Item<'_>, I::Item<'_>>(item)
+                            });
+                        }
+                        Ok(false) => (),
+                        Err(err) => {
+                            self.done = true;
+                            return Some(Err(err));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl<I, F, T, E, K> Seekable<K> for TryFilter<I, F, T, E>
+where
+    I: Seekable<K>,
+    TryFilter<I, F, T, E>: for<'a> LendingIterator<Item<'a> = I::Item<'a>>,
 {
     fn seek(&mut self, key: &K) {
         self.iter.seek(key)

@@ -157,7 +157,7 @@ where
 
 impl ExpressionEvaluation for ListConstructor {
     fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let mut n_elements = state.pop_value().unwrap_long() as usize;
+        let n_elements = state.pop_value().unwrap_long() as usize;
         let mut elements: Vec<Value<'static>> = Vec::with_capacity(n_elements);
         for _ in 0..n_elements {
             elements.push(state.pop_value());

@@ -174,35 +174,27 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let executor = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap()
-    };
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let (_, thing_manager) = load_managers(storage.clone());
+    let thing_manager = Arc::new(thing_manager);
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    {
-        let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-        let (_, thing_manager) = load_managers(storage.clone());
-        let thing_manager = Arc::new(thing_manager);
+    let iterator = executor.into_iterator(snapshot, thing_manager);
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
 
-        let iterator = executor.into_iterator(snapshot, thing_manager);
-        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
-            .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone()))
-            .collect();
+    // person1, <something>
+    // person2, <something>
+    // person3, <something>
 
-        // person1, <something>
-        // person2, <something>
-        // person3, <something>
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 1);
+    assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 1);
+    assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 1);
 
-        assert_eq!(rows.len(), 3);
-        assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 1);
-        assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 1);
-        assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 1);
-
-        for row in rows.iter() {
-            let r = row.as_ref().unwrap();
-            print!("{}", r);
-        }
+    for row in rows.iter() {
+        let r = row.as_ref().unwrap();
+        print!("{}", r);
     }
 }
 
@@ -255,35 +247,27 @@ fn unselected_named_vars_counted() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let executor = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap()
-    };
+    let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
+    let (_, thing_manager) = load_managers(storage.clone());
+    let thing_manager = Arc::new(thing_manager);
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    {
-        let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-        let (_, thing_manager) = load_managers(storage.clone());
-        let thing_manager = Arc::new(thing_manager);
+    let iterator = executor.into_iterator(snapshot, thing_manager);
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
 
-        let iterator = executor.into_iterator(snapshot, thing_manager);
-        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
-            .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone()))
-            .collect();
+    // 7x person 1, <something>
+    // 3x person 2, <something>
+    // 2x person 3, <something>
 
-        // 7x person 1, <something>
-        // 3x person 2, <something>
-        // 2x person 3, <something>
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 7);
+    assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 3);
+    assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 2);
 
-        assert_eq!(rows.len(), 3);
-        assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 7);
-        assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 3);
-        assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 2);
-
-        for row in rows.iter() {
-            let r = row.as_ref().unwrap();
-            print!("{}", r);
-        }
+    for row in rows.iter() {
+        let r = row.as_ref().unwrap();
+        print!("{}", r);
     }
 }
 
@@ -345,40 +329,32 @@ fn cartesian_named_counted_checked() {
             ConstraintInstruction::Has(HasInstruction::new(has_age, Inputs::None([]), &entry_annotations)),
             ConstraintInstruction::Has(HasInstruction::new(has_email, Inputs::None([]), &entry_annotations)),
         ],
-        &vec![var_person, var_age],
+        &[var_person, var_age],
     ))];
     let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let executor = {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (_, thing_manager) = load_managers(storage.clone());
-        ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap()
-    };
+    let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
+    let (_, thing_manager) = load_managers(storage.clone());
+    let thing_manager = Arc::new(thing_manager);
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    {
-        let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-        let (_, thing_manager) = load_managers(storage.clone());
-        let thing_manager = Arc::new(thing_manager);
+    let iterator = executor.into_iterator(snapshot, thing_manager);
+    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
 
-        let iterator = executor.into_iterator(snapshot, thing_manager);
-        let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> = iterator
-            .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone()))
-            .collect();
+    // 2x person 1, age_1, <name something>, <email something>
+    // 2x person 1, age_2, <name something>, <email something>
+    // 2x person 1, age_3, <name something>, <email something>
 
-        // 2x person 1, age_1, <name something>, <email something>
-        // 2x person 1, age_2, <name something>, <email something>
-        // 2x person 1, age_3, <name something>, <email something>
-
-        for row in rows.iter() {
-            let r = row.as_ref().unwrap();
-            print!("{}", r);
-        }
-
-        assert_eq!(rows.len(), 3);
-        assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 2);
-        assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 2);
-        assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 2);
+    for row in rows.iter() {
+        let r = row.as_ref().unwrap();
+        print!("{}", r);
     }
+
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 2);
+    assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 2);
+    assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 2);
 }

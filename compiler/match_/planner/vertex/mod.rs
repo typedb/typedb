@@ -36,12 +36,12 @@ pub(super) enum PlannerVertex {
 impl PlannerVertex {
     pub(super) fn is_valid(&self, ordered: &[usize]) -> bool {
         match self {
-            Self::Constant => true,                        // always valid: comes from query
-            Self::Thing(_) => true,                        // always valid: isa iterator
-            Self::Has(_) => true,                          // always valid: has iterator
-            Self::Links(_) => true,                        // always valid: links iterator
+            Self::Constant => true,                              // always valid: comes from query
+            Self::Thing(_) => true,                              // always valid: isa iterator
+            Self::Has(_) => true,                                // always valid: has iterator
+            Self::Links(_) => true,                              // always valid: links iterator
             Self::Value(value) => value.is_valid(ordered), // may be invalid: has to be from an attribute or a expression
-            Self::Expression(_) => todo!(),                // may be invalid: inputs must be bound
+            Self::Expression(_) => todo!("validate expression"), // may be invalid: inputs must be bound
         }
     }
 

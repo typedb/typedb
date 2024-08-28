@@ -65,7 +65,7 @@ fn execute_match_query(
         .unwrap();
         let match_plan = build_match_plan(&block, &type_annotations, &HashMap::new(), &tx.thing_manager);
         let program_plan = ProgramPlan::new(match_plan, HashMap::new(), HashMap::new());
-        let executor = ProgramExecutor::new(&program_plan, &*tx.snapshot, &tx.thing_manager).map_err(Either::Second)?;
+        let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager).map_err(Either::Second)?;
         variable_position_index = executor.entry_variable_positions_index().to_owned();
         executor
             .into_iterator(tx.snapshot.clone(), tx.thing_manager.clone())
@@ -196,6 +196,13 @@ async fn get_answers_of_typeql_read(context: &mut Context, step: &Step) {
 #[apply(generic_step)]
 #[step(expr = r"uniquely identify answer concepts")]
 async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
+    let num_specs = step.table().unwrap().rows.len() - 1;
+    let num_answers = context.answers.len();
+    assert_eq!(
+        num_specs, num_answers,
+        "expected the number of identifier entries to match the number of answers, found {} entries and {} answers",
+        num_specs, num_answers
+    );
     for row in iter_table_map(step) {
         let mut num_matches = 0;
         for answer_row in &context.answers {

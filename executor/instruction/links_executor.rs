@@ -129,8 +129,8 @@ impl LinksExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self.iterate_mode {
@@ -142,7 +142,7 @@ impl LinksExecutor {
                 let filter_fn = self.filter_fn.clone();
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let iterator: Filter<LinksIterator, Arc<LinksFilterFn>> = thing_manager
-                    .get_links_by_relation_type_range(snapshot, key_range)
+                    .get_links_by_relation_type_range(&**snapshot, key_range)
                     .filter::<_, LinksFilterFn>(filter_fn);
                 let as_tuples: LinksUnboundedSortedRelation = iterator.map(links_to_tuple_relation_player_role);
                 Ok(TupleIterator::LinksUnbounded(SortedTupleIterator::new(
@@ -162,7 +162,7 @@ impl LinksExecutor {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = thing_manager
                         .get_links_by_relation_and_player_type_range(
-                            snapshot,
+                            &**snapshot,
                             relation.as_reference(),
                             // TODO: this should be just the types owned by the one instance's type in the cache!
                             player_type_range,
@@ -182,7 +182,7 @@ impl LinksExecutor {
                     let iterators = relations
                         .map(|relation| {
                             Ok(Peekable::new(thing_manager.get_links_by_relation_and_player_type_range(
-                                snapshot,
+                                &**snapshot,
                                 relation.as_reference(),
                                 player_type_range.clone(),
                             )))
@@ -213,7 +213,7 @@ impl LinksExecutor {
                 let iterator = match row.get(self.links.relation()) {
                     VariableValue::Thing(Thing::Relation(relation)) => thing_manager
                         .get_links_by_relation_and_player_type_range(
-                            snapshot,
+                            &**snapshot,
                             relation.as_reference(),
                             player_type_range,
                         ),
@@ -233,7 +233,7 @@ impl LinksExecutor {
                 debug_assert!(row.width() > self.links.player().as_usize());
                 let relation = row.get(self.links.relation()).as_thing().as_relation();
                 let player = row.get(self.links.player()).as_thing().as_object();
-                let iterator = thing_manager.get_links_by_relation_and_player(snapshot, relation, player);
+                let iterator = thing_manager.get_links_by_relation_and_player(&**snapshot, relation, player);
                 let filtered = iterator.filter::<_, LinksFilterFn>(self.filter_fn.clone());
                 let as_tuples: LinksBoundedRelationSortedPlayer = filtered.map(links_to_tuple_relation_player_role);
                 Ok(TupleIterator::LinksBoundedRelationPlayer(SortedTupleIterator::new(

@@ -11,7 +11,7 @@ pub mod kmerge;
 use std::{borrow::Borrow, cmp::Ordering, iter, mem::transmute};
 
 use crate::{
-    adaptors::{Chain, Filter, FilterMap, FlatMap, Flatten, Map, TakeWhile, TryFlatMap},
+    adaptors::{Chain, Filter, FilterMap, FlatMap, Flatten, Map, TakeWhile, TryFilter, TryFlatMap},
     higher_order::{AdHocHkt, FnHktHelper, FnMutHktHelper, Hkt},
 };
 
@@ -148,6 +148,27 @@ pub trait LendingIterator: 'static {
         }
         count
     }
+}
+
+pub trait TryLendingIterator<T: Hkt, E: 'static>:
+    for<'a> LendingIterator<Item<'a> = Result<T::HktSelf<'a>, E>>
+{
+    fn try_filter<P, F>(self, pred: P) -> TryFilter<Self, P, T, E>
+    where
+        Self: Sized,
+        P: Borrow<F>,
+        F: for<'a, 'b> FnHktHelper<&'a Self::Item<'b>, Result<bool, E>> + ?Sized,
+    {
+        TryFilter::new(self, pred)
+    }
+}
+
+impl<I, T, E> TryLendingIterator<T, E> for I
+where
+    T: Hkt,
+    E: 'static,
+    I: for<'a> LendingIterator<Item<'a> = Result<T::HktSelf<'a>, E>>,
+{
 }
 
 pub trait Seekable<K: ?Sized>: LendingIterator {

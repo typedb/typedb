@@ -116,6 +116,22 @@ impl ConstraintInstruction {
             ConstraintInstruction::ExpressionBinding(binding) => binding.ids_assigned().for_each(apply),
         }
     }
+
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<Variable>) {
+        match self {
+            Self::Isa(inner) => inner.add_check(check),
+            Self::IsaReverse(inner) => inner.add_check(check),
+            Self::Has(inner) => inner.add_check(check),
+            Self::HasReverse(inner) => inner.add_check(check),
+            Self::Links(inner) => inner.add_check(check),
+            Self::LinksReverse(inner) => inner.add_check(check),
+            Self::FunctionCallBinding(_) => todo!(),
+            Self::ComparisonGenerator(_) => todo!(),
+            Self::ComparisonGeneratorReverse(_) => todo!(),
+            Self::ComparisonCheck(_) => todo!(),
+            Self::ExpressionBinding(_) => todo!(),
+        }
+    }
 }
 
 impl InstructionAPI for ConstraintInstruction {
@@ -141,13 +157,19 @@ impl InstructionAPI for ConstraintInstruction {
 
 #[derive(Debug, Clone)]
 pub enum CheckInstruction<ID> {
-    Range(ID, ID, Comparator),
+    Comparison { lhs: ID, rhs: ID, comparator: Comparator },
+    Has { owner: ID, attribute: ID },
 }
 
 impl<ID: IrID> CheckInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> CheckInstruction<T> {
         match self {
-            Self::Range(lhs, rhs, comp) => CheckInstruction::Range(mapping[&lhs], mapping[&rhs], comp),
+            Self::Comparison { lhs, rhs, comparator } => {
+                CheckInstruction::Comparison { lhs: mapping[&lhs], rhs: mapping[&rhs], comparator }
+            }
+            Self::Has { owner, attribute } => {
+                CheckInstruction::Has { owner: mapping[&owner], attribute: mapping[&attribute] }
+            }
         }
     }
 }
@@ -169,6 +191,10 @@ impl IsaInstruction<Variable> {
     ) -> Self {
         let types = type_annotations.variable_annotations_of(isa.type_()).unwrap().clone();
         Self { isa, inputs, types, checks }
+    }
+
+    fn add_check(&mut self, check: CheckInstruction<Variable>) {
+        self.checks.push(check)
     }
 }
 
@@ -195,7 +221,7 @@ pub struct IsaReverseInstruction<ID> {
     pub isa: Isa<ID>,
     pub inputs: Inputs<ID>,
     types: Arc<HashSet<Type>>,
-    checks: Vec<CheckInstruction<ID>>,
+    pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl IsaReverseInstruction<Variable> {
@@ -207,6 +233,10 @@ impl IsaReverseInstruction<Variable> {
     ) -> Self {
         let types = type_annotations.variable_annotations_of(isa.thing()).unwrap().clone();
         Self { isa, inputs, types, checks }
+    }
+
+    fn add_check(&mut self, check: CheckInstruction<Variable>) {
+        self.checks.push(check)
     }
 }
 
@@ -243,6 +273,10 @@ impl HasInstruction<Variable> {
         let owner_to_attribute_types = edge_annotations.left_to_right();
         let attribute_types = type_annotations.variable_annotations_of(constraint.attribute()).unwrap().clone();
         Self { has: constraint, inputs, owner_to_attribute_types, attribute_types }
+    }
+
+    fn add_check(&mut self, _check: CheckInstruction<Variable>) {
+        todo!()
     }
 }
 
@@ -282,6 +316,10 @@ impl HasReverseInstruction<Variable> {
         let attribute_to_owner_types = edge_annotations.right_to_left().clone();
         let owner_types = type_annotations.variable_annotations_of(has.owner()).unwrap().clone();
         Self { has, inputs, attribute_to_owner_types, owner_types }
+    }
+
+    fn add_check(&mut self, _check: CheckInstruction<Variable>) {
+        todo!()
     }
 }
 
@@ -324,6 +362,10 @@ impl LinksInstruction<Variable> {
         let relation_to_player_types = edge_annotations.left_to_right();
         let player_types = type_annotations.variable_annotations_of(links.player()).unwrap().clone();
         Self { links, inputs, relation_to_player_types, player_types, player_to_role_types }
+    }
+
+    fn add_check(&mut self, _check: CheckInstruction<Variable>) {
+        todo!()
     }
 }
 
@@ -371,6 +413,10 @@ impl LinksReverseInstruction<Variable> {
         let player_to_relation_types = edge_annotations.right_to_left();
         let relation_types = type_annotations.variable_annotations_of(links.relation()).unwrap().clone();
         Self { links, inputs, player_to_relation_types, relation_types, relation_to_role_types }
+    }
+
+    fn add_check(&mut self, _check: CheckInstruction<Variable>) {
+        todo!()
     }
 }
 

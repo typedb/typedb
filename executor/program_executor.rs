@@ -28,8 +28,8 @@ pub struct ProgramExecutor {
 impl ProgramExecutor {
     pub fn new(
         program_plan: &ProgramPlan,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
         let ProgramPlan { entry: entry_plan, functions: function_plans, entry_value_type_annotations } = program_plan;
         let entry = PatternExecutor::new(entry_plan, snapshot, thing_manager)?;

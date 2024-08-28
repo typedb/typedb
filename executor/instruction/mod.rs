@@ -8,6 +8,7 @@ use std::{
     collections::HashMap,
     marker::PhantomData,
     ops::{Bound, RangeBounds},
+    sync::Arc,
 };
 
 use answer::{variable::Variable, variable_value::VariableValue};
@@ -15,7 +16,10 @@ use compiler::match_::{
     instructions::{CheckInstruction, ConstraintInstruction},
     planner::pattern_plan::InstructionAPI,
 };
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::{
+    error::ConceptReadError,
+    thing::{object::ObjectAPI, thing_manager::ThingManager},
+};
 use ir::pattern::constraint::Comparator;
 use lending_iterator::higher_order::{FnHktHelper, Hkt};
 use storage::snapshot::ReadableSnapshot;
@@ -120,8 +124,8 @@ impl InstructionExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
@@ -280,7 +284,8 @@ impl TernaryIterateMode {
     }
 }
 
-type FilterFn<T> = dyn for<'a, 'b> FnHktHelper<&'a Result<<T as Hkt>::HktSelf<'b>, ConceptReadError>, bool>;
+type FilterFn<T> =
+    dyn for<'a, 'b> FnHktHelper<&'a Result<<T as Hkt>::HktSelf<'b>, ConceptReadError>, Result<bool, ConceptReadError>>;
 
 struct Checker<T: Hkt> {
     extractors: HashMap<VariablePosition, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,
@@ -320,9 +325,9 @@ impl<T: Hkt> Checker<T> {
         let mut range = (Bound::Unbounded, Bound::Unbounded);
         for check in &self.checks {
             match *check {
-                CheckInstruction::Range(lhs, rhs, comp) if lhs == target => {
+                CheckInstruction::Comparison { lhs, rhs, comparator } if lhs == target => {
                     let rhs = row.get(rhs).to_owned();
-                    let comp_range = match comp {
+                    let comp_range = match comparator {
                         Comparator::Equal => (Bound::Included(rhs.clone()), Bound::Included(rhs)),
                         Comparator::Less => (Bound::Unbounded, Bound::Excluded(rhs)),
                         Comparator::LessOrEqual => (Bound::Unbounded, Bound::Included(rhs)),
@@ -339,20 +344,76 @@ impl<T: Hkt> Checker<T> {
         range
     }
 
-    fn filter_for_row(&self, row: &ImmutableRow<'_>) -> Box<FilterFn<T>> {
-        let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> bool>> = Vec::with_capacity(self.checks.len());
+    fn filter_for_row(
+        &self,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
+        row: &ImmutableRow<'_>,
+    ) -> Box<FilterFn<T>> {
+        let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> Result<bool, ConceptReadError>>> =
+            Vec::with_capacity(self.checks.len());
         for check in &self.checks {
             match *check {
-                CheckInstruction::Range(lhs, rhs, _comp) => {
+                CheckInstruction::Comparison { lhs, rhs, comparator: _comp } => {
                     let lhs = self.extractors[&lhs];
                     let rhs = row.get(rhs).to_owned();
-                    filters.push(Box::new(move |value| lhs(value) == rhs)); // TODO use comp
+                    filters.push(Box::new(move |value| Ok(lhs(value) == rhs))); // TODO use comp
+                }
+                CheckInstruction::Has { owner, attribute } => {
+                    let maybe_owner_extractor = self.extractors.get(&owner);
+                    let maybe_attribute_extractor = self.extractors.get(&attribute);
+                    let snapshot = snapshot.clone();
+                    let thing_manager = thing_manager.clone();
+                    match (maybe_owner_extractor, maybe_attribute_extractor) {
+                        (None, None) => unreachable!("filter unrelated to the iterator"),
+                        (None, Some(&attr)) => {
+                            let owner = row.get(owner).to_owned();
+                            filters.push(Box::new({
+                                move |value| {
+                                    owner.as_thing().as_object().has_attribute(
+                                        &*snapshot,
+                                        &thing_manager,
+                                        attr(value).as_thing().as_attribute().as_reference(),
+                                    )
+                                }
+                            }));
+                        }
+                        (Some(&owner), None) => {
+                            let attr = row.get(attribute).to_owned();
+                            filters.push(Box::new({
+                                move |value| {
+                                    owner(value).as_thing().as_object().has_attribute(
+                                        &*snapshot,
+                                        &thing_manager,
+                                        attr.as_thing().as_attribute().as_reference(),
+                                    )
+                                }
+                            }));
+                        }
+                        (Some(&owner), Some(&attr)) => {
+                            filters.push(Box::new({
+                                move |value| {
+                                    owner(value).as_thing().as_object().has_attribute(
+                                        &*snapshot,
+                                        &thing_manager,
+                                        attr(value).as_thing().as_attribute().as_reference(),
+                                    )
+                                }
+                            }));
+                        }
+                    }
                 }
             }
         }
-        Box::new(move |res| match res {
-            Ok(value) => filters.iter().all(|f| f(value)),
-            Err(_) => true,
+
+        Box::new(move |res| {
+            let Ok(value) = res else { return Ok(true) };
+            for filter in &filters {
+                if !filter(value)? {
+                    return Ok(false);
+                }
+            }
+            Ok(true)
         })
     }
 }

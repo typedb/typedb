@@ -236,8 +236,10 @@ fn traverse_links_unbounded_sorted_from() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let snapshot = Arc::new(snapshot);
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
@@ -324,8 +326,10 @@ fn traverse_links_unbounded_sorted_to() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let snapshot = Arc::new(snapshot);
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
@@ -426,8 +430,10 @@ fn traverse_links_bounded_relation() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let snapshot = Arc::new(snapshot);
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
@@ -539,8 +545,10 @@ fn traverse_links_bounded_relation_player() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let snapshot = Arc::new(snapshot);
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
@@ -600,8 +608,9 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     let entry = builder.finish();
 
-    let snapshot = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let thing_manager = Arc::new(thing_manager);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -628,7 +637,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
@@ -689,8 +698,9 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     let entry = builder.finish();
 
-    let snapshot = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let thing_manager = Arc::new(thing_manager);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -717,7 +727,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
@@ -818,8 +828,10 @@ fn traverse_links_reverse_bounded_player() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let snapshot = Arc::new(snapshot);
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
@@ -931,8 +943,10 @@ fn traverse_links_reverse_bounded_player_relation() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let snapshot = Arc::new(snapshot);
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();

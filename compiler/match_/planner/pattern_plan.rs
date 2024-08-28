@@ -25,8 +25,8 @@ use crate::{
     match_::{
         inference::type_annotations::TypeAnnotations,
         instructions::{
-            ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs, IsaReverseInstruction,
-            LinksInstruction, LinksReverseInstruction,
+            CheckInstruction, ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs,
+            IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
         },
         planner::vertex::{Costed, HasPlanner, LinksPlanner, PlannerVertex, ThingPlanner, ValuePlanner, VertexCost},
     },
@@ -75,6 +75,7 @@ impl PatternPlan {
             variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
 
         let mut programs = Vec::with_capacity(index_to_constraint.len());
+        let mut producers = HashMap::with_capacity(variable_index.len());
         let mut outputs = Vec::with_capacity(variable_index.len());
 
         let mut program_instructions = Vec::new();
@@ -91,12 +92,20 @@ impl PatternPlan {
                         .iter()
                         .filter(|&&adj| elements[adj].is_iterator())
                         .any(|adj| ordering[..i].contains(adj));
+
                     if needs_isa {
+                        if !program_instructions.is_empty() {
+                            programs.push(Program::Intersection(IntersectionProgram::new(
+                                sort_variable.take().unwrap(),
+                                mem::take(&mut program_instructions),
+                                &outputs,
+                            )));
+                        }
+
                         let isa = &variable_isa[&var];
                         outputs.push(var);
-                        if sort_variable.is_none() {
-                            sort_variable = Some(var);
-                        }
+                        sort_variable = Some(var);
+                        producers.insert(var, program_instructions.len());
                         program_instructions.push(ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
                             isa.clone(),
                             Inputs::None([]),
@@ -112,14 +121,6 @@ impl PatternPlan {
                     .map(|adj| index_to_variable[adj])
                     .collect::<HashSet<_>>();
 
-                if !inputs.is_empty() {
-                    programs.push(Program::Intersection(IntersectionStep::new(
-                        sort_variable.take().unwrap(),
-                        mem::take(&mut program_instructions),
-                        &outputs,
-                    )));
-                }
-
                 let constraint = index_to_constraint[&index];
                 match constraint {
                     Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_) => {
@@ -127,11 +128,25 @@ impl PatternPlan {
                     }
 
                     Constraint::Links(links) => {
+                        let relation = links.relation();
+                        let player = links.player();
+                        let role_type = links.role_type();
+
                         if inputs.len() >= 2 {
-                            todo!("fully bound links")
+                            todo!("fully bound links");
+                            continue;
                         }
 
-                        for var in &[links.relation(), links.player(), links.role_type()] {
+                        if !inputs.is_empty() {
+                            producers.clear();
+                            programs.push(Program::Intersection(IntersectionProgram::new(
+                                sort_variable.take().unwrap(),
+                                mem::take(&mut program_instructions),
+                                &outputs,
+                            )));
+                        }
+
+                        for var in &[relation, player, role_type] {
                             if !inputs.contains(var) {
                                 outputs.push(*var)
                             }
@@ -139,16 +154,16 @@ impl PatternPlan {
 
                         let planner = elements[index].as_links().unwrap();
 
-                        let instruction = if inputs.contains(&links.relation()) {
+                        let instruction = if inputs.contains(&relation) {
                             ConstraintInstruction::Links(LinksInstruction::new(
                                 links.clone(),
-                                Inputs::Single([links.relation()]),
+                                Inputs::Single([relation]),
                                 type_annotations,
                             ))
-                        } else if inputs.contains(&links.player()) {
+                        } else if inputs.contains(&player) {
                             ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
                                 links.clone(),
-                                Inputs::Single([links.player()]),
+                                Inputs::Single([player]),
                                 type_annotations,
                             ))
                         } else if planner.unbound_is_forward {
@@ -167,47 +182,69 @@ impl PatternPlan {
                         program_instructions.push(instruction);
 
                         if sort_variable.is_none() {
-                            sort_variable = if inputs.is_empty() && planner.unbound_is_forward
-                                || inputs.contains(&links.player())
-                            {
-                                Some(links.relation())
-                            } else {
-                                Some(links.player())
-                            };
+                            sort_variable =
+                                if inputs.is_empty() && planner.unbound_is_forward || inputs.contains(&player) {
+                                    Some(relation)
+                                } else {
+                                    Some(player)
+                                };
                         }
                     }
 
                     Constraint::Has(has) => {
+                        let owner = has.owner();
+                        let attribute = has.attribute();
+
                         if inputs.len() == 2 {
-                            todo!("fully bound has")
+                            let owner_producer = producers.get(&owner).expect("bound owner must have been produced");
+                            let attribute_producer =
+                                producers.get(&attribute).expect("bound attribute must have been produced");
+                            let latest = usize::max(*owner_producer, *attribute_producer);
+                            program_instructions[latest].add_check(CheckInstruction::Has { owner, attribute });
+                            continue;
+                        }
+
+                        if !inputs.is_empty() {
+                            producers.clear();
+                            programs.push(Program::Intersection(IntersectionProgram::new(
+                                sort_variable.take().unwrap(),
+                                mem::take(&mut program_instructions),
+                                &outputs,
+                            )));
                         }
 
                         let planner = elements[index].as_has().unwrap();
-                        for var in &[has.owner(), has.attribute()] {
+                        for var in &[owner, attribute] {
                             if !inputs.contains(var) {
                                 outputs.push(*var)
                             }
                         }
 
-                        let instruction = if inputs.contains(&has.owner()) {
+                        let instruction = if inputs.contains(&owner) {
+                            producers.insert(attribute, program_instructions.len());
                             ConstraintInstruction::Has(HasInstruction::new(
                                 has.clone(),
-                                Inputs::Single([has.owner()]),
+                                Inputs::Single([owner]),
                                 type_annotations,
                             ))
-                        } else if inputs.contains(&has.attribute()) {
+                        } else if inputs.contains(&attribute) {
+                            producers.insert(owner, program_instructions.len());
                             ConstraintInstruction::HasReverse(HasReverseInstruction::new(
                                 has.clone(),
-                                Inputs::Single([has.attribute()]),
+                                Inputs::Single([attribute]),
                                 type_annotations,
                             ))
                         } else if planner.unbound_is_forward {
+                            producers.insert(owner, program_instructions.len());
+                            producers.insert(attribute, program_instructions.len());
                             ConstraintInstruction::Has(HasInstruction::new(
                                 has.clone(),
                                 Inputs::None([]),
                                 type_annotations,
                             ))
                         } else {
+                            producers.insert(owner, program_instructions.len());
+                            producers.insert(attribute, program_instructions.len());
                             ConstraintInstruction::HasReverse(HasReverseInstruction::new(
                                 has.clone(),
                                 Inputs::None([]),
@@ -217,13 +254,12 @@ impl PatternPlan {
                         program_instructions.push(instruction);
 
                         if sort_variable.is_none() {
-                            sort_variable = if inputs.is_empty() && planner.unbound_is_forward
-                                || inputs.contains(&has.attribute())
-                            {
-                                Some(has.owner())
-                            } else {
-                                Some(has.attribute())
-                            };
+                            sort_variable =
+                                if inputs.is_empty() && planner.unbound_is_forward || inputs.contains(&attribute) {
+                                    Some(owner)
+                                } else {
+                                    Some(attribute)
+                                };
                         }
                     }
 
@@ -236,7 +272,7 @@ impl PatternPlan {
                 }
             }
         }
-        programs.push(Program::Intersection(IntersectionStep::new(sort_variable.unwrap(), program_instructions, &outputs)));
+        programs.push(Program::Intersection(IntersectionProgram::new(sort_variable.unwrap(), program_instructions, &outputs)));
         Self { programs, context: context.clone() }
     }
 

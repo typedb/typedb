@@ -112,10 +112,10 @@ impl HasReverseExecutor {
         })
     }
 
-    pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
+    pub(crate) fn get_iterator(
         &self,
-        snapshot: &Snapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self.iterate_mode {
@@ -124,7 +124,7 @@ impl HasReverseExecutor {
                 let filter_fn = self.filter_fn.clone();
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let iterator: Filter<HasReverseIterator, Arc<HasFilterFn>> = thing_manager
-                    .get_has_from_attribute_type_range(snapshot, attribute_types_in_range)?
+                    .get_has_from_attribute_type_range(&**snapshot, attribute_types_in_range)?
                     .filter::<_, HasFilterFn>(filter_fn);
                 let as_tuples: Map<Filter<HasReverseIterator, Arc<HasFilterFn>>, HasToTupleFn, TupleResult<'_>> =
                     iterator.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
@@ -144,7 +144,7 @@ impl HasReverseExecutor {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = thing_manager
                         .get_has_reverse_by_attribute_and_owner_type_range(
-                            snapshot,
+                            &**snapshot,
                             attr.as_reference(),
                             owner_type_range,
                         )
@@ -161,7 +161,7 @@ impl HasReverseExecutor {
                     let attributes = self.attribute_cache.as_ref().unwrap().iter();
                     let iterators = attributes.map(|attribute| {
                         Peekable::new(thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
-                            snapshot,
+                            &**snapshot,
                             attribute.as_reference(),
                             owner_type_range.clone(),
                         ))
@@ -188,7 +188,7 @@ impl HasReverseExecutor {
                 let type_range =
                     KeyRange::new_inclusive(min_owner_type.as_object_type(), max_owner_type.as_object_type());
                 let iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
-                    snapshot,
+                    &**snapshot,
                     attribute.as_thing().as_attribute(),
                     type_range,
                 );

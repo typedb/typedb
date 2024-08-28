@@ -124,8 +124,9 @@ fn traverse_has_unbounded_sorted_from() {
     let filter = builder.add_filter(vec!["person", "age"]).unwrap().clone();
     let entry = builder.finish();
 
-    let snapshot = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let thing_manager = Arc::new(thing_manager);
 
     let (entry_annotations, annotated_functions) = infer_types(
         &entry,
@@ -150,7 +151,7 @@ fn traverse_has_unbounded_sorted_from() {
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
@@ -197,7 +198,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
     builder.add_limit(3);
 
-    let snapshot = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let entry = builder.finish();
     let (entry_annotations, annotated_functions) = infer_types(
         &entry,
@@ -243,9 +244,11 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let thing_manager = Arc::new(thing_manager);
+
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
@@ -321,9 +324,11 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let snapshot = Arc::new(snapshot);
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
@@ -361,7 +366,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, annotated_functions) = infer_types(
+    let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
         &snapshot,
@@ -381,11 +386,13 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let snapshot = Arc::new(snapshot);
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let variable_positions = executor.entry_variable_positions().clone();
 
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
@@ -468,8 +475,10 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let snapshot = Arc::new(snapshot);
+    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
