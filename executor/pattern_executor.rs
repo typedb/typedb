@@ -6,24 +6,26 @@
 
 use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
+use itertools::Itertools;
+
 use answer::{variable::Variable, variable_value::VariableValue};
 use compiler::match_::{
     instructions::ConstraintInstruction,
     planner::pattern_plan::{
-        AssignmentProgram, DisjunctionProgram, IntersectionProgram, MatchProgram, NegationProgram, OptionalProgram,
-        Program, UnsortedJoinProgram,
+        AssignmentProgram, DisjunctionProgram, IntersectionProgram, MatchProgram, NegationProgram, OptionalProgram, Program,
+        UnsortedJoinProgram,
     },
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::program::block::VariableRegistry;
-use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
-use storage::snapshot::ReadableSnapshot;
+use lending_iterator::adaptors::FlatMap;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     batch::{Batch, BatchRowIterator, ImmutableRow, Row},
-    instruction::{iterator::TupleIterator, InstructionExecutor},
-    pipeline::{PipelineContext, PipelineError},
+    instruction::{InstructionExecutor, iterator::TupleIterator}
+    ,
     SelectedPositions, VariablePosition,
 };
 
@@ -31,7 +33,7 @@ pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, VariablePosition>,
     variable_positions_index: Vec<Variable>,
 
-    program_executors: Vec<StepExecutor>,
+    program_executors: Vec<ProgramExecutor>,
     // modifiers: Modifier,
     initialised: bool,
     output: Option<Batch>,
@@ -52,7 +54,7 @@ impl PatternExecutor {
                     variable_positions.insert(*variable, VariablePosition::new(variable_positions.len() as u32));
                 debug_assert_eq!(previous, None);
             }
-            let executor = StepExecutor::new(program, context, &variable_positions, snapshot, thing_manager)?;
+            let executor = ProgramExecutor::new(program, context, &variable_positions, snapshot, thing_manager)?;
             program_executors.push(executor)
         }
 
@@ -79,12 +81,16 @@ impl PatternExecutor {
         &self.variable_positions_index
     }
 
-    pub fn into_iterator(
+    pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
         self,
-        snapshot: Arc<impl ReadableSnapshot + 'static>,
+        snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
-    ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
-        AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager)).flat_map(BatchRowIterator::new)
+    ) -> PatternIterator<Snapshot> {
+        PatternIterator::new(
+            AsLendingIterator::new(BatchIterator::new(self, snapshot.clone(), thing_manager.clone())).flat_map(BatchRowIterator::new),
+            snapshot,
+            thing_manager,
+        )
     }
 
     fn compute_next_batch(
@@ -156,26 +162,41 @@ enum Direction {
     Backward,
 }
 
+type PatternRowIterator<Snapshot> = FlatMap<
+    AsLendingIterator<BatchIterator<Snapshot>>,
+    BatchRowIterator,
+    fn(Result<Batch, ConceptReadError>) -> BatchRowIterator
+>;
+
+pub(crate) struct PatternIterator<Snapshot: ReadableSnapshot> {
+    iterator: PatternRowIterator<Snapshot>,
+    snapshot: Arc<Snapshot>,
+    thing_manager: Arc<ThingManager>,
+}
+
+impl<Snapshot: ReadableSnapshot> PatternIterator<Snapshot> {
+    fn new(iterator: PatternRowIterator<Snapshot>, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
+        Self { iterator, snapshot, thing_manager }
+    }
+}
+
+impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for PatternIterator<Snapshot> {
+    type Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.iterator.next()
+    }
+}
+
 pub(crate) struct BatchIterator<Snapshot: ReadableSnapshot> {
     executor: PatternExecutor,
-    context: PipelineContext<Snapshot>,
+    snapshot: Arc<Snapshot>,
+    thing_manager: Arc<ThingManager>,
 }
 
 impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
     pub(crate) fn new(executor: PatternExecutor, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
-        Self::new_from_context(executor, PipelineContext::shared(snapshot, thing_manager))
-    }
-
-    fn new_from_context(executor: PatternExecutor, context: PipelineContext<Snapshot>) -> Self {
-        Self { executor, context }
-    }
-
-    pub(crate) fn into_parts(self) -> (PatternExecutor, PipelineContext<Snapshot>) {
-        (self.executor, self.context)
-    }
-
-    pub(crate) fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
-        self.context.try_get_shared()
+        Self { executor, snapshot, thing_manager }
     }
 }
 
@@ -183,13 +204,12 @@ impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> 
     type Item = Result<Batch, ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let (snapshot, thing_manager) = self.context.borrow_parts();
-        let batch = self.executor.compute_next_batch(snapshot, thing_manager);
+        let batch = self.executor.compute_next_batch(self.snapshot.as_ref(), self.thing_manager.as_ref());
         batch.transpose()
     }
 }
 
-enum StepExecutor {
+enum ProgramExecutor {
     SortedJoin(IntersectionExecutor),
     UnsortedJoin(UnsortedJoinExecutor),
     Assignment(AssignExecutor),
@@ -199,7 +219,7 @@ enum StepExecutor {
     Optional(OptionalExecutor),
 }
 
-impl StepExecutor {
+impl ProgramExecutor {
     fn new(
         program: &Program,
         variable_registry: &VariableRegistry,
@@ -258,12 +278,12 @@ impl StepExecutor {
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Option<Batch>, ConceptReadError> {
         match self {
-            StepExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, snapshot, thing_manager),
-            StepExecutor::UnsortedJoin(unsorted) => unsorted.batch_from(input_batch),
-            StepExecutor::Assignment(single) => single.batch_from(input_batch),
-            StepExecutor::Disjunction(disjunction) => disjunction.batch_from(input_batch),
-            StepExecutor::Negation(negation) => negation.batch_from(input_batch),
-            StepExecutor::Optional(optional) => optional.batch_from(input_batch),
+            ProgramExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, snapshot, thing_manager),
+            ProgramExecutor::UnsortedJoin(unsorted) => unsorted.batch_from(input_batch),
+            ProgramExecutor::Assignment(single) => single.batch_from(input_batch),
+            ProgramExecutor::Disjunction(disjunction) => disjunction.batch_from(input_batch),
+            ProgramExecutor::Negation(negation) => negation.batch_from(input_batch),
+            ProgramExecutor::Optional(optional) => optional.batch_from(input_batch),
         }
     }
 
@@ -273,11 +293,11 @@ impl StepExecutor {
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Option<Batch>, ConceptReadError> {
         match self {
-            StepExecutor::SortedJoin(sorted) => sorted.batch_continue(snapshot, thing_manager),
-            StepExecutor::UnsortedJoin(unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
-            StepExecutor::Disjunction(disjunction) => todo!(),
-            StepExecutor::Optional(optional) => todo!(),
-            StepExecutor::Assignment(_) | StepExecutor::Negation(_) => Ok(None),
+            ProgramExecutor::SortedJoin(sorted) => sorted.batch_continue(snapshot, thing_manager),
+            ProgramExecutor::UnsortedJoin(unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
+            ProgramExecutor::Disjunction(disjunction) => todo!(),
+            ProgramExecutor::Optional(optional) => todo!(),
+            ProgramExecutor::Assignment(_) | ProgramExecutor::Negation(_) => Ok(None),
         }
     }
 }

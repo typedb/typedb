@@ -15,7 +15,7 @@ use executor::{
     pipeline::{
         initial::InitialStage,
         insert::InsertStage,
-        match_::MatchStage,
+        match_::MatchStageExecutor,
         stage_wrappers::{ReadPipelineStage, WritePipelineStage},
         PipelineContext,
     },
@@ -113,7 +113,7 @@ impl QueryManager {
             match compiled_stage {
                 CompiledStage::Match(pattern_plan) => {
                     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new()); // TODO: Pass expressions & functions
-                    let match_stage = MatchStage::new(Box::new(latest_stage), program_plan);
+                    let match_stage = MatchStageExecutor::new(Box::new(latest_stage), program_plan);
                     latest_stage = ReadPipelineStage::Match(match_stage);
                 }
                 CompiledStage::Insert(insert_plan) => {

@@ -39,7 +39,7 @@ pub enum ValueSource {
     ValueConstant(Value<'static>),
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct ThingSource(pub VariablePosition);
 
 pub(crate) fn get_thing_source(

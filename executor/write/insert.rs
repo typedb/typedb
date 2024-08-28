@@ -17,16 +17,16 @@ use crate::{
 };
 
 pub struct InsertExecutor {
-    plan: InsertProgram,
+    program: InsertProgram,
 }
 
 impl InsertExecutor {
-    pub fn new(plan: InsertProgram) -> Self {
-        Self { plan }
+    pub fn new(program: InsertProgram) -> Self {
+        Self { program }
     }
 
-    pub(crate) fn plan(&self) -> &InsertProgram {
-        &self.plan
+    pub(crate) fn program(&self) -> &InsertProgram {
+        &self.program
     }
 
     pub fn execute_insert(
@@ -36,8 +36,8 @@ impl InsertExecutor {
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         debug_assert!(row.multiplicity() == 1); // The accumulator should de-duplicate for insert
-        let Self { plan } = self;
-        for instruction in &plan.concepts {
+        let Self { program } = self;
+        for instruction in &program.concept_instructions {
             match instruction {
                 ConceptInstruction::PutAttribute(isa_attr) => {
                     isa_attr.execute(snapshot, thing_manager, row)?;
@@ -47,7 +47,7 @@ impl InsertExecutor {
                 }
             }
         }
-        for instruction in &plan.connections {
+        for instruction in &program.connection_instructions {
             match instruction {
                 ConnectionInstruction::Has(has) => {
                     has.execute(snapshot, thing_manager, row)?;

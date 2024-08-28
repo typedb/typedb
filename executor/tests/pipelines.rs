@@ -17,7 +17,11 @@ use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
     value::{label::Label, value::Value, value_type::ValueType},
 };
-use executor::pipeline::{IteratingStageAPI, PipelineStageAPI};
+use executor::{
+    batch::ImmutableRow,
+    pipeline::{StageIteratorAPI, PipelineContext, PipelineError, PipelineStageAPI},
+    program_executor::ProgramExecutor,
+};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;

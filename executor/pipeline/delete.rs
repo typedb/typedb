@@ -11,21 +11,21 @@ use crate::{
     batch::Row,
     pipeline::{
         accumulator::{AccumulatedRowIterator, AccumulatingStageAPI, Accumulator},
-        common::PipelineStageCommon,
+        common::PipelineStageExecutor,
         stage_wrappers::WritePipelineStage,
         PipelineContext, PipelineError,
     },
     write::delete::DeleteExecutor,
 };
 
-pub type DeleteAccumulator<Snapshot> = Accumulator<Snapshot, WritePipelineStage<Snapshot>, DeleteExecutor>;
+pub type DeleteAccumulator<Snapshot: WritableSnapshot + 'static> =
+    Accumulator<Snapshot, WritePipelineStage<Snapshot>, DeleteExecutor>;
 
-pub type DeleteStage<Snapshot> = PipelineStageCommon<
+pub type DeleteStage<Snapshot: WritableSnapshot + 'static> = PipelineStageExecutor<
     Snapshot,
-    WritePipelineStage<Snapshot>,
     DeleteAccumulator<Snapshot>,
-    AccumulatedRowIterator<Snapshot>,
 >;
+
 impl<Snapshot: WritableSnapshot + 'static> DeleteStage<Snapshot> {
     pub fn new(upstream: Box<WritePipelineStage<Snapshot>>, executor: DeleteExecutor) -> DeleteStage<Snapshot> {
         Self::new_impl(Accumulator::new(upstream, executor))
@@ -51,6 +51,6 @@ impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for De
     }
 
     fn row_width(&self) -> usize {
-        self.plan().output_row_schema.len() + self.plan().concepts.len()
+        self.program().output_row_schema.len() + self.program().concept_instructions.len()
     }
 }

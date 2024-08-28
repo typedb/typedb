@@ -7,7 +7,7 @@
 use std::marker::PhantomData;
 
 use compiler::match_::planner::program_plan::ProgramPlan;
-use concept::error::ConceptReadError;
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -15,55 +15,54 @@ use crate::{
     batch::{Batch, ImmutableRow},
     pattern_executor::{BatchIterator, PatternExecutor},
     pipeline::{
-        common::PipelineStageCommon, IteratingStageAPI, PipelineContext, PipelineError, PipelineStageAPI,
-        UninitialisedStageAPI,
+        common::PipelineStageExecutor, StageIteratorAPI, PipelineContext, PipelineError, PipelineStageAPI,
+        StageAPI,
     },
 };
 
-pub type MatchStage<Snapshot, PipelineStageType> = PipelineStageCommon<
+pub type MatchStageExecutor<Snapshot: ReadableSnapshot, PreviousStage: PipelineStageAPI<Snapshot>> = PipelineStageExecutor<
     Snapshot,
-    PipelineStageType,
-    LazyMatchStage<Snapshot, PipelineStageType>,
-    MatchStageIterator<Snapshot>,
+    LazyMatchStage<Snapshot, PreviousStage>,
 >;
 
-impl<Snapshot: ReadableSnapshot + 'static, PipelineStageType: PipelineStageAPI<Snapshot>>
-    MatchStage<Snapshot, PipelineStageType>
+impl<Snapshot: ReadableSnapshot + 'static, PreviousStage: PipelineStageAPI<Snapshot>>
+    MatchStageExecutor<Snapshot, PreviousStage>
 {
-    pub fn new(upstream: Box<PipelineStageType>, program_plan: ProgramPlan) -> Self {
-        Self::new_impl(LazyMatchStage::new(upstream, program_plan))
+    pub fn new(previous: Box<PreviousStage>, program_plan: ProgramPlan) -> Self {
+        Self::new_impl(LazyMatchStage::new(previous, program_plan))
     }
 }
 
-pub struct LazyMatchStage<Snapshot: ReadableSnapshot + 'static, PipelineStageType: PipelineStageAPI<Snapshot>> {
+pub struct LazyMatchStage<Snapshot: ReadableSnapshot + 'static, PreviousStage: PipelineStageAPI<Snapshot>> {
     program_plan: ProgramPlan,
-    upstream: Box<PipelineStageType>,
+    previous: Box<PreviousStage>,
     phantom: PhantomData<Snapshot>,
 }
 
-impl<Snapshot: ReadableSnapshot + 'static, PipelineStageType: PipelineStageAPI<Snapshot>>
-    LazyMatchStage<Snapshot, PipelineStageType>
+impl<Snapshot: ReadableSnapshot + 'static, PreviousStage: PipelineStageAPI<Snapshot>>
+    LazyMatchStage<Snapshot, PreviousStage>
 {
-    pub fn new(upstream: Box<PipelineStageType>, program_plan: ProgramPlan) -> Self {
-        Self { program_plan, upstream, phantom: PhantomData }
+    pub fn new(previous: Box<PreviousStage>, program_plan: ProgramPlan) -> Self {
+        Self { program_plan, previous, phantom: PhantomData }
     }
 }
 
-impl<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> UninitialisedStageAPI<Snapshot>
-    for LazyMatchStage<Snapshot, PipelineStageType>
+impl<Snapshot: ReadableSnapshot, PreviousStage: PipelineStageAPI<Snapshot>> StageAPI<Snapshot>
+    for LazyMatchStage<Snapshot, PreviousStage>
 {
-    type IteratingStage = MatchStageIterator<Snapshot>;
+    type AsIterator = MatchStageIterator<Snapshot>;
 
-    fn initialise_and_into_iterator(mut self) -> Result<Self::IteratingStage, PipelineError> {
-        self.upstream.initialise()?;
-        let LazyMatchStage { mut upstream, program_plan, .. } = self;
-        let mut context = upstream.try_get_shared_context()?;
-        let (snapshot_borrowed, thing_manager_borrowed) = context.borrow_parts();
-        let executor = PatternExecutor::new(program_plan.entry(), snapshot_borrowed, thing_manager_borrowed)
-            .map_err(PipelineError::ConceptRead)?;
-        let context = context.try_get_shared()?;
-        let (shared_snapshot, shared_thing_manager) = context.borrow_parts();
-        let batch_iterator = BatchIterator::new(executor, shared_snapshot.clone(), shared_thing_manager.clone());
+    fn into_iterator(mut self) -> Result<Self::AsIterator, PipelineError> {
+        self.previous.initialise()?;
+        let LazyMatchStage { previous: mut previous, program_plan, .. } = self;
+        let mut context = previous.try_get_shared_context()?;
+        let (snapshot_borrowed, thing_manager_borrowed): (&Snapshot, &ThingManager) = context.borrow_parts();
+        let executor = PatternExecutor::new(program_plan.entry(), snapshot_borrowed, &thing_manager_borrowed)
+            .map_err(|source| PipelineError::ConceptRead(source))?;
+        let PipelineContext::Shared(shared_snapshot, shared_thing_manager) = context.try_get_shared()? else {
+            unreachable!()
+        };
+        let iterator = executor.into_iterator(snapshot, thing_manager_borrowed);
         Ok(MatchStageIterator::new(batch_iterator))
     }
 }
@@ -108,7 +107,7 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for MatchStageIterato
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> IteratingStageAPI<Snapshot> for MatchStageIterator<Snapshot> {
+impl<Snapshot: ReadableSnapshot + 'static> StageIteratorAPI<Snapshot> for MatchStageIterator<Snapshot> {
     fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         self.batch_iterator.try_get_shared_context()
     }

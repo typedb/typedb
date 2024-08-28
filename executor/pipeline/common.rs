@@ -7,92 +7,80 @@
 use std::marker::PhantomData;
 
 use itertools::Either;
+
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::ImmutableRow,
-    pipeline::{IteratingStageAPI, PipelineContext, PipelineError, PipelineStageAPI, UninitialisedStageAPI},
+    pipeline::{StageIteratorAPI, PipelineContext, PipelineError, PipelineStageAPI, StageAPI},
 };
 
-pub struct PipelineStageCommon<Snapshot, PipelineStageType, Initial, Iter>
+pub struct PipelineStageExecutor<Snapshot, Stage>
 where
     Snapshot: ReadableSnapshot + 'static,
-    PipelineStageType: PipelineStageAPI<Snapshot>,
-    Initial: UninitialisedStageAPI<Snapshot, IteratingStage = Iter>,
-    Iter: IteratingStageAPI<Snapshot>,
+    Stage: StageAPI<Snapshot>,
 {
-    inner: Option<Either<Initial, Iter>>,
+    stage_or_iterator: Option<Either<Stage, Stage::AsIterator>>,
     error: Option<PipelineError>,
-    phantom: PhantomData<(Snapshot, PipelineStageType)>,
+    phantom: PhantomData<Snapshot>,
 }
 
-impl<Snapshot, PipelineStageType, Initial, Iter> PipelineStageCommon<Snapshot, PipelineStageType, Initial, Iter>
+impl<Snapshot, Stage> PipelineStageExecutor<Snapshot, Stage>
 where
     Snapshot: ReadableSnapshot + 'static,
-    PipelineStageType: PipelineStageAPI<Snapshot>,
-    Initial: UninitialisedStageAPI<Snapshot, IteratingStage = Iter>,
-    Iter: IteratingStageAPI<Snapshot>,
+    Stage: StageAPI<Snapshot>,
 {
-    pub fn new_impl(uninitialised: Initial) -> Self {
-        Self { inner: Some(Either::Left(uninitialised)), error: None, phantom: PhantomData }
+    pub fn new_impl(stage: Stage) -> Self {
+        Self { stage_or_iterator: Some(Either::Left(stage)), error: None, phantom: PhantomData }
     }
 }
 
-impl<Snapshot, PipelineStageType, Initial, Iter> IteratingStageAPI<Snapshot>
-    for PipelineStageCommon<Snapshot, PipelineStageType, Initial, Iter>
+impl<Snapshot, Stage> StageIteratorAPI<Snapshot> for PipelineStageExecutor<Snapshot, Stage>
 where
-    Initial: UninitialisedStageAPI<Snapshot, IteratingStage = Iter>,
-    PipelineStageType: PipelineStageAPI<Snapshot>,
-    Iter: IteratingStageAPI<Snapshot>,
+    Stage: StageAPI<Snapshot>,
     Snapshot: 'static + ReadableSnapshot,
 {
     fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
-        match &mut self.inner {
+        match &mut self.stage_or_iterator {
             None | Some(Either::Left(_)) => Err(PipelineError::IllegalState),
-            Some(Either::Right(iterating)) => iterating.try_get_shared_context(),
+            Some(Either::Right(iterator)) => iterator.try_get_shared_context(),
         }
     }
 
     fn finalise_and_into_context(self) -> Result<PipelineContext<Snapshot>, PipelineError> {
-        match self.inner {
+        match self.stage_or_iterator {
             None | Some(Either::Left(_)) => Err(PipelineError::IllegalState),
-            Some(Either::Right(iterating)) => iterating.finalise_and_into_context(),
+            Some(Either::Right(iterator)) => iterator.finalise_and_into_context(),
         }
     }
 }
 
-impl<Snapshot, PipelineStageType, Initial, Iter> PipelineStageAPI<Snapshot>
-    for PipelineStageCommon<Snapshot, PipelineStageType, Initial, Iter>
+impl<Snapshot, Stage> PipelineStageAPI<Snapshot> for PipelineStageExecutor<Snapshot, Stage>
 where
     Snapshot: ReadableSnapshot + 'static,
-    PipelineStageType: PipelineStageAPI<Snapshot>,
-    Initial: UninitialisedStageAPI<Snapshot, IteratingStage = Iter>,
-    Iter: IteratingStageAPI<Snapshot>,
+    Stage: StageAPI<Snapshot>,
 {
     fn initialise(&mut self) -> Result<(), PipelineError> {
-        match self.inner.take() {
+        match self.stage_or_iterator.take() {
             None | Some(Either::Right(_)) => Err(PipelineError::IllegalState),
-            Some(Either::Left(uninitialised)) => {
-                self.inner = Some(Either::Right(uninitialised.initialise_and_into_iterator()?));
+            Some(Either::Left(stage)) => {
+                self.stage_or_iterator = Some(Either::Right(stage.into_iterator()?));
                 Ok(())
             }
         }
     }
 }
 
-impl<Snapshot, PipelineStageType, Initial, Iter> LendingIterator
-    for PipelineStageCommon<Snapshot, PipelineStageType, Initial, Iter>
+impl<Snapshot, Stage> LendingIterator for PipelineStageExecutor<Snapshot, Stage>
 where
     Snapshot: ReadableSnapshot + 'static,
-    PipelineStageType: PipelineStageAPI<Snapshot>,
-    Initial: UninitialisedStageAPI<Snapshot, IteratingStage = Iter>,
-    Iter: IteratingStageAPI<Snapshot>,
+    Stage: StageAPI<Snapshot>,
 {
     type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        match &mut self.inner {
+        match &mut self.stage_or_iterator {
             None => Some(Err(self.error.clone().unwrap_or(PipelineError::IllegalState))),
             Some(Either::Left(_)) => Some(Err(PipelineError::IllegalState)),
             Some(Either::Right(right)) => right.next(),

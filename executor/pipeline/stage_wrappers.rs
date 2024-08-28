@@ -10,14 +10,14 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     batch::ImmutableRow,
     pipeline::{
-        initial::InitialStage, insert::InsertStage, match_::MatchStage, IteratingStageAPI, PipelineContext,
+        initial::InitialStage, insert::InsertStage, match_::MatchStageExecutor, StageIteratorAPI, PipelineContext,
         PipelineError, PipelineStageAPI,
     },
 };
 
 pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
-    Match(MatchStage<Snapshot, ReadPipelineStage<Snapshot>>),
+    Match(MatchStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>),
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadPipelineStage<Snapshot> {
@@ -40,7 +40,7 @@ impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for ReadPi
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> IteratingStageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
+impl<Snapshot: ReadableSnapshot + 'static> StageIteratorAPI<Snapshot> for ReadPipelineStage<Snapshot> {
     fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         match self {
             ReadPipelineStage::Match(match_) => match_.try_get_shared_context(),
@@ -59,7 +59,7 @@ impl<Snapshot: ReadableSnapshot + 'static> IteratingStageAPI<Snapshot> for ReadP
 
 pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
-    Match(MatchStage<Snapshot, WritePipelineStage<Snapshot>>),
+    Match(MatchStageExecutor<Snapshot, WritePipelineStage<Snapshot>>),
     Insert(InsertStage<Snapshot>),
 }
 
@@ -84,7 +84,7 @@ impl<Snapshot: WritableSnapshot + 'static> PipelineStageAPI<Snapshot> for WriteP
         }
     }
 }
-impl<Snapshot: WritableSnapshot + 'static> IteratingStageAPI<Snapshot> for WritePipelineStage<Snapshot> {
+impl<Snapshot: WritableSnapshot + 'static> StageIteratorAPI<Snapshot> for WritePipelineStage<Snapshot> {
     fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         match self {
             WritePipelineStage::Match(match_) => match_.try_get_shared_context(),

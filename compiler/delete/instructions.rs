@@ -7,13 +7,13 @@
 use crate::insert::{ThingSource, TypeSource};
 
 #[derive(Debug)]
-pub enum DeleteConnectionInstruction {
+pub enum ConnectionInstruction {
     Has(Has),               // TODO: Ordering
     RolePlayer(RolePlayer), // TODO: Ordering
 }
 
 #[derive(Debug)]
-pub struct DeleteThingInstruction {
+pub struct ThingInstruction {
     pub thing: ThingSource,
 }
 

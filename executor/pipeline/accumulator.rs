@@ -13,7 +13,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::ImmutableRow,
-    pipeline::{IteratingStageAPI, PipelineContext, PipelineError, PipelineStageAPI, UninitialisedStageAPI},
+    pipeline::{StageIteratorAPI, PipelineContext, PipelineError, PipelineStageAPI, StageAPI},
 };
 
 pub(crate) trait AccumulatingStageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
@@ -30,6 +30,7 @@ pub(crate) trait AccumulatingStageAPI<Snapshot: ReadableSnapshot + 'static>: 'st
     }
 
     fn must_deduplicate_incoming_rows(&self) -> bool;
+
     fn row_width(&self) -> usize;
 }
 
@@ -40,7 +41,7 @@ where
     Executor: AccumulatingStageAPI<Snapshot>,
     PipelineStageType: PipelineStageAPI<Snapshot>,
 {
-    upstream: Box<PipelineStageType>,
+    previous: Box<PipelineStageType>,
     rows: Vec<(Box<[VariableValue<'static>]>, u64)>,
     executor: Executor,
     phantom: PhantomData<Snapshot>,
@@ -52,18 +53,16 @@ where
     Executor: AccumulatingStageAPI<Snapshot>,
     PipelineStageType: PipelineStageAPI<Snapshot>,
 {
-    pub(crate) fn new(upstream: Box<PipelineStageType>, executor: Executor) -> Self {
-        Self { upstream, executor, rows: Vec::new(), phantom: PhantomData }
+    pub(crate) fn new(previous: Box<PipelineStageType>, executor: Executor) -> Self {
+        Self { previous, executor, rows: Vec::new(), phantom: PhantomData }
     }
 
     fn accumulate(&mut self) -> Result<(), PipelineError> {
-        let Self { executor, rows, upstream, .. } = self;
-        while let Some(result) = upstream.next() {
+        let Self { executor, rows, previous, .. } = self;
+        while let Some(result) = previous.next() {
             match result {
                 Err(err) => return Err(err),
-                Ok(row) => {
-                    Self::accept_incoming_row(rows, executor, row);
-                }
+                Ok(row) => Self::accept_incoming_row(rows, executor, row),
             }
         }
         Ok(())
@@ -89,24 +88,24 @@ where
 
     pub fn accumulate_process_and_into_iterator(mut self) -> Result<AccumulatedRowIterator<Snapshot>, PipelineError> {
         self.accumulate()?;
-        let Self { executor, rows, upstream, .. } = self;
-        let mut context = upstream.finalise_and_into_context()?; // TODO: Need not always be owned
+        let Self { executor, rows, previous, .. } = self;
+        let mut context = previous.finalise_and_into_context()?; // TODO: Need not always be owned
         let mut rows = rows.into_boxed_slice();
         executor.process_accumulated(&mut context, &mut rows)?;
         Ok(AccumulatedRowIterator { context, rows, next_index: 0 })
     }
 }
 
-impl<
+impl<Snapshot, PipelineStageType, Executor> StageAPI<Snapshot> for Accumulator<Snapshot, PipelineStageType, Executor>
+    where
         Snapshot: ReadableSnapshot + 'static,
         PipelineStageType: PipelineStageAPI<Snapshot>,
-        Executor: AccumulatingStageAPI<Snapshot>,
-    > UninitialisedStageAPI<Snapshot> for Accumulator<Snapshot, PipelineStageType, Executor>
+        Executor: AccumulatingStageAPI<Snapshot>
 {
-    type IteratingStage = AccumulatedRowIterator<Snapshot>;
+    type AsIterator = AccumulatedRowIterator<Snapshot>;
 
-    fn initialise_and_into_iterator(mut self) -> Result<Self::IteratingStage, PipelineError> {
-        self.upstream.initialise()?;
+    fn into_iterator(mut self) -> Result<Self::AsIterator, PipelineError> {
+        self.previous.initialise()?;
         self.accumulate_process_and_into_iterator()
     }
 }
@@ -117,7 +116,7 @@ pub struct AccumulatedRowIterator<Snapshot: ReadableSnapshot + 'static> {
     next_index: usize,
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> IteratingStageAPI<Snapshot> for AccumulatedRowIterator<Snapshot> {
+impl<Snapshot: ReadableSnapshot + 'static> StageIteratorAPI<Snapshot> for AccumulatedRowIterator<Snapshot> {
     fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         self.context.try_get_shared()
     }

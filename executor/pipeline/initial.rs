@@ -9,7 +9,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{Batch, BatchRowIterator, ImmutableRow},
-    pipeline::{IteratingStageAPI, PipelineContext, PipelineError, PipelineStageAPI},
+    pipeline::{StageIteratorAPI, PipelineContext, PipelineError, PipelineStageAPI},
 };
 
 pub struct InitialStage<Snapshot: ReadableSnapshot + 'static> {
@@ -36,7 +36,7 @@ impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for Initia
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> IteratingStageAPI<Snapshot> for InitialStage<Snapshot> {
+impl<Snapshot: ReadableSnapshot + 'static> StageIteratorAPI<Snapshot> for InitialStage<Snapshot> {
     fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
         self.context.try_get_shared()
     }

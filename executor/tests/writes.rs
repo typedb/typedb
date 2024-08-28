@@ -115,12 +115,11 @@ fn execute_insert(
         compiler::insert::program::compile(block.conjunction().constraints(), &input_row_format, &entry_annotations)
             .unwrap();
 
-    println!("Insert Vertex:\n{:?}", &insert_plan.concepts);
-    println!("Insert Edges:\n{:?}", &insert_plan.connections);
-    insert_plan
-        .debug_info
-        .iter()
-        .for_each(|(k, v)| println!("{:?} -> {:?}", k, translation_context.variable_registry.variable_names().get(v)));
+    println!("Insert Vertex:\n{:?}", &insert_plan.concept_instructions);
+    println!("Insert Edges:\n{:?}", &insert_plan.connection_instructions);
+    insert_plan.debug_info.iter().for_each(|(k, v)| {
+        println!("{:?} -> {:?}", k, translation_context.variable_registry.get_variables_named().get(v))
+    });
 
     // TODO: Replace with accumulator
     let mut output_rows = Vec::with_capacity(input_rows.len());
@@ -206,7 +205,7 @@ fn execute_delete(
         delete_executor.execute_delete(snapshot, thing_manager, &mut output);
         output_rows.push(output_vec);
     }
-    println!("{:?}", &delete_executor.plan().output_row_schema);
+    println!("{:?}", &delete_executor.program().output_row_schema);
     Ok(output_rows)
 }
 

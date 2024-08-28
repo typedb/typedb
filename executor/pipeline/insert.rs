@@ -11,21 +11,21 @@ use crate::{
     batch::Row,
     pipeline::{
         accumulator::{AccumulatedRowIterator, AccumulatingStageAPI, Accumulator},
-        common::PipelineStageCommon,
+        common::PipelineStageExecutor,
         stage_wrappers::WritePipelineStage,
         PipelineContext, PipelineError,
     },
     write::insert::InsertExecutor,
 };
 
-pub type InsertAccumulator<Snapshot> = Accumulator<Snapshot, WritePipelineStage<Snapshot>, InsertExecutor>;
+pub type InsertAccumulator<Snapshot: WritableSnapshot + 'static> =
+    Accumulator<Snapshot, WritePipelineStage<Snapshot>, InsertExecutor>;
 
-pub type InsertStage<Snapshot> = PipelineStageCommon<
+pub type InsertStage<Snapshot: WritableSnapshot + 'static> = PipelineStageExecutor<
     Snapshot,
-    WritePipelineStage<Snapshot>,
     InsertAccumulator<Snapshot>,
-    AccumulatedRowIterator<Snapshot>,
 >;
+
 impl<Snapshot: WritableSnapshot + 'static> InsertStage<Snapshot> {
     pub fn new(upstream: Box<WritePipelineStage<Snapshot>>, executor: InsertExecutor) -> InsertStage<Snapshot> {
         Self::new_impl(Accumulator::new(upstream, executor))
@@ -51,6 +51,6 @@ impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for In
     }
 
     fn row_width(&self) -> usize {
-        self.plan().output_row_schema.len()
+        self.program().output_row_schema.len()
     }
 }
