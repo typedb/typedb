@@ -52,12 +52,12 @@ impl Batch {
         (self.entries * self.width) as usize == self.data.len()
     }
 
-    pub(crate) fn get_row(&self, index: u32) -> ImmutableRow<'_> {
+    pub(crate) fn get_row(&self, index: u32) -> MaybeOwnedRow<'_> {
         debug_assert!(index <= self.entries);
         let start = (index * self.width) as usize;
         let end = ((index + 1) * self.width) as usize;
         let slice = &self.data[start..end];
-        ImmutableRow::new(slice, self.multiplicities[index as usize])
+        MaybeOwnedRow::new(slice, self.multiplicities[index as usize])
     }
 
     pub(crate) fn get_row_mut(&mut self, index: u32) -> Row<'_> {
@@ -101,7 +101,7 @@ impl BatchRowIterator {
 }
 
 impl LendingIterator for BatchRowIterator {
-    type Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, &'a ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self.batch.as_mut() {
@@ -171,14 +171,18 @@ impl<'a> Display for Row<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct ImmutableRow<'a> {
+pub struct MaybeOwnedRow<'a> {
     row: Cow<'a, [VariableValue<'static>]>,
     multiplicity: u64,
 }
 
-impl<'a> ImmutableRow<'a> {
+impl<'a> MaybeOwnedRow<'a> {
     pub(crate) fn new(row: &'a [VariableValue<'static>], multiplicity: u64) -> Self {
         Self { row: Cow::Borrowed(row), multiplicity }
+    }
+
+    pub(crate) fn new_owned(row: Vec<VariableValue<'static>>, multiplicity: u64) -> Self {
+        Self { row: Cow::Owned(row), multiplicity }
     }
 
     pub fn width(&self) -> usize {
@@ -193,17 +197,30 @@ impl<'a> ImmutableRow<'a> {
         self.multiplicity
     }
 
-    pub fn into_owned(self) -> ImmutableRow<'static> {
-        let cloned: Vec<VariableValue<'static>> = self.row.iter().map(|value| value.clone().into_owned()).collect();
-        ImmutableRow { row: Cow::Owned(cloned), multiplicity: self.multiplicity }
+    pub fn into_owned(self) -> MaybeOwnedRow<'static> {
+        let (row_vec, multiplicity) = self.into_owned_parts();
+        MaybeOwnedRow { row: Cow::Owned(row_vec), multiplicity }
     }
 
-    pub fn as_reference(&self) -> ImmutableRow<'_> {
-        ImmutableRow { row: Cow::Borrowed(self.row.as_ref()), multiplicity: self.multiplicity }
+    pub fn as_reference(&self) -> MaybeOwnedRow<'_> {
+        MaybeOwnedRow { row: Cow::Borrowed(self.row.as_ref()), multiplicity: self.multiplicity }
+    }
+
+    pub fn into_owned_parts(self) -> (Vec<VariableValue<'static>>, u64) {
+        (self.row.into_owned(), self.multiplicity)
+    }
+
+    pub fn as_mut_ref(&mut self) -> Row<'_> {
+        match &mut self.row {
+            Cow::Borrowed(_) => panic!("Cannot get mutable access to Borrowed row."),
+            Cow::Owned(row) => {
+                Row::new(row.as_mut_slice(), &mut self.multiplicity)
+            }
+        }
     }
 }
 
-impl IntoIterator for ImmutableRow<'static> {
+impl IntoIterator for MaybeOwnedRow<'static> {
     type Item = VariableValue<'static>;
     type IntoIter = vec::IntoIter<VariableValue<'static>>;
     fn into_iter(self) -> Self::IntoIter {
@@ -212,7 +229,7 @@ impl IntoIterator for ImmutableRow<'static> {
     }
 }
 
-impl<'a> Display for ImmutableRow<'a> {
+impl<'a> Display for MaybeOwnedRow<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} x [  ", self.multiplicity)?;
         for value in &*self.row {

@@ -18,7 +18,7 @@ use lending_iterator::{AsHkt, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::ImmutableRow,
+    batch::MaybeOwnedRow,
     instruction::{
         isa_executor::{
             instances_of_all_types_chained, instances_of_single_type, IsaFilterFn, IsaTupleIterator,
@@ -70,7 +70,7 @@ impl IsaReverseExecutor {
         &self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-        row: ImmutableRow<'_>,
+        row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter_for_row = self.checker.filter_for_row(snapshot, thing_manager, &row);
         match self.iterate_mode {

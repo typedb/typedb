@@ -20,7 +20,7 @@ use concept::{
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
+use executor::{batch::MaybeOwnedRow, program_executor::ProgramExecutor};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
@@ -179,9 +179,10 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager);
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+        let iterator = executor.into_iterator(snapshot, thing_manager);
+        let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> = iterator
+            .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone()))
+            .collect();
 
     // person1, <something>
     // person2, <something>
@@ -253,7 +254,7 @@ fn unselected_named_vars_counted() {
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
 
     // 7x person 1, <something>
@@ -341,7 +342,7 @@ fn cartesian_named_counted_checked() {
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
 
     // 2x person 1, age_1, <name something>, <email something>

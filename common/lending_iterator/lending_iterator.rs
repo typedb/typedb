@@ -8,7 +8,8 @@ pub mod adaptors;
 pub mod higher_order;
 pub mod kmerge;
 
-use std::{borrow::Borrow, cmp::Ordering, iter, mem::transmute};
+use std::{borrow::Borrow, cmp::Ordering, iter, mem::transmute, vec};
+use std::vec::IntoIter;
 
 use crate::{
     adaptors::{Chain, Filter, FilterMap, FlatMap, Flatten, Map, TakeWhile, TryFilter, TryFlatMap},

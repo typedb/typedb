@@ -4,53 +4,47 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable_value::VariableValue;
+use std::marker::PhantomData;
+use std::sync::Arc;
+
+use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
-    batch::Row,
-    pipeline::{
-        accumulator::{AccumulatedRowIterator, AccumulatingStageAPI, Accumulator},
-        common::PipelineStageExecutor,
-        stage_wrappers::WritePipelineStage,
-        PipelineContext, PipelineError,
-    },
+    pipeline::PipelineError,
     write::insert::InsertExecutor,
 };
+use crate::pipeline::{StageAPI, StageIterator, WrittenRowsIterator};
 
-pub type InsertAccumulator<Snapshot: WritableSnapshot + 'static> =
-    Accumulator<Snapshot, WritePipelineStage<Snapshot>, InsertExecutor>;
-
-pub type InsertStage<Snapshot: WritableSnapshot + 'static> = PipelineStageExecutor<
-    Snapshot,
-    InsertAccumulator<Snapshot>,
->;
-
-impl<Snapshot: WritableSnapshot + 'static> InsertStage<Snapshot> {
-    pub fn new(upstream: Box<WritePipelineStage<Snapshot>>, executor: InsertExecutor) -> InsertStage<Snapshot> {
-        Self::new_impl(Accumulator::new(upstream, executor))
-    }
+pub struct InsertStageExecutor<Snapshot: WritableSnapshot + 'static, PreviouStage: StageAPI<Snapshot>> {
+    inserter: InsertExecutor,
+    previous: PreviouStage,
+    snapshot: PhantomData<Snapshot>,
 }
 
-impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for InsertExecutor {
-    fn process_accumulated(
-        &self,
-        context: &mut PipelineContext<Snapshot>,
-        rows: &mut Box<[(Box<[VariableValue<'static>]>, u64)]>,
-    ) -> Result<(), PipelineError> {
-        let (snapshot, thing_manager) = context.borrow_parts_mut();
-        for (row, multiplicity) in rows {
-            self.execute_insert(snapshot, thing_manager, &mut Row::new(row, multiplicity))
-                .map_err(PipelineError::WriteError)?;
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for InsertStageExecutor<Snapshot, PreviousStage>
+    where
+        Snapshot: WritableSnapshot + 'static,
+        PreviousStage: StageAPI<Snapshot>
+{
+    type OutputIterator = WrittenRowsIterator;
+
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
+        let (previous_iterator, mut snapshot, mut thing_manager) = self.previous.into_iterator()?;
+        // accumulate once, then we will operate in-place
+        let mut rows = previous_iterator.collect_owned();
+
+        // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
+        let snapshot_ref = Arc::get_mut(&mut snapshot).unwrap();
+        let thing_manager_ref = Arc::get_mut(&mut thing_manager).unwrap();
+        for row in &mut rows {
+
+            // TODO: surely the output might have a different shape??
+
+            self.inserter.execute_insert(snapshot_ref, thing_manager_ref, &mut row.as_mut_ref())
+                .map_err(|err| PipelineError::WriteError(err))?;
         }
-        Ok(())
-    }
 
-    fn must_deduplicate_incoming_rows(&self) -> bool {
-        true
-    }
-
-    fn row_width(&self) -> usize {
-        self.program().output_row_schema.len()
+        Ok((WrittenRowsIterator::new(rows), snapshot, thing_manager))
     }
 }

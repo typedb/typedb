@@ -18,7 +18,7 @@ use encoding::{
     value::{label::Label, value::Value, value_type::ValueType},
 };
 use executor::{
-    batch::ImmutableRow,
+    batch::MaybeOwnedRow,
     pipeline::{StageIteratorAPI, PipelineContext, PipelineError, PipelineStageAPI},
     program_executor::ProgramExecutor,
 };

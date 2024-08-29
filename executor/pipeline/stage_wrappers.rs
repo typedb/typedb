@@ -4,82 +4,120 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+use concept::thing::thing_manager::ThingManager;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    batch::ImmutableRow,
+    batch::MaybeOwnedRow,
     pipeline::{
-        initial::InitialStage, insert::InsertStage, match_::MatchStageExecutor, StageIteratorAPI, PipelineContext,
+        initial::InitialStage, insert::InsertStageExecutor, match_::MatchStageExecutor,
         PipelineError,
     },
 };
+use crate::pipeline::initial::InitialIterator;
+use crate::pipeline::match_::MatchStageIterator;
+use crate::pipeline::{StageAPI, StageIterator, WrittenRowsIterator};
 
 pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
-    Match(MatchStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>),
+    Match(Box<MatchStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>>),
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadPipelineStage<Snapshot> {
-    type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;
+pub enum ReadStageIterator {
+    Initial(InitialIterator),
+    Match(Box<MatchStageIterator<ReadStageIterator>>),
+}
+
+impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
+    type OutputIterator = ReadStageIterator;
+
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
+        match self {
+            ReadPipelineStage::Initial(stage) => {
+                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
+                Ok((ReadStageIterator::Initial(iterator), snapshot, thing_manager))
+            }
+            ReadPipelineStage::Match(stage) => {
+                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
+                Ok((ReadStageIterator::Match(Box::new(iterator)), snapshot, thing_manager))
+            }
+        }
+    }
+}
+
+impl LendingIterator for ReadStageIterator {
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
-            ReadPipelineStage::Initial(initial) => initial.next(),
-            ReadPipelineStage::Match(match_) => match_.next(),
+            ReadStageIterator::Initial(iterator) => iterator.next(),
+            ReadStageIterator::Match(iterator) => iterator.next()
         }
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> StageIteratorAPI<Snapshot> for ReadPipelineStage<Snapshot> {
-    fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
+impl StageIterator for ReadStageIterator {
+    fn collect_owned(self) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineError> {
         match self {
-            ReadPipelineStage::Match(match_) => match_.try_get_shared_context(),
-            ReadPipelineStage::Initial(initial) => initial.try_get_shared_context(),
-        }
-    }
-
-    fn finalise_and_into_context(self) -> Result<PipelineContext<Snapshot>, PipelineError> {
-        // TODO: Ensure the stages are done somehow
-        match self {
-            ReadPipelineStage::Match(match_) => match_.finalise_and_into_context(),
-            ReadPipelineStage::Initial(initial) => initial.finalise_and_into_context(),
+            ReadStageIterator::Initial(iterator) => iterator.collect_owned(),
+            ReadStageIterator::Match(iterator) => iterator.collect_owned(),
         }
     }
 }
 
 pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
-    Match(MatchStageExecutor<Snapshot, WritePipelineStage<Snapshot>>),
-    Insert(InsertStage<Snapshot>),
+    Match(Box<MatchStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
+    Insert(Box<InsertStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
 }
 
-impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WritePipelineStage<Snapshot> {
-    type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;
+impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineStage<Snapshot> {
+    type OutputIterator = WriteStageIterator;
+
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
+        match self {
+            WritePipelineStage::Initial(stage) => {
+                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
+                Ok((WriteStageIterator::Initial(iterator), snapshot, thing_manager))
+            }
+            WritePipelineStage::Match(stage) => {
+                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
+                Ok((WriteStageIterator::Match(Box::new(iterator)), snapshot, thing_manager))
+            }
+            WritePipelineStage::Insert(stage) => {
+                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
+                Ok((WriteStageIterator::Write(iterator), snapshot, thing_manager))
+            }
+        }
+    }
+}
+
+pub enum WriteStageIterator {
+    Initial(InitialIterator),
+    Match(Box<MatchStageIterator<WriteStageIterator>>),
+    Write(WrittenRowsIterator),
+}
+
+impl LendingIterator for WriteStageIterator {
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
-            WritePipelineStage::Initial(initial) => initial.next(),
-            WritePipelineStage::Match(match_) => match_.next(),
-            WritePipelineStage::Insert(insert) => insert.next(),
+            WriteStageIterator::Initial(iterator) => iterator.next(),
+            WriteStageIterator::Match(iterator) => iterator.next(),
+            WriteStageIterator::Write(iterator) => iterator.next(),
         }
     }
 }
 
-impl<Snapshot: WritableSnapshot + 'static> StageIteratorAPI<Snapshot> for WritePipelineStage<Snapshot> {
-    fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
+impl StageIterator for WriteStageIterator {
+    fn collect_owned(self) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineError> {
         match self {
-            WritePipelineStage::Match(match_) => match_.try_get_shared_context(),
-            WritePipelineStage::Initial(initial) => initial.try_get_shared_context(),
-            WritePipelineStage::Insert(insert) => insert.try_get_shared_context(),
-        }
-    }
-
-    fn finalise_and_into_context(self) -> Result<PipelineContext<Snapshot>, PipelineError> {
-        match self {
-            WritePipelineStage::Match(match_) => match_.finalise_and_into_context(),
-            WritePipelineStage::Initial(initial) => initial.finalise_and_into_context(),
-            WritePipelineStage::Insert(insert) => insert.finalise_and_into_context(),
+            WriteStageIterator::Initial(iterator) => iterator.collect_owned(),
+            WriteStageIterator::Match(iterator) => iterator.collect_owned(),
+            WriteStageIterator::Write(iterator) => iterator.collect_owned(),
         }
     }
 }

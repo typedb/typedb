@@ -25,7 +25,7 @@ use lending_iterator::higher_order::{FnHktHelper, Hkt};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::ImmutableRow,
+    batch::MaybeOwnedRow,
     instruction::{
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
@@ -126,7 +126,7 @@ impl InstructionExecutor {
         &self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-        row: ImmutableRow<'_>,
+        row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
             InstructionExecutor::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),

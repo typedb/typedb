@@ -14,7 +14,10 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::ImmutableRow, function_executor::FunctionExecutor, pattern_executor::PatternExecutor, VariablePosition,
+    batch::{Batch, MaybeOwnedRow},
+    function_executor::FunctionExecutor,
+    pattern_executor::PatternExecutor,
+    VariablePosition,
 };
 
 pub struct ProgramExecutor {
@@ -48,7 +51,7 @@ impl ProgramExecutor {
         self,
         snapshot: Arc<impl ReadableSnapshot + 'static>,
         thing_manager: Arc<ThingManager>,
-    ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, &'a ConceptReadError>> {
         self.entry.into_iterator(snapshot, thing_manager)
     }
 }

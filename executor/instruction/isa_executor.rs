@@ -33,7 +33,7 @@ use lending_iterator::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::ImmutableRow,
+    batch::MaybeOwnedRow,
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions, TupleResult},
@@ -131,7 +131,7 @@ impl IsaExecutor {
         &self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-        row: ImmutableRow<'_>,
+        row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter_for_row = self.checker.filter_for_row(snapshot, thing_manager, &row);
         match self.iterate_mode {

@@ -23,7 +23,7 @@ use lending_iterator::adaptors::FlatMap;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    batch::{Batch, BatchRowIterator, ImmutableRow, Row},
+    batch::{Batch, BatchRowIterator, MaybeOwnedRow, Row},
     instruction::{InstructionExecutor, iterator::TupleIterator}
     ,
     SelectedPositions, VariablePosition,
@@ -41,11 +41,11 @@ pub(crate) struct PatternExecutor {
 
 impl PatternExecutor {
     pub(crate) fn new(
-        plan: &MatchProgram,
+        program: &MatchProgram,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
-        let (programs, context) = (plan.programs(), plan.variable_registry());
+        let (programs, context) = (program.programs(), program.variable_registry());
         let mut variable_positions = HashMap::new();
         let mut program_executors = Vec::with_capacity(programs.len());
         for program in programs {
@@ -181,7 +181,7 @@ impl<Snapshot: ReadableSnapshot> PatternIterator<Snapshot> {
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for PatternIterator<Snapshot> {
-    type Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, &'a ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iterator.next()
@@ -536,7 +536,7 @@ impl IntersectionExecutor {
         debug_assert!(self.iterators.is_empty());
         let peek = self.input.as_mut().unwrap().peek();
         if let Some(input) = peek {
-            let next_row: &ImmutableRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
+            let next_row: &MaybeOwnedRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
             for executor in &self.instruction_executors {
                 self.iterators.push(executor.get_iterator(snapshot, thing_manager, next_row.as_reference())?);
             }
@@ -717,7 +717,7 @@ impl CartesianIterator {
         let mut reopened = executor.get_iterator(
             snapshot,
             thing_manager,
-            ImmutableRow::new(&self.intersection_source, self.intersection_multiplicity),
+            MaybeOwnedRow::new(&self.intersection_source, self.intersection_multiplicity),
         )?;
         let intersection = &self.intersection_source[self.sort_variable_position.as_usize()];
         // TODO: use seek()

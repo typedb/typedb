@@ -27,7 +27,7 @@ use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    batch::ImmutableRow,
+    batch::MaybeOwnedRow,
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         links_executor::{
@@ -127,7 +127,7 @@ impl LinksReverseExecutor {
         &self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-        row: ImmutableRow<'_>,
+        row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
