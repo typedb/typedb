@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{hash_map, HashMap, HashSet},
     mem,
 };
 
@@ -13,10 +13,10 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
     pattern::{
-        constraint::{Comparator, Constraint, ExpressionBinding},
+        constraint::{Comparator, Constraint, ExpressionBinding, Isa},
         variable_category::VariableCategory,
     },
-    program::block::{BlockContext, FunctionalBlock, VariableRegistry},
+    program::block::{FunctionalBlock, VariableRegistry},
 };
 use itertools::Itertools;
 
@@ -26,12 +26,13 @@ use crate::{
         inference::type_annotations::TypeAnnotations,
         instructions::{
             CheckInstruction, ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs,
-            IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
+            IsaReverseInstruction,
         },
         planner::vertex::{Costed, HasPlanner, LinksPlanner, PlannerVertex, ThingPlanner, ValuePlanner, VertexCost},
     },
 };
 
+#[derive(Debug)]
 pub struct MatchProgram {
     pub(crate) programs: Vec<Program>,
     pub(crate) variable_registry: VariableRegistry,
@@ -48,6 +49,162 @@ If we know this we can:
   3. some checks are fully bound, while others are not... when do we decide? What is a Check versus an Iterate instructions? Do we need to differentiate?
  */
 
+#[derive(Debug)]
+struct PlanBuilder {
+    elements: Vec<PlannerVertex>,
+    variable_index: HashMap<Variable, usize>,
+    index_to_constraint: HashMap<usize, Constraint<Variable>>,
+    adjacency: HashMap<usize, HashSet<usize>>,
+    variable_isa: HashMap<Variable, Isa<Variable>>,
+}
+
+impl PlanBuilder {
+    fn init(variable_registry: &VariableRegistry, type_annotations: &TypeAnnotations, statistics: &Statistics) -> Self {
+        let mut elements = Vec::new();
+        let variable_index = variable_registry
+            .variable_categories()
+            .filter_map(|(variable, category)| {
+                match category {
+                    VariableCategory::Type | VariableCategory::ThingType => None, // ignore for now
+                    VariableCategory::RoleType => Some((variable, elements.len())),
+                    VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
+                        let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
+                        let index = elements.len();
+                        elements.push(PlannerVertex::Thing(planner));
+                        Some((variable, index))
+                    }
+                    VariableCategory::Value => {
+                        let planner = ValuePlanner::from_variable(variable);
+                        let index = elements.len();
+                        elements.push(PlannerVertex::Value(planner));
+                        Some((variable, index))
+                    }
+                    | VariableCategory::ObjectList
+                    | VariableCategory::ThingList
+                    | VariableCategory::AttributeList
+                    | VariableCategory::ValueList => todo!("list variable planning"),
+                }
+            })
+            .collect();
+        Self {
+            elements,
+            variable_index,
+            index_to_constraint: HashMap::new(),
+            adjacency: HashMap::new(),
+            variable_isa: HashMap::new(),
+        }
+    }
+
+    fn register_constraints(
+        &mut self,
+        conjunction: &ir::pattern::conjunction::Conjunction,
+        type_annotations: &TypeAnnotations,
+        statistics: &Statistics,
+    ) {
+        for constraint in conjunction.constraints() {
+            let planner = match constraint {
+                Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) => None, // ignore for now
+                Constraint::Owns(_) => todo!("owns"),
+                Constraint::Relates(_) => todo!("relates"),
+                Constraint::Plays(_) => todo!("plays"),
+
+                Constraint::Isa(isa) => {
+                    self.variable_isa.insert(isa.thing(), isa.clone());
+                    None
+                }
+                Constraint::Links(links) => {
+                    let planner =
+                        LinksPlanner::from_constraint(links, &self.variable_index, type_annotations, statistics);
+                    self.elements.push(PlannerVertex::Links(planner));
+                    self.elements.last()
+                }
+                Constraint::Has(has) => {
+                    let planner = HasPlanner::from_constraint(has, &self.variable_index, type_annotations, statistics);
+                    self.elements.push(PlannerVertex::Has(planner));
+                    self.elements.last()
+                }
+
+                Constraint::ExpressionBinding(expression) => {
+                    let lhs = self.variable_index[&expression.left()];
+                    if expression.expression().is_constant() {
+                        if matches!(self.elements[lhs], PlannerVertex::Value(_)) {
+                            self.elements[lhs] = PlannerVertex::Constant
+                        } else {
+                            todo!("non-value var assignment?")
+                        }
+                        None
+                    } else {
+                        let planner_index = self.elements.len();
+                        self.adjacency.entry(lhs).or_default().insert(planner_index);
+                        self.elements.push(PlannerVertex::Expression(todo!("expression = {expression:?}")));
+                        self.elements.last()
+                    }
+                }
+
+                Constraint::FunctionCallBinding(_) => todo!("function call"),
+
+                Constraint::Comparison(comparison) => {
+                    let lhs = self.variable_index[&comparison.lhs()];
+                    let rhs = self.variable_index[&comparison.rhs()];
+                    self.adjacency.entry(lhs).or_default().insert(rhs);
+                    self.adjacency.entry(rhs).or_default().insert(lhs);
+                    match comparison.comparator() {
+                        Comparator::Equal => {
+                            self.elements[lhs].add_equal(rhs);
+                            self.elements[rhs].add_equal(lhs);
+                        }
+                        Comparator::Less | Comparator::LessOrEqual => {
+                            self.elements[lhs].add_upper_bound(rhs);
+                            self.elements[rhs].add_lower_bound(lhs);
+                        }
+                        Comparator::Greater | Comparator::GreaterOrEqual => {
+                            self.elements[lhs].add_lower_bound(rhs);
+                            self.elements[rhs].add_upper_bound(lhs);
+                        }
+                        Comparator::Like => todo!("like operator"),
+                        Comparator::Cointains => todo!("contains operator"),
+                    }
+                    None
+                }
+            };
+
+            if let Some(planner) = planner {
+                let planner_index = self.elements.len() - 1;
+                self.index_to_constraint.insert(planner_index, constraint.clone());
+                self.adjacency.entry(planner_index).or_default().extend(planner.variables());
+                for v in planner.variables() {
+                    self.adjacency.entry(v).or_default().insert(planner_index);
+                }
+            }
+        }
+    }
+
+    fn initialise_greedy(&self) -> Vec<usize> {
+        let mut open_set: HashSet<usize> = (0..self.elements.len()).collect();
+        let mut ordering = Vec::with_capacity(self.elements.len());
+        while !open_set.is_empty() {
+            let (next, _cost) = open_set
+                .iter()
+                .filter(|&&elem| self.elements[elem].is_valid(&ordering))
+                .map(|&elem| (elem, self.calculate_marginal_cost(&ordering, elem)))
+                .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
+                .unwrap();
+            ordering.push(next);
+            open_set.remove(&next);
+        }
+        ordering
+    }
+
+    fn calculate_marginal_cost(&self, prefix: &[usize], next: usize) -> f64 {
+        assert!(!prefix.contains(&next));
+        let adjacent = self.adjacency.get(&next);
+        let preceding = adjacent.into_iter().flatten().filter(|adj| prefix.contains(adj)).copied().collect_vec();
+        let planner_vertex = &self.elements[next];
+        let VertexCost { per_input, per_output, branching_factor } = planner_vertex.cost(&preceding, &self.elements);
+        per_input + branching_factor * per_output
+    }
+}
+
 impl MatchProgram {
     pub fn new(programs: Vec<Program>, context: VariableRegistry) -> Self {
         Self { programs, variable_registry: context }
@@ -63,220 +220,12 @@ impl MatchProgram {
         assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
         let conjunction = block.conjunction();
         assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
-        let mut elements = Vec::new();
 
-        let variable_index = register_variables(variable_registry, &mut elements, type_annotations, statistics);
-        let (index_to_constraint, variable_isa, adjacency) =
-            register_constraints(conjunction, &variable_index, &mut elements, type_annotations, statistics);
+        let mut plan_builder = PlanBuilder::init(variable_registry, type_annotations, statistics);
+        plan_builder.register_constraints(conjunction, type_annotations, statistics);
+        let ordering = plan_builder.initialise_greedy();
 
-        let ordering = initialise_plan_greedy(&elements, &adjacency);
-
-        let index_to_variable: HashMap<_, _> =
-            variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
-
-        let mut programs = Vec::with_capacity(index_to_constraint.len());
-        let mut producers = HashMap::with_capacity(variable_index.len());
-        let mut outputs = Vec::with_capacity(variable_index.len());
-
-        let mut program_instructions = Vec::new();
-        let mut sort_variable = None;
-
-        for (i, &index) in ordering.iter().enumerate() {
-            let adjacent = match adjacency.get(&index) {
-                Some(adj) => adj,
-                None => &HashSet::new(),
-            };
-            if let Some(&var) = index_to_variable.get(&index) {
-                if let PlannerVertex::Thing(_) = &elements[index] {
-                    let needs_isa = !adjacent
-                        .iter()
-                        .filter(|&&adj| elements[adj].is_iterator())
-                        .any(|adj| ordering[..i].contains(adj));
-
-                    if needs_isa {
-                        if !program_instructions.is_empty() {
-                            programs.push(Program::Intersection(IntersectionProgram::new(
-                                sort_variable.take().unwrap(),
-                                mem::take(&mut program_instructions),
-                                &outputs,
-                            )));
-                        }
-
-                        let isa = &variable_isa[&var];
-                        outputs.push(var);
-                        sort_variable = Some(var);
-                        producers.insert(var, program_instructions.len());
-                        program_instructions.push(ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                            isa.clone(),
-                            Inputs::None([]),
-                            type_annotations,
-                            Vec::new(),
-                        )));
-                    }
-                }
-            } else {
-                let inputs = adjacent
-                    .iter()
-                    .filter(|&adj| ordering[..i].contains(adj))
-                    .map(|adj| index_to_variable[adj])
-                    .collect::<HashSet<_>>();
-
-                let constraint = index_to_constraint[&index];
-                match constraint {
-                    Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_) => {
-                        todo!("type constraint")
-                    }
-
-                    Constraint::Links(links) => {
-                        let relation = links.relation();
-                        let player = links.player();
-                        let role_type = links.role_type();
-
-                        if inputs.len() >= 2 {
-                            todo!("fully bound links");
-                            continue;
-                        }
-
-                        if !inputs.is_empty() {
-                            producers.clear();
-                            programs.push(Program::Intersection(IntersectionProgram::new(
-                                sort_variable.take().unwrap(),
-                                mem::take(&mut program_instructions),
-                                &outputs,
-                            )));
-                        }
-
-                        for var in &[relation, player, role_type] {
-                            if !inputs.contains(var) {
-                                outputs.push(*var)
-                            }
-                        }
-
-                        let planner = elements[index].as_links().unwrap();
-
-                        let instruction = if inputs.contains(&relation) {
-                            ConstraintInstruction::Links(LinksInstruction::new(
-                                links.clone(),
-                                Inputs::Single([relation]),
-                                type_annotations,
-                            ))
-                        } else if inputs.contains(&player) {
-                            ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                                links.clone(),
-                                Inputs::Single([player]),
-                                type_annotations,
-                            ))
-                        } else if planner.unbound_is_forward {
-                            ConstraintInstruction::Links(LinksInstruction::new(
-                                links.clone(),
-                                Inputs::None([]),
-                                type_annotations,
-                            ))
-                        } else {
-                            ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                                links.clone(),
-                                Inputs::None([]),
-                                type_annotations,
-                            ))
-                        };
-                        program_instructions.push(instruction);
-
-                        if sort_variable.is_none() {
-                            sort_variable =
-                                if inputs.is_empty() && planner.unbound_is_forward || inputs.contains(&player) {
-                                    Some(relation)
-                                } else {
-                                    Some(player)
-                                };
-                        }
-                    }
-
-                    Constraint::Has(has) => {
-                        let owner = has.owner();
-                        let attribute = has.attribute();
-
-                        if inputs.len() == 2 {
-                            let owner_producer = producers.get(&owner).expect("bound owner must have been produced");
-                            let attribute_producer =
-                                producers.get(&attribute).expect("bound attribute must have been produced");
-                            let latest = usize::max(*owner_producer, *attribute_producer);
-                            program_instructions[latest].add_check(CheckInstruction::Has { owner, attribute });
-                            continue;
-                        }
-
-                        if !inputs.is_empty() {
-                            producers.clear();
-                            programs.push(Program::Intersection(IntersectionProgram::new(
-                                sort_variable.take().unwrap(),
-                                mem::take(&mut program_instructions),
-                                &outputs,
-                            )));
-                        }
-
-                        let planner = elements[index].as_has().unwrap();
-                        for var in &[owner, attribute] {
-                            if !inputs.contains(var) {
-                                outputs.push(*var)
-                            }
-                        }
-
-                        let instruction = if inputs.contains(&owner) {
-                            producers.insert(attribute, program_instructions.len());
-                            ConstraintInstruction::Has(HasInstruction::new(
-                                has.clone(),
-                                Inputs::Single([owner]),
-                                type_annotations,
-                            ))
-                        } else if inputs.contains(&attribute) {
-                            producers.insert(owner, program_instructions.len());
-                            ConstraintInstruction::HasReverse(HasReverseInstruction::new(
-                                has.clone(),
-                                Inputs::Single([attribute]),
-                                type_annotations,
-                            ))
-                        } else if planner.unbound_is_forward {
-                            producers.insert(owner, program_instructions.len());
-                            producers.insert(attribute, program_instructions.len());
-                            ConstraintInstruction::Has(HasInstruction::new(
-                                has.clone(),
-                                Inputs::None([]),
-                                type_annotations,
-                            ))
-                        } else {
-                            producers.insert(owner, program_instructions.len());
-                            producers.insert(attribute, program_instructions.len());
-                            ConstraintInstruction::HasReverse(HasReverseInstruction::new(
-                                has.clone(),
-                                Inputs::None([]),
-                                type_annotations,
-                            ))
-                        };
-                        program_instructions.push(instruction);
-
-                        if sort_variable.is_none() {
-                            sort_variable =
-                                if inputs.is_empty() && planner.unbound_is_forward || inputs.contains(&attribute) {
-                                    Some(owner)
-                                } else {
-                                    Some(attribute)
-                                };
-                        }
-                    }
-
-                    Constraint::ExpressionBinding(_) => todo!("expression binding"),
-                    Constraint::FunctionCallBinding(_) => todo!("function call binding"),
-                    Constraint::Comparison(_) => todo!("comparison"),
-                    Constraint::Owns(_) => todo!("owns"),
-                    Constraint::Relates(_) => todo!("relates"),
-                    Constraint::Plays(_) => todo!("plays"),
-                }
-            }
-        }
-        programs.push(Program::Intersection(IntersectionProgram::new(
-            sort_variable.unwrap(),
-            program_instructions,
-            &outputs,
-        )));
+        let programs = lower_plan(&plan_builder, ordering, type_annotations);
         Self { programs, variable_registry: variable_registry.clone() }
     }
 
@@ -293,171 +242,171 @@ impl MatchProgram {
     }
 }
 
-fn register_variables(
-    variable_registry: &VariableRegistry,
-    elements: &mut Vec<PlannerVertex>,
-    type_annotations: &TypeAnnotations,
-    statistics: &Statistics,
-) -> HashMap<Variable, usize> {
-    variable_registry
-        .variable_categories()
-        .filter_map(|(variable, category)| {
-            match category {
-                VariableCategory::Type | VariableCategory::ThingType => None, // ignore for now
-                VariableCategory::RoleType => Some((variable, elements.len())),
-                VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
-                    let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
-                    let index = elements.len();
-                    elements.push(PlannerVertex::Thing(planner));
-                    Some((variable, index))
-                }
-                VariableCategory::Value => {
-                    let planner = ValuePlanner::from_variable(variable);
-                    let index = elements.len();
-                    elements.push(PlannerVertex::Value(planner));
-                    Some((variable, index))
-                }
-                | VariableCategory::ObjectList
-                | VariableCategory::ThingList
-                | VariableCategory::AttributeList
-                | VariableCategory::ValueList => todo!("list variable planning"),
-            }
-        })
-        .collect()
+#[derive(Debug, Default)]
+struct ProgramBuilder {
+    sort_variable: Option<Variable>,
+    instructions: Vec<ConstraintInstruction>,
+    last_output: Option<usize>,
 }
 
-fn register_constraints<'a>(
-    conjunction: &'a ir::pattern::conjunction::Conjunction,
-    variable_index: &HashMap<Variable, usize>,
-    elements: &mut Vec<PlannerVertex>,
-    type_annotations: &TypeAnnotations,
-    statistics: &Statistics,
-) -> (
-    HashMap<usize, &'a Constraint<Variable>>,
-    HashMap<Variable, ir::pattern::constraint::Isa<Variable>>,
-    HashMap<usize, HashSet<usize>>,
-) {
-    let mut index_to_constraint = HashMap::new();
-    let mut variable_isa = HashMap::new();
-    let mut adjacency: HashMap<usize, HashSet<usize>> = HashMap::new();
+impl ProgramBuilder {
+    fn finish(self, outputs: &[Variable]) -> Program {
+        Program::Intersection(IntersectionProgram::new(
+            self.sort_variable.unwrap(),
+            self.instructions,
+            &outputs[..self.last_output.unwrap()],
+        ))
+    }
+}
 
-    for constraint in conjunction.constraints() {
-        match constraint {
-            Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) => (), // ignore for now
+#[derive(Default)]
+struct MatchProgramBuilder {
+    programs: Vec<ProgramBuilder>,
+    current: ProgramBuilder,
+    outputs: Vec<Variable>,
+}
 
-            Constraint::Owns(_) => todo!("owns"),
-            Constraint::Relates(_) => todo!("relates"),
-            Constraint::Plays(_) => todo!("plays"),
+impl MatchProgramBuilder {
+    fn get_program_mut(&mut self, program: usize) -> &mut ProgramBuilder {
+        self.programs.get_mut(program).unwrap_or(&mut self.current)
+    }
 
-            Constraint::Isa(isa) => {
-                variable_isa.insert(isa.thing(), isa.clone());
+    fn push_instruction(&mut self, sort_variable: Variable, instruction: ConstraintInstruction) -> (usize, usize) {
+        if self.current.sort_variable != Some(sort_variable) {
+            self.finish_one();
+        }
+        self.current.sort_variable = Some(sort_variable);
+        self.current.instructions.push(instruction);
+        (self.programs.len(), self.current.instructions.len() - 1)
+    }
+
+    fn finish_one(&mut self) {
+        if !self.current.instructions.is_empty() {
+            self.current.last_output = Some(self.outputs.len());
+            self.programs.push(mem::take(&mut self.current));
+        }
+    }
+
+    fn finish(mut self) -> Vec<Program> {
+        self.finish_one();
+        self.programs.into_iter().map(|builder| builder.finish(&self.outputs)).collect()
+    }
+}
+
+fn lower_plan(plan_builder: &PlanBuilder, ordering: Vec<usize>, type_annotations: &TypeAnnotations) -> Vec<Program> {
+    let index_to_variable: HashMap<_, _> =
+        plan_builder.variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
+
+    let mut match_builder = MatchProgramBuilder::default();
+
+    let mut producers = HashMap::with_capacity(plan_builder.variable_index.len());
+
+    for (i, &index) in ordering.iter().enumerate() {
+        let adjacent = match plan_builder.adjacency.get(&index) {
+            Some(adj) => adj,
+            None => &HashSet::new(),
+        };
+        if let Some(&var) = index_to_variable.get(&index) {
+            if let PlannerVertex::Thing(_) = &plan_builder.elements[index] {
+                if let hash_map::Entry::Vacant(entry) = producers.entry(var) {
+                    let isa = &plan_builder.variable_isa[&var];
+                    let instruction = ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                        isa.clone(),
+                        Inputs::None([]),
+                        type_annotations,
+                        Vec::new(),
+                    ));
+                    let producer_index = match_builder.push_instruction(var, instruction);
+                    match_builder.outputs.push(var);
+                    entry.insert(producer_index);
+                }
+            }
+        } else {
+            let inputs = adjacent
+                .iter()
+                .filter(|&adj| ordering[..i].contains(adj))
+                .map(|adj| index_to_variable[adj])
+                .collect::<HashSet<_>>();
+
+            let constraint = &plan_builder.index_to_constraint[&index];
+            if let Some(var) = &match_builder.current.sort_variable {
+                if !constraint.ids().contains(var) {
+                    match_builder.finish_one();
+                }
             }
 
-            Constraint::Links(links) => {
-                let planner = LinksPlanner::from_constraint(links, variable_index, type_annotations, statistics);
+            match constraint {
+                Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_) => {
+                    todo!("type constraint")
+                }
 
-                let planner_index = elements.len();
+                Constraint::Links(_links) => {
+                    todo!()
+                }
 
-                index_to_constraint.insert(planner_index, constraint);
+                Constraint::Has(has) => {
+                    let owner = has.owner();
+                    let attribute = has.attribute();
 
-                adjacency.entry(planner_index).or_default().extend([planner.relation, planner.player, planner.role]);
+                    if inputs.len() == 2 {
+                        let owner_producer = producers.get(&owner).expect("bound owner must have been produced");
+                        let attribute_producer =
+                            producers.get(&attribute).expect("bound attribute must have been produced");
+                        let (program, instruction) = std::cmp::Ord::max(*owner_producer, *attribute_producer);
+                        match_builder.get_program_mut(program).instructions[instruction]
+                            .add_check(CheckInstruction::Has { owner, attribute });
+                        continue;
+                    }
 
-                adjacency.entry(planner.relation).or_default().insert(planner_index);
-                adjacency.entry(planner.player).or_default().insert(planner_index);
-                adjacency.entry(planner.role).or_default().insert(planner_index);
+                    let planner = plan_builder.elements[index].as_has().unwrap();
+                    let sort_variable =
+                        if inputs.is_empty() && planner.unbound_is_forward || inputs.contains(&attribute) {
+                            owner
+                        } else {
+                            attribute
+                        };
 
-                elements.push(PlannerVertex::Links(planner));
-            }
-
-            Constraint::Has(has) => {
-                let planner = HasPlanner::from_constraint(has, variable_index, type_annotations, statistics);
-
-                let planner_index = elements.len();
-
-                index_to_constraint.insert(planner_index, constraint);
-
-                adjacency.entry(planner_index).or_default().extend([planner.owner, planner.attribute]);
-
-                adjacency.entry(planner.owner).or_default().insert(planner_index);
-                adjacency.entry(planner.attribute).or_default().insert(planner_index);
-
-                elements.push(PlannerVertex::Has(planner));
-            }
-
-            Constraint::ExpressionBinding(expression) => {
-                let lhs = variable_index[&expression.left()];
-                if expression.expression().is_constant() {
-                    if matches!(elements[lhs], PlannerVertex::Value(_)) {
-                        elements[lhs] = PlannerVertex::Constant
+                    let has = has.clone();
+                    let instruction = if inputs.contains(&owner) {
+                        ConstraintInstruction::Has(HasInstruction::new(has, Inputs::Single([owner]), type_annotations))
+                    } else if inputs.contains(&attribute) {
+                        ConstraintInstruction::HasReverse(HasReverseInstruction::new(
+                            has,
+                            Inputs::Single([attribute]),
+                            type_annotations,
+                        ))
+                    } else if planner.unbound_is_forward {
+                        ConstraintInstruction::Has(HasInstruction::new(has, Inputs::None([]), type_annotations))
                     } else {
-                        todo!("non-value var assignment?")
-                    }
-                } else {
-                    let planner_index = elements.len();
-                    adjacency.entry(lhs).or_default().insert(planner_index);
-                    elements.push(PlannerVertex::Expression(todo!("expression = {expression:?}")));
-                }
-            }
+                        ConstraintInstruction::HasReverse(HasReverseInstruction::new(
+                            has,
+                            Inputs::None([]),
+                            type_annotations,
+                        ))
+                    };
 
-            Constraint::FunctionCallBinding(_) => todo!("function call"),
-
-            Constraint::Comparison(comparison) => {
-                let lhs = variable_index[&comparison.lhs()];
-                let rhs = variable_index[&comparison.rhs()];
-                adjacency.entry(lhs).or_default().insert(rhs);
-                adjacency.entry(rhs).or_default().insert(lhs);
-                match comparison.comparator() {
-                    Comparator::Equal => {
-                        elements[lhs].add_equal(rhs);
-                        elements[rhs].add_equal(lhs);
+                    let producer_index = match_builder.push_instruction(sort_variable, instruction);
+                    for &var in &[owner, attribute] {
+                        if !inputs.contains(&var) {
+                            match_builder.outputs.push(var);
+                            producers.insert(var, producer_index);
+                        }
                     }
-                    Comparator::Less | Comparator::LessOrEqual => {
-                        elements[lhs].add_upper_bound(rhs);
-                        elements[rhs].add_lower_bound(lhs);
-                    }
-                    Comparator::Greater | Comparator::GreaterOrEqual => {
-                        elements[lhs].add_lower_bound(rhs);
-                        elements[rhs].add_upper_bound(lhs);
-                    }
-                    Comparator::Like => todo!("like operator"),
-                    Comparator::Cointains => todo!("contains operator"),
                 }
+
+                Constraint::ExpressionBinding(_) => todo!("expression binding"),
+                Constraint::FunctionCallBinding(_) => todo!("function call binding"),
+                Constraint::Comparison(_) => todo!("comparison"),
+                Constraint::Owns(_) => todo!("owns"),
+                Constraint::Relates(_) => todo!("relates"),
+                Constraint::Plays(_) => todo!("plays"),
             }
         }
     }
-    (index_to_constraint, variable_isa, adjacency)
+    match_builder.finish()
 }
 
-fn initialise_plan_greedy(elements: &[PlannerVertex], adjacency: &HashMap<usize, HashSet<usize>>) -> Vec<usize> {
-    let mut open_set: HashSet<usize> = (0..elements.len()).collect();
-    let mut ordering = Vec::with_capacity(elements.len());
-    while !open_set.is_empty() {
-        let (next, _cost) = open_set
-            .iter()
-            .filter(|&&elem| elements[elem].is_valid(&ordering))
-            .map(|&elem| (elem, calculate_marginal_cost(elements, adjacency, &ordering, elem)))
-            .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
-            .unwrap();
-        ordering.push(next);
-        open_set.remove(&next);
-    }
-    ordering
-}
-
-fn calculate_marginal_cost(
-    elements: &[PlannerVertex],
-    adjacency: &HashMap<usize, HashSet<usize>>,
-    prefix: &[usize],
-    next: usize,
-) -> f64 {
-    assert!(!prefix.contains(&next));
-    let adjacent = adjacency.get(&next);
-    let preceding = adjacent.into_iter().flatten().filter(|adj| prefix.contains(adj)).copied().collect_vec();
-    let planner_vertex = &elements[next];
-    let VertexCost { per_input, per_output, branching_factor } = planner_vertex.cost(&preceding, elements);
-    per_input + branching_factor * per_output
-}
-
+#[derive(Debug)]
 pub enum Program {
     Intersection(IntersectionProgram),
     UnsortedJoin(UnsortedJoinProgram),
@@ -491,6 +440,7 @@ impl Program {
     }
 }
 
+#[derive(Debug)]
 pub struct IntersectionProgram {
     pub sort_variable: Variable,
     pub instructions: Vec<ConstraintInstruction>,
@@ -533,6 +483,7 @@ impl IntersectionProgram {
     }
 }
 
+#[derive(Debug)]
 pub struct UnsortedJoinProgram {
     pub iterate_instruction: ConstraintInstruction,
     pub check_instructions: Vec<ConstraintInstruction>,
@@ -579,6 +530,7 @@ impl UnsortedJoinProgram {
         &self.new_variables
     }
 }
+#[derive(Debug)]
 
 pub struct AssignmentProgram {
     assign_instruction: ExpressionBinding<Variable>,
@@ -592,14 +544,17 @@ impl AssignmentProgram {
     }
 }
 
+#[derive(Debug)]
 pub struct DisjunctionProgram {
     pub disjunction: Vec<MatchProgram>,
 }
 
+#[derive(Debug)]
 pub struct NegationProgram {
     pub negation: MatchProgram,
 }
 
+#[derive(Debug)]
 pub struct OptionalProgram {
     pub optional: MatchProgram,
 }

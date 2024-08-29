@@ -139,7 +139,6 @@ impl VariableRegistry {
 
     fn register_variable_named(&mut self, name: String) -> Variable {
         let variable = self.allocate_variable();
-        println!("Registered variable {} to {}", name.clone(), variable);
         self.variable_names.insert(variable, name);
         variable
     }

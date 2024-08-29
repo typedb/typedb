@@ -5,8 +5,11 @@
  */
 
 use std::{
+    array,
     collections::{HashMap, HashSet},
+    iter,
     ops::Deref,
+    slice,
 };
 
 use answer::variable::Variable;
@@ -71,6 +74,17 @@ impl PlannerVertex {
         match self {
             Self::Links(v) => Some(v),
             _ => None,
+        }
+    }
+
+    pub(super) fn variables(&self) -> impl Iterator<Item = usize> {
+        match self {
+            PlannerVertex::Constant => [None; 3].into_iter().flatten(),
+            PlannerVertex::Value(_inner) => todo!(),
+            PlannerVertex::Thing(_inner) => todo!(),
+            PlannerVertex::Has(inner) => inner.variables(),
+            PlannerVertex::Links(inner) => inner.variables(),
+            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
         }
     }
 
@@ -327,6 +341,10 @@ impl HasPlanner {
             unbound_is_forward,
         }
     }
+
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [Some(self.owner), Some(self.attribute), None].into_iter().flatten()
+    }
 }
 
 impl Costed for HasPlanner {
@@ -432,6 +450,10 @@ impl LinksPlanner {
             expected_unbound_size,
             unbound_is_forward,
         }
+    }
+
+    fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [self.relation, self.player, self.role].map(Some).into_iter().flatten()
     }
 }
 
