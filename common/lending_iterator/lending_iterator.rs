@@ -37,6 +37,16 @@ pub trait LendingIterator: 'static {
         Filter::new(self, pred)
     }
 
+    fn try_filter<P, F, T, E>(self, pred: P) -> TryFilter<Self, P, T, E>
+    where
+        T: Hkt,
+        Self: Sized + for<'a> LendingIterator<Item<'a> = Result<T::HktSelf<'a>, E>>,
+        P: Borrow<F>,
+        F: for<'a, 'b> FnHktHelper<&'a Self::Item<'b>, Result<bool, E>> + ?Sized,
+    {
+        TryFilter::new(self, pred)
+    }
+
     fn take_while<P>(self, pred: P) -> TakeWhile<Self, P>
     where
         Self: Sized,
@@ -148,27 +158,6 @@ pub trait LendingIterator: 'static {
         }
         count
     }
-}
-
-pub trait TryLendingIterator<T: Hkt, E: 'static>:
-    for<'a> LendingIterator<Item<'a> = Result<T::HktSelf<'a>, E>>
-{
-    fn try_filter<P, F>(self, pred: P) -> TryFilter<Self, P, T, E>
-    where
-        Self: Sized,
-        P: Borrow<F>,
-        F: for<'a, 'b> FnHktHelper<&'a Self::Item<'b>, Result<bool, E>> + ?Sized,
-    {
-        TryFilter::new(self, pred)
-    }
-}
-
-impl<I, T, E> TryLendingIterator<T, E> for I
-where
-    T: Hkt,
-    E: 'static,
-    I: for<'a> LendingIterator<Item<'a> = Result<T::HktSelf<'a>, E>>,
-{
 }
 
 pub trait Seekable<K: ?Sized>: LendingIterator {

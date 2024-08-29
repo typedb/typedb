@@ -28,7 +28,7 @@ use ir::pattern::constraint::Isa;
 use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Chain, Flatten, Map, TryFilter},
-    AsHkt, AsLendingIterator, LendingIterator, TryLendingIterator,
+    AsHkt, AsLendingIterator, LendingIterator,
 };
 use storage::snapshot::ReadableSnapshot;
 
@@ -133,6 +133,7 @@ impl IsaExecutor {
         thing_manager: &Arc<ThingManager>,
         row: ImmutableRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
+        let filter_for_row = self.checker.filter_for_row(snapshot, thing_manager, &row);
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
                 let positions = TuplePositions::Pair([self.isa.thing(), self.isa.type_()]);
@@ -140,11 +141,8 @@ impl IsaExecutor {
                     // no heap allocs needed if there is only 1 iterator
                     let type_ = self.types.iter().next().unwrap();
                     let iterator = instances_of_single_type(type_, thing_manager, &**snapshot)?;
-                    let as_tuples: IsaUnboundedSortedThingSingle =
-                        TryLendingIterator::<Thing<'_>, _>::try_filter::<_, IsaFilterFn>(
-                            iterator,
-                            self.checker.filter_for_row(snapshot, thing_manager, &row),
-                        )
+                    let as_tuples: IsaUnboundedSortedThingSingle = iterator
+                        .try_filter::<_, IsaFilterFn, Thing<'_>, _>(filter_for_row)
                         .map(isa_to_tuple_thing_type);
                     Ok(TupleIterator::IsaUnboundedSingle(SortedTupleIterator::new(
                         as_tuples,
@@ -153,11 +151,8 @@ impl IsaExecutor {
                     )))
                 } else {
                     let thing_iter = instances_of_all_types_chained(&self.types, thing_manager, &**snapshot)?;
-                    let as_tuples: IsaUnboundedSortedThingMerged =
-                        TryLendingIterator::<Thing<'_>, _>::try_filter::<_, IsaFilterFn>(
-                            thing_iter,
-                            self.checker.filter_for_row(snapshot, thing_manager, &row),
-                        )
+                    let as_tuples: IsaUnboundedSortedThingMerged = thing_iter
+                        .try_filter::<_, IsaFilterFn, Thing<'_>, _>(filter_for_row)
                         .map(isa_to_tuple_thing_type);
                     Ok(TupleIterator::IsaUnboundedMerged(SortedTupleIterator::new(
                         as_tuples,
@@ -173,11 +168,8 @@ impl IsaExecutor {
                     // no heap allocs needed if there is only 1 iterator
                     let type_ = self.types.iter().next().unwrap();
                     let iterator = instances_of_single_type(type_, thing_manager, &**snapshot)?;
-                    let as_tuples: IsaUnboundedSortedTypeSingle =
-                        TryLendingIterator::<Thing<'_>, _>::try_filter::<_, IsaFilterFn>(
-                            iterator,
-                            self.checker.filter_for_row(snapshot, thing_manager, &row),
-                        )
+                    let as_tuples: IsaUnboundedSortedTypeSingle = iterator
+                        .try_filter::<_, IsaFilterFn, Thing<'_>, _>(filter_for_row)
                         .map(isa_to_tuple_type_thing);
                     Ok(TupleIterator::IsaUnboundedInvertedSingle(SortedTupleIterator::new(
                         as_tuples,
@@ -186,11 +178,8 @@ impl IsaExecutor {
                     )))
                 } else {
                     let thing_iter = instances_of_all_types_chained(&self.types, thing_manager, &**snapshot)?;
-                    let as_tuples: IsaUnboundedSortedTypeMerged =
-                        TryLendingIterator::<Thing<'_>, _>::try_filter::<_, IsaFilterFn>(
-                            thing_iter,
-                            self.checker.filter_for_row(snapshot, thing_manager, &row),
-                        )
+                    let as_tuples: IsaUnboundedSortedTypeMerged = thing_iter
+                        .try_filter::<_, IsaFilterFn, Thing<'_>, _>(filter_for_row)
                         .map(isa_to_tuple_type_thing);
                     Ok(TupleIterator::IsaUnboundedInvertedMerged(SortedTupleIterator::new(
                         as_tuples,
@@ -206,11 +195,9 @@ impl IsaExecutor {
                 let VariableValue::Thing(thing) = row.get(self.isa.thing()).to_owned() else {
                     unreachable!("Has thing must be an entity or relation.")
                 };
-                let as_tuples: IsaBoundedSortedType = TryLendingIterator::<Thing<'_>, _>::try_filter::<_, IsaFilterFn>(
-                    lending_iterator::once::<Result<Thing<'_>, _>>(Ok(thing)),
-                    self.checker.filter_for_row(snapshot, thing_manager, &row),
-                )
-                .map(isa_to_tuple_thing_type);
+                let as_tuples: IsaBoundedSortedType = lending_iterator::once::<Result<Thing<'_>, _>>(Ok(thing))
+                    .try_filter::<_, IsaFilterFn, Thing<'_>, _>(filter_for_row)
+                    .map(isa_to_tuple_thing_type);
                 Ok(TupleIterator::IsaBounded(SortedTupleIterator::new(as_tuples, positions, &self.variable_modes)))
             }
         }
