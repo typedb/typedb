@@ -18,10 +18,9 @@ use crate::{
     write::insert::InsertExecutor,
 };
 
-pub type InsertAccumulator<Snapshot: WritableSnapshot + 'static> =
-    Accumulator<Snapshot, WritePipelineStage<Snapshot>, InsertExecutor>;
+pub type InsertAccumulator<Snapshot> = Accumulator<Snapshot, WritePipelineStage<Snapshot>, InsertExecutor>;
 
-pub type InsertStage<Snapshot: WritableSnapshot + 'static> = PipelineStageCommon<
+pub type InsertStage<Snapshot> = PipelineStageCommon<
     Snapshot,
     WritePipelineStage<Snapshot>,
     InsertAccumulator<Snapshot>,
