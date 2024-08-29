@@ -16,7 +16,7 @@ use executor::{
         initial::InitialStage,
         insert::InsertStage,
         match_::MatchStageExecutor,
-        stage_wrappers::{ReadPipelineStage, WritePipelineStage},
+        stage::{ReadPipelineStage, WritePipelineStage},
         PipelineContext,
     },
     write::insert::InsertExecutor,

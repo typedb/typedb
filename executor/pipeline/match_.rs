@@ -37,13 +37,18 @@ for MatchStageExecutor<Snapshot, PreviousStage>
         let Self { previous: previous_stage, program, .. } = self;
         let (previous_iterator, snapshot, thing_manager) = previous_stage.into_iterator()?;
 
-        let iterator = previous_iterator.flat_map(move |row| {
+        let iterator = previous_iterator.try_flat_map(|row| {
+            let snapshot = snapshot.clone();
+            let thing_manager = thing_manager.clone();
             // TODO: use `row` as input into the executor
-            let executor = PatternExecutor::new(program.entry(), snapshot.as_ref(), thing_manager.as_ref())
-                .map_err(|source| PipelineError::InitialisingMatchIterator(source))?;
-            executor.into_iterator(snapshot.clone(), thing_manager.clone())
+            PatternExecutor::new(&program, snapshot.as_ref(), thing_manager.as_ref())
+                .map(|executor|
+                    executor.into_iterator(snapshot.clone(), thing_manager.clone())
+                    .map(|result| result.map_err(|err| PipelineError::ConceptRead(err.clone())))
+                )
+                .map_err(|err| PipelineError::InitialisingMatchIterator(err.clone()))
         });
-        Ok(MatchStageIterator::new(iterator))
+        Ok((MatchStageIterator::new(iterator), snapshot, thing_manager))
     }
 }
 

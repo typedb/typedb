@@ -21,7 +21,7 @@ mod delete;
 pub mod initial;
 pub mod insert;
 pub mod match_;
-pub mod stage_wrappers;
+pub mod stage;
 
 pub trait StageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
     type OutputIterator: StageIterator;

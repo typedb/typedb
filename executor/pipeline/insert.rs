@@ -32,7 +32,7 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for InsertStageExecutor<Snapsho
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
         let (previous_iterator, mut snapshot, mut thing_manager) = self.previous.into_iterator()?;
         // accumulate once, then we will operate in-place
-        let mut rows = previous_iterator.collect_owned();
+        let mut rows = previous_iterator.collect_owned()?;
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot_ref = Arc::get_mut(&mut snapshot).unwrap();
