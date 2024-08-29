@@ -17,10 +17,8 @@ use compiler::{
 };
 use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::TypeAPI};
 use cucumber::gherkin::Step;
-use encoding::value::label::Label;
 use executor::{
     batch::Row,
-    program_executor::ProgramExecutor,
     write::{insert::InsertExecutor, WriteError},
 };
 use ir::{

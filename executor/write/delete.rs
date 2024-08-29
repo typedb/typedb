@@ -35,7 +35,9 @@ impl DeleteExecutor {
         for instruction in &self.program.connection_instructions {
             match instruction {
                 ConnectionInstruction::Has(has) => has.execute(snapshot, thing_manager, input_output_row)?,
-                ConnectionInstruction::RolePlayer(role_player) => role_player.execute(snapshot, thing_manager, input_output_row)?,
+                ConnectionInstruction::RolePlayer(role_player) => {
+                    role_player.execute(snapshot, thing_manager, input_output_row)?
+                }
             }
         }
 

@@ -4,17 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt::{Display, Formatter}, sync::Arc, vec};
-use itertools::Itertools;
+use std::{
+    error::Error,
+    fmt::{Display, Formatter},
+    sync::Arc,
+    vec,
+};
 
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{
-    batch::MaybeOwnedRow,
-    write::WriteError,
-};
+use crate::{batch::MaybeOwnedRow, write::WriteError};
 
 pub mod accumulator;
 mod delete;
@@ -29,12 +31,11 @@ pub trait StageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError>;
 }
 
-pub trait StageIterator: for<'a> LendingIterator<Item<'a>=Result<MaybeOwnedRow<'a>, PipelineError>> {
+pub trait StageIterator: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>> {
     fn collect_owned(self) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineError> {
         // specific iterators can optimise this by not iterating + collecting!
-        let rows: Vec<MaybeOwnedRow<'static>> = self
-            .map_static(|result| result.map(|row| row.into_owned()))
-            .try_collect()?;
+        let rows: Vec<MaybeOwnedRow<'static>> =
+            self.map_static(|result| result.map(|row| row.into_owned())).try_collect()?;
         Ok(rows)
     }
 }
@@ -75,7 +76,7 @@ impl LendingIterator for WrittenRowsIterator {
     fn next(&mut self) -> Option<Self::Item<'_>> {
         let index = self.index;
         if index >= self.rows.len() {
-            return None
+            return None;
         } else {
             self.index += 1;
             let row = &self.rows[index];

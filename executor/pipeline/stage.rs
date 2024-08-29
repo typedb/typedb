@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -12,13 +13,12 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     batch::MaybeOwnedRow,
     pipeline::{
-        initial::InitialStage, insert::InsertStageExecutor, match_::MatchStageExecutor,
-        PipelineError,
+        initial::{InitialIterator, InitialStage},
+        insert::InsertStageExecutor,
+        match_::{MatchStageExecutor, MatchStageIterator},
+        PipelineError, StageAPI, StageIterator, WrittenRowsIterator,
     },
 };
-use crate::pipeline::initial::InitialIterator;
-use crate::pipeline::match_::MatchStageIterator;
-use crate::pipeline::{StageAPI, StageIterator, WrittenRowsIterator};
 
 pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
@@ -53,7 +53,7 @@ impl LendingIterator for ReadStageIterator {
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
             ReadStageIterator::Initial(iterator) => iterator.next(),
-            ReadStageIterator::Match(iterator) => iterator.next()
+            ReadStageIterator::Match(iterator) => iterator.next(),
         }
     }
 }

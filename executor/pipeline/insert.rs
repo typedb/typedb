@@ -4,17 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::marker::PhantomData;
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
-    pipeline::PipelineError,
+    pipeline::{PipelineError, StageAPI, StageIterator, WrittenRowsIterator},
     write::insert::InsertExecutor,
 };
-use crate::pipeline::{StageAPI, StageIterator, WrittenRowsIterator};
 
 pub struct InsertStageExecutor<Snapshot: WritableSnapshot + 'static, PreviouStage: StageAPI<Snapshot>> {
     inserter: InsertExecutor,
@@ -23,9 +21,9 @@ pub struct InsertStageExecutor<Snapshot: WritableSnapshot + 'static, PreviouStag
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for InsertStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: WritableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>
+where
+    Snapshot: WritableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = WrittenRowsIterator;
 
@@ -38,10 +36,10 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for InsertStageExecutor<Snapsho
         let snapshot_ref = Arc::get_mut(&mut snapshot).unwrap();
         let thing_manager_ref = Arc::get_mut(&mut thing_manager).unwrap();
         for row in &mut rows {
-
             // TODO: surely the output might have a different shape??
 
-            self.inserter.execute_insert(snapshot_ref, thing_manager_ref, &mut row.as_mut_ref())
+            self.inserter
+                .execute_insert(snapshot_ref, thing_manager_ref, &mut row.as_mut_ref())
                 .map_err(|err| PipelineError::WriteError(err))?;
         }
 

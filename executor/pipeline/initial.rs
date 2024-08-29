@@ -4,17 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::array;
-use std::sync::Arc;
+use std::{array, sync::Arc};
+
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::{MaybeOwnedRow},
-    pipeline::{PipelineError},
+    batch::MaybeOwnedRow,
+    pipeline::{PipelineError, StageAPI, StageIterator},
 };
-use crate::pipeline::{StageAPI, StageIterator};
 
 pub struct InitialStage<Snapshot: ReadableSnapshot + 'static> {
     snapshot: Arc<Snapshot>,
@@ -35,11 +34,7 @@ pub struct InitialIterator {
 
 impl InitialIterator {
     fn new() -> Self {
-        Self {
-            single_iterator: AsLendingIterator::new(
-                [Ok(MaybeOwnedRow::new_owned(Vec::new(), 1))].into_iter()
-            )
-        }
+        Self { single_iterator: AsLendingIterator::new([Ok(MaybeOwnedRow::new_owned(Vec::new(), 1))].into_iter()) }
     }
 }
 

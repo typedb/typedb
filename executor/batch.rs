@@ -213,9 +213,7 @@ impl<'a> MaybeOwnedRow<'a> {
     pub fn as_mut_ref(&mut self) -> Row<'_> {
         match &mut self.row {
             Cow::Borrowed(_) => panic!("Cannot get mutable access to Borrowed row."),
-            Cow::Owned(row) => {
-                Row::new(row.as_mut_slice(), &mut self.multiplicity)
-            }
+            Cow::Owned(row) => Row::new(row.as_mut_slice(), &mut self.multiplicity),
         }
     }
 }

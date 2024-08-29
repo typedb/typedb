@@ -11,7 +11,7 @@ use encoding::graph::type_::Kind;
 use ir::pattern::constraint::Constraint;
 
 use crate::{
-    delete::instructions::{ConnectionInstruction, ThingInstruction, Has, RolePlayer},
+    delete::instructions::{ConnectionInstruction, Has, RolePlayer, ThingInstruction},
     insert::{
         get_thing_source, program::collect_role_type_bindings, ThingSource, TypeSource, VariableSource,
         WriteCompilationError,
@@ -102,5 +102,9 @@ pub fn compile(
         })
         .collect::<Vec<_>>();
 
-    Ok(DeleteProgram { connection_instructions: connection_deletes, concept_instructions: concept_deletes, output_row_schema })
+    Ok(DeleteProgram {
+        connection_instructions: connection_deletes,
+        concept_instructions: concept_deletes,
+        output_row_schema,
+    })
 }

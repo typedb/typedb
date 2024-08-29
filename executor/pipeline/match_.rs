@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::marker::PhantomData;
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use compiler::match_::planner::pattern_plan::MatchProgram;
 use concept::thing::thing_manager::ThingManager;
@@ -15,12 +14,8 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::MaybeOwnedRow,
     pattern_executor::PatternExecutor,
-    pipeline::{
-        PipelineError,
-        StageAPI,
-    },
+    pipeline::{PipelineError, StageAPI, StageIterator},
 };
-use crate::pipeline::StageIterator;
 
 pub struct MatchStageExecutor<Snapshot: ReadableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
     program: MatchProgram,
@@ -29,7 +24,7 @@ pub struct MatchStageExecutor<Snapshot: ReadableSnapshot + 'static, PreviousStag
 }
 
 impl<Snapshot: ReadableSnapshot, PreviousStage: StageAPI<Snapshot>> StageAPI<Snapshot>
-for MatchStageExecutor<Snapshot, PreviousStage>
+    for MatchStageExecutor<Snapshot, PreviousStage>
 {
     type OutputIterator = MatchStageIterator<PreviousStage::OutputIterator>;
 
@@ -42,10 +37,11 @@ for MatchStageExecutor<Snapshot, PreviousStage>
             let thing_manager = thing_manager.clone();
             // TODO: use `row` as input into the executor
             PatternExecutor::new(&program, snapshot.as_ref(), thing_manager.as_ref())
-                .map(|executor|
-                    executor.into_iterator(snapshot.clone(), thing_manager.clone())
-                    .map(|result| result.map_err(|err| PipelineError::ConceptRead(err.clone())))
-                )
+                .map(|executor| {
+                    executor
+                        .into_iterator(snapshot.clone(), thing_manager.clone())
+                        .map(|result| result.map_err(|err| PipelineError::ConceptRead(err.clone())))
+                })
                 .map_err(|err| PipelineError::InitialisingMatchIterator(err.clone()))
         });
         Ok((MatchStageIterator::new(iterator), snapshot, thing_manager))
@@ -57,8 +53,8 @@ pub struct MatchStageIterator<Iterator> {
 }
 
 impl<Iterator> MatchStageIterator<Iterator>
-    where
-        Iterator: for<'a> LendingIterator<Item<'a>=Result<MaybeOwnedRow<'a>, PipelineError>>
+where
+    Iterator: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>>,
 {
     fn new(iterator: Iterator) -> Self {
         Self { iterator }
@@ -66,8 +62,8 @@ impl<Iterator> MatchStageIterator<Iterator>
 }
 
 impl<Iterator> LendingIterator for MatchStageIterator<Iterator>
-    where
-        Iterator: for<'a> LendingIterator<Item<'a>=Result<MaybeOwnedRow<'a>, PipelineError>>
+where
+    Iterator: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>>,
 {
     type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
 
@@ -76,7 +72,7 @@ impl<Iterator> LendingIterator for MatchStageIterator<Iterator>
     }
 }
 
-impl<Iterator> StageIterator for MatchStageIterator<Iterator>
-where
-    Iterator: for<'a> LendingIterator<Item<'a>=Result<MaybeOwnedRow<'a>, PipelineError>>
-{}
+impl<Iterator> StageIterator for MatchStageIterator<Iterator> where
+    Iterator: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>>
+{
+}

@@ -19,7 +19,7 @@ use encoding::{
 };
 use executor::{
     batch::MaybeOwnedRow,
-    pipeline::{StageIteratorAPI, PipelineContext, PipelineError, PipelineStageAPI},
+    pipeline::{PipelineContext, PipelineError, PipelineStageAPI, StageIteratorAPI},
     program_executor::ProgramExecutor,
 };
 use function::function_manager::FunctionManager;
@@ -161,7 +161,8 @@ fn test_match_as_pipeline() {
         assert!(result.is_ok(), "{:?}", result);
         count += 1;
     }
-    let (snapshot, thing_manager) = insert_pipeline.finalise_and_into_context().unwrap().into_owned_parts();
+    let (snapshot,  thing_manager) = insert_pipeline.finalise_and_into_context().unwrap()
+    .into_owned_parts();
     let inserted_seq = snapshot.commit().unwrap();
 
     let mut newer_statistics = Statistics::new(inserted_seq.unwrap());
@@ -213,11 +214,14 @@ fn test_has_planning_traversal() {
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
-    let person_owns_age = person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone()).unwrap();
+    let person_owns_age = person_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone())
+        .unwrap();
     person_owns_age.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
 
-    let person_owns_name =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone()).unwrap();
+    let person_owns_name = person_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone())
+        .unwrap();
     person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
 
     let person = [
@@ -319,7 +323,8 @@ fn delete_has() {
 
     assert!(matches!(insert_pipeline.next(), Some(Ok(_))));
     assert!(insert_pipeline.next().is_none());
-    let (snapshot, thing_manager) = insert_pipeline.finalise_and_into_context().unwrap().into_owned_parts();
+    let (snapshot,  thing_manager) = insert_pipeline.finalise_and_into_context().unwrap()
+    .into_owned_parts();
     snapshot.commit().unwrap();
 
     let snapshot = context.storage.clone().open_snapshot_write();
@@ -345,6 +350,7 @@ fn delete_has() {
 
     assert!(matches!(insert_pipeline.next(), Some(Ok(_))));
     assert!(insert_pipeline.next().is_none());
-    let (snapshot, thing_manager) = insert_pipeline.finalise_and_into_context().unwrap().into_owned_parts();
+    let (snapshot,  thing_manager) = insert_pipeline.finalise_and_into_context().unwrap()
+    .into_owned_parts();
     snapshot.commit().unwrap();
 }

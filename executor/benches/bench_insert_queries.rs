@@ -12,8 +12,8 @@ use std::{
     fs::File,
     path::Path,
     sync::{Arc, OnceLock},
+    time::Duration,
 };
-use std::time::Duration;
 
 use answer::variable_value::VariableValue;
 use compiler::{

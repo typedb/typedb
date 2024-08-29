@@ -18,6 +18,7 @@ use concept::{
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
     batch::Row,
+    pipeline::PipelineStageAPI,
     write::{delete::DeleteExecutor, insert::InsertExecutor, WriteError},
 };
 use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};

@@ -6,26 +6,23 @@
 
 use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
-use itertools::Itertools;
-
 use answer::{variable::Variable, variable_value::VariableValue};
 use compiler::match_::{
     instructions::ConstraintInstruction,
     planner::pattern_plan::{
-        AssignmentProgram, DisjunctionProgram, IntersectionProgram, MatchProgram, NegationProgram, OptionalProgram, Program,
-        UnsortedJoinProgram,
+        AssignmentProgram, DisjunctionProgram, IntersectionProgram, MatchProgram, NegationProgram, OptionalProgram,
+        Program, UnsortedJoinProgram,
     },
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::program::block::VariableRegistry;
-use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
-use lending_iterator::adaptors::FlatMap;
+use itertools::Itertools;
+use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     batch::{Batch, BatchRowIterator, MaybeOwnedRow, Row},
-    instruction::{InstructionExecutor, iterator::TupleIterator}
-    ,
+    instruction::{iterator::TupleIterator, InstructionExecutor},
     SelectedPositions, VariablePosition,
 };
 
@@ -87,7 +84,8 @@ impl PatternExecutor {
         thing_manager: Arc<ThingManager>,
     ) -> PatternIterator<Snapshot> {
         PatternIterator::new(
-            AsLendingIterator::new(BatchIterator::new(self, snapshot.clone(), thing_manager.clone())).flat_map(BatchRowIterator::new),
+            AsLendingIterator::new(BatchIterator::new(self, snapshot.clone(), thing_manager.clone()))
+                .flat_map(BatchRowIterator::new),
             snapshot,
             thing_manager,
         )
@@ -165,7 +163,7 @@ enum Direction {
 type PatternRowIterator<Snapshot> = FlatMap<
     AsLendingIterator<BatchIterator<Snapshot>>,
     BatchRowIterator,
-    fn(Result<Batch, ConceptReadError>) -> BatchRowIterator
+    fn(Result<Batch, ConceptReadError>) -> BatchRowIterator,
 >;
 
 pub(crate) struct PatternIterator<Snapshot: ReadableSnapshot> {
