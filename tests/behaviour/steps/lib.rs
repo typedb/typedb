@@ -112,17 +112,16 @@ pub struct Context {
 
 impl Context {
     pub async fn test<I: AsRef<Path>>(glob: I, clean_databases_after: bool) -> bool {
-        let default_panic = std::panic::take_hook();
-        std::panic::set_hook(Box::new(move |info| {
-            default_panic(info);
-            std::process::exit(1);
-        }));
-
         !Self::cucumber::<I>()
             .with_parser(SingletonParser::default())
             .repeat_failed()
             .fail_on_skipped()
             .with_default_cli()
+            .before(move |_, _, _, _| {
+                // cucumber removes the default hook before each scenario and restores it after!
+                std::panic::set_hook(Box::new(move |info| println!("{}", info)));
+                Box::pin(async move {})
+            })
             .after(move |_, _, _, _, context| {
                 Box::pin(async move {
                     context.unwrap().after_scenario(clean_databases_after).await.unwrap();
