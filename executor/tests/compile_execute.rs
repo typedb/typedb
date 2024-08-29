@@ -39,7 +39,7 @@ const MEMBERSHIP_MEMBER_LABEL: Label = Label::new_static_scoped("member", "membe
 fn test_has_planning_traversal() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let mut snapshot = storage.clone().open_snapshot_write();
 
@@ -102,7 +102,7 @@ fn test_has_planning_traversal() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let (entry_annotations, _) = infer_types(
         &block,
@@ -145,7 +145,7 @@ fn test_has_planning_traversal() {
 fn test_links_planning_traversal() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let mut snapshot = storage.clone().open_snapshot_write();
 
@@ -240,7 +240,7 @@ fn test_links_planning_traversal() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &block,
         vec![],

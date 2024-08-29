@@ -40,7 +40,7 @@ const NAME_LABEL: Label = Label::new_static("name");
 
 fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
     let group_type = type_manager.create_entity_type(&mut snapshot, &GROUP_LABEL).unwrap();
@@ -214,7 +214,7 @@ fn has() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_write();
     execute_insert(
@@ -243,7 +243,7 @@ fn test() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
 
     let mut snapshot = storage.clone().open_snapshot_write();
@@ -261,7 +261,7 @@ fn relation() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
 
     let mut snapshot = storage.clone().open_snapshot_write();
@@ -316,7 +316,7 @@ fn relation_with_inferred_roles() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
 
     let mut snapshot = storage.clone().open_snapshot_write();
@@ -371,7 +371,7 @@ fn test_has_with_input_rows() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_write();
     let inserted_rows =
@@ -417,7 +417,7 @@ fn delete_has() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_write();
     let inserted_rows =

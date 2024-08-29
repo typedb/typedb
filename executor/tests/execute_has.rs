@@ -43,7 +43,7 @@ const NAME_LABEL: Label = Label::new_static("name");
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
@@ -129,7 +129,7 @@ fn traverse_has_unbounded_sorted_from() {
     let entry = builder.finish();
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let (entry_annotations, _) = infer_types(
         &entry,
@@ -180,7 +180,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     // query:
     //   match
     //    $person-1 has name $name;
@@ -309,7 +309,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let entry = builder.finish();
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -383,7 +383,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let entry = builder.finish();
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -474,7 +474,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     let entry = builder.finish();
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],

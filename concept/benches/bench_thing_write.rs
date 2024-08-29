@@ -83,7 +83,7 @@ fn write_entity_attributes(
 }
 
 fn create_schema(storage: Arc<MVCCStorage<WALClient>>) {
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap()).unwrap();
     age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();

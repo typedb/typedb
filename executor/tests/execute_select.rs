@@ -41,7 +41,7 @@ const EMAIL_LABEL: Label = Label::new_static("email");
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
@@ -153,7 +153,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
 
     let (entry_annotations, _) = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
+        let (type_manager, _) = load_managers(storage.clone(), None);
         infer_types(
             &entry,
             vec![],
@@ -184,7 +184,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (_, thing_manager) = load_managers(storage.clone());
+    let (_, thing_manager) = load_managers(storage.clone(), None);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
@@ -232,7 +232,7 @@ fn unselected_named_vars_counted() {
 
     let (entry_annotations, _) = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
+        let (type_manager, _) = load_managers(storage.clone(), None);
         infer_types(
             &entry,
             vec![],
@@ -264,7 +264,7 @@ fn unselected_named_vars_counted() {
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-    let (_, thing_manager) = load_managers(storage.clone());
+    let (_, thing_manager) = load_managers(storage.clone(), None);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
@@ -323,7 +323,7 @@ fn cartesian_named_counted_checked() {
 
     let (entry_annotations, _) = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone());
+        let (type_manager, _) = load_managers(storage.clone(), None);
         infer_types(
             &entry,
             vec![],
@@ -364,7 +364,7 @@ fn cartesian_named_counted_checked() {
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-    let (_, thing_manager) = load_managers(storage.clone());
+    let (_, thing_manager) = load_managers(storage.clone(), None);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());

@@ -51,9 +51,9 @@ static NAME_LABEL: OnceLock<Label> = OnceLock::new();
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_write();
-
+    let mut snapshot = storage.clone().open_snapshot_write();
     let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
     let group_type = type_manager.create_entity_type(&mut snapshot, GROUP_LABEL.get().unwrap()).unwrap();
 
@@ -163,9 +163,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     // group.measurement_time(Duration::from_secs(200));
     group.sampling_mode(SamplingMode::Linear);
 
+
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.read_watermark()));
 
     group.bench_function("insert_queries", |b| {
         b.iter(|| {
