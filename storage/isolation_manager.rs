@@ -134,7 +134,7 @@ impl IsolationManager {
         // Pre-collect all the ARCs so we can validate against them.
         let (windows, first_sequence_number_in_memory) =
             self.timeline.collect_concurrent_windows(commit_record.open_sequence_number, commit_sequence_number);
-        if commit_record.open_sequence_number().next() <= first_sequence_number_in_memory {
+        if commit_record.open_sequence_number().next() < first_sequence_number_in_memory {
             if let Some(conflict) =
                 self.validate_concurrent_from_disk(commit_record, first_sequence_number_in_memory, durability_client)?
             {
