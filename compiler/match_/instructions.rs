@@ -183,14 +183,9 @@ pub struct IsaInstruction<ID> {
 }
 
 impl IsaInstruction<Variable> {
-    pub fn new(
-        isa: Isa<Variable>,
-        inputs: Inputs<Variable>,
-        type_annotations: &TypeAnnotations,
-        checks: Vec<CheckInstruction<Variable>>,
-    ) -> Self {
+    pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let types = type_annotations.variable_annotations_of(isa.type_()).unwrap().clone();
-        Self { isa, inputs, types, checks }
+        Self { isa, inputs, types, checks: Vec::new() }
     }
 
     fn add_check(&mut self, check: CheckInstruction<Variable>) {
@@ -225,14 +220,9 @@ pub struct IsaReverseInstruction<ID> {
 }
 
 impl IsaReverseInstruction<Variable> {
-    pub fn new(
-        isa: Isa<Variable>,
-        inputs: Inputs<Variable>,
-        type_annotations: &TypeAnnotations,
-        checks: Vec<CheckInstruction<Variable>>,
-    ) -> Self {
+    pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let types = type_annotations.variable_annotations_of(isa.thing()).unwrap().clone();
-        Self { isa, inputs, types, checks }
+        Self { isa, inputs, types, checks: Vec::new() }
     }
 
     fn add_check(&mut self, check: CheckInstruction<Variable>) {
@@ -264,19 +254,19 @@ pub struct HasInstruction<ID> {
     inputs: Inputs<ID>,
     owner_to_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
     attribute_types: Arc<HashSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl HasInstruction<Variable> {
-    pub fn new(constraint: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let edge_annotations =
-            type_annotations.constraint_annotations_of(constraint.clone().into()).unwrap().as_left_right();
+    pub fn new(has: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let edge_annotations = type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
         let owner_to_attribute_types = edge_annotations.left_to_right();
-        let attribute_types = type_annotations.variable_annotations_of(constraint.attribute()).unwrap().clone();
-        Self { has: constraint, inputs, owner_to_attribute_types, attribute_types }
+        let attribute_types = type_annotations.variable_annotations_of(has.attribute()).unwrap().clone();
+        Self { has, inputs, owner_to_attribute_types, attribute_types, checks: Vec::new() }
     }
 
-    fn add_check(&mut self, _check: CheckInstruction<Variable>) {
-        todo!()
+    fn add_check(&mut self, check: CheckInstruction<Variable>) {
+        self.checks.push(check)
     }
 }
 
@@ -292,12 +282,13 @@ impl<ID> HasInstruction<ID> {
 
 impl<ID: IrID> HasInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> HasInstruction<T> {
-        let Self { has: constraint, inputs, owner_to_attribute_types, attribute_types } = self;
+        let Self { has, inputs, owner_to_attribute_types, attribute_types, checks } = self;
         HasInstruction {
-            has: constraint.map(mapping),
+            has: has.map(mapping),
             inputs: inputs.map(mapping),
             owner_to_attribute_types,
             attribute_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
     }
 }
@@ -308,6 +299,7 @@ pub struct HasReverseInstruction<ID> {
     pub inputs: Inputs<ID>,
     attribute_to_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
     owner_types: Arc<HashSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl HasReverseInstruction<Variable> {
@@ -315,11 +307,11 @@ impl HasReverseInstruction<Variable> {
         let edge_annotations = &type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
         let attribute_to_owner_types = edge_annotations.right_to_left().clone();
         let owner_types = type_annotations.variable_annotations_of(has.owner()).unwrap().clone();
-        Self { has, inputs, attribute_to_owner_types, owner_types }
+        Self { has, inputs, attribute_to_owner_types, owner_types, checks: Vec::new() }
     }
 
-    fn add_check(&mut self, _check: CheckInstruction<Variable>) {
-        todo!()
+    fn add_check(&mut self, check: CheckInstruction<Variable>) {
+        self.checks.push(check)
     }
 }
 
@@ -335,12 +327,13 @@ impl<ID> HasReverseInstruction<ID> {
 
 impl<ID: IrID> HasReverseInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> HasReverseInstruction<T> {
-        let Self { has: constraint, inputs, attribute_to_owner_types, owner_types } = self;
+        let Self { has, inputs, attribute_to_owner_types, owner_types, checks } = self;
         HasReverseInstruction {
-            has: constraint.map(mapping),
+            has: has.map(mapping),
             inputs: inputs.map(mapping),
             attribute_to_owner_types,
             owner_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
     }
 }

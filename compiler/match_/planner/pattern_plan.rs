@@ -314,7 +314,6 @@ fn lower_plan(plan_builder: &PlanBuilder, ordering: Vec<usize>, type_annotations
                         isa.clone(),
                         Inputs::None([]),
                         type_annotations,
-                        Vec::new(),
                     ));
                     let producer_index = match_builder.push_instruction(var, instruction);
                     match_builder.outputs.push(var);
