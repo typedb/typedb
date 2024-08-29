@@ -9,14 +9,10 @@
 
 use std::{collections::HashMap, fmt::Display};
 
-use itertools::Itertools;
-
 use answer::variable::Variable;
 use encoding::{graph::type_::Kind, value::value::Value};
-use ir::pattern::{
-    constraint::Constraint,
-    expression::Expression,
-};
+use ir::pattern::{constraint::Constraint, expression::Expression};
+use itertools::Itertools;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -62,12 +58,7 @@ pub fn compile(
     });
 
     let debug_info = HashMap::new(); // TODO
-    Ok(InsertProgram {
-        concepts: concept_inserts,
-        connections: connection_inserts,
-        output_row_schema,
-        debug_info
-    })
+    Ok(InsertProgram { concepts: concept_inserts, connections: connection_inserts, output_row_schema, debug_info })
 }
 
 fn add_inserted_concepts(

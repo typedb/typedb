@@ -5,12 +5,8 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
-use compiler::{
-    match_::{
-        inference::annotated_functions::IndexedAnnotatedFunctions,
-        planner::program_plan::ProgramPlan,
-    },
-};
+
+use compiler::match_::{inference::annotated_functions::IndexedAnnotatedFunctions, planner::program_plan::ProgramPlan};
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
@@ -30,11 +26,13 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
 
 use crate::{
-    compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
-    define, redefine, undefine,
-    error::QueryError,
-    translation::{translate_pipeline, TranslatedPipeline},
     annotation::{infer_types_for_pipeline, AnnotatedPipeline},
+    compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
+    define,
+    error::QueryError,
+    redefine,
+    translation::{translate_pipeline, TranslatedPipeline},
+    undefine,
 };
 
 pub struct QueryManager {}

@@ -57,43 +57,20 @@ mod type_seeder;
 
 #[derive(Debug)]
 pub enum TypeInferenceError {
-    ConceptRead {
-        source: ConceptReadError,
-    },
+    ConceptRead { source: ConceptReadError },
     LabelNotResolved(String),
 
-    MultipleAssignmentsForSingleVariable {
-        assign_variable: Variable,
-    },
-    CircularDependencyInExpressions {
-        assign_variable: Variable,
-    },
+    MultipleAssignmentsForSingleVariable { assign_variable: Variable },
+    CircularDependencyInExpressions { assign_variable: Variable },
     // TODO: Improve error
-    CouldNotDetermineValueTypeForVariable {
-        variable: Variable,
-    },
-    ExpressionVariableDidNotHaveSingleValueType {
-        variable: Variable,
-    },
-    ExpressionVariableHasNoValueType {
-        variable: Variable,
-    },
-    ExpressionCompilation {
-        source: ExpressionCompileError,
-    },
-    VariableInExpressionMustBeValueOrAttribute {
-        variable: Variable,
-        actual_category: VariableCategory,
-    },
+    CouldNotDetermineValueTypeForVariable { variable: Variable },
+    ExpressionVariableDidNotHaveSingleValueType { variable: Variable },
+    ExpressionVariableHasNoValueType { variable: Variable },
+    ExpressionCompilation { source: ExpressionCompileError },
+    VariableInExpressionMustBeValueOrAttribute { variable: Variable, actual_category: VariableCategory },
     RoleNameNotResolved(String),
-    MultipleLabelsForSingleTypeVariable {
-        variable: Variable,
-    },
-    IllegalInsertTypes {
-        constraint: Constraint<Variable>,
-        left_type: Type,
-        right_type: Type,
-    },
+    MultipleLabelsForSingleTypeVariable { variable: Variable },
+    IllegalInsertTypes { constraint: Constraint<Variable>, left_type: Type, right_type: Type },
 }
 
 impl Display for TypeInferenceError {

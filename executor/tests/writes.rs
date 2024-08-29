@@ -13,27 +13,20 @@ use compiler::{
 };
 use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
-    type_::{object_type::ObjectType, Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
+    type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
     batch::Row,
-    pipeline::{PipelineStageAPI },
-    write::{
-        insert::InsertExecutor,
-        WriteError,
-    },
+    pipeline::PipelineStageAPI,
+    write::{delete::DeleteExecutor, insert::InsertExecutor, WriteError},
 };
-use executor::write::delete::DeleteExecutor;
-use ir::{
-    program::function_signature::HashMapFunctionSignatureIndex,
-    translation::TranslationContext,
-};
+use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 
 use crate::common::{load_managers, setup_storage};
@@ -119,7 +112,9 @@ fn execute_insert(
     )
     .unwrap();
 
-    let mut insert_plan = compiler::insert::program::compile(block.conjunction().constraints(), &input_row_format, &entry_annotations).unwrap();
+    let mut insert_plan =
+        compiler::insert::program::compile(block.conjunction().constraints(), &input_row_format, &entry_annotations)
+            .unwrap();
 
     println!("Insert Vertex:\n{:?}", &insert_plan.concepts);
     println!("Insert Edges:\n{:?}", &insert_plan.connections);
@@ -194,8 +189,13 @@ fn execute_delete(
         .map(|(i, v)| (translation_context.visible_variables.get(*v).unwrap().clone(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
-    let delete_plan = compiler::delete::program::compile(&input_row_format, &entry_annotations, block.conjunction().constraints(), &deleted_concepts)
-            .unwrap();
+    let delete_plan = compiler::delete::program::compile(
+        &input_row_format,
+        &entry_annotations,
+        block.conjunction().constraints(),
+        &deleted_concepts,
+    )
+    .unwrap();
     let delete_executor = DeleteExecutor::new(delete_plan);
     let mut output_rows = Vec::with_capacity(input_rows.len());
     for mut input_row in input_rows {

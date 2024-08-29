@@ -10,8 +10,8 @@ use answer::{variable::Variable, variable_value::VariableValue};
 use compiler::match_::{
     instructions::ConstraintInstruction,
     planner::pattern_plan::{
-        AssignmentProgram, DisjunctionProgram, IntersectionProgram, NegationProgram, OptionalProgram, MatchProgram, Program,
-        UnsortedJoinProgram,
+        AssignmentProgram, DisjunctionProgram, IntersectionProgram, MatchProgram, NegationProgram, OptionalProgram,
+        Program, UnsortedJoinProgram,
     },
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
