@@ -138,7 +138,7 @@ impl QueryManager {
         query: &typeql::query::Pipeline,
     ) -> Result<WritePipelineStage<Snapshot>, QueryError> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
-        let mut snapshot = snapshot;
+        let snapshot = snapshot;
         // 1: Translate
         let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } =
             translate_pipeline(&snapshot, function_manager, query)?;

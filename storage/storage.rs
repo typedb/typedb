@@ -548,7 +548,7 @@ impl fmt::Display for StorageDeleteError {
 impl Error for StorageDeleteError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::KeyspaceDelete { source, .. } => Some(source.get(0).unwrap()), // TODO: there are technically many sources?
+            Self::KeyspaceDelete { source, .. } => Some(source.first().unwrap()), // TODO: there are technically many sources?
             Self::DirectoryDelete { source, .. } => Some(source),
             Self::DurabilityDelete { source, .. } => Some(source),
         }

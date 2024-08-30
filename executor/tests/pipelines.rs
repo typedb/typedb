@@ -6,30 +6,19 @@
 
 mod common;
 
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{borrow::Cow, sync::Arc};
 
-use compiler::match_::{
-    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
-};
+use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, type_manager::TypeManager, Ordering, OwnerAPI},
+    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, type_manager::TypeManager, OwnerAPI},
 };
 use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
     value::{label::Label, value::Value, value_type::ValueType},
 };
-use executor::{
-    batch::ImmutableRow,
-    pipeline::{IteratingStageAPI, PipelineContext, PipelineError, PipelineStageAPI},
-    program_executor::ProgramExecutor,
-};
+use executor::pipeline::{IteratingStageAPI, PipelineStageAPI};
 use function::function_manager::FunctionManager;
-use ir::{
-    program::function_signature::HashMapFunctionSignatureIndex,
-    translation::{match_::translate_match, TranslationContext},
-};
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use storage::{
@@ -78,7 +67,7 @@ fn setup_common() -> (Context, ThingManager) {
 #[test]
 fn test_insert() {
     let (context, thing_manager) = setup_common();
-    let mut snapshot = context.storage.clone().open_snapshot_write();
+    let snapshot = context.storage.clone().open_snapshot_write();
     let query_str = "insert $p isa person, has age 10;";
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
     let mut pipeline = context
@@ -307,7 +296,7 @@ fn test_has_planning_traversal() {
 fn delete_has() {
     // todo!("I haven't been able to test deletes because of the planner");
     let (context, thing_manager) = setup_common();
-    let mut snapshot = context.storage.clone().open_snapshot_write();
+    let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 10;";
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
     let mut insert_pipeline = context

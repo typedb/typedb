@@ -7,8 +7,6 @@
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
-    marker::PhantomData,
-    ops::{Deref, DerefMut},
 };
 
 use bytes::{byte_reference::ByteReference, Bytes};

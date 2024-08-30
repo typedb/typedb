@@ -24,14 +24,14 @@ use compiler::{
 };
 use concept::type_::type_manager::TypeManager;
 use ir::{
-    pattern::{constraint::Constraint, variable_category::VariableCategory},
+    pattern::constraint::Constraint,
     program::{
-        block::{BlockContext, FunctionalBlock, VariableRegistry},
+        block::{FunctionalBlock, VariableRegistry},
         function::Function,
         modifier::{Filter, Limit, Offset, Sort},
     },
 };
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{error::QueryError, translation::TranslatedStage};
 
@@ -91,12 +91,12 @@ pub(super) fn infer_types_for_pipeline(
             .unwrap_or(&empty_constraint_annotations);
         let annotated_stage = annotate_stage(
             &mut running_variable_annotations,
-            &variable_registry,
+            variable_registry,
             snapshot,
             type_manager,
             schema_function_annotations,
             &annotated_preamble,
-            &running_constraint_annotations,
+            running_constraint_annotations,
             stage,
         )?;
         if let AnnotatedStage::Match { .. } = annotated_stage {
@@ -122,16 +122,16 @@ fn annotate_stage(
         TranslatedStage::Match { block } => {
             let block_annotations = infer_types_for_match_block(
                 &block,
-                &variable_registry,
+                variable_registry,
                 snapshot,
-                &type_manager,
-                &running_variable_annotations,
+                type_manager,
+                running_variable_annotations,
                 schema_function_annotations,
-                &preamble_function_annotations,
+                preamble_function_annotations,
             )
             .map_err(|source| QueryError::TypeInference { source })?;
             block_annotations.variable_annotations().iter().for_each(|(k, v)| {
-                running_variable_annotations.insert(k.clone(), v.clone());
+                running_variable_annotations.insert(*k, v.clone());
             });
             let (compiled_expressions, variable_value_types) =
                 compile_expressions(snapshot, type_manager, &block, variable_registry, &block_annotations)
@@ -141,7 +141,7 @@ fn annotate_stage(
         TranslatedStage::Insert { block } => {
             let insert_annotations = infer_types_for_match_block(
                 &block,
-                &variable_registry,
+                variable_registry,
                 snapshot,
                 type_manager,
                 running_variable_annotations,
@@ -176,7 +176,7 @@ fn annotate_stage(
         TranslatedStage::Delete { block, deleted_variables } => {
             let delete_annotations = infer_types_for_match_block(
                 &block,
-                &variable_registry,
+                variable_registry,
                 snapshot,
                 type_manager,
                 running_variable_annotations,

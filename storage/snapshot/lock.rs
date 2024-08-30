@@ -4,13 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::io::Read;
-
 use bytes::byte_array::ByteArray;
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-
-use crate::key_value::StorageKey;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum LockType {

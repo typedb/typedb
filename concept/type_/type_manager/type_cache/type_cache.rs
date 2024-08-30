@@ -439,7 +439,7 @@ impl TypeCache {
         &self,
         attribute_type: AttributeType<'_>,
     ) -> &Option<ValueType> {
-        &AttributeType::get_cache(&self, attribute_type).value_type_declared
+        &AttributeType::get_cache(self, attribute_type).value_type_declared
     }
 
     pub(crate) fn get_attribute_type_value_type(

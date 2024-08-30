@@ -267,7 +267,7 @@ impl<'a> BlockContext<'a> {
     ) -> BlockContext<'a> {
         let mut variable_declaration = HashMap::new();
         input_variable_names.values().for_each(|v| {
-            variable_declaration.insert(v.clone(), ScopeId::INPUT);
+            variable_declaration.insert(*v, ScopeId::INPUT);
         });
         let mut scope_parents = HashMap::new();
         scope_parents.insert(ScopeId::ROOT, ScopeId::INPUT);

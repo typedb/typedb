@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use concept::type_::{annotation, owns::OwnsAnnotation, Capability, Ordering, OwnerAPI, TypeAPI};
+use concept::type_::{annotation, owns::OwnsAnnotation, Capability, OwnerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;

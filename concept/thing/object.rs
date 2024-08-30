@@ -38,8 +38,8 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, owns::Owns, role_type::RoleType,
-        type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, type_manager::TypeManager,
+        Capability, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
     },
     ConceptStatus,
 };

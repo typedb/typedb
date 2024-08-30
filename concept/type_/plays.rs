@@ -178,8 +178,8 @@ impl<'a> Capability<'a> for Plays<'a> {
         type_manager.get_plays_annotations(snapshot, self.clone().into_owned())
     }
 
-    fn get_default_cardinality<'this>(
-        &'this self,
+    fn get_default_cardinality(
+        &self,
         _snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
@@ -211,9 +211,9 @@ impl TryFrom<Annotation> for PlaysAnnotation {
     }
 }
 
-impl Into<Annotation> for PlaysAnnotation {
-    fn into(self) -> Annotation {
-        match self {
+impl From<PlaysAnnotation> for Annotation {
+    fn from(val: PlaysAnnotation) -> Self {
+        match val {
             PlaysAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
         }
     }

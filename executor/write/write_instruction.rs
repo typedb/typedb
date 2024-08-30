@@ -16,7 +16,7 @@ use concept::thing::{
 use encoding::value::value::Value;
 use storage::snapshot::WritableSnapshot;
 
-use crate::{batch::Row, write::WriteError, VariablePosition};
+use crate::{batch::Row, write::WriteError};
 
 macro_rules! try_unwrap_as {
     ($variant:path : $item:expr) => {
@@ -30,19 +30,19 @@ macro_rules! try_unwrap_as {
 
 fn get_type<'a>(input: &'a Row<'a>, source: &'a TypeSource) -> &'a answer::Type {
     match source {
-        TypeSource::InputVariable(position) => input.get(position.clone()).as_type(),
+        TypeSource::InputVariable(position) => input.get(*position).as_type(),
         TypeSource::Constant(type_) => type_,
     }
 }
 
 fn get_thing<'a>(input: &'a Row<'a>, source: &'a ThingSource) -> &'a answer::Thing<'static> {
     let ThingSource(position) = source;
-    input.get(position.clone()).as_thing()
+    input.get(*position).as_thing()
 }
 
 fn get_value<'a>(input: &'a Row<'a>, source: &'a ValueSource) -> &'a Value<'static> {
     match source {
-        ValueSource::InputVariable(position) => input.get(position.clone()).as_value(),
+        ValueSource::InputVariable(position) => input.get(*position).as_value(),
         ValueSource::ValueConstant(value) => value,
     }
 }
@@ -70,7 +70,7 @@ impl AsWriteInstruction for PutAttribute {
             .create_attribute(snapshot, attribute_type.clone(), get_value(row, &self.value).clone())
             .map_err(|source| WriteError::ConceptWrite { source })?;
         let ThingSource(write_to) = &self.write_to;
-        row.set(write_to.clone(), VariableValue::Thing(Thing::Attribute(inserted)));
+        row.set(*write_to, VariableValue::Thing(Thing::Attribute(inserted)));
         Ok(())
     }
 }
@@ -98,7 +98,7 @@ impl AsWriteInstruction for PutObject {
             Type::Attribute(_) | Type::RoleType(_) => unreachable!(),
         };
         let ThingSource(write_to) = &self.write_to;
-        row.set(write_to.clone(), VariableValue::Thing(inserted));
+        row.set(*write_to, VariableValue::Thing(inserted));
         Ok(())
     }
 }
@@ -157,7 +157,7 @@ impl AsWriteInstruction for compiler::delete::instructions::DeleteThingInstructi
             }
         }
         let ThingSource(position) = &self.thing;
-        row.set(position.clone(), VariableValue::Empty);
+        row.set(*position, VariableValue::Empty);
         Ok(())
     }
 }

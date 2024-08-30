@@ -6,14 +6,14 @@
 
 use std::{error::Error, fmt, iter::empty, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::{
     durability_client::DurabilityClient,
     isolation_manager::{CommitRecord, CommitType},
-    iterator::{MVCCRangeIterator, MVCCReadError},
+    iterator::MVCCReadError,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     sequence_number::SequenceNumber,

@@ -848,9 +848,9 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         object: &impl ObjectAPI<'a>,
     ) -> Result<bool, ConceptReadError> {
-        Ok(snapshot
+        snapshot
             .contains(object.vertex().as_storage_key().as_reference())
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })?)
+            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
     pub(crate) fn type_exists<'a>(
@@ -858,9 +858,9 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         type_: impl TypeAPI<'a>,
     ) -> Result<bool, ConceptReadError> {
-        Ok(snapshot
+        snapshot
             .contains(type_.vertex().as_storage_key().as_reference())
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })?)
+            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 }
 
@@ -869,7 +869,7 @@ impl ThingManager {
         snapshot.unmodifiable_lock_add(object.into_vertex().as_storage_key().into_owned_array())
     }
 
-    pub(crate) fn lock_existing_attribute<'a>(&self, snapshot: &mut impl WritableSnapshot, attribute: Attribute<'a>) {
+    pub(crate) fn lock_existing_attribute(&self, snapshot: &mut impl WritableSnapshot, attribute: Attribute<'_>) {
         snapshot.unmodifiable_lock_add(attribute.into_vertex().as_storage_key().into_owned_array())
     }
 
@@ -941,10 +941,10 @@ impl ThingManager {
         Ok(())
     }
 
-    fn add_exclusive_lock_for_owns_cardinality_constraint<'a>(
+    fn add_exclusive_lock_for_owns_cardinality_constraint(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        owner: &Object<'a>,
+        owner: &Object<'_>,
         owns: Owns<'static>,
     ) -> Result<(), ConceptReadError> {
         let mut current_capability = Some(owns);
@@ -970,10 +970,10 @@ impl ThingManager {
         Ok(())
     }
 
-    fn add_exclusive_lock_for_plays_cardinality_constraint<'a>(
+    fn add_exclusive_lock_for_plays_cardinality_constraint(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        player: &Object<'a>,
+        player: &Object<'_>,
         plays: Plays<'static>,
     ) -> Result<(), ConceptReadError> {
         let mut current_capability = Some(plays);
@@ -999,10 +999,10 @@ impl ThingManager {
         Ok(())
     }
 
-    fn add_exclusive_lock_for_relates_cardinality_constraint<'a>(
+    fn add_exclusive_lock_for_relates_cardinality_constraint(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        relation: &Relation<'a>,
+        relation: &Relation<'_>,
         relates: Relates<'static>,
     ) -> Result<(), ConceptReadError> {
         let mut current_capability = Some(relates);
@@ -1213,7 +1213,7 @@ impl ThingManager {
         }
 
         for object in &modified_objects_only_has {
-            if modified_objects.contains(&object) {
+            if modified_objects.contains(object) {
                 continue;
             }
             res = CommitTimeValidation::validate_object_has(snapshot, self, object, &mut errors);
@@ -1221,7 +1221,7 @@ impl ThingManager {
         }
 
         for object in &modified_objects_only_links {
-            if modified_objects.contains(&object) {
+            if modified_objects.contains(object) {
                 continue;
             }
             res = CommitTimeValidation::validate_object_links(snapshot, self, object, &mut errors);

@@ -18,7 +18,6 @@ use concept::{
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
     batch::Row,
-    pipeline::PipelineStageAPI,
     write::{delete::DeleteExecutor, insert::InsertExecutor, WriteError},
 };
 use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
@@ -112,7 +111,7 @@ fn execute_insert(
     )
     .unwrap();
 
-    let mut insert_plan =
+    let insert_plan =
         compiler::insert::program::compile(block.conjunction().constraints(), &input_row_format, &entry_annotations)
             .unwrap();
 
@@ -127,8 +126,8 @@ fn execute_insert(
     let mut output_rows = Vec::with_capacity(input_rows.len());
     println!("Insert output row schema: {:?}", &insert_plan.output_row_schema);
     let output_width = insert_plan.output_row_schema.len();
-    let mut insert_executor = InsertExecutor::new(insert_plan);
-    for mut input_row in input_rows {
+    let insert_executor = InsertExecutor::new(insert_plan);
+    for input_row in input_rows {
         let mut output_multiplicity = 1;
         output_rows.push(
             (0..output_width)

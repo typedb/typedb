@@ -29,13 +29,13 @@ macro_rules! test_keyspace_set {
 }
 
 pub fn create_storage<KS: KeyspaceSet>(path: &Path) -> Result<Arc<MVCCStorage<WALClient>>, StorageOpenError> {
-    let wal = WAL::create(&path).unwrap();
-    let storage = MVCCStorage::create::<KS>("storage", &path, WALClient::new(wal))?;
+    let wal = WAL::create(path).unwrap();
+    let storage = MVCCStorage::create::<KS>("storage", path, WALClient::new(wal))?;
     Ok(Arc::new(storage))
 }
 
 pub fn checkpoint_storage(storage: &MVCCStorage<WALClient>) -> Checkpoint {
-    let mut checkpoint = Checkpoint::new(storage.path().parent().unwrap()).unwrap();
+    let checkpoint = Checkpoint::new(storage.path().parent().unwrap()).unwrap();
     storage.checkpoint(&checkpoint).unwrap();
     checkpoint.finish().unwrap();
     checkpoint

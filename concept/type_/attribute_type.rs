@@ -223,7 +223,7 @@ impl<'a> AttributeType<'a> {
             .get_annotations_declared(snapshot, type_manager)?
             .into_iter()
             .filter(|annotation| annotation.is_value_type_annotation())
-            .map(|annotation| annotation.clone())
+            .cloned()
             .collect())
     }
 
@@ -435,9 +435,9 @@ impl TryFrom<Annotation> for AttributeTypeAnnotation {
     }
 }
 
-impl Into<Annotation> for AttributeTypeAnnotation {
-    fn into(self) -> Annotation {
-        match self {
+impl From<AttributeTypeAnnotation> for Annotation {
+    fn from(val: AttributeTypeAnnotation) -> Self {
+        match val {
             AttributeTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
             AttributeTypeAnnotation::Independent(annotation) => Annotation::Independent(annotation),
             AttributeTypeAnnotation::Regex(annotation) => Annotation::Regex(annotation),

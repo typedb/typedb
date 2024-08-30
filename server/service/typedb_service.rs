@@ -4,12 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc};
 
 use database::database_manager::DatabaseManager;
 use tokio::sync::mpsc::channel;
-use tokio_stream::{wrappers::ReceiverStream, StreamExt};
-use tonic::{Code, Request, Response, Status, Streaming};
+use tokio_stream::wrappers::ReceiverStream;
+use tonic::{Request, Response, Status, Streaming};
 use typedb_protocol::{
     self,
     connection::pulse::{Req, Res},
@@ -102,7 +102,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<Streaming<Client>>,
     ) -> Result<Response<Self::transactionStream>, Status> {
-        let mut request_stream = request.into_inner();
+        let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(10);
         let mut service = TransactionService::new(request_stream, response_sender, self.database_manager.clone());
         tokio::spawn(async move { service.listen().await });

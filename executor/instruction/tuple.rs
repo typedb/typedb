@@ -8,8 +8,6 @@ use answer::{variable_value::VariableValue, Thing};
 use concept::{
     error::ConceptReadError,
     thing::{
-        attribute::Attribute,
-        entity::Entity,
         has::Has,
         relation::{Relation, RolePlayer},
     },

@@ -41,7 +41,7 @@ impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for In
         let (snapshot, thing_manager) = context.borrow_parts_mut();
         for (row, multiplicity) in rows {
             self.execute_insert(snapshot, thing_manager, &mut Row::new(row, multiplicity))
-                .map_err(|source| PipelineError::WriteError(source))?;
+                .map_err(PipelineError::WriteError)?;
         }
         Ok(())
     }

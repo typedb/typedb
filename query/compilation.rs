@@ -41,13 +41,13 @@ impl CompiledStage {
                 .output_row_schema
                 .iter()
                 .enumerate()
-                .map(|(i, (v, _))| (v.clone(), VariablePosition::new(i as u32)))
+                .map(|(i, (v, _))| (*v, VariablePosition::new(i as u32)))
                 .collect(),
             CompiledStage::Delete(plan) => plan
                 .output_row_schema
                 .iter()
                 .enumerate()
-                .map(|(i, (v, _))| (v.clone(), VariablePosition::new(i as u32)))
+                .map(|(i, (v, _))| (*v, VariablePosition::new(i as u32)))
                 .collect(),
         }
     }
@@ -97,7 +97,7 @@ fn compile_stage(
         }
         AnnotatedStage::Insert { block, annotations } => {
             let plan =
-                compiler::insert::program::compile(block.conjunction().constraints(), input_variables, &annotations)
+                compiler::insert::program::compile(block.conjunction().constraints(), input_variables, annotations)
                     .map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Insert(plan))
         }

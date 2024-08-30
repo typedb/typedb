@@ -106,9 +106,9 @@ fn execute_insert(
     let mut translation_context = TranslationContext::new();
     let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
     let input_row_format = input_row_var_names
-        .into_iter()
+        .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.visible_variables.get(*v).unwrap().clone(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
     let (entry_annotations, _) = infer_types(
         &block,
@@ -120,14 +120,14 @@ fn execute_insert(
     )
     .unwrap();
 
-    let mut insert_plan =
+    let insert_plan =
         compiler::insert::program::compile(block.conjunction().constraints(), &input_row_format, &entry_annotations)
             .unwrap();
 
     let mut output_rows = Vec::with_capacity(input_rows.len());
     let output_width = insert_plan.output_row_schema.len();
-    let mut insert_executor = InsertExecutor::new(insert_plan);
-    for mut input_row in input_rows {
+    let insert_executor = InsertExecutor::new(insert_plan);
+    for input_row in input_rows {
         let mut output_multiplicity = 1;
         output_rows.push(
             (0..output_width)
@@ -136,7 +136,7 @@ fn execute_insert(
         );
         insert_executor.execute_insert(
             snapshot,
-            &thing_manager,
+            thing_manager,
             &mut Row::new(output_rows.last_mut().unwrap(), &mut output_multiplicity),
         )?;
     }

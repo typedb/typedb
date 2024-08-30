@@ -8,7 +8,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use compiler::match_::{
     inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    instructions::{CheckInstruction, ConstraintInstruction, Inputs, IsaInstruction},
+    instructions::{ConstraintInstruction, Inputs, IsaInstruction},
     planner::{
         pattern_plan::{IntersectionProgram, MatchProgram, Program},
         program_plan::ProgramPlan,
@@ -20,11 +20,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
-use ir::{
-    pattern::constraint::{Comparator, IsaKind},
-    program::block::FunctionalBlock,
-    translation::TranslationContext,
-};
+use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 

@@ -126,7 +126,7 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {}
 pub trait TypeVertexPropertyEncoding<'a> {
     const INFIX: Infix;
 
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self;
+    fn from_value_bytes(value: ByteReference<'_>) -> Self;
 
     fn build_key<'b>(vertex: impl TypeVertexEncoding<'b>) -> TypeVertexProperty<'b> {
         TypeVertexProperty::build(vertex.into_vertex(), Self::INFIX)
@@ -243,7 +243,7 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {}
 pub trait TypeEdgePropertyEncoding<'a>: Sized {
     const INFIX: Infix;
 
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self;
+    fn from_value_bytes(value: ByteReference<'_>) -> Self;
 
     fn build_key<'b>(edge: impl TypeEdgeEncoding<'b>) -> TypeEdgeProperty<'b> {
         TypeEdgeProperty::build(edge.to_canonical_type_edge(), Self::INFIX)

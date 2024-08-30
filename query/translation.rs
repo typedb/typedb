@@ -5,7 +5,6 @@
  */
 
 use answer::variable::Variable;
-use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
     program::{
@@ -21,8 +20,8 @@ use ir::{
         TranslationContext,
     },
 };
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use typeql::query::{stage::Stage as TypeQLStage, SchemaQuery};
+use storage::snapshot::ReadableSnapshot;
+use typeql::query::stage::Stage as TypeQLStage;
 
 use crate::error::QueryError;
 

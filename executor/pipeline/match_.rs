@@ -20,7 +20,7 @@ use crate::{
     },
 };
 
-pub type MatchStage<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> = PipelineStageCommon<
+pub type MatchStage<Snapshot, PipelineStageType> = PipelineStageCommon<
     Snapshot,
     PipelineStageType,
     LazyMatchStage<Snapshot, PipelineStageType>,

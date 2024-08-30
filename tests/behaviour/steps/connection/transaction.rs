@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::error::ConceptWriteError;
 use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use macro_rules_attribute::apply;
 use options::TransactionOptions;

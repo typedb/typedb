@@ -10,17 +10,11 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use ir::{
-    pattern::constraint::{Constraint, Constraints, Has},
-    program::block::FunctionalBlock,
-};
+use ir::{pattern::constraint::Constraint, program::block::FunctionalBlock};
 
-use crate::{
-    insert::WriteCompilationError,
-    match_::inference::{
-        type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
-        TypeInferenceError,
-    },
+use crate::match_::inference::{
+    type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
+    TypeInferenceError,
 };
 
 pub enum ValidCombinations<'a> {
@@ -31,8 +25,8 @@ pub enum ValidCombinations<'a> {
 impl<'a> ValidCombinations<'a> {
     fn check(&self, left: &answer::Type, right: &answer::Type) -> bool {
         match self {
-            ValidCombinations::Has(has) => has.get(&left).unwrap().contains(right),
-            ValidCombinations::Links(links) => links.get(&left).unwrap().contains(right),
+            ValidCombinations::Has(has) => has.get(left).unwrap().contains(right),
+            ValidCombinations::Links(links) => links.get(left).unwrap().contains(right),
         }
     }
 }

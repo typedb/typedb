@@ -31,7 +31,7 @@ fn define_schema(storage: &Arc<MVCCStorage<WALClient>>, type_manager: &TypeManag
     entity person owns name, plays friendship:friend;
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, schema_query).unwrap();
+    query_manager.execute_schema(&mut snapshot, type_manager, thing_manager, schema_query).unwrap();
     snapshot.commit().unwrap();
 }
 
@@ -44,7 +44,7 @@ fn insert_match_insert_pipeline() {
 
     define_schema(&storage, &type_manager, &thing_manager);
     let query_manager = QueryManager::new();
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let snapshot = storage.clone().open_snapshot_write();
     let query = typeql::parse_query(
         r#"
         insert
@@ -80,7 +80,7 @@ fn insert_insert_pipeline() {
 
     define_schema(&storage, &type_manager, &thing_manager);
     let query_manager = QueryManager::new();
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let snapshot = storage.clone().open_snapshot_write();
     let query = typeql::parse_query(
         r#"
         insert

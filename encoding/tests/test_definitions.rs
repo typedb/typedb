@@ -54,7 +54,7 @@ fn get_struct_key(snapshot: &impl ReadableSnapshot, name: String) -> Option<Defi
     bytes.map(|value| DefinitionKey::new(Bytes::Array(value)))
 }
 
-fn get_struct_definition<'a>(snapshot: &impl ReadableSnapshot, definition_key: &DefinitionKey<'a>) -> StructDefinition {
+fn get_struct_definition(snapshot: &impl ReadableSnapshot, definition_key: &DefinitionKey<'_>) -> StructDefinition {
     let bytes = snapshot.get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference()).unwrap();
     StructDefinition::from_bytes(bytes.unwrap().as_ref())
 }
@@ -77,7 +77,7 @@ fn test_struct_definition() {
     let struct_0_key = define_struct(&mut snapshot, &definition_key_generator, struct_0_definition.clone());
 
     let mut struct_1_definition = StructDefinition::new("struct_1".to_owned());
-    struct_1_definition.add_field("f0_nested".into(), ValueType::Struct(struct_0_key), false).unwrap();
+    struct_1_definition.add_field("f0_nested", ValueType::Struct(struct_0_key), false).unwrap();
     define_struct(&mut snapshot, &definition_key_generator, struct_1_definition.clone());
 
     // Read back buffered

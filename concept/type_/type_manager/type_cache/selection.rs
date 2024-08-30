@@ -22,7 +22,7 @@ pub trait HasObjectCache {
 
 pub(crate) trait CacheGetter {
     type CacheType;
-    fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: Self) -> &'cache Self::CacheType;
+    fn get_cache(type_cache: &TypeCache, type_: Self) -> &Self::CacheType;
 }
 
 macro_rules! impl_cache_getter {

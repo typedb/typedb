@@ -8,8 +8,8 @@ use encoding::value::label::Label;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    thing::{object::ObjectAPI, thing_manager::validation::DataValidationError},
-    type_::{type_manager::TypeManager, Capability, TypeAPI},
+    thing::thing_manager::validation::DataValidationError,
+    type_::{type_manager::TypeManager, TypeAPI},
 };
 
 pub(crate) fn get_label_or_data_err<'a>(

@@ -241,7 +241,7 @@ impl<'snapshot, Snapshot: ReadableSnapshot> FunctionSignatureIndex
 
 #[cfg(test)]
 pub mod tests {
-    use std::{collections::HashSet, sync::Arc};
+    use std::sync::Arc;
 
     use concept::{
         thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -386,7 +386,7 @@ pub mod tests {
             thing::thing_manager::ThingManager,
             type_::{
                 annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation,
-                entity_type::EntityTypeAnnotation, type_manager::TypeManager, Ordering, OwnerAPI,
+                entity_type::EntityTypeAnnotation, type_manager::TypeManager, OwnerAPI,
             },
         };
         use encoding::value::{label::Label, value_type::ValueType};

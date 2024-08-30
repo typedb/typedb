@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use itertools::Itertools;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -18,7 +18,7 @@ use crate::{
     },
     type_::{
         annotation::AnnotationCardinality, attribute_type::AttributeType, owns::Owns, plays::Plays, relates::Relates,
-        role_type::RoleType, Capability, OwnerAPI, PlayerAPI, TypeAPI,
+        role_type::RoleType, Capability, OwnerAPI, PlayerAPI,
     },
 };
 
@@ -39,10 +39,10 @@ pub(crate) use collect_errors;
 
 macro_rules! validate_capability_cardinality_constraint {
     ($func_name:ident, $capability_type:ident, $interface_type:ident, $object_instance:ident, $check_func:path) => {
-        pub(crate) fn $func_name<'a>(
+        pub(crate) fn $func_name(
             snapshot: &impl ReadableSnapshot,
             thing_manager: &ThingManager,
-            owner: &$object_instance<'a>,
+            owner: &$object_instance<'_>,
             capability: $capability_type<'static>,
             counts: &HashMap<$interface_type<'static>, u64>,
         ) -> Result<(), DataValidationError> {
@@ -82,10 +82,10 @@ macro_rules! validate_capability_cardinality_constraint {
 pub struct CommitTimeValidation {}
 
 impl CommitTimeValidation {
-    pub(crate) fn validate_object_has<'a>(
+    pub(crate) fn validate_object_has(
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
-        object: &Object<'a>,
+        object: &Object<'_>,
         out_errors: &mut Vec<DataValidationError>,
     ) -> Result<(), ConceptReadError> {
         let type_ = object.type_();
@@ -96,7 +96,7 @@ impl CommitTimeValidation {
             let cardinality_check = CommitTimeValidation::validate_owns_cardinality_constraint(
                 snapshot,
                 thing_manager,
-                &object,
+                object,
                 owns.clone().into_owned(),
                 &has_counts,
             );
@@ -105,10 +105,10 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_object_links<'a>(
+    pub(crate) fn validate_object_links(
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
-        object: &Object<'a>,
+        object: &Object<'_>,
         out_errors: &mut Vec<DataValidationError>,
     ) -> Result<(), ConceptReadError> {
         let type_ = object.type_();
@@ -119,7 +119,7 @@ impl CommitTimeValidation {
             let cardinality_check = Self::validate_plays_cardinality_constraint(
                 snapshot,
                 thing_manager,
-                &object,
+                object,
                 plays.clone().into_owned(),
                 &played_roles_counts,
             );
@@ -128,10 +128,10 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_relation_links<'a>(
+    pub(crate) fn validate_relation_links(
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
-        relation: &Relation<'a>,
+        relation: &Relation<'_>,
         out_errors: &mut Vec<DataValidationError>,
     ) -> Result<(), ConceptReadError> {
         let type_ = relation.type_();
@@ -142,7 +142,7 @@ impl CommitTimeValidation {
             let cardinality_check = Self::validate_relates_cardinality_constraint(
                 snapshot,
                 thing_manager,
-                &relation,
+                relation,
                 relates.clone().into_owned(),
                 &role_player_count,
             );
@@ -151,10 +151,10 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn check_owns_cardinality<'a>(
+    fn check_owns_cardinality(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        owner: &Object<'a>,
+        owner: &Object<'_>,
         owns: Owns<'static>,
         count: u64,
     ) -> Result<(), DataValidationError> {
@@ -174,10 +174,10 @@ impl CommitTimeValidation {
         }
     }
 
-    fn check_plays_cardinality<'a>(
+    fn check_plays_cardinality(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        player: &Object<'a>,
+        player: &Object<'_>,
         plays: Plays<'static>,
         count: u64,
     ) -> Result<(), DataValidationError> {
@@ -191,10 +191,10 @@ impl CommitTimeValidation {
         }
     }
 
-    fn check_relates_cardinality<'a>(
+    fn check_relates_cardinality(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        relation: &Relation<'a>,
+        relation: &Relation<'_>,
         relates: Relates<'static>,
         count: u64,
     ) -> Result<(), DataValidationError> {

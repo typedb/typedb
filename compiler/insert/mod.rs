@@ -47,13 +47,13 @@ pub(crate) fn get_thing_source(
     variable: Variable,
 ) -> Result<ThingSource, WriteCompilationError> {
     match input_variables.get(&variable) {
-        Some(input) => Ok(ThingSource(input.clone())),
+        Some(input) => Ok(ThingSource(*input)),
         None => Err(WriteCompilationError::CouldNotDetermineThingVariableSource { variable }),
     }
 }
 
 pub(crate) fn get_kinds_from_annotations(annotations: &HashSet<Type>) -> Vec<Kind> {
-    annotations.iter().map(|annotation| annotation.kind().clone()).dedup().collect::<Vec<_>>()
+    annotations.iter().map(|annotation| annotation.kind()).dedup().collect::<Vec<_>>()
 }
 
 #[derive(Debug, Clone)]

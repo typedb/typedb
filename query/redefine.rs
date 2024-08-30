@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::PartialEq, collections::HashMap, error::Error, fmt};
+use std::{error::Error, fmt};
 
 use answer::Type as TypeEnum;
 use concept::{
@@ -37,15 +37,15 @@ use typeql::{
         },
         Struct, Type,
     },
-    Definable, TypeRefAny,
+    Definable,
 };
 
 use crate::{
     definable_resolution::{
         filter_variants, get_struct_field_value_type_optionality, named_type_to_label, resolve_attribute_type,
-        resolve_owns, resolve_owns_declared, resolve_plays_declared, resolve_plays_role_label, resolve_relates,
-        resolve_relates_declared, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type,
-        resolve_value_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type, SymbolResolutionError,
+        resolve_owns, resolve_plays_role_label, resolve_relates, resolve_role_type, resolve_struct_definition_key,
+        resolve_typeql_type, resolve_value_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type,
+        SymbolResolutionError,
     },
     definable_status::{
         get_capability_annotation_status, get_override_status, get_owns_status, get_plays_status, get_relates_status,
@@ -265,7 +265,7 @@ fn redefine_alias(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    &type_declaration
+    type_declaration
         .capabilities
         .iter()
         .filter_map(|capability| try_unwrap!(CapabilityBase::Alias = &capability.base))
@@ -297,17 +297,11 @@ fn redefine_sub(
             continue;
         };
 
-        let supertype_label = Label::parse_from(&sub.supertype_label.ident.as_str());
+        let supertype_label = Label::parse_from(sub.supertype_label.ident.as_str());
         let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
         if type_.kind() != supertype.kind() {
-            return Err(err_capability_kind_mismatch(
-                &label,
-                &supertype_label,
-                capability,
-                type_.kind(),
-                supertype.kind(),
-            ))?;
+            Err(err_capability_kind_mismatch(&label, &supertype_label, capability, type_.kind(), supertype.kind()))?;
         }
 
         match (&type_, supertype) {
@@ -414,7 +408,7 @@ fn redefine_value_type_annotations<'a>(
         if let Some(converted) = type_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
-            &attribute_type_label,
+            attribute_type_label,
             attribute_type.clone(),
             annotation.clone(),
         )? {
@@ -498,12 +492,12 @@ fn redefine_relates(
     Ok(())
 }
 
-fn redefine_relates_annotations<'a>(
+fn redefine_relates_annotations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
-    relation_label: &Label<'a>,
+    relation_label: &Label<'_>,
     relates: Relates<'static>,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
@@ -513,7 +507,7 @@ fn redefine_relates_annotations<'a>(
         let converted_for_relates = capability_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
-            &relation_label,
+            relation_label,
             relates.clone(),
             annotation.clone(),
         );
@@ -533,7 +527,7 @@ fn redefine_relates_annotations<'a>(
                 if let Some(converted_for_role) = type_convert_and_validate_annotation_redefinition_need(
                     snapshot,
                     type_manager,
-                    &relation_label,
+                    relation_label,
                     relates.role(),
                     annotation.clone(),
                 )? {
@@ -552,24 +546,24 @@ fn redefine_relates_annotations<'a>(
     Ok(())
 }
 
-fn redefine_relates_override<'a>(
+fn redefine_relates_override(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
-    relation_label: &Label<'a>,
+    relation_label: &Label<'_>,
     relates: Relates<'static>,
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), RedefineError> {
     if let Some(overridden_label) = &typeql_relates.overridden {
         let overridden_relates =
-            resolve_relates(snapshot, type_manager, relates.relation(), &overridden_label.ident.as_str())
+            resolve_relates(snapshot, type_manager, relates.relation(), overridden_label.ident.as_str())
                 .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
         check_can_redefine_override(
             snapshot,
             type_manager,
-            &relation_label,
+            relation_label,
             relates.clone(),
             overridden_relates.clone(),
         )?;
@@ -640,12 +634,12 @@ fn redefine_owns(
     Ok(())
 }
 
-fn redefine_owns_annotations<'a>(
+fn redefine_owns_annotations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
-    owner_label: &Label<'a>,
+    owner_label: &Label<'_>,
     owns: Owns<'static>,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
@@ -655,7 +649,7 @@ fn redefine_owns_annotations<'a>(
         if let Some(converted) = capability_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
-            &owner_label,
+            owner_label,
             owns.clone(),
             annotation.clone(),
         )? {
@@ -668,12 +662,12 @@ fn redefine_owns_annotations<'a>(
     Ok(())
 }
 
-fn redefine_owns_override<'a>(
+fn redefine_owns_override(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
-    owner_label: &Label<'a>,
+    owner_label: &Label<'_>,
     owns: Owns<'static>,
     typeql_owns: &TypeQLOwns,
 ) -> Result<(), RedefineError> {
@@ -684,7 +678,7 @@ fn redefine_owns_override<'a>(
         let overridden_owns = resolve_owns(snapshot, type_manager, owns.owner(), overridden_attribute_type)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
-        check_can_redefine_override(snapshot, type_manager, &owner_label, owns.clone(), overridden_owns.clone())?;
+        check_can_redefine_override(snapshot, type_manager, owner_label, owns.clone(), overridden_owns.clone())?;
         error_if_anything_redefined_else_set_true(anything_redefined)?;
         owns.set_override(snapshot, type_manager, thing_manager, overridden_owns)
             .map_err(|source| RedefineError::SetOverride { label: owner_label.clone().into_owned(), source })?
@@ -751,12 +745,12 @@ fn redefine_plays(
     Ok(())
 }
 
-fn redefine_plays_annotations<'a>(
+fn redefine_plays_annotations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
-    player_label: &Label<'a>,
+    player_label: &Label<'_>,
     plays: Plays<'static>,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
@@ -766,7 +760,7 @@ fn redefine_plays_annotations<'a>(
         if let Some(converted) = capability_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
-            &player_label,
+            player_label,
             plays.clone(),
             annotation.clone(),
         )? {
@@ -779,12 +773,12 @@ fn redefine_plays_annotations<'a>(
     Ok(())
 }
 
-fn redefine_plays_override<'a>(
+fn redefine_plays_override(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
-    player_label: &Label<'a>,
+    player_label: &Label<'_>,
     plays: Plays<'static>,
     typeql_plays: &TypeQLPlays,
 ) -> Result<(), RedefineError> {
@@ -794,7 +788,7 @@ fn redefine_plays_override<'a>(
         let overridden_plays = resolve_plays_role_label(snapshot, type_manager, plays.player(), &overridden_label)
             .map_err(|source| RedefineError::DefinitionResolution { source })?;
 
-        check_can_redefine_override(snapshot, type_manager, &player_label, plays.clone(), overridden_plays.clone())?;
+        check_can_redefine_override(snapshot, type_manager, player_label, plays.clone(), overridden_plays.clone())?;
         error_if_anything_redefined_else_set_true(anything_redefined)?;
         plays
             .set_override(snapshot, type_manager, thing_manager, overridden_plays)
@@ -922,7 +916,7 @@ fn capability_convert_and_validate_annotation_redefinition_need<'a, CAP: concept
     }
 }
 
-fn error_if_not_redefinable<'a>(label: &Label<'a>, annotation: Annotation) -> Result<(), RedefineError> {
+fn error_if_not_redefinable(label: &Label<'_>, annotation: Annotation) -> Result<(), RedefineError> {
     match annotation.category().has_parameter() {
         false => Err(RedefineError::AnnotationCannotBeRedefined { label: label.clone().into_owned(), annotation }),
         true => Ok(()),

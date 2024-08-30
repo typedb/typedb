@@ -17,7 +17,7 @@ use compiler::match_::{
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
+    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};

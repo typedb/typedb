@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::value::value::Value;
-
 use super::{ThingSource, TypeSource, ValueSource};
 
 #[derive(Debug)]

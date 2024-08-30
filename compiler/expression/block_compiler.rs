@@ -122,7 +122,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     if expression_assignments.contains_key(&variable) {
         if !context.compiled_expressions.contains_key(&variable) {
             if context.visited_expressions.contains(&variable) {
-                return Err(ExpressionCompileError::CircularDependencyInExpressions { assign_variable: variable })?;
+                Err(ExpressionCompileError::CircularDependencyInExpressions { assign_variable: variable })
             } else {
                 compile_expressions_recursive(context, variable, expression_assignments)?;
                 context

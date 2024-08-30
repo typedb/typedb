@@ -9,7 +9,6 @@ use std::{
     collections::{HashMap, HashSet},
     iter,
     ops::Deref,
-    slice,
 };
 
 use answer::variable::Variable;

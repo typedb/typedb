@@ -35,14 +35,14 @@ pub fn infer_types<Snapshot: ReadableSnapshot>(
     annotated_schema_functions: &IndexedAnnotatedFunctions,
     variable_registry: &VariableRegistry,
 ) -> Result<(TypeAnnotations, AnnotatedUnindexedFunctions), TypeInferenceError> {
-    let preamble_functions = infer_types_for_functions(functions, snapshot, type_manager, &annotated_schema_functions)?;
+    let preamble_functions = infer_types_for_functions(functions, snapshot, type_manager, annotated_schema_functions)?;
     let root_tig = infer_types_for_block(
         snapshot,
-        &entry,
+        entry,
         variable_registry,
         type_manager,
         &HashMap::new(),
-        &annotated_schema_functions,
+        annotated_schema_functions,
         Some(&preamble_functions),
     )?;
     Ok((TypeAnnotations::build(root_tig), preamble_functions))
@@ -117,12 +117,12 @@ pub fn infer_types_for_match_block(
 ) -> Result<TypeAnnotations, TypeInferenceError> {
     let root_tig = infer_types_for_block(
         snapshot,
-        &match_block,
+        match_block,
         variable_registry,
         type_manager,
         previous_stage_variable_annotations,
-        &annotated_schema_functions,
-        Some(&annotated_preamble_functions),
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )?;
     let type_annotations = TypeAnnotations::build(root_tig);
     debug_assert!(match_block.variable_scopes().all(|(v, _)| type_annotations.variable_annotations_of(*v).is_some()));
@@ -431,7 +431,7 @@ pub mod tests {
         }
 
         fn var_from_registry(registry: &VariableRegistry, name: &str) -> Option<Variable> {
-            registry.variable_names().iter().find(|(_, n)| n.as_str() == name).map(|(v, _)| v.clone())
+            registry.variable_names().iter().find(|(_, n)| n.as_str() == name).map(|(v, _)| *v)
         }
     }
 }

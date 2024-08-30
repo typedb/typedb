@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
-
 use answer::variable::Variable;
 use typeql::{
     schema::definable::function::{Output, ReturnSingle, ReturnStatement, ReturnStream, SingleOutput},
@@ -18,7 +16,7 @@ use crate::{
         ScopeId,
     },
     program::{
-        block::{BlockContext, FunctionalBlock, VariableRegistry},
+        block::{BlockContext, FunctionalBlock},
         function::{Function, Reducer, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
         FunctionDefinitionError,
@@ -67,9 +65,9 @@ pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> 
         Output::Single(single) => &single.types,
     }
     .iter()
-    .map(|type_any| type_any_to_category_and_optionality(type_any))
+    .map(type_any_to_category_and_optionality)
     .collect::<Vec<_>>();
-    FunctionSignature::new(function_id.clone().into(), args, returns, return_is_stream)
+    FunctionSignature::new(function_id.clone(), args, returns, return_is_stream)
 }
 
 fn type_any_to_category_and_optionality(type_any: &TypeRefAny) -> (VariableCategory, VariableOptionality) {
@@ -80,8 +78,8 @@ fn type_any_to_category_and_optionality(type_any: &TypeRefAny) -> (VariableCateg
     }
 }
 
-fn build_return_stream<'a>(
-    context: &BlockContext<'a>,
+fn build_return_stream(
+    context: &BlockContext<'_>,
     stream: &ReturnStream,
 ) -> Result<ReturnOperation, FunctionDefinitionError> {
     let variables = stream
@@ -96,8 +94,8 @@ fn build_return_stream<'a>(
     Ok(ReturnOperation::Stream(variables))
 }
 
-fn build_return_single<'a>(
-    context: &BlockContext<'a>,
+fn build_return_single(
+    context: &BlockContext<'_>,
     single: &ReturnSingle,
 ) -> Result<ReturnOperation, FunctionDefinitionError> {
     let reducers = single
@@ -108,15 +106,15 @@ fn build_return_single<'a>(
     Ok(ReturnOperation::Single(reducers))
 }
 
-fn build_return_single_output<'a>(
-    context: &BlockContext<'a>,
+fn build_return_single_output(
+    context: &BlockContext<'_>,
     single_output: &SingleOutput,
 ) -> Result<Reducer, FunctionDefinitionError> {
     todo!()
 }
 
-fn get_variable_in_block_root<'a, F>(
-    context: &BlockContext<'a>,
+fn get_variable_in_block_root<F>(
+    context: &BlockContext<'_>,
     typeql_var: &typeql::Variable,
     err: F,
 ) -> Result<Variable, FunctionDefinitionError>
@@ -125,5 +123,5 @@ where
 {
     context
         .get_variable_named(typeql_var.name().unwrap(), ScopeId::ROOT)
-        .map_or_else(|| Err(err(typeql_var)), |var| Ok(var.clone()))
+        .map_or_else(|| Err(err(typeql_var)), |var| Ok(*var))
 }

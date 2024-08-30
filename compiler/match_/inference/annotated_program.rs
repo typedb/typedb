@@ -114,8 +114,8 @@ pub mod tests {
         let empty_cache = IndexedAnnotatedFunctions::empty();
 
         let snapshot = storage.clone().open_snapshot_read();
-        let var_f_c = translation_context.visible_variables.get("c").unwrap().clone();
-        let var_x = translation_context.visible_variables.get("x").unwrap().clone();
+        let var_f_c = *translation_context.visible_variables.get("c").unwrap();
+        let var_x = *translation_context.visible_variables.get("x").unwrap();
         let (entry_annotations, function_annotations) = infer_types(
             &entry,
             vec![function],

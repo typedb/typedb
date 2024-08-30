@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashSet,
-    fmt::{Display, Formatter},
-};
+use std::fmt;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -19,7 +16,6 @@ use encoding::{
     layout::prefix::Prefix,
     AsBytes, Keyable, Prefixed,
 };
-use iterator::Collector;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -27,7 +23,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         object::{Object, ObjectAPI},
-        relation::{IndexedPlayersIterator, RelationRoleIterator},
+        relation::IndexedPlayersIterator,
         thing_manager::ThingManager,
         HKInstance, ThingAPI,
     },
@@ -169,8 +165,8 @@ impl Hkt for Entity<'static> {
     type HktSelf<'a> = Entity<'a>;
 }
 
-impl<'a> Display for Entity<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for Entity<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[Entity:{}:{}]", self.type_().vertex().type_id_(), self.vertex.object_id())
     }
 }

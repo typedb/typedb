@@ -245,9 +245,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     ) -> Result<&ExpressionBinding<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
-        binding
-            .validate(&mut self.context)
-            .map_err(|source| PatternDefinitionError::ExpressionDefinition { source })?;
+        binding.validate(self.context).map_err(|source| PatternDefinitionError::ExpressionDefinition { source })?;
         // WARNING: we can't set a variable category here, since we don't know if the expression will produce a
         //          Value, a ValueList, or a ThingList! We will know this at compilation time
         let as_ref = self.constraints.add_constraint(binding);
@@ -836,7 +834,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
         &self.expression
     }
 
-    pub(crate) fn validate<'cx>(&self, context: &mut BlockContext<'cx>) -> Result<(), ExpressionDefinitionError> {
+    pub(crate) fn validate(&self, context: &mut BlockContext<'_>) -> Result<(), ExpressionDefinitionError> {
         if self.expression().is_empty() {
             Err(ExpressionDefinitionError::EmptyExpressionTree {})
         } else {

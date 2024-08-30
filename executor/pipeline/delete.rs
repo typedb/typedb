@@ -18,10 +18,9 @@ use crate::{
     write::delete::DeleteExecutor,
 };
 
-pub type DeleteAccumulator<Snapshot: WritableSnapshot + 'static> =
-    Accumulator<Snapshot, WritePipelineStage<Snapshot>, DeleteExecutor>;
+pub type DeleteAccumulator<Snapshot> = Accumulator<Snapshot, WritePipelineStage<Snapshot>, DeleteExecutor>;
 
-pub type DeleteStage<Snapshot: WritableSnapshot + 'static> = PipelineStageCommon<
+pub type DeleteStage<Snapshot> = PipelineStageCommon<
     Snapshot,
     WritePipelineStage<Snapshot>,
     DeleteAccumulator<Snapshot>,
@@ -42,7 +41,7 @@ impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for De
         let (snapshot, thing_manager) = context.borrow_parts_mut();
         for (row, multiplicity) in rows {
             self.execute_delete(snapshot, thing_manager, &mut Row::new(row, multiplicity))
-                .map_err(|source| PipelineError::WriteError(source))?;
+                .map_err(PipelineError::WriteError)?;
         }
         Ok(())
     }
