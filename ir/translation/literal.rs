@@ -19,23 +19,7 @@ use typeql::value::{
 use crate::LiteralParseError;
 
 pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, LiteralParseError> {
-    // We don't know the final type yet. Zip with value-type annotations when constructing the executor.
-    Ok(match &literal.inner {
-        ValueLiteral::Boolean(boolean) => Value::Boolean(bool::from_typeql_literal(boolean)?),
-        ValueLiteral::Integer(integer) => Value::Long(i64::from_typeql_literal(integer)?),
-        ValueLiteral::Decimal(decimal) => match Decimal::from_typeql_literal(decimal) {
-            Ok(decimal) => Value::Decimal(decimal),
-            Err(_) => Value::Double(f64::from_typeql_literal(decimal)?),
-        },
-        ValueLiteral::Date(date) => Value::Date(NaiveDate::from_typeql_literal(&date.date)?),
-        ValueLiteral::DateTime(datetime) => Value::DateTime(NaiveDateTime::from_typeql_literal(datetime)?),
-        ValueLiteral::DateTimeTz(datetime_tz) => {
-            Value::DateTimeTZ(chrono::DateTime::<chrono_tz::Tz>::from_typeql_literal(datetime_tz)?)
-        }
-        ValueLiteral::Duration(_) => todo!(),
-        ValueLiteral::String(string) => Value::String(Cow::Owned(String::from_typeql_literal(string)?)),
-        ValueLiteral::Struct(_) => todo!(),
-    })
+    Value::from_typeql_literal(literal)
 }
 
 pub trait FromTypeQLLiteral: Sized {
@@ -44,6 +28,30 @@ pub trait FromTypeQLLiteral: Sized {
 
     fn parse_primitive<T: FromStr>(fragment: &str) -> Result<T, LiteralParseError> {
         fragment.parse::<T>().map_err(|_| LiteralParseError::FragmentParseError { fragment: fragment.to_owned() })
+    }
+}
+
+impl FromTypeQLLiteral for Value<'static> {
+    type TypeQLLiteral = Literal;
+
+    fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
+        // We don't know the final type yet. Zip with value-type annotations when constructing the executor.
+        match &literal.inner {
+            ValueLiteral::Boolean(boolean) => Ok(Value::Boolean(bool::from_typeql_literal(boolean)?)),
+            ValueLiteral::Integer(integer) => Ok(Value::Long(i64::from_typeql_literal(integer)?)),
+            ValueLiteral::Decimal(decimal) => match Decimal::from_typeql_literal(decimal) {
+                Ok(decimal) => Ok(Value::Decimal(decimal)),
+                Err(_) => Ok(Value::Double(f64::from_typeql_literal(decimal)?)),
+            },
+            ValueLiteral::Date(date) => Ok(Value::Date(NaiveDate::from_typeql_literal(&date.date)?)),
+            ValueLiteral::DateTime(datetime) => Ok(Value::DateTime(NaiveDateTime::from_typeql_literal(datetime)?)),
+            ValueLiteral::DateTimeTz(datetime_tz) => {
+                Ok(Value::DateTimeTZ(chrono::DateTime::<chrono_tz::Tz>::from_typeql_literal(datetime_tz)?))
+            }
+            ValueLiteral::Duration(_) => todo!(),
+            ValueLiteral::String(string) => Ok(Value::String(Cow::Owned(String::from_typeql_literal(string)?))),
+            ValueLiteral::Struct(_) => todo!(),
+        }
     }
 }
 

@@ -12,7 +12,7 @@ use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use typeql::{annotation::CardinalityRange, token};
 
 use crate::{
-    translation::literal::{extract_string_literal, translate_literal},
+    translation::literal::{translate_literal, FromTypeQLLiteral},
     LiteralParseError,
 };
 
@@ -40,7 +40,7 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
             range.max.as_ref().map(translate_literal).transpose()?,
         )),
         typeql::Annotation::Regex(regex) => {
-            Annotation::Regex(AnnotationRegex::new(extract_string_literal(&regex.regex)?))
+            Annotation::Regex(AnnotationRegex::new(String::from_typeql_literal(&regex.regex)?))
         }
         typeql::Annotation::Subkey(_) => {
             todo!()

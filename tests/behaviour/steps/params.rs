@@ -51,27 +51,6 @@ impl MayError {
         }
     }
 
-    pub fn check_either_err<T, E1, E2>(&self, res: &Result<T, Either<E1, E2>>)
-    where
-        T: fmt::Debug + Clone,
-        E1: fmt::Debug + Clone,
-        E2: fmt::Debug + Clone,
-    {
-        match res {
-            Ok(res) => {
-                self.check(&Ok::<T, E1>(res.clone()));
-            }
-            Err(either_err) => match either_err {
-                Either::First(err) => {
-                    self.check(&Err::<T, E1>(err.clone()));
-                }
-                Either::Second(err) => {
-                    self.check(&Err::<T, E2>(err.clone()));
-                }
-            },
-        }
-    }
-
     pub fn check_concept_write_without_read_errors<T: fmt::Debug>(&self, res: &Result<T, ConceptWriteError>) {
         match self {
             MayError::False => {
@@ -128,24 +107,6 @@ impl TypeQLMayError {
         self.as_may_error_logic().check(res)
     }
 
-    pub fn check_either_err_parsing<T, E1, E2>(&self, res: &Result<T, Either<E1, E2>>)
-    where
-        T: fmt::Debug + Clone,
-        E1: fmt::Debug + Clone,
-        E2: fmt::Debug + Clone,
-    {
-        self.as_may_error_parsing().check_either_err(res)
-    }
-
-    pub fn check_either_err_logic<T, E1, E2>(&self, res: &Result<T, Either<E1, E2>>)
-    where
-        T: fmt::Debug + Clone,
-        E1: fmt::Debug + Clone,
-        E2: fmt::Debug + Clone,
-    {
-        self.as_may_error_logic().check_either_err(res)
-    }
-
     pub fn expects_parsing_error(&self) -> bool {
         self.as_may_error_parsing().expects_error()
     }
@@ -197,8 +158,6 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
-use concept::type_::attribute_type::AttributeTypeAnnotation;
-use primitive::either::Either;
 
 impl FromStr for Boolean {
     type Err = String;

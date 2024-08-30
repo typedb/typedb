@@ -12,13 +12,10 @@ use concept::{
     thing::thing_manager::ThingManager,
     type_::{
         annotation::{Annotation, AnnotationError},
-        attribute_type::{AttributeType, AttributeTypeAnnotation},
-        entity_type::EntityTypeAnnotation,
-        object_type::ObjectType,
-        owns::{Owns, OwnsAnnotation},
-        plays::{Plays, PlaysAnnotation},
+        attribute_type::AttributeType,
+        owns::Owns,
+        plays::Plays,
         relates::{Relates, RelatesAnnotation},
-        relation_type::RelationTypeAnnotation,
         type_manager::TypeManager,
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
@@ -30,7 +27,6 @@ use encoding::{
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    annotation::Annotation as TypeQLAnnotation,
     query::schema::Define,
     schema::definable::{
         function::Function,
@@ -41,23 +37,21 @@ use typeql::{
         },
         Struct, Type,
     },
-    token,
-    type_::Optional,
-    Definable, ScopedLabel, TypeRef, TypeRefAny,
+    token, Definable,
 };
 
 use crate::{
     definable_resolution::{
         filter_variants, get_struct_field_value_type_optionality, named_type_to_label, resolve_attribute_type,
-        resolve_owns, resolve_owns_declared, resolve_plays, resolve_plays_declared, resolve_plays_role_label,
-        resolve_relates, resolve_relates_declared, resolve_role_type, resolve_struct_definition_key,
-        resolve_typeql_type, resolve_value_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type,
+        resolve_owns, resolve_owns_declared, resolve_plays_declared, resolve_plays_role_label, resolve_relates,
+        resolve_relates_declared, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type,
+        resolve_value_type, try_resolve_typeql_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type,
         SymbolResolutionError,
     },
     definable_status::{
-        get_attribute_type_status, get_capability_annotation_status, get_entity_type_status, get_override_status,
-        get_owns_status, get_plays_status, get_relates_status, get_relation_type_status, get_struct_field_status,
-        get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinableStatus,
+        get_capability_annotation_status, get_override_status, get_owns_status, get_plays_status, get_relates_status,
+        get_struct_field_status, get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status,
+        DefinableStatus,
     },
 };
 
@@ -104,9 +98,7 @@ fn process_type_definitions(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
-    declarations
-        .clone()
-        .try_for_each(|declaration| define_types(snapshot, type_manager, thing_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| define_types(snapshot, type_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| define_alias(snapshot, type_manager, declaration))?;
     declarations
         .clone()
@@ -217,8 +209,9 @@ fn define_types(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let existing =
-        try_resolve_type(snapshot, type_manager, &label).map_err(|source| DefineError::TypeLookup { source })?;
+    let existing = try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| {
+        DefineError::DefinitionResolution { source: SymbolResolutionError::UnexpectedConceptRead { source: err } }
+    })?;
     match type_declaration.kind {
         None => {
             if existing.is_none() {
@@ -526,7 +519,7 @@ fn define_relates_with_annotations(
                 let init_cardinality = if let Some(typeql_cardinality) = capability
                     .annotations
                     .iter()
-                    .find(|annotation| matches!(annotation, TypeQLAnnotation::Cardinality(_)))
+                    .find(|annotation| matches!(annotation, typeql::Annotation::Cardinality(_)))
                 {
                     let annotation = translate_annotation(typeql_cardinality)
                         .map_err(|source| DefineError::LiteralParseError { source })?;
@@ -656,7 +649,7 @@ fn define_relates_overrides(
             return Err(err_unsupported_capability(&label, type_.kind(), capability));
         };
 
-        let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
+        let (role_label, _ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
             .map_err(|source| DefineError::DefinitionResolution { source })?;
         let relates =
             resolve_relates_declared(snapshot, type_manager, relation_type.clone(), &role_label.name.as_str())
@@ -956,9 +949,9 @@ fn define_plays_override<'a>(
 }
 
 fn define_functions(
-    snapshot: &impl WritableSnapshot,
-    type_manager: &TypeManager,
-    declaration: &Function,
+    _snapshot: &impl WritableSnapshot,
+    _type_manager: &TypeManager,
+    _declaration: &Function,
 ) -> Result<(), DefineError> {
     Err(DefineError::Unimplemented)
 }

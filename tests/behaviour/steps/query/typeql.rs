@@ -21,12 +21,11 @@ use encoding::value::label::Label;
 use executor::{
     batch::Row,
     program_executor::ProgramExecutor,
-    write::{insert::InsertExecutor, insert_executor::WriteError, WriteError},
+    write::{insert::InsertExecutor, WriteError},
 };
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, writes::translate_insert, TranslationContext},
-    write::{insert::InsertExecutor, WriteError},
 };
 use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
