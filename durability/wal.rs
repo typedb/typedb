@@ -88,6 +88,10 @@ impl WAL {
     pub fn previous(&self) -> DurabilitySequenceNumber {
         DurabilitySequenceNumber::from(self.next_sequence_number.load(Ordering::Relaxed) - 1)
     }
+
+    pub fn sync_all(&self) {
+        self.files.write().unwrap().sync_all()
+    }
 }
 
 impl DurabilityService for WAL {
@@ -253,7 +257,12 @@ impl Files {
         writer.flush()?;
 
         self.files.last_mut().unwrap().len = writer.stream_position()?;
+        // writer.get_mut().sync_all().unwrap();
         Ok(())
+    }
+
+    pub fn sync_all(&mut self) {
+        self.files.last_mut().unwrap().writer().unwrap().get_mut().sync_all().unwrap()
     }
 
     fn iter(&self) -> impl DoubleEndedIterator<Item = &File> {

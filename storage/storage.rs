@@ -220,7 +220,7 @@ impl<Durability> MVCCStorage<Durability> {
             .validate_commit(commit_sequence_number, commit_record, &self.durability_client)
             .map_err(|error| Durability { name: self.name.to_owned(), source: error })?;
 
-        match validated_commit {
+        let result = match validated_commit {
             ValidatedCommit::Write(write_batches) => {
                 // Write to the k-v storage
                 self.keyspaces
@@ -242,7 +242,9 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|error| Durability { name: self.name.clone(), source: error })?;
                 Err(StorageCommitError::Isolation { name: self.name.clone(), conflict })
             }
-        }
+        };
+        self.durability_client.sync_all();
+        result
     }
 
     fn set_initial_put_status(&self, snapshot: &impl CommittableSnapshot<Durability>) -> Result<(), MVCCReadError>

@@ -46,6 +46,8 @@ pub trait DurabilityClient {
     where
         Record: UnsequencedDurabilityRecord;
 
+    fn sync_all(&self);
+
     fn iter_from(
         &self,
         sequence_number: SequenceNumber,
@@ -139,6 +141,11 @@ impl WALClient {
 }
 
 impl DurabilityClient for WALClient {
+
+    fn sync_all(&self) {
+        self.wal.sync_all()
+    }
+
     fn register_record_type<Record: DurabilityRecord>(&mut self) {
         self.wal.register_record_type(Record::RECORD_TYPE, Record::RECORD_NAME);
     }

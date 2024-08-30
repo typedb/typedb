@@ -17,12 +17,10 @@ use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
-use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use encoding::value::{label::Label, value_type::ValueType};
 use executor::{batch::Row, write::insert_executor::WriteError};
-use pprof::ProfilerGuard;
+
 use rand::distributions::DistString;
-use logger::result::ResultExt;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
@@ -156,7 +154,7 @@ fn main() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.read_watermark()));
     let thing_manager_arced = Arc::new(thing_manager);
     const NUM_THREADS: usize = 32;
-    const INTERNAL_ITERS: u64 = 250;
+    const INTERNAL_ITERS: u64 = 100;
     let start_signal_rw_lock = Arc::new(RwLock::new(()));
     let write_guard = start_signal_rw_lock.write().unwrap();
     let join_handles: [JoinHandle<()>; NUM_THREADS] = array::from_fn(|_| {
@@ -166,7 +164,6 @@ fn main() {
         let rw_lock_cloned = start_signal_rw_lock.clone();
         thread::spawn(move || {
             drop(rw_lock_cloned.read().unwrap());
-            // println!("Start");
             for _ in 0..INTERNAL_ITERS {
                 let mut snapshot = storage_cloned.clone().open_snapshot_write();
                 let age: u32 = rand::random();
@@ -185,6 +182,7 @@ fn main() {
     });
     println!("Sleeping 1s before starting threads");
     sleep(Duration::from_secs(1));
+    println!("Start!");
     let start = Instant::now();
     drop(write_guard); // Start
     for join_handle in join_handles {
