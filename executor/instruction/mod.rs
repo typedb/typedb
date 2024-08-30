@@ -354,10 +354,19 @@ impl<T: Hkt> Checker<T> {
             Vec::with_capacity(self.checks.len());
         for check in &self.checks {
             match *check {
-                CheckInstruction::Comparison { lhs, rhs, comparator: _comp } => {
-                    let lhs = self.extractors[&lhs];
+                CheckInstruction::Comparison { lhs, rhs, comparator } => {
+                    let lhs_extractor = self.extractors[&lhs];
                     let rhs = row.get(rhs).to_owned();
-                    filters.push(Box::new(move |value| Ok(lhs(value) == rhs))); // TODO use comp
+                    let cmp: fn(&VariableValue<'_>, &VariableValue<'_>) -> bool = match comparator {
+                        Comparator::Equal => |a, b| a == b,
+                        Comparator::Less => |a, b| a < b,
+                        Comparator::Greater => |a, b| a > b,
+                        Comparator::LessOrEqual => |a, b| a <= b,
+                        Comparator::GreaterOrEqual => |a, b| a >= b,
+                        Comparator::Like => todo!("like"),
+                        Comparator::Cointains => todo!("contains"),
+                    };
+                    filters.push(Box::new(move |value| Ok(cmp(&lhs_extractor(value), &rhs))));
                 }
                 CheckInstruction::Has { owner, attribute } => {
                     let maybe_owner_extractor = self.extractors.get(&owner);
