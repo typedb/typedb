@@ -94,7 +94,7 @@ fn compile_stage(
     match &annotated_stage {
         AnnotatedStage::Match { block, block_annotations, compiled_expressions, variable_value_types } => {
             let plan =
-                MatchProgram::from_block(block, block_annotations, variable_registry, compiled_expressions, statistics);
+                MatchProgram::compile(block, block_annotations, variable_registry, compiled_expressions, statistics);
             Ok(CompiledStage::Match(plan))
         }
         AnnotatedStage::Insert { block, annotations } => {

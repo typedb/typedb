@@ -210,7 +210,7 @@ impl MatchProgram {
         Self { programs, variable_registry: context }
     }
 
-    pub fn from_block(
+    pub fn compile(
         block: &FunctionalBlock,
         type_annotations: &TypeAnnotations,
         variable_registry: &VariableRegistry,
