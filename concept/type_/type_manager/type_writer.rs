@@ -11,23 +11,22 @@ use encoding::{
     graph::{
         definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
         type_::{
-            edge::{TypeEdge, TypeEdgeEncoding},
+            edge::TypeEdgeEncoding,
             index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
             property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
             vertex::TypeVertexEncoding,
         },
     },
-    value::{label::Label, string_bytes::StringBytes, value_type::ValueType},
+    value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{key_range::KeyRange, snapshot::WritableSnapshot};
+use storage::snapshot::WritableSnapshot;
 
 use crate::{
     error::ConceptWriteError,
     type_::{
-        attribute_type::AttributeType, owns::Owns, relates::Relates, relation_type::RelationType, role_type::RoleType,
-        sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride, Ordering, TypeAPI,
+        attribute_type::AttributeType, owns::Owns, sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride,
+        Ordering, TypeAPI,
     },
 };
 

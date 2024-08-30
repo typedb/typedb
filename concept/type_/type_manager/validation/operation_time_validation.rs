@@ -1412,11 +1412,7 @@ impl OperationTimeValidation {
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError> {
         for_type_and_subtypes_transitive!(snapshot, interface_type, |type_: CAP::InterfaceType| {
-            Self::validate_annotation_set_only_for_interface::<CAP>(
-                snapshot,
-                type_.clone(),
-                annotation_category.clone(),
-            )
+            Self::validate_annotation_set_only_for_interface::<CAP>(snapshot, type_.clone(), annotation_category)
         });
         Ok(())
     }
@@ -1455,7 +1451,7 @@ impl OperationTimeValidation {
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError> {
         for_capability_and_overriding_capabilities_transitive!(snapshot, capability, |cap: CAP| {
-            Self::validate_annotation_set_only_for_capability::<CAP>(snapshot, cap.clone(), annotation_category.clone())
+            Self::validate_annotation_set_only_for_capability::<CAP>(snapshot, cap.clone(), annotation_category)
         });
         Ok(())
     }
@@ -1579,7 +1575,7 @@ impl OperationTimeValidation {
                                 get_label_or_schema_err(snapshot, overriding_capability.interface())?,
                                 get_label_or_schema_err(snapshot, capability.object())?,
                                 get_label_or_schema_err(snapshot, capability.interface())?,
-                                overriding_cardinality.clone(),
+                                *overriding_cardinality,
                                 cardinality,
                             ))
                         };
@@ -1936,7 +1932,7 @@ impl OperationTimeValidation {
         capability: CAP,
         capability_cardinality: AnnotationCardinality,
     ) -> Result<HashMap<CAP, AnnotationCardinality>, ConceptReadError> {
-        let mut updated_cardinalities = HashMap::from([(capability.clone(), capability_cardinality.clone())]);
+        let mut updated_cardinalities = HashMap::from([(capability.clone(), capability_cardinality)]);
 
         // Do not care about the capability's override
         let mut capabilities_and_overrides = VecDeque::from([(capability.clone(), capability.clone())]);
@@ -1948,7 +1944,7 @@ impl OperationTimeValidation {
                     cardinality_declared
                 } else {
                     match updated_cardinalities.get(&overridden) {
-                        Some(inherited_cardinality) => inherited_cardinality.clone(),
+                        Some(inherited_cardinality) => *inherited_cardinality,
                         None => {
                             debug_assert!(
                                 false,
@@ -2853,10 +2849,10 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn get_annotation_constraint_violated_by_entity_instances<'a>(
+    fn get_annotation_constraint_violated_by_entity_instances(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        entity_type: EntityType<'a>,
+        entity_type: EntityType<'_>,
         annotations: &HashSet<Annotation>,
     ) -> Result<Option<AnnotationCategory>, ConceptReadError> {
         if annotations.is_empty() {
@@ -2876,10 +2872,10 @@ impl OperationTimeValidation {
         Ok(None)
     }
 
-    fn get_annotation_constraint_violated_by_relation_instances<'a>(
+    fn get_annotation_constraint_violated_by_relation_instances(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        relation_type: RelationType<'a>,
+        relation_type: RelationType<'_>,
         annotations: &HashSet<Annotation>,
     ) -> Result<Option<AnnotationCategory>, ConceptReadError> {
         if annotations.is_empty() {
@@ -2899,10 +2895,10 @@ impl OperationTimeValidation {
         Ok(None)
     }
 
-    fn get_annotation_constraint_violated_by_attribute_instances<'a>(
+    fn get_annotation_constraint_violated_by_attribute_instances(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'a>,
+        attribute_type: AttributeType<'_>,
         annotations: &HashSet<Annotation>,
     ) -> Result<Option<AnnotationCategory>, ConceptReadError> {
         if annotations.is_empty() {
@@ -2931,7 +2927,7 @@ impl OperationTimeValidation {
             if let Some(regex) = &regex {
                 match &value {
                     Value::String(string_value) => {
-                        if !regex.value_valid(&string_value) {
+                        if !regex.value_valid(string_value) {
                             return Ok(Some(AnnotationCategory::Regex));
                         }
                     }
@@ -2961,10 +2957,10 @@ impl OperationTimeValidation {
         Ok(None)
     }
 
-    fn get_annotation_constraint_violated_by_role_instances<'a>(
+    fn get_annotation_constraint_violated_by_role_instances(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        role_type: RoleType<'a>,
+        role_type: RoleType<'_>,
         annotations: &HashSet<Annotation>,
     ) -> Result<Option<AnnotationCategory>, ConceptReadError> {
         if annotations.is_empty() {
@@ -3080,10 +3076,8 @@ impl OperationTimeValidation {
 
                     real_cardinality += count;
 
-                    if distinct.is_some() {
-                        if count > 1 {
-                            return Ok(Some(AnnotationCategory::Distinct));
-                        }
+                    if distinct.is_some() && count > 1 {
+                        return Ok(Some(AnnotationCategory::Distinct));
                     }
 
                     let value = attribute.get_value(snapshot, thing_manager)?;
@@ -3098,7 +3092,7 @@ impl OperationTimeValidation {
                     if let Some(regex) = &regex {
                         match &value {
                             Value::String(string_value) => {
-                                if !regex.value_valid(&string_value) {
+                                if !regex.value_valid(string_value) {
                                     return Ok(Some(AnnotationCategory::Regex));
                                 }
                             }
@@ -3128,7 +3122,7 @@ impl OperationTimeValidation {
                 }
 
                 if !Self::check_operation_time_cardinality_constraint(
-                    cardinality.clone(),
+                    cardinality,
                     real_cardinality,
                     only_abstract_types,
                 ) {
@@ -3175,7 +3169,7 @@ impl OperationTimeValidation {
                 }
 
                 if !Self::check_operation_time_cardinality_constraint(
-                    cardinality.clone(),
+                    cardinality,
                     real_cardinality,
                     only_abstract_types,
                 ) {
@@ -3226,15 +3220,13 @@ impl OperationTimeValidation {
 
                     real_cardinality += count;
 
-                    if distinct.is_some() {
-                        if count > 1 {
-                            return Ok(Some(AnnotationCategory::Distinct));
-                        }
+                    if distinct.is_some() && count > 1 {
+                        return Ok(Some(AnnotationCategory::Distinct));
                     }
                 }
 
                 if !Self::check_operation_time_cardinality_constraint(
-                    cardinality.clone(),
+                    cardinality,
                     real_cardinality,
                     only_abstract_types,
                 ) {
@@ -3548,10 +3540,10 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_no_instances_to_unset_value_type<'a>(
+    fn validate_no_instances_to_unset_value_type(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'a>,
+        attribute_type: AttributeType<'_>,
     ) -> Result<(), SchemaValidationError> {
         let has_instances = Self::has_instances_of_type(snapshot, thing_manager, attribute_type.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -3817,7 +3809,7 @@ impl OperationTimeValidation {
                     .iter()
                     .any(|inherited_capability| inherited_capability.interface() == capability.interface())
             })
-            .map(|capability| capability.clone())
+            .cloned()
             .collect())
     }
 
@@ -3862,7 +3854,7 @@ impl OperationTimeValidation {
                 let annotations = TypeReader::get_type_edge_annotations(snapshot, new_capability.clone())
                     .map_err(SchemaValidationError::ConceptRead)?
                     .keys()
-                    .map(|annotation| annotation.clone().try_into().unwrap())
+                    .map(|annotation| annotation.clone().into())
                     .collect();
                 updated_annotations_from_inheritance.insert(new_capability, annotations);
             }
@@ -3924,7 +3916,6 @@ impl OperationTimeValidation {
                     && !old_inherited_annotations.contains(new_annotation)
                     && new_annotation_category.inheritable()
             })
-            .map(|new_annotation| new_annotation.clone())
             .collect::<HashSet<Annotation>>())
     }
 
@@ -3963,7 +3954,7 @@ impl OperationTimeValidation {
                     .iter()
                     .map(|annotation| annotation.clone().into().category())
                     .contains(&new_annotation.category())
-                    && !old_inherited_annotations.contains(&new_annotation)
+                    && !old_inherited_annotations.contains(new_annotation)
                     && new_annotation.category().inheritable()
             })
             .collect::<HashSet<Annotation>>())

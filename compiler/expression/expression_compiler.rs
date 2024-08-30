@@ -87,12 +87,12 @@ impl<'this> ExpressionCompilationContext<'this> {
     fn compile_variable(&mut self, variable: &Variable) -> Result<(), ExpressionCompileError> {
         debug_assert!(self.variable_value_categories.contains_key(variable));
 
-        self.variable_stack.push(variable.clone());
+        self.variable_stack.push(*variable);
         self.append_instruction(LoadVariable::OP_CODE);
         // TODO: We need a way to know if a variable is a list or a single
-        match self.variable_value_categories.get(&variable).unwrap() {
-            ExpressionValueType::Single(value_type) => self.push_type_single(value_type.clone()),
-            ExpressionValueType::List(value_type) => self.push_type_list(value_type.clone()),
+        match self.variable_value_categories.get(variable).unwrap() {
+            ExpressionValueType::Single(value_type) => self.push_type_single(*value_type),
+            ExpressionValueType::List(value_type) => self.push_type_list(*value_type),
         }
         Ok(())
     }
@@ -161,7 +161,8 @@ impl<'this> ExpressionCompilationContext<'this> {
             Err(ExpressionCompileError::ListIndexMustBeLong)?
         }
 
-        Ok(self.push_type_single(list_variable_type))
+        self.push_type_single(list_variable_type);
+        Ok(())
     }
 
     fn compile_op(&mut self, operation: &Operation) -> Result<(), ExpressionCompileError> {
@@ -185,7 +186,7 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_op_boolean(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.clone();
+        let right_category = *self.peek_type_single()?;
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Decimal,
@@ -195,7 +196,7 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_op_long(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.clone();
+        let right_category = *self.peek_type_single()?;
         match right_category {
             ValueTypeCategory::Long => {
                 self.compile_op_long_long(op)?;
@@ -216,7 +217,7 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_op_double(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.clone();
+        let right_category = *self.peek_type_single()?;
         match right_category {
             ValueTypeCategory::Long => {
                 // The right needs to be cast
@@ -237,7 +238,7 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_op_decimal(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.clone();
+        let right_category = *self.peek_type_single()?;
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Decimal,
@@ -247,7 +248,7 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_op_string(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.clone();
+        let right_category = *self.peek_type_single()?;
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::String,
@@ -257,7 +258,7 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_op_date(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.clone();
+        let right_category = *self.peek_type_single()?;
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Date,
@@ -271,7 +272,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         right: &Expression<Variable>,
     ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.clone();
+        let right_category = *self.peek_type_single()?;
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::DateTime,
@@ -285,7 +286,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         right: &Expression<Variable>,
     ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.clone();
+        let right_category = *self.peek_type_single()?;
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::DateTimeTZ,
@@ -299,7 +300,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         right: &Expression<Variable>,
     ) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.clone();
+        let right_category = *self.peek_type_single()?;
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Duration,
@@ -309,7 +310,7 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_op_struct(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.clone();
+        let right_category = *self.peek_type_single()?;
         Err(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Struct,

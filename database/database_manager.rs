@@ -94,17 +94,18 @@ impl DatabaseManager {
         };
 
         drop(databases);
-        Ok(match result {
+        match result {
             Ok(_) => (),
             Err(_) => {
                 self.delete_database(name.as_ref())?;
                 self.create_database(name)
             }
-        })
+        };
+        Ok(())
     }
 
     pub fn database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
-        self.databases.read().unwrap().get(name).map(|arc| arc.clone())
+        self.databases.read().unwrap().get(name).cloned()
     }
 
     pub fn database_names(&self) -> Vec<String> {

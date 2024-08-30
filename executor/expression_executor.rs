@@ -137,7 +137,7 @@ fn evaluate_instruction(
 }
 
 pub trait ExpressionEvaluation {
-    fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError>;
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError>;
 }
 
 impl<T1, T2, R, F> ExpressionEvaluation for Binary<T1, T2, R, F>
@@ -147,7 +147,7 @@ where
     R: DBValue,
     F: BinaryExpression<T1, T2, R>,
 {
-    fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let a2: T2 = T2::from_db_value(state.pop_value()).unwrap();
         let a1: T1 = T1::from_db_value(state.pop_value()).unwrap();
         state.push_value(F::evaluate(a1, a2)?.to_db_value());
@@ -156,7 +156,7 @@ where
 }
 
 impl ExpressionEvaluation for ListConstructor {
-    fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let n_elements = state.pop_value().unwrap_long() as usize;
         let mut elements: Vec<Value<'static>> = Vec::with_capacity(n_elements);
         for _ in 0..n_elements {
@@ -168,7 +168,7 @@ impl ExpressionEvaluation for ListConstructor {
 }
 
 impl ExpressionEvaluation for ListIndex {
-    fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let list = state.pop_list();
         let index = state.pop_value().unwrap_long();
         if let Some(value) = list.get(index as usize) {
@@ -181,12 +181,12 @@ impl ExpressionEvaluation for ListIndex {
 }
 
 impl ExpressionEvaluation for ListIndexRange {
-    fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
-        let mut list = state.pop_list();
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
+        let list = state.pop_list();
         let to_index = state.pop_value().unwrap_long() as usize;
         let from_index = state.pop_value().unwrap_long() as usize;
         if let Some(sub_slice) = list.get(from_index..to_index) {
-            let mut vec = Vec::with_capacity((to_index - from_index + 1) as usize);
+            let mut vec = Vec::with_capacity(to_index - from_index + 1);
             vec.extend_from_slice(sub_slice);
             state.push_list(vec); // TODO: Should we make this more efficient by storing (Vec, range) ?
             Ok(())
@@ -196,7 +196,7 @@ impl ExpressionEvaluation for ListIndexRange {
     }
 }
 impl ExpressionEvaluation for LoadVariable {
-    fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         match state.next_variable() {
             ExpressionValue::Single(single) => state.push_value(single),
             ExpressionValue::List(list) => state.push_list(list),
@@ -206,7 +206,7 @@ impl ExpressionEvaluation for LoadVariable {
 }
 
 impl ExpressionEvaluation for LoadConstant {
-    fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let constant = state.next_constant();
         state.push_value(constant);
         Ok(())
@@ -214,7 +214,7 @@ impl ExpressionEvaluation for LoadConstant {
 }
 
 impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastUnary<From, To> {
-    fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let value_before = From::from_db_value(state.pop_value()).unwrap();
         let value_after = To::cast(value_before)?.to_db_value();
         state.push_value(value_after);
@@ -223,7 +223,7 @@ impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastUnary<F
 }
 
 impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryLeft<From, To> {
-    fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let right = state.pop_value();
         let left_before = From::from_db_value(state.pop_value()).unwrap();
         let left_after = To::cast(left_before)?.to_db_value();
@@ -234,7 +234,7 @@ impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryL
 }
 
 impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryRight<From, To> {
-    fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let right_before = From::from_db_value(state.pop_value()).unwrap();
         let right_after = To::cast(right_before)?.to_db_value();
         state.push_value(right_after);
@@ -248,7 +248,7 @@ where
     R: DBValue,
     F: UnaryExpression<T1, R>,
 {
-    fn evaluate<'a>(state: &mut ExpressionExecutorState<'a>) -> Result<(), ExpressionEvaluationError> {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let a1: T1 = T1::from_db_value(state.pop_value()).unwrap();
         state.push_value(F::evaluate(a1)?.to_db_value());
         Ok(())

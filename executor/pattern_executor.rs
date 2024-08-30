@@ -611,7 +611,7 @@ impl CartesianIterator {
             intersection_source: vec![VariableValue::Empty; width],
             intersection_multiplicity: 1,
             cartesian_executor_indices: Vec::with_capacity(iterator_executor_count),
-            iterators: (0..iterator_executor_count).into_iter().map(|_| Option::None).collect_vec(),
+            iterators: (0..iterator_executor_count).map(|_| Option::None).collect_vec(),
         }
     }
 

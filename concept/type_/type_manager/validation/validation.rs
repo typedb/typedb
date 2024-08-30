@@ -12,7 +12,6 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
-    thing::thing_manager::ThingManager,
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange, AnnotationRegex,
@@ -179,27 +178,25 @@ pub(crate) fn validate_cardinality_narrows_inherited_cardinality<CAP: Capability
 
     if overridden_cardinality.narrowed_correctly_by(&cardinality) {
         Ok(())
+    } else if is_key {
+        debug_assert!(cardinality == AnnotationKey::CARDINALITY, "Invalid use of key");
+        Err(SchemaValidationError::KeyDoesNotNarrowInheritedCardinality(
+            get_label_or_schema_err(snapshot, edge.object())?,
+            get_label_or_schema_err(snapshot, edge.interface())?,
+            get_label_or_schema_err(snapshot, overridden_edge.object())?,
+            get_label_or_schema_err(snapshot, overridden_edge.interface())?,
+            overridden_cardinality,
+        ))
     } else {
-        if is_key {
-            debug_assert!(cardinality == AnnotationKey::CARDINALITY, "Invalid use of key");
-            Err(SchemaValidationError::KeyDoesNotNarrowInheritedCardinality(
-                get_label_or_schema_err(snapshot, edge.object())?,
-                get_label_or_schema_err(snapshot, edge.interface())?,
-                get_label_or_schema_err(snapshot, overridden_edge.object())?,
-                get_label_or_schema_err(snapshot, overridden_edge.interface())?,
-                overridden_cardinality,
-            ))
-        } else {
-            Err(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
-                CAP::KIND,
-                get_label_or_schema_err(snapshot, edge.object())?,
-                get_label_or_schema_err(snapshot, edge.interface())?,
-                get_label_or_schema_err(snapshot, overridden_edge.object())?,
-                get_label_or_schema_err(snapshot, overridden_edge.interface())?,
-                cardinality,
-                overridden_cardinality,
-            ))
-        }
+        Err(SchemaValidationError::CardinalityDoesNotNarrowInheritedCardinality(
+            CAP::KIND,
+            get_label_or_schema_err(snapshot, edge.object())?,
+            get_label_or_schema_err(snapshot, edge.interface())?,
+            get_label_or_schema_err(snapshot, overridden_edge.object())?,
+            get_label_or_schema_err(snapshot, overridden_edge.interface())?,
+            cardinality,
+            overridden_cardinality,
+        ))
     }
 }
 

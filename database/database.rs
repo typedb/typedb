@@ -11,7 +11,6 @@ use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
     sync::{
-        atomic::AtomicU64,
         mpsc::{sync_channel, SyncSender},
         Arc, Mutex, MutexGuard, RwLock,
     },
@@ -115,7 +114,7 @@ impl<D> Database<D> {
 
     pub(super) fn release_write_transaction(&self) {
         let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
-        guard.1 = guard.1 - 1;
+        guard.1 -= 1;
         if guard.1 == 0 {
             Self::fulfill_reservation_requests(&mut guard)
         }

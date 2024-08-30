@@ -17,7 +17,7 @@ use compiler::match_::{
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
+    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
@@ -168,7 +168,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_person,
         vec![ConstraintInstruction::Has(HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations))],
-        &vec![var_person],
+        &[var_person],
     ))];
     let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
@@ -241,7 +241,7 @@ fn unselected_named_vars_counted() {
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         var_person,
         vec![ConstraintInstruction::Has(HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations))],
-        &vec![var_person],
+        &[var_person],
     ))];
     let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());

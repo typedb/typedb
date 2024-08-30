@@ -207,11 +207,11 @@ impl TransactionService {
                         event!(Level::TRACE, "Transaction opened, request ID: {:?}", &request_id);
                         Ok(Continue(()))
                     }
-                    Err(status) => return Err(status),
+                    Err(status) => Err(status),
                 }
             }
             (true, typedb_protocol::transaction::req::Req::OpenReq(_)) => {
-                return Err(ProtocolError::TransactionAlreadyOpen {}.into_status());
+                Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
                 self.handle_query(query_req).await?;
@@ -235,7 +235,7 @@ impl TransactionService {
                 self.handle_close(close_req)?;
                 Ok(Break(()))
             }
-            (false, _) => return Err(ProtocolError::TransactionClosed {}.into_status()),
+            (false, _) => Err(ProtocolError::TransactionClosed {}.into_status()),
         }
     }
 
@@ -283,7 +283,8 @@ impl TransactionService {
         // Execute commit
 
         // TODO: take mut
-        let result = match self.transaction.take().unwrap() {
+
+        match self.transaction.take().unwrap() {
             Transaction::Read(_) => Err(TransactionServiceError::CannotCommitReadTransaction {}.into_status()),
             Transaction::Write(transaction) => spawn_blocking(move || {
                 transaction
@@ -295,8 +296,7 @@ impl TransactionService {
             Transaction::Schema(transaction) => transaction
                 .commit()
                 .map_err(|err| TransactionServiceError::SchemaCommitFailed { source: err }.into_status()),
-        };
-        result
+        }
     }
 
     fn handle_rollback(&mut self, rollback_req: typedb_protocol::transaction::rollback::Req) -> Result<(), Status> {
@@ -333,10 +333,10 @@ impl TransactionService {
         // TODO: compile query, create executor, respond with initial message and then await initial answers to send
         let query_string = &query_req.query;
         let query_options = &query_req.options; // TODO: pass query options
-        let parsed = parse_query(&query_string)
+        let parsed = parse_query(query_string)
             .map_err(|err| TransactionServiceError::QueryParseFailed { source: err }.into_status())?;
         match parsed {
-            Query::Schema(schema_query) => return self.handle_query_schema(schema_query).await,
+            Query::Schema(schema_query) => self.handle_query_schema(schema_query).await,
             Query::Pipeline(pipeline) => {
                 let is_write = pipeline.stages.iter().any(Self::is_write_stage);
                 if is_write {
@@ -385,9 +385,9 @@ impl TransactionService {
                 transaction_options,
             );
             self.transaction = Some(Transaction::Schema(transaction));
-            return Ok(());
+            Ok(())
         } else {
-            return Err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}.into_status());
+            Err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}.into_status())
         }
     }
 
@@ -427,7 +427,7 @@ impl TransactionService {
             .unwrap();
             result?;
             self.transaction = Some(Transaction::Schema(transaction));
-            return Ok(());
+            Ok(())
         } else if let Some(Transaction::Write(write_transaction)) = self.transaction.take() {
             let (transaction, result) = spawn_blocking(move || {
                 // TODO: pass in Interrupt Receiver
@@ -486,7 +486,7 @@ impl TransactionService {
                                  Unexpected behaviour, but not an error state."
                         );
                     } else {
-                        let iterator = handle.await.unwrap();
+                        handle.await.unwrap();
                         // TODO: recreate a task to stream back out from the iterator and set the handle
                         // *handle = ..
                     }
@@ -507,7 +507,7 @@ impl TransactionService {
                                  Unexpected behaviour, but not an error state."
                             );
                         } else {
-                            let iterator = handle.await.unwrap();
+                            handle.await.unwrap();
                             // TODO: recreate a task to stream back out from the iterator and set the handle
                             // *handle = ..
                         }

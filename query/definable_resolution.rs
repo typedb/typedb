@@ -11,8 +11,8 @@ use concept::{
     error::ConceptReadError,
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, owns::Owns, plays::Plays,
-        relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, Capability,
-        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI,
+        relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI,
+        Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use encoding::{
@@ -96,11 +96,9 @@ pub(crate) fn get_struct_field_value_type_optionality(
             Ok((value_type, optional))
         }
         TypeRefAny::Type(TypeRef::Variable(_)) | TypeRefAny::Optional(Optional { inner: TypeRef::Variable(_), .. }) => {
-            return Err(SymbolResolutionError::StructFieldIllegalVariable { field_declaration: field.clone() });
+            Err(SymbolResolutionError::StructFieldIllegalVariable { field_declaration: field.clone() })
         }
-        TypeRefAny::List(_) => {
-            return Err(SymbolResolutionError::StructFieldIllegalList { field_declaration: field.clone() });
-        }
+        TypeRefAny::List(_) => Err(SymbolResolutionError::StructFieldIllegalList { field_declaration: field.clone() }),
     }
 }
 
@@ -129,10 +127,8 @@ pub(crate) fn try_resolve_typeql_type(
         }
     } else if let Some(attribute_type) = try_resolve_attribute_type(snapshot, type_manager, label)? {
         Some(Type::Attribute(attribute_type))
-    } else if let Some(role_type) = try_resolve_role_type(snapshot, type_manager, label)? {
-        Some(Type::RoleType(role_type))
     } else {
-        None
+        try_resolve_role_type(snapshot, type_manager, label)?.map(Type::RoleType)
     };
     Ok(type_)
 }
@@ -181,10 +177,10 @@ pub(crate) fn try_resolve_struct_definition_key(
     type_manager.get_struct_definition_key(snapshot, name)
 }
 
-pub(crate) fn resolve_object_type<'a>(
+pub(crate) fn resolve_object_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<ObjectType<'static>, SymbolResolutionError> {
     match try_resolve_object_type(snapshot, type_manager, label) {
         Ok(Some(object_type)) => Ok(object_type),
@@ -193,18 +189,18 @@ pub(crate) fn resolve_object_type<'a>(
     }
 }
 
-pub(crate) fn try_resolve_object_type<'a>(
+pub(crate) fn try_resolve_object_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<Option<ObjectType<'static>>, ConceptReadError> {
     type_manager.get_object_type(snapshot, label)
 }
 
-pub(crate) fn resolve_entity_type<'a>(
+pub(crate) fn resolve_entity_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<EntityType<'static>, SymbolResolutionError> {
     match try_resolve_entity_type(snapshot, type_manager, label) {
         Ok(Some(entity_type)) => Ok(entity_type),
@@ -213,18 +209,18 @@ pub(crate) fn resolve_entity_type<'a>(
     }
 }
 
-pub(crate) fn try_resolve_entity_type<'a>(
+pub(crate) fn try_resolve_entity_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<Option<EntityType<'static>>, ConceptReadError> {
     type_manager.get_entity_type(snapshot, label)
 }
 
-pub(crate) fn resolve_relation_type<'a>(
+pub(crate) fn resolve_relation_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<RelationType<'static>, SymbolResolutionError> {
     match try_resolve_relation_type(snapshot, type_manager, label) {
         Ok(Some(relation_type)) => Ok(relation_type),
@@ -233,18 +229,18 @@ pub(crate) fn resolve_relation_type<'a>(
     }
 }
 
-pub(crate) fn try_resolve_relation_type<'a>(
+pub(crate) fn try_resolve_relation_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<Option<RelationType<'static>>, ConceptReadError> {
     type_manager.get_relation_type(snapshot, label)
 }
 
-pub(crate) fn resolve_attribute_type<'a>(
+pub(crate) fn resolve_attribute_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<AttributeType<'static>, SymbolResolutionError> {
     match try_resolve_attribute_type(snapshot, type_manager, label) {
         Ok(Some(attribute_type)) => Ok(attribute_type),
@@ -253,18 +249,18 @@ pub(crate) fn resolve_attribute_type<'a>(
     }
 }
 
-pub(crate) fn try_resolve_attribute_type<'a>(
+pub(crate) fn try_resolve_attribute_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<Option<AttributeType<'static>>, ConceptReadError> {
     type_manager.get_attribute_type(snapshot, label)
 }
 
-pub(crate) fn resolve_role_type<'a>(
+pub(crate) fn resolve_role_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<RoleType<'static>, SymbolResolutionError> {
     match try_resolve_role_type(snapshot, type_manager, label) {
         Ok(Some(role_type)) => Ok(role_type),
@@ -273,10 +269,10 @@ pub(crate) fn resolve_role_type<'a>(
     }
 }
 
-pub(crate) fn try_resolve_role_type<'a>(
+pub(crate) fn try_resolve_role_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<Option<RoleType<'static>>, ConceptReadError> {
     type_manager.get_role_type(snapshot, label)
 }
@@ -413,11 +409,11 @@ pub(crate) fn try_resolve_plays(
     object_type.get_plays_role_with_overridden(snapshot, type_manager, role_type.clone())
 }
 
-pub(crate) fn resolve_plays_role_label<'a>(
+pub(crate) fn resolve_plays_role_label(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     object_type: ObjectType<'static>,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<Plays<'static>, SymbolResolutionError> {
     match try_resolve_plays_role_label(snapshot, type_manager, object_type.clone(), label) {
         Ok(Some(plays)) => Ok(plays),
@@ -428,11 +424,11 @@ pub(crate) fn resolve_plays_role_label<'a>(
     }
 }
 
-pub(crate) fn try_resolve_plays_role_label<'a>(
+pub(crate) fn try_resolve_plays_role_label(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     object_type: ObjectType<'static>,
-    label: &Label<'a>,
+    label: &Label<'_>,
 ) -> Result<Option<Plays<'static>>, ConceptReadError> {
     match label.scope {
         Some(_) => {

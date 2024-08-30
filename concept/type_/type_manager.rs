@@ -459,7 +459,7 @@ impl TypeManager {
         name: &str,
     ) -> Result<Option<MaybeOwns<'_, Vec<RoleType<'static>>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(cache.get_roles_by_name(name).map(|roles| MaybeOwns::Borrowed(roles)))
+            Ok(cache.get_roles_by_name(name).map(MaybeOwns::Borrowed))
         } else {
             let roles = TypeReader::get_roles_by_name(snapshot, name.to_owned())?;
             if roles.is_empty() {
@@ -1092,10 +1092,10 @@ impl TypeManager {
         }
     }
 
-    pub fn get_owns_is_distinct<'a>(
+    pub fn get_owns_is_distinct(
         &self,
         snapshot: &impl ReadableSnapshot,
-        owns: Owns<'a>,
+        owns: Owns<'_>,
     ) -> Result<bool, ConceptReadError> {
         let default = match owns.get_ordering(snapshot, self)? {
             Ordering::Ordered => None,
@@ -1105,10 +1105,10 @@ impl TypeManager {
         Ok(Constraint::compute_distinct(owns.get_annotations(snapshot, self)?.keys(), default).is_some())
     }
 
-    pub fn get_relates_is_distinct<'a>(
+    pub fn get_relates_is_distinct(
         &self,
         snapshot: &impl ReadableSnapshot,
-        relates: Relates<'a>,
+        relates: Relates<'_>,
     ) -> Result<bool, ConceptReadError> {
         let default = match relates.role().get_ordering(snapshot, self)? {
             Ordering::Ordered => None,
@@ -1173,7 +1173,7 @@ impl TypeManager {
 
 impl TypeManager {
     pub fn validate(&self, snapshot: &impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
-        let type_errors = CommitTimeValidation::validate(&self, snapshot);
+        let type_errors = CommitTimeValidation::validate(self, snapshot);
         match type_errors {
             Ok(errors) => {
                 if errors.is_empty() {
@@ -1312,7 +1312,7 @@ impl TypeManager {
         let role_type = RoleType::new(type_vertex);
         let relates = Relates::new(relation_type, role_type.clone());
 
-        TypeWriter::storage_put_label(snapshot, role_type.clone(), &label);
+        TypeWriter::storage_put_label(snapshot, role_type.clone(), label);
         TypeWriter::storage_put_type_vertex_property(snapshot, role_type.clone(), Some(ordering));
         TypeWriter::storage_put_edge(snapshot, relates.clone());
 
@@ -1346,7 +1346,7 @@ impl TypeManager {
             Some(error) => {
                 TypeWriter::storage_unput_edge(snapshot, relates);
                 TypeWriter::storage_unput_type_vertex_property::<Ordering>(snapshot, role_type.clone(), Some(ordering));
-                TypeWriter::storage_unput_label(snapshot, role_type.clone(), &label);
+                TypeWriter::storage_unput_label(snapshot, role_type.clone(), label);
                 TypeWriter::storage_unput_vertex(snapshot, role_type);
                 Err(error)
             }
@@ -1558,7 +1558,7 @@ impl TypeManager {
         }
 
         TypeWriter::storage_delete_label(snapshot, type_.clone());
-        TypeWriter::storage_put_label(snapshot, type_, &label);
+        TypeWriter::storage_put_label(snapshot, type_, label);
         Ok(())
     }
 
@@ -1574,7 +1574,7 @@ impl TypeManager {
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_delete_label(snapshot, relation_type.clone());
-        TypeWriter::storage_put_label(snapshot, relation_type.clone(), &label);
+        TypeWriter::storage_put_label(snapshot, relation_type.clone(), label);
 
         let relates = self.get_relation_type_relates_declared(snapshot, relation_type)?;
         for relate in &relates {
@@ -2242,7 +2242,7 @@ impl TypeManager {
                 .get_annotations(snapshot, self)?
                 .keys()
                 .cloned()
-                .map(|annotation| annotation.try_into().unwrap())
+                .map(|annotation| annotation.into())
                 .collect();
             OperationTimeValidation::validate_new_acquired_owns_compatible_with_instances(
                 snapshot,
@@ -2420,7 +2420,7 @@ impl TypeManager {
                 .get_annotations(snapshot, self)?
                 .keys()
                 .cloned()
-                .map(|annotation| annotation.try_into().unwrap())
+                .map(|annotation| annotation.into())
                 .collect();
             OperationTimeValidation::validate_new_acquired_plays_compatible_with_instances(
                 snapshot,
@@ -2562,7 +2562,7 @@ impl TypeManager {
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Abstract;
-        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category)?;
 
         OperationTimeValidation::validate_no_abstract_subtypes_to_unset_abstract_annotation(
             snapshot,
@@ -2655,7 +2655,7 @@ impl TypeManager {
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Independent;
-        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category)?;
         self.unset_annotation(snapshot, type_, annotation_category)
     }
 
@@ -2778,7 +2778,7 @@ impl TypeManager {
                 .get_annotations(snapshot, self)?
                 .keys()
                 .cloned()
-                .map(|annotation| annotation.try_into().unwrap())
+                .map(|annotation| annotation.into())
                 .collect();
             OperationTimeValidation::validate_new_acquired_relates_compatible_with_instances(
                 snapshot,
@@ -2856,7 +2856,7 @@ impl TypeManager {
         capability: CAP,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Distinct;
-        self.validate_unset_capability_annotation_general(snapshot, capability.clone(), annotation_category.clone())?;
+        self.validate_unset_capability_annotation_general(snapshot, capability.clone(), annotation_category)?;
         self.unset_capability_annotation(snapshot, capability, annotation_category)
     }
 
@@ -2894,7 +2894,7 @@ impl TypeManager {
         owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Unique;
-        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category)?;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
@@ -2936,7 +2936,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Key;
 
-        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category)?;
 
         if capability_get_declared_annotation_by_category(snapshot, owns.clone(), annotation_category)?.is_some() {
             let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, owns.clone(), None)?;
@@ -2963,7 +2963,7 @@ impl TypeManager {
         owns: Owns<'static>,
         cardinality: AnnotationCardinality,
     ) -> Result<(), ConceptWriteError> {
-        let annotation = Annotation::Cardinality(cardinality.clone());
+        let annotation = Annotation::Cardinality(cardinality);
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
         self.validate_updated_capability_cardinality(snapshot, owns.clone(), cardinality, false)?;
@@ -2988,7 +2988,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Cardinality;
 
-        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category)?;
 
         if capability_get_declared_annotation_by_category(snapshot, owns.clone(), annotation_category)?.is_some() {
             let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, owns.clone(), None)?;
@@ -3017,7 +3017,7 @@ impl TypeManager {
         plays: Plays<'static>,
         cardinality: AnnotationCardinality,
     ) -> Result<(), ConceptWriteError> {
-        let annotation = Annotation::Cardinality(cardinality.clone());
+        let annotation = Annotation::Cardinality(cardinality);
 
         self.validate_set_capability_annotation_general(snapshot, plays.clone(), annotation.clone())?;
         self.validate_updated_capability_cardinality(snapshot, plays.clone(), cardinality, false)?;
@@ -3042,7 +3042,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Cardinality;
 
-        self.validate_unset_capability_annotation_general(snapshot, plays.clone(), annotation_category.clone())?;
+        self.validate_unset_capability_annotation_general(snapshot, plays.clone(), annotation_category)?;
 
         if capability_get_declared_annotation_by_category(snapshot, plays.clone(), annotation_category)?.is_some() {
             let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, plays.clone(), None)?;
@@ -3069,7 +3069,7 @@ impl TypeManager {
         relates: Relates<'static>,
         cardinality: AnnotationCardinality,
     ) -> Result<(), ConceptWriteError> {
-        let annotation = Annotation::Cardinality(cardinality.clone());
+        let annotation = Annotation::Cardinality(cardinality);
 
         self.validate_set_capability_annotation_general(snapshot, relates.clone(), annotation.clone())?;
         self.validate_updated_capability_cardinality(snapshot, relates.clone(), cardinality, false)?;
@@ -3094,7 +3094,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Cardinality;
 
-        self.validate_unset_capability_annotation_general(snapshot, relates.clone(), annotation_category.clone())?;
+        self.validate_unset_capability_annotation_general(snapshot, relates.clone(), annotation_category)?;
 
         if capability_get_declared_annotation_by_category(snapshot, relates.clone(), annotation_category)?.is_some() {
             let updated_cardinality = self.get_cardinality_inherited_or_default(snapshot, relates.clone(), None)?;
@@ -3171,7 +3171,7 @@ impl TypeManager {
         type_: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Regex;
-        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category)?;
         self.unset_annotation(snapshot, type_, annotation_category)
     }
 
@@ -3232,7 +3232,7 @@ impl TypeManager {
         owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Regex;
-        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category)?;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
@@ -3265,7 +3265,7 @@ impl TypeManager {
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Cascade;
-        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category)?;
         self.unset_annotation(snapshot, type_, annotation_category)
     }
 
@@ -3330,7 +3330,7 @@ impl TypeManager {
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Range;
-        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category)?;
         self.unset_annotation(snapshot, type_, annotation_category)
     }
 
@@ -3395,7 +3395,7 @@ impl TypeManager {
         owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Range;
-        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category)?;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
@@ -3460,7 +3460,7 @@ impl TypeManager {
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Values;
-        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category.clone())?;
+        self.validate_unset_annotation_general(snapshot, type_.clone(), annotation_category)?;
         self.unset_annotation(snapshot, type_, annotation_category)
     }
 
@@ -3525,7 +3525,7 @@ impl TypeManager {
         owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Values;
-        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category.clone())?;
+        self.validate_unset_capability_annotation_general(snapshot, owns.clone(), annotation_category)?;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
@@ -3592,14 +3592,14 @@ impl TypeManager {
         OperationTimeValidation::validate_declared_annotation_is_compatible_with_declared_annotations(
             snapshot,
             type_.clone(),
-            category.clone(),
+            category,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_declared_annotation_is_compatible_with_inherited_annotations(
             snapshot,
             type_.clone(),
-            category.clone(),
+            category,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -3662,14 +3662,14 @@ impl TypeManager {
         OperationTimeValidation::validate_declared_capability_annotation_is_compatible_with_declared_annotations(
             snapshot,
             capability.clone(),
-            category.clone(),
+            category,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_declared_capability_annotation_is_compatible_with_inherited_annotations(
             snapshot,
             capability.clone(),
-            category.clone(),
+            category,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 

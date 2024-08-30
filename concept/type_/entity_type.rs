@@ -38,11 +38,11 @@ use crate::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
         attribute_type::AttributeType,
         object_type::ObjectType,
-        owns::{Owns, OwnsAnnotation},
+        owns::Owns,
         plays::Plays,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
+        Capability, KindAPI, ObjectTypeAPI, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
     },
     ConceptAPI,
 };
@@ -365,9 +365,9 @@ impl TryFrom<Annotation> for EntityTypeAnnotation {
     }
 }
 
-impl Into<Annotation> for EntityTypeAnnotation {
-    fn into(self) -> Annotation {
-        match self {
+impl From<EntityTypeAnnotation> for Annotation {
+    fn from(val: EntityTypeAnnotation) -> Self {
+        match val {
             EntityTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
         }
     }

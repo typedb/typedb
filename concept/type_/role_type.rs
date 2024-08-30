@@ -40,7 +40,6 @@ use crate::{
         object_type::ObjectType,
         plays::Plays,
         relates::Relates,
-        relation_type::RelationType,
         type_manager::TypeManager,
         KindAPI, TypeAPI,
     },
@@ -314,9 +313,9 @@ impl TryFrom<Annotation> for RoleTypeAnnotation {
     }
 }
 
-impl Into<Annotation> for RoleTypeAnnotation {
-    fn into(self) -> Annotation {
-        match self {
+impl From<RoleTypeAnnotation> for Annotation {
+    fn from(anno: RoleTypeAnnotation) -> Self {
+        match anno {
             RoleTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
         }
     }

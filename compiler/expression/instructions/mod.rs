@@ -9,10 +9,7 @@ use std::{
     fmt::{Debug, Display, Formatter},
 };
 
-use binary::BinaryExpression;
-use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
-use load_cast::ImplicitCast;
-use unary::UnaryExpression;
+use encoding::value::value_type::ValueTypeCategory;
 
 use crate::expression::{
     expression_compiler::ExpressionCompilationContext, instructions::op_codes::ExpressionOpCode, ExpressionCompileError,

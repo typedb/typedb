@@ -97,13 +97,10 @@ pub fn relation_type_create_role_impl(
     ordering: Ordering,
     annotation: Option<Annotation>,
 ) -> Result<Relates<'static>, ConceptWriteError> {
-    let cardinality = match annotation {
-        None => None,
-        Some(annotation) => Some(match annotation.into_typedb(None) {
-            TypeDBAnnotation::Cardinality(cardinality) => cardinality.clone(),
-            _ => panic!("Expected cardinality annotation"),
-        }),
-    };
+    let cardinality = annotation.map(|annotation| match annotation.into_typedb(None) {
+        TypeDBAnnotation::Cardinality(cardinality) => cardinality,
+        _ => panic!("Expected cardinality annotation"),
+    });
 
     with_schema_tx!(context, |tx| {
         let relation_type =
@@ -779,18 +776,14 @@ pub async fn relation_role_annotation_categories_contain(
                 .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .iter()
-                .map(|(annotation, _)| {
-                    <RoleTypeAnnotation as Into<TypeDBAnnotation>>::into(annotation.clone()).category()
-                })
+                .map(|(annotation, _)| <RoleTypeAnnotation as Into<TypeDBAnnotation>>::into(*annotation).category())
                 .contains(&parsed_annotation_category);
         } else if RelatesAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
             actual_contains = relates
                 .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .iter()
-                .map(|(annotation, _)| {
-                    <RelatesAnnotation as Into<TypeDBAnnotation>>::into(annotation.clone()).category()
-                })
+                .map(|(annotation, _)| <RelatesAnnotation as Into<TypeDBAnnotation>>::into(*annotation).category())
                 .contains(&parsed_annotation_category);
         } else {
             unimplemented!("Annotation {:?} is not supported by roles and relates", parsed_annotation_category);
@@ -936,7 +929,7 @@ pub async fn relation_role_set_ordering(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
-            ordering.into_typedb().into(),
+            ordering.into_typedb(),
         );
         may_error.check_concept_write_without_read_errors(&res);
     });
@@ -959,7 +952,7 @@ pub async fn relation_role_get_ordering(
             .unwrap()
             .unwrap()
             .role();
-        assert_eq!(role.get_ordering(tx.snapshot.as_ref(), &tx.type_manager).unwrap(), ordering.into_typedb().into());
+        assert_eq!(role.get_ordering(tx.snapshot.as_ref(), &tx.type_manager).unwrap(), ordering.into_typedb());
     });
 }
 

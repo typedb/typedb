@@ -231,7 +231,7 @@ impl Serialize for ValueType {
 impl TypeVertexPropertyEncoding<'static> for ValueType {
     const INFIX: Infix = Infix::PropertyValueType;
 
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+    fn from_value_bytes(value: ByteReference<'_>) -> Self {
         let mut bytes: [u8; ValueTypeBytes::LENGTH] = [0; ValueTypeBytes::LENGTH];
         bytes.copy_from_slice(&value.bytes()[0..ValueTypeBytes::LENGTH]);
         ValueTypeBytes::new(bytes).to_value_type()

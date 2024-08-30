@@ -474,7 +474,7 @@ fn define_value_type_annotations<'a>(
         if let Some(converted) = type_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
-            &attribute_type_label,
+            attribute_type_label,
             attribute_type.clone(),
             annotation.clone(),
         )? {
@@ -559,15 +559,7 @@ fn define_relates_with_annotations(
             }
         };
 
-        define_relates_annotations(
-            snapshot,
-            type_manager,
-            thing_manager,
-            &label,
-            defined.clone(),
-            &capability,
-            is_new,
-        )?;
+        define_relates_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), capability, is_new)?;
     }
     Ok(())
 }
@@ -587,7 +579,7 @@ fn define_relates_annotations<'a>(
         let converted_for_relates = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
-            &relation_label,
+            relation_label,
             relates.clone(),
             annotation.clone(),
         );
@@ -614,7 +606,7 @@ fn define_relates_annotations<'a>(
                 if let Some(converted_for_role) = type_convert_and_validate_annotation_definition_need(
                     snapshot,
                     type_manager,
-                    &relation_label,
+                    relation_label,
                     relates.role(),
                     annotation.clone(),
                 )? {
@@ -651,32 +643,31 @@ fn define_relates_overrides(
 
         let (role_label, _ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
             .map_err(|source| DefineError::DefinitionResolution { source })?;
-        let relates =
-            resolve_relates_declared(snapshot, type_manager, relation_type.clone(), &role_label.name.as_str())
-                .map_err(|source| DefineError::DefinitionResolution { source })?;
+        let relates = resolve_relates_declared(snapshot, type_manager, relation_type.clone(), role_label.name.as_str())
+            .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         define_relates_override(snapshot, type_manager, thing_manager, &label, relates, typeql_relates)?;
     }
     Ok(())
 }
 
-fn define_relates_override<'a>(
+fn define_relates_override(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    relation_label: &Label<'a>,
+    relation_label: &Label<'_>,
     relates: Relates<'static>,
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), DefineError> {
     if let Some(overridden_label) = &typeql_relates.overridden {
         let overridden_relates =
-            resolve_relates(snapshot, type_manager, relates.relation(), &overridden_label.ident.as_str())
+            resolve_relates(snapshot, type_manager, relates.relation(), overridden_label.ident.as_str())
                 .map_err(|source| DefineError::DefinitionResolution { source })?;
 
         let need_define = check_can_and_need_define_override(
             snapshot,
             type_manager,
-            &relation_label,
+            relation_label,
             relates.clone(),
             overridden_relates.clone(),
         )?;
@@ -739,7 +730,7 @@ fn define_owns_with_annotations(
                 .map_err(|source| DefineError::SetOwnsOrdering { owns: owns.clone(), source })?;
         }
 
-        define_owns_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), &capability)?;
+        define_owns_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), capability)?;
     }
     Ok(())
 }
@@ -758,7 +749,7 @@ fn define_owns_annotations<'a>(
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
-            &owner_label,
+            owner_label,
             owns.clone(),
             annotation.clone(),
         )? {
@@ -798,11 +789,11 @@ fn define_owns_overrides(
     Ok(())
 }
 
-fn define_owns_override<'a>(
+fn define_owns_override(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    owner_label: &Label<'a>,
+    owner_label: &Label<'_>,
     owns: Owns<'static>,
     typeql_owns: &TypeQLOwns,
 ) -> Result<(), DefineError> {
@@ -816,7 +807,7 @@ fn define_owns_override<'a>(
         let need_define = check_can_and_need_define_override(
             snapshot,
             type_manager,
-            &owner_label,
+            owner_label,
             owns.clone(),
             overridden_owns.clone(),
         )?;
@@ -859,7 +850,7 @@ fn define_plays_with_annotations(
             DefinableStatus::ExistsDifferent(_) => unreachable!("Plays cannot differ"),
         };
 
-        define_plays_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), &capability)?;
+        define_plays_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), capability)?;
     }
     Ok(())
 }
@@ -878,7 +869,7 @@ fn define_plays_annotations<'a>(
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
-            &player_label,
+            player_label,
             plays.clone(),
             annotation.clone(),
         )? {
@@ -918,11 +909,11 @@ fn define_plays_overrides(
     Ok(())
 }
 
-fn define_plays_override<'a>(
+fn define_plays_override(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    player_label: &Label<'a>,
+    player_label: &Label<'_>,
     plays: Plays<'static>,
     typeql_plays: &TypeQLPlays,
 ) -> Result<(), DefineError> {
@@ -935,7 +926,7 @@ fn define_plays_override<'a>(
         let need_define = check_can_and_need_define_override(
             snapshot,
             type_manager,
-            &player_label,
+            player_label,
             plays.clone(),
             overridden_plays.clone(),
         )?;

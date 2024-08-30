@@ -163,7 +163,7 @@ mod typedb_database {
         }
 
         fn name(&self) -> &'static str {
-            &TypeDBSnapshot::KEYSPACE_NAMES[self.id as usize]
+            TypeDBSnapshot::KEYSPACE_NAMES[self.id as usize]
         }
     }
 }

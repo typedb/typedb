@@ -319,7 +319,7 @@ impl<'a> StructIndexEntry<'a> {
         Ok(())
     }
 
-    fn is_string_inlineable<'b, const INLINE_SIZE: usize>(string_bytes: StringBytes<'b, INLINE_SIZE>) -> bool {
+    fn is_string_inlineable<const INLINE_SIZE: usize>(string_bytes: StringBytes<'_, INLINE_SIZE>) -> bool {
         string_bytes.length() < Self::STRING_FIELD_HASHED_PREFIX_LENGTH + Self::STRING_FIELD_HASHID_LENGTH
     }
 }

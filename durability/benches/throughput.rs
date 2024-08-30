@@ -21,7 +21,7 @@ impl TestRecord {
     const RECORD_NAME: &'static str = "TEST";
 
     pub fn new(bytes: Vec<u8>) -> Self {
-        Self { bytes: bytes }
+        Self { bytes }
     }
 
     pub fn bytes(&self) -> &[u8] {

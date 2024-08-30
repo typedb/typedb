@@ -23,8 +23,7 @@ use crate::{
     },
     type_::{
         annotation::Annotation, attribute_type::AttributeType, object_type::ObjectType, owns::Owns,
-        relation_type::RelationType, role_type::RoleType, Capability, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI,
-        TypeAPI,
+        relation_type::RelationType, role_type::RoleType, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 
@@ -128,7 +127,7 @@ impl OperationTimeValidation {
                     Some((player, count)) => Err(DataValidationError::PlayerViolatesDistinctRelatesConstraint {
                         role_type,
                         player: player.clone().clone().into_owned(),
-                        count: count.clone(),
+                        count: *count,
                     }),
                     None => Ok(()),
                 }
@@ -153,7 +152,7 @@ impl OperationTimeValidation {
                     Some((attribute, count)) => Err(DataValidationError::AttributeViolatesDistinctOwnsConstraint {
                         owns,
                         attribute: attribute.clone().clone().into_owned(),
-                        count: count.clone(),
+                        count: *count,
                     }),
                     None => Ok(()),
                 }
@@ -175,7 +174,7 @@ impl OperationTimeValidation {
         match regex {
             Some(regex) => match &value {
                 Value::String(string_value) => {
-                    if !regex.value_valid(&string_value) {
+                    if !regex.value_valid(string_value) {
                         Err(DataValidationError::AttributeViolatesRegexConstraint {
                             attribute_type,
                             value: value.into_owned(),
@@ -358,7 +357,7 @@ impl OperationTimeValidation {
                         let overrides = subtype
                             .get_owns_overrides(snapshot, thing_manager.type_manager())
                             .map_err(DataValidationError::ConceptRead)?;
-                        let mut overridings = overrides.iter().filter_map(|(overriding, overridden)| {
+                        let overridings = overrides.iter().filter_map(|(overriding, overridden)| {
                             if &current_owns == overridden {
                                 Some(overriding.clone())
                             } else {
@@ -367,7 +366,7 @@ impl OperationTimeValidation {
                         });
 
                         if overridings.clone().peekable().peek().is_some() {
-                            while let Some(overriding) = overridings.next() {
+                            for overriding in overridings {
                                 queue.push_front((subtype.clone(), overriding));
                             }
                         } else {

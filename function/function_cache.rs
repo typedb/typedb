@@ -67,7 +67,7 @@ impl FunctionCache {
 
         // Run type-inference
         let unindexed_cache =
-            infer_types_for_functions(ir, snapshot, &type_manager, &IndexedAnnotatedFunctions::empty())
+            infer_types_for_functions(ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
                 .map_err(|source| FunctionError::TypeInference { source })?;
 
         // Convert them to our cache
@@ -81,10 +81,7 @@ impl FunctionCache {
             (0..required_cache_count).map(|_| None).collect::<Box<[Option<FunctionAnnotations>]>>();
 
         let (boxed_translated, boxed_annotations) = unindexed_cache.into_parts();
-        let zipped = zip(
-            schema_functions.into_iter(),
-            zip(boxed_translated.into_vec().into_iter(), boxed_annotations.into_vec().into_iter()),
-        );
+        let zipped = zip(schema_functions, zip(boxed_translated.into_vec(), boxed_annotations.into_vec()));
         for (schema_function, (translated_function, annotations)) in zipped {
             let cache_index = schema_function.function_id.as_usize();
             schema_functions_index[cache_index] = Some(schema_function);

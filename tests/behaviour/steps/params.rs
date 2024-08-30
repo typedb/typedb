@@ -60,12 +60,9 @@ impl MayError {
                 ConceptWriteError::ConceptRead { source } => {
                     panic!("Expected logic error, got ConceptRead {:?}", source)
                 }
-                ConceptWriteError::SchemaValidation { source } => match source {
-                    SchemaValidationError::ConceptRead(source) => {
-                        panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", source)
-                    }
-                    _ => {}
-                },
+                ConceptWriteError::SchemaValidation { source: SchemaValidationError::ConceptRead(source) } => {
+                    panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", source)
+                }
                 _ => {}
             },
         };
@@ -539,11 +536,11 @@ impl Value {
 
     fn parse_date_time_and_remainder(value: &str) -> (NaiveDateTime, &str) {
         for format in Self::DATETIME_FORMATS {
-            if let Ok((datetime, remainder)) = NaiveDateTime::parse_and_remainder(&value, format) {
+            if let Ok((datetime, remainder)) = NaiveDateTime::parse_and_remainder(value, format) {
                 return (datetime, remainder.trim());
             }
         }
-        if let Ok((date, remainder)) = NaiveDate::parse_and_remainder(&value, Self::DATE_FORMAT) {
+        if let Ok((date, remainder)) = NaiveDate::parse_and_remainder(value, Self::DATE_FORMAT) {
             return (date.and_time(NaiveTime::default()), remainder.trim());
         }
         panic!(

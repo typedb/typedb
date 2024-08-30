@@ -47,16 +47,16 @@ fn compile_expression_via_match(
 ) -> Result<(HashMap<String, Variable>, CompiledExpression), PatternDefitionOrExpressionCompileError> {
     let query = format!("match $x = {}; select $x;", s);
     let mut translation_context = TranslationContext::new();
-    if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap() {
+    if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap() {
         let block =
-            translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &match_)?.finish();
+            translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish();
         let variable_mapping = variable_types
             .keys()
-            .map(|name| ((*name).to_owned(), translation_context.visible_variables.get(*name).unwrap().clone()))
+            .map(|name| ((*name).to_owned(), *translation_context.visible_variables.get(*name).unwrap()))
             .collect::<HashMap<_, _>>();
         let variable_types_mapped = variable_types
             .into_iter()
-            .map(|(name, type_)| (translation_context.visible_variables.get(name).unwrap().clone(), type_))
+            .map(|(name, type_)| (*translation_context.visible_variables.get(name).unwrap(), type_))
             .collect::<HashMap<_, _>>();
 
         let expression_binding = match &block.conjunction().constraints()[0] {
@@ -111,7 +111,7 @@ fn test_basic() {
             ]),
         )
         .unwrap();
-        let (a, b) = ["a", "b"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
+        let [a, b] = ["a", "b"].map(|name| *vars.get(name).unwrap());
 
         let inputs =
             HashMap::from([(a, ExpressionValue::Single(Value::Long(2))), (b, ExpressionValue::Single(Value::Long(5)))]);
@@ -260,7 +260,7 @@ fn list_ops() {
             HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))]),
         )
         .unwrap();
-        let (y,) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
+        let y = ["y"].into_iter().map(|name| *vars.get(name).unwrap()).exactly_one().unwrap();
 
         let inputs =
             HashMap::from([(y, ExpressionValue::List(vec![Value::Long(56), Value::Long(78), Value::Long(90)]))]);
@@ -274,11 +274,11 @@ fn list_ops() {
             HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))]),
         )
         .unwrap();
-        let (y,) = ["y"].into_iter().map(|name| vars.get(name).unwrap().clone()).collect_tuple().unwrap();
+        let y = ["y"].into_iter().map(|name| *vars.get(name).unwrap()).exactly_one().unwrap();
 
         let inputs = HashMap::from([(
             y,
-            ExpressionValue::List(vec![Value::Long(09), Value::Long(87), Value::Long(65), Value::Long(43)]),
+            ExpressionValue::List(vec![Value::Long(9), Value::Long(87), Value::Long(65), Value::Long(43)]),
         )]);
         let result = ExpressionExecutor::evaluate(expr, inputs).unwrap();
         assert_eq!(as_list!(result), vec![Value::Long(87), Value::Long(65)]);

@@ -22,7 +22,7 @@ use crate::{
 pub trait Indexable {
     type KeyType<'a>;
     const INDEX_PREFIX: Prefix;
-    fn key_type_to_identifier<'b>(key: Self::KeyType<'b>) -> StringBytes<'b, BUFFER_KEY_INLINE>;
+    fn key_type_to_identifier(key: Self::KeyType<'_>) -> StringBytes<'_, BUFFER_KEY_INLINE>;
 }
 
 pub struct IdentifierIndex<'a, T: Indexable> {
@@ -90,11 +90,11 @@ impl<'a> Indexable for TypeVertex<'a> {
     type KeyType<'b> = &'b Label<'b>;
     const INDEX_PREFIX: Prefix = Prefix::IndexLabelToType;
 
-    fn key_type_to_identifier<'b>(key: Self::KeyType<'b>) -> StringBytes<'b, BUFFER_KEY_INLINE> {
+    fn key_type_to_identifier(key: Self::KeyType<'_>) -> StringBytes<'_, BUFFER_KEY_INLINE> {
         if let Some(scope) = &key.scope {
             let mut vec = Vec::with_capacity(key.name.length() + 1 + scope.length());
             vec.extend_from_slice(key.name.bytes().bytes());
-            vec.push(':' as u8);
+            vec.push(b':');
             vec.extend_from_slice(scope.bytes().bytes());
             StringBytes::new(Bytes::copy(vec.as_slice()))
         } else {
@@ -108,7 +108,7 @@ impl Indexable for StructDefinition {
     type KeyType<'b> = &'b str;
     const INDEX_PREFIX: Prefix = Prefix::IndexNameToDefinitionStruct;
 
-    fn key_type_to_identifier<'b>(key: Self::KeyType<'b>) -> StringBytes<'b, BUFFER_KEY_INLINE> {
+    fn key_type_to_identifier(key: Self::KeyType<'_>) -> StringBytes<'_, BUFFER_KEY_INLINE> {
         StringBytes::build_owned(key)
     }
 }
@@ -119,7 +119,7 @@ impl<'a> Indexable for FunctionDefinition<'a> {
 
     const INDEX_PREFIX: Prefix = Prefix::IndexNameToDefinitionFunction;
 
-    fn key_type_to_identifier<'b>(key: Self::KeyType<'b>) -> StringBytes<'b, BUFFER_KEY_INLINE> {
+    fn key_type_to_identifier(key: Self::KeyType<'_>) -> StringBytes<'_, BUFFER_KEY_INLINE> {
         StringBytes::build_owned(key)
     }
 }

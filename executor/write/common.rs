@@ -8,23 +8,23 @@ use answer::{variable::Variable, variable_value::VariableValue};
 use compiler::insert::{ThingSource, TypeSource, ValueSource, VariableSource};
 use encoding::value::value::Value;
 
-use crate::{batch::Row, VariablePosition};
+use crate::batch::Row;
 
 fn get_type<'a>(input: &'a Row<'a>, source: &'a TypeSource) -> &'a answer::Type {
     match source {
-        TypeSource::InputVariable(position) => input.get(position.clone()).as_type(),
+        TypeSource::InputVariable(position) => input.get(*position).as_type(),
         TypeSource::Constant(type_) => type_,
     }
 }
 
 fn get_thing<'a>(input: &'a Row<'a>, source: &'a ThingSource) -> &'a answer::Thing<'static> {
     let ThingSource(position) = source;
-    input.get(position.clone()).as_thing()
+    input.get(*position).as_thing()
 }
 
 fn get_value<'a>(input: &'a Row<'a>, source: &'a ValueSource) -> &'a Value<'static> {
     match source {
-        ValueSource::InputVariable(position) => input.get(position.clone()).as_value(),
+        ValueSource::InputVariable(position) => input.get(*position).as_value(),
         ValueSource::ValueConstant(constant) => constant,
     }
 }

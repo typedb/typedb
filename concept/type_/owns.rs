@@ -184,8 +184,8 @@ impl<'a> Owns<'a> {
         Ok(())
     }
 
-    pub fn get_ordering<'this>(
-        &'this self,
+    pub fn get_ordering(
+        &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Ordering, ConceptReadError> {
@@ -312,8 +312,8 @@ impl<'a> Capability<'a> for Owns<'a> {
         type_manager.get_owns_annotations(snapshot, self.clone().into_owned())
     }
 
-    fn get_default_cardinality<'this>(
-        &'this self,
+    fn get_default_cardinality(
+        &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
@@ -353,9 +353,9 @@ impl TryFrom<Annotation> for OwnsAnnotation {
     }
 }
 
-impl Into<Annotation> for OwnsAnnotation {
-    fn into(self) -> Annotation {
-        match self {
+impl From<OwnsAnnotation> for Annotation {
+    fn from(anno: OwnsAnnotation) -> Self {
+        match anno {
             OwnsAnnotation::Distinct(annotation) => Annotation::Distinct(annotation),
             OwnsAnnotation::Unique(annotation) => Annotation::Unique(annotation),
             OwnsAnnotation::Key(annotation) => Annotation::Key(annotation),

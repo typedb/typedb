@@ -14,10 +14,7 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::{Batch, ImmutableRow},
-    function_executor::FunctionExecutor,
-    pattern_executor::PatternExecutor,
-    VariablePosition,
+    batch::ImmutableRow, function_executor::FunctionExecutor, pattern_executor::PatternExecutor, VariablePosition,
 };
 
 pub struct ProgramExecutor {

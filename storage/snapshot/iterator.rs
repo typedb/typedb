@@ -51,7 +51,9 @@ impl SnapshotRangeIterator {
     pub fn seek(&mut self, key: StorageKeyReference<'_>) {
         if let Some(Ok((peek, _))) = self.peek() {
             if peek < key {
-                self.buffered_iterator.as_mut().map(|mut iter| iter.seek(key.bytes()));
+                if let Some(iter) = self.buffered_iterator.as_mut() {
+                    iter.seek(key.bytes())
+                }
                 self.storage_iterator.seek(key.bytes());
                 self.find_next_state()
             }
@@ -73,8 +75,7 @@ impl SnapshotRangeIterator {
                 break;
             };
 
-            let Some(Some((buffered_key, buffered_write))) =
-                self.buffered_iterator.as_mut().map(|mut iter| iter.peek())
+            let Some(Some((buffered_key, buffered_write))) = self.buffered_iterator.as_mut().map(|iter| iter.peek())
             else {
                 self.ready_item_source = Some(ReadyItemSource::Storage);
                 break;
@@ -85,7 +86,7 @@ impl SnapshotRangeIterator {
                 Ordering::Less => {
                     if buffered_write.is_delete() {
                         // SKIP buffered
-                        self.buffered_iterator.as_mut().map(|mut iter| iter.next());
+                        self.buffered_iterator.as_mut().map(|iter| iter.next());
                     } else {
                         // ACCEPT buffered
                         assert!(self.buffered_iterator.is_some());
@@ -96,7 +97,7 @@ impl SnapshotRangeIterator {
                     if buffered_write.is_delete() {
                         // SKIP both
                         self.storage_iterator.next();
-                        self.buffered_iterator.as_mut().map(|mut iter| iter.next());
+                        self.buffered_iterator.as_mut().map(|iter| iter.next());
                     } else {
                         // ACCEPT both
                         assert!(self.buffered_iterator.is_some());
@@ -117,11 +118,11 @@ impl SnapshotRangeIterator {
             }
             Some(ReadyItemSource::Buffered) => {
                 assert!(self.buffered_iterator.is_some());
-                self.buffered_iterator.as_mut().map(|mut iter| iter.next());
+                self.buffered_iterator.as_mut().map(|iter| iter.next());
             }
             Some(ReadyItemSource::Both) => {
                 assert!(self.buffered_iterator.is_some());
-                self.buffered_iterator.as_mut().map(|mut iter| iter.next());
+                self.buffered_iterator.as_mut().map(|iter| iter.next());
                 self.storage_iterator.next();
             }
             None => (),

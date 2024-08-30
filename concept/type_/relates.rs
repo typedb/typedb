@@ -20,11 +20,10 @@ use crate::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationError, DefaultFrom,
         },
-        plays::Plays,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, Ordering, TypeAPI,
+        Capability, TypeAPI,
     },
 };
 
@@ -196,8 +195,8 @@ impl<'a> Capability<'a> for Relates<'a> {
         type_manager.get_relates_annotations(snapshot, self.clone().into_owned())
     }
 
-    fn get_default_cardinality<'this>(
-        &'this self,
+    fn get_default_cardinality(
+        &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
@@ -232,9 +231,9 @@ impl TryFrom<Annotation> for RelatesAnnotation {
     }
 }
 
-impl Into<Annotation> for RelatesAnnotation {
-    fn into(self) -> Annotation {
-        match self {
+impl From<RelatesAnnotation> for Annotation {
+    fn from(anno: RelatesAnnotation) -> Self {
+        match anno {
             RelatesAnnotation::Distinct(annotation) => Annotation::Distinct(annotation),
             RelatesAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
         }

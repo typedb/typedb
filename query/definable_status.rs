@@ -190,10 +190,10 @@ pub(crate) fn get_override_status<'a, CAP: Capability<'a>>(
     })
 }
 
-pub(crate) fn get_value_type_status<'a>(
+pub(crate) fn get_value_type_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    attribute_type: AttributeType<'a>,
+    attribute_type: AttributeType<'_>,
     new_value_type: ValueType,
 ) -> Result<DefinableStatus<ValueType>, ConceptReadError> {
     let existing_value_type_opt = attribute_type.get_value_type_declared(snapshot, type_manager)?;
@@ -206,11 +206,11 @@ pub(crate) fn get_value_type_status<'a>(
     })
 }
 
-pub(crate) fn get_relates_status<'a>(
+pub(crate) fn get_relates_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     relation_type: RelationType<'static>,
-    role_label: &Label<'a>,
+    role_label: &Label<'_>,
     new_ordering: Ordering,
 ) -> Result<DefinableStatus<(Relates<'static>, Ordering)>, ConceptReadError> {
     let existing_relates_opt =

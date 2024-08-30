@@ -24,11 +24,11 @@ pub struct InstanceIterator<T: Hkt> {
 
 impl<T: Hkt> InstanceIterator<T> {
     pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator) -> Self {
-        Self { snapshot_iterator: Some(snapshot_iterator), _ph: PhantomData::default() }
+        Self { snapshot_iterator: Some(snapshot_iterator), _ph: PhantomData }
     }
 
     pub(crate) fn empty() -> Self {
-        Self { snapshot_iterator: None, _ph: PhantomData::default() }
+        Self { snapshot_iterator: None, _ph: PhantomData }
     }
 }
 

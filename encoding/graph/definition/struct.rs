@@ -80,7 +80,7 @@ impl StructDefinition {
 }
 
 impl DefinitionValueEncoding for StructDefinition {
-    fn from_bytes<'b>(value: ByteReference<'b>) -> Self {
+    fn from_bytes(value: ByteReference<'_>) -> Self {
         bincode::deserialize(value.bytes()).unwrap()
     }
 

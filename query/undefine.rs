@@ -6,43 +6,9 @@
 
 use std::{error::Error, fmt};
 
-use concept::{
-    error::{ConceptReadError, ConceptWriteError},
-    thing::thing_manager::ThingManager,
-    type_::{
-        annotation::{Annotation, AnnotationError},
-        attribute_type::AttributeType,
-        owns::Owns,
-        plays::Plays,
-        relates::Relates,
-        type_manager::TypeManager,
-        Ordering,
-    },
-};
-use encoding::{
-    graph::type_::Kind,
-    value::{label::Label, value_type::ValueType},
-};
-use ir::LiteralParseError;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use typeql::{
-    query::schema::Undefine,
-    schema::{
-        definable::{
-            struct_::Field,
-            type_::{
-                capability::{Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates},
-                Capability, CapabilityBase,
-            },
-            Type,
-        },
-        undefinable::{Struct, Undefinable},
-    },
-    type_::Optional,
-    ScopedLabel, TypeRef, TypeRefAny,
-};
-
-use crate::definable_resolution::{filter_variants, resolve_value_type, try_unwrap, SymbolResolutionError};
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use storage::snapshot::WritableSnapshot;
+use typeql::query::schema::Undefine;
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,

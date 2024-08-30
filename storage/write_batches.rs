@@ -31,7 +31,7 @@ impl WriteBatches {
             let writes = buffer.writes();
             if !writes.is_empty() {
                 let write_batch = write_batches[index].insert(WriteBatch::default());
-                for (key, write) in &*writes {
+                for (key, write) in writes {
                     match write {
                         Write::Insert { value } => write_batch
                             .put(MVCCKey::build(key.bytes(), seq, StorageOperation::Insert).bytes(), value.bytes()),

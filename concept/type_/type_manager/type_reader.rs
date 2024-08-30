@@ -85,7 +85,7 @@ impl TypeReader {
                 Ok(role_type) => Some(role_type),
             })
             .map_err(|source| ConceptReadError::SnapshotIterate { source })?;
-        Ok(vec.into_iter().filter_map(|x| x).collect())
+        Ok(vec.into_iter().flatten().collect())
     }
 
     pub(crate) fn get_struct_definition_key(

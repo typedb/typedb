@@ -299,7 +299,7 @@ pub async fn type_annotation_categories_contain(
                     .unwrap()
                     .iter()
                     .map(|(annotation, _)| {
-                        <EntityTypeAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
+                        <EntityTypeAnnotation as Into<annotation::Annotation>>::into(*annotation).category()
                     })
                     .contains(&annotation_category.into_typedb());
                 assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -315,7 +315,7 @@ pub async fn type_annotation_categories_contain(
                     .unwrap()
                     .iter()
                     .map(|(annotation, _)| {
-                        <RelationTypeAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
+                        <RelationTypeAnnotation as Into<annotation::Annotation>>::into(*annotation).category()
                     })
                     .contains(&annotation_category.into_typedb());
                 assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -679,7 +679,7 @@ pub async fn get_types_contain(
                 .collect_vec(),
         }
     });
-    contains.check(&expected_labels, &type_labels)
+    contains.check(&expected_labels, type_labels)
 }
 
 #[apply(generic_step)]

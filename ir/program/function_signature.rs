@@ -99,15 +99,15 @@ impl FunctionIDAPI for usize {
     }
 }
 
-impl Into<FunctionID> for usize {
-    fn into(self) -> FunctionID {
-        FunctionID::Preamble(self)
+impl From<usize> for FunctionID {
+    fn from(val: usize) -> Self {
+        FunctionID::Preamble(val)
     }
 }
 
-impl Into<FunctionID> for DefinitionKey<'static> {
-    fn into(self) -> FunctionID {
-        FunctionID::Schema(self)
+impl From<DefinitionKey<'static>> for FunctionID {
+    fn from(val: DefinitionKey<'static>) -> Self {
+        FunctionID::Schema(val)
     }
 }
 
@@ -124,7 +124,7 @@ impl HashMapFunctionSignatureIndex {
     pub fn build<'func>(buffered_typeql: impl Iterator<Item = (FunctionID, &'func typeql::Function)>) -> Self {
         let index = buffered_typeql
             .map(|(function_id, function)| {
-                (function.signature.ident.as_str().to_owned(), build_signature(function_id.into(), &function))
+                (function.signature.ident.as_str().to_owned(), build_signature(function_id, function))
             })
             .collect();
         Self { index }

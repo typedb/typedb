@@ -5,7 +5,7 @@
  */
 
 use ir::{
-    program::{block::BlockContext, function_signature::HashMapFunctionSignatureIndex},
+    program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, TranslationContext},
     PatternDefinitionError,
 };

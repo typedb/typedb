@@ -13,7 +13,7 @@ use answer::{variable::Variable, Type as TypeAnnotation, Type};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint},
-    program::block::{BlockContext, FunctionalBlock, VariableRegistry},
+    program::block::{FunctionalBlock, VariableRegistry},
 };
 use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
@@ -288,10 +288,7 @@ pub mod tests {
     use answer::{variable::Variable, Type as TypeAnnotation};
     use ir::{
         pattern::constraint::{Constraint, IsaKind},
-        program::{
-            block::{BlockContext, FunctionalBlock},
-            function_signature::HashMapFunctionSignatureIndex,
-        },
+        program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
         translation::TranslationContext,
     };
     use itertools::Itertools;
@@ -668,7 +665,7 @@ pub mod tests {
 
             let conjunction = block.conjunction();
             let disj = conjunction.nested_patterns().first().unwrap().as_disjunction().unwrap();
-            let [b1, b2] = &disj.conjunctions()[..] else { unreachable!() };
+            let [b1, b2] = disj.conjunctions() else { unreachable!() };
             let b1_isa = &b1.constraints()[0];
             let b2_isa = &b2.constraints()[0];
             let expected_nested_graphs = vec![
@@ -706,7 +703,7 @@ pub mod tests {
                 },
             ];
             let expected_graph = TypeInferenceGraph {
-                conjunction: &conjunction,
+                conjunction: conjunction,
                 vertices: BTreeMap::from([
                     (var_animal, BTreeSet::from([type_cat.clone(), type_dog.clone()])),
                     (var_name, BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
@@ -780,7 +777,7 @@ pub mod tests {
             .unwrap();
 
             let expected_tig = TypeInferenceGraph {
-                conjunction: &conjunction,
+                conjunction: conjunction,
                 vertices: BTreeMap::from([
                     (var_animal, BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()])),
                     (var_name, BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()])),
@@ -869,7 +866,7 @@ pub mod tests {
             .unwrap();
 
             let expected_graph = TypeInferenceGraph {
-                conjunction: &conjunction,
+                conjunction: conjunction,
                 vertices: BTreeMap::from([
                     (var_has_fear, BTreeSet::from([type_cat.clone()])),
                     (var_is_feared, BTreeSet::from([type_dog.clone()])),

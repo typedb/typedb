@@ -19,7 +19,7 @@ impl StructDefinitionCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<StructDefinitionCache>]> {
         let definitions = TypeReader::get_struct_definitions_all(snapshot).unwrap();
 
-        let max_definition_id = definitions.iter().map(|(d, _)| d.definition_id().as_uint()).max().unwrap_or(0);
+        let max_definition_id = definitions.keys().map(|d| d.definition_id().as_uint()).max().unwrap_or(0);
         let mut caches = (0..=max_definition_id).map(|_| None).collect::<Box<[_]>>();
         for (key, definition) in definitions.into_iter() {
             let cache = StructDefinitionCache { definition_key: key.clone(), definition };

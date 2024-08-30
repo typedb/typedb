@@ -270,7 +270,7 @@ impl<'a> RelationType<'a> {
         let label = Label::build_scoped(name, self.get_label(snapshot, type_manager).unwrap().name().as_str());
         let role_type = type_manager.create_role_type(
             snapshot,
-            &thing_manager,
+            thing_manager,
             &label,
             self.clone().into_owned(),
             ordering,
@@ -387,7 +387,7 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
     ) -> Result<Owns<'static>, ConceptWriteError> {
         type_manager.set_owns(
             snapshot,
-            &thing_manager,
+            thing_manager,
             self.clone().into_owned_object_type(),
             attribute_type.clone(),
         )?;
@@ -495,9 +495,9 @@ impl TryFrom<Annotation> for RelationTypeAnnotation {
     }
 }
 
-impl Into<Annotation> for RelationTypeAnnotation {
-    fn into(self) -> Annotation {
-        match self {
+impl From<RelationTypeAnnotation> for Annotation {
+    fn from(anno: RelationTypeAnnotation) -> Self {
+        match anno {
             RelationTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
             RelationTypeAnnotation::Cascade(annotation) => Annotation::Cascade(annotation),
         }

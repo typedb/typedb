@@ -6,21 +6,15 @@
 
 use std::collections::{HashMap, HashSet};
 
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::WritableSnapshot;
 
-use crate::{
-    error::ConceptReadError,
-    thing::thing_manager::ThingManager,
-    type_::{
-        annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
-            AnnotationDistinct, AnnotationError, AnnotationIndependent, AnnotationKey, AnnotationRange,
-            AnnotationRegex, AnnotationUnique, AnnotationValues, DefaultFrom,
-        },
-        owns::Owns,
-        type_manager::{type_reader::TypeReader, TypeManager},
-        Capability,
+use crate::type_::{
+    annotation::{
+        Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
+        AnnotationDistinct, AnnotationError, AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex,
+        AnnotationUnique, AnnotationValues,
     },
+    Capability,
 };
 
 pub struct Constraint {}
@@ -64,7 +58,7 @@ impl Constraint {
                 _ => None,
             })
             .next();
-        return if distinct.is_some() { distinct } else { default };
+        distinct.or(default)
     }
 
     pub fn compute_unique<'a, A: Into<Annotation> + Clone + 'a>(
@@ -93,7 +87,7 @@ impl Constraint {
                 _ => None,
             })
             .next();
-        return if cardinality.is_some() { cardinality } else { default };
+        cardinality.or(default)
     }
 
     compute_constraint_one_to_one_annotation!(compute_regex, Annotation::Regex, AnnotationRegex);
@@ -111,7 +105,7 @@ impl Constraint {
             let modes = Self::inherited_constraint_validation_mode(annotation.category());
 
             for mode in modes {
-                map.entry(mode).or_insert_with(HashSet::default).insert(annotation.clone());
+                map.entry(mode).or_default().insert(annotation.clone());
             }
         }
 

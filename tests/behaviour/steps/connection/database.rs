@@ -5,7 +5,6 @@
  */
 
 use cucumber::gherkin::Step;
-use futures::future::join_all;
 use macro_rules_attribute::apply;
 
 use crate::{generic_step, util, Context};

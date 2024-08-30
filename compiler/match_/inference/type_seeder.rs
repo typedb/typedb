@@ -30,7 +30,7 @@ use ir::{
         Scope, ScopeId,
     },
     program::{
-        block::{BlockContext, ScopeContext, VariableRegistry},
+        block::{ScopeContext, VariableRegistry},
         function::Function,
         function_signature::FunctionID,
     },
@@ -96,11 +96,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         // Pre-seed with upstream variable annotations.
         for (variable, _) in context.get_variable_scopes() {
             if let Some(annotations) = upstream_annotations.get(variable) {
-                Self::add_or_intersect(
-                    &mut tig.vertices,
-                    variable.clone(),
-                    Cow::Owned(annotations.iter().map(|x| x.clone()).collect()),
-                );
+                Self::add_or_intersect(&mut tig.vertices, *variable, Cow::Owned(annotations.iter().cloned().collect()));
             }
         }
         // Advanced TODO: Copying upstream binary constraints as schema constraints.
@@ -212,7 +208,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         tig: &mut TypeInferenceGraph<'_>,
     ) -> Result<(), TypeInferenceError> {
         // Get vertex annotations from Type & Function returns
-        let TypeInferenceGraph { conjunction, vertices, .. } = tig;
+        let TypeInferenceGraph { vertices, .. } = tig;
         for constraint in tig.conjunction.constraints() {
             match constraint {
                 Constraint::Label(c) => c.apply(self, vertices)?,
@@ -1254,7 +1250,7 @@ pub mod tests {
     use encoding::value::{label::Label, value_type::ValueType};
     use ir::{
         pattern::constraint::{Comparator, IsaKind},
-        program::block::{BlockContext, FunctionalBlock},
+        program::block::FunctionalBlock,
         translation::TranslationContext,
     };
     use storage::snapshot::CommittableSnapshot;

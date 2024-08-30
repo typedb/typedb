@@ -48,7 +48,7 @@ pub fn compile(
                 let player = get_thing_source(input_variables, role_player.player())?;
                 let role_variable = role_player.role_type();
                 let role = match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
-                    (Some(input), None) => TypeSource::InputVariable(input.clone()),
+                    (Some(input), None) => TypeSource::InputVariable(*input),
                     (None, Some(type_)) => TypeSource::Constant(type_.clone()),
                     (None, None) => {
                         let annotations = type_annotations.variable_annotations_of(role_variable).unwrap();
@@ -56,7 +56,7 @@ pub fn compile(
                             TypeSource::Constant(annotations.iter().find(|_| true).unwrap().clone())
                         } else {
                             return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType {
-                                variable: role_variable.clone(),
+                                variable: role_variable,
                             })?;
                         }
                     }
