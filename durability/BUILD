@@ -28,6 +28,7 @@ rust_library(
     deps = [
         "//common/logger",
         "//common/primitive",
+        "//resource",
 
         "@crates//:itertools",
         "@crates//:serde",

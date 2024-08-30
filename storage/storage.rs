@@ -15,6 +15,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc},
 };
+use std::time::Duration;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use isolation_manager::IsolationConflict;
@@ -215,6 +216,8 @@ impl<Durability> MVCCStorage<Durability> {
             .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.to_string(), source: error })?;
 
+        let sync_notifier = self.durability_client.request_sync();
+
         let validated_commit = self
             .isolation_manager
             .validate_commit(commit_sequence_number, commit_record, &self.durability_client)
@@ -243,7 +246,7 @@ impl<Durability> MVCCStorage<Durability> {
                 Err(StorageCommitError::Isolation { name: self.name.clone(), conflict })
             }
         };
-        self.durability_client.sync_all();
+        sync_notifier.recv().unwrap();
         result
     }
 
