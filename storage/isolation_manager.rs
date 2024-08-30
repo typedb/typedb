@@ -114,10 +114,16 @@ impl IsolationManager {
         self.timeline.remove_reader(commit_record.open_sequence_number);
         match isolation_conflict {
             Some(conflict) => Ok(ValidatedCommit::Conflict(conflict)),
-            None => Ok(ValidatedCommit::Write(WriteBatches::from_operations(
-                sequence_number,
-                self.get_commit_record(sequence_number).operations(),
-            ))),
+            None => {
+                let commit_record = match window.get_status(sequence_number) {
+                    CommitStatus::Validated(commit_record) | CommitStatus::Applied(commit_record) => commit_record,
+                    _ => panic!("get_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
+                };
+                Ok(ValidatedCommit::Write(WriteBatches::from_operations(
+                    sequence_number,
+                    commit_record.operations(),
+                )))
+            },
         }
     }
 
@@ -194,6 +200,7 @@ impl IsolationManager {
             let validate_against = SequenceNumber::from(validate_against);
             let window = &windows[window_index];
             debug_assert!(window_index < windows.len());
+            debug_assert!(commit_sequence_number > validate_against);
             if let Some(conflict) = resolve_concurrent(commit_record, validate_against, window) {
                 return Some(conflict);
             }
@@ -242,16 +249,6 @@ impl IsolationManager {
         self.timeline.watermark()
     }
 
-    pub(crate) fn get_commit_record(&self, commit_sequence_number: SequenceNumber) -> impl ReadGuard<'_, CommitRecord> {
-        let window = self.timeline.try_get_window(commit_sequence_number).unwrap();
-        read_guard_project! {
-            window => match window.get_status(commit_sequence_number) {
-                CommitStatus::Validated(commit_record) | CommitStatus::Applied(commit_record) => commit_record,
-                _ => panic!("get_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
-            }
-        }
-    }
-
     pub fn reset(&mut self) {
         self.timeline = Timeline::new(self.initial_sequence_number)
     }
@@ -267,6 +264,10 @@ fn resolve_concurrent(
     predecessor_sequence_number: SequenceNumber,
     predecessor_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
 ) -> Option<IsolationConflict> {
+    while matches!(predecessor_window.get_status(predecessor_sequence_number), CommitStatus::Empty) {
+        // Race condition
+        std::hint::spin_loop();
+    }
     let commit_dependency = match predecessor_window.get_status(predecessor_sequence_number) {
         CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
         CommitStatus::Pending(predecessor_record) => match commit_record.compute_dependency(&predecessor_record) {
@@ -460,22 +461,16 @@ impl Timeline {
     fn try_get_window(
         &self,
         sequence_number: SequenceNumber,
-    ) -> Option<
-        RwLockReadGuardProject<
-            '_,
-            VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
-            TimelineWindow<TIMELINE_WINDOW_SIZE>,
-        >,
-    > {
+    ) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
         let windows = self.windows.read().unwrap_or_log();
         let window_index = Self::resolve_window(&windows, sequence_number)?;
-        Some(read_guard_project! { windows => &**windows.get(window_index).unwrap() })
+        Some(windows.get(window_index).unwrap().clone())
     }
 
     fn get_or_create_window(
         &self,
         sequence_number: SequenceNumber,
-    ) -> impl ReadGuard<'_, TimelineWindow<TIMELINE_WINDOW_SIZE>> {
+    ) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
         let end = self.windows.read().unwrap_or_log().back().unwrap().end();
         if sequence_number >= end {
             self.create_windows_to(sequence_number);

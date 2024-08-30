@@ -7,8 +7,9 @@
 #![deny(unused_must_use)]
 
 use std::{array, collections::HashMap, ffi::c_int, fs::File, path::Path, sync::{Arc, OnceLock}, thread};
-use std::thread::JoinHandle;
-use std::time::Duration;
+use std::sync::RwLock;
+use std::thread::{JoinHandle, sleep};
+use std::time::{Duration, Instant};
 
 use answer::variable_value::VariableValue;
 use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
@@ -21,6 +22,7 @@ use encoding::value::{label::Label, value_type::ValueType};
 use executor::{batch::Row, write::insert_executor::WriteError};
 use pprof::ProfilerGuard;
 use rand::distributions::DistString;
+use logger::result::ResultExt;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
@@ -134,7 +136,12 @@ fn execute_insert(
     Ok(output_rows)
 }
 
-fn criterion_benchmark(c: &mut Criterion) {
+#[test]
+fn as_test() {
+    main()
+}
+
+fn main() {
     PERSON_LABEL.set(Label::new_static("person")).unwrap();
     GROUP_LABEL.set(Label::new_static("group")).unwrap();
     MEMBERSHIP_LABEL.set(Label::new_static("membership")).unwrap();
@@ -144,84 +151,45 @@ fn criterion_benchmark(c: &mut Criterion) {
     NAME_LABEL.set(Label::new_static("name")).unwrap();
     init_logging();
 
-    let mut group = c.benchmark_group("test insert queries");
-    group.sample_size(20);
-    group.sampling_mode(SamplingMode::Flat);
-    // group.measurement_time(Duration::from_secs(20));
-
     let (_tmp_dir, storage) = setup_storage();
     setup_schema(storage.clone());
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.read_watermark()));
     let thing_manager_arced = Arc::new(thing_manager);
-    group.bench_function("insert_queries_multithreaded", |b| {
-        b.iter(|| {
-            const NUM_THREADS: usize = 32;
-            const INTERNAL_ITERS: u64 = 250;
-            let join_handles: [JoinHandle<()>; NUM_THREADS] = array::from_fn(|_| {
-                let storage_cloned = storage.clone();
-                let type_manager_cloned = type_manager.clone();
-                let thing_manager_cloned = thing_manager_arced.clone();
-                thread::spawn(move || {
-                    for _ in 0..INTERNAL_ITERS {
-                        let mut snapshot = storage_cloned.clone().open_snapshot_write();
-                        let age: u32 = rand::random();
-                        let row = execute_insert(
-                            &mut snapshot,
-                            &type_manager_cloned,
-                            &thing_manager_cloned,
-                            &format!("insert $p isa person, has age {age};"),
-                            &vec![],
-                            vec![vec![]],
-                        )
-                            .unwrap();
-                        snapshot.commit().unwrap();
-                    }
-                })
-            });
-            for join_handle in join_handles {
-                join_handle.join().unwrap()
+    const NUM_THREADS: usize = 32;
+    const INTERNAL_ITERS: u64 = 250;
+    let start_signal_rw_lock = Arc::new(RwLock::new(()));
+    let write_guard = start_signal_rw_lock.write().unwrap();
+    let join_handles: [JoinHandle<()>; NUM_THREADS] = array::from_fn(|_| {
+        let storage_cloned = storage.clone();
+        let type_manager_cloned = type_manager.clone();
+        let thing_manager_cloned = thing_manager_arced.clone();
+        let rw_lock_cloned = start_signal_rw_lock.clone();
+        thread::spawn(move || {
+            drop(rw_lock_cloned.read().unwrap());
+            // println!("Start");
+            for _ in 0..INTERNAL_ITERS {
+                let mut snapshot = storage_cloned.clone().open_snapshot_write();
+                let age: u32 = rand::random();
+                let row = execute_insert(
+                    &mut snapshot,
+                    &type_manager_cloned,
+                    &thing_manager_cloned,
+                    &format!("insert $p isa person, has age {age};"),
+                    &vec![],
+                    vec![vec![]],
+                )
+                    .unwrap();
+                snapshot.commit().unwrap();
             }
-        });
+        })
     });
-}
-
-pub struct FlamegraphProfiler<'a> {
-    frequency: c_int,
-    active_profiler: Option<ProfilerGuard<'a>>,
-}
-
-impl<'a> FlamegraphProfiler<'a> {
-    #[allow(dead_code)]
-    pub fn new(frequency: c_int) -> Self {
-        Self { frequency, active_profiler: None }
+    println!("Sleeping 1s before starting threads");
+    sleep(Duration::from_secs(1));
+    let start = Instant::now();
+    drop(write_guard); // Start
+    for join_handle in join_handles {
+        join_handle.join().unwrap()
     }
+    let time_taken_ms = start.elapsed().as_millis();
+    println!("{NUM_THREADS} threads * {INTERNAL_ITERS} iters took: {time_taken_ms} ms");
 }
-
-impl<'a> Profiler for FlamegraphProfiler<'a> {
-    fn start_profiling(&mut self, _benchmark_id: &str, _benchmark_dir: &Path) {
-        self.active_profiler = Some(ProfilerGuard::new(self.frequency).unwrap());
-    }
-
-    fn stop_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
-        std::fs::create_dir_all(benchmark_dir).unwrap();
-        let flamegraph_path = benchmark_dir.join("flamegraph.svg");
-        let flamegraph_file = File::create(flamegraph_path).expect("File system error while creating flamegraph.svg");
-        if let Some(profiler) = self.active_profiler.take() {
-            profiler.report().build().unwrap().flamegraph(flamegraph_file).expect("Error writing flamegraph");
-        }
-    }
-}
-
-fn profiled() -> Criterion {
-    Criterion::default().with_profiler(FlamegraphProfiler::new(10))
-}
-
-// criterion_group!(
-//     name = benches;
-//     config= profiled();
-//     targets = criterion_benchmark
-// );
-
-// TODO: disable profiling when running on mac, since pprof seems to crash sometimes?
-criterion_group!(benches, criterion_benchmark);
-criterion_main!(benches);
