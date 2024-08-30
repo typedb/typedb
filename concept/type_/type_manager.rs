@@ -1231,8 +1231,10 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         definition_key: DefinitionKey<'static>,
-        field_name: String,
+        field_name: &str,
     ) -> Result<(), ConceptWriteError> {
+        // TODO: Somehow check instances?
+
         let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())?;
         struct_definition.delete_field(field_name).map_err(|source| ConceptWriteError::Encoding { source })?;
 
@@ -2069,7 +2071,6 @@ impl TypeManager {
         thing_manager: &ThingManager,
         owner: ObjectType<'static>,
         attribute: AttributeType<'static>,
-        ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_capability_abstractness::<Owns<'static>>(
             snapshot,
@@ -2088,20 +2089,26 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
+        let default_ordering = Ordering::default();
 
-        let initial_annotations =
-            HashSet::from([Annotation::Cardinality(self.get_owns_default_cardinality(ordering.clone()))]);
-        OperationTimeValidation::validate_new_acquired_owns_compatible_with_instances(
-            snapshot,
-            self,
-            thing_manager,
-            owns.clone().into_owned(),
-            initial_annotations,
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        let exists = owner.get_owns(snapshot, self)?.contains(&owns);
+        if !exists {
+            let initial_annotations =
+                HashSet::from([Annotation::Cardinality(self.get_owns_default_cardinality(default_ordering))]);
+            OperationTimeValidation::validate_new_acquired_owns_compatible_with_instances(
+                snapshot,
+                self,
+                thing_manager,
+                owns.clone().into_owned(),
+                initial_annotations,
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         TypeWriter::storage_put_edge(snapshot, owns.clone());
-        TypeWriter::storage_put_type_edge_property(snapshot, owns, Some(ordering));
+        if !exists {
+            TypeWriter::storage_put_type_edge_property(snapshot, owns, Some(default_ordering));
+        }
         Ok(())
     }
 
@@ -2280,17 +2287,19 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
+        let plays = Plays::new(ObjectType::new(player.clone().into_vertex()), role);
 
-        let initial_annotations = HashSet::from([Annotation::Cardinality(self.get_plays_default_cardinality())]);
-        OperationTimeValidation::validate_new_acquired_plays_compatible_with_instances(
-            snapshot,
-            self,
-            thing_manager,
-            plays.clone().into_owned(),
-            initial_annotations,
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        if !player.get_plays(snapshot, self)?.contains(&plays) {
+            let initial_annotations = HashSet::from([Annotation::Cardinality(self.get_plays_default_cardinality())]);
+            OperationTimeValidation::validate_new_acquired_plays_compatible_with_instances(
+                snapshot,
+                self,
+                thing_manager,
+                plays.clone().into_owned(),
+                initial_annotations,
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         TypeWriter::storage_put_edge(snapshot, plays.clone());
         Ok(plays)

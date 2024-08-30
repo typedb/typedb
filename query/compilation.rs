@@ -7,16 +7,15 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use compiler::{
-    delete::program::{DeleteProgram},
-    insert::program::{InsertProgram},
+    delete::program::DeleteProgram,
+    insert::program::InsertProgram,
     match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
     VariablePosition,
 };
 use concept::thing::statistics::Statistics;
 use ir::program::{block::VariableRegistry, function::Function};
 
-use crate::{error::QueryError};
-use crate::annotation::AnnotatedStage;
+use crate::{annotation::AnnotatedStage, error::QueryError};
 
 pub struct CompiledPipeline {
     pub(super) compiled_functions: Vec<CompiledFunction>,
@@ -97,13 +96,19 @@ fn compile_stage(
             Ok(CompiledStage::Match(plan))
         }
         AnnotatedStage::Insert { block, annotations } => {
-            let plan = compiler::insert::program::compile(block.conjunction().constraints(), input_variables, &annotations)
-                .map_err(|source| QueryError::WriteCompilation { source })?;
+            let plan =
+                compiler::insert::program::compile(block.conjunction().constraints(), input_variables, &annotations)
+                    .map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Insert(plan))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations } => {
-            let plan = compiler::delete::program::compile(input_variables, annotations, block.conjunction().constraints(), deleted_variables)
-                    .map_err(|source| QueryError::WriteCompilation { source })?;
+            let plan = compiler::delete::program::compile(
+                input_variables,
+                annotations,
+                block.conjunction().constraints(),
+                deleted_variables,
+            )
+            .map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Delete(plan))
         }
         _ => todo!(),

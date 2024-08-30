@@ -11,7 +11,7 @@ use encoding::value::{
     decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
     value::Value,
 };
-use typeql::value::{DateTimeTZLiteral, Literal, Sign, SignedDecimalLiteral, TimeZone, ValueLiteral};
+use typeql::value::{DateTimeTZLiteral, Literal, Sign, SignedDecimalLiteral, StringLiteral, TimeZone, ValueLiteral};
 
 use crate::LiteralParseError;
 
@@ -30,9 +30,13 @@ pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, Lit
             Value::DateTimeTZ(chrono::DateTime::<chrono_tz::Tz>::from_typeql_literal(datetime_tz)?)
         }
         ValueLiteral::Duration(_) => todo!(),
-        ValueLiteral::String(string) => Value::String(Cow::Owned(string.value.clone())),
+        ValueLiteral::String(string) => Value::String(Cow::Owned(extract_string_literal(string)?)),
         ValueLiteral::Struct(_) => todo!(),
     })
+}
+
+pub(crate) fn extract_string_literal(literal: &StringLiteral) -> Result<String, LiteralParseError> {
+    Ok(literal.unescape().map_err(|_| LiteralParseError::CannotUnescapeString { literal: literal.clone() })?)
 }
 
 pub trait FromTypeQLLiteral: Sized {

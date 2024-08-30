@@ -558,7 +558,7 @@ typedb_error!(
         // TODO: these should be typedb_source
         DataCommitFailed(4, "Data transaction commit failed.", ( source : DataCommitError )),
         SchemaCommitFailed(5, "Schema transaction commit failed.", ( source : SchemaCommitError )),
-        QueryParseFailed(6, "Query parsing failed.", ( source : typeql::common::error::Error )),
+        QueryParseFailed(6, "Query parsing failed.", ( source : typeql::Error )),
         SchemaQueryRequiresSchemaTransaction(7, "Schema modification queries require schema transactions."),
         WriteQueryRequiresSchemaOrWriteTransaction(8, "Data modification queries require either write or schema transactions."),
         QueryExecutionFailed(9, "Query execution failed.", ( source : QueryError )),

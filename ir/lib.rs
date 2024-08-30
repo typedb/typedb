@@ -15,11 +15,12 @@ use std::{
 
 use answer::variable::Variable;
 use typeql::{
-    common::token,
+    token,
     statement::{
         thing::{Relation, RolePlayer},
         InIterable, StructDeconstruct,
     },
+    value::StringLiteral,
 };
 
 use crate::{
@@ -71,7 +72,7 @@ pub enum PatternDefinitionError {
         source: FunctionReadError,
     },
     ParseError {
-        source: typeql::common::error::Error,
+        source: typeql::Error,
     },
     LiteralParseError {
         literal: String,
@@ -133,6 +134,7 @@ pub enum LiteralParseError {
     ScientificNotationNotAllowedForDecimal { literal: String },
     InvalidDate { year: i32, month: u32, day: u32 },
     InvalidTime { hour: u32, minute: u32, second: u32, nano: u32 },
+    CannotUnescapeString { literal: StringLiteral },
 }
 
 impl fmt::Display for LiteralParseError {
@@ -148,6 +150,7 @@ impl Error for LiteralParseError {
             LiteralParseError::ScientificNotationNotAllowedForDecimal { .. } => None,
             LiteralParseError::InvalidDate { .. } => None,
             LiteralParseError::InvalidTime { .. } => None,
+            LiteralParseError::CannotUnescapeString { .. } => None,
         }
     }
 }

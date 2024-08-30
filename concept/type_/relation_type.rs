@@ -40,6 +40,7 @@ use crate::{
             AnnotationError, DefaultFrom,
         },
         attribute_type::AttributeType,
+        get_with_overridden,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
@@ -350,6 +351,11 @@ impl<'a> RelationType<'a> {
         Ok(None)
     }
 
+    get_with_overridden! {
+        pub fn get_relates_role_with_overridden() -> Relates = RoleType<'static> | get_relates_role;
+        pub fn get_relates_role_name_with_overridden() -> Relates = &str | get_relates_role_name;
+    }
+
     pub fn into_owned(self) -> RelationType<'static> {
         RelationType { vertex: self.vertex.into_owned() }
     }
@@ -378,14 +384,12 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-        ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
         type_manager.set_owns(
             snapshot,
             &thing_manager,
             self.clone().into_owned_object_type(),
             attribute_type.clone(),
-            ordering,
         )?;
         Ok(Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type))
     }

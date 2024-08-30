@@ -66,7 +66,7 @@ pub enum FunctionDefinitionError {
     FunctionArgumentUnused { argument_variable: String },
     ReturnVariableUnavailable { variable: String },
     PatternDefinition { source: PatternDefinitionError },
-    ParseError { source: typeql::common::error::Error },
+    ParseError { source: typeql::Error },
 }
 
 impl fmt::Display for FunctionDefinitionError {

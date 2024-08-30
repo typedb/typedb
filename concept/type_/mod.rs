@@ -56,6 +56,37 @@ pub mod role_type;
 pub mod sub;
 pub mod type_manager;
 
+macro_rules! get_with_overridden {
+    ($(
+        $vis:vis fn $method_name:ident() -> $output_type:ident = $input_type:ty | $get_method:ident;
+    )*) => {
+        $(
+            $vis fn $method_name(
+                &self,
+                snapshot: &impl ReadableSnapshot,
+                type_manager: &TypeManager,
+                input_type: $input_type,
+            ) -> Result<Option<$output_type<'static>>, ConceptReadError> {
+                let self_result = self.$get_method(snapshot, type_manager, input_type.clone())?;
+                Ok(match self_result {
+                    Some(owns) => Some(owns),
+                    None => match self.get_supertype(snapshot, type_manager)? {
+                        Some(supertype) => {
+                            let supertype_result = supertype.$get_method(snapshot, type_manager, input_type)?;
+                            match supertype_result {
+                                Some(supertype_result) => Some(supertype_result),
+                                None => None,
+                            }
+                        }
+                        None => None,
+                    },
+                })
+            }
+        )*
+    }
+}
+pub(crate) use get_with_overridden;
+
 pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone + Hash + Eq + 'a {
     type SelfStatic: KindAPI<'static> + 'static;
     fn new(vertex: TypeVertex<'a>) -> Self;
@@ -150,7 +181,6 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-        ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError>;
 
     fn unset_owns(
@@ -208,6 +238,10 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
         Ok(self.get_owns(snapshot, type_manager)?.iter().find(|owns| owns.attribute() == attribute_type).cloned())
+    }
+
+    get_with_overridden! {
+        fn get_owns_attribute_with_overridden() -> Owns = AttributeType<'static> | get_owns_attribute;
     }
 
     fn has_owns_attribute(
@@ -299,6 +333,27 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         role_type: RoleType<'static>,
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_plays_role(snapshot, type_manager, role_type)?.is_some())
+    }
+
+    fn get_plays_role_name(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_name: &str,
+    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+        let mut result: Option<Plays<'static>> = None;
+        for plays in self.get_plays(snapshot, type_manager)?.into_iter() {
+            if plays.role().get_label(snapshot, type_manager)?.name.as_str() == role_name {
+                result = Some(plays.clone());
+                break;
+            }
+        }
+        Ok(result)
+    }
+
+    get_with_overridden! {
+        fn get_plays_role_with_overridden() -> Plays = RoleType<'static> | get_plays_role;
+        fn get_plays_role_name_with_overridden() -> Plays = &str | get_plays_role_name;
     }
 
     fn try_get_plays_role(

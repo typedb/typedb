@@ -14,26 +14,27 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler, SamplingMode};
-use pprof::ProfilerGuard;
-
 use answer::variable_value::VariableValue;
-use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
-use compiler::match_::inference::type_inference::infer_types;
-use compiler::VariablePosition;
-use concept::{
-    thing::{thing_manager::ThingManager},
-    type_::{Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
+use compiler::{
+    match_::inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+    VariablePosition,
 };
+use concept::{
+    thing::thing_manager::ThingManager,
+    type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
+};
+use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use encoding::value::{label::Label, value_type::ValueType};
-use executor::batch::Row;
-use executor::write::insert::InsertExecutor;
-use executor::write::WriteError;
+use executor::{
+    batch::Row,
+    write::{insert::InsertExecutor, WriteError},
+};
 use ir::translation::TranslationContext;
+use pprof::ProfilerGuard;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use test_utils::init_logging;
 
@@ -85,8 +86,8 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap()).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
-    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered).unwrap();
+    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone()).unwrap();
+    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone()).unwrap();
     person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_member_type.clone()).unwrap();
     group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_group_type.clone()).unwrap();
 
@@ -116,11 +117,12 @@ fn execute_insert(
         type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
-    ).unwrap();
+    )
+    .unwrap();
 
-    let mut insert_plan = compiler::insert::program::compile(
-        block.conjunction().constraints(), &input_row_format, &entry_annotations
-    ).unwrap();
+    let mut insert_plan =
+        compiler::insert::program::compile(block.conjunction().constraints(), &input_row_format, &entry_annotations)
+            .unwrap();
 
     let mut output_rows = Vec::with_capacity(input_rows.len());
     let output_width = insert_plan.output_row_schema.len();

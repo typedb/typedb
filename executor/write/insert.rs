@@ -6,8 +6,8 @@
 use std::fmt::{Debug, Display};
 
 use compiler::insert::{
+    instructions::{ConceptInstruction, ConnectionInstruction},
     program::InsertProgram,
-    instructions::{ConnectionInstruction, ConceptInstruction},
 };
 use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;

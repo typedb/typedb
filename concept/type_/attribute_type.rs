@@ -214,6 +214,32 @@ impl<'a> AttributeType<'a> {
         type_manager.unset_value_type(snapshot, thing_manager, self.clone().into_owned())
     }
 
+    pub fn get_value_type_annotations_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<AttributeTypeAnnotation>, ConceptReadError> {
+        Ok(self
+            .get_annotations_declared(snapshot, type_manager)?
+            .into_iter()
+            .filter(|annotation| annotation.is_value_type_annotation())
+            .map(|annotation| annotation.clone())
+            .collect())
+    }
+
+    pub fn get_value_type_annotations(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashMap<AttributeTypeAnnotation, AttributeType<'static>>, ConceptReadError> {
+        Ok(self
+            .get_annotations(snapshot, type_manager)?
+            .into_iter()
+            .filter(|(annotation, _)| annotation.is_value_type_annotation())
+            .map(|(annotation, source)| (annotation.clone(), source.clone().into_owned()))
+            .collect())
+    }
+
     pub fn set_label(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -371,6 +397,20 @@ pub enum AttributeTypeAnnotation {
     Regex(AnnotationRegex),
     Range(AnnotationRange),
     Values(AnnotationValues),
+}
+
+impl AttributeTypeAnnotation {
+    // ValueTypeAnnotation is not declared and is a part of AttributeTypeAnnotation,
+    // because we don't want to store annotations directly on value types.
+    pub fn is_value_type_annotation(&self) -> bool {
+        match self {
+            | AttributeTypeAnnotation::Regex(_)
+            | AttributeTypeAnnotation::Range(_)
+            | AttributeTypeAnnotation::Values(_) => true,
+
+            | AttributeTypeAnnotation::Abstract(_) | AttributeTypeAnnotation::Independent(_) => false,
+        }
+    }
 }
 
 impl TryFrom<Annotation> for AttributeTypeAnnotation {

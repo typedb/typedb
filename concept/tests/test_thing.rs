@@ -206,12 +206,10 @@ fn has() {
             .unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
-            .unwrap();
-        person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
-            .unwrap();
+        let owns_age = person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone()).unwrap();
+        owns_age.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
+        let owns_name = person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone()).unwrap();
+        owns_name.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
 
         let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
         let age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
@@ -270,16 +268,13 @@ fn attribute_cleanup_on_concurrent_detach() {
         name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        let owns_age = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Ordered)
-            .unwrap();
+        let owns_age = person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone()).unwrap();
+        owns_age.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Ordered).unwrap();
         owns_age
             .set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Distinct(AnnotationDistinct))
             .unwrap();
 
-        person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
-            .unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone()).unwrap();
 
         let alice = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
         let bob = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();

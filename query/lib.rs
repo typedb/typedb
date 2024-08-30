@@ -7,13 +7,16 @@ use concept::error::ConceptReadError;
 use encoding::{graph::type_::Kind, value::label::Label};
 use typeql::schema::definable::type_::Capability;
 
+mod annotation;
 mod compilation;
+mod definable_resolution;
+mod definable_status;
 mod define;
 pub mod error;
 pub mod query_manager;
+mod redefine;
 mod translation;
-mod annotation;
-mod util;
+mod undefine;
 
 #[derive(Debug)]
 pub enum SymbolResolutionError {

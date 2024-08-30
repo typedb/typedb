@@ -17,8 +17,8 @@ use itertools::Itertools;
 
 use crate::VariablePosition;
 
-pub mod program;
 pub mod instructions;
+pub mod program;
 pub mod type_check;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]

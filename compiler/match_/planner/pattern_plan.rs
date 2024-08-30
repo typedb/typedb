@@ -269,7 +269,7 @@ impl MatchProgram {
         self.programs.last().unwrap().selected_variables()
     }
 
-    pub(crate) fn into_programs(self) -> impl Iterator<Item =Program> {
+    pub(crate) fn into_programs(self) -> impl Iterator<Item = Program> {
         self.programs.into_iter()
     }
 

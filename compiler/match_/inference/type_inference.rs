@@ -9,7 +9,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{Type, variable::Variable};
+use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
 use ir::program::{
     block::{FunctionalBlock, VariableRegistry},
@@ -17,14 +17,12 @@ use ir::program::{
 };
 use storage::snapshot::ReadableSnapshot;
 
+use super::pattern_type_inference::infer_types_for_block;
 use crate::match_::inference::{
     annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-    type_annotations::{FunctionAnnotations, TypeAnnotations}
-    ,
+    type_annotations::{FunctionAnnotations, TypeAnnotations},
     TypeInferenceError,
 };
-
-use super::pattern_type_inference::infer_types_for_block;
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
@@ -138,9 +136,7 @@ pub mod tests {
         sync::Arc,
     };
 
-    use itertools::Itertools;
-
-    use answer::{Type, variable::Variable};
+    use answer::{variable::Variable, Type};
     use concept::type_::{entity_type::EntityType, relation_type::RelationType, role_type::RoleType};
     use encoding::{
         graph::{
@@ -161,15 +157,16 @@ pub mod tests {
         },
         translation::TranslationContext,
     };
+    use itertools::Itertools;
 
     use crate::match_::inference::{
         annotated_functions::IndexedAnnotatedFunctions,
         pattern_type_inference::{
-            infer_types_for_block, NestedTypeInferenceGraphDisjunction, tests::expected_edge, TypeInferenceGraph,
+            infer_types_for_block, tests::expected_edge, NestedTypeInferenceGraphDisjunction, TypeInferenceGraph,
         },
         tests::{
             managers,
-            schema_consts::{LABEL_CAT, setup_types},
+            schema_consts::{setup_types, LABEL_CAT},
             setup_storage,
         },
         type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},

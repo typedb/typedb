@@ -5,12 +5,8 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
-use compiler::{
-    match_::{
-        inference::annotated_functions::IndexedAnnotatedFunctions,
-        planner::program_plan::ProgramPlan,
-    },
-};
+
+use compiler::match_::{inference::annotated_functions::IndexedAnnotatedFunctions, planner::program_plan::ProgramPlan};
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
@@ -30,11 +26,13 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
 
 use crate::{
+    annotation::{infer_types_for_pipeline, AnnotatedPipeline},
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
     define,
     error::QueryError,
+    redefine,
     translation::{translate_pipeline, TranslatedPipeline},
-    annotation::{infer_types_for_pipeline, AnnotatedPipeline},
+    undefine,
 };
 
 pub struct QueryManager {}
@@ -55,12 +53,10 @@ impl QueryManager {
         match query {
             SchemaQuery::Define(define) => define::execute(snapshot, type_manager, thing_manager, define)
                 .map_err(|err| QueryError::Define { source: err }),
-            SchemaQuery::Redefine(redefine) => {
-                todo!()
-            }
-            SchemaQuery::Undefine(undefine) => {
-                todo!()
-            }
+            SchemaQuery::Redefine(redefine) => redefine::execute(snapshot, type_manager, thing_manager, redefine)
+                .map_err(|err| QueryError::Redefine { source: err }),
+            SchemaQuery::Undefine(undefine) => undefine::execute(snapshot, type_manager, thing_manager, undefine)
+                .map_err(|err| QueryError::Undefine { source: err }),
         }
     }
 

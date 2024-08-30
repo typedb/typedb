@@ -84,12 +84,7 @@ pub fn compile(
         let Some(input_position) = input_variables.get(variable) else {
             return Err(WriteCompilationError::DeletedThingWasNotInInput { variable: *variable });
         };
-        if type_annotations
-            .variable_annotations_of(*variable)
-            .unwrap()
-            .iter()
-            .any(|type_| type_.kind() == Kind::Role)
-        {
+        if type_annotations.variable_annotations_of(*variable).unwrap().iter().any(|type_| type_.kind() == Kind::Role) {
             Err(WriteCompilationError::IllegalRoleDelete { variable: *variable })?;
         } else {
             concept_deletes.push(DeleteThingInstruction { thing: ThingSource(*input_position) });

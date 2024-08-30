@@ -7,8 +7,10 @@
 use std::sync::Arc;
 
 use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
-use concept::{thing::statistics::Statistics, type_::type_manager::TypeManager};
-use concept::thing::thing_manager::ThingManager;
+use concept::{
+    thing::{statistics::Statistics, thing_manager::ThingManager},
+    type_::type_manager::TypeManager,
+};
 use query::query_manager::QueryManager;
 use storage::{
     durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot, MVCCStorage,

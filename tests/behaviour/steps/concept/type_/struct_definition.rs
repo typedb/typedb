@@ -110,7 +110,7 @@ pub async fn struct_delete_field(context: &mut Context, type_label: Label, field
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.thing_manager,
             definition_key.clone(),
-            field_label.into_typedb().scoped_name().as_str().to_owned(),
+            field_label.into_typedb().scoped_name().as_str(),
         ));
     });
 }
