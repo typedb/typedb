@@ -69,12 +69,10 @@ impl<'a> StructValue<'a> {
         let mut fields: HashMap<StructFieldIDUInt, Value<'a>> = HashMap::new();
         let mut errors: Vec<EncodingError> = Vec::new();
         for (field_name, field_id) in struct_definition.field_names {
-            let field_definition: &StructDefinitionField = &struct_definition.fields.get(&field_id).unwrap();
+            let field_definition: &StructDefinitionField = struct_definition.fields.get(&field_id).unwrap();
             if let Some(value) = value.get(&field_name) {
                 if field_definition.value_type == value.value_type() {
-                    if !fields.contains_key(&field_id) {
-                        fields.insert(field_id, value.clone());
-                    }
+                    fields.entry(field_id).or_insert_with(|| value.clone());
                 } else {
                     errors.push(EncodingError::StructFieldValueTypeMismatch {
                         struct_name: struct_definition.name.clone(),
@@ -195,12 +193,12 @@ impl StructIndexEntry<'static> {
     const ENCODING_TYPEID_RANGE: Range<usize> =
         Self::ENCODING_VALUE_TYPE_RANGE.end..{ Self::ENCODING_VALUE_TYPE_RANGE.end + TypeID::LENGTH };
 
-    pub fn build<'b, 'c>(
+    pub fn build(
         snapshot: &impl ReadableSnapshot,
         hasher: &impl Fn(&[u8]) -> u64,
-        path_to_field: &Vec<StructFieldIDUInt>,
-        value: &Value<'b>,
-        attribute: &AttributeVertex<'c>,
+        path_to_field: &[StructFieldIDUInt],
+        value: &Value<'_>,
+        attribute: &AttributeVertex<'_>,
     ) -> Result<StructIndexEntry<'static>, Arc<SnapshotIteratorError>> {
         debug_assert_eq!(Prefix::VertexAttributeStruct, attribute.prefix());
         let mut buf = Self::build_prefix_typeid_path_value_into_buf(
@@ -227,12 +225,12 @@ impl StructIndexEntry<'static> {
         Ok(Self { key: StructIndexEntryKey::new(Bytes::copy(buf.as_slice())), value })
     }
 
-    pub fn build_prefix_typeid_path_value<'b, 'c>(
+    pub fn build_prefix_typeid_path_value(
         snapshot: &impl ReadableSnapshot,
         thing_vertex_generator: &ThingVertexGenerator,
-        path_to_field: &Vec<StructFieldIDUInt>,
-        value: &Value<'b>,
-        attribute_type: &TypeVertex<'c>,
+        path_to_field: &[StructFieldIDUInt],
+        value: &Value<'_>,
+        attribute_type: &TypeVertex<'_>,
     ) -> Result<StorageKey<'static, BUFFER_KEY_INLINE>, Arc<SnapshotIteratorError>> {
         let buf = Self::build_prefix_typeid_path_value_into_buf(
             snapshot,
@@ -244,11 +242,11 @@ impl StructIndexEntry<'static> {
         Ok(StorageKey::new_owned(Self::KEYSPACE, ByteArray::copy(buf.as_slice())))
     }
 
-    fn build_prefix_typeid_path_value_into_buf<'b>(
+    fn build_prefix_typeid_path_value_into_buf(
         snapshot: &impl ReadableSnapshot,
         hasher: &impl Fn(&[u8]) -> u64,
-        path_to_field: &Vec<StructFieldIDUInt>,
-        value: &Value<'b>,
+        path_to_field: &[StructFieldIDUInt],
+        value: &Value<'_>,
         attribute_type_id: TypeID,
     ) -> Result<Vec<u8>, Arc<SnapshotIteratorError>> {
         let mut buf: Vec<u8> = Vec::with_capacity(

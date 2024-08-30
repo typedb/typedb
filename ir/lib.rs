@@ -7,19 +7,14 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 #![allow(unused_variables)]
+#![allow(clippy::result_large_err)]
 
-use std::{
-    error::Error,
-    fmt::{self},
-};
+use std::{error::Error, fmt};
 
 use answer::variable::Variable;
 use typeql::{
+    statement::{thing::RolePlayer, InIterable, StructDeconstruct},
     token,
-    statement::{
-        thing::{Relation, RolePlayer},
-        InIterable, StructDeconstruct,
-    },
     value::StringLiteral,
 };
 
@@ -89,7 +84,6 @@ pub enum PatternDefinitionError {
         expected: usize,
         actual: usize,
     },
-
     UnimplementedStructAssignment {
         deconstruct: StructDeconstruct,
     },
@@ -107,7 +101,7 @@ impl fmt::Display for PatternDefinitionError {
 impl Error for PatternDefinitionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::DisjointVariableReuse { .. }
+            | Self::DisjointVariableReuse { .. }
             | Self::VariableCategoryMismatch { .. }
             | Self::FunctionCallReturnCountMismatch { .. }
             | Self::FunctionCallArgumentCountMismatch { .. }
@@ -134,7 +128,7 @@ pub enum LiteralParseError {
     ScientificNotationNotAllowedForDecimal { literal: String },
     InvalidDate { year: i32, month: u32, day: u32 },
     InvalidTime { hour: u32, minute: u32, second: u32, nano: u32 },
-    CannotUnescapeString { literal: StringLiteral },
+    CannotUnescapeString { literal: StringLiteral, source: typeql::Error },
 }
 
 impl fmt::Display for LiteralParseError {
@@ -150,7 +144,7 @@ impl Error for LiteralParseError {
             LiteralParseError::ScientificNotationNotAllowedForDecimal { .. } => None,
             LiteralParseError::InvalidDate { .. } => None,
             LiteralParseError::InvalidTime { .. } => None,
-            LiteralParseError::CannotUnescapeString { .. } => None,
+            LiteralParseError::CannotUnescapeString { source, .. } => Some(source),
         }
     }
 }

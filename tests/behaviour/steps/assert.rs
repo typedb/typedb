@@ -5,7 +5,7 @@
  */
 
 macro_rules! assert_matches {
-    ($expression:expr, $pattern:pat $(if $guard:expr)? $(,)?) => {
+    ($expression:expr, $pattern:pat $(if $guard:expr)? $(, $message:literal $(, $arg:expr)*)? $(,)?) => {
         {
             match $expression {
                 $pattern $(if $guard)? => (),
@@ -13,9 +13,12 @@ macro_rules! assert_matches {
                     concat!(
                         "assertion `matches!(expression, ",
                         stringify!($pattern $(if $guard)?),
-                        ")` failed\n",
+                        ")` failed",
+                        $(": ", $message,)?
+                        "\n",
                         "expression evaluated to: {:?}"
                     ),
+                    $($($arg,)*)?
                     expr
                 )
             }

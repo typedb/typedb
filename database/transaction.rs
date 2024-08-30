@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use core::fmt;
-use std::{
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-    sync::Arc,
-};
+use std::{error::Error, fmt, sync::Arc};
 
 use concept::{
     error::ConceptWriteError,
@@ -26,10 +21,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
 };
 
-use crate::{
-    transaction::SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate},
-    Database,
-};
+use crate::Database;
 
 #[derive(Debug)]
 pub struct TransactionRead<D> {
@@ -56,7 +48,11 @@ impl<D: DurabilityClient> TransactionRead<D> {
             database.type_vertex_generator.clone(),
             Some(schema.type_cache.clone()),
         )); // TODO pass cache
-        let thing_manager = Arc::new(ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone()));
+        let thing_manager = Arc::new(ThingManager::new(
+            database.thing_vertex_generator.clone(),
+            type_manager.clone(),
+            schema.thing_statistics.clone(),
+        ));
         let function_manager =
             FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
 
@@ -104,7 +100,11 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             database.type_vertex_generator.clone(),
             Some(schema.type_cache.clone()),
         ));
-        let thing_manager = Arc::new(ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone()));
+        let thing_manager = Arc::new(ThingManager::new(
+            database.thing_vertex_generator.clone(),
+            type_manager.clone(),
+            schema.thing_statistics.clone(),
+        ));
         let function_manager =
             FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
         drop(schema);
@@ -130,14 +130,14 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         Self { snapshot, type_manager, thing_manager, function_manager, database, transaction_options }
     }
 
-    pub fn commit(mut self) -> Result<(), DataCommitError> {
+    pub fn commit(self) -> Result<(), DataCommitError> {
         let database = self.database.clone(); // TODO: can we get away without cloning the database before?
         let result = self.try_commit();
         database.release_write_transaction();
         result
     }
 
-    pub fn try_commit(mut self) -> Result<(), DataCommitError> {
+    pub fn try_commit(self) -> Result<(), DataCommitError> {
         let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
         self.thing_manager
             .finalise(&mut snapshot)
@@ -166,9 +166,9 @@ pub enum DataCommitError {
     SnapshotError { source: SnapshotError },
 }
 
-impl Display for DataCommitError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(self, f)
+impl fmt::Display for DataCommitError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
     }
 }
 
@@ -197,7 +197,14 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             database.type_vertex_generator.clone(),
             None,
         ));
-        let thing_manager = ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
+        let thing_manager = {
+            let schema = database.schema.read().unwrap();
+            ThingManager::new(
+                database.thing_vertex_generator.clone(),
+                type_manager.clone(),
+                schema.thing_statistics.clone(),
+            )
+        };
         let function_manager = FunctionManager::new(database.definition_key_generator.clone(), None);
         Self {
             snapshot: Arc::new(snapshot),
@@ -227,17 +234,17 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
     }
 
-    pub fn commit(mut self) -> Result<(), SchemaCommitError> {
+    pub fn commit(self) -> Result<(), SchemaCommitError> {
         let database = self.database.clone(); // TODO: can we get away without cloning the database before?
         let result = self.try_commit();
         database.release_schema_transaction();
         result
     }
 
-    fn try_commit(mut self) -> Result<(), SchemaCommitError> {
+    fn try_commit(self) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
         let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
-        self.type_manager.validate(&mut snapshot).map_err(|errors| ConceptWrite { errors })?;
+        self.type_manager.validate(&snapshot).map_err(|errors| ConceptWrite { errors })?;
 
         self.thing_manager.finalise(&mut snapshot).map_err(|errors| ConceptWrite { errors })?;
         drop(self.thing_manager);

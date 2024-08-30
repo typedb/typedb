@@ -799,15 +799,7 @@ impl BinaryConstraint for Isa<Variable> {
                             collector.insert(subtype);
                         });
                 }
-                TypeAnnotation::RoleType(role_type) => {
-                    role_type
-                        .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone().into_owned()))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
+                TypeAnnotation::RoleType(_) => unreachable!("Cannot get instances of role types."),
             }
         }
         collector.insert(left_type.clone());
@@ -849,15 +841,7 @@ impl BinaryConstraint for Isa<Variable> {
                             collector.insert(subtype);
                         });
                 }
-                TypeAnnotation::RoleType(role_type) => {
-                    role_type
-                        .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone().into_owned()))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
+                TypeAnnotation::RoleType(_) => unreachable!("Cannot get instances of role types."),
             }
         }
         collector.insert(right_type.clone());
@@ -1269,7 +1253,7 @@ pub mod tests {
     use answer::Type as TypeAnnotation;
     use encoding::value::{label::Label, value_type::ValueType};
     use ir::{
-        pattern::constraint::IsaKind,
+        pattern::constraint::{Comparator, IsaKind},
         program::block::{BlockContext, FunctionalBlock},
         translation::TranslationContext,
     };
@@ -1469,7 +1453,7 @@ pub mod tests {
             let var_b = conjunction.get_or_declare_variable("b").unwrap();
             // Try seeding
             {
-                conjunction.constraints_mut().add_comparison(var_a, var_b).unwrap();
+                conjunction.constraints_mut().add_comparison(var_a, var_b, Comparator::Greater).unwrap();
             }
 
             let block = builder.finish();

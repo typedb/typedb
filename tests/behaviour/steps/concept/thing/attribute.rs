@@ -57,7 +57,7 @@ async fn attribute_put_instance_with_value_var(
     may_error: params::MayError,
 ) {
     let result = attribute_put_instance_with_value_impl(context, type_label, value);
-    may_error.check(&result);
+    may_error.check(result.as_ref());
     if !may_error.expects_error() {
         let attribute = result.unwrap();
         context.attributes.insert(var.name, Some(attribute));

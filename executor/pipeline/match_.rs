@@ -7,7 +7,7 @@
 use std::marker::PhantomData;
 
 use compiler::match_::planner::program_plan::ProgramPlan;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::error::ConceptReadError;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -58,13 +58,12 @@ impl<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> 
         self.upstream.initialise()?;
         let LazyMatchStage { mut upstream, program_plan, .. } = self;
         let mut context = upstream.try_get_shared_context()?;
-        let (snapshot_borrowed, thing_manager_borrowed): (&Snapshot, &ThingManager) = context.borrow_parts();
-        let executor = PatternExecutor::new(program_plan.entry(), snapshot_borrowed, &thing_manager_borrowed)
-            .map_err(|source| PipelineError::ConceptRead(source))?;
-        let PipelineContext::Shared(shared_snapshot, shared_thing_manager) = context.try_get_shared()? else {
-            unreachable!()
-        };
-        let batch_iterator = BatchIterator::new(executor, shared_snapshot, shared_thing_manager);
+        let (snapshot_borrowed, thing_manager_borrowed) = context.borrow_parts();
+        let executor = PatternExecutor::new(program_plan.entry(), snapshot_borrowed, thing_manager_borrowed)
+            .map_err(PipelineError::ConceptRead)?;
+        let context = context.try_get_shared()?;
+        let (shared_snapshot, shared_thing_manager) = context.borrow_parts();
+        let batch_iterator = BatchIterator::new(executor, shared_snapshot.clone(), shared_thing_manager.clone());
         Ok(MatchStageIterator::new(batch_iterator))
     }
 }

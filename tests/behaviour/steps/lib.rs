@@ -8,15 +8,16 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     iter, mem,
     path::Path,
     sync::{Arc, Mutex},
 };
 
 use ::concept::thing::{attribute::Attribute, object::Object};
+use answer::variable_value::VariableValue;
 use cucumber::{gherkin::Feature, StatsWriter, World};
-use database::{Database, DatabaseDeleteError};
+use database::Database;
 use futures::{
     future::Either,
     stream::{self, StreamExt},
@@ -102,6 +103,7 @@ pub struct Context {
     server: Option<Arc<Mutex<typedb::Server>>>,
     active_transaction: Option<ActiveTransaction>,
 
+    answers: Vec<HashMap<String, VariableValue<'static>>>,
     objects: HashMap<String, Option<ObjectWithKey>>,
     object_lists: HashMap<String, Vec<Object<'static>>>,
     attributes: HashMap<String, Option<Attribute<'static>>>,
@@ -110,17 +112,16 @@ pub struct Context {
 
 impl Context {
     pub async fn test<I: AsRef<Path>>(glob: I, clean_databases_after: bool) -> bool {
-        let default_panic = std::panic::take_hook();
-        std::panic::set_hook(Box::new(move |info| {
-            default_panic(info);
-            std::process::exit(1);
-        }));
-
         !Self::cucumber::<I>()
             .with_parser(SingletonParser::default())
             .repeat_failed()
             .fail_on_skipped()
             .with_default_cli()
+            .before(move |_, _, _, _| {
+                // cucumber removes the default hook before each scenario and restores it after!
+                std::panic::set_hook(Box::new(move |info| println!("{}", info)));
+                Box::pin(async move {})
+            })
             .after(move |_, _, _, _, context| {
                 Box::pin(async move {
                     context.unwrap().after_scenario(clean_databases_after).await.unwrap();

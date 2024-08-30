@@ -20,7 +20,7 @@ use concept::{
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::program_executor::ProgramExecutor;
 use ir::{
-    program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
+    program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
@@ -60,29 +60,14 @@ fn test_has_planning_traversal() {
         person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone()).unwrap();
     person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
 
-    let person = [
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-    ];
+    let person = [(); 3].map(|()| thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap());
 
-    let age = [
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(10)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(11)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(12)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(13)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(14)).unwrap(),
-    ];
+    let age = [10, 11, 12, 13, 14]
+        .map(|age| thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age)).unwrap());
 
-    let name = [
-        thing_manager.create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("John"))).unwrap(),
-        thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("Alice")))
-            .unwrap(),
-        thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("Leila")))
-            .unwrap(),
-    ];
+    let name = ["John", "Alice", "Leila"].map(|name| {
+        thing_manager.create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(name))).unwrap()
+    });
 
     person[0].set_has_unordered(&mut snapshot, &thing_manager, age[0].clone()).unwrap();
     person[0].set_has_unordered(&mut snapshot, &thing_manager, age[1].clone()).unwrap();
@@ -116,12 +101,14 @@ fn test_has_planning_traversal() {
     let block = builder.finish();
 
     // Executor
-    let snapshot = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let (entry_annotations, annotated_functions) = infer_types(
+    let thing_manager = Arc::new(thing_manager);
+
+    let (entry_annotations, _) = infer_types(
         &block,
         vec![],
-        &snapshot,
+        &*snapshot,
         &type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
@@ -136,7 +123,7 @@ fn test_has_planning_traversal() {
     );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -250,12 +237,13 @@ fn test_links_planning_traversal() {
     let block = builder.finish();
 
     // Executor
-    let snapshot = storage.clone().open_snapshot_read();
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let thing_manager = Arc::new(thing_manager);
     let (entry_annotations, _) = infer_types(
         &block,
         vec![],
-        &snapshot,
+        &*snapshot,
         &type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
@@ -270,7 +258,7 @@ fn test_links_planning_traversal() {
     );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(Arc::new(snapshot), Arc::new(thing_manager));
+    let iterator = executor.into_iterator(snapshot, thing_manager);
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))

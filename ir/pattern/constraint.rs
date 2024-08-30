@@ -99,7 +99,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     ) -> Result<&RoleName<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let role_name = RoleName::new(variable, name.to_owned());
-        self.context.set_variable_category(variable, VariableCategory::Type, role_name.clone().into())?;
+        self.context.set_variable_category(variable, VariableCategory::RoleType, role_name.clone().into())?;
         let as_ref = self.constraints.add_constraint(role_name);
         Ok(as_ref.as_role_name().unwrap())
     }
@@ -130,7 +130,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         );
         let isa = Isa::new(kind, thing, type_);
         self.context.set_variable_category(thing, VariableCategory::Thing, isa.clone().into())?;
-        self.context.set_variable_category(type_, VariableCategory::Type, isa.clone().into())?;
+        self.context.set_variable_category(type_, VariableCategory::ThingType, isa.clone().into())?;
         let constraint = self.constraints.add_constraint(isa);
         Ok(constraint.as_isa().unwrap())
     }
@@ -170,12 +170,13 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         lhs: Variable,
         rhs: Variable,
+        comparator: Comparator,
     ) -> Result<&Comparison<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, lhs)
                 && self.context.is_variable_available(self.constraints.scope, rhs)
         );
-        let comparison = Comparison::new(lhs, rhs);
+        let comparison = Comparison::new(lhs, rhs, Comparator::Equal); // TODO
         self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
         self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
         // todo!("The above lines were the two lines below");
@@ -822,18 +823,16 @@ impl<ID: IrID> ExpressionBinding<ID> {
         // todo!("Do we really need positions here?")
         // self.expression().ids().for_each(|id| function(id, ConstraintIDSide::Right));
     }
-}
 
-impl ExpressionBinding<Variable> {
-    fn new(left: Variable, expression: ExpressionTree<Variable>) -> Self {
+    fn new(left: ID, expression: ExpressionTree<ID>) -> Self {
         Self { left, expression }
     }
 
-    pub fn left(&self) -> Variable {
+    pub fn left(&self) -> ID {
         self.left
     }
 
-    pub fn expression(&self) -> &ExpressionTree<Variable> {
+    pub fn expression(&self) -> &ExpressionTree<ID> {
         &self.expression
     }
 
@@ -870,7 +869,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         Self { assigned: left, function_call, is_stream }
     }
 
-    pub fn assigned(&self) -> &Vec<ID> {
+    pub fn assigned(&self) -> &[ID] {
         &self.assigned
     }
 
@@ -916,16 +915,43 @@ impl<ID: IrID> fmt::Display for FunctionCallBinding<ID> {
     }
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum Comparator {
+    Equal,
+    Less,
+    Greater,
+    LessOrEqual,
+    GreaterOrEqual,
+    Like,
+    Cointains,
+}
+
+impl From<typeql::token::Comparator> for Comparator {
+    fn from(token: typeql::token::Comparator) -> Self {
+        match token {
+            typeql::token::Comparator::Eq => todo!(),
+            typeql::token::Comparator::EqLegacy => todo!(),
+            typeql::token::Comparator::Neq => todo!(),
+            typeql::token::Comparator::Gt => todo!(),
+            typeql::token::Comparator::Gte => todo!(),
+            typeql::token::Comparator::Lt => todo!(),
+            typeql::token::Comparator::Lte => todo!(),
+            typeql::token::Comparator::Contains => todo!(),
+            typeql::token::Comparator::Like => todo!(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Comparison<ID: IrID> {
     lhs: ID,
     rhs: ID,
-    // comparator: Comparator,
+    comparator: Comparator,
 }
 
 impl<ID: IrID> Comparison<ID> {
-    fn new(lhs: ID, rhs: ID) -> Self {
-        Self { lhs, rhs }
+    fn new(lhs: ID, rhs: ID, comparator: Comparator) -> Self {
+        Self { lhs, rhs, comparator }
     }
 
     pub fn lhs(&self) -> ID {
@@ -934,6 +960,10 @@ impl<ID: IrID> Comparison<ID> {
 
     pub fn rhs(&self) -> ID {
         self.rhs
+    }
+
+    pub fn comparator(&self) -> Comparator {
+        self.comparator
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> {

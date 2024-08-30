@@ -19,16 +19,16 @@ use encoding::{
         },
         type_::index::{NameToFunctionDefinitionIndex, NameToStructDefinitionIndex},
     },
-    value::string_bytes::StringBytes,
     AsBytes, Keyable,
 };
 use ir::{
     program::{
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
-        FunctionDefinitionError, FunctionReadError,
+        FunctionReadError,
     },
     translation::function::{build_signature, translate_function},
 };
+use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{
@@ -124,13 +124,12 @@ impl FunctionManager {
 
     pub(crate) fn translate_functions(
         function_index: &impl FunctionSignatureIndex,
-        functions: &Vec<SchemaFunction>,
+        functions: &[SchemaFunction],
     ) -> Result<Vec<ir::program::function::Function>, FunctionError> {
         functions
             .iter()
-            .map(|f| &f.parsed)
-            .map(|function| translate_function(function_index, &function))
-            .collect::<Result<Vec<ir::program::function::Function>, FunctionDefinitionError>>()
+            .map(|function| translate_function(function_index, &function.parsed))
+            .try_collect()
             .map_err(|err| FunctionError::FunctionDefinition { source: err })
     }
 
@@ -244,8 +243,11 @@ impl<'snapshot, Snapshot: ReadableSnapshot> FunctionSignatureIndex
 pub mod tests {
     use std::{collections::HashSet, sync::Arc};
 
-    use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-    use durability::wal::WAL;
+    use concept::{
+        thing::{statistics::Statistics, thing_manager::ThingManager},
+        type_::type_manager::TypeManager,
+    };
+    use durability::{wal::WAL, DurabilitySequenceNumber};
     use encoding::{
         graph::{
             definition::{
@@ -285,12 +287,19 @@ pub mod tests {
     #[test]
     fn test_define_functions() {
         let storage = setup_storage();
-        let type_manager =
-            TypeManager::new(Arc::new(DefinitionKeyGenerator::new()), Arc::new(TypeVertexGenerator::new()), None);
-        let thing_manager = ThingManager::new(Arc::new(ThingVertexGenerator::new()), type_manager.clone());
+        let type_manager = Arc::new(TypeManager::new(
+            Arc::new(DefinitionKeyGenerator::new()),
+            Arc::new(TypeVertexGenerator::new()),
+            None,
+        ));
+        let thing_manager = ThingManager::new(
+            Arc::new(ThingVertexGenerator::new()),
+            type_manager.clone(),
+            Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+        );
 
         let ((_type_animal, type_cat, _type_dog), _) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager, thing_manager);
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
         let functions_to_define = vec!["
         fun cat_names($c: animal) -> { name } :
             match
@@ -364,9 +373,10 @@ pub mod tests {
 
             let function_annotations = cache.get_function_annotations(expected_function_id.clone()).unwrap();
             let function_ir = cache.get_function_ir(expected_function_id.clone()).unwrap();
-            let var_c = *function_ir.block().context().get_variable_named("c", function_ir.block().scope_id()).unwrap();
-            let var_c_annotations = function_annotations.body_annotations().variable_annotations_of(var_c).unwrap();
-            assert_eq!(&Arc::new(HashSet::from([type_cat.clone()])), var_c_annotations);
+            todo!("the following lines no longer compile")
+            // let var_c = *function_ir.block().context().get_variable_named("c", function_ir.block().scope_id()).unwrap();
+            // let var_c_annotations = function_annotations.body_annotations().variable_annotations_of(var_c).unwrap();
+            // assert_eq!(&Arc::new(HashSet::from([type_cat.clone()])), var_c_annotations);
         }
     }
 

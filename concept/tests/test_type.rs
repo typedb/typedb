@@ -14,7 +14,7 @@ use std::{
 
 use chrono_tz::Tz;
 use concept::{
-    thing::thing_manager::ThingManager,
+    thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::{
         annotation::{AnnotationAbstract, AnnotationRange, AnnotationValues},
         attribute_type::AttributeTypeAnnotation,
@@ -25,7 +25,7 @@ use concept::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
-use durability::wal::WAL;
+use durability::{wal::WAL, DurabilitySequenceNumber};
 use encoding::{
     graph::{
         definition::{
@@ -57,7 +57,11 @@ fn type_manager_no_cache() -> Arc<TypeManager> {
 
 fn thing_manager(type_manager: Arc<TypeManager>) -> Arc<ThingManager> {
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-    Arc::new(ThingManager::new(thing_vertex_generator.clone(), type_manager.clone()))
+    Arc::new(ThingManager::new(
+        thing_vertex_generator.clone(),
+        type_manager.clone(),
+        Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+    ))
 }
 
 fn type_manager_at_snapshot(
@@ -1060,7 +1064,6 @@ fn test_struct_definition() {
     // Without cache, uncommitted
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_manager = type_manager_no_cache();
-    let thing_manager = thing_manager(type_manager.clone());
 
     let nested_struct_name = "nested_struct".to_owned();
     let nested_struct_fields =
@@ -1098,7 +1101,6 @@ fn test_struct_definition() {
     {
         let snapshot = storage.clone().open_snapshot_read();
         let type_manager = type_manager_no_cache();
-        let thing_manager = crate::thing_manager(type_manager.clone());
 
         assert_eq!(0, nested_struct_key.definition_id().as_uint());
         // Read back:

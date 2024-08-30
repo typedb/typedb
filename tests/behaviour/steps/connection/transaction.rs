@@ -53,25 +53,26 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
 #[step(expr = "transaction commits{may_error}")]
 pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
     match context.take_transaction().unwrap() {
-        ActiveTransaction::Read(_) => {}
+        ActiveTransaction::Read(_) => (),
         ActiveTransaction::Write(tx) => {
-            if let Some(error) = may_error.check(&tx.commit()) {
-                if let DataCommitError::ConceptWriteErrors { source, .. } = error {
-                    source
-                        .iter()
-                        .for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone())))
+            if let Some(error) = may_error.check(tx.commit()) {
+                if let DataCommitError::ConceptWriteErrors { source: errors, .. } = error {
+                    for error in errors {
+                        may_error.check_concept_write_without_read_errors::<()>(&Err(error))
+                    }
                 } else {
                     panic!("Unexpected write commit error: {:?}", error)
                 }
             }
         }
         ActiveTransaction::Schema(tx) => {
-            if let Some(schema_commit_error) = may_error.check(&tx.commit()) {
-                match schema_commit_error {
-                    SchemaCommitError::ConceptWrite { errors } => errors
-                        .iter()
-                        .for_each(|error| may_error.check_concept_write_without_read_errors::<()>(&Err(error.clone()))),
-                    _ => {}
+            if let Some(error) = may_error.check(tx.commit()) {
+                if let SchemaCommitError::ConceptWrite { errors, .. } = error {
+                    for error in errors {
+                        may_error.check_concept_write_without_read_errors::<()>(&Err(error))
+                    }
+                } else {
+                    panic!("Unexpected schema commit error: {:?}", error)
                 }
             }
         }

@@ -67,6 +67,7 @@ use crate::{
         relation::{
             IndexedPlayersIterator, LinksIterator, Relation, RelationRoleIterator, RolePlayer, RolePlayerIterator,
         },
+        statistics::Statistics,
         thing_manager::validation::{
             commit_time_validation::{collect_errors, CommitTimeValidation},
             operation_time_validation::OperationTimeValidation,
@@ -96,11 +97,20 @@ pub mod validation;
 pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
     type_manager: Arc<TypeManager>,
+    statistics: Arc<Statistics>,
 }
 
 impl ThingManager {
-    pub fn new(vertex_generator: Arc<ThingVertexGenerator>, type_manager: Arc<TypeManager>) -> Self {
-        ThingManager { vertex_generator, type_manager }
+    pub fn new(
+        vertex_generator: Arc<ThingVertexGenerator>,
+        type_manager: Arc<TypeManager>,
+        statistics: Arc<Statistics>,
+    ) -> Self {
+        ThingManager { vertex_generator, type_manager, statistics }
+    }
+
+    pub fn statistics(&self) -> &Statistics {
+        &self.statistics
     }
 
     pub(crate) fn type_manager(&self) -> &TypeManager {

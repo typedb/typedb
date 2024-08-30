@@ -7,7 +7,7 @@
 use crate::{
     pattern::conjunction::ConjunctionBuilder,
     program::{
-        block::{BlockContext, FunctionalBlock, FunctionalBlockBuilder},
+        block::{FunctionalBlock, FunctionalBlockBuilder},
         function_signature::FunctionSignatureIndex,
     },
     translation::{constraints::add_statement, TranslationContext},
@@ -24,26 +24,24 @@ pub fn translate_match<'a>(
     Ok(builder)
 }
 
-pub(crate) fn add_patterns<'cx, 'reg>(
+pub(crate) fn add_patterns(
     function_index: &impl FunctionSignatureIndex,
-    conjunction: &mut ConjunctionBuilder<'cx, 'reg>,
-    patterns: &Vec<typeql::pattern::Pattern>,
+    conjunction: &mut ConjunctionBuilder<'_, '_>,
+    patterns: &[typeql::Pattern],
 ) -> Result<(), PatternDefinitionError> {
     patterns.iter().try_for_each(|pattern| match pattern {
-        typeql::pattern::Pattern::Conjunction(nested) => add_patterns(function_index, conjunction, &nested.patterns),
-        typeql::pattern::Pattern::Disjunction(disjunction) => add_disjunction(function_index, conjunction, disjunction),
-        typeql::pattern::Pattern::Negation(negation) => add_negation(function_index, conjunction, negation),
-        typeql::pattern::Pattern::Optional(optional) => add_optional(function_index, conjunction, optional),
-        typeql::pattern::Pattern::Statement(statement) => {
-            add_statement(function_index, &mut conjunction.constraints_mut(), statement)
-        }
+        typeql::Pattern::Conjunction(nested) => add_patterns(function_index, conjunction, &nested.patterns),
+        typeql::Pattern::Disjunction(disjunction) => add_disjunction(function_index, conjunction, disjunction),
+        typeql::Pattern::Negation(negation) => add_negation(function_index, conjunction, negation),
+        typeql::Pattern::Optional(optional) => add_optional(function_index, conjunction, optional),
+        typeql::Pattern::Statement(statement) => add_statement(function_index, conjunction, statement),
     })?;
     Ok(())
 }
 
-fn add_disjunction<'cx, 'reg>(
+fn add_disjunction(
     function_index: &impl FunctionSignatureIndex,
-    conjunction: &mut ConjunctionBuilder<'cx, 'reg>,
+    conjunction: &mut ConjunctionBuilder<'_, '_>,
     disjunction: &typeql::pattern::Disjunction,
 ) -> Result<(), PatternDefinitionError> {
     let mut disjunction_builder = conjunction.add_disjunction();
@@ -54,18 +52,18 @@ fn add_disjunction<'cx, 'reg>(
     Ok(())
 }
 
-fn add_negation<'cx, 'reg>(
+fn add_negation(
     function_index: &impl FunctionSignatureIndex,
-    conjunction: &mut ConjunctionBuilder<'cx, 'reg>,
+    conjunction: &mut ConjunctionBuilder<'_, '_>,
     negation: &typeql::pattern::Negation,
 ) -> Result<(), PatternDefinitionError> {
     let mut negation_builder = conjunction.add_negation();
     add_patterns(function_index, &mut negation_builder, &negation.patterns)
 }
 
-fn add_optional<'cx, 'reg>(
+fn add_optional(
     function_index: &impl FunctionSignatureIndex,
-    conjunction: &mut ConjunctionBuilder<'cx, 'reg>,
+    conjunction: &mut ConjunctionBuilder<'_, '_>,
     optional: &typeql::pattern::Optional,
 ) -> Result<(), PatternDefinitionError> {
     let mut optional_builder = conjunction.add_optional();

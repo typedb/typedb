@@ -12,7 +12,7 @@ use concept::{
         attribute::Attribute,
         object::{Object, ObjectAPI},
     },
-    type_::{attribute_type::AttributeType, Capability, OwnerAPI, TypeAPI},
+    type_::{attribute_type::AttributeType, Capability, OwnerAPI},
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
@@ -93,7 +93,7 @@ async fn object_set_has(
     // TODO: The interesting error (CannotGetOwnsDoesntExist) is a ConceptError, so we need to expect it
     // However, there are other random ConceptErrors that can make the test look like "it passes" while it
     // is just broken
-    may_error.check(&object_set_has_impl(context, &object, &attribute));
+    may_error.check(object_set_has_impl(context, &object, &attribute));
 }
 
 #[apply(generic_step)]

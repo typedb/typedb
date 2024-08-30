@@ -50,6 +50,17 @@ rust_test(
     crate_features = ["bazel"],
 )
 
+rust_test(
+    name = "test_match",
+    srcs = ["match.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@vaticle_typedb_behaviour//query/language:match.feature"],
+    crate_features = ["bazel"],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

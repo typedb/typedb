@@ -7,13 +7,12 @@
 // jk there's no planning to be done here, just execution.
 // There is a need to construct the executor though.
 
-use std::{collections::HashMap, fmt::Display};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::{graph::type_::Kind, value::value::Value};
 use ir::pattern::{constraint::Constraint, expression::Expression};
 use itertools::Itertools;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     filter_variants,
@@ -35,10 +34,11 @@ pub struct InsertProgram {
 }
 
 /*
-* Assumptions:
-*   - Any labels have been assigned to a type variable and added as a type-annotation, though we should have a more explicit mechanism for this.
-*   - Validation has already been done - An input row will not violate schema on insertion.
-*/
+ * Assumptions:
+ *   - Any labels have been assigned to a type variable and added as a type-annotation, though we should have a more explicit mechanism for this.
+ *   - Validation has already been done - An input row will not violate schema on insertion.
+ */
+
 pub fn compile(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
@@ -52,9 +52,9 @@ pub fn compile(
     add_role_players(constraints, type_annotations, &variables, &mut connection_inserts)?;
 
     let mut output_row_schema = Vec::with_capacity(variables.len()); // TODO
-    variables.iter().map(|(v, i)| (i, v)).sorted().for_each(|(i, v)| {
+    variables.iter().map(|(v, i)| (i, v)).sorted().for_each(|(&i, &v)| {
         debug_assert!(i.position as usize == output_row_schema.len());
-        output_row_schema.push((v.clone(), VariableSource::InputVariable(i.clone())));
+        output_row_schema.push((v, VariableSource::InputVariable(i)));
     });
 
     let debug_info = HashMap::new(); // TODO
@@ -76,7 +76,7 @@ fn add_inserted_concepts(
         }
 
         let type_ = match (input_variables.get(&isa.type_()), type_bindings.get(&isa.type_())) {
-            (Some(input), None) => TypeSource::InputVariable(input.clone()),
+            (Some(&input), None) => TypeSource::InputVariable(input),
             (None, Some(type_)) => TypeSource::Constant(type_.clone()),
             (Some(_), Some(_)) => unreachable!("Explicit label constraints are banned in insert"),
             (None, None) => {
@@ -108,8 +108,8 @@ fn add_inserted_concepts(
             let value = if let Some(constant) = value_bindings.get(&value_variable) {
                 debug_assert!(!input_variables.contains_key(&value_variable));
                 ValueSource::ValueConstant(constant.clone().into_owned())
-            } else if let Some(position) = input_variables.get(&value_variable) {
-                ValueSource::InputVariable(position.clone())
+            } else if let Some(&position) = input_variables.get(&value_variable) {
+                ValueSource::InputVariable(position)
             } else {
                 return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute {
                     variable: value_variable,
@@ -151,7 +151,7 @@ fn add_role_players(
         let player = get_thing_source(input_variables, role_player.player())?;
         let role_variable = role_player.role_type();
         let role = match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
-            (Some(input), None) => TypeSource::InputVariable(input.clone()),
+            (Some(&input), None) => TypeSource::InputVariable(input),
             (None, Some(type_)) => TypeSource::Constant(type_.clone()),
             (None, None) => {
                 // TODO: Do we want to support inserts with unspecified role-types?
@@ -159,9 +159,7 @@ fn add_role_players(
                 if annotations.len() == 1 {
                     TypeSource::Constant(annotations.iter().find(|_| true).unwrap().clone())
                 } else {
-                    return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType {
-                        variable: role_variable.clone(),
-                    })?;
+                    return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType { variable: role_variable })?;
                 }
             }
             (Some(_), Some(_)) => unreachable!(),
@@ -191,7 +189,7 @@ fn resolve_value_variable_for_inserted_attribute(
     if comparisons.len() == 1 {
         Ok(comparisons[0])
     } else {
-        debug_assert!(comparisons.len() == 0);
+        debug_assert!(comparisons.is_empty());
         Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable })
     }
 }
@@ -219,7 +217,7 @@ fn collect_type_bindings(
     filter_variants!(Constraint::Label : constraints).for_each(|label| {
         let annotations = type_annotations.variable_annotations_of(label.left()).unwrap();
         debug_assert!(annotations.len() == 1);
-        let type_ = annotations.iter().find(|_| true).unwrap();
+        let type_ = annotations.iter().next().unwrap();
         debug_assert!(!type_bindings.contains_key(&label.left()));
         type_bindings.insert(label.left(), type_.clone());
     });

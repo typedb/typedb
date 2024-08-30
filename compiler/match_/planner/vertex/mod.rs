@@ -4,7 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, ops::Deref};
+use std::{
+    array,
+    collections::{HashMap, HashSet},
+    iter,
+    ops::Deref,
+    slice,
+};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -16,15 +22,40 @@ use crate::match_::inference::type_annotations::TypeAnnotations;
 const OPEN_ITERATOR_RELATIVE_COST: f64 = 5.0;
 const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
 
+const REGEX_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
+const CONTAINS_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
+
 // FIXME name
 #[derive(Debug)]
 pub(super) enum PlannerVertex {
+    Constant,
+    Value(ValuePlanner),
     Thing(ThingPlanner),
     Has(HasPlanner),
     Links(LinksPlanner),
+    Expression(()),
 }
 
 impl PlannerVertex {
+    pub(super) fn is_valid(&self, ordered: &[usize]) -> bool {
+        match self {
+            Self::Constant => true,                              // always valid: comes from query
+            Self::Thing(_) => true,                              // always valid: isa iterator
+            Self::Has(_) => true,                                // always valid: has iterator
+            Self::Links(_) => true,                              // always valid: links iterator
+            Self::Value(value) => value.is_valid(ordered), // may be invalid: has to be from an attribute or a expression
+            Self::Expression(_) => todo!("validate expression"), // may be invalid: inputs must be bound
+        }
+    }
+
+    pub(super) fn is_constant(&self) -> bool {
+        matches!(self, Self::Constant)
+    }
+
+    pub(crate) fn is_iterator(&self) -> bool {
+        matches!(self, Self::Has(_) | Self::Links(_))
+    }
+
     fn as_thing(&self) -> Option<&ThingPlanner> {
         match self {
             Self::Thing(v) => Some(v),
@@ -45,6 +76,61 @@ impl PlannerVertex {
             _ => None,
         }
     }
+
+    pub(super) fn variables(&self) -> impl Iterator<Item = usize> {
+        match self {
+            PlannerVertex::Constant => [None; 3].into_iter().flatten(),
+            PlannerVertex::Value(_inner) => todo!(),
+            PlannerVertex::Thing(_inner) => todo!(),
+            PlannerVertex::Has(inner) => inner.variables(),
+            PlannerVertex::Links(inner) => inner.variables(),
+            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+        }
+    }
+
+    pub(super) fn add_is(&mut self, other: usize) {
+        match self {
+            PlannerVertex::Constant => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Thing(inner) => inner.add_is(other),
+            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+        }
+    }
+
+    pub(super) fn add_equal(&mut self, other: usize) {
+        match self {
+            PlannerVertex::Constant => (),
+            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Thing(inner) => inner.add_equal(other),
+            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+        }
+    }
+
+    pub(super) fn add_lower_bound(&mut self, other: usize) {
+        match self {
+            PlannerVertex::Constant => (),
+            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Thing(inner) => inner.add_lower_bound(other),
+            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+        }
+    }
+
+    pub(super) fn add_upper_bound(&mut self, other: usize) {
+        match self {
+            PlannerVertex::Constant => (),
+            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Thing(inner) => inner.add_upper_bound(other),
+            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
+            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -54,24 +140,65 @@ pub(super) struct VertexCost {
     pub branching_factor: f64,
 }
 
+impl Default for VertexCost {
+    fn default() -> Self {
+        Self { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
 pub(super) trait Costed {
     fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost;
 }
 
-// TODO delegate
 impl Costed for PlannerVertex {
     fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
         match self {
+            Self::Constant => VertexCost::default(),
+            Self::Value(inner) => inner.cost(inputs, elements),
             Self::Thing(inner) => inner.cost(inputs, elements),
             Self::Has(inner) => inner.cost(inputs, elements),
             Self::Links(inner) => inner.cost(inputs, elements),
+            Self::Expression(_) => todo!("expression cost"),
         }
     }
 }
 
 #[derive(Debug)]
+pub(super) struct ValuePlanner;
+
+impl ValuePlanner {
+    pub(crate) fn from_variable(_: Variable) -> Self {
+        Self
+    }
+
+    pub(crate) fn is_valid(&self, _ordered: &[usize]) -> bool {
+        todo!("value planner is valid")
+    }
+
+    fn expected_size(&self, _inputs: &[usize]) -> f64 {
+        todo!("value planner expected size")
+    }
+}
+
+impl Costed for ValuePlanner {
+    fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        if inputs.is_empty() {
+            VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+        } else {
+            VertexCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
+        }
+    }
+}
+
+#[derive(Debug, Default /* todo remove */)]
 pub(super) struct ThingPlanner {
     expected_size: f64,
+
+    bound_exact: HashSet<usize>, // IID or exact Type + Value
+
+    bound_value_equal: HashSet<usize>,
+    bound_value_below: HashSet<usize>,
+    bound_value_above: HashSet<usize>,
 }
 
 impl ThingPlanner {
@@ -93,25 +220,73 @@ impl ThingPlanner {
                 }
             })
             .sum::<u64>() as f64;
-        Self { expected_size }
+        Self { expected_size, ..Default::default() }
+    }
+
+    pub(super) fn add_is(&mut self, other: usize) {
+        self.bound_exact.insert(other);
+    }
+
+    pub(super) fn add_equal(&mut self, other: usize) {
+        self.bound_value_equal.insert(other);
+    }
+
+    pub(super) fn add_lower_bound(&mut self, other: usize) {
+        self.bound_value_below.insert(other);
+    }
+
+    pub(super) fn add_upper_bound(&mut self, other: usize) {
+        self.bound_value_above.insert(other);
     }
 }
 
 impl Costed for ThingPlanner {
-    fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        if inputs.is_empty() {
-            VertexCost {
-                per_input: OPEN_ITERATOR_RELATIVE_COST,
-                per_output: ADVANCE_ITERATOR_RELATIVE_COST,
-                branching_factor: self.expected_size,
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        let mut per_input = OPEN_ITERATOR_RELATIVE_COST;
+        let mut per_output = ADVANCE_ITERATOR_RELATIVE_COST;
+        let mut branching_factor = self.expected_size;
+
+        let mut is_bounded_below = false;
+        let mut is_bounded_above = false;
+
+        for &input in inputs {
+            if self.bound_exact.contains(&input) {
+                if matches!(elements[input], PlannerVertex::Constant) {
+                } else {
+                    // comes from a previous step, must be in the DB?
+                    // TODO verify this assumption
+                    per_input = 0.0;
+                    per_output = 0.0;
+                    branching_factor /= self.expected_size;
+                }
             }
-        } else {
-            VertexCost {
-                per_input: 0.0,
-                per_output: 0.0,
-                branching_factor: 1.0, // assumes deconstruction; TODO consider intersection
+
+            if self.bound_value_equal.contains(&input) {
+                let b = match &elements[input] {
+                    PlannerVertex::Constant => 1.0,
+                    PlannerVertex::Value(value) => 1.0 / value.expected_size(inputs),
+                    PlannerVertex::Thing(thing) => 1.0 / thing.expected_size,
+                    _ => unreachable!("equality with an edge"),
+                };
+                branching_factor = f64::min(branching_factor, b);
+            }
+
+            if self.bound_value_below.contains(&input) {
+                is_bounded_below = true;
+            }
+
+            if self.bound_value_above.contains(&input) {
+                is_bounded_above = true;
             }
         }
+
+        if is_bounded_below ^ is_bounded_above {
+            branching_factor /= 2.0
+        } else if is_bounded_below && is_bounded_above {
+            branching_factor /= 3.0
+        }
+
+        VertexCost { per_input, per_output, branching_factor }
     }
 }
 
@@ -165,6 +340,10 @@ impl HasPlanner {
             expected_unbound_size,
             unbound_is_forward,
         }
+    }
+
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [Some(self.owner), Some(self.attribute), None].into_iter().flatten()
     }
 }
 
@@ -271,6 +450,10 @@ impl LinksPlanner {
             expected_unbound_size,
             unbound_is_forward,
         }
+    }
+
+    fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [self.relation, self.player, self.role].map(Some).into_iter().flatten()
     }
 }
 

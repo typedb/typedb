@@ -6,16 +6,13 @@
 
 use std::{
     collections::HashMap,
-    future::Future,
     ops::{
         ControlFlow,
         ControlFlow::{Break, Continue},
     },
-    ptr::write,
     sync::Arc,
 };
 
-use bytes::util::HexBytesFormatter;
 use database::{
     database_manager::DatabaseManager,
     transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
@@ -23,14 +20,8 @@ use database::{
 use error::typedb_error;
 use options::TransactionOptions;
 use query::{error::QueryError, query_manager::QueryManager};
-use resource::constants::server::{
-    DEFAULT_PREFETCH_SIZE, DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL,
-    DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
-};
-use storage::{
-    durability_client::WALClient,
-    snapshot::{ReadableSnapshot, WritableSnapshot},
-};
+use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
+use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
 use tokio::{
     sync::{broadcast, mpsc::Sender},
     task::{spawn_blocking, JoinHandle},
@@ -38,7 +29,7 @@ use tokio::{
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
-use typedb_protocol::transaction::{Client, Req, Type};
+use typedb_protocol::transaction::{Client, Type};
 use typeql::{
     parse_query,
     query::{stage::Stage, Pipeline, SchemaQuery},
@@ -46,10 +37,7 @@ use typeql::{
 };
 use uuid::Uuid;
 
-use crate::service::{
-    error::{ProtocolError, StatusConvertible},
-    RequestID,
-};
+use crate::service::error::{ProtocolError, StatusConvertible};
 
 // TODO: where does this belong?
 #[derive(Debug)]

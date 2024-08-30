@@ -6,8 +6,11 @@
 
 use std::sync::Arc;
 
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use durability::wal::WAL;
+use concept::{
+    thing::{statistics::Statistics, thing_manager::ThingManager},
+    type_::type_manager::TypeManager,
+};
+use durability::{wal::WAL, DurabilitySequenceNumber};
 use encoding::{
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
@@ -35,7 +38,11 @@ pub fn load_managers(storage: Arc<MVCCStorage<WALClient>>) -> (Arc<TypeManager>,
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage.clone()).unwrap());
     let type_manager =
         Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
-    let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
+    let thing_manager = ThingManager::new(
+        thing_vertex_generator.clone(),
+        type_manager.clone(),
+        Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+    );
     let function_manager = FunctionManager::new(
         definition_key_generator.clone(),
         Some(Arc::new(FunctionCache::new(storage.clone(), &type_manager, storage.read_watermark()).unwrap())),

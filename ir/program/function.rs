@@ -11,7 +11,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 
-use crate::program::block::{BlockContext, FunctionalBlock, VariableRegistry};
+use crate::program::block::{FunctionalBlock, VariableRegistry};
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
@@ -25,7 +25,7 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn new<'a>(
+    pub fn new(
         block: FunctionalBlock,
         variable_registry: VariableRegistry,
         arguments: Vec<Variable>,
@@ -34,15 +34,18 @@ impl Function {
         Self { block, variable_registry, arguments, return_operation }
     }
 
-    pub fn arguments(&self) -> &Vec<Variable> {
+    pub fn arguments(&self) -> &[Variable] {
         &self.arguments
     }
+
     pub fn block(&self) -> &FunctionalBlock {
         &self.block
     }
+
     pub fn variable_registry(&self) -> &VariableRegistry {
         &self.variable_registry
     }
+
     pub fn return_operation(&self) -> &ReturnOperation {
         &self.return_operation
     }
@@ -63,7 +66,7 @@ impl ReturnOperation {
             ReturnOperation::Stream(vars) => {
                 let inputs = vars.iter().map(|v| function_variable_annotations.get(v).unwrap());
                 inputs
-                    .map(|types_as_arced_hashset| BTreeSet::from_iter(types_as_arced_hashset.iter().map(|t| t.clone())))
+                    .map(|types_as_arced_hashset| BTreeSet::from_iter(types_as_arced_hashset.iter().cloned()))
                     .collect()
             }
             ReturnOperation::Single(_) => {

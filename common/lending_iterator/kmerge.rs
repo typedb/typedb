@@ -39,7 +39,7 @@ where
             .map(|peekable| PeekWrapper { iter: peekable, cmp_fn: cmp });
         // Peek wrapper reverses the comparator to create a min heap
         let queue = BinaryHeap::from_iter(iters);
-        Self { iterators: queue, next_iterator: None, state: State::Init, phantom_compare: PhantomData::default() }
+        Self { iterators: queue, next_iterator: None, state: State::Init, phantom_compare: PhantomData }
     }
 
     fn find_next_state(&mut self) {

@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#[derive(Debug)]
 pub enum Either<F, S> {
     First(F),
     Second(S),

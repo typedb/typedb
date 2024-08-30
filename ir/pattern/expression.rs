@@ -13,10 +13,7 @@ use std::{
 use answer::variable::Variable;
 use encoding::value::value::Value;
 
-use crate::{
-    pattern::{variable_category::VariableCategory, IrID},
-    PatternDefinitionError,
-};
+use crate::{pattern::IrID, PatternDefinitionError};
 
 enum ExpectedArgumentType {
     Single,
@@ -27,7 +24,7 @@ enum ExpectedArgumentType {
 pub type ExpressionTreeNodeId = usize;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct ExpressionTree<ID: IrID> {
+pub struct ExpressionTree<ID> {
     preorder_tree: Vec<Expression<ID>>,
 }
 
@@ -35,34 +32,39 @@ impl ExpressionTree<Variable> {
     pub(crate) fn empty() -> Self {
         Self { preorder_tree: Vec::new() }
     }
+}
 
+impl<ID: IrID> ExpressionTree<ID> {
     pub fn is_empty(&self) -> bool {
         self.preorder_tree.is_empty()
     }
 
-    pub fn expression_tree_preorder(&self) -> impl Iterator<Item = &Expression<Variable>> {
+    pub fn is_constant(&self) -> bool {
+        matches!(&*self.preorder_tree, [Expression::Constant(_)])
+    }
+
+    pub fn expression_tree_preorder(&self) -> impl Iterator<Item = &Expression<ID>> {
         self.preorder_tree.iter()
     }
 
-    pub fn get_root(&self) -> &Expression<Variable> {
+    pub fn get_root(&self) -> &Expression<ID> {
         self.preorder_tree.last().unwrap()
     }
 
-    pub fn get(&self, expression_id: ExpressionTreeNodeId) -> &Expression<Variable> {
+    pub fn get(&self, expression_id: ExpressionTreeNodeId) -> &Expression<ID> {
         &self.preorder_tree[expression_id]
     }
 
-    pub(crate) fn add(&mut self, expression: Expression<Variable>) -> ExpressionTreeNodeId {
+    pub(crate) fn add(&mut self, expression: Expression<ID>) -> ExpressionTreeNodeId {
         self.preorder_tree.push(expression);
         self.preorder_tree.len() - 1
     }
 
-    pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub fn variables(&self) -> impl Iterator<Item = ID> + '_ {
         self.preorder_tree.iter().filter_map(|expr| match expr {
-            Expression::Variable(variable) => Some(variable.clone()),
+            &Expression::Variable(variable) => Some(variable),
             Expression::ListIndex(list_index) => Some(list_index.list_variable()),
             Expression::ListIndexRange(list_index_range) => Some(list_index_range.list_variable()),
-
             Expression::Constant(_) | Expression::Operation(_) | Expression::BuiltInCall(_) | Expression::List(_) => {
                 None
             }
@@ -71,7 +73,7 @@ impl ExpressionTree<Variable> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Expression<ID: IrID> {
+pub enum Expression<ID> {
     Constant(Value<'static>),
     Variable(ID),
     Operation(Operation),
@@ -126,7 +128,7 @@ impl BuiltInCall {
         self.builtin_id
     }
 
-    pub fn argument_expression_ids(&self) -> &Vec<ExpressionTreeNodeId> {
+    pub fn argument_expression_ids(&self) -> &[ExpressionTreeNodeId] {
         &self.argument_expression_ids
     }
 }
@@ -144,17 +146,17 @@ pub enum BuiltInFunctionID {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct ListIndex<ID: IrID> {
+pub struct ListIndex<ID> {
     list_variable: ID,
     index_expression_id: ExpressionTreeNodeId,
 }
 
-impl ListIndex<Variable> {
-    pub(crate) fn new(list_variable: Variable, index_expression_id: ExpressionTreeNodeId) -> ListIndex<Variable> {
+impl<ID: IrID> ListIndex<ID> {
+    pub(crate) fn new(list_variable: ID, index_expression_id: ExpressionTreeNodeId) -> ListIndex<ID> {
         Self { list_variable, index_expression_id }
     }
 
-    pub fn list_variable(&self) -> Variable {
+    pub fn list_variable(&self) -> ID {
         self.list_variable
     }
 
@@ -173,13 +175,13 @@ impl ListConstructor {
         Self { item_expression_ids }
     }
 
-    pub fn item_expression_ids(&self) -> &Vec<ExpressionTreeNodeId> {
+    pub fn item_expression_ids(&self) -> &[ExpressionTreeNodeId] {
         &self.item_expression_ids
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct ListIndexRange<ID: IrID> {
+pub struct ListIndexRange<ID> {
     list_variable: ID,
     from_expression_id: ExpressionTreeNodeId,
     to_expression_id: ExpressionTreeNodeId,

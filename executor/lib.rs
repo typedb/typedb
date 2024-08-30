@@ -7,11 +7,10 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{collections::HashMap, fmt::Display};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use compiler::VariablePosition;
-use ir::pattern::IrID;
 
 pub mod batch;
 pub mod expression_executor;

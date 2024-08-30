@@ -182,7 +182,7 @@ impl FunctionAnnotations {
         &self.block_annotations
     }
 
-    pub fn return_annotations(&self) -> &Vec<BTreeSet<Type>> {
+    pub fn return_annotations(&self) -> &[BTreeSet<Type>] {
         &self.return_annotations
     }
 }

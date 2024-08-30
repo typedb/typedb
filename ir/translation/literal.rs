@@ -11,32 +11,15 @@ use encoding::value::{
     decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
     value::Value,
 };
-use typeql::value::{DateTimeTZLiteral, Literal, Sign, SignedDecimalLiteral, StringLiteral, TimeZone, ValueLiteral};
+use typeql::value::{
+    BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, Literal, Sign, SignedDecimalLiteral,
+    SignedIntegerLiteral, StringLiteral, TimeFragment, TimeZone, ValueLiteral,
+};
 
 use crate::LiteralParseError;
 
 pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, LiteralParseError> {
-    // We don't know the final type yet. Zip with value-type annotations when constructing the executor.
-    Ok(match &literal.inner {
-        ValueLiteral::Boolean(boolean) => Value::Boolean(bool::from_typeql_literal(boolean)?),
-        ValueLiteral::Integer(integer) => Value::Long(i64::from_typeql_literal(integer)?),
-        ValueLiteral::Decimal(decimal) => match Decimal::from_typeql_literal(decimal) {
-            Ok(decimal) => Value::Decimal(decimal),
-            Err(_) => Value::Double(f64::from_typeql_literal(decimal)?),
-        },
-        ValueLiteral::Date(date) => Value::Date(NaiveDate::from_typeql_literal(&date.date)?),
-        ValueLiteral::DateTime(datetime) => Value::DateTime(NaiveDateTime::from_typeql_literal(datetime)?),
-        ValueLiteral::DateTimeTz(datetime_tz) => {
-            Value::DateTimeTZ(chrono::DateTime::<chrono_tz::Tz>::from_typeql_literal(datetime_tz)?)
-        }
-        ValueLiteral::Duration(_) => todo!(),
-        ValueLiteral::String(string) => Value::String(Cow::Owned(extract_string_literal(string)?)),
-        ValueLiteral::Struct(_) => todo!(),
-    })
-}
-
-pub(crate) fn extract_string_literal(literal: &StringLiteral) -> Result<String, LiteralParseError> {
-    Ok(literal.unescape().map_err(|_| LiteralParseError::CannotUnescapeString { literal: literal.clone() })?)
+    Value::from_typeql_literal(literal)
 }
 
 pub trait FromTypeQLLiteral: Sized {
@@ -48,8 +31,32 @@ pub trait FromTypeQLLiteral: Sized {
     }
 }
 
+impl FromTypeQLLiteral for Value<'static> {
+    type TypeQLLiteral = Literal;
+
+    fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
+        // We don't know the final type yet. Zip with value-type annotations when constructing the executor.
+        match &literal.inner {
+            ValueLiteral::Boolean(boolean) => Ok(Value::Boolean(bool::from_typeql_literal(boolean)?)),
+            ValueLiteral::Integer(integer) => Ok(Value::Long(i64::from_typeql_literal(integer)?)),
+            ValueLiteral::Decimal(decimal) => match Decimal::from_typeql_literal(decimal) {
+                Ok(decimal) => Ok(Value::Decimal(decimal)),
+                Err(_) => Ok(Value::Double(f64::from_typeql_literal(decimal)?)),
+            },
+            ValueLiteral::Date(date) => Ok(Value::Date(NaiveDate::from_typeql_literal(&date.date)?)),
+            ValueLiteral::DateTime(datetime) => Ok(Value::DateTime(NaiveDateTime::from_typeql_literal(datetime)?)),
+            ValueLiteral::DateTimeTz(datetime_tz) => {
+                Ok(Value::DateTimeTZ(chrono::DateTime::<chrono_tz::Tz>::from_typeql_literal(datetime_tz)?))
+            }
+            ValueLiteral::Duration(_) => todo!(),
+            ValueLiteral::String(string) => Ok(Value::String(Cow::Owned(String::from_typeql_literal(string)?))),
+            ValueLiteral::Struct(_) => todo!(),
+        }
+    }
+}
+
 impl FromTypeQLLiteral for bool {
-    type TypeQLLiteral = typeql::value::BooleanLiteral;
+    type TypeQLLiteral = BooleanLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         Self::parse_primitive(literal.value.as_str())
@@ -57,11 +64,11 @@ impl FromTypeQLLiteral for bool {
 }
 
 impl FromTypeQLLiteral for i64 {
-    type TypeQLLiteral = typeql::value::SignedIntegerLiteral;
+    type TypeQLLiteral = SignedIntegerLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let unsigned: i64 = Self::parse_primitive(literal.integral.as_str())?;
-        Ok(match literal.sign.clone().unwrap_or(Sign::Plus) {
+        Ok(match literal.sign.unwrap_or(Sign::Plus) {
             Sign::Plus => unsigned,
             Sign::Minus => -unsigned,
         })
@@ -72,10 +79,10 @@ impl FromTypeQLLiteral for f64 {
     type TypeQLLiteral = SignedDecimalLiteral;
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let unsigned = Self::parse_primitive::<f64>(literal.decimal.as_str())?;
-        Ok(match &literal.sign.clone().unwrap_or(Sign::Plus) {
-            Sign::Plus => unsigned,
-            Sign::Minus => -unsigned,
-        })
+        match &literal.sign.unwrap_or(Sign::Plus) {
+            Sign::Plus => Ok(unsigned),
+            Sign::Minus => Ok(-unsigned),
+        }
     }
 }
 
@@ -100,7 +107,7 @@ impl FromTypeQLLiteral for Decimal {
 }
 
 impl FromTypeQLLiteral for NaiveDate {
-    type TypeQLLiteral = typeql::value::DateFragment;
+    type TypeQLLiteral = DateFragment;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let (year, month, day) = (
@@ -108,13 +115,12 @@ impl FromTypeQLLiteral for NaiveDate {
             Self::parse_primitive(literal.month.as_str())?,
             Self::parse_primitive(literal.day.as_str())?,
         );
-        NaiveDate::from_ymd_opt(year, month, day)
-            .map_or_else(|| Err(LiteralParseError::InvalidDate { year, month, day }), |date| Ok(date))
+        NaiveDate::from_ymd_opt(year, month, day).ok_or(LiteralParseError::InvalidDate { year, month, day })
     }
 }
 
 impl FromTypeQLLiteral for NaiveTime {
-    type TypeQLLiteral = typeql::value::TimeFragment;
+    type TypeQLLiteral = TimeFragment;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let hour = Self::parse_primitive(literal.hour.as_str())?;
@@ -135,7 +141,7 @@ impl FromTypeQLLiteral for NaiveTime {
 }
 
 impl FromTypeQLLiteral for TimeZone {
-    type TypeQLLiteral = typeql::value::TimeZone;
+    type TypeQLLiteral = TimeZone;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         match literal {
@@ -146,7 +152,7 @@ impl FromTypeQLLiteral for TimeZone {
 }
 
 impl FromTypeQLLiteral for NaiveDateTime {
-    type TypeQLLiteral = typeql::value::DateTimeLiteral;
+    type TypeQLLiteral = DateTimeLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let date = NaiveDate::from_typeql_literal(&literal.date)?;
@@ -165,6 +171,16 @@ impl FromTypeQLLiteral for chrono::DateTime<chrono_tz::Tz> {
     }
 }
 
+impl FromTypeQLLiteral for String {
+    type TypeQLLiteral = StringLiteral;
+
+    fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
+        literal
+            .unescape()
+            .map_err(|err| LiteralParseError::CannotUnescapeString { literal: literal.clone(), source: err })
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use encoding::value::{
@@ -175,7 +191,7 @@ pub mod tests {
 
     use crate::{
         pattern::expression::Expression,
-        program::{block::BlockContext, function_signature::HashMapFunctionSignatureIndex},
+        program::function_signature::HashMapFunctionSignatureIndex,
         translation::{match_::translate_match, TranslationContext},
         PatternDefinitionError,
     };
@@ -183,7 +199,7 @@ pub mod tests {
     fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, PatternDefinitionError> {
         let query = format!("match $x = {}; select $x;", s);
         if let Stage::Match(match_) =
-            typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.get(0).unwrap()
+            typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap()
         {
             let mut context = TranslationContext::new();
             let block = translate_match(&mut context, &HashMapFunctionSignatureIndex::empty(), &match_)?.finish();

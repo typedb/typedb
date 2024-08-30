@@ -12,21 +12,13 @@ pub mod insert;
 pub mod match_;
 pub mod stage_wrappers;
 
-use std::{
-    error::Error,
-    fmt::{Display, Formatter},
-    sync::Arc,
-};
+use std::{error::Error, fmt, sync::Arc};
 
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{
-    batch::ImmutableRow,
-    pipeline::{initial::InitialStage, insert::InsertStage, match_::MatchStage},
-    write::WriteError,
-};
+use crate::{batch::ImmutableRow, write::WriteError};
 
 pub trait UninitialisedStageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
     type IteratingStage;
@@ -47,46 +39,82 @@ where
     fn initialise(&mut self) -> Result<(), PipelineError>;
 }
 
-pub enum PipelineContext<Snapshot: ReadableSnapshot> {
-    Shared(Arc<Snapshot>, Arc<ThingManager>),
-    Owned(Snapshot, ThingManager),
-    __Transient,
+pub struct SharedPipelineContext<Snapshot> {
+    snapshot: Arc<Snapshot>,
+    thing_manager: Arc<ThingManager>,
 }
 
-impl<Snapshot: ReadableSnapshot> PipelineContext<Snapshot> {
-    pub(crate) fn borrow_parts(&self) -> (&Snapshot, &ThingManager) {
+impl<Snapshot> SharedPipelineContext<Snapshot> {
+    fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
+        Self { snapshot, thing_manager }
+    }
+}
+
+pub struct OwnedPipelineContext<Snapshot> {
+    snapshot: Arc<Snapshot>,
+    thing_manager: Arc<ThingManager>,
+}
+
+impl<Snapshot> OwnedPipelineContext<Snapshot> {
+    fn new(snapshot: Snapshot, thing_manager: ThingManager) -> Self {
+        Self { snapshot: Arc::new(snapshot), thing_manager: Arc::new(thing_manager) }
+    }
+}
+
+pub enum PipelineContext<Snapshot> {
+    Shared(SharedPipelineContext<Snapshot>),
+    Owned(OwnedPipelineContext<Snapshot>),
+}
+
+impl<Snapshot> PipelineContext<Snapshot> {
+    pub fn shared(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
+        Self::Shared(SharedPipelineContext::new(snapshot, thing_manager))
+    }
+
+    pub fn owned(snapshot: Snapshot, thing_manager: ThingManager) -> Self {
+        Self::Owned(OwnedPipelineContext::new(snapshot, thing_manager))
+    }
+
+    pub(crate) fn borrow_parts(&self) -> (&Arc<Snapshot>, &Arc<ThingManager>) {
         match self {
-            PipelineContext::Shared(snapshot, thing_manager) => (&snapshot, &thing_manager),
-            PipelineContext::Owned(snapshot, thing_manager) => (&snapshot, &thing_manager),
-            PipelineContext::__Transient => unreachable!(),
+            PipelineContext::Shared(SharedPipelineContext { snapshot, thing_manager }) => (snapshot, thing_manager),
+            PipelineContext::Owned(OwnedPipelineContext { snapshot, thing_manager }) => (snapshot, thing_manager),
+        }
+    }
+
+    pub fn into_owned_parts(self) -> (Snapshot, ThingManager) {
+        match self {
+            PipelineContext::Shared(SharedPipelineContext { snapshot, thing_manager }) => unreachable!(),
+            PipelineContext::Owned(OwnedPipelineContext { snapshot, thing_manager }) => {
+                (Arc::into_inner(snapshot).unwrap(), Arc::into_inner(thing_manager).unwrap())
+            }
         }
     }
 
     // TODO: This doesn't fail. Shall we change it to get_shared?
     pub(crate) fn try_get_shared(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
-        if let PipelineContext::Shared(snapshot, thing_manager) = self {
-            Ok(PipelineContext::Shared(snapshot.clone(), thing_manager.clone()))
-        } else {
-            let mut tmp = PipelineContext::__Transient;
-            std::mem::swap(self, &mut tmp);
-            let PipelineContext::Owned(snapshot, thing_manager) = tmp else { unreachable!() };
-            let arc_snapshot = Arc::new(snapshot);
-            let arc_thing_manager = Arc::new(thing_manager);
-            *self = PipelineContext::Shared(arc_snapshot.clone(), arc_thing_manager.clone());
-            Ok(PipelineContext::Shared(arc_snapshot.clone(), arc_thing_manager.clone()))
+        match self {
+            PipelineContext::Shared(SharedPipelineContext { snapshot, thing_manager }) => {
+                Ok(PipelineContext::shared(snapshot.clone(), thing_manager.clone()))
+            }
+            PipelineContext::Owned(OwnedPipelineContext { snapshot, thing_manager }) => {
+                let snapshot = snapshot.clone();
+                let thing_manager = thing_manager.clone();
+                *self = PipelineContext::shared(snapshot.clone(), thing_manager.clone());
+                Ok(PipelineContext::shared(snapshot, thing_manager))
+            }
         }
     }
 
     pub(crate) fn try_into_owned(self) -> Result<PipelineContext<Snapshot>, ()> {
         match self {
-            PipelineContext::Owned(snapshot, thing_manager) => Ok(PipelineContext::Owned(snapshot, thing_manager)),
-            PipelineContext::Shared(mut shared_snapshot, mut shared_thing_manager) => {
-                match (Arc::into_inner(shared_snapshot), Arc::into_inner(shared_thing_manager)) {
-                    (Some(snapshot), Some(thing_manager)) => Ok(PipelineContext::Owned(snapshot, thing_manager)),
+            PipelineContext::Owned(..) => Ok(self),
+            PipelineContext::Shared(SharedPipelineContext { snapshot, thing_manager }) => {
+                match (Arc::into_inner(snapshot), Arc::into_inner(thing_manager)) {
+                    (Some(snapshot), Some(thing_manager)) => Ok(Self::owned(snapshot, thing_manager)),
                     (_, _) => Err(()),
                 }
             }
-            PipelineContext::__Transient => unreachable!(),
         }
     }
 }
@@ -94,9 +122,10 @@ impl<Snapshot: ReadableSnapshot> PipelineContext<Snapshot> {
 impl<Snapshot: WritableSnapshot> PipelineContext<Snapshot> {
     pub fn borrow_parts_mut(&mut self) -> (&mut Snapshot, &mut ThingManager) {
         match self {
-            PipelineContext::Shared(snapshot, thing_manager) => todo!("illegal"),
-            PipelineContext::Owned(snapshot, thing_manager) => (snapshot, thing_manager),
-            PipelineContext::__Transient => unreachable!(),
+            PipelineContext::Shared(_) => todo!("illegal"),
+            PipelineContext::Owned(OwnedPipelineContext { snapshot, thing_manager }) => {
+                (Arc::get_mut(snapshot).unwrap(), Arc::get_mut(thing_manager).unwrap())
+            }
         }
     }
 }
@@ -110,8 +139,8 @@ pub enum PipelineError {
     IllegalState,
 }
 
-impl Display for PipelineError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for PipelineError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

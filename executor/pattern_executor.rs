@@ -18,7 +18,7 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::program::block::VariableRegistry;
 use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{Batch, BatchRowIterator, ImmutableRow, Row},
@@ -40,8 +40,8 @@ pub(crate) struct PatternExecutor {
 impl PatternExecutor {
     pub(crate) fn new(
         plan: &MatchProgram,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
         let (programs, context) = (plan.programs(), plan.variable_registry());
         let mut variable_positions = HashMap::new();
@@ -50,7 +50,7 @@ impl PatternExecutor {
             for variable in program.new_variables() {
                 let previous =
                     variable_positions.insert(*variable, VariablePosition::new(variable_positions.len() as u32));
-                debug_assert_eq!(previous, Option::None);
+                debug_assert_eq!(previous, None);
             }
             let executor = StepExecutor::new(program, context, &variable_positions, snapshot, thing_manager)?;
             program_executors.push(executor)
@@ -75,7 +75,7 @@ impl PatternExecutor {
         &self.variable_positions
     }
 
-    pub(crate) fn variable_positions_index(&self) -> &Vec<Variable> {
+    pub(crate) fn variable_positions_index(&self) -> &[Variable] {
         &self.variable_positions_index
     }
 
@@ -89,8 +89,8 @@ impl PatternExecutor {
 
     fn compute_next_batch(
         &mut self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<Option<Batch>, ConceptReadError> {
         let programs_len = self.program_executors.len();
 
@@ -163,7 +163,7 @@ pub(crate) struct BatchIterator<Snapshot: ReadableSnapshot> {
 
 impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
     pub(crate) fn new(executor: PatternExecutor, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
-        Self::new_from_context(executor, PipelineContext::Shared(snapshot, thing_manager))
+        Self::new_from_context(executor, PipelineContext::shared(snapshot, thing_manager))
     }
 
     fn new_from_context(executor: PatternExecutor, context: PipelineContext<Snapshot>) -> Self {
@@ -179,11 +179,10 @@ impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
     }
 }
 
-impl<Snapshot: ReadableSnapshot> Iterator for BatchIterator<Snapshot> {
+impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> {
     type Item = Result<Batch, ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Self { executor, context } = self;
         let (snapshot, thing_manager) = self.context.borrow_parts();
         let batch = self.executor.compute_next_batch(snapshot, thing_manager);
         batch.transpose()
@@ -205,8 +204,8 @@ impl StepExecutor {
         program: &Program,
         variable_registry: &VariableRegistry,
         variable_positions: &HashMap<Variable, VariablePosition>,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
         let row_width = variable_positions.len() as u32;
         match program {
@@ -216,7 +215,7 @@ impl StepExecutor {
                     instructions.clone(),
                     row_width,
                     selected_variables.clone(),
-                    variable_registry.get_variables_named(),
+                    variable_registry.variable_names(),
                     variable_positions,
                     snapshot,
                     thing_manager,
@@ -255,8 +254,8 @@ impl StepExecutor {
     fn batch_from(
         &mut self,
         input_batch: Batch,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<Option<Batch>, ConceptReadError> {
         match self {
             StepExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, snapshot, thing_manager),
@@ -270,8 +269,8 @@ impl StepExecutor {
 
     fn batch_continue(
         &mut self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<Option<Batch>, ConceptReadError> {
         match self {
             StepExecutor::SortedJoin(sorted) => sorted.batch_continue(snapshot, thing_manager),
@@ -308,8 +307,8 @@ impl IntersectionExecutor {
         select_variables: Vec<Variable>,
         named_variables: &HashMap<Variable, String>,
         variable_positions: &HashMap<Variable, VariablePosition>,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
         let sort_variable_position = *variable_positions.get(&sort_variable).unwrap();
         let instruction_count = instructions.len();
@@ -321,7 +320,7 @@ impl IntersectionExecutor {
                     &select_variables,
                     named_variables,
                     variable_positions,
-                    snapshot,
+                    &**snapshot,
                     thing_manager,
                     Some(sort_variable),
                 )
@@ -349,8 +348,8 @@ impl IntersectionExecutor {
     fn batch_from(
         &mut self,
         input_batch: Batch,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<Option<Batch>, ConceptReadError> {
         debug_assert!(self.output.is_none() && (self.input.is_none() || self.input.as_mut().unwrap().peek().is_none()));
         self.input = Some(Peekable::new(BatchRowIterator::new(Ok(input_batch))));
@@ -362,8 +361,8 @@ impl IntersectionExecutor {
 
     fn batch_continue(
         &mut self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<Option<Batch>, ConceptReadError> {
         debug_assert!(self.output.is_none());
         // TODO: this may not have to reopen iterators
@@ -374,8 +373,8 @@ impl IntersectionExecutor {
 
     fn may_compute_next_batch(
         &mut self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<(), ConceptReadError> {
         if self.compute_next_row(snapshot, thing_manager)? {
             // don't allocate batch until 1 answer is confirmed
@@ -399,8 +398,8 @@ impl IntersectionExecutor {
 
     fn compute_next_row(
         &mut self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<bool, ConceptReadError> {
         if self.cartesian_iterator.is_active() {
             let found = self.cartesian_iterator.find_next(snapshot, thing_manager, &self.instruction_executors)?;
@@ -511,8 +510,8 @@ impl IntersectionExecutor {
 
     fn may_create_intersection_iterators(
         &mut self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<(), ConceptReadError> {
         debug_assert!(self.iterators.is_empty());
         let peek = self.input.as_mut().unwrap().peek();
@@ -563,8 +562,8 @@ impl IntersectionExecutor {
 
     fn may_activate_cartesian(
         &mut self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
     ) -> Result<(), ConceptReadError> {
         if self.iterators.len() == 1 {
             // don't delegate to cartesian iterator and incur new iterator costs if there cannot be a cartesian product
@@ -622,10 +621,10 @@ impl CartesianIterator {
 
     fn activate(
         &mut self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        iterator_executors: &Vec<InstructionExecutor>,
-        source_intersection: &Vec<VariableValue<'static>>,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
+        iterator_executors: &[InstructionExecutor],
+        source_intersection: &[VariableValue<'static>],
         source_multiplicity: u64,
         intersection_iterators: &mut Vec<TupleIterator>,
     ) -> Result<(), ConceptReadError> {
@@ -661,9 +660,9 @@ impl CartesianIterator {
 
     fn find_next(
         &mut self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        executors: &Vec<InstructionExecutor>,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
+        executors: &[InstructionExecutor],
     ) -> Result<bool, ConceptReadError> {
         debug_assert!(self.is_active);
         // precondition: all required iterators are open to the intersection point
@@ -691,8 +690,8 @@ impl CartesianIterator {
 
     fn reopen_iterator(
         &self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
         executor: &InstructionExecutor,
     ) -> Result<TupleIterator, ConceptReadError> {
         let mut reopened = executor.get_iterator(

@@ -7,34 +7,49 @@
 use answer::variable::Variable;
 use encoding::value::label::Label;
 use typeql::{
-    expression::{Expression as TypeQLExpression, Expression, FunctionCall, FunctionName},
-    statement::{AssignmentPattern, InIterable},
+    expression::{FunctionCall, FunctionName},
+    statement::{comparison::ComparisonStatement, Assignment, AssignmentPattern, InIterable},
     type_::NamedType,
     ScopedLabel, TypeRef, TypeRefAny,
 };
 
 use crate::{
-    pattern::constraint::{ConstraintsBuilder, IsaKind},
+    pattern::{
+        conjunction::ConjunctionBuilder,
+        constraint::{Comparator, ConstraintsBuilder, IsaKind},
+    },
     program::function_signature::FunctionSignatureIndex,
-    translation::expression::build_expression,
+    translation::expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
     PatternDefinitionError,
 };
 
-pub(super) fn add_statement<'cx, 'reg>(
+pub(super) fn add_statement(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+    conjunction: &mut ConjunctionBuilder<'_, '_>,
     stmt: &typeql::Statement,
 ) -> Result<(), PatternDefinitionError> {
+    let constraints = &mut conjunction.constraints_mut();
     match stmt {
         typeql::Statement::Is(_) => todo!(),
         typeql::Statement::InIterable(InIterable { lhs, rhs, .. }) => {
             let assigned = assignment_typeql_vars_to_variables(constraints, lhs)?;
-            add_typeql_binding(function_index, constraints, assigned, rhs, true)?
+            add_typeql_iterable_binding(function_index, constraints, assigned, rhs)?
         }
-        typeql::Statement::Comparison(_) => todo!(),
-        typeql::Statement::Assignment(assignment) => {
-            let assigned: Vec<Variable> = assignment_pattern_to_variables(constraints, &assignment.lhs)?;
-            add_typeql_binding(function_index, constraints, assigned, &assignment.rhs, false)?
+        typeql::Statement::Comparison(ComparisonStatement { lhs, comparison, .. }) => {
+            let lhs_var = constraints.create_anonymous_variable()?;
+            add_typeql_expression(function_index, constraints, lhs_var, lhs)?;
+
+            let rhs_var = constraints.create_anonymous_variable()?;
+            add_typeql_expression(function_index, constraints, rhs_var, &comparison.rhs)?;
+
+            constraints.add_comparison(lhs_var, rhs_var, comparison.comparator.into())?;
+        }
+        typeql::Statement::Assignment(Assignment { lhs, rhs, .. }) => {
+            let assigned = assignment_pattern_to_variables(constraints, lhs)?;
+            let [assigned] = *assigned else {
+                return Err(PatternDefinitionError::ExpressionAssignmentMustOneVariable { assigned });
+            };
+            add_typeql_expression(function_index, constraints, assigned, rhs)?
         }
         typeql::Statement::Thing(thing) => add_thing_statement(function_index, constraints, thing)?,
         typeql::Statement::AttributeValue(attribute_value) => todo!(),
@@ -44,9 +59,9 @@ pub(super) fn add_statement<'cx, 'reg>(
     Ok(())
 }
 
-fn add_thing_statement<'cx, 'reg>(
+fn add_thing_statement(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     thing: &typeql::statement::Thing,
 ) -> Result<(), PatternDefinitionError> {
     let var = match &thing.head {
@@ -70,8 +85,8 @@ fn add_thing_statement<'cx, 'reg>(
     Ok(())
 }
 
-fn add_type_statement<'cx, 'reg>(
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+fn add_type_statement(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     type_: &typeql::statement::Type,
 ) -> Result<(), PatternDefinitionError> {
     let var = register_typeql_type_var_any(constraints, &type_.type_)?;
@@ -94,13 +109,13 @@ fn add_type_statement<'cx, 'reg>(
     Ok(())
 }
 
-fn extend_from_inline_typeql_expression<'cx, 'reg>(
+fn extend_from_inline_typeql_expression(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
-    expression: &TypeQLExpression,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    expression: &typeql::Expression,
 ) -> Result<Variable, PatternDefinitionError> {
-    if let TypeQLExpression::Variable(typeql_var) = expression {
-        register_typeql_var(constraints, &typeql_var)
+    if let typeql::Expression::Variable(typeql_var) = expression {
+        register_typeql_var(constraints, typeql_var)
     } else {
         let expression = build_expression(function_index, constraints, expression)?;
         let assigned = constraints.create_anonymous_variable()?;
@@ -109,8 +124,8 @@ fn extend_from_inline_typeql_expression<'cx, 'reg>(
     }
 }
 
-pub(crate) fn register_typeql_var<'cx, 'reg>(
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+pub(crate) fn register_typeql_var(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     var: &typeql::Variable,
 ) -> Result<Variable, PatternDefinitionError> {
     match var {
@@ -125,8 +140,8 @@ pub(crate) fn register_typeql_var<'cx, 'reg>(
     }
 }
 
-fn register_typeql_type_var_any<'cx, 'reg>(
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+fn register_typeql_type_var_any(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     type_: &typeql::TypeRefAny,
 ) -> Result<Variable, PatternDefinitionError> {
     match type_ {
@@ -136,8 +151,8 @@ fn register_typeql_type_var_any<'cx, 'reg>(
     }
 }
 
-fn register_typeql_type_var<'cx, 'reg>(
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+fn register_typeql_type_var(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     type_: &typeql::TypeRef,
 ) -> Result<Variable, PatternDefinitionError> {
     match type_ {
@@ -150,8 +165,8 @@ fn register_typeql_type_var<'cx, 'reg>(
     }
 }
 
-fn register_type_scoped_label_var<'cx, 'reg>(
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+fn register_type_scoped_label_var(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     scoped_label: &ScopedLabel,
 ) -> Result<Variable, PatternDefinitionError> {
     let label = Label::build_scoped(scoped_label.name.ident.as_str(), scoped_label.scope.ident.as_str());
@@ -160,8 +175,8 @@ fn register_type_scoped_label_var<'cx, 'reg>(
     Ok(variable)
 }
 
-fn register_type_label_var<'cx, 'reg>(
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+fn register_type_label_var(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     label: &typeql::Label,
 ) -> Result<Variable, PatternDefinitionError> {
     let variable = constraints.create_anonymous_variable()?;
@@ -169,8 +184,8 @@ fn register_type_label_var<'cx, 'reg>(
     Ok(variable)
 }
 
-fn add_typeql_isa<'cx, 'reg>(
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+fn add_typeql_isa(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     thing: Variable,
     isa: &typeql::statement::thing::isa::Isa,
 ) -> Result<(), PatternDefinitionError> {
@@ -183,9 +198,9 @@ fn add_typeql_isa<'cx, 'reg>(
     Ok(())
 }
 
-fn add_typeql_has<'cx, 'reg>(
+fn add_typeql_has(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     owner: Variable,
     has: &typeql::statement::thing::Has,
 ) -> Result<(), PatternDefinitionError> {
@@ -194,7 +209,7 @@ fn add_typeql_has<'cx, 'reg>(
         typeql::statement::thing::HasValue::Expression(expression) => {
             let assigned = extend_from_inline_typeql_expression(function_index, constraints, expression)?;
             let attribute = constraints.create_anonymous_variable()?;
-            constraints.add_comparison(attribute, assigned)?; // TODO: I should probably not piggy back on comparison like this.
+            constraints.add_comparison(attribute, assigned, Comparator::Equal)?; // TODO: I should probably not piggy back on comparison like this.
             attribute
         }
         typeql::statement::thing::HasValue::Comparison(_) => todo!("Same as above?"),
@@ -208,8 +223,8 @@ fn add_typeql_has<'cx, 'reg>(
     Ok(())
 }
 
-pub(super) fn add_typeql_relation<'cx, 'reg>(
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+pub(super) fn add_typeql_relation(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     relation: Variable,
     roleplayers: &typeql::statement::thing::Relation,
 ) -> Result<(), PatternDefinitionError> {
@@ -247,48 +262,32 @@ pub(super) fn add_typeql_relation<'cx, 'reg>(
     Ok(())
 }
 
-fn add_typeql_binding<'cx, 'reg>(
+fn add_typeql_iterable_binding(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     assigned: Vec<Variable>,
-    rhs: &TypeQLExpression,
-    is_stream_binding: bool,
+    rhs: &typeql::Expression,
 ) -> Result<(), PatternDefinitionError> {
     match rhs {
-        Expression::Function(FunctionCall { name: FunctionName::Identifier(identifier), args, .. }) => {
-            let arguments: Vec<Variable> = split_out_inline_expressions(function_index, constraints, &args)?;
-            add_function_call_binding_user(
-                function_index,
-                constraints,
-                assigned,
-                identifier.as_str(),
-                arguments,
-                is_stream_binding,
-            )
+        typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(identifier), args, .. }) => {
+            add_user_defined_function_call(function_index, constraints, identifier, assigned, args)
         }
-        Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. })
-        | Expression::Variable(_)
-        | Expression::ListIndex(_)
-        | Expression::Value(_)
-        | Expression::Operation(_)
-        | Expression::Paren(_)
-        | Expression::List(_)
-        | Expression::ListIndexRange(_) => {
-            let expression = build_expression(function_index, constraints, rhs)?;
-            if assigned.len() != 1 {
-                Err(PatternDefinitionError::ExpressionAssignmentMustOneVariable { assigned })
-            } else {
-                constraints.add_expression(*assigned.get(0).unwrap(), expression)?;
-                Ok(())
-            }
+        typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
+            todo!("builtin function returning list (e.g. list(stream_func()))")
         }
+        typeql::Expression::List(_) | typeql::Expression::ListIndexRange(_) => todo!("iter in list or range slice"),
+        | typeql::Expression::Variable(_)
+        | typeql::Expression::ListIndex(_)
+        | typeql::Expression::Value(_)
+        | typeql::Expression::Operation(_)
+        | typeql::Expression::Paren(_) => unreachable!(),
     }
 }
 
 // Helpers
-pub(super) fn add_function_call_binding_user<'cx, 'reg>(
+pub(super) fn add_function_call_binding_user(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     assigned: Vec<Variable>,
     function_name: &str,
     arguments: Vec<Variable>,
@@ -314,8 +313,8 @@ pub(super) fn add_function_call_binding_user<'cx, 'reg>(
     }
 }
 
-fn assignment_pattern_to_variables<'cx, 'reg>(
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
+fn assignment_pattern_to_variables(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
     assignment: &AssignmentPattern,
 ) -> Result<Vec<Variable>, PatternDefinitionError> {
     match assignment {
@@ -326,22 +325,22 @@ fn assignment_pattern_to_variables<'cx, 'reg>(
     }
 }
 
-fn assignment_typeql_vars_to_variables<'cx, 'reg>(
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
-    vars: &Vec<typeql::Variable>,
+fn assignment_typeql_vars_to_variables(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    vars: &[typeql::Variable],
 ) -> Result<Vec<Variable>, PatternDefinitionError> {
-    vars.iter().map(|variable| register_typeql_var(constraints, variable)).collect::<Result<Vec<_>, _>>()
+    vars.iter().map(|variable| register_typeql_var(constraints, variable)).collect()
 }
 
-pub(super) fn split_out_inline_expressions<'cx, 'reg>(
+pub(super) fn split_out_inline_expressions(
     function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'cx, 'reg>,
-    expressions: &Vec<typeql::expression::Expression>,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    expressions: &[typeql::Expression],
 ) -> Result<Vec<Variable>, PatternDefinitionError> {
     expressions
         .iter()
         .map(|expr| {
-            if let typeql::expression::Expression::Variable(typeql_variable) = expr {
+            if let typeql::Expression::Variable(typeql_variable) = expr {
                 Ok(register_typeql_var(constraints, typeql_variable)?)
             } else {
                 let variable = constraints.create_anonymous_variable()?;
@@ -350,5 +349,5 @@ pub(super) fn split_out_inline_expressions<'cx, 'reg>(
                 Ok(variable)
             }
         })
-        .collect::<Result<Vec<_>, _>>()
+        .collect()
 }

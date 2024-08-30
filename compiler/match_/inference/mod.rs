@@ -102,8 +102,11 @@ impl Error for TypeInferenceError {
 pub mod tests {
     use std::sync::Arc;
 
-    use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-    use durability::wal::WAL;
+    use concept::{
+        thing::{statistics::Statistics, thing_manager::ThingManager},
+        type_::type_manager::TypeManager,
+    };
+    use durability::{wal::WAL, DurabilitySequenceNumber};
     use encoding::{
         graph::{
             definition::definition_key_generator::DefinitionKeyGenerator,
@@ -165,7 +168,11 @@ pub mod tests {
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
         let type_manager =
             Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
-        let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
+        let thing_manager = ThingManager::new(
+            thing_vertex_generator.clone(),
+            type_manager.clone(),
+            Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+        );
 
         (type_manager, thing_manager)
     }

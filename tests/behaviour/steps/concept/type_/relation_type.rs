@@ -9,7 +9,7 @@ use std::sync::Arc;
 use concept::{
     error::ConceptWriteError,
     type_::{
-        annotation::{Annotation as TypeDBAnnotation, AnnotationCardinality, DefaultFrom},
+        annotation::{Annotation as TypeDBAnnotation, DefaultFrom},
         object_type::ObjectType,
         relates::{Relates, RelatesAnnotation},
         role_type::RoleTypeAnnotation,
@@ -156,9 +156,7 @@ pub async fn relation_role_set_override(
                 return;
             }
         }
-        may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
-            BehaviourConceptTestExecutionError::CannotFindRelationTypeRoleTypeToOverride,
-        ));
+        may_error.check::<(), _>(Err(BehaviourConceptTestExecutionError::CannotFindRelationTypeRoleTypeToOverride));
     });
 }
 

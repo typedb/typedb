@@ -33,7 +33,7 @@ pub struct FunctionalBlock {
 }
 
 impl FunctionalBlock {
-    pub fn builder<'a>(context: BlockContext<'a>) -> FunctionalBlockBuilder<'a> {
+    pub fn builder(context: BlockContext<'_>) -> FunctionalBlockBuilder<'_> {
         FunctionalBlockBuilder::new(context)
     }
 
@@ -56,12 +56,13 @@ impl FunctionalBlock {
     pub fn variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
         self.scope_context.variable_declaration.iter()
     }
+
     pub fn block_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_scopes().filter_map(|(v, scope)| if scope != &ScopeId::INPUT { Some(v.clone()) } else { None })
+        self.variable_scopes().filter_map(|(&v, scope)| if scope != &ScopeId::INPUT { Some(v) } else { None })
     }
 
     pub fn input_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_scopes().filter_map(|(v, scope)| if scope == &ScopeId::INPUT { Some(v.clone()) } else { None })
+        self.variable_scopes().filter_map(|(&v, scope)| if scope == &ScopeId::INPUT { Some(v) } else { None })
     }
 }
 
@@ -138,7 +139,6 @@ impl VariableRegistry {
 
     fn register_variable_named(&mut self, name: String) -> Variable {
         let variable = self.allocate_variable();
-        println!("Registered variable {} to {}", name.clone(), variable);
         self.variable_names.insert(variable, name);
         variable
     }
@@ -211,7 +211,7 @@ impl VariableRegistry {
         self.variable_categories.iter().map(|(&variable, &(category, _))| (variable, category))
     }
 
-    pub fn get_variables_named(&self) -> &HashMap<Variable, String> {
+    pub fn variable_names(&self) -> &HashMap<Variable, String> {
         &self.variable_names
     }
 
@@ -331,7 +331,7 @@ impl<'a> BlockContext<'a> {
     }
 
     pub fn named_variable_mapping(&self) -> &HashMap<String, Variable> {
-        &self.variable_names_index
+        self.variable_names_index
     }
 
     pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {

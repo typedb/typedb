@@ -43,9 +43,7 @@ pub async fn struct_delete(context: &mut Context, type_label: Label, may_error: 
                 definition_key,
             ));
         } else {
-            may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
-                BehaviourConceptTestExecutionError::CannotFindStructDefinition,
-            ));
+            may_error.check::<(), _>(Err(BehaviourConceptTestExecutionError::CannotFindStructDefinition));
         }
     });
 }

@@ -90,7 +90,7 @@ fn execute_insert(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     query_str: &str,
-    input_row_var_names: &Vec<&str>,
+    input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
 ) -> Result<Vec<Vec<VariableValue<'static>>>, WriteError> {
     let mut translation_context = TranslationContext::new();
@@ -99,7 +99,7 @@ fn execute_insert(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.visible_variables.get(*v).unwrap().clone(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let (entry_annotations, _) = infer_types(
@@ -118,9 +118,10 @@ fn execute_insert(
 
     println!("Insert Vertex:\n{:?}", &insert_plan.concepts);
     println!("Insert Edges:\n{:?}", &insert_plan.connections);
-    insert_plan.debug_info.iter().for_each(|(k, v)| {
-        println!("{:?} -> {:?}", k, translation_context.variable_registry.get_variables_named().get(v))
-    });
+    insert_plan
+        .debug_info
+        .iter()
+        .for_each(|(k, v)| println!("{:?} -> {:?}", k, translation_context.variable_registry.variable_names().get(v)));
 
     // TODO: Replace with accumulator
     let mut output_rows = Vec::with_capacity(input_rows.len());
@@ -137,7 +138,7 @@ fn execute_insert(
         // Copy input row in
         insert_executor.execute_insert(
             snapshot,
-            &thing_manager,
+            thing_manager,
             &mut Row::new(output_rows.last_mut().unwrap(), &mut output_multiplicity),
         )?;
     }
@@ -150,7 +151,7 @@ fn execute_delete(
     thing_manager: &ThingManager,
     mock_match_string_for_annotations: &str,
     delete_str: &str,
-    input_row_var_names: &Vec<&str>,
+    input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
 ) -> Result<Vec<Vec<VariableValue<'static>>>, WriteError> {
     let mut translation_context = TranslationContext::new();
@@ -173,7 +174,7 @@ fn execute_delete(
             &block,
             vec![],
             snapshot,
-            &type_manager,
+            type_manager,
             &IndexedAnnotatedFunctions::empty(),
             &translation_context.variable_registry,
         )
@@ -186,7 +187,7 @@ fn execute_delete(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.visible_variables.get(*v).unwrap().clone(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let delete_plan = compiler::delete::program::compile(
@@ -221,7 +222,7 @@ fn has() {
         &type_manager,
         &thing_manager,
         "insert $p isa person, has age 10;",
-        &vec![],
+        &[],
         vec![vec![]],
     )
     .unwrap();
@@ -249,7 +250,7 @@ fn test() {
          $p isa person; $g isa group;
          (member: $p, group: $g) isa membership;
     ";
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &vec![], vec![vec![]]).unwrap();
+    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
 }
 
@@ -265,7 +266,7 @@ fn relation() {
          $p isa person; $g isa group;
          (member: $p, group: $g) isa membership;
     ";
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &vec![], vec![vec![]]).unwrap();
+    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
     // read back
     {
@@ -318,7 +319,7 @@ fn relation_with_inferred_roles() {
          $p isa person; $g isa group;
          ($p, $g) isa membership;
     ";
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &vec![], vec![vec![]]).unwrap();
+    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
     // read back
     {
@@ -366,15 +367,15 @@ fn test_has_with_input_rows() {
     setup_schema(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_write();
     let inserted_rows =
-        execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &vec![], vec![vec![]])
+        execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &[], vec![vec![]])
             .unwrap();
-    let p10 = inserted_rows[0][0].clone().into_owned();
+    let p10 = inserted_rows[0][0].clone();
     let inserted_rows = execute_insert(
         &mut snapshot,
         &type_manager,
         &thing_manager,
         "insert $p has age 10;",
-        &vec!["p"],
+        &["p"],
         vec![vec![p10.clone()]],
     )
     .unwrap();
@@ -410,15 +411,15 @@ fn delete_has() {
     setup_schema(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_write();
     let inserted_rows =
-        execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &vec![], vec![vec![]])
+        execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &[], vec![vec![]])
             .unwrap();
-    let p10 = inserted_rows[0][0].clone().into_owned();
+    let p10 = inserted_rows[0][0].clone();
     let inserted_rows = execute_insert(
         &mut snapshot,
         &type_manager,
         &thing_manager,
         "insert $p has age 10;",
-        &vec!["p"],
+        &["p"],
         vec![vec![p10.clone()]],
     )
     .unwrap();
@@ -433,7 +434,7 @@ fn delete_has() {
         &thing_manager,
         "match $p isa person; $a isa age;",
         "delete has $a of $p;",
-        &vec!["p", "a"],
+        &["p", "a"],
         vec![vec![p10.clone(), a10.clone()]],
     )
     .unwrap();
