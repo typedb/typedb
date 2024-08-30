@@ -4,14 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashMap, error::Error, ffi::OsStr, fmt, fs::{self, File as StdFile, OpenOptions}, io::{self, BufReader, BufWriter, Read, Seek, Write}, marker::PhantomData, mem, path::{Path, PathBuf}, sync::{
-    atomic::{AtomicU64, Ordering},
-    RwLock, RwLockReadGuard,
-}, thread};
-use std::sync::{Arc, mpsc, Mutex};
-use std::sync::atomic::{AtomicBool, AtomicU8};
-use std::thread::{JoinHandle, sleep};
-use std::time::{Duration, Instant};
+use std::{
+    borrow::Cow,
+    cmp::max,
+    collections::HashMap,
+    error::Error,
+    ffi::OsStr,
+    fmt,
+    fs::{self, File as StdFile, OpenOptions},
+    io::{self, BufReader, BufWriter, Read, Seek, Write},
+    marker::PhantomData,
+    mem,
+    path::{Path, PathBuf},
+    sync::{
+        atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
+        mpsc, Arc, Mutex, RwLock, RwLockReadGuard,
+    },
+    thread,
+    thread::{sleep, JoinHandle},
+    time::{Duration, Instant},
+};
 
 use itertools::Itertools;
 use logger::result::ResultExt;
@@ -53,7 +65,12 @@ impl WAL {
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
         let mut fsync_thread = FsyncThread::new(files.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
-        Ok(Self { registered_types: HashMap::new(), next_sequence_number: AtomicU64::new(next.number()), files, fsync_thread })
+        Ok(Self {
+            registered_types: HashMap::new(),
+            next_sequence_number: AtomicU64::new(next.number()),
+            files,
+            fsync_thread,
+        })
     }
 
     pub fn load(directory: impl AsRef<Path>) -> Result<Self, WALError> {
@@ -72,7 +89,12 @@ impl WAL {
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
         let fsync_thread = FsyncThread::new(files.clone());
-        Ok(Self { registered_types: HashMap::new(), next_sequence_number: AtomicU64::new(next.number()), files, fsync_thread })
+        Ok(Self {
+            registered_types: HashMap::new(),
+            next_sequence_number: AtomicU64::new(next.number()),
+            files,
+            fsync_thread,
+        })
     }
 
     fn increment(&self) -> DurabilitySequenceNumber {
@@ -513,16 +535,23 @@ pub struct FsyncThread {
 impl FsyncThread {
     fn new(files: Arc<RwLock<Files>>) -> Self {
         let context = FsyncThreadContext {
-            files, shutting_down: AtomicBool::new(false),
-            signalling: [Mutex::new(Vec::new()), Mutex::new(Vec::new())] , current_signal: AtomicU8::new(0)
+            files,
+            shutting_down: AtomicBool::new(false),
+            signalling: [Mutex::new(Vec::new()), Mutex::new(Vec::new())],
+            current_signal: AtomicU8::new(0),
         };
         Self { handle: None, context: Arc::new(context) }
     }
 
-
     fn subscribe_to_next_flush(&self) -> mpsc::Receiver<()> {
         let (sender, recv) = mpsc::channel();
-        let mut vec = self.context.signalling.get(self.context.current_signal.load(Ordering::Relaxed) as usize).unwrap().lock().unwrap();
+        let mut vec = self
+            .context
+            .signalling
+            .get(self.context.current_signal.load(Ordering::Relaxed) as usize)
+            .unwrap()
+            .lock()
+            .unwrap();
         vec.push(sender);
         recv
     }
@@ -537,7 +566,7 @@ impl FsyncThread {
                         break;
                     } else {
                         let micros_since_last_flush = (Instant::now() - last_flush).as_micros() as u64;
-                        if micros_since_last_flush < WAL_FLUSH_INTERVAL_MICROSECONDS  {
+                        if micros_since_last_flush < WAL_FLUSH_INTERVAL_MICROSECONDS {
                             sleep(Duration::from_micros(WAL_FLUSH_INTERVAL_MICROSECONDS - micros_since_last_flush));
                         }
                         last_flush = Instant::now(); // Should we reset the timer before or after the flush completes?
@@ -551,7 +580,7 @@ impl FsyncThread {
 
     fn may_sync_and_update_state(context: &mut Arc<FsyncThreadContext>) -> () {
         let current_signal = context.current_signal.load(Ordering::Relaxed);
-        context.current_signal.store(1- current_signal, Ordering::Relaxed);
+        context.current_signal.store(1 - current_signal, Ordering::Relaxed);
         let vec_lock = context.signalling.get(current_signal as usize).unwrap().lock();
         let mut vec = vec_lock.unwrap();
         if !vec.is_empty() {

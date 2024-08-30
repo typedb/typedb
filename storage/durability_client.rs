@@ -9,9 +9,8 @@ use std::{
     error::Error,
     fmt, io,
     io::{Read, Write},
-    sync::Arc,
+    sync::{Arc, mpsc},
 };
-use std::sync::mpsc;
 
 use durability::{wal::WAL, DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord};
 use itertools::Itertools;
@@ -142,7 +141,6 @@ impl WALClient {
 }
 
 impl DurabilityClient for WALClient {
-
     fn request_sync(&self) -> mpsc::Receiver<()> {
         self.wal.request_sync()
     }

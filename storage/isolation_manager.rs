@@ -119,11 +119,8 @@ impl IsolationManager {
                     CommitStatus::Validated(commit_record) | CommitStatus::Applied(commit_record) => commit_record,
                     _ => panic!("get_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
                 };
-                Ok(ValidatedCommit::Write(WriteBatches::from_operations(
-                    sequence_number,
-                    commit_record.operations(),
-                )))
-            },
+                Ok(ValidatedCommit::Write(WriteBatches::from_operations(sequence_number, commit_record.operations())))
+            }
         }
     }
 
@@ -458,19 +455,13 @@ impl Timeline {
         (concurrent_windows, start_index_of_first_concurrent_window)
     }
 
-    fn try_get_window(
-        &self,
-        sequence_number: SequenceNumber,
-    ) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
+    fn try_get_window(&self, sequence_number: SequenceNumber) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
         let windows = self.windows.read().unwrap_or_log();
         let window_index = Self::resolve_window(&windows, sequence_number)?;
         Some(windows.get(window_index).unwrap().clone())
     }
 
-    fn get_or_create_window(
-        &self,
-        sequence_number: SequenceNumber,
-    ) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
+    fn get_or_create_window(&self, sequence_number: SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
         let end = self.windows.read().unwrap_or_log().back().unwrap().end();
         if sequence_number >= end {
             self.create_windows_to(sequence_number);
