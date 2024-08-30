@@ -556,19 +556,19 @@ impl AnnotationCategory {
         }
     }
 
-    pub fn boolean(&self) -> bool {
+    pub fn has_parameter(&self) -> bool {
         match self {
             | AnnotationCategory::Abstract
             | AnnotationCategory::Key
             | AnnotationCategory::Unique
             | AnnotationCategory::Distinct
             | AnnotationCategory::Independent
-            | AnnotationCategory::Cascade => true,
+            | AnnotationCategory::Cascade => false,
 
             | AnnotationCategory::Cardinality
             | AnnotationCategory::Regex
             | AnnotationCategory::Range
-            | AnnotationCategory::Values => false,
+            | AnnotationCategory::Values => true,
         }
     }
 }

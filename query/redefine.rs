@@ -923,9 +923,9 @@ fn capability_convert_and_validate_annotation_redefinition_need<'a, CAP: concept
 }
 
 fn error_if_not_redefinable<'a>(label: &Label<'a>, annotation: Annotation) -> Result<(), RedefineError> {
-    match annotation.category().boolean() {
-        true => Err(RedefineError::AnnotationCannotBeRedefined { label: label.clone().into_owned(), annotation }),
-        false => Ok(()),
+    match annotation.category().has_parameter() {
+        false => Err(RedefineError::AnnotationCannotBeRedefined { label: label.clone().into_owned(), annotation }),
+        true => Ok(()),
     }
 }
 

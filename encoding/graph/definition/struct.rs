@@ -71,12 +71,11 @@ impl StructDefinition {
     }
 
     pub fn get_field(&self, field_name: &str) -> Option<&StructDefinitionField> {
-        let field_idx = if let Some(id) = self.field_names.get(field_name) {
-            id
+        if let Some(id) = self.field_names.get(field_name) {
+            self.fields.get(id)
         } else {
-            return None;
-        };
-        self.fields.get(field_idx)
+            None
+        }
     }
 }
 
