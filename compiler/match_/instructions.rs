@@ -345,6 +345,7 @@ pub struct LinksInstruction<ID> {
     relation_to_player_types: Arc<BTreeMap<Type, Vec<Type>>>,
     player_to_role_types: Arc<BTreeMap<Type, HashSet<Type>>>,
     player_types: Arc<HashSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl LinksInstruction<Variable> {
@@ -354,11 +355,11 @@ impl LinksInstruction<Variable> {
         let player_to_role_types = edge_annotations.filters_on_right();
         let relation_to_player_types = edge_annotations.left_to_right();
         let player_types = type_annotations.variable_annotations_of(links.player()).unwrap().clone();
-        Self { links, inputs, relation_to_player_types, player_types, player_to_role_types }
+        Self { links, inputs, relation_to_player_types, player_types, player_to_role_types, checks: Vec::new() }
     }
 
-    fn add_check(&mut self, _check: CheckInstruction<Variable>) {
-        todo!()
+    fn add_check(&mut self, check: CheckInstruction<Variable>) {
+        self.checks.push(check)
     }
 }
 
@@ -378,13 +379,14 @@ impl<ID> LinksInstruction<ID> {
 
 impl<ID: IrID> LinksInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> LinksInstruction<T> {
-        let Self { links, inputs, relation_to_player_types, player_types, player_to_role_types } = self;
+        let Self { links, inputs, relation_to_player_types, player_types, player_to_role_types, checks } = self;
         LinksInstruction {
             links: links.map(mapping),
             inputs: inputs.map(mapping),
             relation_to_player_types,
             player_types,
             player_to_role_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
     }
 }
@@ -396,6 +398,7 @@ pub struct LinksReverseInstruction<ID> {
     player_to_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
     relation_to_role_types: Arc<BTreeMap<Type, HashSet<Type>>>,
     relation_types: Arc<HashSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl LinksReverseInstruction<Variable> {
@@ -405,11 +408,11 @@ impl LinksReverseInstruction<Variable> {
         let relation_to_role_types = edge_annotations.filters_on_left();
         let player_to_relation_types = edge_annotations.right_to_left();
         let relation_types = type_annotations.variable_annotations_of(links.relation()).unwrap().clone();
-        Self { links, inputs, player_to_relation_types, relation_types, relation_to_role_types }
+        Self { links, inputs, player_to_relation_types, relation_types, relation_to_role_types, checks: Vec::new() }
     }
 
-    fn add_check(&mut self, _check: CheckInstruction<Variable>) {
-        todo!()
+    fn add_check(&mut self, check: CheckInstruction<Variable>) {
+        self.checks.push(check)
     }
 }
 
@@ -429,13 +432,14 @@ impl<ID> LinksReverseInstruction<ID> {
 
 impl<ID: IrID> LinksReverseInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> LinksReverseInstruction<T> {
-        let Self { links, inputs, player_to_relation_types, relation_to_role_types, relation_types } = self;
+        let Self { links, inputs, player_to_relation_types, relation_to_role_types, relation_types, checks } = self;
         LinksReverseInstruction {
             links: links.map(mapping),
             inputs: inputs.map(mapping),
             player_to_relation_types,
             relation_to_role_types,
             relation_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
     }
 }

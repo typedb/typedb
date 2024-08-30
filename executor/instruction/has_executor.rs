@@ -29,7 +29,6 @@ use lending_iterator::{
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
-use super::FilterFn;
 use crate::{
     batch::ImmutableRow,
     instruction::{
@@ -38,7 +37,7 @@ use crate::{
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
             TupleResult,
         },
-        BinaryIterateMode, Checker, VariableModes,
+        BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     VariablePosition,
 };
@@ -92,9 +91,9 @@ impl HasExecutor {
         let HasInstruction { has, checks, .. } = has;
         let iterate_mode = BinaryIterateMode::new(has.owner(), has.attribute(), &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
-            BinaryIterateMode::Unbound => Self::create_has_filter_owners_attributes(owner_attribute_types.clone()),
+            BinaryIterateMode::Unbound => create_has_filter_owners_attributes(owner_attribute_types.clone()),
             BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {
-                Self::create_has_filter_attributes(attribute_types.clone())
+                create_has_filter_attributes(attribute_types.clone())
             }
         };
         let output_tuple_positions = if iterate_mode.is_inverted() {
@@ -201,7 +200,7 @@ impl HasExecutor {
 
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
                     let merged: KMergeBy<HasIterator, HasOrderingFn> =
-                        KMergeBy::new(iterators, Self::compare_has_by_attribute_then_owner);
+                        KMergeBy::new(iterators, compare_has_by_attribute_then_owner);
                     let as_tuples: HasUnboundedSortedAttributeMerged = merged
                         .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
                         .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
@@ -238,31 +237,31 @@ impl HasExecutor {
             }
         }
     }
+}
 
-    fn create_has_filter_owners_attributes(owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<HasFilterFn> {
-        Arc::new(move |result| match result {
-            Ok((has, _)) => match owner_attribute_types.get(&Type::from(has.owner().type_())) {
-                Some(attribute_types) => Ok(attribute_types.contains(&Type::Attribute(has.attribute().type_()))),
-                None => Ok(false),
-            },
-            Err(err) => Err(err.clone()),
-        })
-    }
+fn create_has_filter_owners_attributes(owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<HasFilterFn> {
+    Arc::new(move |result| match result {
+        Ok((has, _)) => match owner_attribute_types.get(&Type::from(has.owner().type_())) {
+            Some(attribute_types) => Ok(attribute_types.contains(&Type::Attribute(has.attribute().type_()))),
+            None => Ok(false),
+        },
+        Err(err) => Err(err.clone()),
+    })
+}
 
-    fn create_has_filter_attributes(attribute_types: Arc<HashSet<Type>>) -> Arc<HasFilterFn> {
-        Arc::new(move |result| match result {
-            Ok((has, _)) => Ok(attribute_types.contains(&Type::Attribute(has.attribute().type_()))),
-            Err(err) => Err(err.clone()),
-        })
-    }
+fn create_has_filter_attributes(attribute_types: Arc<HashSet<Type>>) -> Arc<HasFilterFn> {
+    Arc::new(move |result| match result {
+        Ok((has, _)) => Ok(attribute_types.contains(&Type::Attribute(has.attribute().type_()))),
+        Err(err) => Err(err.clone()),
+    })
+}
 
-    fn compare_has_by_attribute_then_owner(
-        pair: (&Result<(Has<'_>, u64), ConceptReadError>, &Result<(Has<'_>, u64), ConceptReadError>),
-    ) -> Ordering {
-        if let (Ok((has_1, _)), Ok((has_2, _))) = pair {
-            (has_1.attribute(), has_2.owner()).cmp(&(has_2.attribute(), has_2.owner()))
-        } else {
-            Ordering::Equal
-        }
+fn compare_has_by_attribute_then_owner(
+    pair: (&Result<(Has<'_>, u64), ConceptReadError>, &Result<(Has<'_>, u64), ConceptReadError>),
+) -> Ordering {
+    if let (Ok((has_1, _)), Ok((has_2, _))) = pair {
+        (has_1.attribute(), has_2.owner()).cmp(&(has_2.attribute(), has_2.owner()))
+    } else {
+        Ordering::Equal
     }
 }

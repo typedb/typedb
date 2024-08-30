@@ -22,11 +22,10 @@ use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
-use super::has_executor::HasTupleIterator;
 use crate::{
     batch::ImmutableRow,
     instruction::{
-        has_executor::{HasFilterFn, HasOrderingFn, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
+        has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
@@ -66,9 +65,9 @@ impl HasReverseExecutor {
         let HasReverseInstruction { has, checks, .. } = has_reverse;
         let iterate_mode = BinaryIterateMode::new(has.attribute(), has.owner(), &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
-            BinaryIterateMode::Unbound => Self::create_has_filter_attributes_owners(attribute_owner_types.clone()),
+            BinaryIterateMode::Unbound => create_has_filter_attributes_owners(attribute_owner_types.clone()),
             BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {
-                Self::create_has_filter_owners(owner_types.clone())
+                create_has_filter_owners(owner_types.clone())
             }
         };
         let output_tuple_positions = if iterate_mode.is_inverted() {
@@ -139,7 +138,7 @@ impl HasReverseExecutor {
             }
             BinaryIterateMode::UnboundInverted => {
                 debug_assert!(self.attribute_cache.is_some());
-                let (min_owner_type, max_owner_type) = Self::min_max_types(&*self.owner_types);
+                let (min_owner_type, max_owner_type) = min_max_types(&*self.owner_types);
                 let owner_type_range =
                     KeyRange::new_inclusive(min_owner_type.as_object_type(), max_owner_type.as_object_type());
 
@@ -172,7 +171,7 @@ impl HasReverseExecutor {
 
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
                     let merged: KMergeBy<HasReverseIterator, HasOrderingFn> =
-                        KMergeBy::new(iterators, Self::compare_has_by_owner_then_attribute);
+                        KMergeBy::new(iterators, compare_has_by_owner_then_attribute);
                     let as_tuples: HasReverseUnboundedSortedOwnerMerged = merged
                         .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
                         .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
@@ -186,7 +185,7 @@ impl HasReverseExecutor {
             BinaryIterateMode::BoundFrom => {
                 debug_assert!(row.width() > self.has.attribute().as_usize());
                 let attribute = row.get(self.has.attribute());
-                let (min_owner_type, max_owner_type) = Self::min_max_types(&*self.owner_types);
+                let (min_owner_type, max_owner_type) = min_max_types(&*self.owner_types);
                 let type_range =
                     KeyRange::new_inclusive(min_owner_type.as_object_type(), max_owner_type.as_object_type());
                 let iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
@@ -205,39 +204,39 @@ impl HasReverseExecutor {
             }
         }
     }
+}
 
-    fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) {
-        match types.into_iter().minmax() {
-            MinMaxResult::NoElements => unreachable!("Empty type iterator"),
-            MinMaxResult::OneElement(item) => (item.clone(), item.clone()),
-            MinMaxResult::MinMax(min, max) => (min.clone(), max.clone()),
-        }
+fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) {
+    match types.into_iter().minmax() {
+        MinMaxResult::NoElements => unreachable!("Empty type iterator"),
+        MinMaxResult::OneElement(item) => (item.clone(), item.clone()),
+        MinMaxResult::MinMax(min, max) => (min.clone(), max.clone()),
     }
+}
 
-    fn create_has_filter_attributes_owners(attributes_owner_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<HasFilterFn> {
-        Arc::new(move |result| match result {
-            Ok((has, _)) => match attributes_owner_types.get(&Type::from(has.attribute().type_())) {
-                Some(owner_types) => Ok(owner_types.contains(&Type::from(has.owner().type_()))),
-                None => Ok(false),
-            },
-            Err(err) => Err(err.clone()),
-        })
-    }
+fn create_has_filter_attributes_owners(attributes_owner_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<HasFilterFn> {
+    Arc::new(move |result| match result {
+        Ok((has, _)) => match attributes_owner_types.get(&Type::from(has.attribute().type_())) {
+            Some(owner_types) => Ok(owner_types.contains(&Type::from(has.owner().type_()))),
+            None => Ok(false),
+        },
+        Err(err) => Err(err.clone()),
+    })
+}
 
-    fn create_has_filter_owners(owner_types: Arc<HashSet<Type>>) -> Arc<HasFilterFn> {
-        Arc::new(move |result| match result {
-            Ok((has, _)) => Ok(owner_types.contains(&Type::from(has.owner().type_()))),
-            Err(err) => Err(err.clone()),
-        })
-    }
+fn create_has_filter_owners(owner_types: Arc<HashSet<Type>>) -> Arc<HasFilterFn> {
+    Arc::new(move |result| match result {
+        Ok((has, _)) => Ok(owner_types.contains(&Type::from(has.owner().type_()))),
+        Err(err) => Err(err.clone()),
+    })
+}
 
-    fn compare_has_by_owner_then_attribute(
-        pair: (&Result<(Has<'_>, u64), ConceptReadError>, &Result<(Has<'_>, u64), ConceptReadError>),
-    ) -> Ordering {
-        if let (Ok((has_1, _)), Ok((has_2, _))) = pair {
-            (has_2.owner(), has_1.attribute()).cmp(&(has_2.owner(), has_2.attribute()))
-        } else {
-            Ordering::Equal
-        }
+fn compare_has_by_owner_then_attribute(
+    pair: (&Result<(Has<'_>, u64), ConceptReadError>, &Result<(Has<'_>, u64), ConceptReadError>),
+) -> Ordering {
+    if let (Ok((has_1, _)), Ok((has_2, _))) = pair {
+        (has_2.owner(), has_1.attribute()).cmp(&(has_2.owner(), has_2.attribute()))
+    } else {
+        Ordering::Equal
     }
 }
