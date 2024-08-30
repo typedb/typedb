@@ -11,7 +11,7 @@ use concept::type_::annotation::{
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use typeql::{
     annotation::{Annotation as TypeQLAnnotation, CardinalityRange},
-    common::token::{Kind as TypeQLKind, ValueType as TypeQLValueType},
+    token::{Kind as TypeQLKind, ValueType as TypeQLValueType},
 };
 
 use crate::{

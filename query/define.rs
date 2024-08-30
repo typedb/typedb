@@ -28,7 +28,7 @@ use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     annotation::Annotation as TypeQLAnnotation,
-    common::token,
+    token,
     query::schema::Define,
     schema::definable::{
         function::Function,

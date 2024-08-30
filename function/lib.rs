@@ -24,7 +24,7 @@ pub enum FunctionError {
     FunctionAlreadyExists { name: String },
     Encoding { source: EncodingError },
     FunctionRead { source: FunctionReadError },
-    ParseError { source: typeql::common::error::Error },
+    ParseError { source: typeql::Error },
 }
 
 impl fmt::Display for FunctionError {

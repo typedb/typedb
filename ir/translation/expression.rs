@@ -6,7 +6,7 @@
 
 use answer::variable::Variable;
 use typeql::{
-    common::token::{ArithmeticOperator, Function},
+    token::{ArithmeticOperator, Function},
     expression::{BuiltinFunctionName, Expression as TypeQLExpression, FunctionName},
 };
 

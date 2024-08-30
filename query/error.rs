@@ -15,7 +15,7 @@ use crate::{define::DefineError, redefine::RedefineError, undefine::UndefineErro
 
 #[derive(Debug)]
 pub enum QueryError {
-    ParseError { typeql_query: String, source: typeql::common::Error },
+    ParseError { typeql_query: String, source: typeql::Error },
     Define { source: DefineError },
     Redefine { source: RedefineError },
     Undefine { source: UndefineError },

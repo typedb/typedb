@@ -15,7 +15,7 @@ use std::{
 
 use answer::variable::Variable;
 use typeql::{
-    common::{error::TypeQLError, token},
+    token,
     statement::{
         thing::{Relation, RolePlayer},
         InIterable, StructDeconstruct,
@@ -72,7 +72,7 @@ pub enum PatternDefinitionError {
         source: FunctionReadError,
     },
     ParseError {
-        source: typeql::common::error::Error,
+        source: typeql::Error,
     },
     LiteralParseError {
         literal: String,

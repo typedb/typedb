@@ -27,7 +27,7 @@ pub(super) fn add_statement<'cx, 'reg>(
 ) -> Result<(), PatternDefinitionError> {
     match stmt {
         typeql::Statement::Is(_) => todo!(),
-        typeql::Statement::InStream(InIterable { lhs, rhs, .. }) => {
+        typeql::Statement::InIterable(InIterable { lhs, rhs, .. }) => {
             let assigned = assignment_typeql_vars_to_variables(constraints, lhs)?;
             add_typeql_binding(function_index, constraints, assigned, rhs, true)?
         }
