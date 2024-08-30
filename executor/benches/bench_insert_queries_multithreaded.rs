@@ -7,7 +7,7 @@
 #![deny(unused_must_use)]
 
 use std::{array, collections::HashMap, sync::{Arc, OnceLock}, thread};
-use std::sync::RwLock;
+use std::sync::{mpsc, RwLock};
 use std::thread::{JoinHandle, sleep};
 use std::time::{Duration, Instant};
 
@@ -135,7 +135,7 @@ fn execute_insert(
     Ok(output_rows)
 }
 
-fn main() {
+fn multi_threaded_inserts() {
     PERSON_LABEL.set(Label::new_static("person")).unwrap();
     GROUP_LABEL.set(Label::new_static("group")).unwrap();
     MEMBERSHIP_LABEL.set(Label::new_static("membership")).unwrap();
@@ -149,7 +149,7 @@ fn main() {
     setup_database(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.read_watermark()));
     const NUM_THREADS: usize = 32;
-    const INTERNAL_ITERS: u64 = 100;
+    const INTERNAL_ITERS: u64 = 25;
     let start_signal_rw_lock = Arc::new(RwLock::new(()));
     let write_guard = start_signal_rw_lock.write().unwrap();
     let join_handles: [JoinHandle<()>; NUM_THREADS] = array::from_fn(|_| {
@@ -185,4 +185,83 @@ fn main() {
     }
     let time_taken_ms = start.elapsed().as_millis();
     println!("{NUM_THREADS} threads * {INTERNAL_ITERS} iters took: {time_taken_ms} ms");
+}
+
+fn main() {
+    multi_threaded_inserts();
+}
+
+#[test]
+fn rwlock() {
+    for n_tests in 0..20 {
+        const NUM_THREADS: usize = 8;
+        let start_signal_rw_lock = Arc::new(RwLock::new(()));
+        let write_guard = start_signal_rw_lock.write().unwrap();
+        let join_handles: [JoinHandle<Instant>; NUM_THREADS] = array::from_fn(|_| {
+            let rw_lock_cloned = start_signal_rw_lock.clone();
+            thread::spawn(move || {
+                drop(rw_lock_cloned.read().unwrap());
+                Instant::now()
+            })
+        });
+        println!("Sleeping 1s before starting threads");
+        sleep(Duration::from_millis(50));
+        println!("Start!");
+        let mut end_times = Vec::with_capacity(NUM_THREADS);
+        let start = Instant::now();
+        drop(write_guard); // Start
+        for join_handle in join_handles {
+            end_times.push(join_handle.join().unwrap());
+        }
+        let latencies = end_times.iter().map(|t| *t - start).collect::<Vec<_>>();
+        let max_latency_ms = (latencies.iter().max().unwrap()).as_micros();
+        let avg_latency_ms = latencies.iter().map(|x| x.as_micros()).sum::<u128>() as usize/ latencies.len();
+        println!("Max latency: {max_latency_ms} us");
+        println!("Avg latency: {avg_latency_ms} us");
+    }
+}
+
+
+#[test]
+fn mpsc() {
+    for n_tests in 0..20 {
+        const NUM_THREADS: usize = 8;
+        let mut senders = Vec::with_capacity(NUM_THREADS);
+        let join_handles: [JoinHandle<Instant>; NUM_THREADS] = array::from_fn(|_| {
+            let (sender, receiver) = mpsc::channel();
+            senders.push(sender);
+            thread::spawn(move || {
+                receiver.recv().unwrap();
+                Instant::now()
+            })
+        });
+        println!("Sleeping 1s before starting threads");
+        sleep(Duration::from_millis(50));
+        println!("Start!");
+        let mut end_times = Vec::with_capacity(NUM_THREADS);
+        let start = Instant::now();
+        for sender in senders {
+            sender.send(()).unwrap();
+        }
+        // println!("Done with sending in {} us", (Instant::now() - start).as_micros());
+        for join_handle in join_handles {
+            end_times.push(join_handle.join().unwrap());
+        }
+
+        let latencies = end_times.iter().map(|t| *t - start).collect::<Vec<_>>();
+        let max_latency_ms = (latencies.iter().max().unwrap()).as_micros();
+        let avg_latency_ms = latencies.iter().map(|x| x.as_micros()).sum::<u128>() as usize / latencies.len();
+        println!("Max latency: {max_latency_ms} us");
+        println!("Avg latency: {avg_latency_ms} us");
+    }
+}
+
+#[test]
+fn noop() {
+    for n_tests in 0..20 {
+        let start = Instant::now();
+        let x = 123456/124 * 123;
+        let noop_latency_ms = (Instant::now() - start).as_nanos();
+        println!("noop latency: {noop_latency_ms} NANOs");
+    }
 }
