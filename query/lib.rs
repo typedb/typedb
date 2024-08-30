@@ -9,9 +9,9 @@ use typeql::schema::definable::type_::Capability;
 
 mod annotation;
 mod compilation;
+mod definable_resolution;
+mod definable_status;
 mod define;
-mod definition_resolution;
-mod definition_status;
 pub mod error;
 pub mod query_manager;
 mod redefine;

@@ -90,7 +90,7 @@ impl DefinitionValueEncoding for StructDefinition {
 }
 
 impl StructDefinitionField {
-    pub fn same(&self, optional: bool, value_type: ValueType) -> bool {
+    pub fn has_optionality_and_value_type(&self, optional: bool, value_type: ValueType) -> bool {
         self.optional == optional && self.value_type == value_type
     }
 }

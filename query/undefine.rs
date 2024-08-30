@@ -42,7 +42,7 @@ use typeql::{
     ScopedLabel, TypeRef, TypeRefAny,
 };
 
-use crate::definition_resolution::{filter_variants, resolve_value_type, try_unwrap, SymbolResolutionError};
+use crate::definable_resolution::{filter_variants, resolve_value_type, try_unwrap, SymbolResolutionError};
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,

@@ -41,15 +41,15 @@ use typeql::{
 };
 
 use crate::{
-    definition_resolution::{
+    definable_resolution::{
         filter_variants, get_struct_field_value_type_optionality, named_type_to_label, resolve_attribute_type,
         resolve_owns, resolve_owns_declared, resolve_plays_declared, resolve_plays_role_label, resolve_relates,
         resolve_relates_declared, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type,
         resolve_value_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type, SymbolResolutionError,
     },
-    definition_status::{
+    definable_status::{
         get_capability_annotation_status, get_override_status, get_owns_status, get_plays_status, get_relates_status,
-        get_struct_field_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinitionStatus,
+        get_struct_field_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinableStatus,
     },
 };
 
@@ -163,13 +163,13 @@ fn redefine_struct_fields(
         )
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         match definition_status {
-            DefinitionStatus::DoesNotExist => {
+            DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::StructFieldDoesNotExist { field: field.to_owned() });
             }
-            DefinitionStatus::ExistsSame(_) => {
+            DefinableStatus::ExistsSame(_) => {
                 return Err(RedefineError::StructFieldRemainsSame { field: field.to_owned() });
             }
-            DefinitionStatus::ExistsDifferent(_) => {}
+            DefinableStatus::ExistsDifferent(_) => {}
         }
 
         error_if_anything_redefined_else_set_true(anything_redefined)?;
@@ -372,11 +372,11 @@ fn redefine_value_type(
             get_value_type_status(snapshot, type_manager, attribute_type.clone(), value_type.clone())
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let redefine_needed = match definition_status {
-            DefinitionStatus::DoesNotExist => {
+            DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::AttributeTypeValueTypeIsNotDefined { label: label.to_owned(), value_type });
             }
-            DefinitionStatus::ExistsSame(_) => false, // is not a leaf of redefine query, don't error
-            DefinitionStatus::ExistsDifferent(_) => true,
+            DefinableStatus::ExistsSame(_) => false, // is not a leaf of redefine query, don't error
+            DefinableStatus::ExistsDifferent(_) => true,
         };
 
         if redefine_needed {
@@ -458,16 +458,16 @@ fn redefine_relates(
             get_relates_status(snapshot, type_manager, relation_type.clone(), &role_label, ordering)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let relates = match definition_status {
-            DefinitionStatus::DoesNotExist => {
+            DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::RelatesIsNotDefined {
                     label: label.clone(),
                     declaration: capability.to_owned(),
                     ordering,
                 })
             }
-            DefinitionStatus::ExistsSame(None) => unreachable!("Existing relates concept expected"),
-            DefinitionStatus::ExistsSame(Some((existing_relates, _))) => existing_relates, // is not a leaf of redefine query, don't error
-            DefinitionStatus::ExistsDifferent((existing_relates, _)) => {
+            DefinableStatus::ExistsSame(None) => unreachable!("Existing relates concept expected"),
+            DefinableStatus::ExistsSame(Some((existing_relates, _))) => existing_relates, // is not a leaf of redefine query, don't error
+            DefinableStatus::ExistsDifferent((existing_relates, _)) => {
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
                 existing_relates.role().set_ordering(snapshot, type_manager, thing_manager, ordering).map_err(
                     |source| RedefineError::SetRelatesOrdering { source, relates: typeql_relates.to_owned() },
@@ -608,16 +608,16 @@ fn redefine_owns(
             get_owns_status(snapshot, type_manager, object_type.clone(), attribute_type.clone(), ordering)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let owns = match definition_status {
-            DefinitionStatus::DoesNotExist => {
+            DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::OwnsIsNotDefined {
                     label: label.clone(),
                     declaration: capability.to_owned(),
                     ordering,
                 })
             }
-            DefinitionStatus::ExistsSame(None) => unreachable!("Existing owns concept expected"),
-            DefinitionStatus::ExistsSame(Some((existing_owns, _))) => existing_owns, // is not a leaf of redefine query, don't error
-            DefinitionStatus::ExistsDifferent((existing_owns, _)) => {
+            DefinableStatus::ExistsSame(None) => unreachable!("Existing owns concept expected"),
+            DefinableStatus::ExistsSame(Some((existing_owns, _))) => existing_owns, // is not a leaf of redefine query, don't error
+            DefinableStatus::ExistsDifferent((existing_owns, _)) => {
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
                 existing_owns
                     .set_ordering(snapshot, type_manager, thing_manager, ordering)
@@ -718,15 +718,15 @@ fn redefine_plays(
         let definition_status = get_plays_status(snapshot, type_manager, object_type.clone(), role_type.clone())
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let plays = match definition_status {
-            DefinitionStatus::DoesNotExist => {
+            DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::PlaysIsNotDefined {
                     label: label.clone(),
                     declaration: capability.to_owned(),
                 })
             }
-            DefinitionStatus::ExistsSame(Some(existing_plays)) => existing_plays,
-            DefinitionStatus::ExistsSame(None) => unreachable!("Existing plays concept expected"),
-            DefinitionStatus::ExistsDifferent(_) => unreachable!("Plays cannot differ"),
+            DefinableStatus::ExistsSame(Some(existing_plays)) => existing_plays,
+            DefinableStatus::ExistsSame(None) => unreachable!("Existing plays concept expected"),
+            DefinableStatus::ExistsDifferent(_) => unreachable!("Plays cannot differ"),
         };
 
         redefine_plays_annotations(
@@ -822,21 +822,21 @@ fn check_can_redefine_sub<'a, T: TypeAPI<'a>>(
     let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype.clone())
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinitionStatus::DoesNotExist => Err(RedefineError::TypeSubIsNotDefined {
+        DefinableStatus::DoesNotExist => Err(RedefineError::TypeSubIsNotDefined {
             label: label.clone().into_owned(),
             supertype: new_supertype
                 .get_label_cloned(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
         }),
-        DefinitionStatus::ExistsSame(_) => Err(RedefineError::TypeSubRemainsSame {
+        DefinableStatus::ExistsSame(_) => Err(RedefineError::TypeSubRemainsSame {
             label: label.clone().into_owned(),
             supertype: new_supertype
                 .get_label_cloned(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
         }),
-        DefinitionStatus::ExistsDifferent(_) => Ok(()),
+        DefinableStatus::ExistsDifferent(_) => Ok(()),
     }
 }
 
@@ -850,7 +850,7 @@ fn check_can_redefine_override<'a, CAP: concept::type_::Capability<'a>>(
     let definition_status = get_override_status(snapshot, type_manager, capability, new_override.clone())
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinitionStatus::DoesNotExist => Err(RedefineError::CapabilityOverrideIsNotDefined {
+        DefinableStatus::DoesNotExist => Err(RedefineError::CapabilityOverrideIsNotDefined {
             label: label.clone().into_owned(),
             overridden_interface: new_override
                 .interface()
@@ -858,7 +858,7 @@ fn check_can_redefine_override<'a, CAP: concept::type_::Capability<'a>>(
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
         }),
-        DefinitionStatus::ExistsSame(_) => Err(RedefineError::CapabilityOverrideRemainsSame {
+        DefinableStatus::ExistsSame(_) => Err(RedefineError::CapabilityOverrideRemainsSame {
             label: label.clone().into_owned(),
             overridden_interface: new_override
                 .interface()
@@ -866,7 +866,7 @@ fn check_can_redefine_override<'a, CAP: concept::type_::Capability<'a>>(
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
         }),
-        DefinitionStatus::ExistsDifferent(_) => Ok(()),
+        DefinableStatus::ExistsDifferent(_) => Ok(()),
     }
 }
 
@@ -886,13 +886,13 @@ fn type_convert_and_validate_annotation_redefinition_need<'a, T: KindAPI<'a>>(
         get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinitionStatus::DoesNotExist => {
+        DefinableStatus::DoesNotExist => {
             Err(RedefineError::TypeAnnotationIsNotDefined { label: label.clone().into_owned(), annotation })
         }
-        DefinitionStatus::ExistsSame(_) => {
+        DefinableStatus::ExistsSame(_) => {
             Err(RedefineError::TypeAnnotationRemainsSame { label: label.clone().into_owned(), annotation })
         }
-        DefinitionStatus::ExistsDifferent(_) => Ok(Some(converted)),
+        DefinableStatus::ExistsDifferent(_) => Ok(Some(converted)),
     }
 }
 
@@ -912,13 +912,13 @@ fn capability_convert_and_validate_annotation_redefinition_need<'a, CAP: concept
         get_capability_annotation_status(snapshot, type_manager, capability, &converted, annotation.category())
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinitionStatus::DoesNotExist => {
+        DefinableStatus::DoesNotExist => {
             Err(RedefineError::CapabilityAnnotationIsNotDefined { label: label.clone().into_owned(), annotation })
         }
-        DefinitionStatus::ExistsSame(_) => {
+        DefinableStatus::ExistsSame(_) => {
             Err(RedefineError::CapabilityAnnotationRemainsSame { label: label.clone().into_owned(), annotation })
         }
-        DefinitionStatus::ExistsDifferent(_) => Ok(Some(converted)),
+        DefinableStatus::ExistsDifferent(_) => Ok(Some(converted)),
     }
 }
 

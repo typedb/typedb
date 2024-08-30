@@ -9,17 +9,21 @@
 use answer::Type;
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, type_manager::TypeManager, Capability, ObjectTypeAPI, Ordering},
+    type_::{
+        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, owns::Owns, plays::Plays,
+        relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, Capability,
+        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI,
+    },
 };
 use encoding::{
-    graph::type_::Kind,
+    graph::{definition::definition_key::DefinitionKey, type_::Kind},
     value::{label::Label, value_type::ValueType},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    schema::definable::struct_::Field,
-    type_::{BuiltinValueType, NamedType},
-    ScopedLabel, TypeRef, TypeRefAny,
+    schema::definable::{struct_::Field, type_},
+    type_::{BuiltinValueType, NamedType, Optional},
+    TypeRef, TypeRefAny,
 };
 
 macro_rules! try_unwrap {
@@ -38,15 +42,7 @@ macro_rules! filter_variants {
         $iterable.iter().filter_map(|item| if let $variant(inner) = item { Some(inner) } else { None })
     };
 }
-use concept::type_::{
-    attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relates::Relates,
-    relation_type::RelationType, role_type::RoleType, OwnerAPI, PlayerAPI,
-};
-use encoding::{graph::definition::definition_key::DefinitionKey, value::string_bytes::StringBytes};
 pub(crate) use filter_variants;
-use typeql::{schema::definable::type_, type_::Optional};
-
-use crate::{define::DefineError, definition_status::DefinitionStatus};
 
 pub(crate) fn type_ref_to_label_and_ordering(
     label: &Label,
