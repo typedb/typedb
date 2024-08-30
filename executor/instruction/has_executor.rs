@@ -266,34 +266,3 @@ impl HasExecutor {
         }
     }
 }
-//
-// struct HasCheckExecutor {
-//     has: ir::pattern::constraint::Has<VariablePosition>,
-// }
-//
-// impl HasCheckExecutor {
-//     pub(crate) fn new(ir::pattern::constraint::Has<VariablePosition>,) -> Self {
-//         Self { has }
-//     }
-//
-//     pub(crate) fn check<Snapshot: ReadableSnapshot>(
-//         &self,
-//         snapshot: &Snapshot,
-//         thing_manager: &ThingManager,
-//         row: ImmutableRow<'_>,
-//     ) -> Result<bool, ConceptReadError> {
-//         debug_assert!(
-//             *row.get(self.has.owner()) != VariableValue::Empty
-//                 && *row.get(self.has.attribute()) != VariableValue::Empty
-//         );
-//         let owner = row.get(self.has.owner());
-//         let attribute = row.get(self.has.attribute()).as_thing().as_attribute();
-//         match owner {
-//             VariableValue::Thing(Thing::Entity(entity)) => entity.has_attribute(snapshot, thing_manager, attribute),
-//             VariableValue::Thing(Thing::Relation(relation)) => {
-//                 relation.has_attribute(snapshot, thing_manager, attribute)
-//             }
-//             _ => unreachable!("Has owner must be an entity or relation."),
-//         }
-//     }
-// }
