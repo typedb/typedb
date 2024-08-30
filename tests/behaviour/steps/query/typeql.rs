@@ -11,7 +11,7 @@ use compiler::{
     insert::WriteCompilationError,
     match_::{
         inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-        planner::program_plan::ProgramPlan,
+        planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
     },
 };
 use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::TypeAPI};
@@ -63,10 +63,10 @@ fn execute_match_query(
         )
         .unwrap();
 
-        let match_plan = compiler::match_::compile(
-            variable_registry.clone(),
+        let match_plan = MatchProgram::compile(
             &block,
             &type_annotations,
+            &translation_context.variable_registry,
             &HashMap::new(),
             tx.thing_manager.statistics(),
         );

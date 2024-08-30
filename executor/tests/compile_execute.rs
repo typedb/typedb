@@ -113,7 +113,8 @@ fn test_has_planning_traversal() {
         &translation_context.variable_registry,
     )
     .unwrap();
-    let pattern_plan = MatchProgram::from_block(
+
+    let pattern_plan = MatchProgram::compile(
         &block,
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
@@ -249,7 +250,8 @@ fn test_links_planning_traversal() {
         &translation_context.variable_registry,
     )
     .unwrap();
-    let pattern_plan = MatchProgram::from_block(
+
+    let pattern_plan = MatchProgram::compile(
         &block,
         &entry_annotations,
         Arc::new(translation_context.variable_registry),

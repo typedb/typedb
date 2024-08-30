@@ -53,7 +53,7 @@ impl MatchProgram {
         Self { programs, variable_registry: Arc::new(variable_registry), variable_positions, variable_positions_index }
     }
 
-    pub fn from_block(
+    pub fn compile(
         block: &FunctionalBlock,
         type_annotations: &TypeAnnotations,
         variable_registry: Arc<VariableRegistry>,
