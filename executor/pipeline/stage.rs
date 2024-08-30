@@ -25,13 +25,13 @@ pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Match(Box<MatchStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>>),
 }
 
-pub enum ReadStageIterator {
+pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
     Initial(InitialIterator),
-    Match(Box<MatchStageIterator<ReadStageIterator>>),
+    Match(Box<MatchStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
-    type OutputIterator = ReadStageIterator;
+    type OutputIterator = ReadStageIterator<Snapshot>;
 
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
         match self {
@@ -47,7 +47,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
     }
 }
 
-impl LendingIterator for ReadStageIterator {
+impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadStageIterator<Snapshot> {
     type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
@@ -58,7 +58,7 @@ impl LendingIterator for ReadStageIterator {
     }
 }
 
-impl StageIterator for ReadStageIterator {
+impl<Snapshot: ReadableSnapshot + 'static> StageIterator for ReadStageIterator<Snapshot> {
     fn collect_owned(self) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineError> {
         match self {
             ReadStageIterator::Initial(iterator) => iterator.collect_owned(),
@@ -74,7 +74,7 @@ pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
 }
 
 impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineStage<Snapshot> {
-    type OutputIterator = WriteStageIterator;
+    type OutputIterator = WriteStageIterator<Snapshot>;
 
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
         match self {
@@ -94,13 +94,13 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
     }
 }
 
-pub enum WriteStageIterator {
+pub enum WriteStageIterator<Snapshot: WritableSnapshot + 'static> {
     Initial(InitialIterator),
-    Match(Box<MatchStageIterator<WriteStageIterator>>),
+    Match(Box<MatchStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
     Write(WrittenRowsIterator),
 }
 
-impl LendingIterator for WriteStageIterator {
+impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterator<Snapshot> {
     type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
@@ -112,7 +112,7 @@ impl LendingIterator for WriteStageIterator {
     }
 }
 
-impl StageIterator for WriteStageIterator {
+impl<Snapshot: WritableSnapshot + 'static> StageIterator for WriteStageIterator<Snapshot> {
     fn collect_owned(self) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineError> {
         match self {
             WriteStageIterator::Initial(iterator) => iterator.collect_owned(),

@@ -31,7 +31,7 @@ pub trait StageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError>;
 }
 
-pub trait StageIterator: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>> {
+pub trait StageIterator: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>> + Sized {
     fn collect_owned(self) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineError> {
         // specific iterators can optimise this by not iterating + collecting!
         let rows: Vec<MaybeOwnedRow<'static>> =
@@ -59,7 +59,7 @@ impl Display for PipelineError {
 impl Error for PipelineError {}
 
 // Can be used as normal lending iterator, or optimally collect into owned using `collect_owned()`
-struct WrittenRowsIterator {
+pub struct WrittenRowsIterator {
     rows: Vec<MaybeOwnedRow<'static>>,
     index: usize,
 }

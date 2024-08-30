@@ -12,6 +12,7 @@ use std::{
 
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
+use lending_iterator::higher_order::Hkt;
 use lending_iterator::LendingIterator;
 
 use crate::VariablePosition;
@@ -174,6 +175,10 @@ impl<'a> Display for Row<'a> {
 pub struct MaybeOwnedRow<'a> {
     row: Cow<'a, [VariableValue<'static>]>,
     multiplicity: u64,
+}
+
+impl Hkt for MaybeOwnedRow<'static> {
+    type HktSelf<'a> = MaybeOwnedRow<'a>;
 }
 
 impl<'a> MaybeOwnedRow<'a> {
