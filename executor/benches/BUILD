@@ -37,6 +37,34 @@ rust_test(
     use_libtest_harness = False,
 )
 
+# To run this via Bazel, Criterion must be provided the --bench argument:
+#   bazel run --compilation_mode=opt //executor/benches:bench_insert_queries -- --bench
+rust_test(
+    name = "bench_insert_queries_multithreaded",
+    srcs = glob([
+        "bench_insert_queries_multithreaded.rs",
+        "common.rs",
+    ]),
+    deps = [
+        "//answer",
+        "//compiler",
+        "//concept",
+        "//durability",
+        "//encoding",
+        "//executor",
+        "//ir",
+        "//resource",
+        "//storage",
+        "//util/test:test_utils",
+        "@vaticle_typeql//rust:typeql",
+
+        "@crates//:criterion",
+        "@crates//:rand",
+        "@crates//:pprof",
+    ],
+    use_libtest_harness = False,
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),
