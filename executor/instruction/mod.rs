@@ -30,9 +30,9 @@ use crate::{
         has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
         iterator::TupleIterator, links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
     },
+    row::MaybeOwnedRow,
     VariablePosition,
 };
-use crate::row::MaybeOwnedRow;
 
 mod function_call_binding_executor;
 mod has_executor;

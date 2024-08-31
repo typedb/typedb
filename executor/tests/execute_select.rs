@@ -17,17 +17,16 @@ use compiler::match_::{
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
-    type_::{annotation::AnnotationCardinality, Ordering, OwnerAPI, owns::OwnsAnnotation},
+    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::program_executor::ProgramExecutor;
-use executor::row::MaybeOwnedRow;
+use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 
 use crate::common::{load_managers, setup_storage};
@@ -180,10 +179,9 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-        let iterator = executor.into_iterator(snapshot, thing_manager);
-        let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> = iterator
-            .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone()))
-            .collect();
+    let iterator = executor.into_iterator(snapshot, thing_manager);
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
 
     // person1, <something>
     // person2, <something>

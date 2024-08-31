@@ -20,26 +20,25 @@ use concept::{
 use itertools::{Itertools, MinMaxResult};
 use lending_iterator::{
     adaptors::{Filter, Map},
-    AsHkt,
-    kmerge::KMergeBy, LendingIterator, Peekable,
+    kmerge::KMergeBy,
+    AsHkt, LendingIterator, Peekable,
 };
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
         has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
             TupleResult,
-        }, VariableModes,
+        },
+        BinaryIterateMode, Checker, VariableModes,
     },
+    row::MaybeOwnedRow,
     VariablePosition,
 };
-use crate::instruction::Checker;
-use crate::row::MaybeOwnedRow;
 
 pub(crate) struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<VariablePosition>,

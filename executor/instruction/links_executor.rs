@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{Thing, Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::match_::instructions::LinksInstruction;
 use concept::{
     error::ConceptReadError,
@@ -32,16 +32,15 @@ use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        TernaryIterateMode,
         tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, LinksToTupleFn, Tuple,
             TuplePositions, TupleResult,
-        }, VariableModes,
+        },
+        Checker, FilterFn, TernaryIterateMode, VariableModes,
     },
+    row::MaybeOwnedRow,
     VariablePosition,
 };
-use crate::instruction::{Checker, FilterFn};
-use crate::row::MaybeOwnedRow;
 
 pub(crate) struct LinksExecutor {
     links: ir::pattern::constraint::Links<VariablePosition>,

@@ -22,10 +22,10 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
-    instruction::{InstructionExecutor, iterator::TupleIterator},
+    instruction::{iterator::TupleIterator, InstructionExecutor},
+    row::{MaybeOwnedRow, Row},
     SelectedPositions, VariablePosition,
 };
-use crate::row::{MaybeOwnedRow, Row};
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, VariablePosition>,

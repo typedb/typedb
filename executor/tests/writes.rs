@@ -13,19 +13,19 @@ use compiler::{
 };
 use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
-    type_::{object_type::ObjectType, Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
+    type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
+    row::Row,
     write::{delete::DeleteExecutor, insert::InsertExecutor, WriteError},
 };
-use executor::row::Row;
 use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 
 use crate::common::{load_managers, setup_storage};
@@ -117,9 +117,10 @@ fn execute_insert(
 
     println!("Insert Vertex:\n{:?}", &insert_plan.concept_instructions);
     println!("Insert Edges:\n{:?}", &insert_plan.connection_instructions);
-    insert_plan.debug_info.iter().for_each(|(k, v)| {
-        println!("{:?} -> {:?}", k, translation_context.variable_registry.variable_names().get(v))
-    });
+    insert_plan
+        .debug_info
+        .iter()
+        .for_each(|(k, v)| println!("{:?} -> {:?}", k, translation_context.variable_registry.variable_names().get(v)));
 
     // TODO: Replace with accumulator
     let mut output_rows = Vec::with_capacity(input_rows.len());

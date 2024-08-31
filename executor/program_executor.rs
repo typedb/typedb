@@ -14,11 +14,8 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    function_executor::FunctionExecutor,
-    pattern_executor::PatternExecutor,
-    VariablePosition,
+    function_executor::FunctionExecutor, pattern_executor::PatternExecutor, row::MaybeOwnedRow, VariablePosition,
 };
-use crate::row::MaybeOwnedRow;
 
 pub struct ProgramExecutor {
     entry: PatternExecutor,

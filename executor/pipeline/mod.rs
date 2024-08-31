@@ -7,18 +7,15 @@
 use std::{
     error::Error,
     fmt::{Display, Formatter},
-    sync::Arc
-    ,
+    sync::Arc,
 };
 
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use crate::batch::Batch;
 
-use crate::write::WriteError;
-use crate::row::MaybeOwnedRow;
+use crate::{batch::Batch, row::MaybeOwnedRow, write::WriteError};
 
 pub mod accumulator;
 pub mod delete;

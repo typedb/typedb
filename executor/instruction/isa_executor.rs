@@ -11,7 +11,7 @@ use std::{
     vec,
 };
 
-use answer::{Thing, Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::match_::instructions::IsaInstruction;
 use concept::{
     error::ConceptReadError,
@@ -34,14 +34,13 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, Tuple, TuplePositions, TupleResult}, VariableModes,
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, Tuple, TuplePositions, TupleResult},
+        BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
+    row::MaybeOwnedRow,
     VariablePosition,
 };
-use crate::instruction::{Checker, FilterFn};
-use crate::row::MaybeOwnedRow;
 
 pub(crate) struct IsaExecutor {
     isa: Isa<VariablePosition>,

@@ -19,18 +19,17 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
         isa_executor::{
             instances_of_all_types_chained, instances_of_single_type, IsaFilterFn, IsaTupleIterator,
             MultipleTypeIsaIterator, SingleTypeIsaIterator, EXTRACT_THING, EXTRACT_TYPE,
         },
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions, TupleResult}, VariableModes,
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions, TupleResult},
+        BinaryIterateMode, Checker, VariableModes,
     },
+    row::MaybeOwnedRow,
     VariablePosition,
 };
-use crate::instruction::Checker;
-use crate::row::MaybeOwnedRow;
 
 pub(crate) struct IsaReverseExecutor {
     isa: Isa<VariablePosition>,

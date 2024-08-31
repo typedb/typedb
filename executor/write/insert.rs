@@ -11,8 +11,10 @@ use compiler::insert::{
 use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
 
-use crate::write::{write_instruction::AsWriteInstruction, WriteError};
-use crate::row::Row;
+use crate::{
+    row::Row,
+    write::{write_instruction::AsWriteInstruction, WriteError},
+};
 
 pub struct InsertExecutor {
     program: InsertProgram,
@@ -27,7 +29,7 @@ impl InsertExecutor {
         &self.program
     }
 
-    pub(crate)  fn output_width(&self) -> usize {
+    pub(crate) fn output_width(&self) -> usize {
         self.program.output_row_schema.len()
     }
 

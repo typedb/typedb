@@ -11,9 +11,11 @@ use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::pipeline::{PipelineError, StageAPI, StageIterator};
-use crate::pattern_executor::{PatternExecutor, PatternIterator};
-use crate::row::MaybeOwnedRow;
+use crate::{
+    pattern_executor::{PatternExecutor, PatternIterator},
+    pipeline::{PipelineError, StageAPI, StageIterator},
+    row::MaybeOwnedRow,
+};
 
 pub struct MatchStageExecutor<Snapshot: ReadableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
     program: MatchProgram,
@@ -22,9 +24,9 @@ pub struct MatchStageExecutor<Snapshot: ReadableSnapshot + 'static, PreviousStag
 }
 
 impl<Snapshot, PreviousStage> MatchStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: ReadableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     pub fn new(program: MatchProgram, previous: PreviousStage) -> Self {
         Self { program, previous, phantom: PhantomData::default() }
@@ -32,9 +34,9 @@ impl<Snapshot, PreviousStage> MatchStageExecutor<Snapshot, PreviousStage>
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for MatchStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: ReadableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
@@ -42,7 +44,11 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for MatchStageExecutor<Snapshot
         let Self { previous: previous_stage, program, .. } = self;
         let (previous_iterator, snapshot, thing_manager) = previous_stage.into_iterator()?;
         let iterator = previous_iterator;
-        Ok((MatchStageIterator::new(iterator, program, snapshot.clone(), thing_manager.clone()), snapshot, thing_manager))
+        Ok((
+            MatchStageIterator::new(iterator, program, snapshot.clone(), thing_manager.clone()),
+            snapshot,
+            thing_manager,
+        ))
     }
 }
 
@@ -55,7 +61,12 @@ pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
 }
 
 impl<Snapshot: ReadableSnapshot + 'static, Iterator: StageIterator> MatchStageIterator<Snapshot, Iterator> {
-    fn new(iterator: Iterator, program: MatchProgram, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
+    fn new(
+        iterator: Iterator,
+        program: MatchProgram,
+        snapshot: Arc<Snapshot>,
+        thing_manager: Arc<ThingManager>,
+    ) -> Self {
         Self { snapshot, program, thing_manager, source_iterator: iterator, current_iterator: None }
     }
 
@@ -69,7 +80,6 @@ impl<Snapshot: ReadableSnapshot + 'static, Iterator: StageIterator> MatchStageIt
                     // TODO uses start to initialise new pattern iterator
                     let iterator = PatternExecutor::new(&self.program, &self.snapshot, &self.thing_manager)
                         .map_err(|err| PipelineError::InitialisingMatchIterator(err))?;
-
                 }
             }
         }
@@ -79,9 +89,9 @@ impl<Snapshot: ReadableSnapshot + 'static, Iterator: StageIterator> MatchStageIt
 }
 
 impl<Snapshot, Iterator> LendingIterator for MatchStageIterator<Snapshot, Iterator>
-    where
-        Snapshot: ReadableSnapshot + 'static,
-        Iterator: StageIterator
+where
+    Snapshot: ReadableSnapshot + 'static,
+    Iterator: StageIterator,
 {
     type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
 
@@ -96,25 +106,28 @@ impl<Snapshot, Iterator> LendingIterator for MatchStageIterator<Snapshot, Iterat
                     match iterator {
                         Ok(iterator) => {
                             self.current_iterator = Some(Peekable::new(
-                                iterator
-                                    .into_iterator(self.snapshot.clone(), self.thing_manager.clone())
+                                iterator.into_iterator(self.snapshot.clone(), self.thing_manager.clone()),
                             ));
-                        },
+                        }
                         Err(err) => return Some(Err(err)),
                     };
                 }
             }
         }
-        self.current_iterator.as_mut().unwrap().next().map(|result| result.map_err(|err| PipelineError::ConceptRead(err.clone())))
+        self.current_iterator
+            .as_mut()
+            .unwrap()
+            .next()
+            .map(|result| result.map_err(|err| PipelineError::ConceptRead(err.clone())))
     }
 }
 
 impl<Snapshot, Iterator> StageIterator for MatchStageIterator<Snapshot, Iterator>
-    where
-        Snapshot: ReadableSnapshot + 'static,
-        Iterator: StageIterator
-{}
-
+where
+    Snapshot: ReadableSnapshot + 'static,
+    Iterator: StageIterator,
+{
+}
 
 //
 // impl<Iterator> MatchStageIterator<Iterator>

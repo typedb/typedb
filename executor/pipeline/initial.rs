@@ -10,8 +10,10 @@ use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::pipeline::{PipelineError, StageAPI, StageIterator};
-use crate::row::MaybeOwnedRow;
+use crate::{
+    pipeline::{PipelineError, StageAPI, StageIterator},
+    row::MaybeOwnedRow,
+};
 
 pub struct InitialStage<Snapshot: ReadableSnapshot + 'static> {
     snapshot: Arc<Snapshot>,

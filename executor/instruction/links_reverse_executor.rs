@@ -24,9 +24,9 @@ use concept::{
 use itertools::{Itertools, MinMaxResult};
 use lending_iterator::{
     adaptors::{Filter, Map},
-    AsHkt,
     higher_order::FnHktHelper,
-    kmerge::KMergeBy, LendingIterator, Peekable,
+    kmerge::KMergeBy,
+    AsHkt, LendingIterator, Peekable,
 };
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
@@ -34,17 +34,18 @@ use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        TernaryIterateMode,
+        links_executor::{
+            LinksFilterFn, LinksOrderingFn, LinksTupleIterator, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
+        },
         tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, LinksToTupleFn, TuplePositions,
             TupleResult,
-        }, VariableModes,
+        },
+        Checker, TernaryIterateMode, VariableModes,
     },
+    row::MaybeOwnedRow,
     VariablePosition,
 };
-use crate::instruction::Checker;
-use crate::instruction::links_executor::{EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE, LinksFilterFn, LinksOrderingFn, LinksTupleIterator};
-use crate::row::MaybeOwnedRow;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<VariablePosition>,

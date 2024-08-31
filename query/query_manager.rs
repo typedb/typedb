@@ -4,27 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use compiler::match_::{inference::annotated_functions::IndexedAnnotatedFunctions, planner::program_plan::ProgramPlan};
+use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
 };
 use executor::{
     pipeline::{
+        delete::DeleteStageExecutor,
         initial::InitialStage,
+        insert::InsertStageExecutor,
         match_::MatchStageExecutor,
         stage::{ReadPipelineStage, WritePipelineStage},
     },
-    write::insert::InsertExecutor,
+    write::{delete::DeleteExecutor, insert::InsertExecutor},
 };
-use function::{function_manager::FunctionManager};
+use function::function_manager::FunctionManager;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
-use executor::pipeline::delete::DeleteStageExecutor;
-use executor::pipeline::insert::InsertStageExecutor;
-use executor::write::delete::DeleteExecutor;
 
 use crate::{
     annotation::{infer_types_for_pipeline, AnnotatedPipeline},
@@ -175,7 +174,8 @@ impl QueryManager {
         let CompiledPipeline { compiled_functions, compiled_stages } =
             compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
 
-        let mut last_stage = WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot), Arc::new(thing_manager)));
+        let mut last_stage =
+            WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot), Arc::new(thing_manager)));
         for compiled_stage in compiled_stages {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {

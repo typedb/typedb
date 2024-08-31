@@ -4,14 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::Display,
-    vec,
-};
+use std::{fmt::Display, vec};
 
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
 use lending_iterator::LendingIterator;
+
 use crate::row::{MaybeOwnedRow, Row};
 
 const FIXED_BATCH_ROWS_MAX: u32 = 64;
@@ -117,7 +115,6 @@ impl LendingIterator for FixedBatchRowIterator {
     }
 }
 
-
 #[derive(Debug)]
 pub struct Batch {
     width: u32,
@@ -129,12 +126,7 @@ pub struct Batch {
 impl Batch {
     pub(crate) fn new(width: u32, length: usize) -> Self {
         let size = width as usize * length;
-        Batch {
-            width,
-            data: vec![VariableValue::Empty; size],
-            entries: 0,
-            multiplicities: vec![1; length],
-        }
+        Batch { width, data: vec![VariableValue::Empty; size], entries: 0, multiplicities: vec![1; length] }
     }
 
     pub(crate) fn len(&self) -> usize {

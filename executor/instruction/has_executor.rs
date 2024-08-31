@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{Thing, Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::match_::instructions::HasInstruction;
 use concept::{
     error::ConceptReadError,
@@ -22,28 +22,26 @@ use concept::{
     },
 };
 use lending_iterator::{
-    adaptors::{Filter, Map},
-    AsHkt,
+    adaptors::{Filter, Map, TryFilter},
     higher_order::FnHktHelper,
-    kmerge::KMergeBy, LendingIterator, Peekable,
+    kmerge::KMergeBy,
+    AsHkt, LendingIterator, Peekable,
 };
-use lending_iterator::adaptors::TryFilter;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
             TupleResult,
-        }, VariableModes,
+        },
+        BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
+    row::MaybeOwnedRow,
     VariablePosition,
 };
-use crate::instruction::{Checker, FilterFn};
-use crate::row::MaybeOwnedRow;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<VariablePosition>,

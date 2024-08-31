@@ -7,11 +7,7 @@
 use core::panic;
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 
-use cucumber::gherkin::Step;
-use itertools::{Itertools, izip};
-use macro_rules_attribute::apply;
-
-use answer::{Thing, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing};
 use compiler::{
     insert::WriteCompilationError,
     match_::{
@@ -20,21 +16,31 @@ use compiler::{
     },
 };
 use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::TypeAPI};
+use cucumber::gherkin::Step;
 use encoding::value::label::Label;
-use executor::program_executor::ProgramExecutor;
-use executor::row::Row;
-use executor::write::{insert::InsertExecutor, WriteError};
+use executor::{
+    program_executor::ProgramExecutor,
+    row::Row,
+    write::{insert::InsertExecutor, WriteError},
+};
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
-    translation::{match_::translate_match, TranslationContext, writes::translate_insert},
+    translation::{match_::translate_match, writes::translate_insert, TranslationContext},
 };
+use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
+use macro_rules_attribute::apply;
 use primitive::either::Either;
 use query::query_manager::QueryManager;
 
-use crate::{Context, generic_step, params::{check_boolean, MayError}, params, transaction_context::{with_read_tx, with_schema_tx, with_write_tx}};
-use crate::assert::assert_matches;
-use crate::util::iter_table_map;
+use crate::{
+    assert::assert_matches,
+    generic_step, params,
+    params::{check_boolean, MayError},
+    transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
+    util::iter_table_map,
+    Context,
+};
 
 fn execute_match_query(
     context: &mut Context,

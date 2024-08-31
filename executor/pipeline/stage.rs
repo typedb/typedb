@@ -9,16 +9,18 @@ use std::sync::Arc;
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use crate::batch::Batch;
 
-use crate::pipeline::{
-    initial::{InitialIterator, InitialStage},
-    insert::InsertStageExecutor,
-    match_::{MatchStageExecutor, MatchStageIterator},
-    PipelineError, StageAPI, StageIterator, WrittenRowsIterator,
+use crate::{
+    batch::Batch,
+    pipeline::{
+        delete::DeleteStageExecutor,
+        initial::{InitialIterator, InitialStage},
+        insert::InsertStageExecutor,
+        match_::{MatchStageExecutor, MatchStageIterator},
+        PipelineError, StageAPI, StageIterator, WrittenRowsIterator,
+    },
+    row::MaybeOwnedRow,
 };
-use crate::pipeline::delete::DeleteStageExecutor;
-use crate::row::MaybeOwnedRow;
 
 pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),

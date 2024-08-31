@@ -18,16 +18,15 @@ use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
     type_::{
-        annotation::AnnotationCardinality, Ordering, OwnerAPI, owns::OwnsAnnotation, PlayerAPI,
-        relates::RelatesAnnotation,
+        annotation::AnnotationCardinality, owns::OwnsAnnotation, relates::RelatesAnnotation, Ordering, OwnerAPI,
+        PlayerAPI,
     },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::program_executor::ProgramExecutor;
-use executor::row::MaybeOwnedRow;
+use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
-use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 
 use crate::common::{load_managers, setup_storage};
 

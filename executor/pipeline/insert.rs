@@ -11,11 +11,11 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
+    batch::{Batch, FixedBatch},
     pipeline::{PipelineError, StageAPI, StageIterator, WrittenRowsIterator},
+    row::MaybeOwnedRow,
     write::insert::InsertExecutor,
 };
-use crate::batch::{Batch, FixedBatch};
-use crate::row::MaybeOwnedRow;
 
 pub struct InsertStageExecutor<Snapshot: WritableSnapshot + 'static, PreviouStage: StageAPI<Snapshot>> {
     inserter: InsertExecutor,
@@ -24,15 +24,18 @@ pub struct InsertStageExecutor<Snapshot: WritableSnapshot + 'static, PreviouStag
 }
 
 impl<Snapshot, PreviousStage> InsertStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: WritableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: WritableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     pub fn new(inserter: InsertExecutor, previous: PreviousStage) -> Self {
         Self { inserter, previous, snapshot: PhantomData::default() }
     }
 
-    fn prepare_output_rows(output_width: u32, input_iterator: PreviousStage::OutputIterator) -> Result<Batch, PipelineError> {
+    fn prepare_output_rows(
+        output_width: u32,
+        input_iterator: PreviousStage::OutputIterator,
+    ) -> Result<Batch, PipelineError> {
         // TODO: if the previous stage is not already in Collected format, this will end up temporarily allocating 2x
         //       the current memory. However, in the other case we don't know how many rows in the output batch to allocate ahead of time
         //       and require resizing. For now we take the simpler strategy that doesn't require resizing.

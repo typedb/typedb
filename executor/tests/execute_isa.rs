@@ -16,14 +16,13 @@ use compiler::match_::{
 };
 use concept::error::ConceptReadError;
 use encoding::value::label::Label;
-use executor::program_executor::ProgramExecutor;
-use executor::row::MaybeOwnedRow;
+use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 
 use crate::common::{load_managers, setup_storage};

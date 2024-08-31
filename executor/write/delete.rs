@@ -7,8 +7,10 @@ use compiler::delete::{instructions::ConnectionInstruction, program::DeleteProgr
 use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
 
-use crate::write::{write_instruction::AsWriteInstruction, WriteError};
-use crate::row::Row;
+use crate::{
+    row::Row,
+    write::{write_instruction::AsWriteInstruction, WriteError},
+};
 
 pub struct DeleteExecutor {
     program: DeleteProgram,

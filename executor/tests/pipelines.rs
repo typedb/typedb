@@ -9,7 +9,7 @@ use std::sync::Arc;
 use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
-    type_::{OwnerAPI, type_manager::TypeManager},
+    type_::{type_manager::TypeManager, OwnerAPI},
 };
 use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
@@ -19,9 +19,7 @@ use executor::pipeline::StageAPI;
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
-use storage::{
-    durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot,
-};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 
 use crate::common::{load_managers, setup_storage};
 
@@ -92,9 +90,8 @@ fn test_insert() {
     {
         let snapshot = context.storage.clone().open_snapshot_read();
         let age_type = context.type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
-        let attr_age_10 = thing_manager.get_attribute_with_value(
-            &snapshot, age_type, Value::Long(10)
-        ).unwrap().unwrap();
+        let attr_age_10 =
+            thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
         assert_eq!(1, attr_age_10.get_owners(&snapshot, &thing_manager).count());
         snapshot.close_resources()
     }

@@ -4,12 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{
+    borrow::Cow,
+    fmt::{Display, Formatter},
+    vec,
+};
+
 use answer::variable_value::VariableValue;
-use std::borrow::Cow;
 use compiler::VariablePosition;
-use std::fmt::{Display, Formatter};
 use lending_iterator::higher_order::Hkt;
-use std::vec;
 
 #[derive(Debug)]
 pub struct Row<'a> {
@@ -123,14 +126,10 @@ impl<'a> MaybeOwnedRow<'a> {
     pub fn as_mut_ref(&mut self) -> Row<'_> {
         match &mut self.row {
             Cow::Borrowed(_) => panic!("Cannot get mutable access to Borrowed row."),
-            Cow::Owned(row) => {
-                match &mut self.multiplicity {
-                    Cow::Borrowed(_) => unreachable!("Row and multiplicity should always have the same ownership."),
-                    Cow::Owned(multiplicity) => {
-                        Row::new(row.as_mut_slice(), multiplicity)
-                    }
-                }
-            }
+            Cow::Owned(row) => match &mut self.multiplicity {
+                Cow::Borrowed(_) => unreachable!("Row and multiplicity should always have the same ownership."),
+                Cow::Owned(multiplicity) => Row::new(row.as_mut_slice(), multiplicity),
+            },
         }
     }
 }

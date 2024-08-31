@@ -21,15 +21,13 @@ pub struct DeleteStageExecutor<Snapshot: WritableSnapshot + 'static, PreviousSta
 }
 
 impl<Snapshot, PreviousStage> DeleteStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: WritableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: WritableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
-
     pub fn new(deleter: DeleteExecutor, previous: PreviousStage) -> Self {
         Self { deleter, previous, phantom: PhantomData::default() }
     }
-
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DeleteStageExecutor<Snapshot, PreviousStage>
