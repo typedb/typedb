@@ -39,7 +39,7 @@ impl<'a> Row<'a> {
     pub(crate) fn copy_from_row(&mut self, row: MaybeOwnedRow<'_>) {
         debug_assert!(self.len() >= row.len());
         self.row[0..row.len()].clone_from_slice(row.get_row());
-        *self.multiplicity = *row.get_multiplicity();
+        *self.multiplicity = row.get_multiplicity();
     }
 
     pub(crate) fn copy_from(&mut self, row: &[VariableValue<'static>], multiplicity: u64) {
@@ -99,8 +99,8 @@ impl<'a> MaybeOwnedRow<'a> {
         &self.row[position.as_usize()]
     }
 
-    pub fn get_multiplicity(&self) -> &u64 {
-        self.multiplicity.as_ref()
+    pub fn get_multiplicity(&self) -> u64 {
+        *self.multiplicity.as_ref()
     }
 
     pub fn get_row(&self) -> &[VariableValue<'static>] {

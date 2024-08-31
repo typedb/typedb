@@ -17,7 +17,6 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    pipeline::PipelineStageAPI,
     write::{delete::DeleteExecutor, insert::InsertExecutor, WriteError},
 };
 use executor::row::Row;
@@ -119,7 +118,7 @@ fn execute_insert(
     println!("Insert Vertex:\n{:?}", &insert_plan.concept_instructions);
     println!("Insert Edges:\n{:?}", &insert_plan.connection_instructions);
     insert_plan.debug_info.iter().for_each(|(k, v)| {
-        println!("{:?} -> {:?}", k, translation_context.variable_registry.get_variables_named().get(v))
+        println!("{:?} -> {:?}", k, translation_context.variable_registry.variable_names().get(v))
     });
 
     // TODO: Replace with accumulator

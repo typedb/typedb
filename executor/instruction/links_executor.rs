@@ -40,6 +40,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::instruction::{Checker, FilterFn};
 use crate::row::MaybeOwnedRow;
 
 pub(crate) struct LinksExecutor {

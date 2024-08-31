@@ -42,6 +42,8 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::instruction::Checker;
+use crate::instruction::links_executor::{EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE, LinksFilterFn, LinksOrderingFn, LinksTupleIterator};
 use crate::row::MaybeOwnedRow;
 
 pub(crate) struct LinksReverseExecutor {

@@ -296,7 +296,7 @@ struct Checker<T: Hkt> {
 impl<T: Hkt> Checker<T> {
     fn range_for<const N: usize>(
         &self,
-        row: ImmutableRow<'_>,
+        row: MaybeOwnedRow<'_>,
         target: VariablePosition,
     ) -> impl RangeBounds<VariableValue<'_>> {
         fn intersect<'a>(
@@ -348,7 +348,7 @@ impl<T: Hkt> Checker<T> {
         &self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-        row: &ImmutableRow<'_>,
+        row: &MaybeOwnedRow<'_>,
     ) -> Box<FilterFn<T>> {
         let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> Result<bool, ConceptReadError>>> =
             Vec::with_capacity(self.checks.len());

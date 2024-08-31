@@ -27,6 +27,7 @@ use lending_iterator::{
     higher_order::FnHktHelper,
     kmerge::KMergeBy, LendingIterator, Peekable,
 };
+use lending_iterator::adaptors::TryFilter;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
@@ -41,6 +42,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::instruction::{Checker, FilterFn};
 use crate::row::MaybeOwnedRow;
 
 pub(crate) struct HasExecutor {

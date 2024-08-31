@@ -167,7 +167,7 @@ type PatternRowIterator<Snapshot> = FlatMap<
     fn(Result<FixedBatch, ConceptReadError>) -> FixedBatchRowIterator,
 >;
 
-pub(crate) struct PatternIterator<Snapshot: ReadableSnapshot> {
+pub(crate) struct PatternIterator<Snapshot: ReadableSnapshot + 'static> {
     iterator: PatternRowIterator<Snapshot>,
     snapshot: Arc<Snapshot>,
     thing_manager: Arc<ThingManager>,
@@ -203,7 +203,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> 
     type Item = Result<FixedBatch, ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let batch = self.executor.compute_next_batch(self.snapshot.as_ref(), self.thing_manager.as_ref());
+        let batch = self.executor.compute_next_batch(&self.snapshot, &self.thing_manager);
         batch.transpose()
     }
 }

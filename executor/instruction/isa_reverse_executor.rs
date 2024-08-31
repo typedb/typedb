@@ -29,6 +29,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::instruction::Checker;
 use crate::row::MaybeOwnedRow;
 
 pub(crate) struct IsaReverseExecutor {

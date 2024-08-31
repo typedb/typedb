@@ -67,7 +67,7 @@ impl<Snapshot: ReadableSnapshot + 'static, Iterator: StageIterator> MatchStageIt
                 Some(start) => {
                     let start = start?;
                     // TODO uses start to initialise new pattern iterator
-                    let iterator = PatternExecutor::new(&self.program, self.snapshot.as_ref(), self.thing_manager.as_ref())
+                    let iterator = PatternExecutor::new(&self.program, &self.snapshot, &self.thing_manager)
                         .map_err(|err| PipelineError::InitialisingMatchIterator(err))?;
 
                 }
@@ -91,7 +91,7 @@ impl<Snapshot, Iterator> LendingIterator for MatchStageIterator<Snapshot, Iterat
                 None => return None,
                 Some(source_next) => {
                     // TODO: use the start to initialise the next iterator
-                    let iterator = PatternExecutor::new(&self.program, self.snapshot.as_ref(), self.thing_manager.as_ref())
+                    let iterator = PatternExecutor::new(&self.program, &self.snapshot, &self.thing_manager)
                         .map_err(|err| PipelineError::InitialisingMatchIterator(err));
                     match iterator {
                         Ok(iterator) => {

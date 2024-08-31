@@ -11,7 +11,6 @@ use concept::error::ConceptReadError;
 use lending_iterator::{LendingIterator, Peekable};
 
 use crate::{
-    batch::Row,
     instruction::{
         has_executor::{
             HasBoundedSortedAttribute, HasUnboundedSortedAttributeMerged, HasUnboundedSortedAttributeSingle,
