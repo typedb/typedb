@@ -56,6 +56,10 @@ rust_test(
         "//resource",
         "//storage",
         "//util/test:test_utils",
+        "//concept/tests:test_utils_concept",
+        "//encoding/tests:test_utils_encoding",
+
+
         "@vaticle_typeql//rust:typeql",
 
         "@crates//:criterion",
