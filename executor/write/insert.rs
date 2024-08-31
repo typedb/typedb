@@ -11,10 +11,8 @@ use compiler::insert::{
 use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
 
-use crate::{
-    batch::Row,
-    write::{write_instruction::AsWriteInstruction, WriteError},
-};
+use crate::write::{write_instruction::AsWriteInstruction, WriteError};
+use crate::row::Row;
 
 pub struct InsertExecutor {
     program: InsertProgram,
@@ -29,13 +27,18 @@ impl InsertExecutor {
         &self.program
     }
 
+    pub(crate)  fn output_width(&self) -> usize {
+        self.program.output_row_schema.len()
+    }
+
     pub fn execute_insert(
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
-        debug_assert!(row.multiplicity() == 1); // The accumulator should de-duplicate for insert
+        debug_assert!(row.get_multiplicity() == 1);
+        debug_assert!(row.len() == self.program.output_row_schema.len());
         let Self { program } = self;
         for instruction in &program.concept_instructions {
             match instruction {

@@ -11,8 +11,8 @@ use std::{
     ffi::c_int,
     fs::File,
     path::Path,
-    sync::{Arc, OnceLock},
-    time::Duration,
+    sync::{Arc, OnceLock}
+    ,
 };
 
 use answer::variable_value::VariableValue;
@@ -22,20 +22,18 @@ use compiler::{
 };
 use concept::{
     thing::thing_manager::ThingManager,
-    type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
+    type_::{Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
 };
-use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
+use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler, SamplingMode};
 use encoding::value::{label::Label, value_type::ValueType};
-use executor::{
-    batch::Row,
-    write::{insert::InsertExecutor, WriteError},
-};
+use executor::write::{insert::InsertExecutor, WriteError};
 use ir::translation::TranslationContext;
 use pprof::ProfilerGuard;
+use executor::row::Row;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
 };
 use test_utils::init_logging;
 

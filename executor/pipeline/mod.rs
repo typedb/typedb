@@ -7,19 +7,21 @@
 use std::{
     error::Error,
     fmt::{Display, Formatter},
-    sync::Arc,
-    vec,
+    sync::Arc
+    ,
 };
 
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use crate::batch::Batch;
 
-use crate::{batch::MaybeOwnedRow, write::WriteError};
+use crate::write::WriteError;
+use crate::row::MaybeOwnedRow;
 
 pub mod accumulator;
-mod delete;
+pub mod delete;
 pub mod initial;
 pub mod insert;
 pub mod match_;
@@ -32,11 +34,23 @@ pub trait StageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
 }
 
 pub trait StageIterator: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>> + Sized {
-    fn collect_owned(self) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineError> {
+    fn collect_owned(mut self) -> Result<Batch, PipelineError> {
         // specific iterators can optimise this by not iterating + collecting!
-        let rows: Vec<MaybeOwnedRow<'static>> =
-            self.map_static(|result| result.map(|row| row.into_owned())).try_collect()?;
-        Ok(rows)
+        let first = self.next();
+        let mut batch = match first {
+            None => return Ok(Batch::new(0, 1)),
+            Some(row) => {
+                let row = row?;
+                let mut batch = Batch::new(row.len() as u32, 10);
+                batch.append(row);
+                batch
+            }
+        };
+        while let Some(row) = self.next() {
+            let row = row?;
+            batch.append(row);
+        }
+        Ok(batch)
     }
 }
 
@@ -60,12 +74,12 @@ impl Error for PipelineError {}
 
 // Can be used as normal lending iterator, or optimally collect into owned using `collect_owned()`
 pub struct WrittenRowsIterator {
-    rows: Vec<MaybeOwnedRow<'static>>,
+    rows: Batch,
     index: usize,
 }
 
 impl WrittenRowsIterator {
-    pub(crate) fn new(rows: Vec<MaybeOwnedRow<'static>>) -> Self {
+    pub(crate) fn new(rows: Batch) -> Self {
         Self { rows, index: 0 }
     }
 }
@@ -75,18 +89,17 @@ impl LendingIterator for WrittenRowsIterator {
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         let index = self.index;
-        if index >= self.rows.len() {
-            return None;
-        } else {
+        if index < self.rows.len() {
             self.index += 1;
-            let row = &self.rows[index];
-            Some(Ok(row.as_reference()))
+            Some(Ok(self.rows.get_row(index)))
+        } else {
+            return None;
         }
     }
 }
 
 impl StageIterator for WrittenRowsIterator {
-    fn collect_owned(self) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineError> {
+    fn collect_owned(self) -> Result<Batch, PipelineError> {
         debug_assert!(self.index == 0, "Truncating start of rows is not implemented");
         Ok(self.rows)
     }

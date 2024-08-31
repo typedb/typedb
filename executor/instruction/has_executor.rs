@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable_value::VariableValue, Thing, Type};
+use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::match_::instructions::HasInstruction;
 use concept::{
     error::ConceptReadError,
@@ -22,25 +22,26 @@ use concept::{
     },
 };
 use lending_iterator::{
-    adaptors::{Map, TryFilter},
-    kmerge::KMergeBy,
-    AsHkt, LendingIterator, Peekable,
+    adaptors::{Filter, Map},
+    AsHkt,
+    higher_order::FnHktHelper,
+    kmerge::KMergeBy, LendingIterator, Peekable,
 };
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    batch::MaybeOwnedRow,
     instruction::{
+        BinaryIterateMode,
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
             TupleResult,
-        },
-        BinaryIterateMode, Checker, FilterFn, VariableModes,
+        }, VariableModes,
     },
     VariablePosition,
 };
+use crate::row::MaybeOwnedRow;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<VariablePosition>,
@@ -212,7 +213,7 @@ impl HasExecutor {
                 }
             }
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.width() > self.has.owner().as_usize());
+                debug_assert!(row.len() > self.has.owner().as_usize());
                 let iterator = match row.get(self.has.owner()) {
                     VariableValue::Thing(Thing::Entity(entity)) => entity.get_has_types_range_unordered(
                         &**snapshot,

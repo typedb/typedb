@@ -9,16 +9,16 @@ use std::sync::Arc;
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use crate::batch::Batch;
 
-use crate::{
-    batch::MaybeOwnedRow,
-    pipeline::{
-        initial::{InitialIterator, InitialStage},
-        insert::InsertStageExecutor,
-        match_::{MatchStageExecutor, MatchStageIterator},
-        PipelineError, StageAPI, StageIterator, WrittenRowsIterator,
-    },
+use crate::pipeline::{
+    initial::{InitialIterator, InitialStage},
+    insert::InsertStageExecutor,
+    match_::{MatchStageExecutor, MatchStageIterator},
+    PipelineError, StageAPI, StageIterator, WrittenRowsIterator,
 };
+use crate::pipeline::delete::DeleteStageExecutor;
+use crate::row::MaybeOwnedRow;
 
 pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
@@ -59,7 +59,7 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadStageIterator
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> StageIterator for ReadStageIterator<Snapshot> {
-    fn collect_owned(self) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineError> {
+    fn collect_owned(self) -> Result<Batch, PipelineError> {
         match self {
             ReadStageIterator::Initial(iterator) => iterator.collect_owned(),
             ReadStageIterator::Match(iterator) => iterator.collect_owned(),
@@ -71,6 +71,7 @@ pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
     Match(Box<MatchStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
     Insert(Box<InsertStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
+    Delete(Box<DeleteStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
 }
 
 impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineStage<Snapshot> {
@@ -87,6 +88,10 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
                 Ok((WriteStageIterator::Match(Box::new(iterator)), snapshot, thing_manager))
             }
             WritePipelineStage::Insert(stage) => {
+                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
+                Ok((WriteStageIterator::Write(iterator), snapshot, thing_manager))
+            }
+            WritePipelineStage::Delete(stage) => {
                 let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
                 Ok((WriteStageIterator::Write(iterator), snapshot, thing_manager))
             }
@@ -113,7 +118,7 @@ impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterato
 }
 
 impl<Snapshot: WritableSnapshot + 'static> StageIterator for WriteStageIterator<Snapshot> {
-    fn collect_owned(self) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineError> {
+    fn collect_owned(self) -> Result<Batch, PipelineError> {
         match self {
             WriteStageIterator::Initial(iterator) => iterator.collect_owned(),
             WriteStageIterator::Match(iterator) => iterator.collect_owned(),

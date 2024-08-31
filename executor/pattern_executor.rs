@@ -21,10 +21,11 @@ use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator, Pe
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    batch::{Batch, BatchRowIterator, MaybeOwnedRow, Row},
-    instruction::{iterator::TupleIterator, InstructionExecutor},
+    batch::{FixedBatch, FixedBatchRowIterator},
+    instruction::{InstructionExecutor, iterator::TupleIterator},
     SelectedPositions, VariablePosition,
 };
+use crate::row::{MaybeOwnedRow, Row};
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, VariablePosition>,
@@ -33,7 +34,7 @@ pub(crate) struct PatternExecutor {
     program_executors: Vec<ProgramExecutor>,
     // modifiers: Modifier,
     initialised: bool,
-    output: Option<Batch>,
+    output: Option<FixedBatch>,
 }
 
 impl PatternExecutor {
@@ -85,7 +86,7 @@ impl PatternExecutor {
     ) -> PatternIterator<Snapshot> {
         PatternIterator::new(
             AsLendingIterator::new(BatchIterator::new(self, snapshot.clone(), thing_manager.clone()))
-                .flat_map(BatchRowIterator::new),
+                .flat_map(FixedBatchRowIterator::new),
             snapshot,
             thing_manager,
         )
@@ -95,14 +96,14 @@ impl PatternExecutor {
         &mut self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Option<Batch>, ConceptReadError> {
+    ) -> Result<Option<FixedBatch>, ConceptReadError> {
         let programs_len = self.program_executors.len();
 
         let (mut current_program, mut last_program_batch, mut direction) = if self.initialised {
             (programs_len - 1, None, Direction::Backward)
         } else {
             self.initialised = true;
-            (0, Some(Batch::SINGLE_EMPTY_ROW), Direction::Forward)
+            (0, Some(FixedBatch::SINGLE_EMPTY_ROW), Direction::Forward)
         };
 
         loop {
@@ -162,8 +163,8 @@ enum Direction {
 
 type PatternRowIterator<Snapshot> = FlatMap<
     AsLendingIterator<BatchIterator<Snapshot>>,
-    BatchRowIterator,
-    fn(Result<Batch, ConceptReadError>) -> BatchRowIterator,
+    FixedBatchRowIterator,
+    fn(Result<FixedBatch, ConceptReadError>) -> FixedBatchRowIterator,
 >;
 
 pub(crate) struct PatternIterator<Snapshot: ReadableSnapshot> {
@@ -199,7 +200,7 @@ impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> {
-    type Item = Result<Batch, ConceptReadError>;
+    type Item = Result<FixedBatch, ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let batch = self.executor.compute_next_batch(self.snapshot.as_ref(), self.thing_manager.as_ref());
@@ -271,10 +272,10 @@ impl ProgramExecutor {
 
     fn batch_from(
         &mut self,
-        input_batch: Batch,
+        input_batch: FixedBatch,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Option<Batch>, ConceptReadError> {
+    ) -> Result<Option<FixedBatch>, ConceptReadError> {
         match self {
             ProgramExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, snapshot, thing_manager),
             ProgramExecutor::UnsortedJoin(unsorted) => unsorted.batch_from(input_batch),
@@ -289,7 +290,7 @@ impl ProgramExecutor {
         &mut self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Option<Batch>, ConceptReadError> {
+    ) -> Result<Option<FixedBatch>, ConceptReadError> {
         match self {
             ProgramExecutor::SortedJoin(sorted) => sorted.batch_continue(snapshot, thing_manager),
             ProgramExecutor::UnsortedJoin(unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
@@ -311,10 +312,10 @@ struct IntersectionExecutor {
 
     iterators: Vec<TupleIterator>,
     cartesian_iterator: CartesianIterator,
-    input: Option<Peekable<BatchRowIterator>>,
+    input: Option<Peekable<FixedBatchRowIterator>>,
     intersection_row: Vec<VariableValue<'static>>,
     intersection_multiplicity: u64,
-    output: Option<Batch>,
+    output: Option<FixedBatch>,
 }
 
 impl IntersectionExecutor {
@@ -365,12 +366,12 @@ impl IntersectionExecutor {
 
     fn batch_from(
         &mut self,
-        input_batch: Batch,
+        input_batch: FixedBatch,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Option<Batch>, ConceptReadError> {
+    ) -> Result<Option<FixedBatch>, ConceptReadError> {
         debug_assert!(self.output.is_none() && (self.input.is_none() || self.input.as_mut().unwrap().peek().is_none()));
-        self.input = Some(Peekable::new(BatchRowIterator::new(Ok(input_batch))));
+        self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
         self.may_create_intersection_iterators(snapshot, thing_manager)?;
         self.may_compute_next_batch(snapshot, thing_manager)?;
@@ -381,7 +382,7 @@ impl IntersectionExecutor {
         &mut self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Option<Batch>, ConceptReadError> {
+    ) -> Result<Option<FixedBatch>, ConceptReadError> {
         debug_assert!(self.output.is_none());
         // TODO: this may not have to reopen iterators
         self.may_create_intersection_iterators(snapshot, thing_manager)?;
@@ -396,7 +397,7 @@ impl IntersectionExecutor {
     ) -> Result<(), ConceptReadError> {
         if self.compute_next_row(snapshot, thing_manager)? {
             // don't allocate batch until 1 answer is confirmed
-            let mut batch = Batch::new(self.output_width);
+            let mut batch = FixedBatch::new(self.output_width);
             batch.append(|mut row| self.write_next_row_into(&mut row));
             while !batch.is_full() && self.compute_next_row(snapshot, thing_manager)? {
                 batch.append(|mut row| self.write_next_row_into(&mut row));
@@ -570,7 +571,7 @@ impl IntersectionExecutor {
 
         let input_row = self.input.as_mut().unwrap().peek().unwrap().as_ref().map_err(|err| (*err).clone())?;
         for position in self.outputs_selected.iter_selected() {
-            if position.as_usize() < input_row.width() {
+            if position.as_usize() < input_row.len() {
                 row.set(position, input_row.get(position).clone().into_owned())
             }
         }
@@ -715,7 +716,7 @@ impl CartesianIterator {
         let mut reopened = executor.get_iterator(
             snapshot,
             thing_manager,
-            MaybeOwnedRow::new(&self.intersection_source, self.intersection_multiplicity),
+            MaybeOwnedRow::new_borrowed(&self.intersection_source, &self.intersection_multiplicity),
         )?;
         let intersection = &self.intersection_source[self.sort_variable_position.as_usize()];
         // TODO: use seek()
@@ -742,7 +743,7 @@ struct UnsortedJoinExecutor {
     checks: Vec<ConstraintInstruction>,
 
     output_width: u32,
-    output: Option<Batch>,
+    output: Option<FixedBatch>,
 }
 
 impl UnsortedJoinExecutor {
@@ -755,11 +756,11 @@ impl UnsortedJoinExecutor {
         Self { iterate, checks, output_width: total_vars, output: None }
     }
 
-    fn batch_from(&mut self, input_batch: Batch) -> Result<Option<Batch>, ConceptReadError> {
+    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ConceptReadError> {
         todo!()
     }
 
-    fn batch_continue(&mut self) -> Option<Batch> {
+    fn batch_continue(&mut self) -> Option<FixedBatch> {
         todo!()
     }
 }
@@ -770,7 +771,7 @@ struct AssignExecutor {
 }
 
 impl AssignExecutor {
-    fn batch_from(&mut self, input_batch: Batch) -> Result<Option<Batch>, ConceptReadError> {
+    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ConceptReadError> {
         todo!()
     }
 }
@@ -787,11 +788,11 @@ impl DisjunctionExecutor {
         Self { executors }
     }
 
-    fn batch_from(&mut self, input_batch: Batch) -> Result<Option<Batch>, ConceptReadError> {
+    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ConceptReadError> {
         todo!()
     }
 
-    fn batch_continue(&mut self) -> Result<Option<Batch>, ConceptReadError> {
+    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ConceptReadError> {
         todo!()
     }
 }
@@ -805,7 +806,7 @@ impl NegationExecutor {
         Self { executor }
     }
 
-    fn batch_from(&mut self, input_batch: Batch) -> Result<Option<Batch>, ConceptReadError> {
+    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ConceptReadError> {
         todo!()
     }
 }
@@ -819,11 +820,11 @@ impl OptionalExecutor {
         Self { executor }
     }
 
-    fn batch_from(&mut self, input_batch: Batch) -> Result<Option<Batch>, ConceptReadError> {
+    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ConceptReadError> {
         todo!()
     }
 
-    fn batch_continue(&mut self) -> Result<Option<Batch>, ConceptReadError> {
+    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ConceptReadError> {
         todo!()
     }
 }

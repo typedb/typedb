@@ -10,14 +10,18 @@ use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{
-    batch::MaybeOwnedRow,
-    pipeline::{PipelineError, StageAPI, StageIterator},
-};
+use crate::pipeline::{PipelineError, StageAPI, StageIterator};
+use crate::row::MaybeOwnedRow;
 
 pub struct InitialStage<Snapshot: ReadableSnapshot + 'static> {
     snapshot: Arc<Snapshot>,
     thing_manager: Arc<ThingManager>,
+}
+
+impl<Snapshot: ReadableSnapshot + 'static> InitialStage<Snapshot> {
+    pub fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
+        Self { snapshot, thing_manager }
+    }
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for InitialStage<Snapshot> {
@@ -42,7 +46,7 @@ impl LendingIterator for InitialIterator {
     type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.next()
+        self.single_iterator.next()
     }
 }
 

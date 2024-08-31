@@ -20,6 +20,7 @@ pub mod pattern_executor;
 pub mod pipeline;
 pub mod program_executor;
 pub mod write;
+pub mod row;
 
 // TODO: use a bit-vec, since we have a continuously allocated range of positions
 // ---> for now, using a byte vec, which is 8x wasteful and on the heap!

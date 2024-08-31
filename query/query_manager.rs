@@ -14,16 +14,17 @@ use concept::{
 use executor::{
     pipeline::{
         initial::InitialStage,
-        insert::InsertStage,
         match_::MatchStageExecutor,
         stage::{ReadPipelineStage, WritePipelineStage},
-        PipelineContext,
     },
     write::insert::InsertExecutor,
 };
-use function::function_manager::FunctionManager;
+use function::{function_manager::FunctionManager};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
+use executor::pipeline::delete::DeleteStageExecutor;
+use executor::pipeline::insert::InsertStageExecutor;
+use executor::write::delete::DeleteExecutor;
 
 use crate::{
     annotation::{infer_types_for_pipeline, AnnotatedPipeline},
@@ -107,24 +108,24 @@ impl QueryManager {
         let CompiledPipeline { compiled_functions, compiled_stages } =
             compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
 
-        let context = PipelineContext::shared(Arc::new(snapshot), Arc::new(thing_manager));
-        let mut latest_stage = ReadPipelineStage::Initial(InitialStage::new(context));
+        let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(Arc::new(snapshot), Arc::new(thing_manager)));
         for compiled_stage in compiled_stages {
             match compiled_stage {
-                CompiledStage::Match(pattern_plan) => {
-                    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new()); // TODO: Pass expressions & functions
-                    let match_stage = MatchStageExecutor::new(Box::new(latest_stage), program_plan);
-                    latest_stage = ReadPipelineStage::Match(match_stage);
+                CompiledStage::Match(match_program) => {
+                    // TODO: Pass expressions & functions
+                    // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
+                    let match_stage = MatchStageExecutor::new(match_program, last_stage);
+                    last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
-                CompiledStage::Insert(insert_plan) => {
-                    todo!("Illegal, return error")
+                CompiledStage::Insert(_) => {
+                    unreachable!("Insert clause cannot exist in a read pipeline.")
                 }
-                CompiledStage::Delete(delete) => {
-                    todo!("Illegal, return error")
+                CompiledStage::Delete(_) => {
+                    unreachable!("Delete clause cannot exist in a read pipeline.")
                 }
             }
         }
-        Ok(latest_stage)
+        Ok(last_stage)
     }
 
     pub fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
@@ -174,23 +175,26 @@ impl QueryManager {
         let CompiledPipeline { compiled_functions, compiled_stages } =
             compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
 
-        let context = PipelineContext::owned(snapshot, thing_manager);
-        let mut latest_stage = WritePipelineStage::Initial(InitialStage::new(context));
+        let mut last_stage = WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot), Arc::new(thing_manager)));
         for compiled_stage in compiled_stages {
             match compiled_stage {
-                CompiledStage::Match(match_plan) => {
-                    todo!()
+                CompiledStage::Match(match_program) => {
+                    // TODO: Pass expressions & functions
+                    // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
+                    let match_stage = MatchStageExecutor::new(match_program, last_stage);
+                    last_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
-                CompiledStage::Insert(insert_plan) => {
-                    let insert_stage = InsertStage::new(Box::new(latest_stage), InsertExecutor::new(insert_plan));
-                    latest_stage = WritePipelineStage::Insert(insert_stage);
+                CompiledStage::Insert(insert_program) => {
+                    let insert_stage = InsertStageExecutor::new(InsertExecutor::new(insert_program), last_stage);
+                    last_stage = WritePipelineStage::Insert(Box::new(insert_stage));
                 }
-                CompiledStage::Delete(delete) => {
-                    todo!()
+                CompiledStage::Delete(delete_program) => {
+                    let delete_stage = DeleteStageExecutor::new(DeleteExecutor::new(delete_program), last_stage);
+                    last_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
             }
         }
-        Ok(latest_stage)
+        Ok(last_stage)
     }
 }
 

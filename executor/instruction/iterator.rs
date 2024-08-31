@@ -42,6 +42,7 @@ use crate::{
         VariableMode, VariableModes,
     },
 };
+use crate::row::Row;
 
 // TODO: the 'check' can deduplicate against all relevant variables as soon as an anonymous variable is no longer relevant.
 //       if the deduplicated answer leads to an answer, we should not re-emit it again (we will rediscover the same answers)

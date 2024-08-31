@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable_value::VariableValue, Thing, Type};
+use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::match_::instructions::LinksInstruction;
 use concept::{
     error::ConceptReadError,
@@ -30,17 +30,17 @@ use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    batch::MaybeOwnedRow,
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        TernaryIterateMode,
         tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, LinksToTupleFn, Tuple,
             TuplePositions, TupleResult,
-        },
-        Checker, FilterFn, TernaryIterateMode, VariableModes,
+        }, VariableModes,
     },
     VariablePosition,
 };
+use crate::row::MaybeOwnedRow;
 
 pub(crate) struct LinksExecutor {
     links: ir::pattern::constraint::Links<VariablePosition>,
@@ -229,7 +229,7 @@ impl LinksExecutor {
             }
 
             TernaryIterateMode::BoundFrom => {
-                debug_assert!(row.width() > self.links.relation().as_usize());
+                debug_assert!(row.len() > self.links.relation().as_usize());
                 let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
                 let player_type_range =
                     KeyRange::new_inclusive(min_player_type.as_object_type(), max_player_type.as_object_type());
@@ -254,8 +254,8 @@ impl LinksExecutor {
             }
 
             TernaryIterateMode::BoundFromBoundTo => {
-                debug_assert!(row.width() > self.links.relation().as_usize());
-                debug_assert!(row.width() > self.links.player().as_usize());
+                debug_assert!(row.len() > self.links.relation().as_usize());
+                debug_assert!(row.len() > self.links.player().as_usize());
                 let relation = row.get(self.links.relation()).as_thing().as_relation();
                 let player = row.get(self.links.player()).as_thing().as_object();
                 let iterator = thing_manager.get_links_by_relation_and_player(&**snapshot, relation, player);

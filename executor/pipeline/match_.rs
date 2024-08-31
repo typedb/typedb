@@ -9,19 +9,26 @@ use std::{marker::PhantomData, sync::Arc};
 use compiler::match_::planner::pattern_plan::MatchProgram;
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{LendingIterator, Peekable};
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
-use crate::{
-    batch::MaybeOwnedRow
-    ,
-    pipeline::{PipelineError, StageAPI, StageIterator},
-};
+use crate::pipeline::{PipelineError, StageAPI, StageIterator};
 use crate::pattern_executor::{PatternExecutor, PatternIterator};
+use crate::row::MaybeOwnedRow;
 
 pub struct MatchStageExecutor<Snapshot: ReadableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
     program: MatchProgram,
     previous: PreviousStage,
     phantom: PhantomData<Snapshot>,
+}
+
+impl<Snapshot, PreviousStage> MatchStageExecutor<Snapshot, PreviousStage>
+    where
+        Snapshot: ReadableSnapshot + 'static,
+        PreviousStage: StageAPI<Snapshot>,
+{
+    pub fn new(program: MatchProgram, previous: PreviousStage) -> Self {
+        Self { program, previous, phantom: PhantomData::default() }
+    }
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for MatchStageExecutor<Snapshot, PreviousStage>

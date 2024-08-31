@@ -20,6 +20,18 @@ pub struct DeleteStageExecutor<Snapshot: WritableSnapshot + 'static, PreviousSta
     phantom: PhantomData<Snapshot>,
 }
 
+impl<Snapshot, PreviousStage> DeleteStageExecutor<Snapshot, PreviousStage>
+    where
+        Snapshot: WritableSnapshot + 'static,
+        PreviousStage: StageAPI<Snapshot>,
+{
+
+    pub fn new(deleter: DeleteExecutor, previous: PreviousStage) -> Self {
+        Self { deleter, previous, phantom: PhantomData::default() }
+    }
+
+}
+
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DeleteStageExecutor<Snapshot, PreviousStage>
 where
     Snapshot: WritableSnapshot + 'static,
@@ -35,9 +47,10 @@ where
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot_ref = Arc::get_mut(&mut snapshot).unwrap();
         let thing_manager_ref = Arc::get_mut(&mut thing_manager).unwrap();
-        for row in &mut rows {
+        for index in 0..rows.len() {
+            let mut row = rows.get_row_mut(index);
             self.deleter
-                .execute_delete(snapshot_ref, thing_manager_ref, &mut row.as_mut_ref())
+                .execute_delete(snapshot_ref, thing_manager_ref, &mut row)
                 .map_err(|err| PipelineError::WriteError(err))?;
         }
 

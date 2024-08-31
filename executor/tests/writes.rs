@@ -13,20 +13,20 @@ use compiler::{
 };
 use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
-    type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
+    type_::{object_type::ObjectType, Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    batch::Row,
     pipeline::PipelineStageAPI,
     write::{delete::DeleteExecutor, insert::InsertExecutor, WriteError},
 };
+use executor::row::Row;
 use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
 };
 
 use crate::common::{load_managers, setup_storage};

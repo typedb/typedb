@@ -11,7 +11,7 @@ use std::{
     vec,
 };
 
-use answer::{variable_value::VariableValue, Thing, Type};
+use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::match_::instructions::IsaInstruction;
 use concept::{
     error::ConceptReadError,
@@ -33,14 +33,14 @@ use lending_iterator::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::MaybeOwnedRow,
     instruction::{
+        BinaryIterateMode,
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions, TupleResult},
-        BinaryIterateMode, Checker, FilterFn, VariableModes,
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, Tuple, TuplePositions, TupleResult}, VariableModes,
     },
     VariablePosition,
 };
+use crate::row::MaybeOwnedRow;
 
 pub(crate) struct IsaExecutor {
     isa: Isa<VariablePosition>,
@@ -190,7 +190,7 @@ impl IsaExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.width() > self.isa.thing().as_usize());
+                debug_assert!(row.len() > self.isa.thing().as_usize());
                 let positions = TuplePositions::Pair([self.isa.type_(), self.isa.thing()]);
                 let VariableValue::Thing(thing) = row.get(self.isa.thing()).to_owned() else {
                     unreachable!("Has thing must be an entity or relation.")

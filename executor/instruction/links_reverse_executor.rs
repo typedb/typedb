@@ -22,22 +22,27 @@ use concept::{
     },
 };
 use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable};
+use lending_iterator::{
+    adaptors::{Filter, Map},
+    AsHkt,
+    higher_order::FnHktHelper,
+    kmerge::KMergeBy, LendingIterator, Peekable,
+};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    batch::MaybeOwnedRow,
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        links_executor::{
-            LinksFilterFn, LinksOrderingFn, LinksTupleIterator, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
-        },
-        tuple::{links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, TuplePositions},
-        Checker, TernaryIterateMode, VariableModes,
+        TernaryIterateMode,
+        tuple::{
+            links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, LinksToTupleFn, TuplePositions,
+            TupleResult,
+        }, VariableModes,
     },
     VariablePosition,
 };
+use crate::row::MaybeOwnedRow;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<VariablePosition>,
@@ -205,7 +210,7 @@ impl LinksReverseExecutor {
             }
 
             TernaryIterateMode::BoundFrom => {
-                debug_assert!(row.width() > self.links.player().as_usize());
+                debug_assert!(row.len() > self.links.player().as_usize());
                 let (min_relation_type, max_relation_type) = min_max_types(&*self.relation_types);
                 let relation_type_range =
                     KeyRange::new_inclusive(min_relation_type.as_relation_type(), max_relation_type.as_relation_type());
@@ -226,8 +231,8 @@ impl LinksReverseExecutor {
             }
 
             TernaryIterateMode::BoundFromBoundTo => {
-                debug_assert!(row.width() > self.links.player().as_usize());
-                debug_assert!(row.width() > self.links.relation().as_usize());
+                debug_assert!(row.len() > self.links.player().as_usize());
+                debug_assert!(row.len() > self.links.relation().as_usize());
                 let relation = row.get(self.links.relation()).as_thing().as_relation();
                 let player = row.get(self.links.player()).as_thing().as_object();
                 let iterator = thing_manager.get_links_by_relation_and_player(&**snapshot, relation, player); // NOTE: not reverse, no difference

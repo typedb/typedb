@@ -25,7 +25,6 @@ use lending_iterator::higher_order::{FnHktHelper, Hkt};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::MaybeOwnedRow,
     instruction::{
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
@@ -33,6 +32,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::row::MaybeOwnedRow;
 
 mod function_call_binding_executor;
 mod has_executor;

@@ -18,20 +18,27 @@ use concept::{
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
 };
 use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable};
+use lending_iterator::{
+    adaptors::{Filter, Map},
+    AsHkt,
+    kmerge::KMergeBy, LendingIterator, Peekable,
+};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    batch::MaybeOwnedRow,
     instruction::{
+        BinaryIterateMode,
         has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
-        BinaryIterateMode, Checker, VariableModes,
+        tuple::{
+            has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
+            TupleResult,
+        }, VariableModes,
     },
     VariablePosition,
 };
+use crate::row::MaybeOwnedRow;
 
 pub(crate) struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<VariablePosition>,
@@ -183,7 +190,7 @@ impl HasReverseExecutor {
                 }
             }
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.width() > self.has.attribute().as_usize());
+                debug_assert!(row.len() > self.has.attribute().as_usize());
                 let attribute = row.get(self.has.attribute());
                 let (min_owner_type, max_owner_type) = min_max_types(&*self.owner_types);
                 let type_range =

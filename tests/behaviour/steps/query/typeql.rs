@@ -17,10 +17,7 @@ use compiler::{
 };
 use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::TypeAPI};
 use cucumber::gherkin::Step;
-use executor::{
-    batch::Row,
-    write::{insert::InsertExecutor, WriteError},
-};
+use executor::write::{insert::InsertExecutor, WriteError};
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, writes::translate_insert, TranslationContext},
@@ -28,15 +25,15 @@ use ir::{
 use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
+use executor::row::Row;
 use primitive::either::Either;
 use query::query_manager::QueryManager;
 
 use crate::{
-    assert::assert_matches,
-    generic_step, params,
-    transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
-    util::iter_table_map,
     Context,
+    generic_step,
+    params::{check_boolean, MayError},
+    transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
 };
 
 fn execute_match_query(
