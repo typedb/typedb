@@ -65,7 +65,7 @@ impl MatchProgram {
         assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
 
         let mut plan_builder = PlanBuilder::init(&variable_registry, type_annotations, statistics);
-        plan_builder.register_constraints(conjunction, type_annotations, statistics);
+        plan_builder.register_constraints(conjunction);
         let ordering = plan_builder.initialise_greedy();
 
         let (variable_positions, index, programs) = lower_plan(&plan_builder, ordering, type_annotations);
@@ -106,16 +106,22 @@ If we know this we can:
  */
 
 #[derive(Debug)]
-struct PlanBuilder {
+struct PlanBuilder<'a> {
     elements: Vec<PlannerVertex>,
     variable_index: HashMap<Variable, usize>,
-    index_to_constraint: HashMap<usize, Constraint<Variable>>,
+    index_to_constraint: HashMap<usize, &'a Constraint<Variable>>,
     adjacency: HashMap<usize, HashSet<usize>>,
     variable_isa: HashMap<Variable, Isa<Variable>>,
+    type_annotations: &'a TypeAnnotations,
+    statistics: &'a Statistics,
 }
 
-impl PlanBuilder {
-    fn init(variable_registry: &VariableRegistry, type_annotations: &TypeAnnotations, statistics: &Statistics) -> Self {
+impl<'a> PlanBuilder<'a> {
+    fn init(
+        variable_registry: &VariableRegistry,
+        type_annotations: &'a TypeAnnotations,
+        statistics: &'a Statistics,
+    ) -> Self {
         let mut elements = Vec::new();
         let variable_index = variable_registry
             .variable_categories()
@@ -148,15 +154,15 @@ impl PlanBuilder {
             index_to_constraint: HashMap::new(),
             adjacency: HashMap::new(),
             variable_isa: HashMap::new(),
+            type_annotations,
+            statistics,
         }
     }
 
-    fn register_constraints(
-        &mut self,
-        conjunction: &ir::pattern::conjunction::Conjunction,
-        type_annotations: &TypeAnnotations,
-        statistics: &Statistics,
-    ) {
+    fn register_constraints(&mut self, conjunction: &'a ir::pattern::conjunction::Conjunction) {
+        let type_annotations = self.type_annotations;
+        let statistics = self.statistics;
+
         for constraint in conjunction.constraints() {
             let planner = match constraint {
                 Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) => None, // ignore for now
@@ -226,7 +232,7 @@ impl PlanBuilder {
 
             if let Some(planner) = planner {
                 let planner_index = self.elements.len() - 1;
-                self.index_to_constraint.insert(planner_index, constraint.clone());
+                self.index_to_constraint.insert(planner_index, constraint);
                 self.adjacency.entry(planner_index).or_default().extend(planner.variables());
                 for v in planner.variables() {
                     self.adjacency.entry(v).or_default().insert(planner_index);
