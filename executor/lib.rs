@@ -7,7 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use core::slice;
+use std::slice;
 
 use compiler::VariablePosition;
 

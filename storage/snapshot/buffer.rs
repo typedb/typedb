@@ -37,7 +37,7 @@ pub struct OperationsBuffer {
 impl OperationsBuffer {
     pub(crate) fn new() -> OperationsBuffer {
         OperationsBuffer {
-            write_buffers: core::array::from_fn(|i| WriteBuffer::new(KeyspaceId(i as u8))),
+            write_buffers: std::array::from_fn(|i| WriteBuffer::new(KeyspaceId(i as u8))),
             locks: BTreeMap::new(),
         }
     }

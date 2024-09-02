@@ -55,7 +55,7 @@ mod non_transactional_rocks {
     impl<const N_DATABASES: usize> NonTransactionalRocks<N_DATABASES> {
         pub(super) fn setup(options: Options, write_options: WriteOptions) -> Result<Self, rocksdb::Error> {
             let path = create_tmp_dir();
-            let databases = core::array::from_fn(|i| DB::open(&options, path.join(format!("db_{i}"))).unwrap());
+            let databases = std::array::from_fn(|i| DB::open(&options, path.join(format!("db_{i}"))).unwrap());
 
             Ok(Self { path, databases, write_options })
         }
@@ -63,7 +63,7 @@ mod non_transactional_rocks {
 
     impl<const N_DATABASES: usize> RocksDatabase for NonTransactionalRocks<N_DATABASES> {
         fn open_batch(&self) -> impl RocksWriteBatch {
-            let write_batches = core::array::from_fn(|_| WriteBatch::default());
+            let write_batches = std::array::from_fn(|_| WriteBatch::default());
             NonTransactionalWriteBatch { database: self, write_batches }
         }
     }
