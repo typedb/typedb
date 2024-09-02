@@ -533,7 +533,7 @@ impl IntersectionProgram {
         // FIXME: currently since the intersection always creates at least one new variable,
         // and since we never shrink the row, this is valid.
         // In future this should be injected instead.
-        let output_width = selected_variables.iter().max().unwrap().as_usize() as u32 + 1;
+        let output_width = new_variables.iter().max().unwrap().as_usize() as u32 + 1;
 
         Self {
             sort_variable,

@@ -18,7 +18,7 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::program::block::VariableRegistry;
 use itertools::Itertools;
 use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator, Peekable};
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},

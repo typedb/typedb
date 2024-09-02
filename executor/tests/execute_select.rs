@@ -167,7 +167,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
         .unwrap()
     };
 
-    let vars = vec![var_attribute_type, var_attribute, var_person_type, var_person];
+    let vars = vec![var_attribute, var_person, var_attribute_type, var_person_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
     let entry_annotations = entry_annotations.map(&variable_positions);
