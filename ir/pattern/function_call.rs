@@ -4,9 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::BTreeMap, fmt, hash::Hash
-};
+use std::{collections::BTreeMap, fmt, hash::Hash};
 
 use itertools::Itertools;
 
