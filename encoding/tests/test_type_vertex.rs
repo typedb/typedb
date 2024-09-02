@@ -27,6 +27,7 @@ use storage::{
     MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
+use test_utils_encoding::create_core_storage;
 
 pub struct MockEntityType<'a> {
     vertex: TypeVertex<'a>,
@@ -49,12 +50,8 @@ impl<'a> PrefixedTypeVertexEncoding<'a> for MockEntityType<'a> {
 // TODO: Update all tests with higher level APIs
 #[test]
 fn entity_type_vertexes_are_reused() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, storage) = create_core_storage();
+
     // If we don't commit, it doesn't move.
     {
         for _ in 0..5 {
@@ -103,12 +100,8 @@ fn entity_type_vertexes_are_reused() {
 
 #[test]
 fn max_entity_type_vertexes() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, storage) = create_core_storage();
+
     let create_till = u16::MAX;
     {
         let mut snapshot = storage.clone().open_snapshot_write();

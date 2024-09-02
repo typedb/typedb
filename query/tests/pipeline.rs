@@ -62,7 +62,7 @@ fn insert_match_insert_pipeline() {
         .prepare_write_pipeline(
             snapshot,
             &type_manager,
-            thing_manager,
+            Arc::new(thing_manager),
             &function_manager,
             &statistics,
             &IndexedAnnotatedFunctions::empty(),
@@ -75,8 +75,6 @@ fn insert_match_insert_pipeline() {
 fn insert_insert_pipeline() {
     let (_tmp_dir, storage) = setup_storage();
     let (type_manager, thing_manager, function_manager) = load_managers(storage.clone());
-    let mut statistics = Statistics::new(SequenceNumber::new(0));
-    statistics.may_synchronise(&storage).unwrap();
 
     define_schema(&storage, &type_manager, &thing_manager);
     let query_manager = QueryManager::new();
@@ -96,9 +94,8 @@ fn insert_insert_pipeline() {
         .prepare_write_pipeline(
             snapshot,
             &type_manager,
-            thing_manager,
+            Arc::new(thing_manager),
             &function_manager,
-            &statistics,
             &IndexedAnnotatedFunctions::empty(),
             &query,
         )

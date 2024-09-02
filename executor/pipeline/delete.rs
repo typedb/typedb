@@ -17,6 +17,7 @@ use crate::{
 pub struct DeleteStageExecutor<Snapshot: WritableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
     deleter: DeleteExecutor,
     previous: PreviousStage,
+    thing_manager: Arc<ThingManager>,
     phantom: PhantomData<Snapshot>,
 }
 
@@ -25,8 +26,8 @@ where
     Snapshot: WritableSnapshot + 'static,
     PreviousStage: StageAPI<Snapshot>,
 {
-    pub fn new(deleter: DeleteExecutor, previous: PreviousStage) -> Self {
-        Self { deleter, previous, phantom: PhantomData::default() }
+    pub fn new(deleter: DeleteExecutor, previous: PreviousStage, thing_manager: Arc<ThingManager>) -> Self {
+        Self { deleter, previous, thing_manager, phantom: PhantomData::default()}
     }
 }
 
@@ -37,21 +38,20 @@ where
 {
     type OutputIterator = WrittenRowsIterator;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
-        let (previous_iterator, mut snapshot, mut thing_manager) = self.previous.into_iterator()?;
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), PipelineError> {
+        let (previous_iterator, mut snapshot) = self.previous.into_iterator()?;
         // accumulate once, then we will operate in-place
         let mut rows = previous_iterator.collect_owned()?;
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot_ref = Arc::get_mut(&mut snapshot).unwrap();
-        let thing_manager_ref = Arc::get_mut(&mut thing_manager).unwrap();
         for index in 0..rows.len() {
             let mut row = rows.get_row_mut(index);
             self.deleter
-                .execute_delete(snapshot_ref, thing_manager_ref, &mut row)
+                .execute_delete(snapshot_ref, self.thing_manager.as_ref(), &mut row)
                 .map_err(|err| PipelineError::WriteError(err))?;
         }
 
-        Ok((WrittenRowsIterator::new(rows), snapshot, thing_manager))
+        Ok((WrittenRowsIterator::new(rows), snapshot))
     }
 }

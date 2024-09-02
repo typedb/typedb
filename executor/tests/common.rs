@@ -29,16 +29,3 @@ pub fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
         Arc::new(MVCCStorage::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
     (storage_path, storage)
 }
-
-pub fn load_managers(storage: Arc<MVCCStorage<WALClient>>) -> (Arc<TypeManager>, ThingManager) {
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage).unwrap());
-    let type_manager = Arc::new(TypeManager::new(definition_key_generator, type_vertex_generator, None));
-    let thing_manager = ThingManager::new(
-        thing_vertex_generator,
-        type_manager.clone(),
-        Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
-    );
-    (type_manager, thing_manager)
-}

@@ -129,7 +129,6 @@ fn traverse_has_unbounded_sorted_from() {
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let thing_manager = Arc::new(thing_manager);
 
     let (entry_annotations, _) = infer_types(
         &entry,
@@ -254,8 +253,6 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
-    let thing_manager = Arc::new(thing_manager);
-
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
@@ -344,7 +341,6 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
@@ -413,7 +409,6 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let variable_positions = executor.entry_variable_positions().clone();
@@ -505,7 +500,6 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 

@@ -254,7 +254,6 @@ fn traverse_links_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
@@ -339,7 +338,6 @@ fn traverse_links_unbounded_sorted_to() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
@@ -436,7 +434,6 @@ fn traverse_links_bounded_relation() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
@@ -545,7 +542,6 @@ fn traverse_links_bounded_relation_player() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
@@ -600,7 +596,6 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let thing_manager = Arc::new(thing_manager);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -685,7 +680,6 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let thing_manager = Arc::new(thing_manager);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -810,7 +804,6 @@ fn traverse_links_reverse_bounded_player() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
@@ -919,7 +912,6 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 

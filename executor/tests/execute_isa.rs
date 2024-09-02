@@ -107,7 +107,6 @@ fn traverse_isa_unbounded_sorted_thing() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
@@ -174,7 +173,6 @@ fn traverse_isa_unbounded_sorted_type() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
@@ -254,7 +252,6 @@ fn traverse_isa_bounded_thing() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
@@ -321,7 +318,6 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
@@ -388,7 +384,6 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
@@ -467,7 +462,6 @@ fn traverse_isa_reverse_bounded_type() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);

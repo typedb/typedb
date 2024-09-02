@@ -126,7 +126,6 @@ fn attribute_equality() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);

@@ -47,7 +47,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
             database.definition_key_generator.clone(),
             database.type_vertex_generator.clone(),
             Some(schema.type_cache.clone()),
-        )); // TODO pass cache
+        ));
         let thing_manager = Arc::new(ThingManager::new(
             database.thing_vertex_generator.clone(),
             type_manager.clone(),

@@ -411,6 +411,14 @@ impl TransactionService {
                     transaction_options,
                 } = schema_transaction;
                 let mut snapshot = Arc::into_inner(snapshot).unwrap();
+                QueryManager::new().prepare_write_pipeline(
+                    snapshot,
+                    type_manager.as_ref(),
+                    thing_manager.clone(),
+                    &function_manager,
+                    thing_manager.statistics(),
+
+                );
                 let result = Self::execute_write_pipeline(&mut snapshot, pipeline)
                     .map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
                 let transaction = TransactionSchema::from(

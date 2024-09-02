@@ -17,20 +17,19 @@ use crate::{
 
 pub struct InitialStage<Snapshot: ReadableSnapshot + 'static> {
     snapshot: Arc<Snapshot>,
-    thing_manager: Arc<ThingManager>,
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> InitialStage<Snapshot> {
-    pub fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
-        Self { snapshot, thing_manager }
+    pub fn new(snapshot: Arc<Snapshot>) -> Self {
+        Self { snapshot }
     }
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for InitialStage<Snapshot> {
     type OutputIterator = InitialIterator;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
-        Ok((InitialIterator::new(), self.snapshot.clone(), self.thing_manager.clone()))
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), PipelineError> {
+        Ok((InitialIterator::new(), self.snapshot))
     }
 }
 

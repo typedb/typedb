@@ -28,6 +28,7 @@ use storage::{
     MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
+use test_utils_encoding::create_core_storage;
 
 fn define_struct<Snapshot: WritableSnapshot>(
     snapshot: &mut Snapshot,
@@ -61,13 +62,8 @@ fn get_struct_definition(snapshot: &impl ReadableSnapshot, definition_key: &Defi
 
 #[test]
 fn test_struct_definition() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>(Rc::from("storage"), &storage_path, WALClient::new(wal))
-            .unwrap(),
-    );
+    let (_tmp_dir, storage) = create_core_storage();
+
     let mut snapshot = storage.clone().open_snapshot_write();
     let definition_key_generator = DefinitionKeyGenerator::new();
 

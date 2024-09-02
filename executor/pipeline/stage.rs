@@ -35,15 +35,15 @@ pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
     type OutputIterator = ReadStageIterator<Snapshot>;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), PipelineError> {
         match self {
             ReadPipelineStage::Initial(stage) => {
-                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
-                Ok((ReadStageIterator::Initial(iterator), snapshot, thing_manager))
+                let (iterator, snapshot) = stage.into_iterator()?;
+                Ok((ReadStageIterator::Initial(iterator), snapshot))
             }
             ReadPipelineStage::Match(stage) => {
-                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
-                Ok((ReadStageIterator::Match(Box::new(iterator)), snapshot, thing_manager))
+                let (iterator, snapshot) = stage.into_iterator()?;
+                Ok((ReadStageIterator::Match(Box::new(iterator)), snapshot))
             }
         }
     }
@@ -79,23 +79,23 @@ pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
 impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineStage<Snapshot> {
     type OutputIterator = WriteStageIterator<Snapshot>;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), PipelineError> {
         match self {
             WritePipelineStage::Initial(stage) => {
-                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
-                Ok((WriteStageIterator::Initial(iterator), snapshot, thing_manager))
+                let (iterator, snapshot) = stage.into_iterator()?;
+                Ok((WriteStageIterator::Initial(iterator), snapshot))
             }
             WritePipelineStage::Match(stage) => {
-                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
-                Ok((WriteStageIterator::Match(Box::new(iterator)), snapshot, thing_manager))
+                let (iterator, snapshot) = stage.into_iterator()?;
+                Ok((WriteStageIterator::Match(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Insert(stage) => {
-                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
-                Ok((WriteStageIterator::Write(iterator), snapshot, thing_manager))
+                let (iterator, snapshot) = stage.into_iterator()?;
+                Ok((WriteStageIterator::Write(iterator), snapshot))
             }
             WritePipelineStage::Delete(stage) => {
-                let (iterator, snapshot, thing_manager) = stage.into_iterator()?;
-                Ok((WriteStageIterator::Write(iterator), snapshot, thing_manager))
+                let (iterator, snapshot) = stage.into_iterator()?;
+                Ok((WriteStageIterator::Write(iterator), snapshot))
             }
         }
     }

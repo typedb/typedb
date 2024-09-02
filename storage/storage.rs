@@ -155,6 +155,10 @@ impl<Durability> MVCCStorage<Durability> {
         &self.durability_client
     }
 
+    pub fn durability_mut(&mut self) -> &mut Durability {
+        &mut self.durability_client
+    }
+
     pub fn open_snapshot_write(self: Arc<Self>) -> WriteSnapshot<Durability> {
         /*
         How to pick a sequence number:

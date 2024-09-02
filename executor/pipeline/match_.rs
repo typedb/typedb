@@ -20,6 +20,7 @@ use crate::{
 pub struct MatchStageExecutor<Snapshot: ReadableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
     program: MatchProgram,
     previous: PreviousStage,
+    thing_manager: Arc<ThingManager>,
     phantom: PhantomData<Snapshot>,
 }
 
@@ -28,8 +29,8 @@ where
     Snapshot: ReadableSnapshot + 'static,
     PreviousStage: StageAPI<Snapshot>,
 {
-    pub fn new(program: MatchProgram, previous: PreviousStage) -> Self {
-        Self { program, previous, phantom: PhantomData::default() }
+    pub fn new(program: MatchProgram, previous: PreviousStage, thing_manager: Arc<ThingManager>) -> Self {
+        Self { program, previous, thing_manager, phantom: PhantomData::default() }
     }
 }
 
@@ -40,14 +41,13 @@ where
 {
     type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
-    fn into_iterator(mut self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
+    fn into_iterator(mut self) -> Result<(Self::OutputIterator, Arc<Snapshot>), PipelineError> {
         let Self { previous: previous_stage, program, .. } = self;
-        let (previous_iterator, snapshot, thing_manager) = previous_stage.into_iterator()?;
+        let (previous_iterator, snapshot) = previous_stage.into_iterator()?;
         let iterator = previous_iterator;
         Ok((
-            MatchStageIterator::new(iterator, program, snapshot.clone(), thing_manager.clone()),
+            MatchStageIterator::new(iterator, program, snapshot.clone(), self.thing_manager.clone()),
             snapshot,
-            thing_manager,
         ))
     }
 }
@@ -68,23 +68,6 @@ impl<Snapshot: ReadableSnapshot + 'static, Iterator: StageIterator> MatchStageIt
         thing_manager: Arc<ThingManager>,
     ) -> Self {
         Self { snapshot, program, thing_manager, source_iterator: iterator, current_iterator: None }
-    }
-
-    fn create_next_current_iterator(&mut self) -> Result<(), PipelineError> {
-        while self.current_iterator.is_none() {
-            let start = self.source_iterator.next();
-            match start {
-                None => return Ok(()),
-                Some(start) => {
-                    let start = start?;
-                    // TODO uses start to initialise new pattern iterator
-                    let iterator = PatternExecutor::new(&self.program, &self.snapshot, &self.thing_manager)
-                        .map_err(|err| PipelineError::InitialisingMatchIterator(err))?;
-                }
-            }
-        }
-
-        Ok(())
     }
 }
 

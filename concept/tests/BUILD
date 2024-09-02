@@ -3,28 +3,44 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_test", "rust_library")
 package(default_visibility = ["//visibility:public",])
+
+rust_library(
+    name = "test_utils_concept",
+    srcs = ["test_utils_concept.rs"],
+    deps = [
+        "//concept",
+        "//encoding",
+        "//storage",
+        "//durability",
+    ]
+)
+
+test_deps = [
+    "//common/bytes",
+    "//common/lending_iterator",
+    "//common/logger",
+    "//common/primitive",
+    "//concept",
+    "//encoding",
+    "//storage",
+    "//durability",
+
+    ":test_utils_concept",
+    "//encoding/tests:test_utils_encoding",
+    "//util/test:test_utils",
+
+    "@crates//:rand",
+    "@crates//:tracing",
+]
 
 rust_test(
     name = "test_statistics",
     srcs = glob([
         "test_statistics.rs",
     ]),
-    deps = [
-        "//common/bytes",
-        "//common/lending_iterator",
-        "//common/logger",
-        "//common/primitive",
-        "//concept",
-        "//encoding",
-        "//storage",
-        "//durability",
-        "//util/test:test_utils",
-
-        "@crates//:rand",
-        "@crates//:tracing",
-    ]
+    deps = test_deps,
 )
 
 rust_test(
@@ -32,20 +48,7 @@ rust_test(
     srcs = glob([
         "test_thing.rs",
     ]),
-    deps = [
-        "//common/bytes",
-        "//common/lending_iterator",
-        "//common/logger",
-        "//common/primitive",
-        "//concept",
-        "//encoding",
-        "//storage",
-        "//durability",
-        "//util/test:test_utils",
-
-        "@crates//:rand",
-        "@crates//:tracing",
-    ]
+    deps = test_deps,
 )
 
 rust_test(
@@ -53,25 +56,17 @@ rust_test(
     srcs = glob([
         "test_type.rs",
     ]),
-    deps = [
-        "//common/bytes",
-        "//common/logger",
-        "//common/primitive",
-        "//concept",
-        "//encoding",
-        "//storage",
-        "//durability",
-        "//util/test:test_utils",
-
-        "@crates//:rand",
-        "@crates//:tracing",
+    deps = test_deps + [
         "@crates//:chrono",
         "@crates//:chrono-tz",
-    ]
+    ],
 )
 
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),
+    exclude = glob([
+        "Cargo.*",
+    ]),
     license_type = "mpl-header",
 )

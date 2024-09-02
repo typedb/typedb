@@ -13,19 +13,20 @@ use std::{
 };
 
 use chrono_tz::Tz;
+
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::{
         annotation::{AnnotationAbstract, AnnotationRange, AnnotationValues},
         attribute_type::AttributeTypeAnnotation,
+        Capability,
         entity_type::EntityTypeAnnotation,
+        KindAPI,
         object_type::ObjectType,
-        owns::{Owns, OwnsAnnotation},
-        type_manager::{type_cache::TypeCache, TypeManager},
-        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        Ordering, OwnerAPI, owns::{Owns, OwnsAnnotation}, PlayerAPI, type_manager::{type_cache::TypeCache, TypeManager}, TypeAPI,
     },
 };
-use durability::{wal::WAL, DurabilitySequenceNumber};
+use durability::DurabilitySequenceNumber;
 use encoding::{
     graph::{
         definition::{
@@ -34,15 +35,16 @@ use encoding::{
         thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
-    value::{decimal_value::Decimal, label::Label, value::Value, value_type::ValueType},
-    EncodingKeyspace,
+    value::{decimal_value::Decimal, label::Label, value::Value, value_type::ValueType}
+    ,
 };
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot},
 };
-use test_utils::{create_tmp_dir, init_logging};
+use test_utils_concept::setup_concept_storage;
+use test_utils_encoding::create_core_storage;
 
 /*
 This test is used to help develop the API of Types.
@@ -76,12 +78,8 @@ fn type_manager_at_snapshot(
 
 #[test]
 fn entity_usage() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
@@ -233,12 +231,8 @@ fn entity_usage() {
 
 #[test]
 fn role_usage() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     let friendship_label = Label::build("friendship");
     let friend_name = "friend";
@@ -297,12 +291,8 @@ fn role_usage() {
 
 #[test]
 fn annotations_with_range_arguments() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     let tz = Tz::Africa__Abidjan;
     let now = chrono::offset::Local::now().with_timezone(&tz);
@@ -581,7 +571,7 @@ fn annotations_with_range_arguments() {
         assert!(!empty_name_owns
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
-            .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, None,))));
+            .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, None))));
 
         assert!(balance_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::Decimal(Decimal::MAX))))
@@ -612,12 +602,12 @@ fn annotations_with_range_arguments() {
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.0)), None))));
         assert!(!empty_measurement_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
-            &OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.0)), Some(Value::Double(0.0)),))
+            &OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.0)), Some(Value::Double(0.0))))
         ));
         assert!(!empty_measurement_owns
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
-            .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Double(0.00000000001)),))));
+            .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Double(0.00000000001))))));
 
         assert!(schedule_type
             .get_annotations(&snapshot, &type_manager)
@@ -634,7 +624,7 @@ fn annotations_with_range_arguments() {
         assert!(!schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(
                 Some(Value::DateTimeTZ(chrono::offset::Local::now().with_timezone(&tz))),
-                None
+                None,
             ))
         ));
         assert!(schedule_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
@@ -658,23 +648,19 @@ fn annotations_with_range_arguments() {
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Boolean(false)), None))));
         assert!(!empty_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Range(
-            AnnotationRange::new(Some(Value::Boolean(false)), Some(Value::Boolean(false)),)
+            AnnotationRange::new(Some(Value::Boolean(false)), Some(Value::Boolean(false)))
         )));
         assert!(!empty_owns
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
-            .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Boolean(true)),))));
+            .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Boolean(true))))));
     }
 }
 
 #[test]
 fn annotations_with_value_arguments() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     let tz = Tz::Africa__Abidjan;
     let now = chrono::offset::Local::now().with_timezone(&tz);
@@ -950,7 +936,7 @@ fn annotations_with_value_arguments() {
             AnnotationValues::new(vec![Value::String(Cow::Borrowed("A")), Value::String(Cow::Borrowed("z"))])
         )));
         assert!(!name_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
-            AnnotationValues::new(vec![Value::String(Cow::Borrowed("z")), Value::String(Cow::Borrowed("A")),])
+            AnnotationValues::new(vec![Value::String(Cow::Borrowed("z")), Value::String(Cow::Borrowed("A"))])
         )));
 
         assert!(empty_name_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
@@ -978,7 +964,7 @@ fn annotations_with_value_arguments() {
             &OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.01), Value::Double(0.3339848944)]))
         ));
         assert!(!measurement_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
-            &OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.3339848944), Value::Double(0.01),]))
+            &OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.3339848944), Value::Double(0.01)]))
         ));
         assert!(!measurement_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
             &OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.1), Value::Double(0.3339848944)]))
@@ -1000,7 +986,7 @@ fn annotations_with_value_arguments() {
         assert!(schedule_type
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
-            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now),]))));
+            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)]))));
         assert!(!schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
                 Value::DateTimeTZ(now),
@@ -1010,7 +996,7 @@ fn annotations_with_value_arguments() {
         assert!(!schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(
                 chrono::offset::Local::now().with_timezone(&tz)
-            ),]))
+            ), ]))
         ));
         assert!(schedule_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
 
@@ -1028,38 +1014,34 @@ fn annotations_with_value_arguments() {
         assert!(!valid_owns
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
-            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(true),]))));
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(true)]))));
         assert!(!valid_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
-            AnnotationValues::new(vec![Value::Boolean(true), Value::Boolean(false),])
+            AnnotationValues::new(vec![Value::Boolean(true), Value::Boolean(false)])
         )));
 
         assert!(empty_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
         assert!(empty_owns
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
-            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(false),]))));
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(false)]))));
         assert!(!empty_owns
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
-            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(true),]))));
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(true)]))));
         assert!(!empty_owns
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![]))));
         assert!(!empty_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
-            AnnotationValues::new(vec![Value::Boolean(false), Value::Boolean(false),])
+            AnnotationValues::new(vec![Value::Boolean(false), Value::Boolean(false)])
         )));
     }
 }
 
 #[test]
 fn test_struct_definition() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     // Without cache, uncommitted
     let mut snapshot = storage.clone().open_snapshot_write();
@@ -1168,12 +1150,8 @@ fn define_struct(
 
 #[test]
 fn test_struct_definition_updates() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     let type_manager = type_manager_no_cache();
     let thing_manager = thing_manager(type_manager.clone());

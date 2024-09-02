@@ -64,9 +64,8 @@ impl QueryManager {
         &self,
         snapshot: Snapshot,
         type_manager: &TypeManager,
-        thing_manager: ThingManager,
+        thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
-        statistics: &Statistics,
         schema_function_annotations: &IndexedAnnotatedFunctions,
         query: &typeql::query::Pipeline,
     ) -> Result<ReadPipelineStage<Snapshot>, QueryError> {
@@ -105,15 +104,15 @@ impl QueryManager {
 
         // 3: Compile
         let CompiledPipeline { compiled_functions, compiled_stages } =
-            compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
+            compile_pipeline(thing_manager.statistics(), &variable_registry, annotated_preamble, annotated_stages)?;
 
-        let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(Arc::new(snapshot), Arc::new(thing_manager)));
+        let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(Arc::new(snapshot)));
         for compiled_stage in compiled_stages {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
                     // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(match_program, last_stage);
+                    let match_stage = MatchStageExecutor::new(match_program, last_stage, thing_manager.clone());
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(_) => {
@@ -131,9 +130,8 @@ impl QueryManager {
         &self,
         snapshot: Snapshot,
         type_manager: &TypeManager,
-        thing_manager: ThingManager,
+        thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
-        statistics: &Statistics,
         schema_function_annotations: &IndexedAnnotatedFunctions,
         query: &typeql::query::Pipeline,
     ) -> Result<WritePipelineStage<Snapshot>, QueryError> {
@@ -172,24 +170,24 @@ impl QueryManager {
 
         // // 3: Compile
         let CompiledPipeline { compiled_functions, compiled_stages } =
-            compile_pipeline(statistics, &variable_registry, annotated_preamble, annotated_stages)?;
+            compile_pipeline(thing_manager.statistics(), &variable_registry, annotated_preamble, annotated_stages)?;
 
         let mut last_stage =
-            WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot), Arc::new(thing_manager)));
+            WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot)));
         for compiled_stage in compiled_stages {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
                     // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(match_program, last_stage);
+                    let match_stage = MatchStageExecutor::new(match_program, last_stage, thing_manager.clone());
                     last_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(insert_program) => {
-                    let insert_stage = InsertStageExecutor::new(InsertExecutor::new(insert_program), last_stage);
+                    let insert_stage = InsertStageExecutor::new(InsertExecutor::new(insert_program), last_stage, thing_manager.clone());
                     last_stage = WritePipelineStage::Insert(Box::new(insert_stage));
                 }
                 CompiledStage::Delete(delete_program) => {
-                    let delete_stage = DeleteStageExecutor::new(DeleteExecutor::new(delete_program), last_stage);
+                    let delete_stage = DeleteStageExecutor::new(DeleteExecutor::new(delete_program), last_stage, thing_manager.clone());
                     last_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
             }
