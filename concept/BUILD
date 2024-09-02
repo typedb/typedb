@@ -14,6 +14,7 @@ package(default_visibility = [
     "//compiler:__subpackages__",
     "//traversal:__subpackages__",
     "//query:__subpackages__",
+    "//server:__subpackages__",
     "//tests/behaviour:__subpackages__",
 ])
 

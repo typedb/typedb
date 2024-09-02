@@ -41,7 +41,7 @@ where
 {
     type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
-    fn into_iterator(mut self) -> Result<(Self::OutputIterator, Arc<Snapshot>), PipelineError> {
+    fn into_iterator(mut self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineError)> {
         let Self { previous: previous_stage, program, .. } = self;
         let (previous_iterator, snapshot) = previous_stage.into_iterator()?;
         let iterator = previous_iterator;

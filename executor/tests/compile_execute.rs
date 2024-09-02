@@ -26,10 +26,9 @@ use ir::{
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::{sequence_number::SequenceNumber, snapshot::CommittableSnapshot};
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
-use crate::common::{load_managers, setup_storage};
-
-mod common;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const AGE_LABEL: Label = Label::new_static("age");
@@ -39,9 +38,11 @@ const MEMBERSHIP_MEMBER_LABEL: Label = Label::new_static_scoped("member", "membe
 
 #[test]
 fn test_has_planning_traversal() {
-    let (_tmp_dir, storage) = setup_storage();
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone());
+
+    let mut snapshot = storage.clone().open_snapshot_write();
 
     const CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None));
 
@@ -142,9 +143,11 @@ fn test_has_planning_traversal() {
 
 #[test]
 fn test_links_planning_traversal() {
-    let (_tmp_dir, storage) = setup_storage();
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone());
+
+    let mut snapshot = storage.clone().open_snapshot_write();
 
     const CARDINALITY_ANY: AnnotationCardinality = AnnotationCardinality::new(0, None);
     const OWNS_CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(CARDINALITY_ANY);

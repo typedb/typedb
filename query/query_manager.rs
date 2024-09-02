@@ -6,9 +6,11 @@
 
 use std::sync::Arc;
 
+use typeql::query::SchemaQuery;
 use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
+
 use concept::{
-    thing::{statistics::Statistics, thing_manager::ThingManager},
+    thing::thing_manager::ThingManager,
     type_::type_manager::TypeManager,
 };
 use executor::{
@@ -22,11 +24,11 @@ use executor::{
     write::{delete::DeleteExecutor, insert::InsertExecutor},
 };
 use function::function_manager::FunctionManager;
+use function::FunctionError;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use typeql::query::SchemaQuery;
 
 use crate::{
-    annotation::{infer_types_for_pipeline, AnnotatedPipeline},
+    annotation::{AnnotatedPipeline, infer_types_for_pipeline},
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
     define,
     error::QueryError,
@@ -62,24 +64,26 @@ impl QueryManager {
 
     pub fn prepare_read_pipeline<Snapshot: ReadableSnapshot + 'static>(
         &self,
-        snapshot: Snapshot,
+        snapshot: Arc<Snapshot>,
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
-        schema_function_annotations: &IndexedAnnotatedFunctions,
         query: &typeql::query::Pipeline,
-    ) -> Result<ReadPipelineStage<Snapshot>, QueryError> {
+    ) -> Result<ReadPipelineStage<Snapshot>,QueryError> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         let mut snapshot = snapshot;
         // 1: Translate
         let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } =
-            translate_pipeline(&snapshot, function_manager, query)?;
+            translate_pipeline(snapshot.as_ref(), function_manager, query)?;
+
+        let annotated_functions = function_manager.get_annotated_functions(snapshot.as_ref(), &type_manager)
+            .map_err(|err| QueryError::FunctionRetrieval { source: err })?;
 
         // 2: Annotate
         let AnnotatedPipeline { annotated_preamble, annotated_stages } = infer_types_for_pipeline(
-            &mut snapshot,
+            snapshot.as_ref(),
             type_manager,
-            schema_function_annotations,
+            &annotated_functions,
             &variable_registry,
             translated_preamble,
             translated_stages,
@@ -106,7 +110,7 @@ impl QueryManager {
         let CompiledPipeline { compiled_functions, compiled_stages } =
             compile_pipeline(thing_manager.statistics(), &variable_registry, annotated_preamble, annotated_stages)?;
 
-        let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(Arc::new(snapshot)));
+        let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(snapshot));
         for compiled_stage in compiled_stages {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
@@ -132,24 +136,34 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
-        schema_function_annotations: &IndexedAnnotatedFunctions,
         query: &typeql::query::Pipeline,
-    ) -> Result<WritePipelineStage<Snapshot>, QueryError> {
+    ) -> Result<WritePipelineStage<Snapshot>, (Snapshot, QueryError)> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
-        let snapshot = snapshot;
         // 1: Translate
-        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } =
-            translate_pipeline(&snapshot, function_manager, query)?;
+        let translated_pipeline = translate_pipeline(&snapshot, function_manager, query);
+        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } = match translated_pipeline {
+            Ok(translated_pipeline) => translated_pipeline,
+            Err(err) => return Err((snapshot, err)),
+        };
+
+        let annotated_functions = match function_manager.get_annotated_functions(&snapshot, &type_manager) {
+            Ok(annotated_functions) => annotated_functions,
+            Err(err) => return Err((snapshot, QueryError::FunctionRetrieval { source: err })),
+        };
 
         // 2: Annotate
-        let AnnotatedPipeline { annotated_preamble, annotated_stages } = infer_types_for_pipeline(
+        let annotated_pipeline = infer_types_for_pipeline(
             &snapshot,
             type_manager,
-            schema_function_annotations,
+            &annotated_functions,
             &variable_registry,
             translated_preamble,
             translated_stages,
-        )?;
+        );
+        let AnnotatedPipeline { annotated_preamble, annotated_stages } = match annotated_pipeline {
+            Ok(annotated_pipeline) => annotated_pipeline,
+            Err(err) => return Err((snapshot, err)),
+        };
         // // TODO: Improve how we do this. This is a temporary workaround
         // annotated_stages.iter().filter_map(|stage| {
         //     if let AnnotatedStage::Match { block, variable_value_types, .. }  = stage {
@@ -169,8 +183,12 @@ impl QueryManager {
         // }).unwrap();
 
         // // 3: Compile
-        let CompiledPipeline { compiled_functions, compiled_stages } =
-            compile_pipeline(thing_manager.statistics(), &variable_registry, annotated_preamble, annotated_stages)?;
+        let compiled_pipeline =
+            compile_pipeline(thing_manager.statistics(), &variable_registry, annotated_preamble, annotated_stages);
+        let CompiledPipeline { compiled_functions, compiled_stages } = match compiled_pipeline {
+            Ok(compiled_pipeline) => compiled_pipeline,
+            Err(err) => return Err((snapshot, err))
+        };
 
         let mut last_stage =
             WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot)));

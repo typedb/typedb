@@ -18,13 +18,16 @@ deps = [
     "//ir",
     "//storage",
     "@vaticle_typeql//rust:typeql",
+
+    "//concept/tests:test_utils_concept",
+    "//encoding/tests:test_utils_encoding",
     "//util/test:test_utils",
 ]
 
 rust_test(
     name = "test_compile_execute",
     crate_root = "compile_execute.rs",
-    srcs = ["compile_execute.rs", "common.rs"],
+    srcs = ["compile_execute.rs"],
     deps = deps + [
         "@crates//:itertools",
     ],
@@ -33,35 +36,35 @@ rust_test(
 rust_test(
     name = "test_execute_isa",
     crate_root = "execute_isa.rs",
-    srcs = ["execute_isa.rs", "common.rs"],
+    srcs = ["execute_isa.rs"],
     deps = deps,
 )
 
 rust_test(
     name = "test_execute_has",
     crate_root = "execute_has.rs",
-    srcs = ["execute_has.rs", "common.rs"],
+    srcs = ["execute_has.rs"],
     deps = deps,
 )
 
 rust_test(
     name = "test_execute_links",
     crate_root = "execute_links.rs",
-    srcs = ["execute_links.rs", "common.rs"],
+    srcs = ["execute_links.rs"],
     deps = deps,
 )
 
 rust_test(
     name = "test_select",
     crate_root = "execute_select.rs",
-    srcs = ["execute_select.rs", "common.rs"],
+    srcs = ["execute_select.rs"],
     deps = deps,
 )
 
 rust_test(
     name = "test_writes",
     crate_root = "writes.rs",
-    srcs = ["writes.rs", "common.rs"],
+    srcs = ["writes.rs"],
     deps = deps + [
         "//query:query",
     ],
@@ -79,7 +82,7 @@ rust_test(
 rust_test(
     name = "test_pipelines",
     crate_root = "pipelines.rs",
-    srcs = ["pipelines.rs", "common.rs"],
+    srcs = ["pipelines.rs"],
     deps = deps + [
         "//function",
         "//query:query",

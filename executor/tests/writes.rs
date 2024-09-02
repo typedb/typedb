@@ -27,10 +27,9 @@ use storage::{
     snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
 };
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
-use crate::common::{load_managers, setup_storage};
-
-mod common;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const GROUP_LABEL: Label = Label::new_static("group");
@@ -212,7 +211,9 @@ fn execute_delete(
 
 #[test]
 fn has() {
-    let (_tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
     setup_schema(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_write();
@@ -239,7 +240,9 @@ fn has() {
 
 #[test]
 fn test() {
-    let (_tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
     setup_schema(storage.clone());
 
@@ -255,7 +258,9 @@ fn test() {
 
 #[test]
 fn relation() {
-    let (_tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
     setup_schema(storage.clone());
 
@@ -308,7 +313,9 @@ fn relation() {
 
 #[test]
 fn relation_with_inferred_roles() {
-    let (_tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
     setup_schema(storage.clone());
 
@@ -361,7 +368,9 @@ fn relation_with_inferred_roles() {
 
 #[test]
 fn test_has_with_input_rows() {
-    let (_tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
     setup_schema(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_write();
@@ -405,7 +414,9 @@ fn test_has_with_input_rows() {
 
 #[test]
 fn delete_has() {
-    let (_tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
     setup_schema(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_write();

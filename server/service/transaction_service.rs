@@ -13,18 +13,9 @@ use std::{
     sync::Arc,
 };
 
-use database::{
-    database_manager::DatabaseManager,
-    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
-};
-use error::typedb_error;
-use options::TransactionOptions;
-use query::{error::QueryError, query_manager::QueryManager};
-use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
-use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
 use tokio::{
     sync::{broadcast, mpsc::Sender},
-    task::{spawn_blocking, JoinHandle},
+    task::{JoinHandle, spawn_blocking},
 };
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
@@ -32,10 +23,27 @@ use tracing::{event, Level};
 use typedb_protocol::transaction::{Client, Type};
 use typeql::{
     parse_query,
-    query::{stage::Stage, Pipeline, SchemaQuery},
+    query::{Pipeline, SchemaQuery, stage::Stage},
     Query,
 };
 use uuid::Uuid;
+
+use concept::thing::thing_manager::ThingManager;
+use concept::type_::type_manager::TypeManager;
+use database::{
+    database_manager::DatabaseManager,
+    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+};
+use error::typedb_error;
+use executor::batch::Batch;
+use executor::pipeline::{PipelineError, StageAPI, StageIterator};
+use executor::pipeline::stage::{ReadStageIterator, WritePipelineStage, WriteStageIterator};
+use function::function_manager::FunctionManager;
+use options::TransactionOptions;
+use query::{error::QueryError, query_manager::QueryManager};
+use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
+use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::service::error::{ProtocolError, StatusConvertible};
 
@@ -45,25 +53,6 @@ pub enum Transaction {
     Read(TransactionRead<WALClient>),
     Write(TransactionWrite<WALClient>),
     Schema(TransactionSchema<WALClient>),
-}
-
-macro_rules! with_readable_snapshot {
-    ($tx: ident, |$snapshot: ident| $expr:expr) => {
-        match $tx {
-            Transaction::Read(transaction) => {
-                let $snapshot = transaction.snapshot;
-                $expr
-            }
-            Transaction::Write(transaction) => {
-                let $snapshot = transaction.snapshot;
-                $expr
-            }
-            Transaction::Schema(transaction) => {
-                let $snapshot = transaction.snapshot;
-                $expr
-            }
-        }
-    };
 }
 
 #[derive(Debug)]
@@ -85,16 +74,9 @@ pub(crate) struct TransactionService {
     is_open: bool,
     transaction: Option<Transaction>,
     request_queue: Vec<typedb_protocol::query::Req>,
-    read_responders: HashMap<Uuid, Responder>,
-    write_responders: HashMap<Uuid, Responder>,
-    active_write_query: Option<(Uuid, JoinHandle<()>)>,
-}
-
-#[derive(Debug)]
-enum Responder {
-    Active(JoinHandle<()>),
-    // a read query computing+responding, or a write query responding
-    Waiting(()),
+    read_responders: HashMap<Uuid, JoinHandle<()>>,
+    write_responders: HashMap<Uuid, JoinHandle<()>>,
+    active_write_query: Option<(Uuid, JoinHandle<(Transaction, Result<Batch, Status>)>)>,
 }
 
 macro_rules! close_service {
@@ -158,9 +140,9 @@ impl TransactionService {
                                         name: "req",
                                         description: "Transaction message must contain a request.",
                                     }
-                                    .into_status(),
+                                        .into_status(),
                                 )
-                                .await;
+                                    .await;
                                 close_service!();
                             }
                             Some(req) => {
@@ -214,7 +196,7 @@ impl TransactionService {
                 Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
-                self.handle_query(query_req).await?;
+                self.handle_query(request_id, query_req).await?;
                 Ok(Continue(()))
             }
             (true, typedb_protocol::transaction::req::Req::StreamReq(stream_req)) => {
@@ -291,8 +273,8 @@ impl TransactionService {
                     .commit()
                     .map_err(|err| TransactionServiceError::DataCommitFailed { source: err }.into_status())
             })
-            .await
-            .unwrap(),
+                .await
+                .unwrap(),
             Transaction::Schema(transaction) => transaction
                 .commit()
                 .map_err(|err| TransactionServiceError::SchemaCommitFailed { source: err }.into_status()),
@@ -329,7 +311,7 @@ impl TransactionService {
         Ok(())
     }
 
-    async fn handle_query(&mut self, query_req: typedb_protocol::query::Req) -> Result<(), Status> {
+    async fn handle_query(&mut self, req_id: Uuid, query_req: typedb_protocol::query::Req) -> Result<(), Status> {
         // TODO: compile query, create executor, respond with initial message and then await initial answers to send
         let query_string = &query_req.query;
         let query_options = &query_req.options; // TODO: pass query options
@@ -338,6 +320,7 @@ impl TransactionService {
         match parsed {
             Query::Schema(schema_query) => self.handle_query_schema(schema_query).await,
             Query::Pipeline(pipeline) => {
+                // TODO: check if active write query can be moved to write responders, then we can promote queries from the queue
                 let is_write = pipeline.stages.iter().any(Self::is_write_stage);
                 if is_write {
                     if !self.request_queue.is_empty()
@@ -347,10 +330,18 @@ impl TransactionService {
                         self.request_queue.push(query_req);
                         Ok(())
                     } else {
-                        self.execute_write_query(pipeline).await
+                        let join_handle = self.execute_write_query(pipeline)?;
+                        // TODO: we should start streaming data once we can? TODO pipe into responses...
+                        self.active_write_query = Some((req_id, join_handle));
+                        Ok(())
                     }
                 } else {
-                    todo!()
+                    // if !self.request_queue.is_empty() || self.active_write_query.is_some() {
+                    //     self.request_queue.push(query_req);
+                    //     Ok(())
+                    // } else {
+                    //     self.prepare_read_query(pipeline).await?;
+                    // }
                 }
             }
         }
@@ -373,8 +364,8 @@ impl TransactionService {
                     .map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
                 (snapshot, type_manager, thing_manager, result)
             })
-            .await
-            .unwrap();
+                .await
+                .unwrap();
             result?;
             let transaction = TransactionSchema::from(
                 snapshot,
@@ -391,16 +382,15 @@ impl TransactionService {
         }
     }
 
-    async fn execute_write_query(&mut self, pipeline: Pipeline) -> Result<(), Status> {
+    fn execute_write_query(&mut self, pipeline: Pipeline) -> Result<JoinHandle<(Transaction, Result<Batch, Status>)>, Status> {
         debug_assert!(
             self.request_queue.is_empty()
                 && self.read_responders.is_empty()
                 && self.active_write_query.is_none()
                 && self.transaction.is_some()
         );
-
         if let Some(Transaction::Schema(schema_transaction)) = self.transaction.take() {
-            let (transaction, result) = spawn_blocking(move || {
+            Ok(spawn_blocking(move || {
                 // TODO: pass in Interrupt Receiver
                 let TransactionSchema {
                     snapshot,
@@ -410,34 +400,24 @@ impl TransactionService {
                     database,
                     transaction_options,
                 } = schema_transaction;
-                let mut snapshot = Arc::into_inner(snapshot).unwrap();
-                QueryManager::new().prepare_write_pipeline(
-                    snapshot,
-                    type_manager.as_ref(),
-                    thing_manager.clone(),
-                    &function_manager,
-                    thing_manager.statistics(),
 
+                let (snapshot, result) = Self::execute_write_query_in(
+                    Arc::into_inner(snapshot).unwrap(), &type_manager, thing_manager.clone(), &function_manager, &pipeline,
                 );
-                let result = Self::execute_write_pipeline(&mut snapshot, pipeline)
-                    .map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
-                let transaction = TransactionSchema::from(
+
+                let transaction = Transaction::Schema(TransactionSchema::from(
                     snapshot,
                     type_manager,
                     thing_manager,
                     function_manager,
                     database,
                     transaction_options,
-                );
+                ));
+                let result = result.map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
                 (transaction, result)
-            })
-            .await
-            .unwrap();
-            result?;
-            self.transaction = Some(Transaction::Schema(transaction));
-            Ok(())
+            }))
         } else if let Some(Transaction::Write(write_transaction)) = self.transaction.take() {
-            let (transaction, result) = spawn_blocking(move || {
+            Ok(spawn_blocking(move || {
                 // TODO: pass in Interrupt Receiver
                 let TransactionWrite {
                     snapshot,
@@ -447,32 +427,95 @@ impl TransactionService {
                     database,
                     transaction_options,
                 } = write_transaction;
-                let mut snapshot = Arc::into_inner(snapshot).unwrap();
-                let result = Self::execute_write_pipeline(&mut snapshot, pipeline)
-                    .map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
-                let transaction = TransactionWrite::from(
+
+                let (snapshot, result) = Self::execute_write_query_in(
+                    Arc::into_inner(snapshot).unwrap(), &type_manager, thing_manager.clone(), &function_manager, &pipeline,
+                );
+
+                let transaction = Transaction::Write(TransactionWrite::from(
                     Arc::new(snapshot),
                     type_manager,
                     thing_manager,
                     function_manager,
                     database,
                     transaction_options,
-                );
+                ));
+                let result = result.map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
                 (transaction, result)
-            })
-            .await
-            .unwrap();
-            result?;
-            self.transaction = Some(Transaction::Write(transaction));
-            return Ok(());
+            }))
         } else {
             return Err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}.into_status());
         }
     }
 
-    // TODO move to QueryManager
-    fn execute_write_pipeline(snapshot: &mut impl WritableSnapshot, pipeline: Pipeline) -> Result<(), QueryError> {
-        todo!()
+    fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
+        snapshot: Snapshot,
+        type_manager: &TypeManager,
+        thing_manager: Arc<ThingManager>,
+        function_manager: &FunctionManager,
+        pipeline: &Pipeline,
+    ) -> (Snapshot, Result<Batch, QueryError>) {
+        let result = QueryManager::new().prepare_write_pipeline(
+            snapshot,
+            type_manager,
+            thing_manager,
+            &function_manager,
+            &pipeline,
+        );
+        let pipeline = match result {
+            Ok(pipeline) => pipeline,
+            Err((snapshot, err)) => return (snapshot, Err(err)),
+        };
+
+        let (iterator, snapshot) = match pipeline.into_iterator() {
+            Ok((iterator, snapshot)) => (iterator, snapshot),
+            Err((snapshot, err)) => return (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineError { source: err })),
+        };
+
+        // collect so the snapshot Arc is no longer held by the iterator
+        match iterator.collect_owned() {
+            Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok(batch)),
+            Err(err) => (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineError { source: err })),
+        }
+    }
+
+    async fn prepare_read_query(&self, pipeline: &Pipeline) -> Result<(), Status> {
+        debug_assert!(self.request_queue.is_empty() && self.active_write_query.is_none() && self.transaction.is_some());
+        match self.transaction.as_ref().unwrap() {
+            Transaction::Read(transaction) => {
+                Self::prepare_read_query_in(
+                    transaction.snapshot.clone(),
+                    &transaction.type_manager,
+                    transaction.thing_manager.clone(),
+                    &transaction.function_manager
+                ).await.map_err()
+            }
+            Transaction::Write(transaction) => {}
+            Transaction::Schema(transaction) => {}
+        }
+    }
+
+    async fn prepare_read_query_in<Snapshot: ReadableSnapshot + 'static>(
+        snapshot: Arc<Snapshot>,
+        type_manager: &TypeManager,
+        thing_manager: Arc<ThingManager>,
+        function_manager: &FunctionManager,
+        pipeline: &Pipeline
+    ) -> Result<ReadStageIterator<Snapshot>, QueryError> {
+        let pipeline = QueryManager::new().prepare_read_pipeline(
+            snapshot,
+            type_manager,
+            thing_manager,
+            &function_manager,
+            &pipeline,
+        )?;
+
+        let iterator = match pipeline.into_iterator() {
+            Ok((iterator, _)) => iterator,
+            Err((_, err)) => return Err(QueryError::WritePipelineError { source: err })
+        };
+
+        Ok(iterator)
     }
 
     async fn handle_stream_continue(

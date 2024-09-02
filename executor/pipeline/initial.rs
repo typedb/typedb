@@ -28,7 +28,7 @@ impl<Snapshot: ReadableSnapshot + 'static> InitialStage<Snapshot> {
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for InitialStage<Snapshot> {
     type OutputIterator = InitialIterator;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), PipelineError> {
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineError)> {
         Ok((InitialIterator::new(), self.snapshot))
     }
 }

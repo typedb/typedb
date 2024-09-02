@@ -23,18 +23,19 @@ use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
-use crate::common::{load_managers, setup_storage};
-
-mod common;
 
 const ANIMAL_LABEL: Label = Label::new_static("animal");
 const CAT_LABEL: Label = Label::new_static("cat");
 const DOG_LABEL: Label = Label::new_static("dog");
 
-fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
-    let mut snapshot = storage.clone().open_snapshot_write();
+fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+    setup_concept_storage(storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let mut snapshot = storage.clone().open_snapshot_write();
 
     let animal_type = type_manager.create_entity_type(&mut snapshot, &ANIMAL_LABEL).unwrap();
     let dog_type = type_manager.create_entity_type(&mut snapshot, &DOG_LABEL).unwrap();
@@ -58,8 +59,8 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 
 #[test]
 fn traverse_isa_unbounded_sorted_thing() {
-    let (_tmp_dir, storage) = setup_storage();
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match $x isa $t; $t label dog;
@@ -124,8 +125,8 @@ fn traverse_isa_unbounded_sorted_thing() {
 
 #[test]
 fn traverse_isa_unbounded_sorted_type() {
-    let (_tmp_dir, storage) = setup_storage();
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match $x isa $t; $t label dog;
@@ -190,8 +191,8 @@ fn traverse_isa_unbounded_sorted_type() {
 
 #[test]
 fn traverse_isa_bounded_thing() {
-    let (_tmp_dir, storage) = setup_storage();
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match $x isa $t; $x isa $u;
@@ -269,8 +270,8 @@ fn traverse_isa_bounded_thing() {
 
 #[test]
 fn traverse_isa_reverse_unbounded_sorted_thing() {
-    let (_tmp_dir, storage) = setup_storage();
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match $x isa $t; $t label dog;
@@ -335,8 +336,8 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
 
 #[test]
 fn traverse_isa_reverse_unbounded_sorted_type() {
-    let (_tmp_dir, storage) = setup_storage();
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match $x isa $t; $t label dog;
@@ -401,8 +402,8 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
 
 #[test]
 fn traverse_isa_reverse_bounded_type() {
-    let (_tmp_dir, storage) = setup_storage();
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match $x isa $t; $y isa $t;

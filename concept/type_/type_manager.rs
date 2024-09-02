@@ -313,6 +313,10 @@ impl TypeManager {
         TypeManager { definition_key_generator, vertex_generator, type_cache: schema_cache }
     }
 
+    pub fn definition_key_generator(&self) -> Arc<DefinitionKeyGenerator> {
+        self.definition_key_generator.clone()
+    }
+
     pub fn resolve_relates(
         &self,
         snapshot: &impl ReadableSnapshot,

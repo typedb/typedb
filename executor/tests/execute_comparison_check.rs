@@ -22,24 +22,26 @@ use concept::{
     type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
+use executor::{program_executor::ProgramExecutor};
+use executor::row::MaybeOwnedRow;
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
-use crate::common::{load_managers, setup_storage};
-
-mod common;
 
 const AGE_LABEL: Label = Label::new_static("age");
 const NAME_LABEL: Label = Label::new_static("name");
 
 const ATTRIBUTE_INDEPENDENT: AttributeTypeAnnotation = AttributeTypeAnnotation::Independent(AnnotationIndependent);
 
-fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
-    let mut snapshot = storage.clone().open_snapshot_write();
+fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+    setup_concept_storage(storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let mut snapshot = storage.clone().open_snapshot_write();
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
     age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
@@ -61,8 +63,8 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 
 #[test]
 fn attribute_equality() {
-    let (_tmp_dir, storage) = setup_storage();
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //     $a isa age; $b isa age; $a == $b;

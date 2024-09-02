@@ -13,6 +13,8 @@ use crate::{
     pipeline::{PipelineError, StageAPI, StageIterator, WrittenRowsIterator},
     write::delete::DeleteExecutor,
 };
+use crate::batch::Batch;
+use crate::write::WriteError;
 
 pub struct DeleteStageExecutor<Snapshot: WritableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
     deleter: DeleteExecutor,
@@ -38,20 +40,24 @@ where
 {
     type OutputIterator = WrittenRowsIterator;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), PipelineError> {
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineError)> {
         let (previous_iterator, mut snapshot) = self.previous.into_iterator()?;
         // accumulate once, then we will operate in-place
-        let mut rows = previous_iterator.collect_owned()?;
+        let mut batch = match previous_iterator.collect_owned() {
+            Ok(batch) => batch,
+            Err(err) => return Err((snapshot, err)),
+        };
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot_ref = Arc::get_mut(&mut snapshot).unwrap();
-        for index in 0..rows.len() {
-            let mut row = rows.get_row_mut(index);
-            self.deleter
-                .execute_delete(snapshot_ref, self.thing_manager.as_ref(), &mut row)
-                .map_err(|err| PipelineError::WriteError(err))?;
+        for index in 0..batch.len() {
+            let mut row = batch.get_row_mut(index);
+            match self.deleter.execute_delete(snapshot_ref, self.thing_manager.as_ref(), &mut row) {
+                Ok(_) => {}
+                Err(err) => return Err((snapshot, PipelineError::WriteError(err))),
+            }
         }
 
-        Ok((WrittenRowsIterator::new(rows), snapshot))
+        Ok((WrittenRowsIterator::new(batch), snapshot))
     }
 }

@@ -20,10 +20,9 @@ use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
-use crate::common::{load_managers, setup_storage};
-
-mod common;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const AGE_LABEL: Label = Label::new_static("age");
@@ -40,7 +39,9 @@ struct Context {
 }
 
 fn setup_common() -> Context {
-    let (_tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let query_manager = QueryManager::new();

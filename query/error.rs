@@ -9,6 +9,8 @@ use std::{error::Error, fmt};
 use compiler::{
     expression::ExpressionCompileError, insert::WriteCompilationError, match_::inference::TypeInferenceError,
 };
+use executor::pipeline::PipelineError;
+use function::FunctionError;
 use ir::{program::FunctionDefinitionError, PatternDefinitionError};
 
 use crate::{define::DefineError, redefine::RedefineError, undefine::UndefineError};
@@ -20,10 +22,12 @@ pub enum QueryError {
     Redefine { source: RedefineError },
     Undefine { source: UndefineError },
     FunctionDefinition { source: FunctionDefinitionError },
+    FunctionRetrieval { source: FunctionError },
     PatternDefinition { source: PatternDefinitionError },
     TypeInference { source: TypeInferenceError },
     WriteCompilation { source: WriteCompilationError },
     ExpressionCompilation { source: ExpressionCompileError },
+    WritePipelineError { source: PipelineError },
 }
 
 impl fmt::Display for QueryError {
@@ -40,10 +44,12 @@ impl Error for QueryError {
             QueryError::Redefine { source, .. } => Some(source),
             QueryError::Undefine { source, .. } => Some(source),
             QueryError::FunctionDefinition { source, .. } => Some(source),
+            QueryError::FunctionRetrieval { source, .. } => Some(source),
             QueryError::PatternDefinition { source, .. } => Some(source),
             QueryError::TypeInference { source } => Some(source),
             QueryError::WriteCompilation { source } => Some(source),
             QueryError::ExpressionCompilation { source } => Some(source),
+            QueryError::WritePipelineError { source, .. } => Some(source),
         }
     }
 }

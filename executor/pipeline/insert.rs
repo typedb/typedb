@@ -16,6 +16,7 @@ use crate::{
     row::MaybeOwnedRow,
     write::insert::InsertExecutor,
 };
+use crate::write::WriteError;
 
 pub struct InsertStageExecutor<Snapshot: WritableSnapshot + 'static, PreviouStage: StageAPI<Snapshot>> {
     inserter: InsertExecutor,
@@ -64,18 +65,22 @@ where
 {
     type OutputIterator = WrittenRowsIterator;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), PipelineError> {
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineError)> {
         let (previous_iterator, mut snapshot) = self.previous.into_iterator()?;
-        let mut output_rows = Self::prepare_output_rows(self.inserter.output_width() as u32, previous_iterator)?;
+        let mut output_rows = match Self::prepare_output_rows(self.inserter.output_width() as u32, previous_iterator) {
+            Ok(output_rows) => output_rows,
+            Err(err) => return Err((snapshot, err)),
+        };
 
-        // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
+        // once the previous iterator is complete, this must be the exclusive owner of Arc's, so we can get mut:
         let snapshot_ref = Arc::get_mut(&mut snapshot).unwrap();
         for index in 0..output_rows.len() {
-            // TODO: parallelise!
+            // TODO: parallelise -- though this requires our snapshots support parallel writes!
             let mut row = output_rows.get_row_mut(index);
-            self.inserter
-                .execute_insert(snapshot_ref, self.thing_manager.as_ref(), &mut row)
-                .map_err(|err| PipelineError::WriteError(err))?;
+            match self.inserter.execute_insert(snapshot_ref, self.thing_manager.as_ref(), &mut row) {
+                Ok(_) => {}
+                Err(err) => return Err((snapshot, PipelineError::WriteError(err))),
+            }
         }
         Ok((WrittenRowsIterator::new(output_rows), snapshot))
     }

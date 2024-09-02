@@ -10,4 +10,7 @@ checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
     license_type = "mpl-header",
+    exclude = glob([
+        "Cargo.*",
+    ]),
 )

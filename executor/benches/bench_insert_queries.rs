@@ -14,6 +14,9 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler, SamplingMode};
+use pprof::ProfilerGuard;
+
 use answer::variable_value::VariableValue;
 use compiler::{
     match_::inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
@@ -21,26 +24,23 @@ use compiler::{
 };
 use concept::{
     thing::thing_manager::ThingManager,
-    type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
+    type_::{Ordering, OwnerAPI, type_manager::TypeManager},
 };
-use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
+use concept::type_::PlayerAPI;
 use encoding::value::{label::Label, value_type::ValueType};
 use executor::{
     row::Row,
     write::{insert::InsertExecutor, WriteError},
 };
 use ir::translation::TranslationContext;
-use pprof::ProfilerGuard;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, WritableSnapshot},
 };
 use test_utils::init_logging;
-
-use crate::common::{load_managers, setup_storage};
-
-mod common;
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
 static PERSON_LABEL: OnceLock<Label> = OnceLock::new();
 static GROUP_LABEL: OnceLock<Label> = OnceLock::new();
@@ -50,9 +50,11 @@ static MEMBERSHIP_GROUP_LABEL: OnceLock<Label> = OnceLock::new();
 static AGE_LABEL: OnceLock<Label> = OnceLock::new();
 static NAME_LABEL: OnceLock<Label> = OnceLock::new();
 
-fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
-    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+    setup_concept_storage(storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
     let group_type = type_manager.create_entity_type(&mut snapshot, GROUP_LABEL.get().unwrap()).unwrap();
@@ -158,8 +160,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     // group.measurement_time(Duration::from_secs(200));
     group.sampling_mode(SamplingMode::Linear);
 
-    let (_tmp_dir, storage) = setup_storage();
-    setup_schema(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
     group.bench_function("insert_queries", |b| {

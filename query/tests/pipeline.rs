@@ -11,14 +11,15 @@ use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
 };
+use function::function_cache::FunctionCache;
+use function::function_manager::FunctionManager;
 use query::query_manager::QueryManager;
 use storage::{
     durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot, MVCCStorage,
 };
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
-use crate::common::{load_managers, setup_storage};
-
-mod common;
 
 fn define_schema(storage: &Arc<MVCCStorage<WALClient>>, type_manager: &TypeManager, thing_manager: &ThingManager) {
     let mut snapshot = storage.clone().open_snapshot_schema();
@@ -37,8 +38,14 @@ fn define_schema(storage: &Arc<MVCCStorage<WALClient>>, type_manager: &TypeManag
 
 #[test]
 fn insert_match_insert_pipeline() {
-    let (_tmp_dir, storage) = setup_storage();
-    let (type_manager, thing_manager, function_manager) = load_managers(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let function_manager = FunctionManager::new(
+        type_manager.definition_key_generator().clone(),
+        Some(Arc::new(FunctionCache::new(storage.clone(), &type_manager, storage.read_watermark()).unwrap())),
+    );
+
     let mut statistics = Statistics::new(SequenceNumber::new(0));
     statistics.may_synchronise(&storage).unwrap();
 
@@ -62,9 +69,8 @@ fn insert_match_insert_pipeline() {
         .prepare_write_pipeline(
             snapshot,
             &type_manager,
-            Arc::new(thing_manager),
+            thing_manager.clone(),
             &function_manager,
-            &statistics,
             &IndexedAnnotatedFunctions::empty(),
             &query,
         )
@@ -73,8 +79,13 @@ fn insert_match_insert_pipeline() {
 
 #[test]
 fn insert_insert_pipeline() {
-    let (_tmp_dir, storage) = setup_storage();
-    let (type_manager, thing_manager, function_manager) = load_managers(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let function_manager = FunctionManager::new(
+        type_manager.definition_key_generator().clone(),
+        Some(Arc::new(FunctionCache::new(storage.clone(), &type_manager, storage.read_watermark()).unwrap())),
+    );
 
     define_schema(&storage, &type_manager, &thing_manager);
     let query_manager = QueryManager::new();
@@ -94,7 +105,7 @@ fn insert_insert_pipeline() {
         .prepare_write_pipeline(
             snapshot,
             &type_manager,
-            Arc::new(thing_manager),
+            thing_manager.clone(),
             &function_manager,
             &IndexedAnnotatedFunctions::empty(),
             &query,

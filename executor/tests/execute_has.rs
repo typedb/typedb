@@ -31,18 +31,18 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadSnapshot},
     MVCCStorage,
 };
-
-use crate::common::{load_managers, setup_storage};
-
-mod common;
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const AGE_LABEL: Label = Label::new_static("age");
 const NAME_LABEL: Label = Label::new_static("name");
 
-fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
-    let mut snapshot = storage.clone().open_snapshot_write();
+fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+    setup_concept_storage(storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
@@ -99,9 +99,8 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 
 #[test]
 fn traverse_has_unbounded_sorted_from() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -175,9 +174,9 @@ fn traverse_has_unbounded_sorted_from() {
 
 #[test]
 fn traverse_has_bounded_sorted_from_chain_intersect() {
-    let (_tmp_dir, storage) = setup_storage();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
-    setup_database(storage.clone());
     let (type_manager, thing_manager) = load_managers(storage.clone());
     // query:
     //   match
@@ -270,9 +269,8 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
 #[test]
 fn traverse_has_unbounded_sorted_from_intersect() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -358,9 +356,8 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
 #[test]
 fn traverse_has_unbounded_sorted_to_merged() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -442,9 +439,8 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
 #[test]
 fn traverse_has_reverse_unbounded_sorted_from() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
