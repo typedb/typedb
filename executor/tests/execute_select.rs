@@ -153,7 +153,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
-    let (entry_annotations, annotated_functions) = {
+    let (entry_annotations, _) = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
         infer_types(
@@ -167,7 +167,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
         .unwrap()
     };
 
-    let vars = vec![var_person_type, var_person, var_attribute];
+    let vars = vec![var_attribute_type, var_attribute, var_person_type, var_person];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
     let entry_annotations = entry_annotations.map(&variable_positions);
@@ -250,7 +250,7 @@ fn unselected_named_vars_counted() {
         .unwrap()
     };
 
-    let vars = vec![var_person_type, var_attribute, var_person];
+    let vars = vec![var_person_type, var_attribute, var_attribute_type, var_person];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
     let entry_annotations = entry_annotations.map(&variable_positions);
@@ -345,7 +345,8 @@ fn cartesian_named_counted_checked() {
         .unwrap()
     };
 
-    let vars = vec![var_person, var_age, var_age_type, var_person_type];
+    let vars =
+        vec![var_age_type, var_person_type, var_name_type, var_email_type, var_name, var_email, var_person, var_age];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
     let entry_annotations = entry_annotations.map(&variable_positions);
