@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::Type;
+use answer::{variable::Variable, Type};
 use ir::pattern::{
     constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, Links},
     IrID,
@@ -198,20 +198,10 @@ pub struct IsaInstruction<ID> {
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
-impl<ID: IrID> IsaInstruction<ID> {
-    pub fn new(isa: Isa<ID>, inputs: Inputs<ID>, type_annotations: &TypeAnnotations<ID>) -> Self {
+impl IsaInstruction<Variable> {
+    pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let types = type_annotations.variable_annotations_of(isa.type_()).unwrap().clone();
         Self { isa, inputs, types, checks: Vec::new() }
-    }
-
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsaInstruction<T> {
-        let Self { isa, inputs, types, checks } = self;
-        IsaInstruction {
-            isa: isa.map(mapping),
-            inputs: inputs.map(mapping),
-            types,
-            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
-        }
     }
 }
 
@@ -225,6 +215,18 @@ impl<ID> IsaInstruction<ID> {
     }
 }
 
+impl<ID: IrID> IsaInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsaInstruction<T> {
+        let Self { isa, inputs, types, checks } = self;
+        IsaInstruction {
+            isa: isa.map(mapping),
+            inputs: inputs.map(mapping),
+            types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct IsaReverseInstruction<ID> {
     pub isa: Isa<ID>,
@@ -233,20 +235,10 @@ pub struct IsaReverseInstruction<ID> {
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
-impl<ID: IrID> IsaReverseInstruction<ID> {
-    pub fn new(isa: Isa<ID>, inputs: Inputs<ID>, type_annotations: &TypeAnnotations<ID>) -> Self {
+impl IsaReverseInstruction<Variable> {
+    pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let types = type_annotations.variable_annotations_of(isa.thing()).unwrap().clone();
         Self { isa, inputs, types, checks: Vec::new() }
-    }
-
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsaReverseInstruction<T> {
-        let Self { isa: constraint, inputs, types, checks } = self;
-        IsaReverseInstruction {
-            isa: constraint.map(mapping),
-            inputs: inputs.map(mapping),
-            types,
-            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
-        }
     }
 }
 
@@ -260,6 +252,18 @@ impl<ID> IsaReverseInstruction<ID> {
     }
 }
 
+impl<ID: IrID> IsaReverseInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsaReverseInstruction<T> {
+        let Self { isa: constraint, inputs, types, checks } = self;
+        IsaReverseInstruction {
+            isa: constraint.map(mapping),
+            inputs: inputs.map(mapping),
+            types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct HasInstruction<ID> {
     pub has: Has<ID>,
@@ -269,23 +273,12 @@ pub struct HasInstruction<ID> {
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
-impl<ID: IrID> HasInstruction<ID> {
-    pub fn new(has: Has<ID>, inputs: Inputs<ID>, type_annotations: &TypeAnnotations<ID>) -> Self {
+impl HasInstruction<Variable> {
+    pub fn new(has: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations = type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
         let owner_to_attribute_types = edge_annotations.left_to_right();
         let attribute_types = type_annotations.variable_annotations_of(has.attribute()).unwrap().clone();
         Self { has, inputs, owner_to_attribute_types, attribute_types, checks: Vec::new() }
-    }
-
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> HasInstruction<T> {
-        let Self { has, inputs, owner_to_attribute_types, attribute_types, checks } = self;
-        HasInstruction {
-            has: has.map(mapping),
-            inputs: inputs.map(mapping),
-            owner_to_attribute_types,
-            attribute_types,
-            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
-        }
     }
 }
 
@@ -303,6 +296,19 @@ impl<ID> HasInstruction<ID> {
     }
 }
 
+impl<ID: IrID> HasInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> HasInstruction<T> {
+        let Self { has, inputs, owner_to_attribute_types, attribute_types, checks } = self;
+        HasInstruction {
+            has: has.map(mapping),
+            inputs: inputs.map(mapping),
+            owner_to_attribute_types,
+            attribute_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct HasReverseInstruction<ID> {
     pub has: Has<ID>,
@@ -312,23 +318,12 @@ pub struct HasReverseInstruction<ID> {
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
-impl<ID: IrID> HasReverseInstruction<ID> {
-    pub fn new(has: Has<ID>, inputs: Inputs<ID>, type_annotations: &TypeAnnotations<ID>) -> Self {
+impl HasReverseInstruction<Variable> {
+    pub fn new(has: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations = &type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
         let attribute_to_owner_types = edge_annotations.right_to_left().clone();
         let owner_types = type_annotations.variable_annotations_of(has.owner()).unwrap().clone();
         Self { has, inputs, attribute_to_owner_types, owner_types, checks: Vec::new() }
-    }
-
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> HasReverseInstruction<T> {
-        let Self { has, inputs, attribute_to_owner_types, owner_types, checks } = self;
-        HasReverseInstruction {
-            has: has.map(mapping),
-            inputs: inputs.map(mapping),
-            attribute_to_owner_types,
-            owner_types,
-            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
-        }
     }
 }
 
@@ -346,6 +341,19 @@ impl<ID> HasReverseInstruction<ID> {
     }
 }
 
+impl<ID: IrID> HasReverseInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> HasReverseInstruction<T> {
+        let Self { has, inputs, attribute_to_owner_types, owner_types, checks } = self;
+        HasReverseInstruction {
+            has: has.map(mapping),
+            inputs: inputs.map(mapping),
+            attribute_to_owner_types,
+            owner_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct LinksInstruction<ID> {
     pub links: Links<ID>,
@@ -356,26 +364,14 @@ pub struct LinksInstruction<ID> {
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
-impl<ID: IrID> LinksInstruction<ID> {
-    pub fn new(links: Links<ID>, inputs: Inputs<ID>, type_annotations: &TypeAnnotations<ID>) -> Self {
+impl LinksInstruction<Variable> {
+    pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations =
             type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
         let player_to_role_types = edge_annotations.filters_on_right();
         let relation_to_player_types = edge_annotations.left_to_right();
         let player_types = type_annotations.variable_annotations_of(links.player()).unwrap().clone();
         Self { links, inputs, relation_to_player_types, player_types, player_to_role_types, checks: Vec::new() }
-    }
-
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> LinksInstruction<T> {
-        let Self { links, inputs, relation_to_player_types, player_types, player_to_role_types, checks } = self;
-        LinksInstruction {
-            links: links.map(mapping),
-            inputs: inputs.map(mapping),
-            relation_to_player_types,
-            player_types,
-            player_to_role_types,
-            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
-        }
     }
 }
 
@@ -397,6 +393,20 @@ impl<ID> LinksInstruction<ID> {
     }
 }
 
+impl<ID: IrID> LinksInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> LinksInstruction<T> {
+        let Self { links, inputs, relation_to_player_types, player_types, player_to_role_types, checks } = self;
+        LinksInstruction {
+            links: links.map(mapping),
+            inputs: inputs.map(mapping),
+            relation_to_player_types,
+            player_types,
+            player_to_role_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct LinksReverseInstruction<ID> {
     pub links: Links<ID>,
@@ -407,26 +417,14 @@ pub struct LinksReverseInstruction<ID> {
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
-impl<ID: IrID> LinksReverseInstruction<ID> {
-    pub fn new(links: Links<ID>, inputs: Inputs<ID>, type_annotations: &TypeAnnotations<ID>) -> Self {
+impl LinksReverseInstruction<Variable> {
+    pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations =
             type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered().clone();
         let relation_to_role_types = edge_annotations.filters_on_left();
         let player_to_relation_types = edge_annotations.right_to_left();
         let relation_types = type_annotations.variable_annotations_of(links.relation()).unwrap().clone();
         Self { links, inputs, player_to_relation_types, relation_types, relation_to_role_types, checks: Vec::new() }
-    }
-
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> LinksReverseInstruction<T> {
-        let Self { links, inputs, player_to_relation_types, relation_to_role_types, relation_types, checks } = self;
-        LinksReverseInstruction {
-            links: links.map(mapping),
-            inputs: inputs.map(mapping),
-            player_to_relation_types,
-            relation_to_role_types,
-            relation_types,
-            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
-        }
     }
 }
 
@@ -445,6 +443,20 @@ impl<ID> LinksReverseInstruction<ID> {
 
     pub fn relation_to_role_types(&self) -> &Arc<BTreeMap<Type, HashSet<Type>>> {
         &self.relation_to_role_types
+    }
+}
+
+impl<ID: IrID> LinksReverseInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> LinksReverseInstruction<T> {
+        let Self { links, inputs, player_to_relation_types, relation_to_role_types, relation_types, checks } = self;
+        LinksReverseInstruction {
+            links: links.map(mapping),
+            inputs: inputs.map(mapping),
+            player_to_relation_types,
+            relation_to_role_types,
+            relation_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
     }
 }
 

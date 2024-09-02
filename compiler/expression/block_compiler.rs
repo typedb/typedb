@@ -32,7 +32,7 @@ struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     variable_registry: &'block VariableRegistry,
     snapshot: &'block Snapshot,
     type_manager: &'block TypeManager,
-    type_annotations: &'block TypeAnnotations<Variable>,
+    type_annotations: &'block TypeAnnotations,
 
     compiled_expressions: HashMap<Variable, CompiledExpression>,
     variable_value_types: HashMap<Variable, ExpressionValueType>,
@@ -44,7 +44,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     type_manager: &'block TypeManager,
     block: &'block FunctionalBlock,
     variable_registry: &'block VariableRegistry,
-    type_annotations: &'block TypeAnnotations<Variable>,
+    type_annotations: &'block TypeAnnotations,
 ) -> Result<(HashMap<Variable, CompiledExpression>, HashMap<Variable, ExpressionValueType>), ExpressionCompileError> {
     let mut expression_index = HashMap::new();
     index_expressions(block.conjunction(), &mut expression_index)?;

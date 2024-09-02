@@ -170,16 +170,13 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let vars = vec![var_attribute, var_person, var_attribute_type, var_person_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_person],
-        vec![ConstraintInstruction::Has(HasInstruction::new(
-            has_attribute.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::Has(
+            HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
         &[variable_positions[&var_person]],
     ))];
     let pattern_plan =
@@ -253,16 +250,13 @@ fn unselected_named_vars_counted() {
     let vars = vec![var_person_type, var_attribute, var_attribute_type, var_person];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_person],
-        vec![ConstraintInstruction::Has(HasInstruction::new(
-            has_attribute.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::Has(
+            HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
         &[variable_positions[&var_person]],
     ))];
 
@@ -349,27 +343,20 @@ fn cartesian_named_counted_checked() {
         vec![var_age_type, var_person_type, var_name_type, var_email_type, var_name, var_email, var_person, var_age];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_person],
         vec![
-            ConstraintInstruction::Has(HasInstruction::new(
-                has_name.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            )),
-            ConstraintInstruction::Has(HasInstruction::new(
-                has_age.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            )),
-            ConstraintInstruction::Has(HasInstruction::new(
-                has_email.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            )),
+            ConstraintInstruction::Has(
+                HasInstruction::new(has_name, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            ),
+            ConstraintInstruction::Has(
+                HasInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            ),
+            ConstraintInstruction::Has(
+                HasInstruction::new(has_email, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            ),
         ],
         &[variable_positions[&var_person], variable_positions[&var_age]],
     ))];

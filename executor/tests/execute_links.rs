@@ -231,22 +231,19 @@ fn traverse_links_unbounded_sorted_from() {
     ];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_membership],
         vec![
-            ConstraintInstruction::Links(LinksInstruction::new(
-                links_membership_person.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            )),
-            ConstraintInstruction::Links(LinksInstruction::new(
-                links_membership_group.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            )),
+            ConstraintInstruction::Links(
+                LinksInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations)
+                    .map(&variable_positions),
+            ),
+            ConstraintInstruction::Links(
+                LinksInstruction::new(links_membership_group, Inputs::None([]), &entry_annotations)
+                    .map(&variable_positions),
+            ),
         ],
         &[variable_positions[&var_membership], variable_positions[&var_group], variable_positions[&var_person]],
     ))];
@@ -325,16 +322,14 @@ fn traverse_links_unbounded_sorted_to() {
     let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_membership, var_person];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_person],
-        vec![ConstraintInstruction::Links(LinksInstruction::new(
-            links_membership_person.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::Links(
+            LinksInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations)
+                .map(&variable_positions),
+        )],
         &[variable_positions[&var_membership], variable_positions[&var_person]],
     ))];
 
@@ -414,26 +409,23 @@ fn traverse_links_bounded_relation() {
     let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_membership, var_person];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_membership],
-            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_membership.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations)
+                    .map(&variable_positions),
+            )],
             &[variable_positions[&var_membership]],
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_person],
-            vec![ConstraintInstruction::Links(LinksInstruction::new(
-                links_membership_person.map(&variable_positions),
-                Inputs::Single([variable_positions[&var_membership]]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::Links(
+                LinksInstruction::new(links_membership_person, Inputs::Single([var_membership]), &entry_annotations)
+                    .map(&variable_positions),
+            )],
             &[variable_positions[&var_person]],
         )),
     ];
@@ -515,35 +507,34 @@ fn traverse_links_bounded_relation_player() {
     let vars = vec![var_membership_type, var_person_type, var_membership, var_person, var_membership_member_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_membership],
-            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_membership.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations)
+                    .map(&variable_positions),
+            )],
             &[variable_positions[&var_membership]],
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_person],
-            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_person.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            )],
             &[variable_positions[&var_membership], variable_positions[&var_person]],
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_membership_member_type],
-            vec![ConstraintInstruction::Links(LinksInstruction::new(
-                links_membership_person.map(&variable_positions),
-                Inputs::Dual([variable_positions[&var_membership], variable_positions[&var_person]]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::Links(
+                LinksInstruction::new(
+                    links_membership_person,
+                    Inputs::Dual([var_membership, var_person]),
+                    &entry_annotations,
+                )
+                .map(&variable_positions),
+            )],
             &[variable_positions[&var_membership_member_type]],
         )),
     ];
@@ -623,16 +614,14 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     let vars = vec![var_membership_type, var_person_type, var_membership_member_type, var_membership, var_person];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_person],
-        vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-            links_membership_person.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::LinksReverse(
+            LinksReverseInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations)
+                .map(&variable_positions),
+        )],
         &[variable_positions[&var_membership], variable_positions[&var_person]],
     ))];
 
@@ -710,16 +699,14 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_membership, var_person];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_membership],
-        vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-            links_membership_person.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::LinksReverse(
+            LinksReverseInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations)
+                .map(&variable_positions),
+        )],
         &[variable_positions[&var_membership], variable_positions[&var_person]],
     ))];
 
@@ -797,26 +784,22 @@ fn traverse_links_reverse_bounded_player() {
     let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_person, var_membership];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_person],
-            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_person.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            )],
             &[variable_positions[&var_person]],
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_membership],
-            vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                links_membership_person.map(&variable_positions),
-                Inputs::Single([variable_positions[&var_person]]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::LinksReverse(
+                LinksReverseInstruction::new(links_membership_person, Inputs::Single([var_person]), &entry_annotations)
+                    .map(&variable_positions),
+            )],
             &[variable_positions[&var_membership]],
         )),
     ];
@@ -898,35 +881,34 @@ fn traverse_links_reverse_bounded_player_relation() {
     let vars = vec![var_membership_type, var_person_type, var_person, var_membership, var_membership_member_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_person],
-            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_person.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            )],
             &[variable_positions[&var_person]],
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_membership],
-            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_membership.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations)
+                    .map(&variable_positions),
+            )],
             &[variable_positions[&var_person], variable_positions[&var_membership]],
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_membership_member_type],
-            vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                links_membership_person.map(&variable_positions),
-                Inputs::Dual([variable_positions[&var_membership], variable_positions[&var_person]]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::LinksReverse(
+                LinksReverseInstruction::new(
+                    links_membership_person,
+                    Inputs::Dual([var_membership, var_person]),
+                    &entry_annotations,
+                )
+                .map(&variable_positions),
+            )],
             &[variable_positions[&var_membership_member_type]],
         )),
     ];

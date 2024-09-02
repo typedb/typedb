@@ -91,16 +91,13 @@ fn traverse_isa_unbounded_sorted_thing() {
     let vars = vec![var_dog, var_dog_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_dog],
-        vec![ConstraintInstruction::Isa(IsaInstruction::new(
-            isa.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::Isa(
+            IsaInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
     ))];
 
@@ -161,16 +158,13 @@ fn traverse_isa_unbounded_sorted_type() {
     let vars = vec![var_dog, var_dog_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_dog_type],
-        vec![ConstraintInstruction::Isa(IsaInstruction::new(
-            isa.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::Isa(
+            IsaInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
     ))];
 
@@ -233,26 +227,23 @@ fn traverse_isa_bounded_thing() {
     let vars = vec![var_type_from, var_thing, var_type_to];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_type_from],
-            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_from_type.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_from_type, Inputs::None([]), &entry_annotations)
+                    .map(&variable_positions),
+            )],
             &[variable_positions[&var_thing]],
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_type_to],
-            vec![ConstraintInstruction::Isa(IsaInstruction::new(
-                isa_to_type.map(&variable_positions),
-                Inputs::Single([variable_positions[&var_thing]]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_to_type, Inputs::Single([var_thing]), &entry_annotations)
+                    .map(&variable_positions),
+            )],
             &[variable_positions[&var_type_to]],
         )),
     ];
@@ -314,16 +305,13 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     let vars = vec![var_dog, var_dog_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_dog],
-        vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-            isa.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::IsaReverse(
+            IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
     ))];
 
@@ -384,16 +372,13 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     let vars = vec![var_dog, var_dog_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_dog_type],
-        vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-            isa.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::IsaReverse(
+            IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
     ))];
 
@@ -456,26 +441,22 @@ fn traverse_isa_reverse_bounded_type() {
     let vars = vec![var_thing_from, var_type, var_thing_to];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_thing_from],
-            vec![ConstraintInstruction::Isa(IsaInstruction::new(
-                isa_from_thing.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_from_thing, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            )],
             &[variable_positions[&var_thing_from], variable_positions[&var_type]],
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_thing_to],
-            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_to_thing.map(&variable_positions),
-                Inputs::Single([variable_positions[&var_type]]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_to_thing, Inputs::Single([var_type]), &entry_annotations)
+                    .map(&variable_positions),
+            )],
             &[variable_positions[&var_thing_from], variable_positions[&var_type], variable_positions[&var_thing_to]],
         )),
     ];

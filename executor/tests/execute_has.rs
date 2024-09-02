@@ -25,7 +25,6 @@ use concept::{
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -145,16 +144,13 @@ fn traverse_has_unbounded_sorted_from() {
     let vars = vec![var_person, var_age, var_age_type, var_person_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_person],
-        vec![ConstraintInstruction::Has(HasInstruction::new(
-            has_age.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::Has(
+            HasInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
         &[variable_positions[&var_person], variable_positions[&var_age]],
     ))];
     // TODO: incorporate the filter
@@ -227,32 +223,27 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let vars = vec![var_person_type, var_person_1, var_name_type, var_person_2, var_name];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_person_1],
-            vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_person_1.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_person_1, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            )],
             &[variable_positions[&var_person_1]],
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_name],
             vec![
-                ConstraintInstruction::Has(HasInstruction::new(
-                    has_name_1.map(&variable_positions),
-                    Inputs::Single([variable_positions[&var_person_1]]),
-                    &entry_annotations,
-                )),
-                ConstraintInstruction::HasReverse(HasReverseInstruction::new(
-                    has_name_2.map(&variable_positions),
-                    Inputs::None([]),
-                    &entry_annotations,
-                )),
+                ConstraintInstruction::Has(
+                    HasInstruction::new(has_name_1, Inputs::Single([var_person_1]), &entry_annotations)
+                        .map(&variable_positions),
+                ),
+                ConstraintInstruction::HasReverse(
+                    HasReverseInstruction::new(has_name_2, Inputs::None([]), &entry_annotations)
+                        .map(&variable_positions),
+                ),
             ],
             &[variable_positions[&var_person_1], variable_positions[&var_person_2], variable_positions[&var_name]],
         )),
@@ -332,22 +323,17 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let vars = vec![var_person, var_name, var_age, var_person_type, var_name_type, var_age_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_person],
         vec![
-            ConstraintInstruction::Has(HasInstruction::new(
-                has_age.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            )),
-            ConstraintInstruction::Has(HasInstruction::new(
-                has_name.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            )),
+            ConstraintInstruction::Has(
+                HasInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            ),
+            ConstraintInstruction::Has(
+                HasInstruction::new(has_name, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            ),
         ],
         &[variable_positions[&var_person], variable_positions[&var_name], variable_positions[&var_age]],
     ))];
@@ -412,16 +398,13 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let vars = vec![var_person, var_attribute, var_person_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_attribute],
-        vec![ConstraintInstruction::Has(HasInstruction::new(
-            has_attribute.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::Has(
+            HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
         &[variable_positions[&var_person], variable_positions[&var_attribute]],
     ))];
     let pattern_plan =
@@ -507,16 +490,13 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     let vars = vec![var_person, var_age, var_person_type, var_age_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
         variable_positions[&var_age],
-        vec![ConstraintInstruction::HasReverse(HasReverseInstruction::new(
-            has_age.map(&variable_positions),
-            Inputs::None([]),
-            &entry_annotations,
-        ))],
+        vec![ConstraintInstruction::HasReverse(
+            HasReverseInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
         &[variable_positions[&var_person], variable_positions[&var_age]],
     ))];
     let pattern_plan =

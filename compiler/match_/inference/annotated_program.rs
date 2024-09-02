@@ -19,7 +19,7 @@ use crate::{
 
 pub struct AnnotatedProgram {
     pub(crate) entry: FunctionalBlock,
-    pub(crate) entry_annotations: TypeAnnotations<Variable>,
+    pub(crate) entry_annotations: TypeAnnotations,
     pub(crate) entry_expressions: HashMap<Variable, CompiledExpression>,
     pub(crate) schema_functions: Arc<IndexedAnnotatedFunctions>,
     pub(crate) preamble_functions: AnnotatedUnindexedFunctions,
@@ -28,7 +28,7 @@ pub struct AnnotatedProgram {
 impl AnnotatedProgram {
     pub(crate) fn new(
         entry: FunctionalBlock,
-        entry_annotations: TypeAnnotations<Variable>,
+        entry_annotations: TypeAnnotations,
         entry_expressions: HashMap<Variable, CompiledExpression>,
         local_functions: AnnotatedUnindexedFunctions,
         schema_functions: Arc<IndexedAnnotatedFunctions>,
@@ -40,7 +40,7 @@ impl AnnotatedProgram {
         &self.entry
     }
 
-    pub fn entry_annotations(&self) -> &TypeAnnotations<Variable> {
+    pub fn entry_annotations(&self) -> &TypeAnnotations {
         &self.entry_annotations
     }
 

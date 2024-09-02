@@ -29,7 +29,7 @@ pub struct DeleteProgram {
 
 pub fn compile(
     input_variables: &HashMap<Variable, VariablePosition>,
-    type_annotations: &TypeAnnotations<Variable>,
+    type_annotations: &TypeAnnotations,
     constraints: &[Constraint<Variable>],
     deleted_concepts: &[Variable],
 ) -> Result<DeleteProgram, WriteCompilationError> {

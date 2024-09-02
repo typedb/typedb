@@ -54,7 +54,7 @@ impl MatchProgram {
 
     pub fn from_block(
         block: &FunctionalBlock,
-        type_annotations: &TypeAnnotations<Variable>,
+        type_annotations: &TypeAnnotations,
         variable_registry: &VariableRegistry,
         _expressions: &HashMap<Variable, CompiledExpression>,
         statistics: &Statistics,
@@ -114,11 +114,7 @@ struct PlanBuilder {
 }
 
 impl PlanBuilder {
-    fn init(
-        variable_registry: &VariableRegistry,
-        type_annotations: &TypeAnnotations<Variable>,
-        statistics: &Statistics,
-    ) -> Self {
+    fn init(variable_registry: &VariableRegistry, type_annotations: &TypeAnnotations, statistics: &Statistics) -> Self {
         let mut elements = Vec::new();
         let variable_index = variable_registry
             .variable_categories()
@@ -157,7 +153,7 @@ impl PlanBuilder {
     fn register_constraints(
         &mut self,
         conjunction: &ir::pattern::conjunction::Conjunction,
-        type_annotations: &TypeAnnotations<Variable>,
+        type_annotations: &TypeAnnotations,
         statistics: &Statistics,
     ) {
         for constraint in conjunction.constraints() {
@@ -339,7 +335,7 @@ impl MatchProgramBuilder {
 fn lower_plan(
     plan_builder: &PlanBuilder,
     ordering: Vec<usize>,
-    type_annotations: &TypeAnnotations<Variable>,
+    type_annotations: &TypeAnnotations,
 ) -> (HashMap<Variable, VariablePosition>, HashMap<VariablePosition, Variable>, Vec<Program>) {
     let index_to_variable: HashMap<_, _> =
         plan_builder.variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();

@@ -43,18 +43,18 @@ pub(super) struct AnnotatedPipeline {
 pub(super) enum AnnotatedStage {
     Match {
         block: FunctionalBlock,
-        block_annotations: TypeAnnotations<Variable>,
+        block_annotations: TypeAnnotations,
         compiled_expressions: HashMap<Variable, CompiledExpression>,
         variable_value_types: HashMap<Variable, ExpressionValueType>,
     },
     Insert {
         block: FunctionalBlock,
-        annotations: TypeAnnotations<Variable>,
+        annotations: TypeAnnotations,
     },
     Delete {
         block: FunctionalBlock,
         deleted_variables: Vec<Variable>,
-        annotations: TypeAnnotations<Variable>,
+        annotations: TypeAnnotations,
     },
     // ...
     Filter(Filter),

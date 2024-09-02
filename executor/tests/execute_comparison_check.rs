@@ -97,28 +97,25 @@ fn attribute_equality() {
     let vars = entry.block_variables().collect_vec();
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let entry_annotations = entry_annotations.map(&variable_positions);
 
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_age_a],
-            vec![ConstraintInstruction::Isa(IsaInstruction::new(
-                isa_a.map(&variable_positions),
-                Inputs::None([]),
-                &entry_annotations,
-            ))],
+            vec![ConstraintInstruction::Isa(IsaInstruction::new(isa_a, Inputs::None([]), &entry_annotations))
+                .map(&variable_positions)],
             &[variable_positions[&var_age_a]],
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_age_b],
             vec![ConstraintInstruction::Isa(IsaInstruction::new(
-                isa_b.map(&variable_positions),
+                isa_b,
                 Inputs::None([]),
                 &entry_annotations,
                 // TODO
                 // vec![CheckInstruction::Comparison { lhs: vars[&var_age_b], rhs: vars[&var_age_a], comparator: Comparator::Equal }],
-            ))],
+            ))
+            .map(&variable_positions)],
             &[variable_positions[&var_age_a], variable_positions[&var_age_b]],
         )),
     ];

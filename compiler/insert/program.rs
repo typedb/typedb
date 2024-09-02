@@ -42,7 +42,7 @@ pub struct InsertProgram {
 pub fn compile(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
-    type_annotations: &TypeAnnotations<Variable>,
+    type_annotations: &TypeAnnotations,
 ) -> Result<InsertProgram, WriteCompilationError> {
     let mut concept_inserts = Vec::with_capacity(constraints.len());
     let variables = add_inserted_concepts(constraints, input_variables, type_annotations, &mut concept_inserts)?;
@@ -69,7 +69,7 @@ pub fn compile(
 fn add_inserted_concepts(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
-    type_annotations: &TypeAnnotations<Variable>,
+    type_annotations: &TypeAnnotations,
     vertex_instructions: &mut Vec<ConceptInstruction>,
 ) -> Result<HashMap<Variable, VariablePosition>, WriteCompilationError> {
     let mut output_variables = input_variables.clone();
@@ -146,7 +146,7 @@ fn add_has(
 
 fn add_role_players(
     constraints: &[Constraint<Variable>],
-    type_annotations: &TypeAnnotations<Variable>,
+    type_annotations: &TypeAnnotations,
     input_variables: &HashMap<Variable, VariablePosition>,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), WriteCompilationError> {
@@ -216,7 +216,7 @@ fn collect_value_bindings(
 
 fn collect_type_bindings(
     constraints: &[Constraint<Variable>],
-    type_annotations: &TypeAnnotations<Variable>,
+    type_annotations: &TypeAnnotations,
 ) -> Result<HashMap<Variable, answer::Type>, WriteCompilationError> {
     let mut type_bindings: HashMap<Variable, answer::Type> = HashMap::new();
     filter_variants!(Constraint::Label : constraints).for_each(|label| {
@@ -231,7 +231,7 @@ fn collect_type_bindings(
 
 pub(crate) fn collect_role_type_bindings(
     constraints: &[Constraint<Variable>],
-    type_annotations: &TypeAnnotations<Variable>,
+    type_annotations: &TypeAnnotations,
 ) -> Result<HashMap<Variable, answer::Type>, WriteCompilationError> {
     let mut type_bindings: HashMap<Variable, answer::Type> = HashMap::new();
     filter_variants!(Constraint::RoleName : constraints).try_for_each(|role_name| {
