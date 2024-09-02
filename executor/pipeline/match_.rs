@@ -128,28 +128,3 @@ where
     Iterator: StageIterator,
 {
 }
-
-//
-// impl<Iterator> MatchStageIterator<Iterator>
-// where
-//     Iterator: for<'a> LendingIterator<Item<'a>=Result<MaybeOwnedRow<'a>, PipelineError>>,
-// {
-//     fn new(iterator: Iterator) -> Self {
-//         Self { iterator }
-//     }
-// }
-//
-// impl<Iterator> LendingIterator for MatchStageIterator<Iterator>
-//     where
-//         Iterator: for<'a> LendingIterator<Item<'a>=Result<MaybeOwnedRow<'a>, PipelineError>>,
-// {
-//     type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
-//
-//     fn next(&mut self) -> Option<Self::Item<'_>> {
-//         self.iterator.next()
-//     }
-// }
-//
-// impl<Iterator> StageIterator for MatchStageIterator<Iterator> where
-//     Iterator: for<'a> LendingIterator<Item<'a>=Result<MaybeOwnedRow<'a>, PipelineError>>
-// {}

@@ -63,8 +63,8 @@ impl QueryManager {
     pub fn prepare_read_pipeline<Snapshot: ReadableSnapshot + 'static>(
         &self,
         snapshot: Snapshot,
-        thing_manager: ThingManager,
         type_manager: &TypeManager,
+        thing_manager: ThingManager,
         function_manager: &FunctionManager,
         statistics: &Statistics,
         schema_function_annotations: &IndexedAnnotatedFunctions,

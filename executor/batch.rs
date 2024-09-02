@@ -129,7 +129,7 @@ impl Batch {
         Batch { width, data: vec![VariableValue::Empty; size], entries: 0, multiplicities: vec![1; length] }
     }
 
-    pub(crate) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.entries
     }
 
@@ -170,17 +170,17 @@ impl Batch {
         Row::new(slice, &mut self.multiplicities[index])
     }
 
-    pub(crate) fn into_iterator(self) -> BatchRowIterator {
-        BatchRowIterator::new(self)
+    pub(crate) fn into_iterator_mut(self) -> MutableBatchRowIterator {
+        MutableBatchRowIterator::new(self)
     }
 }
 
-pub struct BatchRowIterator {
+pub struct MutableBatchRowIterator {
     batch: Batch,
     index: usize,
 }
 
-impl BatchRowIterator {
+impl MutableBatchRowIterator {
     pub(crate) fn new(batch: Batch) -> Self {
         Self { batch, index: 0 }
     }
@@ -190,8 +190,7 @@ impl BatchRowIterator {
     }
 }
 
-impl LendingIterator for BatchRowIterator {
-    // TODO: this is a mutable Row, while FixedBatch returns an unmodifiable row?
+impl LendingIterator for MutableBatchRowIterator {
     type Item<'a> = Result<Row<'a>, &'a ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {

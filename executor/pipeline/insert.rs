@@ -42,7 +42,7 @@ where
         let input_batch = input_iterator.collect_owned()?;
         let total_output_rows: u64 = input_batch.get_multiplicities().iter().sum();
         let mut output_batch = Batch::new(output_width, total_output_rows as usize);
-        let mut input_batch_iterator = input_batch.into_iterator();
+        let mut input_batch_iterator = input_batch.into_iterator_mut();
         while let Some(row) = input_batch_iterator.next() {
             let mut row = row.map_err(|err| PipelineError::ConceptRead(err.clone()))?;
             // copy out row multiplicity M, set it to 1, then append the row M times

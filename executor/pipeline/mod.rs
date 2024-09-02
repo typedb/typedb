@@ -17,7 +17,6 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{batch::Batch, row::MaybeOwnedRow, write::WriteError};
 
-pub mod accumulator;
 pub mod delete;
 pub mod initial;
 pub mod insert;
