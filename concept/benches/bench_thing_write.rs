@@ -39,6 +39,8 @@ use storage::{
     MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
 static AGE_LABEL: OnceLock<Label> = OnceLock::new();
 static NAME_LABEL: OnceLock<Label> = OnceLock::new();
@@ -49,6 +51,7 @@ fn write_entity_attributes(
     definition_key_generator: Arc<DefinitionKeyGenerator>,
     type_vertex_generator: Arc<TypeVertexGenerator>,
     thing_vertex_generator: Arc<ThingVertexGenerator>,
+    statistics: Arc<Statistics>,
     schema_cache: Arc<TypeCache>,
 ) {
     let mut snapshot = storage.clone().open_snapshot_write();
@@ -61,7 +64,7 @@ fn write_entity_attributes(
         let thing_manager = ThingManager::new(
             thing_vertex_generator.clone(),
             type_manager.clone(),
-            Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+            statistics,
         );
 
         let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();
@@ -86,18 +89,9 @@ fn write_entity_attributes(
 
 fn create_schema(
     storage: Arc<MVCCStorage<WALClient>>,
-    definition_key_generator: Arc<DefinitionKeyGenerator>,
-    type_vertex_generator: Arc<TypeVertexGenerator>,
 ) {
+    let (type_manager, thing_manager) = load_managers(storage.clone());
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-    let type_manager =
-        Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
-    let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-    let thing_manager = Arc::new(ThingManager::new(
-        thing_vertex_generator.clone(),
-        type_manager.clone(),
-        Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
-    ));
     let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap()).unwrap();
     age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap()).unwrap();
@@ -119,23 +113,25 @@ fn criterion_benchmark(c: &mut Criterion) {
     // group.measurement_time(Duration::from_secs(60*5));
     group.sampling_mode(SamplingMode::Linear);
     group.bench_function("thing_write", |b| {
-        let storage_path = create_tmp_dir();
-        let wal = WAL::create(&storage_path).unwrap();
-        let storage = Arc::new(
-            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
-                .unwrap(),
-        );
+        let (_tmp_dir, mut storage) = create_core_storage();
+        setup_concept_storage(&mut storage);
+
+        create_schema(storage.clone());
+
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        create_schema(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone());
         let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
+        let mut statistics = Statistics::new(DurabilitySequenceNumber::MIN);
+        statistics.may_synchronise(&storage).unwrap();
+        let statistics = Arc::new(statistics);
         b.iter(|| {
             write_entity_attributes(
                 storage.clone(),
                 definition_key_generator.clone(),
                 type_vertex_generator.clone(),
                 thing_vertex_generator.clone(),
+                statistics.clone(),
                 schema_cache.clone(),
             )
         });
