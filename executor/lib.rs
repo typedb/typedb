@@ -7,9 +7,8 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::collections::HashMap;
+use core::slice;
 
-use answer::variable::Variable;
 use compiler::VariablePosition;
 
 pub mod batch;
@@ -29,11 +28,17 @@ pub(crate) struct SelectedPositions {
 }
 
 impl SelectedPositions {
-    fn new(selected_variables: &[Variable], variable_positions: &HashMap<Variable, VariablePosition>) -> Self {
-        Self { selected: selected_variables.iter().map(|var| variable_positions[var]).collect() }
+    fn new(selected: Vec<VariablePosition>) -> Self {
+        Self { selected }
     }
+}
 
-    fn iter_selected(&self) -> impl Iterator<Item = VariablePosition> + '_ {
-        self.selected.iter().copied()
+impl<'a> IntoIterator for &'a SelectedPositions {
+    type Item = &'a VariablePosition;
+
+    type IntoIter = slice::Iter<'a, VariablePosition>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.selected.iter()
     }
 }

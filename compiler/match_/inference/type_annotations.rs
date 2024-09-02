@@ -10,45 +10,55 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use ir::pattern::constraint::Constraint;
+use ir::pattern::{constraint::Constraint, IrID};
 
-use crate::match_::inference::pattern_type_inference::TypeInferenceGraph;
+use crate::{match_::inference::pattern_type_inference::TypeInferenceGraph, VariablePosition};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypeAnnotations {
-    variables: HashMap<Variable, Arc<HashSet<Type>>>,
-    constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
+pub struct TypeAnnotations<ID: IrID> {
+    variables: HashMap<ID, Arc<HashSet<Type>>>,
+    constraints: HashMap<Constraint<ID>, ConstraintTypeAnnotations>,
 }
 
-impl TypeAnnotations {
-    pub fn new(
-        variables: HashMap<Variable, Arc<HashSet<Type>>>,
-        constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    ) -> Self {
-        TypeAnnotations { variables, constraints }
-    }
-
+impl TypeAnnotations<Variable> {
     pub(crate) fn build(inference_graph: TypeInferenceGraph<'_>) -> Self {
         let mut vertex_annotations = HashMap::new();
         let mut constraint_annotations = HashMap::new();
         inference_graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
         Self::new(vertex_annotations, constraint_annotations)
     }
+}
 
-    pub fn variable_annotations(&self) -> &HashMap<Variable, Arc<HashSet<Type>>> {
+impl<ID: IrID> TypeAnnotations<ID> {
+    pub fn new(
+        variables: HashMap<ID, Arc<HashSet<Type>>>,
+        constraints: HashMap<Constraint<ID>, ConstraintTypeAnnotations>,
+    ) -> Self {
+        TypeAnnotations { variables, constraints }
+    }
+
+    pub fn variable_annotations(&self) -> &HashMap<ID, Arc<HashSet<Type>>> {
         &self.variables
     }
 
-    pub fn variable_annotations_of(&self, variable: Variable) -> Option<&Arc<HashSet<Type>>> {
+    pub fn variable_annotations_of(&self, variable: ID) -> Option<&Arc<HashSet<Type>>> {
         self.variables.get(&variable)
     }
 
-    pub fn constraint_annotations(&self) -> &HashMap<Constraint<Variable>, ConstraintTypeAnnotations> {
+    pub fn constraint_annotations(&self) -> &HashMap<Constraint<ID>, ConstraintTypeAnnotations> {
         &self.constraints
     }
 
-    pub fn constraint_annotations_of(&self, constraint: Constraint<Variable>) -> Option<&ConstraintTypeAnnotations> {
+    pub fn constraint_annotations_of(&self, constraint: Constraint<ID>) -> Option<&ConstraintTypeAnnotations> {
         self.constraints.get(&constraint)
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> TypeAnnotations<T> {
+        let TypeAnnotations { variables, constraints } = self;
+        TypeAnnotations::new(
+            variables.into_iter().map(|(k, v)| (mapping[&k], v)).collect(),
+            constraints.into_iter().map(|(k, v)| (k.map(mapping), v)).collect(),
+        )
     }
 }
 
@@ -173,12 +183,12 @@ impl LeftRightFilteredAnnotations {
 
 #[derive(Debug)]
 pub struct FunctionAnnotations {
-    pub(crate) block_annotations: TypeAnnotations,
+    pub(crate) block_annotations: TypeAnnotations<Variable>,
     pub(crate) return_annotations: Vec<BTreeSet<Type>>,
 }
 
 impl FunctionAnnotations {
-    pub fn body_annotations(&self) -> &TypeAnnotations {
+    pub fn body_annotations(&self) -> &TypeAnnotations<Variable> {
         &self.block_annotations
     }
 

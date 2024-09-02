@@ -203,7 +203,7 @@ pub(super) struct ThingPlanner {
 impl ThingPlanner {
     pub(super) fn from_variable(
         variable: Variable,
-        type_annotations: &TypeAnnotations,
+        type_annotations: &TypeAnnotations<Variable>,
         statistics: &Statistics,
     ) -> Self {
         let expected_size = type_annotations
@@ -302,7 +302,7 @@ impl HasPlanner {
     pub(super) fn from_constraint(
         constraint: &Has<Variable>,
         variable_index: &HashMap<Variable, usize>,
-        type_annotations: &TypeAnnotations,
+        type_annotations: &TypeAnnotations<Variable>,
         statistics: &Statistics,
     ) -> Self {
         let owner = constraint.owner();
@@ -387,7 +387,7 @@ impl LinksPlanner {
     pub(super) fn from_constraint(
         links: &Links<Variable>,
         variable_index: &HashMap<Variable, usize>,
-        type_annotations: &TypeAnnotations,
+        type_annotations: &TypeAnnotations<Variable>,
         statistics: &Statistics,
     ) -> Self {
         let relation = links.relation();

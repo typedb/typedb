@@ -35,7 +35,7 @@ pub fn check_annotations(
     block: &FunctionalBlock,
     input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    insert_annotations: &TypeAnnotations,
+    insert_annotations: &TypeAnnotations<Variable>,
 ) -> Result<(), TypeInferenceError> {
     for constraint in block.conjunction().constraints() {
         match constraint {

@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, variable_value::VariableValue};
+use answer::variable_value::VariableValue;
 use compiler::match_::{
     instructions::{CheckInstruction, ConstraintInstruction},
     planner::pattern_plan::InstructionAPI,
@@ -60,58 +60,38 @@ pub(crate) enum InstructionExecutor {
 
 impl InstructionExecutor {
     pub(crate) fn new(
-        instruction: ConstraintInstruction,
-        selected: &[Variable],
-        named: &HashMap<Variable, String>,
-        positions: &HashMap<Variable, VariablePosition>,
+        instruction: ConstraintInstruction<VariablePosition>,
+        selected: &[VariablePosition],
+        named: &HashMap<VariablePosition, String>,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        sort_by: Option<Variable>,
+        sort_by: Option<VariablePosition>,
     ) -> Result<Self, ConceptReadError> {
-        let variable_modes = VariableModes::new_for(&instruction, positions, selected, named);
-        let sort_by_position = sort_by.map(|var| *positions.get(&var).unwrap());
+        let variable_modes = VariableModes::new_for(&instruction, selected, named);
         match instruction {
             ConstraintInstruction::Isa(isa) => {
-                let executor = IsaExecutor::new(isa.map(positions), variable_modes, sort_by_position);
+                let executor = IsaExecutor::new(isa, variable_modes, sort_by);
                 Ok(Self::Isa(executor))
             }
             ConstraintInstruction::IsaReverse(isa_reverse) => {
-                let executor = IsaReverseExecutor::new(isa_reverse.map(positions), variable_modes, sort_by_position);
+                let executor = IsaReverseExecutor::new(isa_reverse, variable_modes, sort_by);
                 Ok(Self::IsaReverse(executor))
             }
             ConstraintInstruction::Has(has) => {
-                let executor =
-                    HasExecutor::new(has.map(positions), variable_modes, sort_by_position, snapshot, thing_manager)?;
+                let executor = HasExecutor::new(has, variable_modes, sort_by, snapshot, thing_manager)?;
                 Ok(Self::Has(executor))
             }
             ConstraintInstruction::HasReverse(has_reverse) => {
-                let executor = HasReverseExecutor::new(
-                    has_reverse.map(positions),
-                    variable_modes,
-                    sort_by_position,
-                    snapshot,
-                    thing_manager,
-                )?;
+                let executor = HasReverseExecutor::new(has_reverse, variable_modes, sort_by, snapshot, thing_manager)?;
                 Ok(Self::HasReverse(executor))
             }
             ConstraintInstruction::Links(links) => {
-                let executor = LinksExecutor::new(
-                    links.map(positions),
-                    variable_modes,
-                    sort_by_position,
-                    snapshot,
-                    thing_manager,
-                )?;
+                let executor = LinksExecutor::new(links, variable_modes, sort_by, snapshot, thing_manager)?;
                 Ok(Self::Links(executor))
             }
             ConstraintInstruction::LinksReverse(links_reverse) => {
-                let executor = LinksReverseExecutor::new(
-                    links_reverse.map(positions),
-                    variable_modes,
-                    sort_by_position,
-                    snapshot,
-                    thing_manager,
-                )?;
+                let executor =
+                    LinksReverseExecutor::new(links_reverse, variable_modes, sort_by, snapshot, thing_manager)?;
                 Ok(Self::LinksReverse(executor))
             }
             ConstraintInstruction::FunctionCallBinding(_function_call) => todo!(),
@@ -172,18 +152,16 @@ impl VariableModes {
     }
 
     pub(crate) fn new_for(
-        instruction: &ConstraintInstruction,
-        variable_positions: &HashMap<Variable, VariablePosition>,
-        selected: &[Variable],
-        named: &HashMap<Variable, String>,
+        instruction: &ConstraintInstruction<VariablePosition>,
+        selected: &[VariablePosition],
+        named: &HashMap<VariablePosition, String>,
     ) -> Self {
         let constraint = instruction.constraint();
         let mut modes = Self::new();
         constraint.ids_foreach(|id, _| {
-            let as_position = *variable_positions.get(&id).unwrap();
             let var_mode =
                 VariableMode::new(instruction.is_input_variable(id), selected.contains(&id), named.contains_key(&id));
-            modes.insert(as_position, var_mode)
+            modes.insert(id, var_mode)
         });
         modes
     }

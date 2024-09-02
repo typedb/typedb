@@ -20,7 +20,7 @@ pub mod planner;
 
 pub fn compile(
     block: &FunctionalBlock,
-    type_annotations: &TypeAnnotations,
+    type_annotations: &TypeAnnotations<Variable>,
     variable_registry: &VariableRegistry,
     expressions: &HashMap<Variable, CompiledExpression>,
     statistics: &Statistics,

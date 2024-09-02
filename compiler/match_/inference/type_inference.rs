@@ -34,7 +34,7 @@ pub fn infer_types<Snapshot: ReadableSnapshot>(
     type_manager: &TypeManager,
     annotated_schema_functions: &IndexedAnnotatedFunctions,
     variable_registry: &VariableRegistry,
-) -> Result<(TypeAnnotations, AnnotatedUnindexedFunctions), TypeInferenceError> {
+) -> Result<(TypeAnnotations<Variable>, AnnotatedUnindexedFunctions), TypeInferenceError> {
     let preamble_functions = infer_types_for_functions(functions, snapshot, type_manager, annotated_schema_functions)?;
     let root_tig = infer_types_for_block(
         snapshot,
@@ -114,7 +114,7 @@ pub fn infer_types_for_match_block(
     previous_stage_variable_annotations: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
     annotated_schema_functions: &IndexedAnnotatedFunctions,
     annotated_preamble_functions: &AnnotatedUnindexedFunctions,
-) -> Result<TypeAnnotations, TypeInferenceError> {
+) -> Result<TypeAnnotations<Variable>, TypeInferenceError> {
     let root_tig = infer_types_for_block(
         snapshot,
         match_block,

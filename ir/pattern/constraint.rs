@@ -314,7 +314,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Constraint<ID: IrID> {
+pub enum Constraint<ID> {
     Label(Label<ID>),
     RoleName(RoleName<ID>),
     Sub(Sub<ID>),
@@ -364,6 +364,23 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(owns) => owns.ids_foreach(function),
             Constraint::Relates(relates) => relates.ids_foreach(function),
             Constraint::Plays(plays) => plays.ids_foreach(function),
+        }
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Constraint<T> {
+        match self {
+            Constraint::Label(inner) => todo!(),
+            Constraint::RoleName(inner) => todo!(),
+            Constraint::Sub(inner) => todo!(),
+            Constraint::Isa(inner) => Constraint::Isa(inner.map(mapping)),
+            Constraint::Links(inner) => Constraint::Links(inner.map(mapping)),
+            Constraint::Has(inner) => Constraint::Has(inner.map(mapping)),
+            Constraint::ExpressionBinding(inner) => todo!(),
+            Constraint::FunctionCallBinding(inner) => todo!(),
+            Constraint::Comparison(inner) => todo!(),
+            Constraint::Owns(inner) => todo!(),
+            Constraint::Relates(inner) => todo!(),
+            Constraint::Plays(inner) => todo!(),
         }
     }
 
@@ -505,7 +522,7 @@ pub enum ConstraintIDSide {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Label<ID: IrID> {
+pub struct Label<ID> {
     left: ID,
     type_label: String,
 }
@@ -535,7 +552,7 @@ impl<ID: IrID> Label<ID> {
     }
 }
 
-impl<ID: IrID> From<Label<ID>> for Constraint<ID> {
+impl<ID> From<Label<ID>> for Constraint<ID> {
     fn from(val: Label<ID>) -> Self {
         Constraint::Label(val)
     }
@@ -580,7 +597,7 @@ impl<ID: IrID> RoleName<ID> {
     }
 }
 
-impl<ID: IrID> From<RoleName<ID>> for Constraint<ID> {
+impl<ID> From<RoleName<ID>> for Constraint<ID> {
     fn from(value: RoleName<ID>) -> Self {
         Constraint::RoleName(value)
     }
@@ -593,7 +610,7 @@ impl<ID: IrID> fmt::Display for RoleName<ID> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Sub<ID: IrID> {
+pub struct Sub<ID> {
     subtype: ID,
     supertype: ID,
 }
@@ -624,7 +641,7 @@ impl<ID: IrID> Sub<ID> {
     }
 }
 
-impl<ID: IrID> From<Sub<ID>> for Constraint<ID> {
+impl<ID> From<Sub<ID>> for Constraint<ID> {
     fn from(val: Sub<ID>) -> Self {
         Constraint::Sub(val)
     }
@@ -677,7 +694,7 @@ impl<ID: IrID> Isa<ID> {
     }
 }
 
-impl<ID: IrID> From<Isa<ID>> for Constraint<ID> {
+impl<ID> From<Isa<ID>> for Constraint<ID> {
     fn from(val: Isa<ID>) -> Self {
         Constraint::Isa(val)
     }
@@ -741,7 +758,7 @@ impl<ID: IrID> Links<ID> {
     }
 }
 
-impl<ID: IrID> From<Links<ID>> for Constraint<ID> {
+impl<ID> From<Links<ID>> for Constraint<ID> {
     fn from(links: Links<ID>) -> Self {
         Constraint::Links(links)
     }
@@ -789,7 +806,7 @@ impl<ID: IrID> Has<ID> {
     }
 }
 
-impl<ID: IrID> From<Has<ID>> for Constraint<ID> {
+impl<ID> From<Has<ID>> for Constraint<ID> {
     fn from(has: Has<ID>) -> Self {
         Constraint::Has(has)
     }
@@ -802,7 +819,7 @@ impl<ID: IrID> fmt::Display for Has<ID> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct ExpressionBinding<ID: IrID> {
+pub struct ExpressionBinding<ID> {
     left: ID,
     expression: ExpressionTree<ID>,
 }
@@ -843,7 +860,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
     }
 }
 
-impl<ID: IrID> From<ExpressionBinding<ID>> for Constraint<ID> {
+impl<ID> From<ExpressionBinding<ID>> for Constraint<ID> {
     fn from(val: ExpressionBinding<ID>) -> Self {
         Constraint::ExpressionBinding(val)
     }
@@ -856,7 +873,7 @@ impl<ID: IrID> fmt::Display for ExpressionBinding<ID> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct FunctionCallBinding<ID: IrID> {
+pub struct FunctionCallBinding<ID> {
     assigned: Vec<ID>,
     function_call: FunctionCall<ID>,
     is_stream: bool,
@@ -897,7 +914,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
     }
 }
 
-impl<ID: IrID> From<FunctionCallBinding<ID>> for Constraint<ID> {
+impl<ID> From<FunctionCallBinding<ID>> for Constraint<ID> {
     fn from(val: FunctionCallBinding<ID>) -> Self {
         Constraint::FunctionCallBinding(val)
     }
@@ -941,7 +958,7 @@ impl From<typeql::token::Comparator> for Comparator {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Comparison<ID: IrID> {
+pub struct Comparison<ID> {
     lhs: ID,
     rhs: ID,
     comparator: Comparator,
@@ -977,7 +994,7 @@ impl<ID: IrID> Comparison<ID> {
     }
 }
 
-impl<ID: IrID> From<Comparison<ID>> for Constraint<ID> {
+impl<ID> From<Comparison<ID>> for Constraint<ID> {
     fn from(val: Comparison<ID>) -> Self {
         Constraint::Comparison(val)
     }
@@ -1021,7 +1038,7 @@ impl<ID: IrID> Owns<ID> {
     }
 }
 
-impl<ID: IrID> From<Owns<ID>> for Constraint<ID> {
+impl<ID> From<Owns<ID>> for Constraint<ID> {
     fn from(val: Owns<ID>) -> Self {
         Constraint::Owns(val)
     }
@@ -1065,7 +1082,7 @@ impl<ID: IrID> Relates<ID> {
     }
 }
 
-impl<ID: IrID> From<Relates<ID>> for Constraint<ID> {
+impl<ID> From<Relates<ID>> for Constraint<ID> {
     fn from(val: Relates<ID>) -> Self {
         Constraint::Relates(val)
     }
@@ -1109,7 +1126,7 @@ impl<ID: IrID> Plays<ID> {
     }
 }
 
-impl<ID: IrID> From<Plays<ID>> for Constraint<ID> {
+impl<ID> From<Plays<ID>> for Constraint<ID> {
     fn from(val: Plays<ID>) -> Self {
         Constraint::Plays(val)
     }

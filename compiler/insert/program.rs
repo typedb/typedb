@@ -7,13 +7,12 @@
 // jk there's no planning to be done here, just execution.
 // There is a need to construct the executor though.
 
-use std::{collections::HashMap, fmt::Display};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::{graph::type_::Kind, value::value::Value};
 use ir::pattern::{constraint::Constraint, expression::Expression};
 use itertools::Itertools;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     filter_variants,
@@ -43,7 +42,7 @@ pub struct InsertProgram {
 pub fn compile(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
-    type_annotations: &TypeAnnotations,
+    type_annotations: &TypeAnnotations<Variable>,
 ) -> Result<InsertProgram, WriteCompilationError> {
     let mut concept_inserts = Vec::with_capacity(constraints.len());
     let variables = add_inserted_concepts(constraints, input_variables, type_annotations, &mut concept_inserts)?;
@@ -70,7 +69,7 @@ pub fn compile(
 fn add_inserted_concepts(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
-    type_annotations: &TypeAnnotations,
+    type_annotations: &TypeAnnotations<Variable>,
     vertex_instructions: &mut Vec<ConceptInstruction>,
 ) -> Result<HashMap<Variable, VariablePosition>, WriteCompilationError> {
     let mut output_variables = input_variables.clone();
@@ -147,7 +146,7 @@ fn add_has(
 
 fn add_role_players(
     constraints: &[Constraint<Variable>],
-    type_annotations: &TypeAnnotations,
+    type_annotations: &TypeAnnotations<Variable>,
     input_variables: &HashMap<Variable, VariablePosition>,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), WriteCompilationError> {
@@ -217,7 +216,7 @@ fn collect_value_bindings(
 
 fn collect_type_bindings(
     constraints: &[Constraint<Variable>],
-    type_annotations: &TypeAnnotations,
+    type_annotations: &TypeAnnotations<Variable>,
 ) -> Result<HashMap<Variable, answer::Type>, WriteCompilationError> {
     let mut type_bindings: HashMap<Variable, answer::Type> = HashMap::new();
     filter_variants!(Constraint::Label : constraints).for_each(|label| {
@@ -232,7 +231,7 @@ fn collect_type_bindings(
 
 pub(crate) fn collect_role_type_bindings(
     constraints: &[Constraint<Variable>],
-    type_annotations: &TypeAnnotations,
+    type_annotations: &TypeAnnotations<Variable>,
 ) -> Result<HashMap<Variable, answer::Type>, WriteCompilationError> {
     let mut type_bindings: HashMap<Variable, answer::Type> = HashMap::new();
     filter_variants!(Constraint::RoleName : constraints).try_for_each(|role_name| {

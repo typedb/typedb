@@ -30,12 +30,67 @@ use crate::{
         },
         planner::vertex::{Costed, HasPlanner, LinksPlanner, PlannerVertex, ThingPlanner, ValuePlanner, VertexCost},
     },
+    VariablePosition,
 };
 
 #[derive(Debug)]
 pub struct MatchProgram {
     pub(crate) programs: Vec<Program>,
     pub(crate) variable_registry: VariableRegistry,
+
+    variable_positions: HashMap<Variable, VariablePosition>,
+    variable_positions_index: Vec<Variable>,
+}
+
+impl MatchProgram {
+    pub fn new(
+        programs: Vec<Program>,
+        variable_registry: VariableRegistry,
+        variable_positions: HashMap<Variable, VariablePosition>,
+        variable_positions_index: Vec<Variable>,
+    ) -> Self {
+        Self { programs, variable_registry, variable_positions, variable_positions_index }
+    }
+
+    pub fn from_block(
+        block: &FunctionalBlock,
+        type_annotations: &TypeAnnotations<Variable>,
+        variable_registry: &VariableRegistry,
+        _expressions: &HashMap<Variable, CompiledExpression>,
+        statistics: &Statistics,
+    ) -> Self {
+        assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
+        let conjunction = block.conjunction();
+        assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
+
+        let mut plan_builder = PlanBuilder::init(variable_registry, type_annotations, statistics);
+        plan_builder.register_constraints(conjunction, type_annotations, statistics);
+        let ordering = plan_builder.initialise_greedy();
+
+        let (variable_positions, index, programs) = lower_plan(&plan_builder, ordering, type_annotations);
+        let variable_positions_index = index.into_iter().sorted_by_key(|(k, _)| k.as_usize()).map(|(_, v)| v).collect();
+        Self { programs, variable_registry: variable_registry.clone(), variable_positions, variable_positions_index }
+    }
+
+    pub fn programs(&self) -> &[Program] {
+        &self.programs
+    }
+
+    pub fn outputs(&self) -> &[VariablePosition] {
+        self.programs.last().unwrap().selected_variables()
+    }
+
+    pub fn variable_registry(&self) -> &VariableRegistry {
+        &self.variable_registry
+    }
+
+    pub fn variable_positions(&self) -> &HashMap<Variable, VariablePosition> {
+        &self.variable_positions
+    }
+
+    pub fn variable_positions_index(&self) -> &[Variable] {
+        &self.variable_positions_index
+    }
 }
 
 /*
@@ -59,7 +114,11 @@ struct PlanBuilder {
 }
 
 impl PlanBuilder {
-    fn init(variable_registry: &VariableRegistry, type_annotations: &TypeAnnotations, statistics: &Statistics) -> Self {
+    fn init(
+        variable_registry: &VariableRegistry,
+        type_annotations: &TypeAnnotations<Variable>,
+        statistics: &Statistics,
+    ) -> Self {
         let mut elements = Vec::new();
         let variable_index = variable_registry
             .variable_categories()
@@ -98,7 +157,7 @@ impl PlanBuilder {
     fn register_constraints(
         &mut self,
         conjunction: &ir::pattern::conjunction::Conjunction,
-        type_annotations: &TypeAnnotations,
+        type_annotations: &TypeAnnotations<Variable>,
         statistics: &Statistics,
     ) {
         for constraint in conjunction.constraints() {
@@ -205,56 +264,20 @@ impl PlanBuilder {
     }
 }
 
-impl MatchProgram {
-    pub fn new(programs: Vec<Program>, context: VariableRegistry) -> Self {
-        Self { programs, variable_registry: context }
-    }
-
-    pub fn from_block(
-        block: &FunctionalBlock,
-        type_annotations: &TypeAnnotations,
-        variable_registry: &VariableRegistry,
-        _expressions: &HashMap<Variable, CompiledExpression>,
-        statistics: &Statistics,
-    ) -> Self {
-        assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
-        let conjunction = block.conjunction();
-        assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
-
-        let mut plan_builder = PlanBuilder::init(variable_registry, type_annotations, statistics);
-        plan_builder.register_constraints(conjunction, type_annotations, statistics);
-        let ordering = plan_builder.initialise_greedy();
-
-        let programs = lower_plan(&plan_builder, ordering, type_annotations);
-        Self { programs, variable_registry: variable_registry.clone() }
-    }
-
-    pub fn programs(&self) -> &[Program] {
-        &self.programs
-    }
-
-    pub fn outputs(&self) -> &[Variable] {
-        self.programs.last().unwrap().selected_variables()
-    }
-
-    pub fn variable_registry(&self) -> &VariableRegistry {
-        &self.variable_registry
-    }
-}
-
 #[derive(Debug, Default)]
 struct ProgramBuilder {
     sort_variable: Option<Variable>,
-    instructions: Vec<ConstraintInstruction>,
-    last_output: Option<usize>,
+    instructions: Vec<ConstraintInstruction<VariablePosition>>,
+    last_output: Option<u32>,
 }
 
 impl ProgramBuilder {
-    fn finish(self, outputs: &[Variable]) -> Program {
+    fn finish(self, outputs: &HashMap<VariablePosition, Variable>) -> Program {
+        let sort_variable = *outputs.iter().find(|(_, &item)| Some(item) == self.sort_variable).unwrap().0;
         Program::Intersection(IntersectionProgram::new(
-            self.sort_variable.unwrap(),
+            sort_variable,
             self.instructions,
-            &outputs[..self.last_output.unwrap()],
+            &(0..self.last_output.unwrap()).map(VariablePosition::new).collect_vec(),
         ))
     }
 }
@@ -263,7 +286,8 @@ impl ProgramBuilder {
 struct MatchProgramBuilder {
     programs: Vec<ProgramBuilder>,
     current: ProgramBuilder,
-    outputs: Vec<Variable>,
+    outputs: HashMap<VariablePosition, Variable>,
+    index: HashMap<Variable, VariablePosition>,
 }
 
 impl MatchProgramBuilder {
@@ -271,18 +295,37 @@ impl MatchProgramBuilder {
         self.programs.get_mut(program).unwrap_or(&mut self.current)
     }
 
-    fn push_instruction(&mut self, sort_variable: Variable, instruction: ConstraintInstruction) -> (usize, usize) {
+    fn push_instruction(
+        &mut self,
+        sort_variable: Variable,
+        instruction: ConstraintInstruction<Variable>,
+        outputs: &[Variable],
+    ) -> (usize, usize) {
         if self.current.sort_variable != Some(sort_variable) {
             self.finish_one();
         }
+        for &var in outputs {
+            self.register_output(var);
+        }
         self.current.sort_variable = Some(sort_variable);
-        self.current.instructions.push(instruction);
+        self.current.instructions.push(instruction.map(&self.index));
         (self.programs.len(), self.current.instructions.len() - 1)
+    }
+
+    fn position(&self, var: Variable) -> VariablePosition {
+        self.index[&var]
+    }
+
+    fn register_output(&mut self, var: Variable) {
+        if !self.index.contains_key(&var) {
+            self.index.insert(var, VariablePosition::new(self.index.len() as u32));
+            self.outputs.insert(VariablePosition::new(self.outputs.len() as u32), var);
+        }
     }
 
     fn finish_one(&mut self) {
         if !self.current.instructions.is_empty() {
-            self.current.last_output = Some(self.outputs.len());
+            self.current.last_output = Some(self.outputs.len() as u32);
             self.programs.push(mem::take(&mut self.current));
         }
     }
@@ -293,7 +336,11 @@ impl MatchProgramBuilder {
     }
 }
 
-fn lower_plan(plan_builder: &PlanBuilder, ordering: Vec<usize>, type_annotations: &TypeAnnotations) -> Vec<Program> {
+fn lower_plan(
+    plan_builder: &PlanBuilder,
+    ordering: Vec<usize>,
+    type_annotations: &TypeAnnotations<Variable>,
+) -> (HashMap<Variable, VariablePosition>, HashMap<VariablePosition, Variable>, Vec<Program>) {
     let index_to_variable: HashMap<_, _> =
         plan_builder.variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
 
@@ -306,6 +353,7 @@ fn lower_plan(plan_builder: &PlanBuilder, ordering: Vec<usize>, type_annotations
             Some(adj) => adj,
             None => &HashSet::new(),
         };
+
         if let Some(&var) = index_to_variable.get(&index) {
             if let PlannerVertex::Thing(_) = &plan_builder.elements[index] {
                 if let hash_map::Entry::Vacant(entry) = producers.entry(var) {
@@ -315,8 +363,7 @@ fn lower_plan(plan_builder: &PlanBuilder, ordering: Vec<usize>, type_annotations
                         Inputs::None([]),
                         type_annotations,
                     ));
-                    let producer_index = match_builder.push_instruction(var, instruction);
-                    match_builder.outputs.push(var);
+                    let producer_index = match_builder.push_instruction(var, instruction, &[var, isa.type_()]);
                     entry.insert(producer_index);
                 }
             }
@@ -352,8 +399,10 @@ fn lower_plan(plan_builder: &PlanBuilder, ordering: Vec<usize>, type_annotations
                         let attribute_producer =
                             producers.get(&attribute).expect("bound attribute must have been produced");
                         let (program, instruction) = std::cmp::Ord::max(*owner_producer, *attribute_producer);
+                        let owner_pos = match_builder.position(owner);
+                        let attribute_pos = match_builder.position(attribute);
                         match_builder.get_program_mut(program).instructions[instruction]
-                            .add_check(CheckInstruction::Has { owner, attribute });
+                            .add_check(CheckInstruction::Has { owner: owner_pos, attribute: attribute_pos });
                         continue;
                     }
 
@@ -383,11 +432,11 @@ fn lower_plan(plan_builder: &PlanBuilder, ordering: Vec<usize>, type_annotations
                             type_annotations,
                         ))
                     };
+                    let producer_index =
+                        match_builder.push_instruction(sort_variable, instruction, &[owner, attribute]);
 
-                    let producer_index = match_builder.push_instruction(sort_variable, instruction);
                     for &var in &[owner, attribute] {
                         if !inputs.contains(&var) {
-                            match_builder.outputs.push(var);
                             producers.insert(var, producer_index);
                         }
                     }
@@ -402,7 +451,7 @@ fn lower_plan(plan_builder: &PlanBuilder, ordering: Vec<usize>, type_annotations
             }
         }
     }
-    match_builder.finish()
+    (match_builder.index.clone(), match_builder.outputs.clone(), match_builder.finish())
 }
 
 #[derive(Debug)]
@@ -416,7 +465,7 @@ pub enum Program {
 }
 
 impl Program {
-    pub fn selected_variables(&self) -> &[Variable] {
+    pub fn selected_variables(&self) -> &[VariablePosition] {
         match self {
             Program::Intersection(program) => &program.selected_variables,
             Program::UnsortedJoin(program) => &program.selected_variables,
@@ -427,7 +476,7 @@ impl Program {
         }
     }
 
-    pub fn new_variables(&self) -> &[Variable] {
+    pub fn new_variables(&self) -> &[VariablePosition] {
         match self {
             Program::Intersection(program) => program.new_variables(),
             Program::UnsortedJoin(program) => program.new_variables(),
@@ -437,22 +486,34 @@ impl Program {
             Program::Optional(_) => todo!(),
         }
     }
+
+    pub fn output_width(&self) -> u32 {
+        match self {
+            Program::Intersection(program) => program.output_width(),
+            Program::UnsortedJoin(program) => program.output_width(),
+            Program::Assignment(program) => program.output_width(),
+            Program::Disjunction(_) => todo!(),
+            Program::Negation(_) => todo!(),
+            Program::Optional(_) => todo!(),
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct IntersectionProgram {
-    pub sort_variable: Variable,
-    pub instructions: Vec<ConstraintInstruction>,
-    new_variables: Vec<Variable>,
-    input_variables: Vec<Variable>,
-    pub selected_variables: Vec<Variable>,
+    pub sort_variable: VariablePosition,
+    pub instructions: Vec<ConstraintInstruction<VariablePosition>>,
+    new_variables: Vec<VariablePosition>,
+    output_width: u32,
+    input_variables: Vec<VariablePosition>,
+    pub selected_variables: Vec<VariablePosition>,
 }
 
 impl IntersectionProgram {
     pub fn new(
-        sort_variable: Variable,
-        instructions: Vec<ConstraintInstruction>,
-        selected_variables: &[Variable],
+        sort_variable: VariablePosition,
+        instructions: Vec<ConstraintInstruction<VariablePosition>>,
+        selected_variables: &[VariablePosition],
     ) -> Self {
         let mut input_variables = Vec::with_capacity(instructions.len() * 2);
         let mut new_variables = Vec::with_capacity(instructions.len() * 2);
@@ -468,34 +529,41 @@ impl IntersectionProgram {
                 }
             });
         });
+        let output_width = selected_variables.iter().max().unwrap().as_usize() as u32 + 1;
+        dbg!(output_width);
         Self {
             sort_variable,
             instructions,
             new_variables,
+            output_width,
             input_variables,
             selected_variables: selected_variables.to_owned(),
         }
     }
 
-    fn new_variables(&self) -> &[Variable] {
+    fn new_variables(&self) -> &[VariablePosition] {
         &self.new_variables
+    }
+
+    fn output_width(&self) -> u32 {
+        self.output_width
     }
 }
 
 #[derive(Debug)]
 pub struct UnsortedJoinProgram {
-    pub iterate_instruction: ConstraintInstruction,
-    pub check_instructions: Vec<ConstraintInstruction>,
-    new_variables: Vec<Variable>,
-    input_variables: Vec<Variable>,
-    selected_variables: Vec<Variable>,
+    pub iterate_instruction: ConstraintInstruction<VariablePosition>,
+    pub check_instructions: Vec<ConstraintInstruction<VariablePosition>>,
+    new_variables: Vec<VariablePosition>,
+    input_variables: Vec<VariablePosition>,
+    selected_variables: Vec<VariablePosition>,
 }
 
 impl UnsortedJoinProgram {
     pub fn new(
-        iterate_instruction: ConstraintInstruction,
-        check_instructions: Vec<ConstraintInstruction>,
-        selected_variables: &[Variable],
+        iterate_instruction: ConstraintInstruction<VariablePosition>,
+        check_instructions: Vec<ConstraintInstruction<VariablePosition>>,
+        selected_variables: &[VariablePosition],
     ) -> Self {
         let mut input_variables = Vec::with_capacity(check_instructions.len() * 2);
         let mut new_variables = Vec::with_capacity(5);
@@ -525,21 +593,29 @@ impl UnsortedJoinProgram {
         }
     }
 
-    fn new_variables(&self) -> &[Variable] {
+    fn new_variables(&self) -> &[VariablePosition] {
         &self.new_variables
+    }
+
+    fn output_width(&self) -> u32 {
+        todo!()
     }
 }
 
 #[derive(Debug)]
 pub struct AssignmentProgram {
-    assign_instruction: ExpressionBinding<Variable>,
-    check_instructions: Vec<ConstraintInstruction>,
-    unbound: [Variable; 1],
+    assign_instruction: ExpressionBinding<VariablePosition>,
+    check_instructions: Vec<ConstraintInstruction<VariablePosition>>,
+    unbound: [VariablePosition; 1],
 }
 
 impl AssignmentProgram {
-    fn new_variables(&self) -> &[Variable] {
+    fn new_variables(&self) -> &[VariablePosition] {
         &self.unbound
+    }
+
+    fn output_width(&self) -> u32 {
+        todo!()
     }
 }
 
@@ -558,6 +634,6 @@ pub struct OptionalProgram {
     pub optional: MatchProgram,
 }
 
-pub trait InstructionAPI {
-    fn constraint(&self) -> Constraint<Variable>;
+pub trait InstructionAPI<ID> {
+    fn constraint(&self) -> Constraint<ID>;
 }

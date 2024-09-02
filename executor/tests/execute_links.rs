@@ -6,13 +6,18 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use compiler::match_::{
-    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    instructions::{ConstraintInstruction, Inputs, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction},
-    planner::{
-        pattern_plan::{IntersectionProgram, MatchProgram, Program},
-        program_plan::ProgramPlan,
+use compiler::{
+    match_::{
+        inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+        instructions::{
+            ConstraintInstruction, Inputs, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
+        },
+        planner::{
+            pattern_plan::{IntersectionProgram, MatchProgram, Program},
+            program_plan::ProgramPlan,
+        },
     },
+    VariablePosition,
 };
 use concept::{
     error::ConceptReadError,
@@ -214,25 +219,40 @@ fn traverse_links_unbounded_sorted_from() {
     )
     .unwrap();
 
+    let vars = vec![
+        var_membership_group_type,
+        var_membership_member_type,
+        var_membership_type,
+        var_group_type,
+        var_person_type,
+        var_membership,
+        var_group,
+        var_person,
+    ];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let entry_annotations = entry_annotations.map(&variable_positions);
+
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
-        var_membership,
+        variable_positions[&var_membership],
         vec![
             ConstraintInstruction::Links(LinksInstruction::new(
-                links_membership_person,
+                links_membership_person.map(&variable_positions),
                 Inputs::None([]),
                 &entry_annotations,
             )),
             ConstraintInstruction::Links(LinksInstruction::new(
-                links_membership_group,
+                links_membership_group.map(&variable_positions),
                 Inputs::None([]),
                 &entry_annotations,
             )),
         ],
-        &[var_membership, var_group, var_person],
+        &[variable_positions[&var_membership], variable_positions[&var_group], variable_positions[&var_person]],
     ))];
 
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -268,13 +288,10 @@ fn traverse_links_unbounded_sorted_to() {
     let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
     let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
-    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
     let links_membership_person = conjunction
@@ -284,18 +301,12 @@ fn traverse_links_unbounded_sorted_to() {
         .clone();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
     conjunction
         .constraints_mut()
         .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
-        .unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
     let entry = builder.finish();
@@ -311,18 +322,24 @@ fn traverse_links_unbounded_sorted_to() {
     )
     .unwrap();
 
+    let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_membership, var_person];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let entry_annotations = entry_annotations.map(&variable_positions);
+
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
-        var_person,
+        variable_positions[&var_person],
         vec![ConstraintInstruction::Links(LinksInstruction::new(
-            links_membership_person,
+            links_membership_person.map(&variable_positions),
             Inputs::None([]),
             &entry_annotations,
         ))],
-        &[var_membership, var_person],
+        &[variable_positions[&var_membership], variable_positions[&var_person]],
     ))];
 
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -358,13 +375,10 @@ fn traverse_links_bounded_relation() {
     let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
     let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
-    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
     let links_membership_person = conjunction
@@ -374,19 +388,13 @@ fn traverse_links_bounded_relation() {
         .clone();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     let isa_membership =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap().clone();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
     conjunction
         .constraints_mut()
         .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
-        .unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
     let entry = builder.finish();
@@ -403,29 +411,35 @@ fn traverse_links_bounded_relation() {
     )
     .unwrap();
 
+    let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_membership, var_person];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let entry_annotations = entry_annotations.map(&variable_positions);
+
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
-            var_membership,
+            variable_positions[&var_membership],
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_membership,
+                isa_membership.map(&variable_positions),
                 Inputs::None([]),
                 &entry_annotations,
             ))],
-            &[var_membership],
+            &[variable_positions[&var_membership]],
         )),
         Program::Intersection(IntersectionProgram::new(
-            var_person,
+            variable_positions[&var_person],
             vec![ConstraintInstruction::Links(LinksInstruction::new(
-                links_membership_person,
-                Inputs::Single([var_membership]),
+                links_membership_person.map(&variable_positions),
+                Inputs::Single([variable_positions[&var_membership]]),
                 &entry_annotations,
             ))],
-            &[var_person],
+            &[variable_positions[&var_person]],
         )),
     ];
 
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -461,13 +475,10 @@ fn traverse_links_bounded_relation_player() {
     let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
     let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
-    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
     let links_membership_person = conjunction
@@ -478,19 +489,13 @@ fn traverse_links_bounded_relation_player() {
 
     let isa_person =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap().clone();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     let isa_membership =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap().clone();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
     conjunction
         .constraints_mut()
         .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
-        .unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
     let entry = builder.finish();
@@ -507,38 +512,44 @@ fn traverse_links_bounded_relation_player() {
     )
     .unwrap();
 
+    let vars = vec![var_membership_type, var_person_type, var_membership, var_person, var_membership_member_type];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let entry_annotations = entry_annotations.map(&variable_positions);
+
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
-            var_membership,
+            variable_positions[&var_membership],
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_membership,
+                isa_membership.map(&variable_positions),
                 Inputs::None([]),
                 &entry_annotations,
             ))],
-            &[var_membership],
+            &[variable_positions[&var_membership]],
         )),
         Program::Intersection(IntersectionProgram::new(
-            var_person,
+            variable_positions[&var_person],
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_person,
+                isa_person.map(&variable_positions),
                 Inputs::None([]),
                 &entry_annotations,
             ))],
-            &[var_membership, var_person],
+            &[variable_positions[&var_membership], variable_positions[&var_person]],
         )),
         Program::Intersection(IntersectionProgram::new(
-            var_membership_member_type,
+            variable_positions[&var_membership_member_type],
             vec![ConstraintInstruction::Links(LinksInstruction::new(
-                links_membership_person,
-                Inputs::Dual([var_membership, var_person]),
+                links_membership_person.map(&variable_positions),
+                Inputs::Dual([variable_positions[&var_membership], variable_positions[&var_person]]),
                 &entry_annotations,
             ))],
-            &[var_membership_member_type],
+            &[variable_positions[&var_membership_member_type]],
         )),
     ];
 
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -573,13 +584,10 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
     let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
-    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
     let links_membership_person = conjunction
@@ -589,18 +597,12 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         .clone();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
     conjunction
         .constraints_mut()
         .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
-        .unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
     let entry = builder.finish();
@@ -618,18 +620,24 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     )
     .unwrap();
 
+    let vars = vec![var_membership_type, var_person_type, var_membership_member_type, var_membership, var_person];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let entry_annotations = entry_annotations.map(&variable_positions);
+
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
-        var_person,
+        variable_positions[&var_person],
         vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-            links_membership_person,
+            links_membership_person.map(&variable_positions),
             Inputs::None([]),
             &entry_annotations,
         ))],
-        &[var_membership, var_person],
+        &[variable_positions[&var_membership], variable_positions[&var_person]],
     ))];
 
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -663,13 +671,10 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
     let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
-    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
     let links_membership_person = conjunction
@@ -679,18 +684,12 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         .clone();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
     conjunction
         .constraints_mut()
         .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
-        .unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
     let entry = builder.finish();
@@ -708,18 +707,24 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     )
     .unwrap();
 
+    let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_membership, var_person];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let entry_annotations = entry_annotations.map(&variable_positions);
+
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
-        var_membership,
+        variable_positions[&var_membership],
         vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-            links_membership_person,
+            links_membership_person.map(&variable_positions),
             Inputs::None([]),
             &entry_annotations,
         ))],
-        &[var_membership, var_person],
+        &[variable_positions[&var_membership], variable_positions[&var_person]],
     ))];
 
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -753,13 +758,10 @@ fn traverse_links_reverse_bounded_player() {
     let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
     let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
-    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
     let links_membership_person = conjunction
@@ -770,18 +772,12 @@ fn traverse_links_reverse_bounded_player() {
 
     let isa_person =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap().clone();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
     conjunction
         .constraints_mut()
         .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
-        .unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
     let entry = builder.finish();
@@ -798,29 +794,35 @@ fn traverse_links_reverse_bounded_player() {
     )
     .unwrap();
 
+    let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_person, var_membership];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let entry_annotations = entry_annotations.map(&variable_positions);
+
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
-            var_person,
+            variable_positions[&var_person],
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_person,
+                isa_person.map(&variable_positions),
                 Inputs::None([]),
                 &entry_annotations,
             ))],
-            &[var_person],
+            &[variable_positions[&var_person]],
         )),
         Program::Intersection(IntersectionProgram::new(
-            var_membership,
+            variable_positions[&var_membership],
             vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                links_membership_person,
-                Inputs::Single([var_person]),
+                links_membership_person.map(&variable_positions),
+                Inputs::Single([variable_positions[&var_person]]),
                 &entry_annotations,
             ))],
-            &[var_membership],
+            &[variable_positions[&var_membership]],
         )),
     ];
 
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -856,13 +858,10 @@ fn traverse_links_reverse_bounded_player_relation() {
     let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
     let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
-    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_group = conjunction.get_or_declare_variable("group").unwrap();
     let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
 
     let links_membership_person = conjunction
@@ -873,19 +872,13 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     let isa_person =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap().clone();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type).unwrap();
     let isa_membership =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type).unwrap().clone();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.scoped_name().as_str()).unwrap();
     conjunction
         .constraints_mut()
         .add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.scoped_name().as_str())
-        .unwrap();
-    conjunction
-        .constraints_mut()
-        .add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.scoped_name().as_str())
         .unwrap();
 
     let entry = builder.finish();
@@ -902,38 +895,44 @@ fn traverse_links_reverse_bounded_player_relation() {
     )
     .unwrap();
 
+    let vars = vec![var_membership_type, var_person_type, var_person, var_membership, var_membership_member_type];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let entry_annotations = entry_annotations.map(&variable_positions);
+
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
-            var_person,
+            variable_positions[&var_person],
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_person,
+                isa_person.map(&variable_positions),
                 Inputs::None([]),
                 &entry_annotations,
             ))],
-            &[var_person],
+            &[variable_positions[&var_person]],
         )),
         Program::Intersection(IntersectionProgram::new(
-            var_membership,
+            variable_positions[&var_membership],
             vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                isa_membership,
+                isa_membership.map(&variable_positions),
                 Inputs::None([]),
                 &entry_annotations,
             ))],
-            &[var_person, var_membership],
+            &[variable_positions[&var_person], variable_positions[&var_membership]],
         )),
         Program::Intersection(IntersectionProgram::new(
-            var_membership_member_type,
+            variable_positions[&var_membership_member_type],
             vec![ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                links_membership_person,
-                Inputs::Dual([var_membership, var_person]),
+                links_membership_person.map(&variable_positions),
+                Inputs::Dual([variable_positions[&var_membership], variable_positions[&var_person]]),
                 &entry_annotations,
             ))],
-            &[var_membership_member_type],
+            &[variable_positions[&var_membership_member_type]],
         )),
     ];
 
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
