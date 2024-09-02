@@ -7,13 +7,12 @@
 // jk there's no planning to be done here, just execution.
 // There is a need to construct the executor though.
 
-use std::{collections::HashMap, fmt::Display};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::{graph::type_::Kind, value::value::Value};
 use ir::pattern::{constraint::Constraint, expression::Expression};
 use itertools::Itertools;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     filter_variants,

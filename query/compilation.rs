@@ -36,9 +36,7 @@ pub enum CompiledStage {
 impl CompiledStage {
     fn output_row_mapping(&self) -> HashMap<Variable, VariablePosition> {
         match self {
-            CompiledStage::Match(program) => {
-                program.outputs()
-            }
+            CompiledStage::Match(program) => program.variable_positions().to_owned(),
             CompiledStage::Insert(program) => program
                 .output_row_schema
                 .iter()

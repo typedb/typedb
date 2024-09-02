@@ -18,7 +18,7 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::program::block::VariableRegistry;
 use itertools::Itertools;
 use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator, Peekable};
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
@@ -43,27 +43,18 @@ impl PatternExecutor {
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
-        let (programs, context) = (program.programs(), program.variable_registry());
-        let mut variable_positions = HashMap::new();
-        let mut program_executors = Vec::with_capacity(programs.len());
-        for program in programs {
-            for variable in program.new_variables() {
-                let previous =
-                    variable_positions.insert(*variable, VariablePosition::new(variable_positions.len() as u32));
-                debug_assert_eq!(previous, None);
-            }
-            let executor = ProgramExecutor::new(program, context, &variable_positions, snapshot, thing_manager)?;
-            program_executors.push(executor)
-        }
+        let programs = program.programs();
+        let context = program.variable_registry();
+        let variable_positions = program.variable_positions();
 
-        let mut variable_positions_index = vec![Variable::new(0); variable_positions.len()];
-        for (variable, position) in &variable_positions {
-            variable_positions_index[position.as_usize()] = *variable
-        }
+        let program_executors = programs
+            .iter()
+            .map(|program| ProgramExecutor::new(program, context, variable_positions, snapshot, thing_manager))
+            .try_collect()?;
 
         Ok(PatternExecutor {
-            variable_positions,
-            variable_positions_index,
+            variable_positions: program.variable_positions().clone(),
+            variable_positions_index: program.variable_positions_index().to_owned(),
             program_executors,
             // modifiers:
             initialised: false,
@@ -226,7 +217,7 @@ impl ProgramExecutor {
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
-        let row_width = variable_positions.len() as u32;
+        let row_width = program.output_width();
         match program {
             Program::Intersection(IntersectionProgram { sort_variable, instructions, selected_variables, .. }) => {
                 let executor = IntersectionExecutor::new(
@@ -234,20 +225,19 @@ impl ProgramExecutor {
                     instructions.clone(),
                     row_width,
                     selected_variables.clone(),
-                    variable_registry.variable_names(),
-                    variable_positions,
+                    &variable_registry
+                        .variable_names()
+                        .iter()
+                        .map(|(var, name)| (variable_positions[var], name.to_owned()))
+                        .collect(),
                     snapshot,
                     thing_manager,
                 )?;
                 Ok(Self::SortedJoin(executor))
             }
             Program::UnsortedJoin(UnsortedJoinProgram { iterate_instruction, check_instructions, .. }) => {
-                let executor = UnsortedJoinExecutor::new(
-                    iterate_instruction.clone(),
-                    check_instructions.clone(),
-                    row_width,
-                    variable_positions,
-                );
+                let executor =
+                    UnsortedJoinExecutor::new(iterate_instruction.clone(), check_instructions.clone(), row_width);
                 Ok(Self::UnsortedJoin(executor))
             }
             Program::Assignment(AssignmentProgram { .. }) => {
@@ -306,7 +296,7 @@ impl ProgramExecutor {
 /// Cartesian sub-program, which generates all cartesian answers within one intersection, if there are any.
 struct IntersectionExecutor {
     instruction_executors: Vec<InstructionExecutor>,
-    sort_variable_position: VariablePosition,
+    sort_variable: VariablePosition,
     output_width: u32,
     outputs_selected: SelectedPositions,
 
@@ -320,16 +310,14 @@ struct IntersectionExecutor {
 
 impl IntersectionExecutor {
     fn new(
-        sort_variable: Variable,
-        instructions: Vec<ConstraintInstruction>,
+        sort_variable: VariablePosition,
+        instructions: Vec<ConstraintInstruction<VariablePosition>>,
         output_width: u32,
-        select_variables: Vec<Variable>,
-        named_variables: &HashMap<Variable, String>,
-        variable_positions: &HashMap<Variable, VariablePosition>,
+        select_variables: Vec<VariablePosition>,
+        named_variables: &HashMap<VariablePosition, String>,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
-        let sort_variable_position = *variable_positions.get(&sort_variable).unwrap();
         let instruction_count = instructions.len();
         let executors: Vec<InstructionExecutor> = instructions
             .into_iter()
@@ -338,7 +326,6 @@ impl IntersectionExecutor {
                     instruction,
                     &select_variables,
                     named_variables,
-                    variable_positions,
                     &**snapshot,
                     thing_manager,
                     Some(sort_variable),
@@ -348,15 +335,11 @@ impl IntersectionExecutor {
 
         Ok(Self {
             instruction_executors: executors,
-            sort_variable_position,
+            sort_variable,
             output_width,
-            outputs_selected: SelectedPositions::new(&select_variables, variable_positions),
+            outputs_selected: SelectedPositions::new(select_variables),
             iterators: Vec::with_capacity(instruction_count),
-            cartesian_iterator: CartesianIterator::new(
-                output_width as usize,
-                instruction_count,
-                sort_variable_position,
-            ),
+            cartesian_iterator: CartesianIterator::new(output_width as usize, instruction_count, sort_variable),
             input: None,
             intersection_row: (0..output_width).map(|_| VariableValue::Empty).collect_vec(),
             intersection_multiplicity: 1,
@@ -426,7 +409,7 @@ impl IntersectionExecutor {
                 Ok(true)
             } else {
                 // advance the first iterator past the intersection point to move to the next intersection
-                let intersection = &self.intersection_row[self.sort_variable_position.as_usize()];
+                let intersection = &self.intersection_row[self.sort_variable.as_usize()];
                 let iter = &mut self.iterators[0];
                 while iter.peek_first_unbound_value().transpose()?.is_some_and(|value| value == intersection) {
                     iter.advance_single()?;
@@ -570,7 +553,7 @@ impl IntersectionExecutor {
         }
 
         let input_row = self.input.as_mut().unwrap().peek().unwrap().as_ref().map_err(|err| (*err).clone())?;
-        for position in self.outputs_selected.iter_selected() {
+        for &position in &self.outputs_selected {
             if position.as_usize() < input_row.len() {
                 row.set(position, input_row.get(position).clone().into_owned())
             }
@@ -593,7 +576,7 @@ impl IntersectionExecutor {
             if iter
                 .peek_first_unbound_value()
                 .transpose()?
-                .is_some_and(|value| value == &self.intersection_row[self.sort_variable_position.as_usize()])
+                .is_some_and(|value| value == &self.intersection_row[self.sort_variable.as_usize()])
             {
                 cartesian = true;
                 break;
@@ -739,8 +722,8 @@ impl CartesianIterator {
 }
 
 struct UnsortedJoinExecutor {
-    iterate: ConstraintInstruction,
-    checks: Vec<ConstraintInstruction>,
+    iterate: ConstraintInstruction<VariablePosition>,
+    checks: Vec<ConstraintInstruction<VariablePosition>>,
 
     output_width: u32,
     output: Option<FixedBatch>,
@@ -748,10 +731,9 @@ struct UnsortedJoinExecutor {
 
 impl UnsortedJoinExecutor {
     fn new(
-        iterate: ConstraintInstruction,
-        checks: Vec<ConstraintInstruction>,
+        iterate: ConstraintInstruction<VariablePosition>,
+        checks: Vec<ConstraintInstruction<VariablePosition>>,
         total_vars: u32,
-        variable_positions: &HashMap<Variable, VariablePosition>,
     ) -> Self {
         Self { iterate, checks, output_width: total_vars, output: None }
     }

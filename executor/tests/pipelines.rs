@@ -147,7 +147,7 @@ fn test_match() {
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 3);
     let snapshot = Arc::into_inner(snapshot).unwrap();
-    let thing_manager  = Arc::into_inner(thing_manager).unwrap();
+    let thing_manager = Arc::into_inner(thing_manager).unwrap();
 
     let query = "match $person isa person, has name 'John', has age $age;";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
@@ -167,7 +167,7 @@ fn test_match() {
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 1);
     let snapshot = Arc::into_inner(snapshot);
-    let thing_manager  = Arc::into_inner(thing_manager);
+    let thing_manager = Arc::into_inner(thing_manager);
 }
 
 #[test]

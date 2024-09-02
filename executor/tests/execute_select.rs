@@ -6,18 +6,21 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use compiler::match_::{
-    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    instructions::{ConstraintInstruction, HasInstruction, Inputs},
-    planner::{
-        pattern_plan::{IntersectionProgram, MatchProgram, Program},
-        program_plan::ProgramPlan,
+use compiler::{
+    match_::{
+        inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+        instructions::{ConstraintInstruction, HasInstruction, Inputs},
+        planner::{
+            pattern_plan::{IntersectionProgram, MatchProgram, Program},
+            program_plan::ProgramPlan,
+        },
     },
+    VariablePosition,
 };
 use concept::{
     error::ConceptReadError,
     thing::object::ObjectAPI,
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
+    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
@@ -150,7 +153,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
-    let (entry_annotations, annotated_functions) = {
+    let (entry_annotations, _) = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
         infer_types(
@@ -164,13 +167,20 @@ fn anonymous_vars_not_enumerated_or_counted() {
         .unwrap()
     };
 
+    let vars = vec![var_attribute, var_person, var_attribute_type, var_person_type];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
-        var_person,
-        vec![ConstraintInstruction::Has(HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations))],
-        &[var_person],
+        variable_positions[&var_person],
+        vec![ConstraintInstruction::Has(
+            HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
+        &[variable_positions[&var_person]],
     ))];
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -223,7 +233,7 @@ fn unselected_named_vars_counted() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
-    let (entry_annotations, annotated_functions) = {
+    let (entry_annotations, _) = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
         infer_types(
@@ -237,13 +247,21 @@ fn unselected_named_vars_counted() {
         .unwrap()
     };
 
+    let vars = vec![var_person_type, var_attribute, var_attribute_type, var_person];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
-        var_person,
-        vec![ConstraintInstruction::Has(HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations))],
-        &[var_person],
+        variable_positions[&var_person],
+        vec![ConstraintInstruction::Has(
+            HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
+        &[variable_positions[&var_person]],
     ))];
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -307,7 +325,7 @@ fn cartesian_named_counted_checked() {
     conjunction.constraints_mut().add_label(var_email_type, EMAIL_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
-    let (entry_annotations, annotated_functions) = {
+    let (entry_annotations, _) = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone());
         infer_types(
@@ -321,17 +339,30 @@ fn cartesian_named_counted_checked() {
         .unwrap()
     };
 
+    let vars =
+        vec![var_age_type, var_person_type, var_name_type, var_email_type, var_name, var_email, var_person, var_age];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
-        var_person,
+        variable_positions[&var_person],
         vec![
-            ConstraintInstruction::Has(HasInstruction::new(has_name, Inputs::None([]), &entry_annotations)),
-            ConstraintInstruction::Has(HasInstruction::new(has_age, Inputs::None([]), &entry_annotations)),
-            ConstraintInstruction::Has(HasInstruction::new(has_email, Inputs::None([]), &entry_annotations)),
+            ConstraintInstruction::Has(
+                HasInstruction::new(has_name, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            ),
+            ConstraintInstruction::Has(
+                HasInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            ),
+            ConstraintInstruction::Has(
+                HasInstruction::new(has_email, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            ),
         ],
-        &[var_person, var_age],
+        &[variable_positions[&var_person], variable_positions[&var_age]],
     ))];
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor

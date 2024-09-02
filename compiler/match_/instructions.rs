@@ -20,39 +20,39 @@ use itertools::Itertools;
 use crate::match_::{inference::type_annotations::TypeAnnotations, planner::pattern_plan::InstructionAPI};
 
 #[derive(Debug, Clone)]
-pub enum ConstraintInstruction {
+pub enum ConstraintInstruction<ID> {
     // thing -> type
-    Isa(IsaInstruction<Variable>),
+    Isa(IsaInstruction<ID>),
     // type -> thing
-    IsaReverse(IsaReverseInstruction<Variable>),
+    IsaReverse(IsaReverseInstruction<ID>),
 
     // owner -> attribute
-    Has(HasInstruction<Variable>),
+    Has(HasInstruction<ID>),
     // attribute -> owner
-    HasReverse(HasReverseInstruction<Variable>),
+    HasReverse(HasReverseInstruction<ID>),
 
     // relation -> player
-    Links(LinksInstruction<Variable>),
+    Links(LinksInstruction<ID>),
     // player -> relation
-    LinksReverse(LinksReverseInstruction<Variable>),
+    LinksReverse(LinksReverseInstruction<ID>),
 
     // $x --> $y
     // RolePlayerIndex(IR, IterateBounds)
-    FunctionCallBinding(FunctionCallBinding<Variable>),
+    FunctionCallBinding(FunctionCallBinding<ID>),
 
     // rhs derived from lhs. We need to decide if rhs will always be sorted
-    ComparisonGenerator(Comparison<Variable>),
+    ComparisonGenerator(Comparison<ID>),
     // lhs derived from rhs
-    ComparisonGeneratorReverse(Comparison<Variable>),
+    ComparisonGeneratorReverse(Comparison<ID>),
     // lhs and rhs are known
-    ComparisonCheck(Comparison<Variable>),
+    ComparisonCheck(Comparison<ID>),
 
     // vars = <expr>
-    ExpressionBinding(ExpressionBinding<Variable>),
+    ExpressionBinding(ExpressionBinding<ID>),
 }
 
-impl ConstraintInstruction {
-    pub fn is_input_variable(&self, var: Variable) -> bool {
+impl<ID: IrID> ConstraintInstruction<ID> {
+    pub fn is_input_variable(&self, var: ID) -> bool {
         let mut found = false;
         self.input_variables_foreach(|v| {
             if v == var {
@@ -62,7 +62,7 @@ impl ConstraintInstruction {
         found
     }
 
-    pub(crate) fn input_variables_foreach(&self, mut apply: impl FnMut(Variable)) {
+    pub(crate) fn input_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
             | ConstraintInstruction::Isa(IsaInstruction { inputs, .. })
             | ConstraintInstruction::IsaReverse(IsaReverseInstruction { inputs, .. })
@@ -80,7 +80,7 @@ impl ConstraintInstruction {
         }
     }
 
-    pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(Variable)) {
+    pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
             ConstraintInstruction::Isa(IsaInstruction { isa, inputs, .. })
             | ConstraintInstruction::IsaReverse(IsaReverseInstruction { isa, inputs, .. }) => {
@@ -117,7 +117,7 @@ impl ConstraintInstruction {
         }
     }
 
-    pub(crate) fn add_check(&mut self, check: CheckInstruction<Variable>) {
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         match self {
             Self::Isa(inner) => inner.add_check(check),
             Self::IsaReverse(inner) => inner.add_check(check),
@@ -132,10 +132,26 @@ impl ConstraintInstruction {
             Self::ExpressionBinding(_) => todo!(),
         }
     }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ConstraintInstruction<T> {
+        match self {
+            Self::Isa(inner) => ConstraintInstruction::Isa(inner.map(mapping)),
+            Self::IsaReverse(inner) => ConstraintInstruction::IsaReverse(inner.map(mapping)),
+            Self::Has(inner) => ConstraintInstruction::Has(inner.map(mapping)),
+            Self::HasReverse(inner) => ConstraintInstruction::HasReverse(inner.map(mapping)),
+            Self::Links(inner) => ConstraintInstruction::Links(inner.map(mapping)),
+            Self::LinksReverse(inner) => ConstraintInstruction::LinksReverse(inner.map(mapping)),
+            Self::FunctionCallBinding(_) => todo!(),
+            Self::ComparisonGenerator(_) => todo!(),
+            Self::ComparisonGeneratorReverse(_) => todo!(),
+            Self::ComparisonCheck(_) => todo!(),
+            Self::ExpressionBinding(_) => todo!(),
+        }
+    }
 }
 
-impl InstructionAPI for ConstraintInstruction {
-    fn constraint(&self) -> Constraint<Variable> {
+impl<ID: Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
+    fn constraint(&self) -> Constraint<ID> {
         match self {
             Self::Isa(IsaInstruction { isa, .. }) | Self::IsaReverse(IsaReverseInstruction { isa, .. }) => {
                 isa.clone().into()
@@ -187,13 +203,13 @@ impl IsaInstruction<Variable> {
         let types = type_annotations.variable_annotations_of(isa.type_()).unwrap().clone();
         Self { isa, inputs, types, checks: Vec::new() }
     }
-
-    fn add_check(&mut self, check: CheckInstruction<Variable>) {
-        self.checks.push(check)
-    }
 }
 
 impl<ID> IsaInstruction<ID> {
+    fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
     pub fn types(&self) -> &Arc<HashSet<Type>> {
         &self.types
     }
@@ -224,13 +240,13 @@ impl IsaReverseInstruction<Variable> {
         let types = type_annotations.variable_annotations_of(isa.thing()).unwrap().clone();
         Self { isa, inputs, types, checks: Vec::new() }
     }
-
-    fn add_check(&mut self, check: CheckInstruction<Variable>) {
-        self.checks.push(check)
-    }
 }
 
 impl<ID> IsaReverseInstruction<ID> {
+    fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
     pub fn types(&self) -> &Arc<HashSet<Type>> {
         &self.types
     }
@@ -264,13 +280,13 @@ impl HasInstruction<Variable> {
         let attribute_types = type_annotations.variable_annotations_of(has.attribute()).unwrap().clone();
         Self { has, inputs, owner_to_attribute_types, attribute_types, checks: Vec::new() }
     }
-
-    fn add_check(&mut self, check: CheckInstruction<Variable>) {
-        self.checks.push(check)
-    }
 }
 
 impl<ID> HasInstruction<ID> {
+    fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
     pub fn owner_to_attribute_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
         &self.owner_to_attribute_types
     }
@@ -309,13 +325,13 @@ impl HasReverseInstruction<Variable> {
         let owner_types = type_annotations.variable_annotations_of(has.owner()).unwrap().clone();
         Self { has, inputs, attribute_to_owner_types, owner_types, checks: Vec::new() }
     }
-
-    fn add_check(&mut self, check: CheckInstruction<Variable>) {
-        self.checks.push(check)
-    }
 }
 
 impl<ID> HasReverseInstruction<ID> {
+    fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
     pub fn attribute_to_owner_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
         &self.attribute_to_owner_types
     }
@@ -357,13 +373,13 @@ impl LinksInstruction<Variable> {
         let player_types = type_annotations.variable_annotations_of(links.player()).unwrap().clone();
         Self { links, inputs, relation_to_player_types, player_types, player_to_role_types, checks: Vec::new() }
     }
-
-    fn add_check(&mut self, check: CheckInstruction<Variable>) {
-        self.checks.push(check)
-    }
 }
 
 impl<ID> LinksInstruction<ID> {
+    fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
     pub fn relation_to_player_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
         &self.relation_to_player_types
     }
@@ -410,13 +426,13 @@ impl LinksReverseInstruction<Variable> {
         let relation_types = type_annotations.variable_annotations_of(links.relation()).unwrap().clone();
         Self { links, inputs, player_to_relation_types, relation_types, relation_to_role_types, checks: Vec::new() }
     }
-
-    fn add_check(&mut self, check: CheckInstruction<Variable>) {
-        self.checks.push(check)
-    }
 }
 
 impl<ID> LinksReverseInstruction<ID> {
+    fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
     pub fn player_to_relation_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
         &self.player_to_relation_types
     }
@@ -465,7 +481,7 @@ impl<ID: IrID> Inputs<ID> {
     }
 }
 
-impl<ID: IrID> Deref for Inputs<ID> {
+impl<ID> Deref for Inputs<ID> {
     type Target = [ID];
 
     fn deref(&self) -> &Self::Target {

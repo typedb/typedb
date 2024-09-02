@@ -6,21 +6,25 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use compiler::match_::{
-    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    instructions::{ConstraintInstruction, Inputs, IsaInstruction},
-    planner::{
-        pattern_plan::{IntersectionProgram, MatchProgram, Program},
-        program_plan::ProgramPlan,
+use compiler::{
+    match_::{
+        inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+        instructions::{ConstraintInstruction, Inputs, IsaInstruction},
+        planner::{
+            pattern_plan::{IntersectionProgram, MatchProgram, Program},
+            program_plan::ProgramPlan,
+        },
     },
+    VariablePosition,
 };
 use concept::{
     error::ConceptReadError,
     type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
+use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 
@@ -90,27 +94,34 @@ fn attribute_equality() {
     )
     .unwrap();
 
+    let vars = entry.block_variables().collect_vec();
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+
     // Plan
     let steps = vec![
         Program::Intersection(IntersectionProgram::new(
-            var_age_a,
-            vec![ConstraintInstruction::Isa(IsaInstruction::new(isa_a, Inputs::None([]), &entry_annotations))],
-            &[var_age_a],
+            variable_positions[&var_age_a],
+            vec![ConstraintInstruction::Isa(IsaInstruction::new(isa_a, Inputs::None([]), &entry_annotations))
+                .map(&variable_positions)],
+            &[variable_positions[&var_age_a]],
         )),
         Program::Intersection(IntersectionProgram::new(
-            var_age_b,
+            variable_positions[&var_age_b],
             vec![ConstraintInstruction::Isa(IsaInstruction::new(
                 isa_b,
                 Inputs::None([]),
                 &entry_annotations,
                 // TODO
-                // vec![CheckInstruction::Comparison { lhs: var_age_b, rhs: var_age_a, comparator: Comparator::Equal }],
-            ))],
-            &[var_age_a, var_age_b],
+                // vec![CheckInstruction::Comparison { lhs: vars[&var_age_b], rhs: vars[&var_age_a], comparator: Comparator::Equal }],
+            ))
+            .map(&variable_positions)],
+            &[variable_positions[&var_age_a], variable_positions[&var_age_b]],
         )),
     ];
 
-    let pattern_plan = MatchProgram::new(steps, translation_context.variable_registry.clone());
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -120,7 +131,7 @@ fn attribute_equality() {
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 25);
 

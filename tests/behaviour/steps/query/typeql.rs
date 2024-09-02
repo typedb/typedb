@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use core::panic;
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
@@ -36,7 +35,6 @@ use query::query_manager::QueryManager;
 use crate::{
     assert::assert_matches,
     generic_step, params,
-    params::{check_boolean, MayError},
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     util::iter_table_map,
     Context,

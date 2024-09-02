@@ -4,18 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::BTreeMap,
-    fmt::{Display, Formatter},
-    hash::{Hash, Hasher},
-};
+use std::{collections::BTreeMap, fmt, hash::Hash};
 
 use itertools::Itertools;
 
 use crate::{pattern::IrID, program::function_signature::FunctionID};
 
-#[derive(Debug, Clone)]
-pub struct FunctionCall<ID: IrID> {
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct FunctionCall<ID> {
     function_id: FunctionID,
     // map call variable to index of argument
     call_variable_mapping: BTreeMap<ID, usize>,
@@ -39,23 +35,8 @@ impl<ID: IrID> FunctionCall<ID> {
     }
 }
 
-impl<ID: IrID> PartialEq for FunctionCall<ID> {
-    fn eq(&self, other: &Self) -> bool {
-        self.function_id == other.function_id && self.call_variable_mapping == other.call_variable_mapping
-    }
-}
-
-impl<ID: IrID> Eq for FunctionCall<ID> {}
-
-impl<ID: IrID> Hash for FunctionCall<ID> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.function_id.hash(state);
-        self.call_variable_mapping.hash(state);
-    }
-}
-
-impl<ID: IrID> Display for FunctionCall<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for FunctionCall<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let formatted_args = self
             .call_variable_mapping
             .iter()

@@ -21,18 +21,18 @@ pub struct TypeAnnotations {
 }
 
 impl TypeAnnotations {
-    pub fn new(
-        variables: HashMap<Variable, Arc<HashSet<Type>>>,
-        constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    ) -> Self {
-        TypeAnnotations { variables, constraints }
-    }
-
     pub(crate) fn build(inference_graph: TypeInferenceGraph<'_>) -> Self {
         let mut vertex_annotations = HashMap::new();
         let mut constraint_annotations = HashMap::new();
         inference_graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
         Self::new(vertex_annotations, constraint_annotations)
+    }
+
+    pub fn new(
+        variables: HashMap<Variable, Arc<HashSet<Type>>>,
+        constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
+    ) -> Self {
+        TypeAnnotations { variables, constraints }
     }
 
     pub fn variable_annotations(&self) -> &HashMap<Variable, Arc<HashSet<Type>>> {
