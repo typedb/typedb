@@ -20,6 +20,7 @@ use ir::{
 };
 use itertools::Itertools;
 
+use super::vertex::OwnsPlanner;
 use crate::{
     expression::compiled_expression::CompiledExpression,
     match_::{
@@ -48,6 +49,14 @@ If we know this we can:
   2. if the ordering implies it, we may need to perform Storage/Comparison checks, if the variables are visited disconnected and then joined
   3. some checks are fully bound, while others are not... when do we decide? What is a Check versus an Iterate instructions? Do we need to differentiate?
  */
+
+macro_rules! dbg2 {
+    ($expr:expr) => {{
+        let res = $expr;
+        eprintln!("[{}:{}] {} = {:?}", file!(), line!(), stringify!($expr), &res);
+        res
+    }};
+}
 
 #[derive(Debug)]
 struct PlanBuilder<'a> {
@@ -110,7 +119,12 @@ impl<'a> PlanBuilder<'a> {
         for constraint in conjunction.constraints() {
             let planner = match constraint {
                 Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) => None, // ignore for now
-                Constraint::Owns(_) => todo!("owns"),
+                Constraint::Owns(owns) => {
+                    let planner =
+                        OwnsPlanner::from_constraint(owns, &self.variable_index, type_annotations, statistics);
+                    self.elements.push(PlannerVertex::Owns(planner));
+                    self.elements.last()
+                }
                 Constraint::Relates(_) => todo!("relates"),
                 Constraint::Plays(_) => todo!("plays"),
 
@@ -230,6 +244,13 @@ impl MatchProgram {
         let mut plan_builder = PlanBuilder::init(variable_registry, type_annotations, statistics);
         plan_builder.register_constraints(conjunction);
         let ordering = plan_builder.initialise_greedy();
+
+        eprintln!("[{}:{}] elements = [", file!(), line!());
+        for (i, elem) in plan_builder.elements.iter().enumerate() {
+            eprintln!("    {:2}: {:?},", i, elem);
+        }
+        eprintln!("]");
+        eprintln!("[{}:{}] ordering = {:?}", file!(), line!(), ordering);
 
         let programs = lower_plan(&plan_builder, ordering, type_annotations);
         Self { programs, variable_registry: variable_registry.clone() }
