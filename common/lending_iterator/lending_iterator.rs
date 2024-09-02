@@ -216,7 +216,7 @@ where
         if self.item.is_some() {
             let item = self.item.as_ref().unwrap();
             match self.compare_key(item, key) {
-                Ordering::Less => {}, // fallthrough
+                Ordering::Less => (), // fallthrough
                 Ordering::Equal => return,
                 Ordering::Greater => {
                     unreachable!("Key behind the stored item in a Peekable iterator")
