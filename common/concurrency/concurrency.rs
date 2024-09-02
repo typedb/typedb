@@ -4,6 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod interval_runner;
-
 pub use crate::interval_runner::IntervalRunner;
+
+mod interval_runner;

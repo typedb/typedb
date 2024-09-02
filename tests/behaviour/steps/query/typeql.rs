@@ -19,8 +19,8 @@ use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::TypeAPI}
 use cucumber::gherkin::Step;
 use encoding::value::label::Label;
 use executor::{
-    batch::Row,
     program_executor::ProgramExecutor,
+    row::Row,
     write::{insert::InsertExecutor, WriteError},
 };
 use ir::{
@@ -36,6 +36,7 @@ use query::query_manager::QueryManager;
 use crate::{
     assert::assert_matches,
     generic_step, params,
+    params::{check_boolean, MayError},
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     util::iter_table_map,
     Context,

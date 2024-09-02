@@ -4,28 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod common;
-
-use std::{borrow::Cow, sync::Arc};
+use std::sync::Arc;
 
 use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, type_manager::TypeManager, OwnerAPI},
+    type_::{type_manager::TypeManager, OwnerAPI},
 };
 use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
-    value::{label::Label, value::Value, value_type::ValueType},
+    value::{label::Label, value::Value},
 };
-use executor::pipeline::{IteratingStageAPI, PipelineStageAPI};
+use executor::pipeline::{StageAPI, StageIterator};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
-use storage::{
-    durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot, MVCCStorage,
-};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 
 use crate::common::{load_managers, setup_storage};
+
+mod common;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const AGE_LABEL: Label = Label::new_static("age");
@@ -52,7 +50,8 @@ fn setup_common() -> (Context, ThingManager) {
         attribute age value long;
         attribute name value string;
         entity person owns age @card(0..), owns name @card(0..), plays membership:member;
-        relation membership relates member;
+        entity organisation plays membership:group;
+        relation membership relates member, relates group;
     "#;
     storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
@@ -82,11 +81,12 @@ fn test_insert() {
             &query,
         )
         .unwrap();
-    pipeline.initialise().unwrap();
-    assert!(matches!(pipeline.next(), Some(Ok(_))));
-    assert!(pipeline.next().is_none());
-    let (snapshot, thing_manager) = pipeline.finalise_and_into_context().unwrap().into_owned_parts();
+    let (mut iterator, snapshot, thing_manager) = pipeline.into_iterator().unwrap();
+    assert!(matches!(iterator.next(), Some(Ok(_))));
+    assert!(matches!(iterator.next(), None));
+    let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
+    let thing_manager = Arc::into_inner(thing_manager).unwrap();
 
     {
         let snapshot = context.storage.clone().open_snapshot_read();
@@ -99,15 +99,16 @@ fn test_insert() {
 }
 
 #[test]
-fn test_dummy_match() {
-    todo!("This hits a todo");
-    let (mut context, thing_manager) = setup_common();
-
-    let snapshot = context.storage.open_snapshot_write();
-    let query = "match ($p) isa membership;";
-    // let query = "match $person isa person, has name $name, has age $age;";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    // // Executor
+fn test_match() {
+    let (context, thing_manager) = setup_common();
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let query_str = r#"
+       insert
+       $p isa person, has age 10, has name 'John';
+       $q isa person, has age 20, has name 'Alice';
+       $r isa person, has age 30, has name 'Harry';
+   "#;
+    let query = typeql::parse_query(query_str).unwrap().into_pipeline();
     let mut pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -117,184 +118,128 @@ fn test_dummy_match() {
             &context.function_manager,
             &context.statistics,
             &IndexedAnnotatedFunctions::empty(),
+            &query,
+        )
+        .unwrap();
+    let (mut iterator, snapshot, thing_manager) = pipeline.into_iterator().unwrap();
+    let _ = iterator.count();
+    // must consume iterator to ensure operation completed
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
+    let thing_manager = Arc::into_inner(thing_manager).unwrap();
+
+    let snapshot = context.storage.open_snapshot_read();
+    let query = "match $p isa person;";
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+    let mut pipeline = context
+        .query_manager
+        .prepare_read_pipeline(
+            snapshot,
+            &context.type_manager,
+            thing_manager,
+            &context.function_manager,
+            &context.statistics,
+            &IndexedAnnotatedFunctions::empty(),
             &match_,
         )
         .unwrap();
-    let mut rows = Vec::new();
-    while let Some(row) = pipeline.next() {
-        rows.push(row.unwrap().clone().into_owned());
-    }
+    let (iterator, snapshot, thing_manager) = pipeline.into_iterator().unwrap();
+    let batch = iterator.collect_owned().unwrap();
+    assert_eq!(batch.len(), 3);
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    let thing_manager  = Arc::into_inner(thing_manager).unwrap();
+
+    let query = "match $person isa person, has name 'John', has age $age;";
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+    let mut pipeline = context
+        .query_manager
+        .prepare_read_pipeline(
+            snapshot,
+            &context.type_manager,
+            thing_manager,
+            &context.function_manager,
+            &context.statistics,
+            &IndexedAnnotatedFunctions::empty(),
+            &match_,
+        )
+        .unwrap();
+    let (iterator, snapshot, thing_manager) = pipeline.into_iterator().unwrap();
+    let batch = iterator.collect_owned().unwrap();
+    assert_eq!(batch.len(), 1);
+    let snapshot = Arc::into_inner(snapshot);
+    let thing_manager  = Arc::into_inner(thing_manager);
 }
 
 #[test]
 fn test_match_as_pipeline() {
     todo!("This hits a todo");
-    let (mut context, thing_manager) = setup_common();
-
-    let mut snapshot = context.storage.clone().open_snapshot_write();
-    let query_str = r#"
-    insert
-        $p0 isa person, has age 10, has age 11, has age 12, has name "John", has name "Alice";
-        $p1 isa person, has age 14, has age 13, has  age 10;
-        $p2 isa person, has age 13, has name "Leila";
-
-    "#;
-    let insert = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let mut insert_pipeline = context
-        .query_manager
-        .prepare_write_pipeline(
-            snapshot,
-            &context.type_manager,
-            thing_manager,
-            &context.function_manager,
-            &context.statistics,
-            &IndexedAnnotatedFunctions::empty(),
-            &insert,
-        )
-        .unwrap();
-    let mut count = 0;
-    while let Some(result) = insert_pipeline.next() {
-        assert!(result.is_ok(), "{:?}", result);
-        count += 1;
-    }
-    let (snapshot, thing_manager) = insert_pipeline.finalise_and_into_context().unwrap().into_owned_parts();
-    let inserted_seq = snapshot.commit().unwrap();
-
-    let mut newer_statistics = Statistics::new(inserted_seq.unwrap());
-    newer_statistics.may_synchronise(&context.storage).unwrap();
-    let mut snapshot = context.storage.open_snapshot_write();
-    let query = "match $person isa person, has name $name, has age $age;";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    // // Executor
-    let mut pipeline = context
-        .query_manager
-        .prepare_write_pipeline(
-            snapshot,
-            &context.type_manager,
-            thing_manager,
-            &context.function_manager,
-            &newer_statistics,
-            &IndexedAnnotatedFunctions::empty(),
-            &match_,
-        )
-        .unwrap();
-    let mut rows = Vec::new();
-    while let Some(row) = pipeline.next() {
-        rows.push(row.unwrap().clone().into_owned());
-    }
-    assert_eq!(rows.len(), 7);
-    for row in rows {
-        for value in row {
-            print!("{}, ", value);
-        }
-        println!()
-    }
-}
-
-// We need a way to work around stuff
-
-#[test]
-fn test_has_planning_traversal() {
-    let (_tmp_dir, storage) = setup_storage();
-    let mut snapshot = storage.clone().open_snapshot_write();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
-
-    const CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None));
-
-    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
-
-    let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
-
-    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
-    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-
-    let person_owns_age = person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone()).unwrap();
-    person_owns_age.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
-
-    let person_owns_name =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone()).unwrap();
-    person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
-
-    let person = [
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-    ];
-
-    let age = [
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(10)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(11)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(12)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(13)).unwrap(),
-        thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(14)).unwrap(),
-    ];
-
-    let name = [
-        thing_manager.create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("John"))).unwrap(),
-        thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("Alice")))
-            .unwrap(),
-        thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("Leila")))
-            .unwrap(),
-    ];
-
-    person[0].set_has_unordered(&mut snapshot, &thing_manager, age[0].clone()).unwrap();
-    person[0].set_has_unordered(&mut snapshot, &thing_manager, age[1].clone()).unwrap();
-    person[0].set_has_unordered(&mut snapshot, &thing_manager, age[2].clone()).unwrap();
-    person[0].set_has_unordered(&mut snapshot, &thing_manager, name[0].clone()).unwrap();
-    person[0].set_has_unordered(&mut snapshot, &thing_manager, name[1].clone()).unwrap();
-
-    person[1].set_has_unordered(&mut snapshot, &thing_manager, age[4].clone()).unwrap();
-    person[1].set_has_unordered(&mut snapshot, &thing_manager, age[3].clone()).unwrap();
-    person[1].set_has_unordered(&mut snapshot, &thing_manager, age[0].clone()).unwrap();
-
-    person[2].set_has_unordered(&mut snapshot, &thing_manager, age[3].clone()).unwrap();
-    person[2].set_has_unordered(&mut snapshot, &thing_manager, name[2].clone()).unwrap();
-
-    let finalise_result = thing_manager.finalise(&mut snapshot);
-    assert!(finalise_result.is_ok());
-    snapshot.commit().unwrap();
-
-    let mut statistics = Statistics::new(SequenceNumber::new(0));
-    statistics.may_synchronise(&storage).unwrap();
-
-    // // Executor
-    let query_manager = QueryManager::new();
-    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
-
-    let snapshot = storage.clone().open_snapshot_read();
-    let query = "match $person isa person, has name $name, has age $age;";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    let mut pipeline = query_manager
-        .prepare_read_pipeline(
-            snapshot,
-            thing_manager,
-            &type_manager,
-            &function_manager,
-            &statistics,
-            &IndexedAnnotatedFunctions::empty(),
-            &match_,
-        )
-        .unwrap();
-    pipeline.initialise().unwrap();
-    let mut rows = Vec::new();
-    while let Some(row) = pipeline.next() {
-        rows.push(row.unwrap().clone().into_owned());
-    }
-    assert_eq!(rows.len(), 7);
-    for row in rows {
-        for value in row {
-            print!("{}, ", value);
-        }
-        println!()
-    }
+    // let (mut context, thing_manager) = setup_common();
+    //
+    // let mut snapshot = context.storage.clone().open_snapshot_write();
+    // let query_str = r#"
+    // insert
+    //     $p0 isa person, has age 10, has age 11, has age 12, has name "John", has name "Alice";
+    //     $p1 isa person, has age 14, has age 13, has  age 10;
+    //     $p2 isa person, has age 13, has name "Leila";
+    //
+    // "#;
+    // let insert = typeql::parse_query(query_str).unwrap().into_pipeline();
+    // let mut insert_pipeline = context
+    //     .query_manager
+    //     .prepare_write_pipeline(
+    //         snapshot,
+    //         &context.type_manager,
+    //         thing_manager,
+    //         &context.function_manager,
+    //         &context.statistics,
+    //         &IndexedAnnotatedFunctions::empty(),
+    //         &insert,
+    //     )
+    //     .unwrap();
+    // let mut count = 0;
+    // while let Some(result) = insert_pipeline.next() {
+    //     assert!(result.is_ok(), "{:?}", result);
+    //     count += 1;
+    // }
+    // let PipelineContext::Owned(mut snapshot, mut thing_manager) = insert_pipeline.finalise_and_into_context().unwrap()
+    // else {
+    //     unreachable!()
+    // };
+    // let inserted_seq = snapshot.commit().unwrap();
+    //
+    // let mut newer_statistics = Statistics::new(inserted_seq.unwrap());
+    // newer_statistics.may_synchronise(&context.storage).unwrap();
+    // let mut snapshot = context.storage.open_snapshot_write();
+    // let query = "match $person isa person, has name $name, has age $age;";
+    // let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+    // // // Executor
+    // let mut pipeline = context
+    //     .query_manager
+    //     .prepare_write_pipeline(
+    //         snapshot,
+    //         &context.type_manager,
+    //         thing_manager,
+    //         &context.function_manager,
+    //         &newer_statistics,
+    //         &IndexedAnnotatedFunctions::empty(),
+    //         &match_,
+    //     )
+    //     .unwrap();
+    // let mut rows = Vec::new();
+    // while let Some(row) = pipeline.next() {
+    //     rows.push(row.unwrap().clone().into_owned());
+    // }
+    // assert_eq!(rows.len(), 7);
+    // for row in rows {
+    //     for value in row {
+    //         print!("{}, ", value);
+    //     }
+    //     println!()
+    // }
 }
 
 #[test]
-fn delete_has() {
-    // todo!("I haven't been able to test deletes because of the planner");
+fn match_delete_has() {
     let (context, thing_manager) = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 10;";
@@ -311,12 +256,13 @@ fn delete_has() {
             &insert_query,
         )
         .unwrap();
-    insert_pipeline.initialise().unwrap();
+    let (mut iterator, snapshot, thing_manager) = insert_pipeline.into_iterator().unwrap();
 
-    assert!(matches!(insert_pipeline.next(), Some(Ok(_))));
-    assert!(insert_pipeline.next().is_none());
-    let (snapshot, thing_manager) = insert_pipeline.finalise_and_into_context().unwrap().into_owned_parts();
+    assert!(matches!(iterator.next(), Some(Ok(_))));
+    assert!(matches!(iterator.next(), None));
+    let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
+    let thing_manager = Arc::into_inner(thing_manager).unwrap();
 
     let snapshot = context.storage.clone().open_snapshot_write();
     let delete_query_str = r#"
@@ -325,7 +271,7 @@ fn delete_has() {
     "#;
 
     let delete_query = typeql::parse_query(delete_query_str).unwrap().into_pipeline();
-    let mut insert_pipeline = context
+    let delete_pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -337,10 +283,10 @@ fn delete_has() {
             &delete_query,
         )
         .unwrap();
-    insert_pipeline.initialise().unwrap();
+    let (mut iterator, snapshot, thing_manager) = delete_pipeline.into_iterator().unwrap();
 
-    assert!(matches!(insert_pipeline.next(), Some(Ok(_))));
-    assert!(insert_pipeline.next().is_none());
-    let (snapshot, thing_manager) = insert_pipeline.finalise_and_into_context().unwrap().into_owned_parts();
+    assert!(matches!(iterator.next(), Some(Ok(_))));
+    assert!(matches!(iterator.next(), None));
+    let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
 }

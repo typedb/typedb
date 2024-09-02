@@ -16,7 +16,7 @@ use concept::thing::{
 use encoding::value::value::Value;
 use storage::snapshot::WritableSnapshot;
 
-use crate::{batch::Row, write::WriteError};
+use crate::{row::Row, write::WriteError};
 
 macro_rules! try_unwrap_as {
     ($variant:path : $item:expr) => {
@@ -35,12 +35,12 @@ fn get_type<'a>(input: &'a Row<'a>, source: &'a TypeSource) -> &'a answer::Type 
     }
 }
 
-fn get_thing<'a>(input: &'a Row<'a>, source: &'a ThingSource) -> &'a answer::Thing<'static> {
+fn get_thing<'a>(input: &'a Row<'a>, source: &ThingSource) -> &'a answer::Thing<'a> {
     let ThingSource(position) = source;
     input.get(*position).as_thing()
 }
 
-fn get_value<'a>(input: &'a Row<'a>, source: &'a ValueSource) -> &'a Value<'static> {
+fn get_value<'a>(input: &'a Row<'a>, source: &'a ValueSource) -> &'a Value<'a> {
     match source {
         ValueSource::InputVariable(position) => input.get(*position).as_value(),
         ValueSource::ValueConstant(value) => value,
@@ -137,7 +137,7 @@ impl AsWriteInstruction for compiler::insert::instructions::RolePlayer {
     }
 }
 
-impl AsWriteInstruction for compiler::delete::instructions::DeleteThingInstruction {
+impl AsWriteInstruction for compiler::delete::instructions::ThingInstruction {
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,

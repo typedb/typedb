@@ -26,7 +26,7 @@ use concept::{
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use encoding::value::{label::Label, value_type::ValueType};
 use executor::{
-    batch::Row,
+    row::Row,
     write::{insert::InsertExecutor, WriteError},
 };
 use ir::translation::TranslationContext;
@@ -155,7 +155,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("test insert queries");
     // group.sample_size(1000);
-    // group.measurement_time(Duration::from_secs(20));
+    // group.measurement_time(Duration::from_secs(200));
     group.sampling_mode(SamplingMode::Linear);
 
     let (_tmp_dir, storage) = setup_storage();

@@ -11,7 +11,7 @@ use encoding::graph::type_::Kind;
 use ir::pattern::constraint::Constraint;
 
 use crate::{
-    delete::instructions::{DeleteConnectionInstruction, DeleteThingInstruction, Has, RolePlayer},
+    delete::instructions::{ConnectionInstruction, Has, RolePlayer, ThingInstruction},
     insert::{
         get_thing_source, program::collect_role_type_bindings, ThingSource, TypeSource, VariableSource,
         WriteCompilationError,
@@ -21,8 +21,8 @@ use crate::{
 };
 
 pub struct DeleteProgram {
-    pub concepts: Vec<DeleteThingInstruction>,
-    pub connections: Vec<DeleteConnectionInstruction>,
+    pub concept_instructions: Vec<ThingInstruction>,
+    pub connection_instructions: Vec<ConnectionInstruction>,
     pub output_row_schema: Vec<(Variable, VariableSource)>,
     // pub debug_info: HashMap<VariableSource, Variable>,
 }
@@ -38,7 +38,7 @@ pub fn compile(
     for constraint in constraints {
         match constraint {
             Constraint::Has(has) => {
-                connection_deletes.push(DeleteConnectionInstruction::Has(Has {
+                connection_deletes.push(ConnectionInstruction::Has(Has {
                     owner: get_thing_source(input_variables, has.owner())?,
                     attribute: get_thing_source(input_variables, has.attribute())?,
                 }));
@@ -62,7 +62,7 @@ pub fn compile(
                     }
                     (Some(_), Some(_)) => unreachable!(),
                 };
-                connection_deletes.push(DeleteConnectionInstruction::RolePlayer(RolePlayer { relation, player, role }));
+                connection_deletes.push(ConnectionInstruction::RolePlayer(RolePlayer { relation, player, role }));
             }
             Constraint::Isa(_)
             | Constraint::Label(_)
@@ -87,7 +87,7 @@ pub fn compile(
         if type_annotations.variable_annotations_of(*variable).unwrap().iter().any(|type_| type_.kind() == Kind::Role) {
             Err(WriteCompilationError::IllegalRoleDelete { variable: *variable })?;
         } else {
-            concept_deletes.push(DeleteThingInstruction { thing: ThingSource(*input_position) });
+            concept_deletes.push(ThingInstruction { thing: ThingSource(*input_position) });
         };
     }
     // To produce the output stream, we remove the deleted concepts from each map in the stream.
@@ -102,5 +102,9 @@ pub fn compile(
         })
         .collect::<Vec<_>>();
 
-    Ok(DeleteProgram { connections: connection_deletes, concepts: concept_deletes, output_row_schema })
+    Ok(DeleteProgram {
+        connection_instructions: connection_deletes,
+        concept_instructions: concept_deletes,
+        output_row_schema,
+    })
 }

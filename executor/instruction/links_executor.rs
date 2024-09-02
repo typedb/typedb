@@ -30,7 +30,6 @@ use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    batch::ImmutableRow,
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{
@@ -39,6 +38,7 @@ use crate::{
         },
         Checker, FilterFn, TernaryIterateMode, VariableModes,
     },
+    row::MaybeOwnedRow,
     VariablePosition,
 };
 
@@ -152,7 +152,7 @@ impl LinksExecutor {
         &self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-        row: ImmutableRow<'_>,
+        row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
@@ -229,7 +229,7 @@ impl LinksExecutor {
             }
 
             TernaryIterateMode::BoundFrom => {
-                debug_assert!(row.width() > self.links.relation().as_usize());
+                debug_assert!(row.len() > self.links.relation().as_usize());
                 let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
                 let player_type_range =
                     KeyRange::new_inclusive(min_player_type.as_object_type(), max_player_type.as_object_type());
@@ -254,8 +254,8 @@ impl LinksExecutor {
             }
 
             TernaryIterateMode::BoundFromBoundTo => {
-                debug_assert!(row.width() > self.links.relation().as_usize());
-                debug_assert!(row.width() > self.links.player().as_usize());
+                debug_assert!(row.len() > self.links.relation().as_usize());
+                debug_assert!(row.len() > self.links.player().as_usize());
                 let relation = row.get(self.links.relation()).as_thing().as_relation();
                 let player = row.get(self.links.player()).as_thing().as_object();
                 let iterator = thing_manager.get_links_by_relation_and_player(&**snapshot, relation, player);

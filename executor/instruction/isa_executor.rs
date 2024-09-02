@@ -33,12 +33,12 @@ use lending_iterator::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::ImmutableRow,
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions, TupleResult},
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, Tuple, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
+    row::MaybeOwnedRow,
     VariablePosition,
 };
 
@@ -131,7 +131,7 @@ impl IsaExecutor {
         &self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-        row: ImmutableRow<'_>,
+        row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter_for_row = self.checker.filter_for_row(snapshot, thing_manager, &row);
         match self.iterate_mode {
@@ -190,7 +190,7 @@ impl IsaExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.width() > self.isa.thing().as_usize());
+                debug_assert!(row.len() > self.isa.thing().as_usize());
                 let positions = TuplePositions::Pair([self.isa.type_(), self.isa.thing()]);
                 let VariableValue::Thing(thing) = row.get(self.isa.thing()).to_owned() else {
                     unreachable!("Has thing must be an entity or relation.")

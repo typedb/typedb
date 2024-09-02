@@ -4,47 +4,43 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    borrow::Cow,
-    fmt::{Display, Formatter},
-    vec,
-};
+use std::{fmt::Display, vec};
 
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
 use lending_iterator::LendingIterator;
 
-use crate::VariablePosition;
+use crate::row::{MaybeOwnedRow, Row};
 
-const BATCH_ROWS_MAX: u32 = 64;
+const FIXED_BATCH_ROWS_MAX: u32 = 64;
 
 #[derive(Debug)]
-pub struct Batch {
+pub struct FixedBatch {
     width: u32,
     entries: u32,
     data: Vec<VariableValue<'static>>,
-    multiplicities: [u64; BATCH_ROWS_MAX as usize],
+    multiplicities: [u64; FIXED_BATCH_ROWS_MAX as usize],
 }
 
-impl Batch {
-    pub(crate) const INIT_MULTIPLICITIES: [u64; BATCH_ROWS_MAX as usize] = [1; BATCH_ROWS_MAX as usize];
-    pub(crate) const SINGLE_EMPTY_ROW: Batch =
-        Batch { width: 0, entries: 1, data: Vec::new(), multiplicities: Batch::INIT_MULTIPLICITIES };
+impl FixedBatch {
+    pub(crate) const INIT_MULTIPLICITIES: [u64; FIXED_BATCH_ROWS_MAX as usize] = [1; FIXED_BATCH_ROWS_MAX as usize];
+    pub(crate) const SINGLE_EMPTY_ROW: FixedBatch =
+        FixedBatch { width: 0, entries: 1, data: Vec::new(), multiplicities: FixedBatch::INIT_MULTIPLICITIES };
 
-    pub(crate) const EMPTY: Batch =
-        Batch { width: 0, entries: 0, data: Vec::new(), multiplicities: Batch::INIT_MULTIPLICITIES };
+    pub(crate) const EMPTY: FixedBatch =
+        FixedBatch { width: 0, entries: 0, data: Vec::new(), multiplicities: FixedBatch::INIT_MULTIPLICITIES };
 
     pub(crate) fn new(width: u32) -> Self {
-        let size = width * BATCH_ROWS_MAX;
-        Batch {
+        let size = width * FIXED_BATCH_ROWS_MAX;
+        FixedBatch {
             width,
             data: vec![VariableValue::Empty; size as usize],
             entries: 0,
-            multiplicities: Batch::INIT_MULTIPLICITIES,
+            multiplicities: FixedBatch::INIT_MULTIPLICITIES,
         }
     }
 
-    pub(crate) fn rows_count(&self) -> u32 {
+    pub(crate) fn len(&self) -> u32 {
         self.entries
     }
 
@@ -52,12 +48,12 @@ impl Batch {
         (self.entries * self.width) as usize == self.data.len()
     }
 
-    pub(crate) fn get_row(&self, index: u32) -> ImmutableRow<'_> {
+    pub(crate) fn get_row(&self, index: u32) -> MaybeOwnedRow<'_> {
         debug_assert!(index <= self.entries);
         let start = (index * self.width) as usize;
         let end = ((index + 1) * self.width) as usize;
         let slice = &self.data[start..end];
-        ImmutableRow::new(slice, self.multiplicities[index as usize])
+        MaybeOwnedRow::new_borrowed(slice, &self.multiplicities[index as usize])
     }
 
     pub(crate) fn get_row_mut(&mut self, index: u32) -> Row<'_> {
@@ -80,33 +76,33 @@ impl Batch {
         Row::new(slice, &mut self.multiplicities[index as usize])
     }
 
-    pub(crate) fn into_iterator(self) -> BatchRowIterator {
-        BatchRowIterator::new(Ok(self))
+    pub(crate) fn into_iterator(self) -> FixedBatchRowIterator {
+        FixedBatchRowIterator::new(Ok(self))
     }
 }
 
-pub struct BatchRowIterator {
-    batch: Result<Batch, ConceptReadError>,
+pub struct FixedBatchRowIterator {
+    batch: Result<FixedBatch, ConceptReadError>,
     index: u32,
 }
 
-impl BatchRowIterator {
-    pub(crate) fn new(batch: Result<Batch, ConceptReadError>) -> Self {
+impl FixedBatchRowIterator {
+    pub(crate) fn new(batch: Result<FixedBatch, ConceptReadError>) -> Self {
         Self { batch, index: 0 }
     }
 
     fn has_next(&self) -> bool {
-        self.batch.as_ref().is_ok_and(|batch| self.index < batch.rows_count())
+        self.batch.as_ref().is_ok_and(|batch| self.index < batch.len())
     }
 }
 
-impl LendingIterator for BatchRowIterator {
-    type Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>;
+impl LendingIterator for FixedBatchRowIterator {
+    type Item<'a> = Result<MaybeOwnedRow<'a>, &'a ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self.batch.as_mut() {
             Ok(batch) => {
-                if self.index >= batch.rows_count() {
+                if self.index >= batch.len() {
                     None
                 } else {
                     let row = batch.get_row(self.index);
@@ -120,105 +116,90 @@ impl LendingIterator for BatchRowIterator {
 }
 
 #[derive(Debug)]
-pub struct Row<'a> {
-    row: &'a mut [VariableValue<'static>],
-    multiplicity: &'a mut u64,
+pub struct Batch {
+    width: u32,
+    entries: usize,
+    data: Vec<VariableValue<'static>>,
+    multiplicities: Vec<u64>,
 }
 
-impl<'a> Row<'a> {
-    // TODO: pub(crate)
-    pub fn new(row: &'a mut [VariableValue<'static>], multiplicity: &'a mut u64) -> Self {
-        Self { row, multiplicity }
+impl Batch {
+    pub(crate) fn new(width: u32, length: usize) -> Self {
+        let size = width as usize * length;
+        Batch { width, data: vec![VariableValue::Empty; size], entries: 0, multiplicities: vec![1; length] }
     }
 
-    pub(crate) fn len(&self) -> usize {
-        self.row.len()
+    pub fn len(&self) -> usize {
+        self.entries
     }
 
-    pub(crate) fn get(&self, position: VariablePosition) -> &VariableValue<'static> {
-        &self.row[position.as_usize()]
+    pub(crate) fn is_full(&self) -> bool {
+        (self.entries * self.width as usize) == self.data.len()
     }
 
-    pub(crate) fn set(&mut self, position: VariablePosition, value: VariableValue<'static>) {
-        debug_assert!(*self.get(position) == VariableValue::Empty || *self.get(position) == value);
-        self.row[position.as_usize()] = value;
+    pub(crate) fn get_multiplicities(&self) -> &[u64] {
+        self.multiplicities.as_ref()
     }
 
-    pub(crate) fn copy_from(&mut self, row: &[VariableValue<'static>], multiplicity: u64) {
-        debug_assert!(self.len() == row.len());
-        self.row.clone_from_slice(row);
-        *self.multiplicity = multiplicity;
+    pub(crate) fn get_row(&self, index: usize) -> MaybeOwnedRow<'_> {
+        debug_assert!(index <= self.entries);
+        let start = index * self.width as usize;
+        let end = (index + 1) * self.width as usize;
+        let slice = &self.data[start..end];
+        MaybeOwnedRow::new_borrowed(slice, &self.multiplicities[index])
     }
 
-    pub(crate) fn multiplicity(&self) -> u64 {
-        *self.multiplicity
+    pub(crate) fn get_row_mut(&mut self, index: usize) -> Row<'_> {
+        debug_assert!(index <= self.entries);
+        self.row_internal_mut(index)
     }
 
-    pub(crate) fn set_multiplicity(&mut self, multiplicity: u64) {
-        *self.multiplicity = multiplicity;
+    pub(crate) fn append(&mut self, row: MaybeOwnedRow<'_>) {
+        let mut destination_row = self.row_internal_mut(self.entries);
+        destination_row.copy_from_row(row);
+        self.entries += 1;
     }
-}
 
-impl<'a> Display for Row<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} x [  ", self.multiplicity)?;
-        for value in &*self.row {
-            write!(f, "{value}  ")?
+    fn row_internal_mut(&mut self, index: usize) -> Row<'_> {
+        let start = index * self.width as usize;
+        let end = (index + 1) * self.width as usize;
+        if end > self.data.len() {
+            self.data.resize(end, VariableValue::Empty);
         }
-        writeln!(f, "]")?;
-        Ok(())
+        let slice = &mut self.data[start..end];
+        Row::new(slice, &mut self.multiplicities[index])
+    }
+
+    pub(crate) fn into_iterator_mut(self) -> MutableBatchRowIterator {
+        MutableBatchRowIterator::new(self)
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ImmutableRow<'a> {
-    row: Cow<'a, [VariableValue<'static>]>,
-    multiplicity: u64,
+pub struct MutableBatchRowIterator {
+    batch: Batch,
+    index: usize,
 }
 
-impl<'a> ImmutableRow<'a> {
-    pub(crate) fn new(row: &'a [VariableValue<'static>], multiplicity: u64) -> Self {
-        Self { row: Cow::Borrowed(row), multiplicity }
+impl MutableBatchRowIterator {
+    pub(crate) fn new(batch: Batch) -> Self {
+        Self { batch, index: 0 }
     }
 
-    pub fn width(&self) -> usize {
-        self.row.len()
-    }
-
-    pub fn get(&self, position: VariablePosition) -> &VariableValue<'_> {
-        &self.row[position.as_usize()]
-    }
-
-    pub fn get_multiplicity(&self) -> u64 {
-        self.multiplicity
-    }
-
-    pub fn into_owned(self) -> ImmutableRow<'static> {
-        let cloned: Vec<VariableValue<'static>> = self.row.iter().map(|value| value.clone().into_owned()).collect();
-        ImmutableRow { row: Cow::Owned(cloned), multiplicity: self.multiplicity }
-    }
-
-    pub fn as_reference(&self) -> ImmutableRow<'_> {
-        ImmutableRow { row: Cow::Borrowed(self.row.as_ref()), multiplicity: self.multiplicity }
+    fn has_next(&self) -> bool {
+        self.index < self.batch.len()
     }
 }
 
-impl IntoIterator for ImmutableRow<'static> {
-    type Item = VariableValue<'static>;
-    type IntoIter = vec::IntoIter<VariableValue<'static>>;
-    fn into_iter(self) -> Self::IntoIter {
-        #[allow(clippy::unnecessary_to_owned)]
-        self.row.into_owned().into_iter()
-    }
-}
+impl LendingIterator for MutableBatchRowIterator {
+    type Item<'a> = Result<Row<'a>, &'a ConceptReadError>;
 
-impl<'a> Display for ImmutableRow<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} x [  ", self.multiplicity)?;
-        for value in &*self.row {
-            write!(f, "{value}  ")?
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        if self.index >= self.batch.len() {
+            None
+        } else {
+            let row = self.batch.get_row_mut(self.index);
+            self.index += 1;
+            Some(Ok(row))
         }
-        writeln!(f, "]")?;
-        Ok(())
     }
 }

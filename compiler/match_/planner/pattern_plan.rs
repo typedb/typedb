@@ -529,8 +529,8 @@ impl UnsortedJoinProgram {
         &self.new_variables
     }
 }
-#[derive(Debug)]
 
+#[derive(Debug)]
 pub struct AssignmentProgram {
     assign_instruction: ExpressionBinding<Variable>,
     check_instructions: Vec<ConstraintInstruction>,

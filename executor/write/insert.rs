@@ -12,21 +12,25 @@ use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
-    batch::Row,
+    row::Row,
     write::{write_instruction::AsWriteInstruction, WriteError},
 };
 
 pub struct InsertExecutor {
-    plan: InsertProgram,
+    program: InsertProgram,
 }
 
 impl InsertExecutor {
-    pub fn new(plan: InsertProgram) -> Self {
-        Self { plan }
+    pub fn new(program: InsertProgram) -> Self {
+        Self { program }
     }
 
-    pub(crate) fn plan(&self) -> &InsertProgram {
-        &self.plan
+    pub(crate) fn program(&self) -> &InsertProgram {
+        &self.program
+    }
+
+    pub(crate) fn output_width(&self) -> usize {
+        self.program.output_row_schema.len()
     }
 
     pub fn execute_insert(
@@ -35,9 +39,10 @@ impl InsertExecutor {
         thing_manager: &ThingManager,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
-        debug_assert!(row.multiplicity() == 1); // The accumulator should de-duplicate for insert
-        let Self { plan } = self;
-        for instruction in &plan.concepts {
+        debug_assert!(row.get_multiplicity() == 1);
+        debug_assert!(row.len() == self.program.output_row_schema.len());
+        let Self { program } = self;
+        for instruction in &program.concept_instructions {
             match instruction {
                 ConceptInstruction::PutAttribute(isa_attr) => {
                     isa_attr.execute(snapshot, thing_manager, row)?;
@@ -47,7 +52,7 @@ impl InsertExecutor {
                 }
             }
         }
-        for instruction in &plan.connections {
+        for instruction in &program.connection_instructions {
             match instruction {
                 ConnectionInstruction::Has(has) => {
                     has.execute(snapshot, thing_manager, row)?;

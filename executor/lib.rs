@@ -19,6 +19,7 @@ pub(crate) mod instruction;
 pub mod pattern_executor;
 pub mod pipeline;
 pub mod program_executor;
+pub mod row;
 pub mod write;
 
 // TODO: use a bit-vec, since we have a continuously allocated range of positions

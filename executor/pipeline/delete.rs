@@ -4,53 +4,54 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable_value::VariableValue;
+use std::{marker::PhantomData, sync::Arc};
+
+use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
-    batch::Row,
-    pipeline::{
-        accumulator::{AccumulatedRowIterator, AccumulatingStageAPI, Accumulator},
-        common::PipelineStageCommon,
-        stage_wrappers::WritePipelineStage,
-        PipelineContext, PipelineError,
-    },
+    pipeline::{PipelineError, StageAPI, StageIterator, WrittenRowsIterator},
     write::delete::DeleteExecutor,
 };
 
-pub type DeleteAccumulator<Snapshot> = Accumulator<Snapshot, WritePipelineStage<Snapshot>, DeleteExecutor>;
+pub struct DeleteStageExecutor<Snapshot: WritableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
+    deleter: DeleteExecutor,
+    previous: PreviousStage,
+    phantom: PhantomData<Snapshot>,
+}
 
-pub type DeleteStage<Snapshot> = PipelineStageCommon<
-    Snapshot,
-    WritePipelineStage<Snapshot>,
-    DeleteAccumulator<Snapshot>,
-    AccumulatedRowIterator<Snapshot>,
->;
-impl<Snapshot: WritableSnapshot + 'static> DeleteStage<Snapshot> {
-    pub fn new(upstream: Box<WritePipelineStage<Snapshot>>, executor: DeleteExecutor) -> DeleteStage<Snapshot> {
-        Self::new_impl(Accumulator::new(upstream, executor))
+impl<Snapshot, PreviousStage> DeleteStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: WritableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    pub fn new(deleter: DeleteExecutor, previous: PreviousStage) -> Self {
+        Self { deleter, previous, phantom: PhantomData::default() }
     }
 }
 
-impl<Snapshot: WritableSnapshot + 'static> AccumulatingStageAPI<Snapshot> for DeleteExecutor {
-    fn process_accumulated(
-        &self,
-        context: &mut PipelineContext<Snapshot>,
-        rows: &mut Box<[(Box<[VariableValue<'static>]>, u64)]>,
-    ) -> Result<(), PipelineError> {
-        let (snapshot, thing_manager) = context.borrow_parts_mut();
-        for (row, multiplicity) in rows {
-            self.execute_delete(snapshot, thing_manager, &mut Row::new(row, multiplicity))
-                .map_err(PipelineError::WriteError)?;
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DeleteStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: WritableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    type OutputIterator = WrittenRowsIterator;
+
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
+        let (previous_iterator, mut snapshot, mut thing_manager) = self.previous.into_iterator()?;
+        // accumulate once, then we will operate in-place
+        let mut rows = previous_iterator.collect_owned()?;
+
+        // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
+        let snapshot_ref = Arc::get_mut(&mut snapshot).unwrap();
+        let thing_manager_ref = Arc::get_mut(&mut thing_manager).unwrap();
+        for index in 0..rows.len() {
+            let mut row = rows.get_row_mut(index);
+            self.deleter
+                .execute_delete(snapshot_ref, thing_manager_ref, &mut row)
+                .map_err(|err| PipelineError::WriteError(err))?;
         }
-        Ok(())
-    }
 
-    fn must_deduplicate_incoming_rows(&self) -> bool {
-        false
-    }
-
-    fn row_width(&self) -> usize {
-        self.plan().output_row_schema.len() + self.plan().concepts.len()
+        Ok((WrittenRowsIterator::new(rows), snapshot, thing_manager))
     }
 }

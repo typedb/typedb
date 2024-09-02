@@ -11,7 +11,6 @@ use concept::error::ConceptReadError;
 use lending_iterator::{LendingIterator, Peekable};
 
 use crate::{
-    batch::Row,
     instruction::{
         has_executor::{
             HasBoundedSortedAttribute, HasUnboundedSortedAttributeMerged, HasUnboundedSortedAttributeSingle,
@@ -41,6 +40,7 @@ use crate::{
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
         VariableMode, VariableModes,
     },
+    row::Row,
 };
 
 // TODO: the 'check' can deduplicate against all relevant variables as soon as an anonymous variable is no longer relevant.

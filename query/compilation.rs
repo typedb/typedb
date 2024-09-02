@@ -36,14 +36,16 @@ pub enum CompiledStage {
 impl CompiledStage {
     fn output_row_mapping(&self) -> HashMap<Variable, VariablePosition> {
         match self {
-            CompiledStage::Match(_) => HashMap::new(), // TODO
-            CompiledStage::Insert(plan) => plan
+            CompiledStage::Match(program) => {
+                program.outputs()
+            }
+            CompiledStage::Insert(program) => program
                 .output_row_schema
                 .iter()
                 .enumerate()
                 .map(|(i, (v, _))| (*v, VariablePosition::new(i as u32)))
                 .collect(),
-            CompiledStage::Delete(plan) => plan
+            CompiledStage::Delete(program) => program
                 .output_row_schema
                 .iter()
                 .enumerate()

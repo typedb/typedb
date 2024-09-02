@@ -4,49 +4,52 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use lending_iterator::LendingIterator;
+use std::{array, sync::Arc};
+
+use concept::thing::thing_manager::ThingManager;
+use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::{Batch, BatchRowIterator, ImmutableRow},
-    pipeline::{IteratingStageAPI, PipelineContext, PipelineError, PipelineStageAPI},
+    pipeline::{PipelineError, StageAPI, StageIterator},
+    row::MaybeOwnedRow,
 };
 
 pub struct InitialStage<Snapshot: ReadableSnapshot + 'static> {
-    context: PipelineContext<Snapshot>,
-    only_entry: BatchRowIterator,
+    snapshot: Arc<Snapshot>,
+    thing_manager: Arc<ThingManager>,
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> InitialStage<Snapshot> {
-    pub fn new(context: PipelineContext<Snapshot>) -> Self {
-        Self { context, only_entry: BatchRowIterator::new(Ok(Batch::SINGLE_EMPTY_ROW)) }
+    pub fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
+        Self { snapshot, thing_manager }
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for InitialStage<Snapshot> {
-    type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;
+impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for InitialStage<Snapshot> {
+    type OutputIterator = InitialIterator;
+
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
+        Ok((InitialIterator::new(), self.snapshot.clone(), self.thing_manager.clone()))
+    }
+}
+
+pub struct InitialIterator {
+    single_iterator: AsLendingIterator<array::IntoIter<Result<MaybeOwnedRow<'static>, PipelineError>, 1>>,
+}
+
+impl InitialIterator {
+    fn new() -> Self {
+        Self { single_iterator: AsLendingIterator::new([Ok(MaybeOwnedRow::new_owned(Vec::new(), 1))].into_iter()) }
+    }
+}
+
+impl LendingIterator for InitialIterator {
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
+
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.only_entry.next().map(|result| result.map_err(|source| PipelineError::ConceptRead(source.clone())))
+        self.single_iterator.next()
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> PipelineStageAPI<Snapshot> for InitialStage<Snapshot> {
-    fn initialise(&mut self) -> Result<(), PipelineError> {
-        Ok(())
-    }
-}
-
-impl<Snapshot: ReadableSnapshot + 'static> IteratingStageAPI<Snapshot> for InitialStage<Snapshot> {
-    fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
-        self.context.try_get_shared()
-    }
-
-    fn finalise_and_into_context(mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
-        if self.next().is_some() {
-            // This changes the state, but we're going to error anyway
-            Err(PipelineError::FinalisedUnconsumedStage)
-        } else {
-            Ok(self.context)
-        }
-    }
-}
+impl StageIterator for InitialIterator {}

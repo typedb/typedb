@@ -23,7 +23,7 @@ use concept::{
     },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{batch::ImmutableRow, program_executor::ProgramExecutor};
+use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
@@ -241,7 +241,7 @@ fn traverse_links_unbounded_sorted_from() {
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 2);
 
@@ -331,7 +331,7 @@ fn traverse_links_unbounded_sorted_to() {
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 2);
 
@@ -434,7 +434,7 @@ fn traverse_links_bounded_relation() {
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 2);
 
@@ -547,7 +547,7 @@ fn traverse_links_bounded_relation_player() {
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 2);
 
@@ -636,7 +636,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 2);
 
@@ -726,7 +726,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 2);
 
@@ -829,7 +829,7 @@ fn traverse_links_reverse_bounded_player() {
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 2);
 
@@ -942,7 +942,7 @@ fn traverse_links_reverse_bounded_player_relation() {
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
-    let rows: Vec<Result<ImmutableRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 2);
 

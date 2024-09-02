@@ -18,18 +18,25 @@ use concept::{
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
 };
 use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable};
+use lending_iterator::{
+    adaptors::{Filter, Map},
+    kmerge::KMergeBy,
+    AsHkt, LendingIterator, Peekable,
+};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    batch::ImmutableRow,
     instruction::{
         has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
+        tuple::{
+            has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
+            TupleResult,
+        },
         BinaryIterateMode, Checker, VariableModes,
     },
+    row::MaybeOwnedRow,
     VariablePosition,
 };
 
@@ -114,7 +121,7 @@ impl HasReverseExecutor {
         &self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-        row: ImmutableRow<'_>,
+        row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
@@ -183,7 +190,7 @@ impl HasReverseExecutor {
                 }
             }
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.width() > self.has.attribute().as_usize());
+                debug_assert!(row.len() > self.has.attribute().as_usize());
                 let attribute = row.get(self.has.attribute());
                 let (min_owner_type, max_owner_type) = min_max_types(&*self.owner_types);
                 let type_range =

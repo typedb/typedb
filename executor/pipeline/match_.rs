@@ -4,121 +4,127 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
-use compiler::match_::planner::program_plan::ProgramPlan;
-use concept::error::ConceptReadError;
-use lending_iterator::LendingIterator;
+use compiler::match_::planner::pattern_plan::MatchProgram;
+use concept::thing::thing_manager::ThingManager;
+use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::{Batch, ImmutableRow},
-    pattern_executor::{BatchIterator, PatternExecutor},
-    pipeline::{
-        common::PipelineStageCommon, IteratingStageAPI, PipelineContext, PipelineError, PipelineStageAPI,
-        UninitialisedStageAPI,
-    },
+    pattern_executor::{PatternExecutor, PatternIterator},
+    pipeline::{PipelineError, StageAPI, StageIterator},
+    row::MaybeOwnedRow,
 };
 
-pub type MatchStage<Snapshot, PipelineStageType> = PipelineStageCommon<
-    Snapshot,
-    PipelineStageType,
-    LazyMatchStage<Snapshot, PipelineStageType>,
-    MatchStageIterator<Snapshot>,
->;
-
-impl<Snapshot: ReadableSnapshot + 'static, PipelineStageType: PipelineStageAPI<Snapshot>>
-    MatchStage<Snapshot, PipelineStageType>
-{
-    pub fn new(upstream: Box<PipelineStageType>, program_plan: ProgramPlan) -> Self {
-        Self::new_impl(LazyMatchStage::new(upstream, program_plan))
-    }
-}
-
-pub struct LazyMatchStage<Snapshot: ReadableSnapshot + 'static, PipelineStageType: PipelineStageAPI<Snapshot>> {
-    program_plan: ProgramPlan,
-    upstream: Box<PipelineStageType>,
+pub struct MatchStageExecutor<Snapshot: ReadableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
+    program: MatchProgram,
+    previous: PreviousStage,
     phantom: PhantomData<Snapshot>,
 }
 
-impl<Snapshot: ReadableSnapshot + 'static, PipelineStageType: PipelineStageAPI<Snapshot>>
-    LazyMatchStage<Snapshot, PipelineStageType>
+impl<Snapshot, PreviousStage> MatchStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
-    pub fn new(upstream: Box<PipelineStageType>, program_plan: ProgramPlan) -> Self {
-        Self { program_plan, upstream, phantom: PhantomData }
+    pub fn new(program: MatchProgram, previous: PreviousStage) -> Self {
+        Self { program, previous, phantom: PhantomData::default() }
     }
 }
 
-impl<Snapshot: ReadableSnapshot, PipelineStageType: PipelineStageAPI<Snapshot>> UninitialisedStageAPI<Snapshot>
-    for LazyMatchStage<Snapshot, PipelineStageType>
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for MatchStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
-    type IteratingStage = MatchStageIterator<Snapshot>;
+    type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
-    fn initialise_and_into_iterator(mut self) -> Result<Self::IteratingStage, PipelineError> {
-        self.upstream.initialise()?;
-        let LazyMatchStage { mut upstream, program_plan, .. } = self;
-        let mut context = upstream.try_get_shared_context()?;
-        let (snapshot_borrowed, thing_manager_borrowed) = context.borrow_parts();
-        let executor = PatternExecutor::new(program_plan.entry(), snapshot_borrowed, thing_manager_borrowed)
-            .map_err(PipelineError::ConceptRead)?;
-        let context = context.try_get_shared()?;
-        let (shared_snapshot, shared_thing_manager) = context.borrow_parts();
-        let batch_iterator = BatchIterator::new(executor, shared_snapshot.clone(), shared_thing_manager.clone());
-        Ok(MatchStageIterator::new(batch_iterator))
+    fn into_iterator(mut self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
+        let Self { previous: previous_stage, program, .. } = self;
+        let (previous_iterator, snapshot, thing_manager) = previous_stage.into_iterator()?;
+        let iterator = previous_iterator;
+        Ok((
+            MatchStageIterator::new(iterator, program, snapshot.clone(), thing_manager.clone()),
+            snapshot,
+            thing_manager,
+        ))
     }
 }
 
-pub struct MatchStageIterator<Snapshot: ReadableSnapshot> {
-    batch_iterator: BatchIterator<Snapshot>,
-    current_batch: Option<Result<Batch, ConceptReadError>>,
-    current_index: u32,
+pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
+    snapshot: Arc<Snapshot>,
+    thing_manager: Arc<ThingManager>,
+    program: MatchProgram,
+    source_iterator: Iterator,
+    current_iterator: Option<Peekable<PatternIterator<Snapshot>>>,
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> MatchStageIterator<Snapshot> {
-    fn new(batch_iterator: BatchIterator<Snapshot>) -> Self {
-        Self { batch_iterator, current_batch: Some(Ok(Batch::EMPTY)), current_index: 0 }
+impl<Snapshot: ReadableSnapshot + 'static, Iterator: StageIterator> MatchStageIterator<Snapshot, Iterator> {
+    fn new(
+        iterator: Iterator,
+        program: MatchProgram,
+        snapshot: Arc<Snapshot>,
+        thing_manager: Arc<ThingManager>,
+    ) -> Self {
+        Self { snapshot, program, thing_manager, source_iterator: iterator, current_iterator: None }
     }
 
-    fn forward_batches_till_has_next_or_none(&mut self) {
-        let must_fetch_next = match &self.current_batch {
-            None => false,
-            Some(Err(_)) => false,
-            Some(Ok(batch)) => self.current_index >= batch.rows_count(),
-        };
-        if must_fetch_next {
-            self.current_batch = self.batch_iterator.next();
-            self.forward_batches_till_has_next_or_none(); // Just in case we have empty batches
-        }
-    }
-}
-
-impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for MatchStageIterator<Snapshot> {
-    type Item<'a> = Result<ImmutableRow<'a>, PipelineError>;
-
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.forward_batches_till_has_next_or_none();
-        match &self.current_batch {
-            None => None,
-            Some(Err(err)) => Some(Err(PipelineError::ConceptRead(err.clone()))),
-            Some(Ok(batch)) => {
-                self.current_index += 1;
-                Some(Ok(batch.get_row(self.current_index - 1)))
+    fn create_next_current_iterator(&mut self) -> Result<(), PipelineError> {
+        while self.current_iterator.is_none() {
+            let start = self.source_iterator.next();
+            match start {
+                None => return Ok(()),
+                Some(start) => {
+                    let start = start?;
+                    // TODO uses start to initialise new pattern iterator
+                    let iterator = PatternExecutor::new(&self.program, &self.snapshot, &self.thing_manager)
+                        .map_err(|err| PipelineError::InitialisingMatchIterator(err))?;
+                }
             }
         }
+
+        Ok(())
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> IteratingStageAPI<Snapshot> for MatchStageIterator<Snapshot> {
-    fn try_get_shared_context(&mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
-        self.batch_iterator.try_get_shared_context()
-    }
+impl<Snapshot, Iterator> LendingIterator for MatchStageIterator<Snapshot, Iterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    Iterator: StageIterator,
+{
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
 
-    fn finalise_and_into_context(mut self) -> Result<PipelineContext<Snapshot>, PipelineError> {
-        if self.next().is_some() {
-            Err(PipelineError::FinalisedUnconsumedStage)
-        } else {
-            let (_, context) = self.batch_iterator.into_parts();
-            Ok(context)
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        while !self.current_iterator.as_mut().is_some_and(|iter| iter.peek().is_some()) {
+            match self.source_iterator.next() {
+                None => return None,
+                Some(source_next) => {
+                    // TODO: use the start to initialise the next iterator
+                    let iterator = PatternExecutor::new(&self.program, &self.snapshot, &self.thing_manager)
+                        .map_err(|err| PipelineError::InitialisingMatchIterator(err));
+                    match iterator {
+                        Ok(iterator) => {
+                            self.current_iterator = Some(Peekable::new(
+                                iterator.into_iterator(self.snapshot.clone(), self.thing_manager.clone()),
+                            ));
+                        }
+                        Err(err) => return Some(Err(err)),
+                    };
+                }
+            }
         }
+        self.current_iterator
+            .as_mut()
+            .unwrap()
+            .next()
+            .map(|result| result.map_err(|err| PipelineError::ConceptRead(err.clone())))
     }
+}
+
+impl<Snapshot, Iterator> StageIterator for MatchStageIterator<Snapshot, Iterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    Iterator: StageIterator,
+{
 }

@@ -22,7 +22,8 @@ use concept::{
     },
 };
 use lending_iterator::{
-    adaptors::{Map, TryFilter},
+    adaptors::{Filter, Map, TryFilter},
+    higher_order::FnHktHelper,
     kmerge::KMergeBy,
     AsHkt, LendingIterator, Peekable,
 };
@@ -30,7 +31,6 @@ use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    batch::ImmutableRow,
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{
@@ -39,6 +39,7 @@ use crate::{
         },
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
+    row::MaybeOwnedRow,
     VariablePosition,
 };
 
@@ -140,7 +141,7 @@ impl HasExecutor {
         &self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-        row: ImmutableRow<'_>,
+        row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
@@ -212,7 +213,7 @@ impl HasExecutor {
                 }
             }
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.width() > self.has.owner().as_usize());
+                debug_assert!(row.len() > self.has.owner().as_usize());
                 let iterator = match row.get(self.has.owner()) {
                     VariableValue::Thing(Thing::Entity(entity)) => entity.get_has_types_range_unordered(
                         &**snapshot,

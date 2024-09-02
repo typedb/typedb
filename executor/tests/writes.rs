@@ -17,7 +17,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    batch::Row,
+    row::Row,
     write::{delete::DeleteExecutor, insert::InsertExecutor, WriteError},
 };
 use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
@@ -115,8 +115,8 @@ fn execute_insert(
         compiler::insert::program::compile(block.conjunction().constraints(), &input_row_format, &entry_annotations)
             .unwrap();
 
-    println!("Insert Vertex:\n{:?}", &insert_plan.concepts);
-    println!("Insert Edges:\n{:?}", &insert_plan.connections);
+    println!("Insert Vertex:\n{:?}", &insert_plan.concept_instructions);
+    println!("Insert Edges:\n{:?}", &insert_plan.connection_instructions);
     insert_plan
         .debug_info
         .iter()
@@ -206,7 +206,7 @@ fn execute_delete(
         delete_executor.execute_delete(snapshot, thing_manager, &mut output);
         output_rows.push(output_vec);
     }
-    println!("{:?}", &delete_executor.plan().output_row_schema);
+    println!("{:?}", &delete_executor.program().output_row_schema);
     Ok(output_rows)
 }
 

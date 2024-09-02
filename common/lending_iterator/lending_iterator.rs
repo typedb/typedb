@@ -4,16 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod adaptors;
-pub mod higher_order;
-pub mod kmerge;
-
 use std::{borrow::Borrow, cmp::Ordering, iter, mem::transmute};
 
 use crate::{
     adaptors::{Chain, Filter, FilterMap, FlatMap, Flatten, Map, TakeWhile, TryFilter, TryFlatMap},
     higher_order::{AdHocHkt, FnHktHelper, FnMutHktHelper, Hkt},
 };
+
+pub mod adaptors;
+pub mod higher_order;
+pub mod kmerge;
 
 pub trait LendingIterator: 'static {
     type Item<'a>;
@@ -216,11 +216,11 @@ where
         if self.item.is_some() {
             let item = self.item.as_ref().unwrap();
             match self.compare_key(item, key) {
-                Ordering::Less => {
+                Ordering::Less => {}, // fallthrough
+                Ordering::Equal => return,
+                Ordering::Greater => {
                     unreachable!("Key behind the stored item in a Peekable iterator")
                 }
-                Ordering::Equal => return,
-                Ordering::Greater => (), // fallthrough
             }
         }
         self.item = None;

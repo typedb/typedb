@@ -7,12 +7,13 @@
 // jk there's no planning to be done here, just execution.
 // There is a need to construct the executor though.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use answer::variable::Variable;
 use encoding::{graph::type_::Kind, value::value::Value};
 use ir::pattern::{constraint::Constraint, expression::Expression};
 use itertools::Itertools;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     filter_variants,
@@ -26,8 +27,8 @@ use crate::{
 };
 
 pub struct InsertProgram {
-    pub concepts: Vec<ConceptInstruction>,
-    pub connections: Vec<ConnectionInstruction>,
+    pub concept_instructions: Vec<ConceptInstruction>,
+    pub connection_instructions: Vec<ConnectionInstruction>,
     pub output_row_schema: Vec<(Variable, VariableSource)>,
     // Where to copy from
     pub debug_info: HashMap<VariableSource, Variable>,
@@ -58,7 +59,12 @@ pub fn compile(
     });
 
     let debug_info = HashMap::new(); // TODO
-    Ok(InsertProgram { concepts: concept_inserts, connections: connection_inserts, output_row_schema, debug_info })
+    Ok(InsertProgram {
+        concept_instructions: concept_inserts,
+        connection_instructions: connection_inserts,
+        output_row_schema,
+        debug_info,
+    })
 }
 
 fn add_inserted_concepts(

@@ -11,7 +11,6 @@ use std::{
 
 use concept::error::ConceptWriteError;
 
-pub mod common;
 pub mod delete;
 pub mod insert;
 pub(crate) mod write_instruction;
