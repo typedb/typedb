@@ -9,6 +9,7 @@ use chrono_tz::Tz;
 
 use answer::{Thing, Type};
 use answer::variable_value::VariableValue;
+use compiler::VariablePosition;
 use concept::error::ConceptReadError;
 use concept::thing::thing_manager::ThingManager;
 use concept::type_::{KindAPI, TypeAPI};
@@ -20,9 +21,26 @@ use concept::type_::role_type::RoleType;
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value::Value;
 use encoding::value::value_type::ValueType;
+use executor::row::MaybeOwnedRow;
 use storage::snapshot::ReadableSnapshot;
 
-fn encode_variable_value(
+pub(crate) fn encode_row(
+    row: MaybeOwnedRow<'_>,
+    columns: &[(String, VariablePosition)],
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+) -> Result<typedb_protocol::AnswerRow, ConceptReadError> {
+    let mut encoded_row = Vec::with_capacity(columns.len());
+    for (_, position) in columns {
+        let variable_value = row.get(*position);
+        let encoded_value = encode_variable_value(variable_value, snapshot, type_manager, thing_manager, false)?;
+        encoded_row.push(encoded_value);
+    }
+    Ok(typedb_protocol::AnswerRow { row: encoded_row })
+}
+
+pub(crate) fn encode_variable_value(
     variable_value: &VariableValue<'_>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
