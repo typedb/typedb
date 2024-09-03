@@ -77,6 +77,16 @@ impl<'a> Relation<'a> {
         }
     }
 
+    pub fn has_role_player<'o>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        player: &impl ObjectAPI<'o>,
+        role: RoleType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        thing_manager.has_role_player(snapshot, self.as_reference(), player, role)
+    }
+
     pub fn get_players(
         &self,
         snapshot: &impl ReadableSnapshot,

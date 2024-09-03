@@ -27,7 +27,7 @@ use crate::{
         inference::type_annotations::TypeAnnotations,
         instructions::{
             CheckInstruction, ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs,
-            IsaReverseInstruction,
+            IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
         },
         planner::vertex::{Costed, HasPlanner, LinksPlanner, PlannerVertex, ThingPlanner, ValuePlanner, VertexCost},
     },
@@ -389,8 +389,63 @@ fn lower_plan(
                     todo!("type constraint")
                 }
 
-                Constraint::Links(_links) => {
-                    todo!()
+                Constraint::Links(links) => {
+                    let relation = links.relation();
+                    let player = links.player();
+                    let role = links.role_type();
+
+                    if inputs.len() == 3 {
+                        let relation_producer =
+                            producers.get(&relation).expect("bound relation must have been produced");
+                        let player_producer = producers.get(&player).expect("bound player must have been produced");
+                        let (program, instruction) = std::cmp::Ord::max(*relation_producer, *player_producer);
+
+                        let relation_pos = match_builder.position(relation);
+                        let player_pos = match_builder.position(player);
+                        let role_pos = match_builder.position(role);
+                        match_builder.get_program_mut(program).instructions[instruction].add_check(
+                            CheckInstruction::Links { relation: relation_pos, player: player_pos, role: role_pos },
+                        );
+                        continue;
+                    }
+
+                    let planner = plan_builder.elements[index].as_links().unwrap();
+                    let sort_variable = if inputs.is_empty() && planner.unbound_is_forward || inputs.contains(&player) {
+                        relation
+                    } else {
+                        player
+                    };
+
+                    let links = links.clone();
+                    let instruction = if inputs.contains(&relation) {
+                        ConstraintInstruction::Links(LinksInstruction::new(
+                            links,
+                            Inputs::Single([relation]),
+                            type_annotations,
+                        ))
+                    } else if inputs.contains(&player) {
+                        ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
+                            links,
+                            Inputs::Single([player]),
+                            type_annotations,
+                        ))
+                    } else if planner.unbound_is_forward {
+                        ConstraintInstruction::Links(LinksInstruction::new(links, Inputs::None([]), type_annotations))
+                    } else {
+                        ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
+                            links,
+                            Inputs::None([]),
+                            type_annotations,
+                        ))
+                    };
+                    let producer_index =
+                        match_builder.push_instruction(sort_variable, instruction, &[relation, player, role]);
+
+                    for &var in &[relation, player, role] {
+                        if !inputs.contains(&var) {
+                            producers.insert(var, producer_index);
+                        }
+                    }
                 }
 
                 Constraint::Has(has) => {

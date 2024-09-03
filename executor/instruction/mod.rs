@@ -328,6 +328,7 @@ impl<T: Hkt> Checker<T> {
         thing_manager: &Arc<ThingManager>,
         row: &MaybeOwnedRow<'_>,
     ) -> Box<FilterFn<T>> {
+        type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>>;
         let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> Result<bool, ConceptReadError>>> =
             Vec::with_capacity(self.checks.len());
         for check in &self.checks {
@@ -351,44 +352,67 @@ impl<T: Hkt> Checker<T> {
                     let maybe_attribute_extractor = self.extractors.get(&attribute);
                     let snapshot = snapshot.clone();
                     let thing_manager = thing_manager.clone();
-                    match (maybe_owner_extractor, maybe_attribute_extractor) {
-                        (None, None) => unreachable!("filter unrelated to the iterator"),
-                        (None, Some(&attr)) => {
+                    let owner: BoxExtractor<T> = match maybe_owner_extractor {
+                        Some(&owner) => Box::new(owner),
+                        None => {
                             let owner = row.get(owner).to_owned();
-                            filters.push(Box::new({
-                                move |value| {
-                                    owner.as_thing().as_object().has_attribute(
-                                        &*snapshot,
-                                        &thing_manager,
-                                        attr(value).as_thing().as_attribute().as_reference(),
-                                    )
-                                }
-                            }));
+                            Box::new(move |_| owner.clone())
                         }
-                        (Some(&owner), None) => {
-                            let attr = row.get(attribute).to_owned();
-                            filters.push(Box::new({
-                                move |value| {
-                                    owner(value).as_thing().as_object().has_attribute(
-                                        &*snapshot,
-                                        &thing_manager,
-                                        attr.as_thing().as_attribute().as_reference(),
-                                    )
-                                }
-                            }));
+                    };
+                    let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
+                        Some(&attribute) => Box::new(attribute),
+                        None => {
+                            let attribute = row.get(attribute).to_owned();
+                            Box::new(move |_| attribute.clone())
                         }
-                        (Some(&owner), Some(&attr)) => {
-                            filters.push(Box::new({
-                                move |value| {
-                                    owner(value).as_thing().as_object().has_attribute(
-                                        &*snapshot,
-                                        &thing_manager,
-                                        attr(value).as_thing().as_attribute().as_reference(),
-                                    )
-                                }
-                            }));
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            owner(value).as_thing().as_object().has_attribute(
+                                &*snapshot,
+                                &thing_manager,
+                                attribute(value).as_thing().as_attribute().as_reference(),
+                            )
                         }
-                    }
+                    }));
+                }
+                CheckInstruction::Links { relation, player, role } => {
+                    let maybe_relation_extractor = self.extractors.get(&relation);
+                    let maybe_player_extractor = self.extractors.get(&player);
+                    let maybe_role_extractor = self.extractors.get(&role);
+                    let snapshot = snapshot.clone();
+                    let thing_manager = thing_manager.clone();
+                    let relation: BoxExtractor<T> = match maybe_relation_extractor {
+                        Some(&relation) => Box::new(relation),
+                        None => {
+                            let relation = row.get(relation).to_owned();
+                            Box::new(move |_| relation.clone())
+                        }
+                    };
+                    let player: BoxExtractor<T> = match maybe_player_extractor {
+                        Some(&player) => Box::new(player),
+                        None => {
+                            let player = row.get(player).to_owned();
+                            Box::new(move |_| player.clone())
+                        }
+                    };
+                    let role: BoxExtractor<T> = match maybe_role_extractor {
+                        Some(&role) => Box::new(role),
+                        None => {
+                            let role = row.get(role).to_owned();
+                            Box::new(move |_| role.clone())
+                        }
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            relation(value).as_thing().as_relation().has_role_player(
+                                &*snapshot,
+                                &thing_manager,
+                                &player(value).as_thing().as_object(),
+                                role(value).as_type().as_role_type().clone(),
+                            )
+                        }
+                    }));
                 }
             }
         }

@@ -776,6 +776,21 @@ impl ThingManager {
         LinksIterator::new(snapshot.iterate_range(range))
     }
 
+    pub(crate) fn has_role_player<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation: Relation<'_>,
+        player: &impl ObjectAPI<'a>,
+        role_type: RoleType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
+        let links_exists = snapshot
+            .get_mapped(links.into_storage_key().as_reference(), |_| true)
+            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
+            .unwrap_or(false);
+        Ok(links_exists)
+    }
+
     pub(crate) fn get_role_players(
         &self,
         snapshot: &impl ReadableSnapshot,
