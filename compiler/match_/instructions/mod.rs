@@ -22,6 +22,8 @@ pub enum ConstraintInstruction<ID> {
 
     // sub -> super
     Sub(type_::SubInstruction<ID>),
+    // super -> sub
+    SubReverse(type_::SubReverseInstruction<ID>),
 
     // thing -> type
     Isa(thing::IsaInstruction<ID>),
@@ -67,7 +69,8 @@ impl<ID: IrID> ConstraintInstruction<ID> {
     pub fn ids_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
             &Self::Type(type_::TypeInstruction { type_var, .. }) => apply(type_var),
-            Self::Sub(type_::SubInstruction { sub, .. }) => sub.ids_foreach(|var, _| apply(var)),
+            Self::Sub(type_::SubInstruction { sub, .. })
+            | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(|var, _| apply(var)),
             Self::Isa(thing::IsaInstruction { isa, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(|var, _| apply(var)),
             Self::Has(thing::HasInstruction { has, .. })
@@ -91,6 +94,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
         match self {
             Self::Type(_) => (),
             | Self::Sub(type_::SubInstruction { inputs, .. })
+            | Self::SubReverse(type_::SubReverseInstruction { inputs, .. })
             | Self::Isa(thing::IsaInstruction { inputs, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { inputs, .. })
             | Self::Has(thing::HasInstruction { inputs, .. })
@@ -110,7 +114,8 @@ impl<ID: IrID> ConstraintInstruction<ID> {
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
             &Self::Type(type_::TypeInstruction { type_var, .. }) => apply(type_var),
-            Self::Sub(type_::SubInstruction { sub, inputs, .. }) => sub.ids_foreach(|var, _| {
+            Self::Sub(type_::SubInstruction { sub, inputs, .. })
+            | Self::SubReverse(type_::SubReverseInstruction { sub, inputs, .. }) => sub.ids_foreach(|var, _| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
@@ -150,6 +155,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
         match self {
             Self::Type(_) => unreachable!("free-standing type variable can't have checks"),
             Self::Sub(inner) => inner.add_check(check),
+            Self::SubReverse(inner) => inner.add_check(check),
             Self::Isa(inner) => inner.add_check(check),
             Self::IsaReverse(inner) => inner.add_check(check),
             Self::Has(inner) => inner.add_check(check),
@@ -168,6 +174,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
         match self {
             Self::Type(inner) => ConstraintInstruction::Type(inner.map(mapping)),
             Self::Sub(inner) => ConstraintInstruction::Sub(inner.map(mapping)),
+            Self::SubReverse(inner) => ConstraintInstruction::SubReverse(inner.map(mapping)),
             Self::Isa(inner) => ConstraintInstruction::Isa(inner.map(mapping)),
             Self::IsaReverse(inner) => ConstraintInstruction::IsaReverse(inner.map(mapping)),
             Self::Has(inner) => ConstraintInstruction::Has(inner.map(mapping)),
@@ -187,7 +194,8 @@ impl<ID: Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
     fn constraint(&self) -> Constraint<ID> {
         match self {
             Self::Type(_) => todo!(), // TODO label?
-            Self::Sub(type_::SubInstruction { sub, .. }) => sub.clone().into(),
+            Self::Sub(type_::SubInstruction { sub, .. })
+            | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.clone().into(),
             Self::Isa(thing::IsaInstruction { isa, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.clone().into(),
             Self::Has(thing::HasInstruction { has, .. })

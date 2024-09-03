@@ -29,7 +29,7 @@ use crate::{
             thing::{
                 HasInstruction, HasReverseInstruction, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
             },
-            type_::{SubInstruction, TypeInstruction},
+            type_::{SubInstruction, SubReverseInstruction, TypeInstruction},
             CheckInstruction, ConstraintInstruction, Inputs,
         },
         planner::vertex::{
@@ -435,11 +435,7 @@ fn lower_plan(
 
                     let _planner = plan_builder.elements[index].as_sub().unwrap();
                     let sort_variable =
-                        if inputs.is_empty() || inputs.contains(&supertype) {
-                            subtype
-                        } else {
-                            supertype
-                        };
+                        if inputs.is_empty() || inputs.contains(&supertype) { subtype } else { supertype };
 
                     let sub = sub.clone();
                     let instruction = if inputs.contains(&subtype) {
@@ -449,10 +445,11 @@ fn lower_plan(
                             type_annotations,
                         ))
                     } else if inputs.contains(&supertype) {
-                        // ConstraintInstruction::SubReverse(SubReverseInstruction::new(sub, Inputs::Single([supertype]), type_annotations))
-                        todo!()
-                    // } else if !planner.unbound_is_forward {
-                        // ConstraintInstruction::SubReverse(SubReverseInstruction::new(sub, Inputs::None([]), type_annotations))
+                        ConstraintInstruction::SubReverse(SubReverseInstruction::new(
+                            sub,
+                            Inputs::Single([supertype]),
+                            type_annotations,
+                        ))
                     } else {
                         ConstraintInstruction::Sub(SubInstruction::new(sub, Inputs::None([]), type_annotations))
                     };

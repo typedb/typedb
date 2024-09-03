@@ -5,7 +5,6 @@
  */
 
 use std::{
-    cmp::Ordering,
     collections::{BTreeMap, HashMap, HashSet},
     marker::PhantomData,
     sync::Arc,
@@ -13,88 +12,64 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Type};
-use compiler::match_::instructions::type_::SubInstruction;
+use compiler::match_::instructions::type_::SubReverseInstruction;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
-use lending_iterator::{
-    adaptors::{Map, TryFilter},
-    higher_order::AdHocHkt,
-    AsLendingIterator, LendingIterator,
-};
+use lending_iterator::{higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions, TupleResult},
+        sub_executor::{NarrowingTupleIterator, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
+        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, TuplePositions},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     row::MaybeOwnedRow,
     VariablePosition,
 };
 
-pub(crate) struct SubExecutor {
+pub(crate) struct SubReverseExecutor {
     sub: ir::pattern::constraint::Sub<VariablePosition>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
-    sub_to_supertypes: Arc<BTreeMap<Type, Vec<Type>>>,
-    supertypes: Arc<HashSet<Type>>,
+    super_to_subtypes: Arc<BTreeMap<Type, Vec<Type>>>,
+    subtypes: Arc<HashSet<Type>>,
     filter_fn: Arc<SubFilterFn>,
     checker: Checker<AdHocHkt<(Type, Type)>>,
 }
 
-pub(super) type SubTupleIterator<I> = NarrowingTupleIterator<
-    Map<TryFilter<I, Box<SubFilterFn>, (Type, Type), ConceptReadError>, SubToTupleFn, AdHocHkt<TupleResult<'static>>>,
->;
-
-pub(super) type SubUnboundedSortedSub =
+pub(super) type SubReverseUnboundedSortedSub =
     SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), ConceptReadError>>>>;
-pub(super) type SubBoundedSortedSuper =
+pub(super) type SubReverseBoundedSortedSuper =
     SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), ConceptReadError>>>>;
 
 pub(super) type SubFilterFn = FilterFn<(Type, Type)>;
 
-type SubVariableValueExtractor = fn(&(Type, Type)) -> VariableValue<'static>;
-pub(super) const EXTRACT_SUB: SubVariableValueExtractor = |(sub, _)| VariableValue::Type(sub.clone());
-pub(super) const EXTRACT_SUPER: SubVariableValueExtractor = |(_, sup)| VariableValue::Type(sup.clone());
-
-pub(crate) struct NarrowingTupleIterator<I>(pub I);
-
-impl<I> LendingIterator for NarrowingTupleIterator<I>
-where
-    I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>>,
-{
-    type Item<'a> = TupleResult<'a>;
-
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.0.next()
-    }
-}
-
-impl SubExecutor {
+impl SubReverseExecutor {
     pub(crate) fn new(
-        sub: SubInstruction<VariablePosition>,
+        sub: SubReverseInstruction<VariablePosition>,
         variable_modes: VariableModes,
         sort_by: Option<VariablePosition>,
     ) -> Self {
-        let supertypes = sub.supertypes().clone();
-        let sub_to_supertypes = sub.sub_to_supertypes().clone();
-        debug_assert!(supertypes.len() > 0);
+        let subtypes = sub.subtypes().clone();
+        let super_to_subtypes = sub.super_to_subtypes().clone();
+        debug_assert!(subtypes.len() > 0);
 
-        let SubInstruction { sub, checks, .. } = sub;
+        let SubReverseInstruction { sub, checks, .. } = sub;
 
         let iterate_mode = BinaryIterateMode::new(sub.subtype(), sub.supertype(), &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
-            BinaryIterateMode::Unbound => create_sub_filter_sub_super(sub_to_supertypes.clone()),
+            BinaryIterateMode::Unbound => create_sub_filter_super_sub(super_to_subtypes.clone()),
             BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {
-                create_sub_filter_super(supertypes.clone())
+                create_sub_filter_sub(subtypes.clone())
             }
         };
         let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([sub.supertype(), sub.subtype()])
-        } else {
             TuplePositions::Pair([sub.subtype(), sub.supertype()])
+        } else {
+            TuplePositions::Pair([sub.supertype(), sub.subtype()])
         };
 
         let checker = Checker::<AdHocHkt<(Type, Type)>> {
@@ -108,8 +83,8 @@ impl SubExecutor {
             iterate_mode,
             variable_modes,
             tuple_positions: output_tuple_positions,
-            sub_to_supertypes,
-            supertypes,
+            super_to_subtypes,
+            subtypes,
             filter_fn,
             checker,
         }
@@ -129,18 +104,22 @@ impl SubExecutor {
         });
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let positions = TuplePositions::Pair([self.sub.subtype(), self.sub.supertype()]);
+                let positions = TuplePositions::Pair([self.sub.supertype(), self.sub.subtype()]);
                 let sub_with_super = self
-                    .sub_to_supertypes
+                    .super_to_subtypes
                     .iter()
-                    .flat_map(|(sub, supers)| supers.iter().map(|sup| Ok((sub.clone(), sup.clone()))))
+                    .flat_map(|(sup, subs)| subs.iter().map(|sub| Ok((sub.clone(), sup.clone()))))
                     .collect_vec();
-                let as_tuples: SubUnboundedSortedSub = NarrowingTupleIterator(
+                let as_tuples: SubReverseUnboundedSortedSub = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
                         .map(sub_to_tuple_sub_super),
                 );
-                Ok(TupleIterator::SubUnbounded(SortedTupleIterator::new(as_tuples, positions, &self.variable_modes)))
+                Ok(TupleIterator::SubReverseUnbounded(SortedTupleIterator::new(
+                    as_tuples,
+                    positions,
+                    &self.variable_modes,
+                )))
             }
 
             BinaryIterateMode::UnboundInverted => {
@@ -148,37 +127,41 @@ impl SubExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.len() > self.sub.subtype().as_usize());
-                let positions = TuplePositions::Pair([self.sub.supertype(), self.sub.subtype()]);
-                let VariableValue::Type(sub) = row.get(self.sub.subtype()).to_owned() else {
+                debug_assert!(row.len() > self.sub.supertype().as_usize());
+                let positions = TuplePositions::Pair([self.sub.subtype(), self.sub.supertype()]);
+                let VariableValue::Type(sup) = row.get(self.sub.supertype()).to_owned() else {
                     unreachable!("Subtype must be a type")
                 };
-                let supertypes = self.sub_to_supertypes.get(&sub).cloned().unwrap_or_default();
-                let sub_with_super = supertypes.into_iter().map(|sup| Ok((sub.clone(), sup))).collect_vec(); // TODO cache this
-                let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
+                let subtypes = self.super_to_subtypes.get(&sup).cloned().unwrap_or_default();
+                let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, sup.clone()))).collect_vec(); // TODO cache this
+                let as_tuples: SubReverseBoundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
                         .map(sub_to_tuple_super_sub),
                 );
-                Ok(TupleIterator::SubBounded(SortedTupleIterator::new(as_tuples, positions, &self.variable_modes)))
+                Ok(TupleIterator::SubReverseBounded(SortedTupleIterator::new(
+                    as_tuples,
+                    positions,
+                    &self.variable_modes,
+                )))
             }
         }
     }
 }
 
-fn create_sub_filter_sub_super(sub_to_supertypes: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<SubFilterFn> {
+fn create_sub_filter_super_sub(super_to_subtypes: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<SubFilterFn> {
     Arc::new(move |result| match result {
-        Ok((sub, sup)) => match sub_to_supertypes.get(sub) {
-            Some(supertypes) => Ok(supertypes.contains(sup)),
+        Ok((sub, sup)) => match super_to_subtypes.get(sup) {
+            Some(subtypes) => Ok(subtypes.contains(sub)),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
     })
 }
 
-fn create_sub_filter_super(supertypes: Arc<HashSet<Type>>) -> Arc<SubFilterFn> {
+fn create_sub_filter_sub(subtypes: Arc<HashSet<Type>>) -> Arc<SubFilterFn> {
     Arc::new(move |result| match result {
-        Ok((_, sup)) => Ok(supertypes.contains(sup)),
+        Ok((sub, _)) => Ok(subtypes.contains(sub)),
         Err(err) => Err(err.clone()),
     })
 }

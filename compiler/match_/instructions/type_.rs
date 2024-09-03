@@ -87,3 +87,48 @@ impl<ID: IrID> SubInstruction<ID> {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct SubReverseInstruction<ID> {
+    pub sub: Sub<ID>,
+    pub inputs: Inputs<ID>,
+    super_to_subtypes: Arc<BTreeMap<Type, Vec<Type>>>,
+    subtypes: Arc<HashSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
+}
+
+impl SubReverseInstruction<Variable> {
+    pub fn new(sub: Sub<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let subtypes = type_annotations.variable_annotations_of(sub.subtype()).unwrap().clone();
+        let edge_annotations = type_annotations.constraint_annotations_of(sub.clone().into()).unwrap().as_left_right();
+        let super_to_subtypes = edge_annotations.right_to_left();
+        Self { sub, inputs, super_to_subtypes, subtypes, checks: Vec::new() }
+    }
+}
+
+impl<ID> SubReverseInstruction<ID> {
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
+    pub fn super_to_subtypes(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.super_to_subtypes
+    }
+
+    pub fn subtypes(&self) -> &Arc<HashSet<Type>> {
+        &self.subtypes
+    }
+}
+
+impl<ID: IrID> SubReverseInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> SubReverseInstruction<T> {
+        let Self { sub, inputs, super_to_subtypes, subtypes, checks } = self;
+        SubReverseInstruction {
+            sub: sub.map(mapping),
+            inputs: inputs.map(mapping),
+            super_to_subtypes,
+            subtypes,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
