@@ -5,8 +5,10 @@
  */
 
 use std::{marker::PhantomData, sync::Arc};
+use std::collections::HashMap;
 
 use compiler::match_::planner::pattern_plan::MatchProgram;
+use compiler::VariablePosition;
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
@@ -32,6 +34,7 @@ where
     pub fn new(program: MatchProgram, previous: PreviousStage, thing_manager: Arc<ThingManager>) -> Self {
         Self { program, previous, thing_manager, phantom: PhantomData::default() }
     }
+
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for MatchStageExecutor<Snapshot, PreviousStage>
@@ -40,6 +43,14 @@ where
     PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
+
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
+        self.program.outputs().iter().filter_map(|position| {
+            let variable = self.program.variable_positions_index()[position.as_usize()];
+            self.program.variable_registry().variable_names().get(&variable)
+                .map(|name| (*position, name.to_string()))
+        }).collect()
+    }
 
     fn into_iterator(mut self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { previous: previous_stage, program, .. } = self;

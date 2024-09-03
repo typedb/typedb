@@ -110,16 +110,14 @@ fn execute_insert(
     )
     .unwrap();
 
-    let insert_plan =
-        compiler::insert::program::compile(block.conjunction().constraints(), &input_row_format, &entry_annotations)
-            .unwrap();
+    let variable_registry = Arc::new(translation_context.variable_registry);
+
+    let insert_plan = compiler::insert::program::compile(
+        variable_registry, block.conjunction().constraints(), &input_row_format, &entry_annotations
+    ).unwrap();
 
     println!("Insert Vertex:\n{:?}", &insert_plan.concept_instructions);
     println!("Insert Edges:\n{:?}", &insert_plan.connection_instructions);
-    insert_plan
-        .debug_info
-        .iter()
-        .for_each(|(k, v)| println!("{:?} -> {:?}", k, translation_context.variable_registry.variable_names().get(v)));
 
     // TODO: Replace with accumulator
     let mut output_rows = Vec::with_capacity(input_rows.len());

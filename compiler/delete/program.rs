@@ -23,7 +23,7 @@ use crate::{
 pub struct DeleteProgram {
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub output_row_schema: Vec<(Variable, VariableSource)>,
+    pub output_row_schema: Vec<Option<Variable>>,
     // pub debug_info: HashMap<VariableSource, Variable>,
 }
 
@@ -90,14 +90,15 @@ pub fn compile(
             concept_deletes.push(ThingInstruction { thing: ThingSource(*input_position) });
         };
     }
+
     // To produce the output stream, we remove the deleted concepts from each map in the stream.
     let output_row_schema = input_variables
         .iter()
-        .filter_map(|(variable, position)| {
+        .map(|(variable, position)| {
             if deleted_concepts.contains(variable) {
                 None
             } else {
-                Some((*variable, VariableSource::InputVariable(*position)))
+                Some(*variable)
             }
         })
         .collect::<Vec<_>>();

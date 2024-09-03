@@ -5,6 +5,8 @@
  */
 
 use std::{marker::PhantomData, sync::Arc};
+use std::collections::HashMap;
+use compiler::VariablePosition;
 
 use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
@@ -13,8 +15,6 @@ use crate::{
     pipeline::{PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator},
     write::delete::DeleteExecutor,
 };
-use crate::batch::Batch;
-use crate::write::WriteError;
 
 pub struct DeleteStageExecutor<Snapshot: WritableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
     deleter: DeleteExecutor,
@@ -24,21 +24,31 @@ pub struct DeleteStageExecutor<Snapshot: WritableSnapshot + 'static, PreviousSta
 }
 
 impl<Snapshot, PreviousStage> DeleteStageExecutor<Snapshot, PreviousStage>
-where
-    Snapshot: WritableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    where
+        Snapshot: WritableSnapshot + 'static,
+        PreviousStage: StageAPI<Snapshot>,
 {
     pub fn new(deleter: DeleteExecutor, previous: PreviousStage, thing_manager: Arc<ThingManager>) -> Self {
-        Self { deleter, previous, thing_manager, phantom: PhantomData::default()}
+        Self { deleter, previous, thing_manager, phantom: PhantomData::default() }
     }
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DeleteStageExecutor<Snapshot, PreviousStage>
-where
-    Snapshot: WritableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    where
+        Snapshot: WritableSnapshot + 'static,
+        PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = WrittenRowsIterator;
+
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
+        let mut inputs = self.previous.named_selected_outputs();
+        for (position, variable) in self.deleter.program().output_row_schema.iter().enumerate() {
+            if variable.is_none() {
+                inputs.remove(&VariablePosition::new(position as u32));
+            }
+        }
+        inputs
+    }
 
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let (previous_iterator, mut snapshot) = self.previous.into_iterator()?;

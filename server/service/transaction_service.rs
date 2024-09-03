@@ -12,6 +12,7 @@ use std::{
     },
     sync::Arc,
 };
+use itertools::Itertools;
 
 use tokio::{
     sync::{broadcast, mpsc::Sender},
@@ -30,6 +31,7 @@ use typeql::{
     Query,
 };
 use uuid::Uuid;
+use compiler::VariablePosition;
 
 use concept::thing::thing_manager::ThingManager;
 use concept::type_::type_manager::TypeManager;
@@ -40,7 +42,7 @@ use database::{
 use error::typedb_error;
 use executor::batch::Batch;
 use executor::pipeline::{PipelineExecutionError, StageAPI, StageIterator};
-use executor::pipeline::stage::{ReadStageIterator, WritePipelineStage, WriteStageIterator};
+use executor::pipeline::stage::{ReadPipelineStage, ReadStageIterator, WritePipelineStage, WriteStageIterator};
 use executor::row::MaybeOwnedRow;
 use function::function_manager::FunctionManager;
 use options::TransactionOptions;
@@ -496,34 +498,42 @@ impl TransactionService {
     async fn blocking_execute_read_query(
         &self,
         pipeline: &Pipeline,
-        sender: Sender<Option<typedb_protocol::query::Res>>,
+        sender: Sender<Option<Res>>,
     ) -> JoinHandle<Result<(), Status>> {
         debug_assert!(self.request_queue.is_empty() && self.active_write_query.is_none() && self.transaction.is_some());
         match self.transaction.as_ref().unwrap() {
             Transaction::Read(transaction) => {
-                let iterator = Self::prepare_read_query_in(
+                let executor = Self::prepare_read_query_in(
                     transaction.snapshot.clone(),
                     &transaction.type_manager,
                     transaction.thing_manager.clone(),
                     &transaction.function_manager,
-                    pipeline
+                    pipeline,
                 );
 
-                let mut iterator = match iterator {
-                    Ok(iterator) => iterator,
-                    Err(err) => {
-                        Self::signal_error_and_finish(sender, err);
+                let named_outputs: Vec<(String, VariablePosition)> = executor.named_selected_outputs()
+                    .into_iter()
+                    .map(|(position, name)| (name, position))
+                    .sorted()
+                    .collect();
+
+                Self::submit_concept_rows_stream_descriptor(&sender, &named_outputs);
+
+                let mut iterator = match executor.into_iterator() {
+                    Ok((iterator, _)) => iterator,
+                    Err((_, err)) => {
+                        Self::submit_error_and_terminator(&sender, Err(QueryError::ReadPipelineExecutionError { source: err }));
                         return;
-                    },
+                    }
                 };
 
                 // TODO: send row header message
 
                 while let Some(next) = iterator.next() {
                     match next {
-                        Ok(row) => {}
+                        Ok(row) => Self::submit_row(&sender, row, &named_outputs),
                         Err(err) => {
-                            Self::signal_error_and_finish(sender, err);
+                            Self::submit_error_and_terminator(&sender, err);
                             return;
                         }
                     }
@@ -539,7 +549,28 @@ impl TransactionService {
         }
     }
 
-    fn signal_error_and_finish(sender: Sender<Option<typedb_protocol::query::Res>>, error: impl IntoProtocolErrorMessage) {
+    fn submit_concept_rows_stream_descriptor(sender: &Sender<Option<Res>>, columns: &[(String, VariablePosition)]) {
+        // TODO: we could also write variable optionality and categories here?
+        let mut header = typedb_protocol::query::res::ok::ConceptRowStream::default();
+        header.column_variable_names.extend(columns.iter().map(|(name, _)| name));
+        let message = typedb_protocol::query::res::Res::Ok(
+            typedb_protocol::query::res::Ok {
+                ok: Some(
+                    typedb_protocol::query::res::ok::Ok::ConceptMapStream(header)
+                )
+            }
+        );
+        sender.blocking_send(Some(Res { res: Some(message) })).unwrap()
+    }
+
+    fn submit_row(sender: &Sender<Option<Res>>, row: MaybeOwnedRow, columns: &[(String, VariablePosition)]) {
+        let mut row_message = typedb_protocol::ConceptRow::default();
+        for (_, position) in columns {
+            let concept = row.get(*position);
+        }
+    }
+
+    fn submit_error_and_terminator(sender: &Sender<Option<Res>>, error: impl IntoProtocolErrorMessage) {
         let err = error.into_error_message();
         match sender.blocking_send(Some(typedb_protocol::query::Res {
             res: Some(typedb_protocol::query::res::Res::Error(err))
@@ -560,19 +591,14 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         pipeline: &Pipeline,
-    ) -> Result<ReadStageIterator<Snapshot>, QueryError> {
-        let pipeline = QueryManager::new().prepare_read_pipeline(
+    ) -> ReadPipelineStage<Snapshot> {
+        QueryManager::new().prepare_read_pipeline(
             snapshot,
             type_manager,
             thing_manager,
             &function_manager,
             &pipeline,
-        )?;
-
-        return match pipeline.into_iterator() {
-            Ok((iterator, _)) => Ok(iterator),
-            Err((_, err)) => Err(QueryError::ReadPipelineExecutionError { source: err })
-        };
+        )?
     }
 
     async fn handle_stream_continue(

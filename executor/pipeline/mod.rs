@@ -9,9 +9,11 @@ use std::{
     fmt::{Display, Formatter},
     sync::Arc,
 };
+use std::collections::HashMap;
 
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
+use compiler::VariablePosition;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot};
@@ -27,7 +29,7 @@ pub mod stage;
 pub trait StageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
     type OutputIterator: StageIterator;
 
-
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String>;
 
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)>;
 }

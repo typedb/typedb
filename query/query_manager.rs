@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+use typeql::parser::Rule::var;
 
 use typeql::query::SchemaQuery;
 use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
@@ -107,8 +108,9 @@ impl QueryManager {
         // }).unwrap();
 
         // 3: Compile
+        let variable_registry = Arc::new(variable_registry);
         let CompiledPipeline { compiled_functions, compiled_stages } =
-            compile_pipeline(thing_manager.statistics(), &variable_registry, annotated_preamble, annotated_stages)?;
+            compile_pipeline(thing_manager.statistics(), variable_registry, annotated_preamble, annotated_stages)?;
 
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(snapshot));
         for compiled_stage in compiled_stages {

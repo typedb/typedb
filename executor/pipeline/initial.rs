@@ -5,6 +5,8 @@
  */
 
 use std::{array, sync::Arc};
+use std::collections::HashMap;
+use compiler::VariablePosition;
 
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{AsLendingIterator, LendingIterator};
@@ -27,6 +29,10 @@ impl<Snapshot: ReadableSnapshot + 'static> InitialStage<Snapshot> {
 
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for InitialStage<Snapshot> {
     type OutputIterator = InitialIterator;
+
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
+        HashMap::new()
+    }
 
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         Ok((InitialIterator::new(), self.snapshot))

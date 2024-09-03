@@ -4,9 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use concept::thing::thing_manager::ThingManager;
+use compiler::VariablePosition;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -34,6 +35,13 @@ pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
 
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
     type OutputIterator = ReadStageIterator<Snapshot>;
+
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
+        match self {
+            WritePipelineStage::Initial(stage) => stage.named_selected_outputs(),
+            WritePipelineStage::Match(stage) => stage.named_selected_outputs(),
+        }
+    }
 
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         match self {
@@ -78,6 +86,15 @@ pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
 
 impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineStage<Snapshot> {
     type OutputIterator = WriteStageIterator<Snapshot>;
+
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
+        match self {
+            WritePipelineStage::Initial(stage) => stage.named_selected_outputs(),
+            WritePipelineStage::Match(stage) => stage.named_selected_outputs(),
+            WritePipelineStage::Insert(stage) => stage.named_selected_outputs(),
+            WritePipelineStage::Delete(stage) => stage.named_selected_outputs(),
+        }
+    }
 
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         match self {
