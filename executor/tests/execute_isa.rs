@@ -9,7 +9,10 @@ use std::{collections::HashMap, sync::Arc};
 use compiler::{
     match_::{
         inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-        instructions::{ConstraintInstruction, Inputs, thing::IsaInstruction, thing::IsaReverseInstruction},
+        instructions::{
+            thing::{IsaInstruction, IsaReverseInstruction},
+            ConstraintInstruction, Inputs,
+        },
         planner::{
             pattern_plan::{IntersectionProgram, MatchProgram, Program},
             program_plan::ProgramPlan,

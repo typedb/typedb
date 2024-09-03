@@ -63,7 +63,7 @@ pub(crate) type SubOrderingFn = for<'a, 'b> fn(
     (&'a Result<(Type, Type), ConceptReadError>, &'b Result<(Type, Type), ConceptReadError>),
 ) -> Ordering;
 
-pub(crate) struct NarrowingTupleIterator<I>(I);
+pub(crate) struct NarrowingTupleIterator<I>(pub I);
 
 impl<I> LendingIterator for NarrowingTupleIterator<I>
 where

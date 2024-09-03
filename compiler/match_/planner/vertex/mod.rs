@@ -89,6 +89,13 @@ impl PlannerVertex {
         }
     }
 
+    pub(super) fn as_sub(&self) -> Option<&SubPlanner> {
+        match self {
+            Self::Sub(v) => Some(v),
+            _ => None,
+        }
+    }
+
     pub(super) fn variables(&self) -> impl Iterator<Item = usize> {
         match self {
             Self::Constant => [None; 3].into_iter().flatten(),
@@ -333,8 +340,8 @@ impl HasPlanner {
         let owner = constraint.owner();
         let attribute = constraint.attribute();
 
-        let owner_types = type_annotations.variable_annotations_of(owner).unwrap().deref();
-        let attribute_types = type_annotations.variable_annotations_of(attribute).unwrap().deref();
+        let owner_types = dbg!(type_annotations.variable_annotations_of(owner).unwrap().deref());
+        let attribute_types = dbg!(type_annotations.variable_annotations_of(attribute).unwrap().deref());
 
         let expected_size = itertools::iproduct!(owner_types, attribute_types)
             .filter_map(|(owner, attribute)| {
@@ -509,13 +516,20 @@ impl Costed for LinksPlanner {
 }
 
 #[derive(Debug)]
-pub(super) struct TypePlanner;
+pub(super) struct TypePlanner {
+    branching_factor: f64,
+}
 
-impl TypePlanner {}
+impl TypePlanner {
+    pub(crate) fn from_variable(variable: Variable, type_annotations: &TypeAnnotations) -> Self {
+        let num_types = type_annotations.variable_annotations_of(variable).unwrap().len();
+        Self { branching_factor: num_types as f64 }
+    }
+}
 
 impl Costed for TypePlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
-        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: self.branching_factor }
     }
 }
 
@@ -532,7 +546,11 @@ impl SubPlanner {
         variable_index: &HashMap<Variable, usize>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        Self { type_: variable_index[&sub.subtype()], supertype: variable_index[&sub.supertype()], kind: sub.sub_kind() }
+        Self {
+            type_: variable_index[&sub.subtype()],
+            supertype: variable_index[&sub.supertype()],
+            kind: sub.sub_kind(),
+        }
     }
 
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {

@@ -29,6 +29,7 @@ use crate::{
             thing::{
                 HasInstruction, HasReverseInstruction, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
             },
+            type_::{SubInstruction, TypeInstruction},
             CheckInstruction, ConstraintInstruction, Inputs,
         },
         planner::vertex::{
@@ -132,8 +133,9 @@ impl<'a> PlanBuilder<'a> {
             .variable_categories()
             .map(|(variable, category)| match category {
                 VariableCategory::Type | VariableCategory::ThingType | VariableCategory::RoleType => {
+                    let planner = TypePlanner::from_variable(variable, type_annotations);
                     let index = elements.len();
-                    elements.push(PlannerVertex::Type(TypePlanner));
+                    elements.push(PlannerVertex::Type(planner));
                     (variable, index)
                 }
                 VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
@@ -171,7 +173,7 @@ impl<'a> PlanBuilder<'a> {
 
         for constraint in conjunction.constraints() {
             let planner = match constraint {
-                Constraint::RoleName(_) | Constraint::Label(_) => None, // ignore for now
+                Constraint::RoleName(_) | Constraint::Label(_) => continue, // already accounted for by type inference
                 Constraint::Sub(sub) => {
                     let planner = SubPlanner::from_constraint(sub, &self.variable_index, type_annotations);
                     self.elements.push(PlannerVertex::Sub(planner));
@@ -188,6 +190,12 @@ impl<'a> PlanBuilder<'a> {
 
                 Constraint::Isa(isa) => {
                     self.variable_isa.insert(isa.thing(), isa.clone());
+
+                    let thing = self.variable_index[&isa.thing()];
+                    let type_ = self.variable_index[&isa.type_()];
+
+                    self.adjacency.entry(thing).or_default().insert(type_);
+                    self.adjacency.entry(type_).or_default().insert(thing);
                     None
                 }
                 Constraint::Links(links) => {
@@ -374,17 +382,29 @@ fn lower_plan(
         };
 
         if let Some(&var) = index_to_variable.get(&index) {
-            if let PlannerVertex::Thing(_) = &plan_builder.elements[index] {
-                if let hash_map::Entry::Vacant(entry) = producers.entry(var) {
-                    let isa = &plan_builder.variable_isa[&var];
-                    let instruction = ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
-                        isa.clone(),
-                        Inputs::None([]),
-                        type_annotations,
-                    ));
-                    let producer_index = match_builder.push_instruction(var, instruction, &[var, isa.type_()]);
-                    entry.insert(producer_index);
+            match &plan_builder.elements[index] {
+                PlannerVertex::Thing(_) => {
+                    if let hash_map::Entry::Vacant(entry) = producers.entry(var) {
+                        let isa = &plan_builder.variable_isa[&var];
+                        let instruction = ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(
+                            isa.clone(),
+                            Inputs::None([]),
+                            type_annotations,
+                        ));
+                        let producer_index = match_builder.push_instruction(var, instruction, &[var, isa.type_()]);
+                        entry.insert(producer_index);
+                    }
                 }
+                PlannerVertex::Type(_) => {
+                    if adjacent.is_empty()
+                    // otherwise rolled into an edge
+                    {
+                        let instruction = ConstraintInstruction::Type(TypeInstruction::new(var, type_annotations));
+                        let producer_index = match_builder.push_instruction(var, instruction, &[var]);
+                        producers.insert(var, producer_index);
+                    }
+                }
+                _ => (),
             }
         } else {
             let inputs = adjacent
@@ -405,7 +425,46 @@ fn lower_plan(
 
                 Constraint::Isa(_) => todo!("isa constraint"),
 
-                Constraint::Sub(_) => todo!("type constraint"),
+                Constraint::Sub(sub) => {
+                    let subtype = sub.subtype();
+                    let supertype = sub.supertype();
+
+                    if inputs.len() == 2 {
+                        todo!("sub check")
+                    }
+
+                    let _planner = plan_builder.elements[index].as_sub().unwrap();
+                    let sort_variable =
+                        if inputs.is_empty() || inputs.contains(&supertype) {
+                            subtype
+                        } else {
+                            supertype
+                        };
+
+                    let sub = sub.clone();
+                    let instruction = if inputs.contains(&subtype) {
+                        ConstraintInstruction::Sub(SubInstruction::new(
+                            sub,
+                            Inputs::Single([subtype]),
+                            type_annotations,
+                        ))
+                    } else if inputs.contains(&supertype) {
+                        // ConstraintInstruction::SubReverse(SubReverseInstruction::new(sub, Inputs::Single([supertype]), type_annotations))
+                        todo!()
+                    // } else if !planner.unbound_is_forward {
+                        // ConstraintInstruction::SubReverse(SubReverseInstruction::new(sub, Inputs::None([]), type_annotations))
+                    } else {
+                        ConstraintInstruction::Sub(SubInstruction::new(sub, Inputs::None([]), type_annotations))
+                    };
+                    let producer_index =
+                        match_builder.push_instruction(sort_variable, instruction, &[subtype, supertype]);
+
+                    for &var in &[subtype, supertype] {
+                        if !inputs.contains(&var) {
+                            producers.insert(var, producer_index);
+                        }
+                    }
+                }
 
                 Constraint::Links(links) => {
                     let relation = links.relation();

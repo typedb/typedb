@@ -12,10 +12,7 @@ use std::{
 };
 
 use answer::variable_value::VariableValue;
-use compiler::match_::{
-    instructions::{CheckInstruction, ConstraintInstruction},
-    planner::pattern_plan::InstructionAPI,
-};
+use compiler::match_::instructions::{CheckInstruction, ConstraintInstruction};
 use concept::{
     error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
@@ -29,7 +26,7 @@ use crate::{
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
         iterator::TupleIterator, links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
-        sub_executor::SubExecutor,
+        sub_executor::SubExecutor, type_executor::TypeExecutor,
     },
     row::MaybeOwnedRow,
     VariablePosition,
@@ -45,8 +42,11 @@ mod links_executor;
 mod links_reverse_executor;
 mod sub_executor;
 pub(crate) mod tuple;
+mod type_executor;
 
 pub(crate) enum InstructionExecutor {
+    Type(TypeExecutor),
+
     Sub(SubExecutor),
 
     Isa(IsaExecutor),
@@ -73,6 +73,7 @@ impl InstructionExecutor {
     ) -> Result<Self, ConceptReadError> {
         let variable_modes = VariableModes::new_for(&instruction, selected, named);
         match instruction {
+            ConstraintInstruction::Type(type_) => Ok(Self::Type(TypeExecutor::new(type_, variable_modes, sort_by))),
             ConstraintInstruction::Sub(sub) => Ok(Self::Sub(SubExecutor::new(sub, variable_modes, sort_by))),
             ConstraintInstruction::Isa(isa) => Ok(Self::Isa(IsaExecutor::new(isa, variable_modes, sort_by))),
             ConstraintInstruction::IsaReverse(isa_reverse) => {
@@ -113,6 +114,7 @@ impl InstructionExecutor {
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
+            Self::Type(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Sub(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
@@ -161,9 +163,8 @@ impl VariableModes {
         selected: &[VariablePosition],
         named: &HashMap<VariablePosition, String>,
     ) -> Self {
-        let constraint = instruction.constraint();
         let mut modes = Self::new();
-        constraint.ids_foreach(|id, _| {
+        instruction.ids_foreach(|id| {
             let var_mode =
                 VariableMode::new(instruction.is_input_variable(id), selected.contains(&id), named.contains_key(&id));
             modes.insert(id, var_mode)
