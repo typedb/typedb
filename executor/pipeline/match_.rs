@@ -27,20 +27,19 @@ pub struct MatchStageExecutor<Snapshot: ReadableSnapshot + 'static, PreviousStag
 }
 
 impl<Snapshot, PreviousStage> MatchStageExecutor<Snapshot, PreviousStage>
-where
-    Snapshot: ReadableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    where
+        Snapshot: ReadableSnapshot + 'static,
+        PreviousStage: StageAPI<Snapshot>,
 {
     pub fn new(program: MatchProgram, previous: PreviousStage, thing_manager: Arc<ThingManager>) -> Self {
         Self { program, previous, thing_manager, phantom: PhantomData::default() }
     }
-
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for MatchStageExecutor<Snapshot, PreviousStage>
-where
-    Snapshot: ReadableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    where
+        Snapshot: ReadableSnapshot + 'static,
+        PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
@@ -83,9 +82,9 @@ impl<Snapshot: ReadableSnapshot + 'static, Iterator: StageIterator> MatchStageIt
 }
 
 impl<Snapshot, Iterator> LendingIterator for MatchStageIterator<Snapshot, Iterator>
-where
-    Snapshot: ReadableSnapshot + 'static,
-    Iterator: StageIterator,
+    where
+        Snapshot: ReadableSnapshot + 'static,
+        Iterator: StageIterator,
 {
     type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
 
@@ -96,7 +95,7 @@ where
                 Some(source_next) => {
                     // TODO: use the start to initialise the next iterator
                     let iterator = PatternExecutor::new(&self.program, &self.snapshot, &self.thing_manager)
-                        .map_err(|err| PipelineExecutionError::InitialisingMatchIterator(err));
+                        .map_err(|err| PipelineExecutionError::InitialisingMatchIterator { source: err });
                     match iterator {
                         Ok(iterator) => {
                             self.current_iterator = Some(Peekable::new(
@@ -112,13 +111,12 @@ where
             .as_mut()
             .unwrap()
             .next()
-            .map(|result| result.map_err(|err| PipelineExecutionError::ConceptRead(err.clone())))
+            .map(|result| result.map_err(|err| PipelineExecutionError::ConceptRead { source: err.clone() }))
     }
 }
 
 impl<Snapshot, Iterator> StageIterator for MatchStageIterator<Snapshot, Iterator>
-where
-    Snapshot: ReadableSnapshot + 'static,
-    Iterator: StageIterator,
-{
-}
+    where
+        Snapshot: ReadableSnapshot + 'static,
+        Iterator: StageIterator,
+{}

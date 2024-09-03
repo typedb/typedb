@@ -38,8 +38,8 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
 
     fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
         match self {
-            WritePipelineStage::Initial(stage) => stage.named_selected_outputs(),
-            WritePipelineStage::Match(stage) => stage.named_selected_outputs(),
+            Self::Initial(stage) => stage.named_selected_outputs(),
+            Self::Match(stage) => stage.named_selected_outputs(),
         }
     }
 

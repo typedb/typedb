@@ -48,7 +48,7 @@ impl CompiledStage {
                 .output_row_schema
                 .iter()
                 .enumerate()
-                .filter_map(|(i, (v))| v.map(|v| (*v, VariablePosition::new(i as u32))))
+                .filter_map(|(i, v)| v.map(|v| (v, VariablePosition::new(i as u32))))
                 .collect(),
         }
     }

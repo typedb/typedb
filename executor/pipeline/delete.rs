@@ -64,7 +64,7 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DeleteStageExecutor<Snapsho
             let mut row = batch.get_row_mut(index);
             match self.deleter.execute_delete(snapshot_ref, self.thing_manager.as_ref(), &mut row) {
                 Ok(_) => {}
-                Err(err) => return Err((snapshot, PipelineExecutionError::WriteError(err))),
+                Err(err) => return Err((snapshot, PipelineExecutionError::WriteError{ source: err })),
             }
         }
 

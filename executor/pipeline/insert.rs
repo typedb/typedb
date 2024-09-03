@@ -67,7 +67,7 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for InsertStageExecutor<Snapsho
     type OutputIterator = WrittenRowsIterator;
 
     fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
-        (0..self.inserter.output_width()).map(|position| {
+        (0..self.inserter.output_width()).filter_map(|position| {
             let variable = self.inserter.program().output_row_schema[position].0;
             self.inserter.program().variable_registry.variable_names().get(&variable)
                 .map(|name| (VariablePosition::new(position as u32), name.to_string()))

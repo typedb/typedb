@@ -30,7 +30,7 @@ typedb_error!(
         TypeInference(8, "Error during type inference. ", ( source: TypeInferenceError )),
         WriteCompilation(9, "Error while compiling write query.", ( source: WriteCompilationError )),
         ExpressionCompilation(10, "Error while compiling expression.", ( source: ExpressionCompileError )),
-        WritePipelineExecutionError(11, "Error while execution write pipeline.", ( source: PipelineExecutionError )),
-        ReadPipelineExecutionError(12, "Error while executing read pipeline.", ( source: PipelineExecutionError )),
+        WritePipelineExecutionError(11, "Error while execution write pipeline.", ( typedb_source: PipelineExecutionError )),
+        ReadPipelineExecutionError(12, "Error while executing read pipeline.", ( typedb_source: PipelineExecutionError )),
     }
 );

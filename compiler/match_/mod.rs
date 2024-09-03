@@ -5,6 +5,7 @@
  */
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -21,7 +22,7 @@ pub mod planner;
 pub fn compile(
     block: &FunctionalBlock,
     type_annotations: &TypeAnnotations,
-    variable_registry: &VariableRegistry,
+    variable_registry: Arc<VariableRegistry>,
     expressions: &HashMap<Variable, CompiledExpression>,
     statistics: &Statistics,
 ) -> MatchProgram {

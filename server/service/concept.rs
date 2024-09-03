@@ -4,6 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use chrono::{Datelike, NaiveDateTime, Timelike};
+use chrono_tz::Tz;
+
 use answer::{Thing, Type};
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
@@ -15,6 +18,7 @@ use concept::type_::entity_type::EntityType;
 use concept::type_::relation_type::RelationType;
 use concept::type_::role_type::RoleType;
 use concept::type_::type_manager::TypeManager;
+use encoding::value::value::Value;
 use encoding::value::value_type::ValueType;
 use storage::snapshot::ReadableSnapshot;
 
@@ -24,37 +28,49 @@ fn encode_variable_value(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_thing_types: bool,
-) -> typedb_protocol::Answer {
+) -> Result<typedb_protocol::Answer, ConceptReadError> {
     // let answer = let
     match variable_value {
         VariableValue::Empty => typedb_protocol::answer::Answer::Empty(typedb_protocol::answer::Empty {}),
-        VariableValue::Type(type_) => {
-            typedb_protocol::answer::Answer::Concept(
-                typedb_protocol::Concept { concept: Some(encode_type_concept(type_, snapshot, type_manager)?) }
+        VariableValue::Type(type_) => typedb_protocol::answer::Answer::Concept(
+            encode_type_concept(type_, snapshot, type_manager)?
+        ),
+        VariableValue::Thing(thing) => typedb_protocol::answer::Answer::Concept(
+            encode_thing_concept(thing, snapshot, type_manager, thing_manager, include_thing_types)?
+        ),
+        VariableValue::Value(value) => typedb_protocol::answer::Answer::Value(
+            encode_value(value.as_reference())
+        ),
+        VariableValue::ThingList(thing_list) => {
+            let mut encoded = Vec::with_capacity(thing_list.len());
+            for thing in thing_list.iter() {
+                encoded.push(encode_thing_concept(thing, snapshot, type_manager, thing_manager, include_thing_types)?);
+            }
+            typedb_protocol::answer::Answer::ConceptList(
+                typedb_protocol::answer::ConceptList { concepts: encoded }
             )
         }
-        VariableValue::Thing(thing) => {
-            typedb_protocol::answer::Answer::Concept(
-                typedb_protocol::Concept {
-                    concept: Some(encode_thing_concept(thing, snapshot, type_manager, thing_manager, include_thing_types)?)
-                }
+        VariableValue::ValueList(value_list) => {
+            let mut encoded = Vec::with_capacity(value_list.len());
+            for value in value_list.iter() {
+                encoded.push(encode_value(value.as_reference()))
+            }
+            typedb_protocol::answer::Answer::ValueList(
+                typedb_protocol::answer::ValueList { values: encoded }
             )
         }
-        VariableValue::Value(value) => {}
-        VariableValue::ThingList(thing_list) => {}
-        VariableValue::ValueList(value_list) => {}
     };
     todo!()
 }
 
 fn encode_thing_concept(
-    thing: &Thing,
+    thing: &Thing<'_>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_thing_types: bool,
-) -> Result<typedb_protocol::concept::Concept, ConceptReadError> {
-    Ok(match thing {
+) -> Result<typedb_protocol::Concept, ConceptReadError> {
+    let encoded = match thing {
         Thing::Entity(entity) => {
             typedb_protocol::concept::Concept::Entity(
                 typedb_protocol::Entity {
@@ -83,7 +99,7 @@ fn encode_thing_concept(
             typedb_protocol::concept::Concept::Attribute(
                 typedb_protocol::Attribute {
                     iid: Vec::from(attribute.iid().bytes()),
-                    value: encode_value(attribute.get_value(snapshot))
+                    value: Some(encode_value(attribute.get_value(snapshot, thing_manager)?)),
                     attribute_type: if include_thing_types {
                         Some(encode_attribute_type(&attribute.type_(), snapshot, type_manager)?)
                     } else {
@@ -92,15 +108,16 @@ fn encode_thing_concept(
                 }
             )
         }
-    })
+    };
+    Ok(typedb_protocol::Concept { concept: Some(encoded) })
 }
 
 fn encode_type_concept(
     type_: &Type,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-) -> Result<typedb_protocol::concept::Concept, ConceptReadError> {
-    Ok(match type_ {
+) -> Result<typedb_protocol::Concept, ConceptReadError> {
+    let encoded = match type_ {
         Type::Entity(entity) => {
             typedb_protocol::concept::Concept::EntityType(encode_entity_type(entity, snapshot, type_manager)?)
         }
@@ -113,45 +130,47 @@ fn encode_type_concept(
         Type::RoleType(role) => {
             typedb_protocol::concept::Concept::RoleType(encode_role_type(role, snapshot, type_manager)?)
         }
-    })
+    };
+    Ok(typedb_protocol::Concept { concept: Some(encoded) })
 }
 
+
 fn encode_entity_type(
-    entity: &EntityType,
+    entity: &EntityType<'_>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::EntityType, ConceptReadError> {
-    typedb_protocol::EntityType {
+    Ok(typedb_protocol::EntityType {
         label: entity.get_label(snapshot, type_manager)?.scoped_name().to_string(),
         annotations: encode_annotations(
-            &*entity.get_annotations_declared(snapshot, type_manager)?
+            entity.get_annotations_declared(snapshot, type_manager)?
                 .iter()
                 .map(|annotation| Annotation::from(annotation.clone()))
         ),
-    }
+    })
 }
 
 fn encode_relation_type(
-    relation: &RelationType,
+    relation: &RelationType<'_>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::RelationType, ConceptReadError> {
-    typedb_protocol::RelationType {
+    Ok(typedb_protocol::RelationType {
         label: relation.get_label(snapshot, type_manager)?.scoped_name().to_string(),
         annotations: encode_annotations(
-            &*relation.get_annotations_declared(snapshot, type_manager)?
+            relation.get_annotations_declared(snapshot, type_manager)?
                 .iter()
                 .map(|annotation| Annotation::from(annotation.clone()))
         ),
-    }
+    })
 }
 
 fn encode_attribute_type(
-    attribute: &AttributeType,
+    attribute: &AttributeType<'_>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::AttributeType, ConceptReadError> {
-    typedb_protocol::AttributeType {
+    Ok(typedb_protocol::AttributeType {
         label: attribute.get_label(snapshot, type_manager)?.scoped_name().to_string(),
         value_type: {
             attribute
@@ -160,27 +179,27 @@ fn encode_attribute_type(
                 .transpose()?
         },
         annotations: encode_annotations(
-            &*attribute.get_annotations_declared(snapshot, type_manager)?
+            attribute.get_annotations_declared(snapshot, type_manager)?
                 .iter()
                 .map(|annotation| Annotation::from(annotation.clone()))
         ),
-    }
+    })
 }
 
 fn encode_role_type(
-    role: &RoleType,
+    role: &RoleType<'_>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::RoleType, ConceptReadError> {
-    typedb_protocol::RoleType {
+    Ok(typedb_protocol::RoleType {
         name: role.get_label(snapshot, type_manager)?.name().to_string(),
-        scope: role.get_label(snapshot, type_manager)?.scope().to_string(),
+        scope: role.get_label(snapshot, type_manager)?.scope().expect("Role type must have a Scope.").to_string(),
         annotations: encode_annotations(
-            &*role.get_annotations_declared(snapshot, type_manager)?
+            role.get_annotations_declared(snapshot, type_manager)?
                 .iter()
                 .map(|annotation| Annotation::from(annotation.clone()))
         ),
-    }
+    })
 }
 
 fn encode_annotations(annotations: impl Iterator<Item=Annotation>) -> Vec<typedb_protocol::Annotation> {
@@ -212,4 +231,61 @@ fn encode_value_type(
     })
 }
 
-fn
+fn encode_value(value: Value<'_>) -> typedb_protocol::Value {
+    let value_message = match value {
+        Value::Boolean(bool) => typedb_protocol::value::Value::Boolean(bool),
+        Value::Long(long) => typedb_protocol::value::Value::Long(long),
+        Value::Double(double) => typedb_protocol::value::Value::Double(double),
+        Value::Decimal(decimal) => {
+            typedb_protocol::value::Value::Decimal(
+                typedb_protocol::value::Decimal {
+                    integer: decimal.integer_part(),
+                    fractional: decimal.fractional_part(),
+                }
+            )
+        }
+        Value::Date(date) => {
+            typedb_protocol::value::Value::Date(
+                typedb_protocol::value::Date {
+                    num_days_since_ce: Datelike::num_days_from_ce(&date)
+                }
+            )
+        }
+        Value::DateTime(date_time) => {
+            typedb_protocol::value::Value::Datetime(encode_date_time(date_time))
+        }
+        Value::DateTimeTZ(date_time_tz) => {
+            typedb_protocol::value::Value::DatetimeTz(
+                typedb_protocol::value::DatetimeTz {
+                    datetime: Some(encode_date_time(date_time_tz.naive_local())),
+                    timezone: Some(encode_time_zone(date_time_tz.timezone())),
+                }
+            )
+        }
+        Value::Duration(duration) => {
+            typedb_protocol::value::Value::Duration(
+                typedb_protocol::value::Duration {
+                    months: duration.months,
+                    days: duration.days,
+                    nanos: duration.nanos,
+                }
+            )
+        }
+        Value::String(string) => typedb_protocol::value::Value::String(string.to_string()),
+        Value::Struct(struct_) => {
+            todo!()
+        }
+    };
+    typedb_protocol::Value { value: Some(value_message) }
+}
+
+fn encode_date_time(date_time: NaiveDateTime) -> typedb_protocol::value::Datetime {
+    typedb_protocol::value::Datetime {
+        seconds: date_time.and_utc().timestamp_millis(),
+        nanos: date_time.nanosecond(),
+    }
+}
+
+fn encode_time_zone(timezone: Tz) -> typedb_protocol::value::datetime_tz::Timezone {
+    typedb_protocol::value::datetime_tz::Timezone::Named(timezone.name().to_string())
+}

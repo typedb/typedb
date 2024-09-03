@@ -21,6 +21,7 @@ use tokio::{
 use lending_iterator::LendingIterator;
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::error::SendError;
+use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
 use typedb_protocol::query::Res;
@@ -93,7 +94,7 @@ macro_rules! close_service {
 }
 
 macro_rules! close_service_with_error {
-    ($self: ident, $error: expr) => {
+    ($self: ident, $error: expr) => {{
         let result = $self.response_sender.send(Err($error)).await;
         if let Err(send_error) = result {
             event!(Level::DEBUG, ?send_error, "Failed to send error to client");
@@ -376,7 +377,7 @@ impl TransactionService {
             let (snapshot, type_manager, thing_manager, result) = spawn_blocking(move || {
                 let result = QueryManager::new()
                     .execute_schema(&mut snapshot, &type_manager, &thing_manager, query)
-                    .map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
+                    .map_err(|err| TransactionServiceError::QueryExecutionFailed { typedb_source: err }.into_status());
                 (snapshot, type_manager, thing_manager, result)
             })
                 .await
@@ -429,7 +430,7 @@ impl TransactionService {
                     database,
                     transaction_options,
                 ));
-                let result = result.map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
+                let result = result.map_err(|err| TransactionServiceError::QueryExecutionFailed { typedb_source: err }.into_status());
                 (transaction, result)
             }))
         } else if let Some(Transaction::Write(write_transaction)) = self.transaction.take() {
@@ -456,7 +457,7 @@ impl TransactionService {
                     database,
                     transaction_options,
                 ));
-                let result = result.map_err(|err| TransactionServiceError::QueryExecutionFailed { source: err }.into_status());
+                let result = result.map_err(|err| TransactionServiceError::QueryExecutionFailed { typedb_source: err }.into_status());
                 (transaction, result)
             }))
         } else {
@@ -485,13 +486,13 @@ impl TransactionService {
 
         let (iterator, snapshot) = match pipeline.into_iterator() {
             Ok((iterator, snapshot)) => (iterator, snapshot),
-            Err((snapshot, err)) => return (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecutionError { source: err })),
+            Err((snapshot, err)) => return (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecutionError { typedb_source: err })),
         };
 
         // collect so the snapshot Arc is no longer held by the iterator
         match iterator.collect_owned() {
             Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok(batch)),
-            Err(err) => (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecutionError { source: err })),
+            Err(err) => (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecutionError { typedb_source: err })),
         }
     }
 
@@ -522,7 +523,7 @@ impl TransactionService {
                 let mut iterator = match executor.into_iterator() {
                     Ok((iterator, _)) => iterator,
                     Err((_, err)) => {
-                        Self::submit_error_and_terminator(&sender, Err(QueryError::ReadPipelineExecutionError { source: err }));
+                        Self::submit_error_and_terminator(&sender, Err(QueryError::ReadPipelineExecutionError { typedb_source: err }));
                         return;
                     }
                 };
@@ -551,7 +552,7 @@ impl TransactionService {
 
     fn submit_concept_rows_stream_descriptor(sender: &Sender<Option<Res>>, columns: &[(String, VariablePosition)]) {
         // TODO: we could also write variable optionality and categories here?
-        let mut header = typedb_protocol::query::res::ok::ConceptRowStream::default();
+        let mut header = typedb_protocol::query::res::ok::AnswerRowStream::default();
         header.column_variable_names.extend(columns.iter().map(|(name, _)| name));
         let message = typedb_protocol::query::res::Res::Ok(
             typedb_protocol::query::res::Ok {
@@ -563,8 +564,8 @@ impl TransactionService {
         sender.blocking_send(Some(Res { res: Some(message) })).unwrap()
     }
 
-    fn submit_row(sender: &Sender<Option<Res>>, row: MaybeOwnedRow, columns: &[(String, VariablePosition)]) {
-        let mut row_message = typedb_protocol::ConceptRow::default();
+    fn submit_row(sender: &Sender<Option<Res>>, row: MaybeOwnedRow<'_>, columns: &[(String, VariablePosition)]) {
+        let mut row_message = typedb_protocol::AnswerRow::default();
         for (_, position) in columns {
             let concept = row.get(*position);
         }

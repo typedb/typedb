@@ -31,6 +31,8 @@ rust_library(
         "@vaticle_typeql//rust:typeql",
         "@vaticle_typedb_protocol//grpc/rust:typedb_protocol",
 
+        "@crates//:chrono",
+        "@crates//:chrono-tz",
         "@crates//:itertools",
         "@crates//:prost",
         "@crates//:tokio",

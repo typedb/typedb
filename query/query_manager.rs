@@ -185,8 +185,9 @@ impl QueryManager {
         // }).unwrap();
 
         // // 3: Compile
+        let variable_registry = Arc::new(variable_registry);
         let compiled_pipeline =
-            compile_pipeline(thing_manager.statistics(), &variable_registry, annotated_preamble, annotated_stages);
+            compile_pipeline(thing_manager.statistics(), variable_registry, annotated_preamble, annotated_stages);
         let CompiledPipeline { compiled_functions, compiled_stages } = match compiled_pipeline {
             Ok(compiled_pipeline) => compiled_pipeline,
             Err(err) => return Err((snapshot, err))

@@ -26,9 +26,9 @@ const DAYS_PER_WEEK: u32 = 7;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Duration {
-    pub(super) months: u32,
-    pub(super) days: u32,
-    pub(super) nanos: u64,
+    pub months: u32,
+    pub days: u32,
+    pub nanos: u64,
 }
 
 impl Duration {
