@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::match_::instructions::IsaInstruction;
+use compiler::match_::instructions::thing::IsaInstruction;
 use concept::{
     error::ConceptReadError,
     iterator::InstanceIterator,
@@ -35,7 +35,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, Tuple, TuplePositions, TupleResult},
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     row::MaybeOwnedRow,

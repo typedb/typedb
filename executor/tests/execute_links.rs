@@ -10,7 +10,7 @@ use compiler::{
     match_::{
         inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
         instructions::{
-            ConstraintInstruction, Inputs, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
+            ConstraintInstruction, Inputs, thing::IsaReverseInstruction, thing::LinksInstruction, thing::LinksReverseInstruction,
         },
         planner::{
             pattern_plan::{IntersectionProgram, MatchProgram, Program},

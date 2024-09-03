@@ -12,17 +12,13 @@ use std::{
 };
 
 use answer::Type;
-use compiler::match_::instructions::HasReverseInstruction;
+use compiler::match_::instructions::thing::HasReverseInstruction;
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
 };
 use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{
-    adaptors::{Filter, Map},
-    kmerge::KMergeBy,
-    AsHkt, LendingIterator, Peekable,
-};
+use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
@@ -30,10 +26,7 @@ use crate::{
     instruction::{
         has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{
-            has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
-            TupleResult,
-        },
+        tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
     row::MaybeOwnedRow,

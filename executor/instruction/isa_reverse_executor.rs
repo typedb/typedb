@@ -11,7 +11,7 @@ use std::{
 };
 
 use answer::{Thing, Type};
-use compiler::match_::instructions::IsaReverseInstruction;
+use compiler::match_::instructions::thing::IsaReverseInstruction;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::pattern::constraint::Isa;
 use lending_iterator::{AsHkt, LendingIterator};
@@ -24,7 +24,7 @@ use crate::{
             MultipleTypeIsaIterator, SingleTypeIsaIterator, EXTRACT_THING, EXTRACT_TYPE,
         },
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions, TupleResult},
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
     row::MaybeOwnedRow,

@@ -9,7 +9,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 use compiler::{
     match_::{
         inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-        instructions::{ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs, IsaReverseInstruction},
+        instructions::{ConstraintInstruction, thing::HasInstruction, thing::HasReverseInstruction, Inputs, thing::IsaReverseInstruction},
         planner::{
             pattern_plan::{IntersectionProgram, MatchProgram, Program},
             program_plan::ProgramPlan,

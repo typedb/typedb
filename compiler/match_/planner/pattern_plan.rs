@@ -26,10 +26,15 @@ use crate::{
     match_::{
         inference::type_annotations::TypeAnnotations,
         instructions::{
-            CheckInstruction, ConstraintInstruction, HasInstruction, HasReverseInstruction, Inputs,
-            IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
+            thing::{
+                HasInstruction, HasReverseInstruction, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
+            },
+            CheckInstruction, ConstraintInstruction, Inputs,
         },
-        planner::vertex::{Costed, HasPlanner, LinksPlanner, PlannerVertex, ThingPlanner, ValuePlanner, VertexCost},
+        planner::vertex::{
+            Costed, HasPlanner, LinksPlanner, OwnsPlanner, PlannerVertex, SubPlanner, ThingPlanner, TypePlanner,
+            ValuePlanner, VertexCost,
+        },
     },
     VariablePosition,
 };
