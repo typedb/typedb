@@ -10,7 +10,7 @@ use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
-    pipeline::{PipelineError, StageAPI, StageIterator, WrittenRowsIterator},
+    pipeline::{PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator},
     write::delete::DeleteExecutor,
 };
 use crate::batch::Batch;
@@ -40,7 +40,7 @@ where
 {
     type OutputIterator = WrittenRowsIterator;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineError)> {
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let (previous_iterator, mut snapshot) = self.previous.into_iterator()?;
         // accumulate once, then we will operate in-place
         let mut batch = match previous_iterator.collect_owned() {
@@ -54,7 +54,7 @@ where
             let mut row = batch.get_row_mut(index);
             match self.deleter.execute_delete(snapshot_ref, self.thing_manager.as_ref(), &mut row) {
                 Ok(_) => {}
-                Err(err) => return Err((snapshot, PipelineError::WriteError(err))),
+                Err(err) => return Err((snapshot, PipelineExecutionError::WriteError(err))),
             }
         }
 

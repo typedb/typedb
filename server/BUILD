@@ -15,6 +15,7 @@ rust_library(
     deps = [
         "//common/bytes",
         "//common/error",
+        "//common/lending_iterator",
         "//common/options",
         "//concept",
         "//database",

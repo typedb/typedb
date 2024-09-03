@@ -11,7 +11,7 @@ use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    pipeline::{PipelineError, StageAPI, StageIterator},
+    pipeline::{PipelineExecutionError, StageAPI, StageIterator},
     row::MaybeOwnedRow,
 };
 
@@ -28,13 +28,13 @@ impl<Snapshot: ReadableSnapshot + 'static> InitialStage<Snapshot> {
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for InitialStage<Snapshot> {
     type OutputIterator = InitialIterator;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineError)> {
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         Ok((InitialIterator::new(), self.snapshot))
     }
 }
 
 pub struct InitialIterator {
-    single_iterator: AsLendingIterator<array::IntoIter<Result<MaybeOwnedRow<'static>, PipelineError>, 1>>,
+    single_iterator: AsLendingIterator<array::IntoIter<Result<MaybeOwnedRow<'static>, PipelineExecutionError>, 1>>,
 }
 
 impl InitialIterator {
@@ -44,7 +44,7 @@ impl InitialIterator {
 }
 
 impl LendingIterator for InitialIterator {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.single_iterator.next()

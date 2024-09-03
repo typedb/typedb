@@ -12,7 +12,7 @@ use storage::snapshot::WritableSnapshot;
 
 use crate::{
     batch::{Batch},
-    pipeline::{PipelineError, StageAPI, StageIterator, WrittenRowsIterator},
+    pipeline::{PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator},
     row::MaybeOwnedRow,
     write::insert::InsertExecutor,
 };
@@ -37,7 +37,7 @@ where
     fn prepare_output_rows(
         output_width: u32,
         input_iterator: PreviousStage::OutputIterator,
-    ) -> Result<Batch, PipelineError> {
+    ) -> Result<Batch, PipelineExecutionError> {
         // TODO: if the previous stage is not already in Collected format, this will end up temporarily allocating 2x
         //       the current memory. However, in the other case we don't know how many rows in the output batch to allocate ahead of time
         //       and require resizing. For now we take the simpler strategy that doesn't require resizing.
@@ -46,7 +46,7 @@ where
         let mut output_batch = Batch::new(output_width, total_output_rows as usize);
         let mut input_batch_iterator = input_batch.into_iterator_mut();
         while let Some(row) = input_batch_iterator.next() {
-            let mut row = row.map_err(|err| PipelineError::ConceptRead(err.clone()))?;
+            let mut row = row.map_err(|err| PipelineExecutionError::ConceptRead(err.clone()))?;
             // copy out row multiplicity M, set it to 1, then append the row M times
             let multiplicity = row.get_multiplicity();
             row.set_multiplicity(1);
@@ -65,7 +65,7 @@ where
 {
     type OutputIterator = WrittenRowsIterator;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineError)> {
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let (previous_iterator, mut snapshot) = self.previous.into_iterator()?;
         let mut output_rows = match Self::prepare_output_rows(self.inserter.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
@@ -79,7 +79,7 @@ where
             let mut row = output_rows.get_row_mut(index);
             match self.inserter.execute_insert(snapshot_ref, self.thing_manager.as_ref(), &mut row) {
                 Ok(_) => {}
-                Err(err) => return Err((snapshot, PipelineError::WriteError(err))),
+                Err(err) => return Err((snapshot, PipelineExecutionError::WriteError(err))),
             }
         }
         Ok((WrittenRowsIterator::new(output_rows), snapshot))

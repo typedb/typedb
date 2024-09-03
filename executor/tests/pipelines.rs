@@ -77,7 +77,6 @@ fn test_insert() {
             &context.type_manager,
             context.thing_manager.clone(),
             &context.function_manager,
-            &IndexedAnnotatedFunctions::empty(),
             &query,
         )
         .unwrap();

@@ -16,10 +16,11 @@ rust_library(
         "//answer",
         "//concept",
         "//compiler",
+        "//common/lending_iterator",
+        "//common/error",
         "//function",
         "//encoding",
         "//executor",
-        "//common/lending_iterator",
         "//ir",
         "//storage",
 

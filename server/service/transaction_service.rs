@@ -17,9 +17,12 @@ use tokio::{
     sync::{broadcast, mpsc::Sender},
     task::{JoinHandle, spawn_blocking},
 };
-use tokio_stream::StreamExt;
+use lending_iterator::LendingIterator;
+use tokio::sync::mpsc::channel;
+use tokio::sync::mpsc::error::SendError;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
+use typedb_protocol::query::Res;
 use typedb_protocol::transaction::{Client, Type};
 use typeql::{
     parse_query,
@@ -36,16 +39,17 @@ use database::{
 };
 use error::typedb_error;
 use executor::batch::Batch;
-use executor::pipeline::{PipelineError, StageAPI, StageIterator};
+use executor::pipeline::{PipelineExecutionError, StageAPI, StageIterator};
 use executor::pipeline::stage::{ReadStageIterator, WritePipelineStage, WriteStageIterator};
+use executor::row::MaybeOwnedRow;
 use function::function_manager::FunctionManager;
 use options::TransactionOptions;
 use query::{error::QueryError, query_manager::QueryManager};
 use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
-use storage::snapshot::ReadableSnapshot;
+use storage::snapshot::{ReadableSnapshot, ReadSnapshot};
 
-use crate::service::error::{ProtocolError, StatusConvertible};
+use crate::service::error::{ProtocolError, IntoProtocolErrorMessage, IntoGRPCStatus};
 
 // TODO: where does this belong?
 #[derive(Debug)]
@@ -73,7 +77,7 @@ pub(crate) struct TransactionService {
 
     is_open: bool,
     transaction: Option<Transaction>,
-    request_queue: Vec<typedb_protocol::query::Req>,
+    request_queue: Vec<(Uuid, Pipeline)>,
     read_responders: HashMap<Uuid, JoinHandle<()>>,
     write_responders: HashMap<Uuid, JoinHandle<()>>,
     active_write_query: Option<(Uuid, JoinHandle<(Transaction, Result<Batch, Status>)>)>,
@@ -83,6 +87,17 @@ macro_rules! close_service {
     () => {
         return;
     };
+
+}
+
+macro_rules! close_service_with_error {
+    ($self: ident, $error: expr) => {
+        let result = $self.response_sender.send(Err($error)).await;
+        if let Err(send_error) = result {
+            event!(Level::DEBUG, ?send_error, "Failed to send error to client");
+        }
+        return;
+    }};
 }
 
 impl TransactionService {
@@ -120,7 +135,7 @@ impl TransactionService {
 
     pub(crate) async fn listen(&mut self) {
         loop {
-            let next = self.request_stream.next().await;
+            let next = self.request_stream.next().await; // TODO: await active write query. If finished, move to responders and unblock other queries!
             match next {
                 None => {
                     close_service!();
@@ -135,15 +150,14 @@ impl TransactionService {
                         let metadata = request.metadata;
                         match request.req {
                             None => {
-                                self.send_err(
+                                close_service_with_error!(
+                                    self,
                                     ProtocolError::MissingField {
                                         name: "req",
                                         description: "Transaction message must contain a request.",
                                     }
-                                        .into_status(),
-                                )
-                                    .await;
-                                close_service!();
+                                        .into_status()
+                                );
                             }
                             Some(req) => {
                                 // TODO:
@@ -162,12 +176,9 @@ impl TransactionService {
                                         close_service!();
                                     }
                                     Err(err) => {
-                                        self.send_err(err).await;
-                                        close_service!();
+                                        close_service_with_error!(self,err);
                                     }
                                 }
-
-                                // update state
                             }
                         }
                     }
@@ -196,6 +207,7 @@ impl TransactionService {
                 Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
+                // TODO: not every query error -> Status needs to abort the transaction!
                 self.handle_query(request_id, query_req).await?;
                 Ok(Continue(()))
             }
@@ -320,28 +332,29 @@ impl TransactionService {
         match parsed {
             Query::Schema(schema_query) => self.handle_query_schema(schema_query).await,
             Query::Pipeline(pipeline) => {
-                // TODO: check if active write query can be moved to write responders, then we can promote queries from the queue
                 let is_write = pipeline.stages.iter().any(Self::is_write_stage);
                 if is_write {
                     if !self.request_queue.is_empty()
                         || !self.read_responders.is_empty()
                         || self.active_write_query.is_some()
                     {
-                        self.request_queue.push(query_req);
+                        self.request_queue.push((req_id, pipeline));
                         Ok(())
                     } else {
-                        let join_handle = self.execute_write_query(pipeline)?;
-                        // TODO: we should start streaming data once we can? TODO pipe into responses...
-                        self.active_write_query = Some((req_id, join_handle));
+                        // TODO: inject interrupt signal
+                        let blocking_execution = self.blocking_execute_write_query(pipeline)?;
+                        self.active_write_query = Some((req_id, tokio::spawn(async move {
+                            blocking_execution.await.unwrap()
+                        })));
                         Ok(())
                     }
                 } else {
-                    // if !self.request_queue.is_empty() || self.active_write_query.is_some() {
-                    //     self.request_queue.push(query_req);
-                    //     Ok(())
-                    // } else {
-                    //     self.prepare_read_query(pipeline).await?;
-                    // }
+                    if !self.request_queue.is_empty() || self.active_write_query.is_some() {
+                        self.request_queue.push((req_id, pipeline));
+                        Ok(())
+                    } else {
+                        self.blocking_execute_read_query(pipeline).await?;
+                    }
                 }
             }
         }
@@ -378,11 +391,12 @@ impl TransactionService {
             self.transaction = Some(Transaction::Schema(transaction));
             Ok(())
         } else {
+            // TODO: this doesn't need to be fatal!
             Err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}.into_status())
         }
     }
 
-    fn execute_write_query(&mut self, pipeline: Pipeline) -> Result<JoinHandle<(Transaction, Result<Batch, Status>)>, Status> {
+    fn blocking_execute_write_query(&mut self, pipeline: Pipeline) -> Result<JoinHandle<(Transaction, Result<Batch, Status>)>, Status> {
         debug_assert!(
             self.request_queue.is_empty()
                 && self.read_responders.is_empty()
@@ -469,38 +483,83 @@ impl TransactionService {
 
         let (iterator, snapshot) = match pipeline.into_iterator() {
             Ok((iterator, snapshot)) => (iterator, snapshot),
-            Err((snapshot, err)) => return (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineError { source: err })),
+            Err((snapshot, err)) => return (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecutionError { source: err })),
         };
 
         // collect so the snapshot Arc is no longer held by the iterator
         match iterator.collect_owned() {
             Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok(batch)),
-            Err(err) => (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineError { source: err })),
+            Err(err) => (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecutionError { source: err })),
         }
     }
 
-    async fn prepare_read_query(&self, pipeline: &Pipeline) -> Result<(), Status> {
+    async fn blocking_execute_read_query(
+        &self,
+        pipeline: &Pipeline,
+        sender: Sender<Option<typedb_protocol::query::Res>>,
+    ) -> JoinHandle<Result<(), Status>> {
         debug_assert!(self.request_queue.is_empty() && self.active_write_query.is_none() && self.transaction.is_some());
         match self.transaction.as_ref().unwrap() {
             Transaction::Read(transaction) => {
-                Self::prepare_read_query_in(
+                let iterator = Self::prepare_read_query_in(
                     transaction.snapshot.clone(),
                     &transaction.type_manager,
                     transaction.thing_manager.clone(),
-                    &transaction.function_manager
-                ).await.map_err()
+                    &transaction.function_manager,
+                    pipeline
+                );
+
+                let mut iterator = match iterator {
+                    Ok(iterator) => iterator,
+                    Err(err) => {
+                        Self::signal_error_and_finish(sender, err);
+                        return;
+                    },
+                };
+
+                // TODO: send row header message
+
+                while let Some(next) = iterator.next() {
+                    match next {
+                        Ok(row) => {}
+                        Err(err) => {
+                            Self::signal_error_and_finish(sender, err);
+                            return;
+                        }
+                    }
+                }
+                todo!()
             }
-            Transaction::Write(transaction) => {}
-            Transaction::Schema(transaction) => {}
+            Transaction::Write(transaction) => {
+                todo!()
+            }
+            Transaction::Schema(transaction) => {
+                todo!()
+            }
         }
     }
 
-    async fn prepare_read_query_in<Snapshot: ReadableSnapshot + 'static>(
+    fn signal_error_and_finish(sender: Sender<Option<typedb_protocol::query::Res>>, error: impl IntoProtocolErrorMessage) {
+        let err = error.into_error_message();
+        match sender.blocking_send(Some(typedb_protocol::query::Res {
+            res: Some(typedb_protocol::query::res::Res::Error(err))
+        })) {
+            Ok(_) => if let Err(err) = sender.blocking_send(None) {
+                event!(
+                    Level::DEBUG,
+                    "Worker failed to send final empty message after error message: {:?}", err
+                )
+            },
+            Err(err) => event!(Level::ERROR, "Worker failed to send error message: {:?}", err),
+        }
+    }
+
+    fn prepare_read_query_in<Snapshot: ReadableSnapshot + 'static>(
         snapshot: Arc<Snapshot>,
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
-        pipeline: &Pipeline
+        pipeline: &Pipeline,
     ) -> Result<ReadStageIterator<Snapshot>, QueryError> {
         let pipeline = QueryManager::new().prepare_read_pipeline(
             snapshot,
@@ -510,12 +569,10 @@ impl TransactionService {
             &pipeline,
         )?;
 
-        let iterator = match pipeline.into_iterator() {
-            Ok((iterator, _)) => iterator,
-            Err((_, err)) => return Err(QueryError::WritePipelineError { source: err })
+        return match pipeline.into_iterator() {
+            Ok((iterator, _)) => Ok(iterator),
+            Err((_, err)) => Err(QueryError::ReadPipelineExecutionError { source: err })
         };
-
-        Ok(iterator)
     }
 
     async fn handle_stream_continue(
@@ -580,13 +637,6 @@ impl TransactionService {
             Stage::Fetch(_) | Stage::Reduce(_) | Stage::Modifier(_) | Stage::Match(_) => false,
         }
     }
-
-    async fn send_err(&mut self, err: Status) {
-        let result = self.response_sender.send(Err(err)).await;
-        if let Err(send_error) = result {
-            event!(Level::DEBUG, ?send_error, "Failed to send error to client");
-        }
-    }
 }
 
 typedb_error!(
@@ -600,6 +650,6 @@ typedb_error!(
         QueryParseFailed(6, "Query parsing failed.", ( source : typeql::Error )),
         SchemaQueryRequiresSchemaTransaction(7, "Schema modification queries require schema transactions."),
         WriteQueryRequiresSchemaOrWriteTransaction(8, "Data modification queries require either write or schema transactions."),
-        QueryExecutionFailed(9, "Query execution failed.", ( source : QueryError )),
+        QueryExecutionFailed(9, "Query execution failed.", ( typedb_source : QueryError )),
     }
 );

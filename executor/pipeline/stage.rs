@@ -17,7 +17,7 @@ use crate::{
         initial::{InitialIterator, InitialStage},
         insert::InsertStageExecutor,
         match_::{MatchStageExecutor, MatchStageIterator},
-        PipelineError, StageAPI, StageIterator, WrittenRowsIterator,
+        PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator,
     },
     row::MaybeOwnedRow,
 };
@@ -35,7 +35,7 @@ pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
     type OutputIterator = ReadStageIterator<Snapshot>;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineError)> {
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         match self {
             ReadPipelineStage::Initial(stage) => {
                 let (iterator, snapshot) = stage.into_iterator()?;
@@ -50,7 +50,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadStageIterator<Snapshot> {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
@@ -61,7 +61,7 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadStageIterator
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> StageIterator for ReadStageIterator<Snapshot> {
-    fn collect_owned(self) -> Result<Batch, PipelineError> {
+    fn collect_owned(self) -> Result<Batch, PipelineExecutionError> {
         match self {
             ReadStageIterator::Initial(iterator) => iterator.collect_owned(),
             ReadStageIterator::Match(iterator) => iterator.collect_owned(),
@@ -79,7 +79,7 @@ pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
 impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineStage<Snapshot> {
     type OutputIterator = WriteStageIterator<Snapshot>;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineError)> {
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         match self {
             WritePipelineStage::Initial(stage) => {
                 let (iterator, snapshot) = stage.into_iterator()?;
@@ -108,7 +108,7 @@ pub enum WriteStageIterator<Snapshot: WritableSnapshot + 'static> {
 }
 
 impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterator<Snapshot> {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
@@ -120,7 +120,7 @@ impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterato
 }
 
 impl<Snapshot: WritableSnapshot + 'static> StageIterator for WriteStageIterator<Snapshot> {
-    fn collect_owned(self) -> Result<Batch, PipelineError> {
+    fn collect_owned(self) -> Result<Batch, PipelineExecutionError> {
         match self {
             WriteStageIterator::Initial(iterator) => iterator.collect_owned(),
             WriteStageIterator::Match(iterator) => iterator.collect_owned(),

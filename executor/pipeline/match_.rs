@@ -13,7 +13,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern_executor::{PatternExecutor, PatternIterator},
-    pipeline::{PipelineError, StageAPI, StageIterator},
+    pipeline::{PipelineExecutionError, StageAPI, StageIterator},
     row::MaybeOwnedRow,
 };
 
@@ -41,7 +41,7 @@ where
 {
     type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
-    fn into_iterator(mut self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineError)> {
+    fn into_iterator(mut self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { previous: previous_stage, program, .. } = self;
         let (previous_iterator, snapshot) = previous_stage.into_iterator()?;
         let iterator = previous_iterator;
@@ -76,7 +76,7 @@ where
     Snapshot: ReadableSnapshot + 'static,
     Iterator: StageIterator,
 {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         while !self.current_iterator.as_mut().is_some_and(|iter| iter.peek().is_some()) {
@@ -85,7 +85,7 @@ where
                 Some(source_next) => {
                     // TODO: use the start to initialise the next iterator
                     let iterator = PatternExecutor::new(&self.program, &self.snapshot, &self.thing_manager)
-                        .map_err(|err| PipelineError::InitialisingMatchIterator(err));
+                        .map_err(|err| PipelineExecutionError::InitialisingMatchIterator(err));
                     match iterator {
                         Ok(iterator) => {
                             self.current_iterator = Some(Peekable::new(
@@ -101,7 +101,7 @@ where
             .as_mut()
             .unwrap()
             .next()
-            .map(|result| result.map_err(|err| PipelineError::ConceptRead(err.clone())))
+            .map(|result| result.map_err(|err| PipelineExecutionError::ConceptRead(err.clone())))
     }
 }
 

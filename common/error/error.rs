@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+mod typeql;
+
 use std::{
     error::Error,
     fmt::{Debug, Display, Formatter},
@@ -153,12 +155,18 @@ macro_rules! typedb_error {
                     $(
                         $( Self::$variant { typedb_source, .. } => {
                             let typedb_source: &$typedb_source = typedb_source;
-                            Some(typedb_source as &dyn error::TypeDBError),
+                            Some(typedb_source as &dyn error::TypeDBError)
                         } )?
                     )*
                     _ => None
                 };
                 error
+            }
+        }
+
+        impl std::fmt::Debug for $name {
+           fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                std::fmt::Debug::fmt(self as &dyn error::TypeDBError, f)
             }
         }
     };
