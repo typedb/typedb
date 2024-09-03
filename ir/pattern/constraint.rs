@@ -106,12 +106,13 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_sub(
         &mut self,
+        kind: SubKind,
         subtype: Variable,
         supertype: Variable,
     ) -> Result<&Sub<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, subtype));
         debug_assert!(self.context.is_variable_available(self.constraints.scope, supertype));
-        let sub = Sub::new(subtype, supertype);
+        let sub = Sub::new(kind, subtype, supertype);
         self.context.set_variable_category(subtype, VariableCategory::Type, sub.clone().into())?;
         self.context.set_variable_category(supertype, VariableCategory::Type, sub.clone().into())?;
         let as_ref = self.constraints.add_constraint(sub);
@@ -609,15 +610,34 @@ impl<ID: IrID> fmt::Display for RoleName<ID> {
     }
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum SubKind {
+    Exact,
+    Subtype,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Sub<ID> {
+    kind: SubKind,
     subtype: ID,
     supertype: ID,
 }
 
 impl<ID: IrID> Sub<ID> {
-    fn new(subtype: ID, supertype: ID) -> Self {
-        Sub { subtype, supertype }
+    fn new(kind: SubKind, subtype: ID, supertype: ID) -> Self {
+        Sub { subtype, supertype, kind }
+    }
+
+    pub fn subtype(&self) -> ID {
+        self.subtype
+    }
+
+    pub fn supertype(&self) -> ID {
+        self.supertype
+    }
+
+    pub fn sub_kind(&self) -> SubKind {
+        self.kind
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
@@ -632,12 +652,8 @@ impl<ID: IrID> Sub<ID> {
         function(self.supertype, ConstraintIDSide::Right)
     }
 
-    pub fn subtype(&self) -> ID {
-        self.subtype
-    }
-
-    pub fn supertype(&self) -> ID {
-        self.supertype
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Sub<T> {
+        Sub::new(self.kind, *mapping.get(&self.subtype).unwrap(), *mapping.get(&self.supertype).unwrap())
     }
 }
 

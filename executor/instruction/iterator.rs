@@ -37,6 +37,9 @@ use crate::{
             LinksReverseUnboundedSortedPlayer, LinksReverseUnboundedSortedRelationMerged,
             LinksReverseUnboundedSortedRelationSingle,
         },
+        sub_executor::{
+            SubBoundedSortedSuper, SubUnboundedSortedSub,
+        },
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
         VariableMode, VariableModes,
     },
@@ -85,6 +88,9 @@ macro_rules! dispatch_tuple_iterator {
 dispatch_tuple_iterator! {
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum TupleIterator {
+    SubUnbounded(SortedTupleIterator<SubUnboundedSortedSub>),
+    SubBounded(SortedTupleIterator<SubBoundedSortedSuper>),
+
     IsaUnboundedSingle(SortedTupleIterator<IsaUnboundedSortedThingSingle>),
     IsaUnboundedMerged(SortedTupleIterator<IsaUnboundedSortedThingMerged>),
     IsaUnboundedInvertedSingle(SortedTupleIterator<IsaUnboundedSortedTypeSingle>),

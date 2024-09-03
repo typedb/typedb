@@ -29,6 +29,7 @@ use crate::{
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
         iterator::TupleIterator, links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
+        sub_executor::SubExecutor,
     },
     row::MaybeOwnedRow,
     VariablePosition,
@@ -42,9 +43,12 @@ mod isa_reverse_executor;
 pub(crate) mod iterator;
 mod links_executor;
 mod links_reverse_executor;
+mod sub_executor;
 pub(crate) mod tuple;
 
 pub(crate) enum InstructionExecutor {
+    Sub(SubExecutor),
+
     Isa(IsaExecutor),
     IsaReverse(IsaReverseExecutor),
 
@@ -69,31 +73,31 @@ impl InstructionExecutor {
     ) -> Result<Self, ConceptReadError> {
         let variable_modes = VariableModes::new_for(&instruction, selected, named);
         match instruction {
-            ConstraintInstruction::Isa(isa) => {
-                let executor = IsaExecutor::new(isa, variable_modes, sort_by);
-                Ok(Self::Isa(executor))
-            }
+            ConstraintInstruction::Sub(sub) => Ok(Self::Sub(SubExecutor::new(sub, variable_modes, sort_by))),
+            ConstraintInstruction::Isa(isa) => Ok(Self::Isa(IsaExecutor::new(isa, variable_modes, sort_by))),
             ConstraintInstruction::IsaReverse(isa_reverse) => {
-                let executor = IsaReverseExecutor::new(isa_reverse, variable_modes, sort_by);
-                Ok(Self::IsaReverse(executor))
+                Ok(Self::IsaReverse(IsaReverseExecutor::new(isa_reverse, variable_modes, sort_by)))
             }
             ConstraintInstruction::Has(has) => {
-                let executor = HasExecutor::new(has, variable_modes, sort_by, snapshot, thing_manager)?;
-                Ok(Self::Has(executor))
+                Ok(Self::Has(HasExecutor::new(has, variable_modes, sort_by, snapshot, thing_manager)?))
             }
-            ConstraintInstruction::HasReverse(has_reverse) => {
-                let executor = HasReverseExecutor::new(has_reverse, variable_modes, sort_by, snapshot, thing_manager)?;
-                Ok(Self::HasReverse(executor))
-            }
+            ConstraintInstruction::HasReverse(has_reverse) => Ok(Self::HasReverse(HasReverseExecutor::new(
+                has_reverse,
+                variable_modes,
+                sort_by,
+                snapshot,
+                thing_manager,
+            )?)),
             ConstraintInstruction::Links(links) => {
-                let executor = LinksExecutor::new(links, variable_modes, sort_by, snapshot, thing_manager)?;
-                Ok(Self::Links(executor))
+                Ok(Self::Links(LinksExecutor::new(links, variable_modes, sort_by, snapshot, thing_manager)?))
             }
-            ConstraintInstruction::LinksReverse(links_reverse) => {
-                let executor =
-                    LinksReverseExecutor::new(links_reverse, variable_modes, sort_by, snapshot, thing_manager)?;
-                Ok(Self::LinksReverse(executor))
-            }
+            ConstraintInstruction::LinksReverse(links_reverse) => Ok(Self::LinksReverse(LinksReverseExecutor::new(
+                links_reverse,
+                variable_modes,
+                sort_by,
+                snapshot,
+                thing_manager,
+            )?)),
             ConstraintInstruction::FunctionCallBinding(_function_call) => todo!(),
             ConstraintInstruction::ComparisonGenerator(_comparison) => todo!(),
             ConstraintInstruction::ComparisonGeneratorReverse(_comparison) => todo!(),
@@ -109,13 +113,14 @@ impl InstructionExecutor {
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
-            InstructionExecutor::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::Links(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::LinksReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::FunctionCallBinding(_executor) => todo!(),
+            Self::Sub(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Links(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::LinksReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::FunctionCallBinding(_executor) => todo!(),
         }
     }
 }

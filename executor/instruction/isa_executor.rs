@@ -35,7 +35,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions, TupleResult},
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, ThingToTupleFn, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     row::MaybeOwnedRow,
@@ -96,8 +96,6 @@ type ObjectEraseFn = for<'a> fn(Result<Object<'a>, ConceptReadError>) -> Result<
 type EntityEraseFn = for<'a> fn(Result<Entity<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
 type RelationEraseFn = for<'a> fn(Result<Relation<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
 type AttributeEraseFn = for<'a> fn(Result<Attribute<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
-
-type ThingToTupleFn = for<'a> fn(Result<Thing<'a>, ConceptReadError>) -> TupleResult<'a>;
 
 pub(super) type IsaFilterFn = FilterFn<AsHkt![Thing<'_>]>;
 

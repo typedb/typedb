@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::{variable_value::VariableValue, Thing};
+use answer::{variable_value::VariableValue, Thing, Type};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -118,6 +118,24 @@ pub(crate) type TupleIndex = u16;
 
 pub(crate) type TupleResult<'a> = Result<Tuple<'a>, ConceptReadError>;
 
+pub(crate) type SubToTupleFn = fn(Result<(Type, Type), ConceptReadError>) -> TupleResult<'static>;
+
+pub(crate) fn sub_to_tuple_sub_super(result: Result<(Type, Type), ConceptReadError>) -> TupleResult<'static> {
+    match result {
+        Ok((sub, sup)) => Ok(Tuple::Pair([VariableValue::Type(sub), VariableValue::Type(sup)])),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) fn sub_to_tuple_super_sub(result: Result<(Type, Type), ConceptReadError>) -> TupleResult<'static> {
+    match result {
+        Ok((sub, sup)) => Ok(Tuple::Pair([VariableValue::Type(sup), VariableValue::Type(sub)])),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) type ThingToTupleFn = for<'a> fn(Result<Thing<'a>, ConceptReadError>) -> TupleResult<'a>;
+
 pub(crate) fn isa_to_tuple_thing_type(result: Result<Thing<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
         Ok(thing) => {
@@ -138,13 +156,13 @@ pub(crate) fn isa_to_tuple_type_thing(result: Result<Thing<'_>, ConceptReadError
 pub(crate) type HasToTupleFn = for<'a> fn(Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a>;
 
 pub(crate) fn has_to_tuple_owner_attribute(result: Result<(Has<'_>, u64), ConceptReadError>) -> TupleResult<'_> {
-    let (has, count) = result?;
+    let (has, _count) = result?;
     let (owner, attribute) = has.into_owner_attribute();
     Ok(Tuple::Pair([VariableValue::Thing(owner.into()), VariableValue::Thing(attribute.into())]))
 }
 
 pub(crate) fn has_to_tuple_attribute_owner(result: Result<(Has<'_>, u64), ConceptReadError>) -> TupleResult<'_> {
-    let (has, count) = result?;
+    let (has, _count) = result?;
     let (owner, attribute) = has.into_owner_attribute();
     Ok(Tuple::Pair([VariableValue::Thing(attribute.into()), VariableValue::Thing(owner.into())]))
 }
@@ -155,7 +173,7 @@ pub(crate) type LinksToTupleFn =
 pub(crate) fn links_to_tuple_relation_player_role<'a>(
     result: Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>,
 ) -> TupleResult<'a> {
-    let (rel, rp, count) = result?;
+    let (rel, rp, _count) = result?;
     let role_type = rp.role_type();
     Ok(Tuple::Triple([
         VariableValue::Thing(rel.into()),
@@ -167,7 +185,7 @@ pub(crate) fn links_to_tuple_relation_player_role<'a>(
 pub(crate) fn links_to_tuple_player_relation_role<'a>(
     result: Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>,
 ) -> TupleResult<'a> {
-    let (rel, rp, count) = result?;
+    let (rel, rp, _count) = result?;
     let role_type = rp.role_type();
     Ok(Tuple::Triple([
         VariableValue::Thing(rp.into_player().into()),

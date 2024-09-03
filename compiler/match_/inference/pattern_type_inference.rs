@@ -287,7 +287,7 @@ pub mod tests {
 
     use answer::{variable::Variable, Type as TypeAnnotation};
     use ir::{
-        pattern::constraint::{Constraint, IsaKind},
+        pattern::constraint::{Constraint, IsaKind, SubKind},
         program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
         translation::TranslationContext,
     };
@@ -845,9 +845,12 @@ pub mod tests {
             conjunction.constraints_mut().add_links(var_fears, var_has_fear, var_role_has_fear).unwrap();
             conjunction.constraints_mut().add_links(var_fears, var_is_feared, var_role_is_feared).unwrap();
 
-            conjunction.constraints_mut().add_sub(var_role_has_fear, var_role_has_fear_type).unwrap();
+            conjunction.constraints_mut().add_sub(SubKind::Subtype, var_role_has_fear, var_role_has_fear_type).unwrap();
             conjunction.constraints_mut().add_label(var_role_has_fear_type, "fears:has-fear").unwrap();
-            conjunction.constraints_mut().add_sub(var_role_is_feared, var_role_is_feared_type).unwrap();
+            conjunction
+                .constraints_mut()
+                .add_sub(SubKind::Subtype, var_role_is_feared, var_role_is_feared_type)
+                .unwrap();
             conjunction.constraints_mut().add_label(var_role_is_feared_type, "fears:is-feared").unwrap();
 
             let block = builder.finish();

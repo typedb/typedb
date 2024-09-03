@@ -10,14 +10,17 @@ use ir::pattern::{
     constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding},
     IrID,
 };
-use itertools::Itertools;
 
 use crate::match_::planner::pattern_plan::InstructionAPI;
 
 pub mod thing;
+pub mod type_;
 
 #[derive(Debug, Clone)]
 pub enum ConstraintInstruction<ID> {
+    // sub -> super
+    Sub(type_::SubInstruction<ID>),
+
     // thing -> type
     Isa(thing::IsaInstruction<ID>),
     // type -> thing
@@ -61,6 +64,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn input_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
+            | ConstraintInstruction::Sub(type_::SubInstruction { inputs, .. })
             | ConstraintInstruction::Isa(thing::IsaInstruction { inputs, .. })
             | ConstraintInstruction::IsaReverse(thing::IsaReverseInstruction { inputs, .. })
             | ConstraintInstruction::Has(thing::HasInstruction { inputs, .. })
@@ -79,10 +83,18 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
+            ConstraintInstruction::Sub(type_::SubInstruction { sub, inputs, .. })
+            /*| ConstraintInstruction::IsaReverse(thing::IsaReverseInstruction { isa, inputs, .. })*/ => {
+                sub.ids_foreach(|var, _| {
+                    if !inputs.contains(var) {
+                        apply(var)
+                    }
+                })
+            }
             ConstraintInstruction::Isa(thing::IsaInstruction { isa, inputs, .. })
             | ConstraintInstruction::IsaReverse(thing::IsaReverseInstruction { isa, inputs, .. }) => {
                 isa.ids_foreach(|var, _| {
-                    if !inputs.iter().contains(&var) {
+                    if !inputs.contains(var) {
                         apply(var)
                     }
                 })
@@ -90,7 +102,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             ConstraintInstruction::Has(thing::HasInstruction { has, inputs, .. })
             | ConstraintInstruction::HasReverse(thing::HasReverseInstruction { has, inputs, .. }) => {
                 has.ids_foreach(|var, _| {
-                    if !inputs.iter().contains(&var) {
+                    if !inputs.contains(var) {
                         apply(var)
                     }
                 })
@@ -98,7 +110,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             ConstraintInstruction::Links(thing::LinksInstruction { links, inputs, .. })
             | ConstraintInstruction::LinksReverse(thing::LinksReverseInstruction { links, inputs, .. }) => links
                 .ids_foreach(|var, _| {
-                    if !inputs.iter().contains(&var) {
+                    if !inputs.contains(var) {
                         apply(var)
                     }
                 }),
@@ -115,6 +127,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         match self {
+            Self::Sub(inner) => inner.add_check(check),
             Self::Isa(inner) => inner.add_check(check),
             Self::IsaReverse(inner) => inner.add_check(check),
             Self::Has(inner) => inner.add_check(check),
@@ -131,6 +144,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ConstraintInstruction<T> {
         match self {
+            Self::Sub(inner) => ConstraintInstruction::Sub(inner.map(mapping)),
             Self::Isa(inner) => ConstraintInstruction::Isa(inner.map(mapping)),
             Self::IsaReverse(inner) => ConstraintInstruction::IsaReverse(inner.map(mapping)),
             Self::Has(inner) => ConstraintInstruction::Has(inner.map(mapping)),
@@ -149,6 +163,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 impl<ID: Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
     fn constraint(&self) -> Constraint<ID> {
         match self {
+            Self::Sub(type_::SubInstruction { sub, .. }) => sub.clone().into(),
             Self::Isa(thing::IsaInstruction { isa, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.clone().into(),
             Self::Has(thing::HasInstruction { has, .. })

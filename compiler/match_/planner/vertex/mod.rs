@@ -13,7 +13,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::{Has, Links};
+use ir::pattern::constraint::{Has, Links, SubKind};
 use itertools::Itertools;
 
 use crate::match_::inference::type_annotations::TypeAnnotations;
@@ -33,6 +33,13 @@ pub(super) enum PlannerVertex {
     Has(HasPlanner),
     Links(LinksPlanner),
     Expression(()),
+
+    Type(TypePlanner),
+    Sub(SubPlanner),
+    Owns(OwnsPlanner),
+    Relates(RelatesPlanner),
+    Plays(PlaysPlanner),
+    ValueType(ValueTypePlanner),
 }
 
 impl PlannerVertex {
@@ -44,6 +51,12 @@ impl PlannerVertex {
             Self::Links(_) => true,                              // always valid: links iterator
             Self::Value(value) => value.is_valid(ordered), // may be invalid: has to be from an attribute or a expression
             Self::Expression(_) => todo!("validate expression"), // may be invalid: inputs must be bound
+            Self::Type(_) => true,                         // TODO when?
+            Self::Sub(_) => true,                          // TODO when?
+            Self::Owns(_) => true,                         // TODO when?
+            Self::Relates(_) => true,                      // TODO when?
+            Self::Plays(_) => true,                        // TODO when?
+            Self::ValueType(_) => true,                    // TODO when?
         }
     }
 
@@ -78,56 +91,62 @@ impl PlannerVertex {
 
     pub(super) fn variables(&self) -> impl Iterator<Item = usize> {
         match self {
-            PlannerVertex::Constant => [None; 3].into_iter().flatten(),
-            PlannerVertex::Value(_inner) => todo!(),
-            PlannerVertex::Thing(_inner) => todo!(),
-            PlannerVertex::Has(inner) => inner.variables(),
-            PlannerVertex::Links(inner) => inner.variables(),
-            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+            Self::Constant => [None; 3].into_iter().flatten(),
+            Self::Value(_inner) => todo!(),
+            Self::Thing(_inner) => todo!(),
+            Self::Has(inner) => inner.variables(),
+            Self::Links(inner) => inner.variables(),
+            Self::Expression(_inner) => todo!(),
+            Self::Type(inner) => todo!(),
+            Self::Sub(inner) => inner.variables(),
+            Self::Owns(inner) => inner.variables(),
+            Self::Relates(inner) => inner.variables(),
+            Self::Plays(inner) => inner.variables(),
+            Self::ValueType(inner) => inner.variables(),
         }
     }
 
     pub(super) fn add_is(&mut self, other: usize) {
         match self {
-            PlannerVertex::Constant => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Thing(inner) => inner.add_is(other),
-            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+            Self::Constant => todo!(),
+            Self::Value(_inner) => todo!(),
+            Self::Thing(inner) => inner.add_is(other),
+            Self::Has(_inner) => todo!(),
+            Self::Links(_inner) => todo!(),
+            Self::Expression(_inner) => todo!(),
+            Self::Type(_inner) => todo!(),
+            Self::Sub(_inner) => todo!(),
+            Self::Owns(_inner) => todo!(),
+            Self::Relates(_inner) => todo!(),
+            Self::Plays(_inner) => todo!(),
+            Self::ValueType(_inner) => todo!(),
         }
     }
 
     pub(super) fn add_equal(&mut self, other: usize) {
         match self {
-            PlannerVertex::Constant => (),
-            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Thing(inner) => inner.add_equal(other),
-            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+            Self::Constant => (),
+            Self::Value(_inner) => todo!(),
+            Self::Thing(inner) => inner.add_equal(other),
+            _ => todo!(),
         }
     }
 
     pub(super) fn add_lower_bound(&mut self, other: usize) {
         match self {
-            PlannerVertex::Constant => (),
-            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Thing(inner) => inner.add_lower_bound(other),
-            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+            Self::Constant => (),
+            Self::Value(_inner) => todo!(),
+            Self::Thing(inner) => inner.add_lower_bound(other),
+            _ => todo!(),
         }
     }
 
     pub(super) fn add_upper_bound(&mut self, other: usize) {
         match self {
-            PlannerVertex::Constant => (),
-            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Thing(inner) => inner.add_upper_bound(other),
-            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+            Self::Constant => (),
+            Self::Value(_inner) => todo!(),
+            Self::Thing(inner) => inner.add_upper_bound(other),
+            _ => todo!(),
         }
     }
 }
@@ -158,6 +177,12 @@ impl Costed for PlannerVertex {
             Self::Has(inner) => inner.cost(inputs, elements),
             Self::Links(inner) => inner.cost(inputs, elements),
             Self::Expression(_) => todo!("expression cost"),
+            Self::Type(inner) => inner.cost(inputs, elements),
+            Self::Sub(inner) => inner.cost(inputs, elements),
+            Self::Owns(inner) => inner.cost(inputs, elements),
+            Self::Relates(inner) => inner.cost(inputs, elements),
+            Self::Plays(inner) => inner.cost(inputs, elements),
+            Self::ValueType(inner) => inner.cost(inputs, elements),
         }
     }
 }
@@ -480,5 +505,112 @@ impl Costed for LinksPlanner {
         };
 
         VertexCost { per_input, per_output, branching_factor }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct TypePlanner;
+
+impl TypePlanner {}
+
+impl Costed for TypePlanner {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct SubPlanner {
+    type_: usize,
+    supertype: usize,
+    kind: SubKind,
+}
+
+impl SubPlanner {
+    pub(crate) fn from_constraint(
+        sub: &ir::pattern::constraint::Sub<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        type_annotations: &TypeAnnotations,
+    ) -> Self {
+        Self { type_: variable_index[&sub.subtype()], supertype: variable_index[&sub.supertype()], kind: sub.sub_kind() }
+    }
+
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [None; 3].into_iter().flatten()
+    }
+}
+
+impl Costed for SubPlanner {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct OwnsPlanner {}
+
+impl OwnsPlanner {
+    pub(crate) fn from_constraint(
+        owns: &ir::pattern::constraint::Owns<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        type_annotations: &TypeAnnotations,
+        statistics: &Statistics,
+    ) -> OwnsPlanner {
+        todo!()
+    }
+
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [None; 3].into_iter().flatten()
+    }
+}
+
+impl Costed for OwnsPlanner {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct RelatesPlanner {}
+
+impl RelatesPlanner {
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [None; 3].into_iter().flatten()
+    }
+}
+
+impl Costed for RelatesPlanner {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct PlaysPlanner {}
+
+impl PlaysPlanner {
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [None; 3].into_iter().flatten()
+    }
+}
+
+impl Costed for PlaysPlanner {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct ValueTypePlanner {}
+
+impl ValueTypePlanner {
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [None; 3].into_iter().flatten()
+    }
+}
+
+impl Costed for ValueTypePlanner {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }

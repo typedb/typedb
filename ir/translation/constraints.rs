@@ -16,7 +16,7 @@ use typeql::{
 use crate::{
     pattern::{
         conjunction::ConjunctionBuilder,
-        constraint::{Comparator, ConstraintsBuilder, IsaKind},
+        constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
     },
     program::function_signature::FunctionSignatureIndex,
     translation::expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
@@ -93,7 +93,7 @@ fn add_type_statement(
     for constraint in &type_.constraints {
         assert!(constraint.annotations.is_empty(), "TODO: handle type statement annotations");
         match &constraint.base {
-            typeql::statement::type_::ConstraintBase::Sub(_) => todo!(),
+            typeql::statement::type_::ConstraintBase::Sub(sub) => add_typeql_sub(constraints, var, sub)?,
             typeql::statement::type_::ConstraintBase::Label(label) => match label {
                 typeql::statement::type_::LabelConstraint::Name(label) => {
                     constraints.add_label(var, label.ident.as_str())?;
@@ -182,6 +182,20 @@ fn register_type_label_var(
     let variable = constraints.create_anonymous_variable()?;
     constraints.add_label(variable, label.ident.as_str())?;
     Ok(variable)
+}
+
+fn add_typeql_sub(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    thing: Variable,
+    sub: &typeql::statement::type_::Sub,
+) -> Result<(), PatternDefinitionError> {
+    let kind = match sub.kind {
+        typeql::statement::type_::SubKind::Direct => SubKind::Exact,
+        typeql::statement::type_::SubKind::Transitive => SubKind::Subtype,
+    };
+    let type_ = register_typeql_type_var_any(constraints, &sub.supertype)?;
+    constraints.add_sub(kind, thing, type_)?;
+    Ok(())
 }
 
 fn add_typeql_isa(

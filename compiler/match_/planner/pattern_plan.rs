@@ -130,27 +130,28 @@ impl<'a> PlanBuilder<'a> {
         let mut elements = Vec::new();
         let variable_index = variable_registry
             .variable_categories()
-            .filter_map(|(variable, category)| {
-                match category {
-                    VariableCategory::Type | VariableCategory::ThingType => None, // ignore for now
-                    VariableCategory::RoleType => Some((variable, elements.len())),
-                    VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
-                        let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
-                        let index = elements.len();
-                        elements.push(PlannerVertex::Thing(planner));
-                        Some((variable, index))
-                    }
-                    VariableCategory::Value => {
-                        let planner = ValuePlanner::from_variable(variable);
-                        let index = elements.len();
-                        elements.push(PlannerVertex::Value(planner));
-                        Some((variable, index))
-                    }
-                    | VariableCategory::ObjectList
-                    | VariableCategory::ThingList
-                    | VariableCategory::AttributeList
-                    | VariableCategory::ValueList => todo!("list variable planning"),
+            .map(|(variable, category)| match category {
+                VariableCategory::Type | VariableCategory::ThingType | VariableCategory::RoleType => {
+                    let index = elements.len();
+                    elements.push(PlannerVertex::Type(TypePlanner));
+                    (variable, index)
                 }
+                VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
+                    let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
+                    let index = elements.len();
+                    elements.push(PlannerVertex::Thing(planner));
+                    (variable, index)
+                }
+                VariableCategory::Value => {
+                    let planner = ValuePlanner::from_variable(variable);
+                    let index = elements.len();
+                    elements.push(PlannerVertex::Value(planner));
+                    (variable, index)
+                }
+                | VariableCategory::ObjectList
+                | VariableCategory::ThingList
+                | VariableCategory::AttributeList
+                | VariableCategory::ValueList => todo!("list variable planning"),
             })
             .collect();
         Self {
@@ -170,8 +171,18 @@ impl<'a> PlanBuilder<'a> {
 
         for constraint in conjunction.constraints() {
             let planner = match constraint {
-                Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) => None, // ignore for now
-                Constraint::Owns(_) => todo!("owns"),
+                Constraint::RoleName(_) | Constraint::Label(_) => None, // ignore for now
+                Constraint::Sub(sub) => {
+                    let planner = SubPlanner::from_constraint(sub, &self.variable_index, type_annotations);
+                    self.elements.push(PlannerVertex::Sub(planner));
+                    self.elements.last()
+                }
+                Constraint::Owns(owns) => {
+                    let planner =
+                        OwnsPlanner::from_constraint(owns, &self.variable_index, type_annotations, statistics);
+                    self.elements.push(PlannerVertex::Owns(planner));
+                    self.elements.last()
+                }
                 Constraint::Relates(_) => todo!("relates"),
                 Constraint::Plays(_) => todo!("plays"),
 
@@ -390,9 +401,11 @@ fn lower_plan(
             }
 
             match constraint {
-                Constraint::RoleName(_) | Constraint::Label(_) | Constraint::Sub(_) | Constraint::Isa(_) => {
-                    todo!("type constraint")
-                }
+                Constraint::RoleName(_) | Constraint::Label(_) => todo!("type constraint"),
+
+                Constraint::Isa(_) => todo!("isa constraint"),
+
+                Constraint::Sub(_) => todo!("type constraint"),
 
                 Constraint::Links(links) => {
                     let relation = links.relation();
