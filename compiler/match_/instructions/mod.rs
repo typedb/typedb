@@ -18,7 +18,7 @@ pub mod type_;
 
 #[derive(Debug, Clone)]
 pub enum ConstraintInstruction<ID> {
-    Type(type_::TypeInstruction<ID>),
+    Label(type_::LabelInstruction<ID>),
 
     // sub -> super
     Sub(type_::SubInstruction<ID>),
@@ -73,7 +73,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub fn ids_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
-            &Self::Type(type_::TypeInstruction { type_var, .. }) => apply(type_var),
+            &Self::Label(type_::LabelInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(|var, _| apply(var)),
             Self::Owns(type_::OwnsInstruction { owns, .. })
@@ -99,7 +99,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn input_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
-            Self::Type(_) => (),
+            Self::Label(_) => (),
             | Self::Sub(type_::SubInstruction { inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { inputs, .. })
             | Self::Owns(type_::OwnsInstruction { inputs, .. })
@@ -122,7 +122,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
-            &Self::Type(type_::TypeInstruction { type_var, .. }) => apply(type_var),
+            &Self::Label(type_::LabelInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, inputs, .. }) => sub.ids_foreach(|var, _| {
                 if !inputs.contains(var) {
@@ -168,7 +168,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         match self {
-            Self::Type(_) => unreachable!("free-standing type variable can't have checks"),
+            Self::Label(_) => unreachable!("free-standing type variable can't have checks"),
             Self::Sub(inner) => inner.add_check(check),
             Self::SubReverse(inner) => inner.add_check(check),
             Self::Owns(inner) => inner.add_check(check),
@@ -189,7 +189,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ConstraintInstruction<T> {
         match self {
-            Self::Type(inner) => ConstraintInstruction::Type(inner.map(mapping)),
+            Self::Label(inner) => ConstraintInstruction::Label(inner.map(mapping)),
             Self::Sub(inner) => ConstraintInstruction::Sub(inner.map(mapping)),
             Self::SubReverse(inner) => ConstraintInstruction::SubReverse(inner.map(mapping)),
             Self::Owns(inner) => ConstraintInstruction::Owns(inner.map(mapping)),
@@ -212,7 +212,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 impl<ID: Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
     fn constraint(&self) -> Constraint<ID> {
         match self {
-            Self::Type(_) => todo!(), // TODO label?
+            Self::Label(_) => todo!(), // TODO label?
             Self::Sub(type_::SubInstruction { sub, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.clone().into(),
             Self::Owns(type_::OwnsInstruction { owns, .. })
@@ -237,6 +237,9 @@ pub enum CheckInstruction<ID> {
     Comparison { lhs: ID, rhs: ID, comparator: Comparator },
     Has { owner: ID, attribute: ID },
     Links { relation: ID, player: ID, role: ID },
+    Isa { type_: ID, thing: ID },
+    Sub { subtype: ID, supertype: ID },
+    Owns { owner: ID, attribute: ID },
 }
 
 impl<ID: IrID> CheckInstruction<ID> {
@@ -251,6 +254,7 @@ impl<ID: IrID> CheckInstruction<ID> {
             Self::Links { relation, player, role } => {
                 CheckInstruction::Links { relation: mapping[&relation], player: mapping[&player], role: mapping[&role] }
             }
+            _ => todo!(),
         }
     }
 }

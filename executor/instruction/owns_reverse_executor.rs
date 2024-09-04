@@ -23,11 +23,10 @@ use itertools::Itertools;
 use lending_iterator::{higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
-use super::owns_executor::{OwnsFilterFn, OwnsTupleIterator};
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        owns_executor::{EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
+        owns_executor::{OwnsFilterFn, OwnsTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         sub_executor::NarrowingTupleIterator,
         tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
@@ -73,7 +72,7 @@ impl OwnsReverseExecutor {
 
         let OwnsReverseInstruction { owns, checks, .. } = owns;
 
-        let iterate_mode = BinaryIterateMode::new(owns.owner(), owns.attribute(), &variable_modes, sort_by);
+        let iterate_mode = BinaryIterateMode::new(owns.attribute(), owns.owner(), &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
             BinaryIterateMode::Unbound => create_owns_filter_owner_attribute(attribute_owner_types.clone()),
             BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {
@@ -81,9 +80,9 @@ impl OwnsReverseExecutor {
             }
         };
         let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([owns.attribute(), owns.owner()])
-        } else {
             TuplePositions::Pair([owns.owner(), owns.attribute()])
+        } else {
+            TuplePositions::Pair([owns.attribute(), owns.owner()])
         };
 
         let checker = Checker::<AdHocHkt<Owns<'static>>> {

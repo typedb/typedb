@@ -28,13 +28,17 @@ const CONTAINS_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 #[derive(Debug)]
 pub(super) enum PlannerVertex {
     Constant,
-    Value(ValuePlanner),
+    Label(LabelPlanner),
+
+    Type(TypePlanner),
     Thing(ThingPlanner),
+    Value(ValuePlanner),
+
+    Isa(IsaPlanner),
     Has(HasPlanner),
     Links(LinksPlanner),
     Expression(()),
 
-    Type(TypePlanner),
     Sub(SubPlanner),
     Owns(OwnsPlanner),
     Relates(RelatesPlanner),
@@ -43,34 +47,38 @@ pub(super) enum PlannerVertex {
 }
 
 impl PlannerVertex {
-    pub(super) fn is_valid(&self, ordered: &[usize]) -> bool {
+    pub(super) fn is_valid(&self, index: usize, ordered: &[usize], adjacency: &HashMap<usize, HashSet<usize>>) -> bool {
         match self {
-            Self::Constant => true,                              // always valid: comes from query
-            Self::Thing(_) => true,                              // always valid: isa iterator
-            Self::Has(_) => true,                                // always valid: has iterator
-            Self::Links(_) => true,                              // always valid: links iterator
-            Self::Value(value) => value.is_valid(ordered), // may be invalid: has to be from an attribute or a expression
+            Self::Type(_) | Self::Thing(_) | Self::Value(_) => {
+                let adjacent = &adjacency[&index];
+                ordered.iter().any(|x| adjacent.contains(x))
+            } // may be invalid: must be produced
+
             Self::Expression(_) => todo!("validate expression"), // may be invalid: inputs must be bound
-            Self::Type(_) => true,                         // TODO when?
-            Self::Sub(_) => true,                          // TODO when?
-            Self::Owns(_) => true,                         // TODO when?
-            Self::Relates(_) => true,                      // TODO when?
-            Self::Plays(_) => true,                        // TODO when?
-            Self::ValueType(_) => true,                    // TODO when?
+
+            Self::Constant | Self::Label(_) => true, // always valid: comes from query
+
+            | Self::Isa(_)
+            | Self::Has(_)
+            | Self::Links(_)
+            | Self::Sub(_)
+            | Self::Owns(_)
+            | Self::Relates(_)
+            | Self::Plays(_)
+            | Self::ValueType(_) => true, // always valid: iterators
         }
-    }
-
-    pub(super) fn is_constant(&self) -> bool {
-        matches!(self, Self::Constant)
-    }
-
-    pub(crate) fn is_iterator(&self) -> bool {
-        matches!(self, Self::Has(_) | Self::Links(_))
     }
 
     fn as_thing(&self) -> Option<&ThingPlanner> {
         match self {
             Self::Thing(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub(super) fn as_isa(&self) -> Option<&IsaPlanner> {
+        match self {
+            Self::Isa(v) => Some(v),
             _ => None,
         }
     }
@@ -106,12 +114,17 @@ impl PlannerVertex {
     pub(super) fn variables(&self) -> impl Iterator<Item = usize> {
         match self {
             Self::Constant => [None; 3].into_iter().flatten(),
-            Self::Value(_inner) => todo!(),
+            Self::Label(inner) => inner.variables(),
+
+            Self::Type(_inner) => todo!(),
             Self::Thing(_inner) => todo!(),
+            Self::Value(_inner) => todo!(),
+
+            Self::Isa(inner) => inner.variables(),
             Self::Has(inner) => inner.variables(),
             Self::Links(inner) => inner.variables(),
             Self::Expression(_inner) => todo!(),
-            Self::Type(inner) => todo!(),
+
             Self::Sub(inner) => inner.variables(),
             Self::Owns(inner) => inner.variables(),
             Self::Relates(inner) => inner.variables(),
@@ -123,12 +136,17 @@ impl PlannerVertex {
     pub(super) fn add_is(&mut self, other: usize) {
         match self {
             Self::Constant => todo!(),
-            Self::Value(_inner) => todo!(),
+            Self::Label(_) => todo!(),
+
+            Self::Type(_inner) => todo!(),
             Self::Thing(inner) => inner.add_is(other),
+            Self::Value(_inner) => todo!(),
+
+            Self::Isa(_inner) => todo!(),
             Self::Has(_inner) => todo!(),
             Self::Links(_inner) => todo!(),
             Self::Expression(_inner) => todo!(),
-            Self::Type(_inner) => todo!(),
+
             Self::Sub(_inner) => todo!(),
             Self::Owns(_inner) => todo!(),
             Self::Relates(_inner) => todo!(),
@@ -186,12 +204,17 @@ impl Costed for PlannerVertex {
     fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
         match self {
             Self::Constant => VertexCost::default(),
-            Self::Value(inner) => inner.cost(inputs, elements),
+            Self::Label(_) => VertexCost::default(),
+
+            Self::Type(inner) => inner.cost(inputs, elements),
             Self::Thing(inner) => inner.cost(inputs, elements),
+            Self::Value(inner) => inner.cost(inputs, elements),
+
+            Self::Isa(inner) => inner.cost(inputs, elements),
             Self::Has(inner) => inner.cost(inputs, elements),
             Self::Links(inner) => inner.cost(inputs, elements),
             Self::Expression(_) => todo!("expression cost"),
-            Self::Type(inner) => inner.cost(inputs, elements),
+
             Self::Sub(inner) => inner.cost(inputs, elements),
             Self::Owns(inner) => inner.cost(inputs, elements),
             Self::Relates(inner) => inner.cost(inputs, elements),
@@ -202,29 +225,39 @@ impl Costed for PlannerVertex {
 }
 
 #[derive(Debug)]
-pub(super) struct ValuePlanner;
+pub(super) struct LabelPlanner {
+    var: usize,
+}
 
-impl ValuePlanner {
-    pub(crate) fn from_variable(_: Variable) -> Self {
-        Self
+impl LabelPlanner {
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [Some(self.var), None, None].into_iter().flatten()
     }
 
-    pub(crate) fn is_valid(&self, _ordered: &[usize]) -> bool {
-        todo!("value planner is valid")
-    }
-
-    fn expected_size(&self, _inputs: &[usize]) -> f64 {
-        todo!("value planner expected size")
+    pub(crate) fn from_constraint(
+        label: &ir::pattern::constraint::Label<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+    ) -> LabelPlanner {
+        Self { var: variable_index[&label.left()] }
     }
 }
 
-impl Costed for ValuePlanner {
-    fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        if inputs.is_empty() {
-            VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
-        } else {
-            VertexCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
-        }
+#[derive(Debug)]
+pub(super) struct TypePlanner {
+    branching_factor: f64,
+}
+
+impl TypePlanner {
+    pub(crate) fn from_variable(variable: Variable, type_annotations: &TypeAnnotations) -> Self {
+        let num_types = type_annotations.variable_annotations_of(variable).unwrap().len();
+        Self { branching_factor: num_types as f64 }
+    }
+}
+
+impl Costed for TypePlanner {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost::default()
     }
 }
 
@@ -325,6 +358,56 @@ impl Costed for ThingPlanner {
         }
 
         VertexCost { per_input, per_output, branching_factor }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct ValuePlanner;
+
+impl ValuePlanner {
+    pub(crate) fn from_variable(_: Variable) -> Self {
+        Self
+    }
+
+    fn expected_size(&self, _inputs: &[usize]) -> f64 {
+        todo!("value planner expected size")
+    }
+}
+
+impl Costed for ValuePlanner {
+    fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        if inputs.is_empty() {
+            VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+        } else {
+            VertexCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct IsaPlanner {
+    thing: usize,
+    type_: usize,
+}
+
+impl IsaPlanner {
+    pub(crate) fn from_constraint(
+        isa: &ir::pattern::constraint::Isa<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> Self {
+        Self { thing: variable_index[&isa.thing()], type_: variable_index[&isa.type_()] }
+    }
+
+    fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [Some(self.thing), Some(self.type_), None].into_iter().flatten()
+    }
+}
+
+impl Costed for IsaPlanner {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        elements[self.thing].cost(inputs, elements)
     }
 }
 
@@ -523,24 +606,6 @@ impl Costed for LinksPlanner {
 }
 
 #[derive(Debug)]
-pub(super) struct TypePlanner {
-    branching_factor: f64,
-}
-
-impl TypePlanner {
-    pub(crate) fn from_variable(variable: Variable, type_annotations: &TypeAnnotations) -> Self {
-        let num_types = type_annotations.variable_annotations_of(variable).unwrap().len();
-        Self { branching_factor: num_types as f64 }
-    }
-}
-
-impl Costed for TypePlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: self.branching_factor }
-    }
-}
-
-#[derive(Debug)]
 pub(super) struct SubPlanner {
     type_: usize,
     supertype: usize,
@@ -572,21 +637,25 @@ impl Costed for SubPlanner {
 }
 
 #[derive(Debug)]
-pub(super) struct OwnsPlanner {}
+pub(super) struct OwnsPlanner {
+    owner: usize,
+    attribute: usize,
+}
 
 impl OwnsPlanner {
     pub(crate) fn from_constraint(
         owns: &ir::pattern::constraint::Owns<Variable>,
         variable_index: &HashMap<Variable, usize>,
-        type_annotations: &TypeAnnotations,
-        statistics: &Statistics,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
     ) -> OwnsPlanner {
-        // TODO
-        Self {}
+        let owner = variable_index[&owns.owner()];
+        let attribute = variable_index[&owns.attribute()];
+        Self { owner, attribute }
     }
 
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [None; 3].into_iter().flatten()
+        [Some(self.owner), Some(self.attribute), None].into_iter().flatten()
     }
 }
 

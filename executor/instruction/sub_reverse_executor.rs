@@ -60,7 +60,7 @@ impl SubReverseExecutor {
 
         let SubReverseInstruction { sub, checks, .. } = sub;
 
-        let iterate_mode = BinaryIterateMode::new(sub.subtype(), sub.supertype(), &variable_modes, sort_by);
+        let iterate_mode = BinaryIterateMode::new(sub.supertype(), sub.subtype(), &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
             BinaryIterateMode::Unbound => create_sub_filter_super_sub(super_to_subtypes.clone()),
             BinaryIterateMode::UnboundInverted | BinaryIterateMode::BoundFrom => {
@@ -68,9 +68,9 @@ impl SubReverseExecutor {
             }
         };
         let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([sub.subtype(), sub.supertype()])
-        } else {
             TuplePositions::Pair([sub.supertype(), sub.subtype()])
+        } else {
+            TuplePositions::Pair([sub.subtype(), sub.supertype()])
         };
 
         let checker = Checker::<AdHocHkt<(Type, Type)>> {

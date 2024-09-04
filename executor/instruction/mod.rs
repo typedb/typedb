@@ -81,7 +81,7 @@ impl InstructionExecutor {
     ) -> Result<Self, ConceptReadError> {
         let variable_modes = VariableModes::new_for(&instruction, selected, named);
         match instruction {
-            ConstraintInstruction::Type(type_) => Ok(Self::Type(TypeExecutor::new(type_, variable_modes, sort_by))),
+            ConstraintInstruction::Label(type_) => Ok(Self::Type(TypeExecutor::new(type_, variable_modes, sort_by))),
             ConstraintInstruction::Sub(sub) => Ok(Self::Sub(SubExecutor::new(sub, variable_modes, sort_by))),
             ConstraintInstruction::SubReverse(sub_reverse) => {
                 Ok(Self::SubReverse(SubReverseExecutor::new(sub_reverse, variable_modes, sort_by)))
@@ -438,6 +438,7 @@ impl<T: Hkt> Checker<T> {
                         }
                     }));
                 }
+                _ => todo!(),
             }
         }
 

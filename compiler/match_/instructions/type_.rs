@@ -21,28 +21,28 @@ use crate::match_::{
 };
 
 #[derive(Debug, Clone)]
-pub struct TypeInstruction<ID> {
+pub struct LabelInstruction<ID> {
     pub type_var: ID,
     types: Arc<HashSet<Type>>,
 }
 
-impl TypeInstruction<Variable> {
+impl LabelInstruction<Variable> {
     pub(crate) fn new(type_var: Variable, type_annotations: &TypeAnnotations) -> Self {
         let types = type_annotations.variable_annotations_of(type_var).unwrap().clone();
         Self { type_var, types }
     }
 }
 
-impl<ID> TypeInstruction<ID> {
+impl<ID> LabelInstruction<ID> {
     pub fn types(&self) -> &HashSet<Type> {
         &self.types
     }
 }
 
-impl<ID: IrID> TypeInstruction<ID> {
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> TypeInstruction<T> {
+impl<ID: IrID> LabelInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> LabelInstruction<T> {
         let Self { type_var, types } = self;
-        TypeInstruction { type_var: mapping[&type_var], types }
+        LabelInstruction { type_var: mapping[&type_var], types }
     }
 }
 

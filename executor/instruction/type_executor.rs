@@ -7,7 +7,7 @@
 use std::{sync::Arc, vec};
 
 use answer::Type;
-use compiler::match_::instructions::type_::TypeInstruction;
+use compiler::match_::instructions::type_::LabelInstruction;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
 use lending_iterator::{adaptors::Map, higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
@@ -35,14 +35,14 @@ pub(crate) type TypeIterator =
 
 impl TypeExecutor {
     pub(crate) fn new(
-        type_: TypeInstruction<VariablePosition>,
+        type_: LabelInstruction<VariablePosition>,
         variable_modes: VariableModes,
         _sort_by: Option<VariablePosition>,
     ) -> Self {
         debug_assert!(!variable_modes.all_inputs());
         let types = type_.types().iter().cloned().sorted().collect_vec();
         debug_assert!(!types.is_empty());
-        let TypeInstruction { type_var, .. } = type_;
+        let LabelInstruction { type_var, .. } = type_;
         debug_assert_eq!(Some(type_var), _sort_by);
         let tuple_positions = TuplePositions::Single([type_var]);
         Self { variable_modes, tuple_positions, types }
