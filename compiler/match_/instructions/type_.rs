@@ -10,7 +10,10 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use ir::pattern::{constraint::Sub, IrID};
+use ir::pattern::{
+    constraint::{Owns, Sub},
+    IrID,
+};
 
 use crate::match_::{
     inference::type_annotations::TypeAnnotations,
@@ -128,6 +131,96 @@ impl<ID: IrID> SubReverseInstruction<ID> {
             inputs: inputs.map(mapping),
             super_to_subtypes,
             subtypes,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct OwnsInstruction<ID> {
+    pub owns: Owns<ID>,
+    pub inputs: Inputs<ID>,
+    owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    attribute_types: Arc<HashSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
+}
+
+impl OwnsInstruction<Variable> {
+    pub fn new(owns: Owns<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let attribute_types = type_annotations.variable_annotations_of(owns.attribute()).unwrap().clone();
+        let edge_annotations = type_annotations.constraint_annotations_of(owns.clone().into()).unwrap().as_left_right();
+        let owner_attribute_types = edge_annotations.left_to_right();
+        Self { owns, inputs, owner_attribute_types, attribute_types, checks: Vec::new() }
+    }
+}
+
+impl<ID> OwnsInstruction<ID> {
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
+    pub fn owner_attribute_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.owner_attribute_types
+    }
+
+    pub fn attribute_types(&self) -> &Arc<HashSet<Type>> {
+        &self.attribute_types
+    }
+}
+
+impl<ID: IrID> OwnsInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> OwnsInstruction<T> {
+        let Self { owns, inputs, owner_attribute_types, attribute_types, checks } = self;
+        OwnsInstruction {
+            owns: owns.map(mapping),
+            inputs: inputs.map(mapping),
+            owner_attribute_types,
+            attribute_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct OwnsReverseInstruction<ID> {
+    pub owns: Owns<ID>,
+    pub inputs: Inputs<ID>,
+    attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    owner_types: Arc<HashSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
+}
+
+impl OwnsReverseInstruction<Variable> {
+    pub fn new(owns: Owns<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let owner_types = type_annotations.variable_annotations_of(owns.owner()).unwrap().clone();
+        let edge_annotations = type_annotations.constraint_annotations_of(owns.clone().into()).unwrap().as_left_right();
+        let attribute_owner_types = edge_annotations.right_to_left();
+        Self { owns, inputs, attribute_owner_types, owner_types, checks: Vec::new() }
+    }
+}
+
+impl<ID> OwnsReverseInstruction<ID> {
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
+    pub fn attribute_owner_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.attribute_owner_types
+    }
+
+    pub fn owner_types(&self) -> &Arc<HashSet<Type>> {
+        &self.owner_types
+    }
+}
+
+impl<ID: IrID> OwnsReverseInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> OwnsReverseInstruction<T> {
+        let Self { owns, inputs, attribute_owner_types, owner_types, checks } = self;
+        OwnsReverseInstruction {
+            owns: owns.map(mapping),
+            inputs: inputs.map(mapping),
+            attribute_owner_types,
+            owner_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
     }

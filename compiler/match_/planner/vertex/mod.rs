@@ -96,6 +96,13 @@ impl PlannerVertex {
         }
     }
 
+    pub(super) fn as_owns(&self) -> Option<&OwnsPlanner> {
+        match self {
+            Self::Owns(v) => Some(v),
+            _ => None,
+        }
+    }
+
     pub(super) fn variables(&self) -> impl Iterator<Item = usize> {
         match self {
             Self::Constant => [None; 3].into_iter().flatten(),
@@ -574,7 +581,8 @@ impl OwnsPlanner {
         type_annotations: &TypeAnnotations,
         statistics: &Statistics,
     ) -> OwnsPlanner {
-        todo!()
+        // TODO
+        Self {}
     }
 
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {

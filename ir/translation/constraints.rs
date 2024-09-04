@@ -101,7 +101,7 @@ fn add_type_statement(
                 typeql::statement::type_::LabelConstraint::Scoped(_) => todo!(),
             },
             typeql::statement::type_::ConstraintBase::ValueType(_) => todo!(),
-            typeql::statement::type_::ConstraintBase::Owns(_) => todo!(),
+            typeql::statement::type_::ConstraintBase::Owns(owns) => add_typeql_owns(constraints, var, owns)?,
             typeql::statement::type_::ConstraintBase::Relates(_) => todo!(),
             typeql::statement::type_::ConstraintBase::Plays(_) => todo!(),
         }
@@ -195,6 +195,16 @@ fn add_typeql_sub(
     };
     let type_ = register_typeql_type_var_any(constraints, &sub.supertype)?;
     constraints.add_sub(kind, thing, type_)?;
+    Ok(())
+}
+
+fn add_typeql_owns(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    owner_type: Variable,
+    owns: &typeql::statement::type_::Owns,
+) -> Result<(), PatternDefinitionError> {
+    let attribute_type = register_typeql_type_var_any(constraints, &owns.owned)?;
+    constraints.add_owns(owner_type, attribute_type)?;
     Ok(())
 }
 

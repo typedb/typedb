@@ -25,6 +25,11 @@ pub enum ConstraintInstruction<ID> {
     // super -> sub
     SubReverse(type_::SubReverseInstruction<ID>),
 
+    // owner -> attribute
+    Owns(type_::OwnsInstruction<ID>),
+    // attribute -> owner
+    OwnsReverse(type_::OwnsReverseInstruction<ID>),
+
     // thing -> type
     Isa(thing::IsaInstruction<ID>),
     // type -> thing
@@ -71,6 +76,8 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             &Self::Type(type_::TypeInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(|var, _| apply(var)),
+            Self::Owns(type_::OwnsInstruction { owns, .. })
+            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, .. }) => owns.ids_foreach(|var, _| apply(var)),
             Self::Isa(thing::IsaInstruction { isa, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(|var, _| apply(var)),
             Self::Has(thing::HasInstruction { has, .. })
@@ -95,6 +102,8 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Type(_) => (),
             | Self::Sub(type_::SubInstruction { inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { inputs, .. })
+            | Self::Owns(type_::OwnsInstruction { inputs, .. })
+            | Self::OwnsReverse(type_::OwnsReverseInstruction { inputs, .. })
             | Self::Isa(thing::IsaInstruction { inputs, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { inputs, .. })
             | Self::Has(thing::HasInstruction { inputs, .. })
@@ -116,6 +125,12 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             &Self::Type(type_::TypeInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, inputs, .. }) => sub.ids_foreach(|var, _| {
+                if !inputs.contains(var) {
+                    apply(var)
+                }
+            }),
+            Self::Owns(type_::OwnsInstruction { owns, inputs, .. })
+            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, inputs, .. }) => owns.ids_foreach(|var, _| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
@@ -156,6 +171,8 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Type(_) => unreachable!("free-standing type variable can't have checks"),
             Self::Sub(inner) => inner.add_check(check),
             Self::SubReverse(inner) => inner.add_check(check),
+            Self::Owns(inner) => inner.add_check(check),
+            Self::OwnsReverse(inner) => inner.add_check(check),
             Self::Isa(inner) => inner.add_check(check),
             Self::IsaReverse(inner) => inner.add_check(check),
             Self::Has(inner) => inner.add_check(check),
@@ -175,6 +192,8 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Type(inner) => ConstraintInstruction::Type(inner.map(mapping)),
             Self::Sub(inner) => ConstraintInstruction::Sub(inner.map(mapping)),
             Self::SubReverse(inner) => ConstraintInstruction::SubReverse(inner.map(mapping)),
+            Self::Owns(inner) => ConstraintInstruction::Owns(inner.map(mapping)),
+            Self::OwnsReverse(inner) => ConstraintInstruction::OwnsReverse(inner.map(mapping)),
             Self::Isa(inner) => ConstraintInstruction::Isa(inner.map(mapping)),
             Self::IsaReverse(inner) => ConstraintInstruction::IsaReverse(inner.map(mapping)),
             Self::Has(inner) => ConstraintInstruction::Has(inner.map(mapping)),
@@ -196,6 +215,8 @@ impl<ID: Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
             Self::Type(_) => todo!(), // TODO label?
             Self::Sub(type_::SubInstruction { sub, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.clone().into(),
+            Self::Owns(type_::OwnsInstruction { owns, .. })
+            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, .. }) => owns.clone().into(),
             Self::Isa(thing::IsaInstruction { isa, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.clone().into(),
             Self::Has(thing::HasInstruction { has, .. })

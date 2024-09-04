@@ -11,6 +11,7 @@ use concept::{
         has::Has,
         relation::{Relation, RolePlayer},
     },
+    type_::owns::Owns,
 };
 use lending_iterator::higher_order::Hkt;
 
@@ -136,6 +137,28 @@ pub(crate) fn sub_to_tuple_sub_super(result: Result<(Type, Type), ConceptReadErr
 pub(crate) fn sub_to_tuple_super_sub(result: Result<(Type, Type), ConceptReadError>) -> TupleResult<'static> {
     match result {
         Ok((sub, sup)) => Ok(Tuple::Pair([VariableValue::Type(sup), VariableValue::Type(sub)])),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) type OwnsToTupleFn = fn(Result<Owns<'static>, ConceptReadError>) -> TupleResult<'static>;
+
+pub(crate) fn owns_to_tuple_owner_attribute(result: Result<Owns<'static>, ConceptReadError>) -> TupleResult<'static> {
+    match result {
+        Ok(owns) => Ok(Tuple::Pair(
+            [Type::from(owns.owner().into_owned()), Type::Attribute(owns.attribute().to_owned())]
+                .map(VariableValue::Type),
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) fn owns_to_tuple_attribute_owner(result: Result<Owns<'static>, ConceptReadError>) -> TupleResult<'static> {
+    match result {
+        Ok(owns) => Ok(Tuple::Pair(
+            [Type::Attribute(owns.attribute().to_owned()), Type::from(owns.owner().into_owned())]
+                .map(VariableValue::Type),
+        )),
         Err(err) => Err(err),
     }
 }

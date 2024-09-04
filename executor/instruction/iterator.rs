@@ -37,6 +37,8 @@ use crate::{
             LinksReverseUnboundedSortedPlayer, LinksReverseUnboundedSortedRelationMerged,
             LinksReverseUnboundedSortedRelationSingle,
         },
+        owns_executor::{OwnsBoundedSortedAttribute, OwnsUnboundedSortedOwner},
+        owns_reverse_executor::{OwnsReverseBoundedSortedOwner, OwnsReverseUnboundedSortedAttribute},
         sub_executor::{SubBoundedSortedSuper, SubUnboundedSortedSub},
         sub_reverse_executor::{SubReverseBoundedSortedSuper, SubReverseUnboundedSortedSub},
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
@@ -95,6 +97,12 @@ pub(crate) enum TupleIterator {
 
     SubReverseUnbounded(SortedTupleIterator<SubReverseUnboundedSortedSub>),
     SubReverseBounded(SortedTupleIterator<SubReverseBoundedSortedSuper>),
+
+    OwnsUnbounded(SortedTupleIterator<OwnsUnboundedSortedOwner>),
+    OwnsBounded(SortedTupleIterator<OwnsBoundedSortedAttribute>),
+
+    OwnsReverseUnbounded(SortedTupleIterator<OwnsReverseUnboundedSortedAttribute>),
+    OwnsReverseBounded(SortedTupleIterator<OwnsReverseBoundedSortedOwner>),
 
     IsaUnboundedSingle(SortedTupleIterator<IsaUnboundedSortedThingSingle>),
     IsaUnboundedMerged(SortedTupleIterator<IsaUnboundedSortedThingMerged>),

@@ -1052,6 +1052,10 @@ impl<ID: IrID> Owns<ID> {
         function(self.owner, ConstraintIDSide::Left);
         function(self.attribute, ConstraintIDSide::Right);
     }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Owns<T> {
+        Owns::new(*mapping.get(&self.owner).unwrap(), *mapping.get(&self.attribute).unwrap())
+    }
 }
 
 impl<ID> From<Owns<ID>> for Constraint<ID> {

@@ -29,7 +29,7 @@ use crate::{
             thing::{
                 HasInstruction, HasReverseInstruction, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
             },
-            type_::{SubInstruction, SubReverseInstruction, TypeInstruction},
+            type_::{OwnsInstruction, OwnsReverseInstruction, SubInstruction, SubReverseInstruction, TypeInstruction},
             CheckInstruction, ConstraintInstruction, Inputs,
         },
         planner::vertex::{
@@ -409,7 +409,7 @@ fn lower_plan(
         } else {
             let inputs = adjacent
                 .iter()
-                .filter(|&adj| ordering[..i].contains(adj))
+                .filter(|&adj| ordering[..i].contains(adj) && producers.contains_key(&index_to_variable[adj]))
                 .map(|adj| index_to_variable[adj])
                 .collect::<HashSet<_>>();
 
@@ -457,6 +457,44 @@ fn lower_plan(
                         match_builder.push_instruction(sort_variable, instruction, &[subtype, supertype]);
 
                     for &var in &[subtype, supertype] {
+                        if !inputs.contains(&var) {
+                            producers.insert(var, producer_index);
+                        }
+                    }
+                }
+
+                Constraint::Owns(owns) => {
+                    let owner = owns.owner();
+                    let attribute = owns.attribute();
+
+                    if inputs.len() == 2 {
+                        todo!("sub check")
+                    }
+
+                    let _planner = plan_builder.elements[index].as_owns().unwrap();
+                    let sort_variable =
+                        if inputs.is_empty() || inputs.contains(&attribute) { owner } else { attribute };
+
+                    let owns = owns.clone();
+                    let instruction = if inputs.contains(&owner) {
+                        ConstraintInstruction::Owns(OwnsInstruction::new(
+                            owns,
+                            Inputs::Single([owner]),
+                            type_annotations,
+                        ))
+                    } else if inputs.contains(&attribute) {
+                        ConstraintInstruction::OwnsReverse(OwnsReverseInstruction::new(
+                            owns,
+                            Inputs::Single([attribute]),
+                            type_annotations,
+                        ))
+                    } else {
+                        ConstraintInstruction::Owns(OwnsInstruction::new(owns, Inputs::None([]), type_annotations))
+                    };
+                    let producer_index =
+                        match_builder.push_instruction(sort_variable, instruction, &[owner, attribute]);
+
+                    for &var in &[owner, attribute] {
                         if !inputs.contains(&var) {
                             producers.insert(var, producer_index);
                         }
@@ -577,7 +615,6 @@ fn lower_plan(
                 Constraint::ExpressionBinding(_) => todo!("expression binding"),
                 Constraint::FunctionCallBinding(_) => todo!("function call binding"),
                 Constraint::Comparison(_) => todo!("comparison"),
-                Constraint::Owns(_) => todo!("owns"),
                 Constraint::Relates(_) => todo!("relates"),
                 Constraint::Plays(_) => todo!("plays"),
             }
