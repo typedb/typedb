@@ -14,6 +14,7 @@ use std::{
 use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::SubReverseInstruction;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use ir::pattern::constraint::SubKind;
 use itertools::Itertools;
 use lending_iterator::{higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
@@ -96,15 +97,17 @@ impl SubReverseExecutor {
         thing_manager: &Arc<ThingManager>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
+        debug_assert_eq!(self.sub.sub_kind(), SubKind::Subtype);
+
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
         let filter_for_row: Box<SubFilterFn> = Box::new(move |item| match filter(item) {
             Ok(true) => check(item),
             fail => fail,
         });
+
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let positions = TuplePositions::Pair([self.sub.supertype(), self.sub.subtype()]);
                 let sub_with_super = self
                     .super_to_subtypes
                     .iter()
@@ -117,7 +120,7 @@ impl SubReverseExecutor {
                 );
                 Ok(TupleIterator::SubReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
-                    positions,
+                    self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
             }
@@ -128,11 +131,41 @@ impl SubReverseExecutor {
 
             BinaryIterateMode::BoundFrom => {
                 debug_assert!(row.len() > self.sub.supertype().as_usize());
-                let positions = TuplePositions::Pair([self.sub.subtype(), self.sub.supertype()]);
                 let VariableValue::Type(sup) = row.get(self.sub.supertype()).to_owned() else {
                     unreachable!("Subtype must be a type")
                 };
-                let subtypes = self.super_to_subtypes.get(&sup).cloned().unwrap_or_default();
+
+                let type_manager = thing_manager.type_manager();
+                let subtypes = match sup.clone() {
+                    Type::Entity(type_) => {
+                        let mut subtypes =
+                            type_manager.get_entity_type_subtypes(&**snapshot, type_.clone())?.to_owned();
+                        subtypes.push(type_);
+                        subtypes.sort();
+                        subtypes.into_iter().map(Type::Entity).collect_vec()
+                    }
+                    Type::Relation(type_) => {
+                        let mut subtypes =
+                            type_manager.get_relation_type_subtypes(&**snapshot, type_.clone())?.to_owned();
+                        subtypes.push(type_);
+                        subtypes.sort();
+                        subtypes.into_iter().map(Type::Relation).collect_vec()
+                    }
+                    Type::Attribute(type_) => {
+                        let mut subtypes =
+                            type_manager.get_attribute_type_subtypes(&**snapshot, type_.clone())?.to_owned();
+                        subtypes.push(type_);
+                        subtypes.sort();
+                        subtypes.into_iter().map(Type::Attribute).collect_vec()
+                    }
+                    Type::RoleType(type_) => {
+                        let mut subtypes = type_manager.get_role_type_subtypes(&**snapshot, type_.clone())?.to_owned();
+                        subtypes.push(type_);
+                        subtypes.sort();
+                        subtypes.into_iter().map(Type::RoleType).collect_vec()
+                    }
+                };
+
                 let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, sup.clone()))).collect_vec(); // TODO cache this
                 let as_tuples: SubReverseBoundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
@@ -141,7 +174,7 @@ impl SubReverseExecutor {
                 );
                 Ok(TupleIterator::SubReverseBounded(SortedTupleIterator::new(
                     as_tuples,
-                    positions,
+                    self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
             }

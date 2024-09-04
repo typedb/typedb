@@ -113,7 +113,7 @@ impl ThingManager {
         &self.statistics
     }
 
-    pub(crate) fn type_manager(&self) -> &TypeManager {
+    pub fn type_manager(&self) -> &TypeManager {
         &self.type_manager
     }
 
