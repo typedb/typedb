@@ -119,7 +119,6 @@ fn execute_insert(
     println!("Insert Vertex:\n{:?}", &insert_plan.concept_instructions);
     println!("Insert Edges:\n{:?}", &insert_plan.connection_instructions);
 
-    // TODO: Replace with accumulator
     let mut output_rows = Vec::with_capacity(input_rows.len());
     println!("Insert output row schema: {:?}", &insert_plan.output_row_schema);
     let output_width = insert_plan.output_row_schema.len();
