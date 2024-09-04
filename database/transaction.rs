@@ -28,7 +28,7 @@ pub struct TransactionRead<D> {
     pub snapshot: Arc<ReadSnapshot<D>>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
-    pub function_manager: FunctionManager,
+    pub function_manager: Arc<FunctionManager>,
     _database: Arc<Database<D>>,
     transaction_options: TransactionOptions,
 }
@@ -53,8 +53,10 @@ impl<D: DurabilityClient> TransactionRead<D> {
             type_manager.clone(),
             schema.thing_statistics.clone(),
         ));
-        let function_manager =
-            FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
+        let function_manager = Arc::new(FunctionManager::new(
+            database.definition_key_generator.clone(),
+            Some(schema.function_cache.clone())
+        ));
 
         drop(schema);
 
@@ -84,7 +86,7 @@ pub struct TransactionWrite<D> {
     pub snapshot: Arc<WriteSnapshot<D>>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
-    pub function_manager: FunctionManager, // TODO: krishnan: Should this be an arc or direct ownership?
+    pub function_manager: Arc<FunctionManager>,
     pub database: Arc<Database<D>>,
     pub transaction_options: TransactionOptions,
 }
@@ -105,8 +107,10 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             type_manager.clone(),
             schema.thing_statistics.clone(),
         ));
-        let function_manager =
-            FunctionManager::new(database.definition_key_generator.clone(), Some(schema.function_cache.clone()));
+        let function_manager = Arc::new(FunctionManager::new(
+            database.definition_key_generator.clone(),
+            Some(schema.function_cache.clone())
+        ));
         drop(schema);
 
         Self {
@@ -123,7 +127,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         snapshot: Arc<WriteSnapshot<D>>,
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
-        function_manager: FunctionManager,
+        function_manager: Arc<FunctionManager>,
         database: Arc<Database<D>>,
         transaction_options: TransactionOptions,
     ) -> Self {
@@ -182,7 +186,7 @@ pub struct TransactionSchema<D> {
     pub snapshot: Arc<SchemaSnapshot<D>>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
-    pub function_manager: FunctionManager,
+    pub function_manager: Arc<FunctionManager>,
     pub database: Arc<Database<D>>,
     pub transaction_options: TransactionOptions,
 }
@@ -205,7 +209,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
                 schema.thing_statistics.clone(),
             )
         };
-        let function_manager = FunctionManager::new(database.definition_key_generator.clone(), None);
+        let function_manager = Arc::new(FunctionManager::new(database.definition_key_generator.clone(), None));
         Self {
             snapshot: Arc::new(snapshot),
             type_manager,
@@ -220,7 +224,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         snapshot: SchemaSnapshot<D>,
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
-        function_manager: FunctionManager,
+        function_manager: Arc<FunctionManager>,
         database: Arc<Database<D>>,
         transaction_options: TransactionOptions,
     ) -> Self {
@@ -243,17 +247,18 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
     fn try_commit(self) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
-        let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
+        let mut snapshot = Arc::into_inner(self.snapshot).expect("Failed to unwrap Arc<Snapshot>");;
         self.type_manager.validate(&snapshot).map_err(|errors| ConceptWrite { errors })?;
 
         self.thing_manager.finalise(&mut snapshot).map_err(|errors| ConceptWrite { errors })?;
         drop(self.thing_manager);
 
-        self.function_manager
+        let function_manager = Arc::into_inner(self.function_manager).expect("Failed to unwrap Arc<FunctionManager>");
+        function_manager
             .finalise(&snapshot, &self.type_manager)
             .map_err(|source| SchemaCommitError::FunctionError { source })?;
 
-        let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap type_manager Arc");
+        let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         drop(type_manager);
 
         // Schema commits must wait for all other data operations to finish. No new read or write

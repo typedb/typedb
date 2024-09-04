@@ -32,5 +32,6 @@ typedb_error!(
         ExpressionCompilation(10, "Error while compiling expression.", ( source: ExpressionCompileError )),
         WritePipelineExecutionError(11, "Error while execution write pipeline.", ( typedb_source: PipelineExecutionError )),
         ReadPipelineExecutionError(12, "Error while executing read pipeline.", ( typedb_source: PipelineExecutionError )),
+        QueryExecutionClosedEarly(13, "Query execution was closed before it finished, possibly due to transaction close, rollback, or commit."),
     }
 );

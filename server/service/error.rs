@@ -57,11 +57,11 @@ impl IntoGRPCStatus for ProtocolError {
 }
 
 pub(crate) trait IntoProtocolErrorMessage {
-    fn into_error_message(self) -> typedb_protocol::query::Error;
+    fn into_error_message(self) -> typedb_protocol::Error;
 }
 
 impl<T: TypeDBError> IntoProtocolErrorMessage for T {
-    fn into_error_message(self) -> typedb_protocol::query::Error {
+    fn into_error_message(self) -> typedb_protocol::Error {
         let root_source = self.root_source_typedb_error();
         let code = root_source.code();
         let domain = root_source.domain();
@@ -73,7 +73,7 @@ impl<T: TypeDBError> IntoProtocolErrorMessage for T {
             error = source;
             stack_trace.push(error.format_description());
         }
-        typedb_protocol::query::Error {
+        typedb_protocol::Error {
             error_code: code.to_string(),
             domain: domain.to_string(),
             stack_trace
@@ -85,7 +85,7 @@ pub(crate) trait IntoGRPCStatus {
     fn into_status(self) -> Status;
 }
 
-impl IntoGRPCStatus for typedb_protocol::query::Error {
+impl IntoGRPCStatus for typedb_protocol::Error {
     fn into_status(self) -> Status {
         let mut details = ErrorDetails::with_error_info(self.error_code, self.domain, HashMap::new());
         details.set_debug_info(self.stack_trace, "");

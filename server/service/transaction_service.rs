@@ -12,16 +12,22 @@ use std::{
     },
     sync::Arc,
 };
+use std::future::Future;
+use std::pin::Pin;
+use std::time::SystemTime;
 
 use itertools::Itertools;
 use tokio::{
     sync::{broadcast, mpsc::Sender},
     task::{JoinHandle, spawn_blocking},
 };
+use tokio::sync::mpsc::{channel, Receiver};
+use tokio::sync::mpsc::error::SendError;
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
-use typedb_protocol::transaction::{Client, Type};
+use typedb_protocol::transaction::{Client, Server, Type};
+use typedb_protocol::transaction::stream_signal::Req;
 use typeql::{
     parse_query,
     query::{Pipeline, SchemaQuery, stage::Stage},
@@ -61,17 +67,11 @@ pub enum Transaction {
 }
 
 macro_rules! with_readable_transaction {
-    ($match_:expr, |$transaction: ident| { $expr:expr } ) => {{
-        match $match_{
-            Transaction::Read($transaction) => {
-                $expr
-            },
-            Transaction::Write($transaction) => {
-                $expr
-            },
-            Transaction::Schema($transaction) => {
-                $expr
-            },
+    ($match_:expr, |$transaction: ident| $block: block ) => {{
+        match $match_ {
+            Transaction::Read($transaction) => $block
+            Transaction::Write($transaction) => $block
+            Transaction::Schema($transaction) => $block
         }
     }}
 }
@@ -95,9 +95,9 @@ pub(crate) struct TransactionService {
     is_open: bool,
     transaction: Option<Transaction>,
     request_queue: Vec<(Uuid, Pipeline)>,
-    read_responders: HashMap<Uuid, JoinHandle<()>>,
+    read_responders: HashMap<Uuid, (JoinHandle<()>, JoinHandle<ControlFlow<(), (Uuid, Receiver<Option<QueryResponse>>)>>)>,
     write_responders: HashMap<Uuid, JoinHandle<()>>,
-    active_write_query: Option<(Uuid, JoinHandle<(Transaction, Result<Batch, Status>)>)>,
+    active_write_query: Option<(Uuid, JoinHandle<(Transaction, Result<Batch, QueryError>)>)>,
 }
 
 macro_rules! close_service {
@@ -145,10 +145,111 @@ macro_rules! query_res_part_res {
     }}
 }
 
+macro_rules! transaction_server_res_part_query_res {
+    ($messages: expr) => {{
+        typedb_protocol::transaction::res_part::ResPart::QueryRes(
+            typedb_protocol::query::ResPart {
+                res: $messages
+            }
+        )
+    }}
+}
+
+macro_rules! transaction_res_part_stream_signal_done {
+    () => {{
+        typedb_protocol::transaction::res_part::ResPart::StreamRes(
+            typedb_protocol::transaction::stream_signal::ResPart {
+                state: Some(typedb_protocol::transaction::stream_signal::res_part::State::Done(
+                    typedb_protocol::transaction::stream_signal::res_part::Done {}
+                ))
+            }
+        )
+    }}
+}
+
+macro_rules! transaction_res_part_stream_signal_continue {
+    () => {{
+        typedb_protocol::transaction::res_part::ResPart::StreamRes(
+            typedb_protocol::transaction::stream_signal::ResPart {
+                state: Some(typedb_protocol::transaction::stream_signal::res_part::State::Continue(
+                    typedb_protocol::transaction::stream_signal::res_part::Continue {}
+                ))
+            }
+        )
+    }}
+}
+
+macro_rules! transaction_res_part_stream_signal_error {
+    ($error_message: expr) => {{
+        typedb_protocol::transaction::res_part::ResPart::StreamRes(
+            typedb_protocol::transaction::stream_signal::ResPart {
+                state: Some(typedb_protocol::transaction::stream_signal::res_part::State::Error(
+                    $error_message
+                ))
+            }
+        )
+    }}
+}
+
+macro_rules! transaction_server_res {
+    ($req_id: expr, $message: expr) => {{
+        typedb_protocol::transaction::Server {
+            server: Some(
+                typedb_protocol::transaction::server::Server::Res(
+                    typedb_protocol::transaction::Res {
+                        req_id: $req_id.as_bytes().to_vec(),
+                        res: Some($message),
+                    }
+                )
+            )
+        }
+    }}
+}
+
+macro_rules! transaction_server_res_part {
+    ($req_id: expr, $message: expr) => {{
+        typedb_protocol::transaction::Server {
+            server: Some(
+                typedb_protocol::transaction::server::Server::ResPart(
+                    typedb_protocol::transaction::ResPart {
+                        req_id: $req_id.as_bytes().to_vec(),
+                        res_part: Some($message)
+                    }
+                )
+            )
+        }
+    }}
+}
+
+macro_rules! send_ok_message_else_return_break {
+    ($response_sender: expr, $message: expr) => {{
+        if let Err(err) = $response_sender.send(Ok($message)).await {
+            event!(Level::TRACE, "Submit message failed: {:?}", err);
+            return ControlFlow::Break(());
+        }
+    }}
+}
+
 enum QueryResponse {
     ResOk(typedb_protocol::query::res::Ok),
-    ResErr(typedb_protocol::query::Error),
+    ResErr(typedb_protocol::Error),
     ResPartRes(typedb_protocol::query::res_part::Res),
+}
+
+enum StreamingCondition {
+    Count(usize),
+    Duration(SystemTime, usize),
+}
+
+impl StreamingCondition {
+    fn continue_(&self, iteration: usize) -> bool {
+        match self {
+            StreamingCondition::Count(count) => *count < iteration,
+            StreamingCondition::Duration(start_time, limit_millis) => {
+                (SystemTime::now().duration_since(*start_time).unwrap().as_millis() as usize) < *limit_millis
+            }
+        }
+    }
 }
 
 // macro_rules! query_res_part_res {
@@ -167,35 +268,6 @@ enum QueryResponse {
 //     }}
 // }
 
-macro_rules! transaction_res {
-    ($req_id: ident, $message: expr) => {{
-        typedb_protocol::transaction::Server {
-            server: Some (
-                typedb_protocol::transaction::server::Server::Res(
-                    typedb_protocol::transaction::Res {
-                        req_id: $req_id.as_bytes().to_vec(),
-                        res: Some($message),
-                    }
-                )
-            )
-        }
-    }}
-}
-
-macro_rules! transaction_res_part {
-    ($req_id: ident, $messages: expr, $stream_status: expr) => {{
-        typedb_protocol::transaction::Server {
-            server: Some (
-                typedb_protocol::transaction::server::Server::ResPart(
-                    typedb_protocol::transaction::ResPart {
-                        req_id: $req_id.as_bytes().to_vec(),
-                        res_part: Some($messages),
-                    }
-                )
-            )
-        }
-    }}
-}
 
 impl TransactionService {
     pub(crate) fn new(
@@ -354,7 +426,7 @@ impl TransactionService {
         let database = self
             .database_manager
             .database(database_name.as_ref())
-            .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name }.into_status())?;
+            .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name }.into_error_message().into_status())?;
 
         let transaction = match transaction_type {
             Type::Read => Transaction::Read(TransactionRead::open(database, transaction_options)),
@@ -376,17 +448,17 @@ impl TransactionService {
         // TODO: take mut
 
         match self.transaction.take().unwrap() {
-            Transaction::Read(_) => Err(TransactionServiceError::CannotCommitReadTransaction {}.into_status()),
+            Transaction::Read(_) => Err(TransactionServiceError::CannotCommitReadTransaction {}.into_error_message().into_status()),
             Transaction::Write(transaction) => spawn_blocking(move || {
                 transaction
                     .commit()
-                    .map_err(|err| TransactionServiceError::DataCommitFailed { source: err }.into_status())
+                    .map_err(|err| TransactionServiceError::DataCommitFailed { source: err }.into_error_message().into_status())
             })
                 .await
                 .unwrap(),
             Transaction::Schema(transaction) => transaction
                 .commit()
-                .map_err(|err| TransactionServiceError::SchemaCommitFailed { source: err }.into_status()),
+                .map_err(|err| TransactionServiceError::SchemaCommitFailed { source: err }.into_error_message().into_status()),
         }
     }
 
@@ -398,7 +470,7 @@ impl TransactionService {
         // Execute rollback
 
         match self.transaction.take().unwrap() {
-            Transaction::Read(_) => return Err(TransactionServiceError::CannotRollbackReadTransaction {}.into_status()),
+            Transaction::Read(_) => return Err(TransactionServiceError::CannotRollbackReadTransaction {}.into_error_message().into_status()),
             Transaction::Write(mut transaction) => transaction.rollback(),
             Transaction::Schema(mut transaction) => transaction.rollback(),
         };
@@ -425,7 +497,7 @@ impl TransactionService {
         let query_string = &query_req.query;
         let query_options = &query_req.options; // TODO: pass query options
         let parsed = parse_query(query_string)
-            .map_err(|err| TransactionServiceError::QueryParseFailed { source: err }.into_status())?;
+            .map_err(|err| TransactionServiceError::QueryParseFailed { source: err }.into_error_message().into_status())?;
         match parsed {
             Query::Schema(schema_query) => self.handle_query_schema(schema_query).await,
             Query::Pipeline(pipeline) => {
@@ -439,9 +511,9 @@ impl TransactionService {
                         Ok(())
                     } else {
                         // TODO: inject interrupt signal
-                        let blocking_execution = self.blocking_execute_write_query(pipeline)?;
+                        let handle = self.blocking_execute_write_query(pipeline)?;
                         self.active_write_query = Some((req_id, tokio::spawn(async move {
-                            blocking_execution.await.unwrap()
+                            handle.await.unwrap()
                         })));
                         Ok(())
                     }
@@ -450,11 +522,123 @@ impl TransactionService {
                         self.request_queue.push((req_id, pipeline));
                         Ok(())
                     } else {
-                        self.blocking_execute_read_query(req_id, pipeline).await?;
+                        let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
+                        let worker_handle = self.blocking_execute_read_query(pipeline, sender);
+                        let transmitter_handle = tokio::spawn(
+                            Self::stream_parts(
+                                self.response_sender.clone(),
+                                self.prefetch_size.unwrap() as usize,
+                                self.network_latency_millis.unwrap() as usize,
+                                req_id,
+                                receiver,
+                            )
+                        );
+                        self.read_responders.insert(req_id, (worker_handle, transmitter_handle));
+                        Ok(())
                     }
                 }
             }
         }
+    }
+
+    async fn stream_parts(
+        response_sender: Sender<Result<Server, Status>>,
+        prefetch_size: usize,
+        network_latency_millis: usize,
+        req_id: Uuid,
+        mut query_response_receiver: Receiver<Option<QueryResponse>>,
+    ) -> ControlFlow<(), (Uuid, Receiver<Option<QueryResponse>>)> {
+        // stream PREFETCH answers in one big message (increases message throughput. Note: tested in Java impl)
+        let (req_id, query_response_receiver) = Self::stream_while_or_finish(
+            &response_sender,
+            req_id,
+            query_response_receiver,
+            StreamingCondition::Count(prefetch_size),
+        ).await?;
+        send_ok_message_else_return_break!(response_sender, Self::message_stream_signal_continue(req_id));
+
+        // stream LATENCY number of answers
+        let (req_id, query_response_receiver) = Self::stream_while_or_finish(
+            &response_sender,
+            req_id,
+            query_response_receiver,
+            StreamingCondition::Duration(SystemTime::now(), network_latency_millis),
+        ).await?;
+        ControlFlow::Continue((req_id, query_response_receiver))
+    }
+
+    async fn stream_while_or_finish(
+        response_sender: &Sender<Result<Server, Status>>,
+        req_id: Uuid,
+        mut query_response_receiver: Receiver<Option<QueryResponse>>,
+        streaming_condition: StreamingCondition,
+    ) -> ControlFlow<(), (Uuid, Receiver<Option<QueryResponse>>)> {
+        let mut res_parts_batch = Vec::new();
+        let mut iteration = 0;
+        while streaming_condition.continue_(iteration) {
+            match query_response_receiver.recv().await {
+                None => {
+                    send_ok_message_else_return_break!(
+                        response_sender,
+                        Self::message_stream_signal_error(req_id, QueryError::QueryExecutionClosedEarly {}.into_error_message())
+                    );
+                    return ControlFlow::Break(());
+                }
+                Some(response) => {
+                    match response {
+                        None => {
+                            send_ok_message_else_return_break!(response_sender, Self::message_stream_signal_done(req_id));
+                            return ControlFlow::Break(());
+                        }
+                        Some(query_response) => {
+                            match query_response {
+                                QueryResponse::ResOk(_) => unreachable!("Streams should only respond ResPart or Error"),
+                                QueryResponse::ResErr(res_error) => {
+                                    if !res_parts_batch.is_empty() {
+                                        send_ok_message_else_return_break!(
+                                            response_sender,
+                                            Self::message_stream_res_parts(req_id, res_parts_batch)
+                                        );
+                                    }
+                                    send_ok_message_else_return_break!(
+                                        response_sender,
+                                        Self::message_stream_signal_error(req_id, res_error)
+                                    );
+                                    return ControlFlow::Break(());
+                                }
+                                QueryResponse::ResPartRes(res_part) => {
+                                    res_parts_batch.push(res_part)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            iteration += 1;
+        }
+        if !res_parts_batch.is_empty() {
+            send_ok_message_else_return_break!(response_sender, Self::message_stream_res_parts(req_id, res_parts_batch));
+        }
+        ControlFlow::Continue((req_id, query_response_receiver))
+    }
+
+    fn message_stream_res_parts(
+        req_id: Uuid,
+        res_parts: Vec<typedb_protocol::query::res_part::Res>,
+    ) -> typedb_protocol::transaction::Server {
+        transaction_server_res_part!(req_id, transaction_server_res_part_query_res!(res_parts))
+    }
+
+    fn message_stream_signal_continue(req_id: Uuid) -> typedb_protocol::transaction::Server {
+        transaction_server_res_part!(req_id, transaction_res_part_stream_signal_continue!())
+    }
+
+    fn message_stream_signal_done(req_id: Uuid) -> typedb_protocol::transaction::Server {
+        transaction_server_res_part!(req_id, transaction_res_part_stream_signal_done!())
+    }
+
+    fn message_stream_signal_error(req_id: Uuid, error: typedb_protocol::Error) -> typedb_protocol::transaction::Server {
+        transaction_server_res_part!(req_id, transaction_res_part_stream_signal_error!(error))
     }
 
     async fn handle_query_schema(&mut self, query: SchemaQuery) -> Result<(), Status> {
@@ -471,7 +655,7 @@ impl TransactionService {
             let (snapshot, type_manager, thing_manager, result) = spawn_blocking(move || {
                 let result = QueryManager::new()
                     .execute_schema(&mut snapshot, &type_manager, &thing_manager, query)
-                    .map_err(|err| TransactionServiceError::QueryExecutionFailed { typedb_source: err }.into_status());
+                    .map_err(|err| TransactionServiceError::QueryExecutionFailed { typedb_source: err }.into_error_message().into_status());
                 (snapshot, type_manager, thing_manager, result)
             })
                 .await
@@ -489,11 +673,11 @@ impl TransactionService {
             Ok(())
         } else {
             // TODO: this doesn't need to be fatal!
-            Err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}.into_status())
+            Err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}.into_error_message().into_status())
         }
     }
 
-    fn blocking_execute_write_query(&mut self, pipeline: Pipeline) -> Result<JoinHandle<(Transaction, Result<Batch, Status>)>, Status> {
+    fn blocking_execute_write_query(&mut self, pipeline: Pipeline) -> Result<JoinHandle<(Transaction, Result<Batch, QueryError>)>, Status> {
         debug_assert!(
             self.request_queue.is_empty()
                 && self.read_responders.is_empty()
@@ -524,7 +708,6 @@ impl TransactionService {
                     database,
                     transaction_options,
                 ));
-                let result = result.map_err(|err| TransactionServiceError::QueryExecutionFailed { typedb_source: err }.into_error_message().into_status());
                 (transaction, result)
             }))
         } else if let Some(Transaction::Write(write_transaction)) = self.transaction.take() {
@@ -551,7 +734,6 @@ impl TransactionService {
                     database,
                     transaction_options,
                 ));
-                let result = result.map_err(|err| TransactionServiceError::QueryExecutionFailed { typedb_source: err }.into_error_message().into_status());
                 (transaction, result)
             }))
         } else {
@@ -590,10 +772,9 @@ impl TransactionService {
         }
     }
 
-    async fn blocking_execute_read_query(
+    fn blocking_execute_read_query(
         &self,
-        req_id: Uuid,
-        pipeline: &Pipeline,
+        pipeline: Pipeline,
         sender: Sender<Option<QueryResponse>>,
     ) -> JoinHandle<()> {
         debug_assert!(self.request_queue.is_empty() && self.active_write_query.is_none() && self.transaction.is_some());
@@ -601,13 +782,17 @@ impl TransactionService {
         with_readable_transaction!(
             self.transaction.as_ref().unwrap(),
             |transaction| {
-                spawn_blocking(|| {
+                let snapshot = transaction.snapshot.clone();
+                let type_manager = transaction.type_manager.clone();
+                let thing_manager = transaction.thing_manager.clone();
+                let function_manager = transaction.function_manager.clone();
+                spawn_blocking(move || {
                     let executor = Self::prepare_read_query_in(
-                        transaction.snapshot.clone(),
-                        &transaction.type_manager,
-                        transaction.thing_manager.clone(),
-                        &transaction.function_manager,
-                        pipeline,
+                        snapshot.clone(),
+                        &type_manager,
+                        thing_manager.clone(),
+                        &function_manager,
+                        &pipeline,
                     );
 
                     let executor = unwrap_or_submit_error_and_return!(executor, &sender, |err| err);
@@ -623,7 +808,7 @@ impl TransactionService {
                     let (mut iterator, _) = unwrap_or_submit_error_and_return!(
                         executor.into_iterator(),
                         &sender,
-                        |err| QueryError::ReadPipelineExecutionError { typedb_source: err }
+                        |snapshot_and_err| QueryError::ReadPipelineExecutionError { typedb_source: snapshot_and_err.1 }
                     );
 
                     while let Some(next) = iterator.next() {
@@ -631,9 +816,9 @@ impl TransactionService {
                         let encoded = encode_row(
                             row,
                             &named_outputs,
-                            transaction.snapshot.as_ref(),
-                            &transaction.type_manager,
-                            &transaction.thing_manager,
+                            snapshot.as_ref(),
+                            &type_manager,
+                            &thing_manager,
                         );
                         match encoded {
                             Ok(encoded) => Self::submit_stream_row(&sender, encoded),
@@ -695,7 +880,7 @@ impl TransactionService {
     async fn handle_stream_continue(
         &mut self,
         request_id: Uuid,
-        stream_req: typedb_protocol::transaction::stream::Req,
+        stream_req: Req,
     ) -> Result<(), Status> {
         todo!()
         // debug_assert!(
@@ -756,7 +941,6 @@ impl TransactionService {
         }
     }
 }
-
 
 typedb_error!(
     pub(crate) TransactionServiceError(domain = "Service", prefix = "TSV") {

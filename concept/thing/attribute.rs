@@ -12,6 +12,7 @@ use std::{
     sync::Arc,
 };
 use std::cell::OnceCell;
+use std::sync::OnceLock;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -43,7 +44,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Attribute<'a> {
     vertex: AttributeVertex<'a>,
-    value: OnceCell<Arc<Value<'static>>>,
+    value: OnceLock<Arc<Value<'static>>>,
 }
 
 impl<'a> Attribute<'a> {}
@@ -100,8 +101,7 @@ impl<'a> Attribute<'a> {
     }
 
     pub fn as_reference(&self) -> Attribute<'_> {
-        let value_ref = self.value.clone();
-        Attribute { vertex: self.vertex.as_reference(), value: value_ref }
+        Attribute { vertex: self.vertex.as_reference(), value: self.value.clone() }
     }
 
     pub fn into_owned(self) -> Attribute<'static> {
@@ -118,7 +118,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::ATTRIBUTE_MIN, Prefix::ATTRIBUTE_MAX);
 
     fn new(vertex: Self::Vertex<'a>) -> Self {
-        Attribute { vertex, value: OnceCell::new() }
+        Attribute { vertex, value: OnceLock::new() }
     }
 
     fn vertex(&self) -> Self::Vertex<'_> {
