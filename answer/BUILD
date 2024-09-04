@@ -14,9 +14,11 @@ rust_library(
     ]),
     deps = [
         "//common/bytes",
+        "//common/primitive",
         "//common/lending_iterator",
         "//concept",
         "//encoding",
+        "//storage",
     ],
 )
 

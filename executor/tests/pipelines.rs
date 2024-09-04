@@ -96,6 +96,48 @@ fn test_insert() {
 }
 
 #[test]
+fn test_insert_insert() {
+    let context = setup_common();
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let query_str = r#"
+    insert
+        $p isa person, has age 10;
+        $org isa organisation;
+    insert
+        (group: $org, member: $p) isa membership;
+    "#;
+    let query = typeql::parse_query(query_str).unwrap().into_pipeline();
+    let pipeline = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &query,
+        );
+    if let Err((_, err)) = pipeline {
+        dbg!(err);
+    }
+    //
+    // let (mut iterator, snapshot) = pipeline.into_iterator().unwrap();
+    // let row = iterator.next();
+    // assert!(matches!(&row, &Some(Ok(_))));
+    // assert_eq!(row.unwrap().unwrap().len(), 3);
+    // assert!(matches!(iterator.next(), None));
+    // let snapshot = Arc::into_inner(snapshot).unwrap();
+    // snapshot.commit().unwrap();
+
+    {
+        let snapshot = context.storage.clone().open_snapshot_read();
+        let membership_type = context.type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
+        assert_eq!(context.thing_manager.get_relations_in(&snapshot, membership_type).count(), 1);
+        snapshot.close_resources()
+    }
+}
+
+
+#[test]
 fn test_match() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();

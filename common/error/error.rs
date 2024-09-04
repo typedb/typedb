@@ -57,7 +57,7 @@ impl Debug for dyn TypeDBError {
 impl Display for dyn TypeDBError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.source().is_some() {
-            write!(f, "[{}] {}. Cause: \n\t {:?}", self.code(), self.format_description(), self.source().unwrap())
+            write!(f, "[{}] {}\nCause: \n\t {:?}", self.code(), self.format_description(), self.source().unwrap())
         } else {
             write!(f, "[{}] {}", self.code(), self.format_description())
         }

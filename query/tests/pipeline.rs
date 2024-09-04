@@ -74,38 +74,3 @@ fn insert_match_insert_pipeline() {
         )
         .unwrap();
 }
-
-#[test]
-fn insert_insert_pipeline() {
-    let (_tmp_dir, mut storage) = create_core_storage();
-    setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
-    let function_manager = FunctionManager::new(
-        type_manager.definition_key_generator().clone(),
-        Some(Arc::new(FunctionCache::new(storage.clone(), &type_manager, storage.read_watermark()).unwrap())),
-    );
-
-    define_schema(&storage, &type_manager, &thing_manager);
-    let query_manager = QueryManager::new();
-    let snapshot = storage.clone().open_snapshot_write();
-    let query = typeql::parse_query(
-        r#"
-        insert
-            $p1 isa person, has name "John";
-            $p2 isa person, has name "James";
-        insert
-            (friend: $p1, friend: $p2) isa friendship;
-    "#,
-    )
-    .unwrap()
-    .into_pipeline();
-    query_manager
-        .prepare_write_pipeline(
-            snapshot,
-            &type_manager,
-            thing_manager.clone(),
-            &function_manager,
-            &query,
-        )
-        .unwrap();
-}

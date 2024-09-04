@@ -87,6 +87,7 @@ pub(crate) use get_with_overridden;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone + Hash + Eq + 'a {
     type SelfStatic: KindAPI<'static> + 'static;
+
     fn new(vertex: TypeVertex<'a>) -> Self;
 
     fn read_from(b: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
