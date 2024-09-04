@@ -32,10 +32,9 @@ use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
-use crate::common::{load_managers, setup_storage};
-
-mod common;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const GROUP_LABEL: Label = Label::new_static("group");
@@ -45,13 +44,15 @@ const MEMBERSHIP_GROUP_LABEL: Label = Label::new_static_scoped("group", "members
 const AGE_LABEL: Label = Label::new_static("age");
 const NAME_LABEL: Label = Label::new_static("name");
 
-fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
-    const CARDINALITY_ANY: AnnotationCardinality = AnnotationCardinality::new(0, None);
-    const OWNS_CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(CARDINALITY_ANY);
-    const RELATES_CARDINALITY_ANY: RelatesAnnotation = RelatesAnnotation::Cardinality(CARDINALITY_ANY);
+const CARDINALITY_ANY: AnnotationCardinality = AnnotationCardinality::new(0, None);
+const OWNS_CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(CARDINALITY_ANY);
+const RELATES_CARDINALITY_ANY: RelatesAnnotation = RelatesAnnotation::Cardinality(CARDINALITY_ANY);
 
-    let mut snapshot = storage.clone().open_snapshot_write();
+fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+    setup_concept_storage(storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
     let group_type = type_manager.create_entity_type(&mut snapshot, &GROUP_LABEL).unwrap();
@@ -160,9 +161,8 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 
 #[test]
 fn traverse_links_unbounded_sorted_from() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -254,7 +254,6 @@ fn traverse_links_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
@@ -271,9 +270,8 @@ fn traverse_links_unbounded_sorted_from() {
 
 #[test]
 fn traverse_links_unbounded_sorted_to() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -339,7 +337,6 @@ fn traverse_links_unbounded_sorted_to() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
@@ -356,9 +353,8 @@ fn traverse_links_unbounded_sorted_to() {
 
 #[test]
 fn traverse_links_bounded_relation() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -436,7 +432,6 @@ fn traverse_links_bounded_relation() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
@@ -453,9 +448,8 @@ fn traverse_links_bounded_relation() {
 
 #[test]
 fn traverse_links_bounded_relation_player() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -545,7 +539,6 @@ fn traverse_links_bounded_relation_player() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
@@ -561,9 +554,8 @@ fn traverse_links_bounded_relation_player() {
 
 #[test]
 fn traverse_links_reverse_unbounded_sorted_from() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -600,7 +592,6 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let thing_manager = Arc::new(thing_manager);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -646,9 +637,8 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
 #[test]
 fn traverse_links_reverse_unbounded_sorted_to() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -685,7 +675,6 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone());
-    let thing_manager = Arc::new(thing_manager);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -731,9 +720,8 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
 #[test]
 fn traverse_links_reverse_bounded_player() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -810,7 +798,6 @@ fn traverse_links_reverse_bounded_player() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 
@@ -827,9 +814,8 @@ fn traverse_links_reverse_bounded_player() {
 
 #[test]
 fn traverse_links_reverse_bounded_player_relation() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -919,7 +905,6 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
     let iterator = executor.into_iterator(snapshot, thing_manager);
 

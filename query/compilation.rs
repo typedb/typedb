@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use answer::variable::Variable;
 use compiler::{
@@ -47,7 +48,7 @@ impl CompiledStage {
                 .output_row_schema
                 .iter()
                 .enumerate()
-                .map(|(i, (v, _))| (*v, VariablePosition::new(i as u32)))
+                .filter_map(|(i, v)| v.map(|v| (v, VariablePosition::new(i as u32))))
                 .collect(),
         }
     }
@@ -55,13 +56,13 @@ impl CompiledStage {
 
 pub(super) fn compile_pipeline(
     statistics: &Statistics,
-    variable_registry: &VariableRegistry,
+    variable_registry: Arc<VariableRegistry>,
     annotated_functions: AnnotatedUnindexedFunctions,
     annotated_stages: Vec<AnnotatedStage>,
 ) -> Result<CompiledPipeline, QueryError> {
     let compiled_functions = annotated_functions
         .iter_functions()
-        .map(|function| compile_function(statistics, variable_registry, function))
+        .map(|function| compile_function(statistics, variable_registry.clone(), function))
         .collect::<Result<Vec<_>, _>>()?;
 
     let mut compiled_stages = Vec::with_capacity(annotated_stages.len());
@@ -69,7 +70,7 @@ pub(super) fn compile_pipeline(
         let input_variable_positions =
             compiled_stages.last().map(|stage: &CompiledStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
 
-        let compiled_stage = compile_stage(statistics, variable_registry, &input_variable_positions, stage)?;
+        let compiled_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;
         compiled_stages.push(compiled_stage);
     }
     Ok(CompiledPipeline { compiled_functions, compiled_stages })
@@ -77,7 +78,7 @@ pub(super) fn compile_pipeline(
 
 fn compile_function(
     statistics: &Statistics,
-    variable_registry: &VariableRegistry,
+    variable_registry: Arc<VariableRegistry>,
     function: &Function,
 ) -> Result<CompiledFunction, QueryError> {
     todo!()
@@ -85,7 +86,7 @@ fn compile_function(
 
 fn compile_stage(
     statistics: &Statistics,
-    variable_registry: &VariableRegistry,
+    variable_registry: Arc<VariableRegistry>,
     input_variables: &HashMap<Variable, VariablePosition>,
     annotated_stage: AnnotatedStage,
 ) -> Result<CompiledStage, QueryError> {
@@ -96,9 +97,9 @@ fn compile_stage(
             Ok(CompiledStage::Match(plan))
         }
         AnnotatedStage::Insert { block, annotations } => {
-            let plan =
-                compiler::insert::program::compile(block.conjunction().constraints(), input_variables, annotations)
-                    .map_err(|source| QueryError::WriteCompilation { source })?;
+            let plan = compiler::insert::program::compile(
+                variable_registry, block.conjunction().constraints(), input_variables, annotations,
+            ).map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Insert(plan))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations } => {
@@ -107,8 +108,7 @@ fn compile_stage(
                 annotations,
                 block.conjunction().constraints(),
                 deleted_variables,
-            )
-            .map_err(|source| QueryError::WriteCompilation { source })?;
+            ).map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Delete(plan))
         }
         _ => todo!(),

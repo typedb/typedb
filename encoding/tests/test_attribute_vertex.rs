@@ -25,16 +25,11 @@ use encoding::{
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging};
+use test_utils_encoding::create_core_storage;
 
 #[test]
 fn generate_string_attribute_vertex() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>(Rc::from("storage"), &storage_path, WALClient::new(wal))
-            .unwrap(),
-    );
+   let (_tmp_dir, storage) = create_core_storage();
 
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_id = TypeID::build(0);
@@ -140,13 +135,7 @@ fn generate_string_attribute_vertex() {
 
 #[test]
 fn generate_struct_attribute_vertex() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>(Rc::from("storage"), &storage_path, WALClient::new(wal))
-            .unwrap(),
-    );
+    let (_tmp_dir, storage) = create_core_storage();
 
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_id = TypeID::build(0);

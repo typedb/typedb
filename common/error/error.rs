@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+mod typeql;
+
 use std::{
     error::Error,
     fmt::{Debug, Display, Formatter},
@@ -55,7 +57,7 @@ impl Debug for dyn TypeDBError {
 impl Display for dyn TypeDBError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.source().is_some() {
-            write!(f, "[{}] {}. Cause: \n\t {:?}", self.code(), self.format_description(), self.source().unwrap())
+            write!(f, "[{}] {}\nCause: \n\t {:?}", self.code(), self.format_description(), self.source().unwrap())
         } else {
             write!(f, "[{}] {}", self.code(), self.format_description())
         }
@@ -153,12 +155,18 @@ macro_rules! typedb_error {
                     $(
                         $( Self::$variant { typedb_source, .. } => {
                             let typedb_source: &$typedb_source = typedb_source;
-                            Some(typedb_source as &dyn error::TypeDBError),
+                            Some(typedb_source as &dyn error::TypeDBError)
                         } )?
                     )*
                     _ => None
                 };
                 error
+            }
+        }
+
+        impl std::fmt::Debug for $name {
+           fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                std::fmt::Debug::fmt(self as &dyn error::TypeDBError, f)
             }
         }
     };

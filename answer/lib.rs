@@ -5,6 +5,7 @@
  */
 
 use std::fmt::{Display, Formatter};
+use std::ops::Deref;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use concept::{
@@ -14,12 +15,17 @@ use concept::{
         role_type::RoleType, ObjectTypeAPI, TypeAPI,
     },
 };
+use concept::error::ConceptReadError;
+use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::type_::{vertex::TypeVertex, Kind},
     value::value::Value,
     AsBytes,
 };
+use encoding::value::label::Label;
 use lending_iterator::higher_order::Hkt;
+use primitive::maybe_owns::MaybeOwns;
+use storage::snapshot::ReadableSnapshot;
 
 pub mod answer_map;
 pub mod variable;
@@ -47,6 +53,19 @@ impl Type {
             Type::Relation(_) => Kind::Relation,
             Type::Attribute(_) => Kind::Attribute,
             Type::RoleType(_) => Kind::Role,
+        }
+    }
+
+    pub fn get_label<'a>(
+        &'a self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'a TypeManager
+    ) -> Result<MaybeOwns<'a, Label<'static>>, ConceptReadError> {
+        match self {
+            Type::Entity(entity) => entity.get_label(snapshot, type_manager),
+            Type::Relation(relation) => relation.get_label(snapshot, type_manager),
+            Type::Attribute(attribute) => attribute.get_label(snapshot, type_manager),
+            Type::RoleType(role) => role.get_label(snapshot, type_manager),
         }
     }
 

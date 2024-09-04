@@ -9,11 +9,14 @@ use std::{
     fmt::{Display, Formatter},
     sync::Arc,
 };
+use std::collections::HashMap;
 
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
+use compiler::VariablePosition;
+use error::typedb_error;
 use lending_iterator::LendingIterator;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::{ReadableSnapshot};
 
 use crate::{batch::Batch, row::MaybeOwnedRow, write::WriteError};
 
@@ -26,11 +29,14 @@ pub mod stage;
 pub trait StageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
     type OutputIterator: StageIterator;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError>;
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String>;
+
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)>;
 }
 
-pub trait StageIterator: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>> + Sized {
-    fn collect_owned(mut self) -> Result<Batch, PipelineError> {
+pub trait StageIterator: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>> + Sized {
+
+    fn collect_owned(mut self) -> Result<Batch, PipelineExecutionError> {
         // specific iterators can optimise this by not iterating + collecting!
         let first = self.next();
         let mut batch = match first {
@@ -50,23 +56,14 @@ pub trait StageIterator: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum PipelineError {
-    ConceptRead(ConceptReadError),
-    InitialisingMatchIterator(ConceptReadError),
-    WriteError(WriteError),
-    FinalisedUnconsumedStage,
-    CouldNotGetOwnedContextFromShared,
-    IllegalState,
-}
-
-impl Display for PipelineError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+typedb_error!(
+    pub PipelineExecutionError(domain = "Executor", prefix = "EXE") {
+        // TODO: migrate to `typedb_error` once they are typedb errors
+        ConceptRead(1, "Error reading concept.", ( source: ConceptReadError )),
+        InitialisingMatchIterator(2, "Error initialising Match clause iterator.", ( source: ConceptReadError )),
+        WriteError(3, "Error executing write operation.", ( source: WriteError )),
     }
-}
-
-impl Error for PipelineError {}
+);
 
 // Can be used as normal lending iterator, or optimally collect into owned using `collect_owned()`
 pub struct WrittenRowsIterator {
@@ -81,7 +78,7 @@ impl WrittenRowsIterator {
 }
 
 impl LendingIterator for WrittenRowsIterator {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         let index = self.index;
@@ -95,7 +92,7 @@ impl LendingIterator for WrittenRowsIterator {
 }
 
 impl StageIterator for WrittenRowsIterator {
-    fn collect_owned(self) -> Result<Batch, PipelineError> {
+    fn collect_owned(self) -> Result<Batch, PipelineExecutionError> {
         debug_assert!(self.index == 0, "Truncating start of rows is not implemented");
         Ok(self.rows)
     }

@@ -164,6 +164,8 @@ fn annotate_stage(
             });
 
             check_annotations(
+                snapshot,
+                type_manager ,
                 &block,
                 running_variable_annotations,
                 running_constraint_annotations,

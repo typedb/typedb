@@ -70,7 +70,7 @@ pub enum TypeInferenceError {
     VariableInExpressionMustBeValueOrAttribute { variable: Variable, actual_category: VariableCategory },
     RoleNameNotResolved(String),
     MultipleLabelsForSingleTypeVariable { variable: Variable },
-    IllegalInsertTypes { constraint: Constraint<Variable>, left_type: Type, right_type: Type },
+    IllegalInsertTypes { constraint: Constraint<Variable>, left_type: String, right_type: String },
 }
 
 impl Display for TypeInferenceError {

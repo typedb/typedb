@@ -19,6 +19,8 @@ rust_test(
         "//resource",
         "//storage",
         "//durability",
+        "//concept/tests:test_utils_concept",
+        "//encoding/tests:test_utils_encoding",
         "//util/test:test_utils",
 
         "@crates//:criterion",

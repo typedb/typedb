@@ -12,7 +12,6 @@ rust_test(
     name = "bench_insert_queries",
     srcs = glob([
         "bench_insert_queries.rs",
-        "common.rs",
     ]),
     deps = [
         "//answer",
@@ -24,7 +23,11 @@ rust_test(
         "//ir",
         "//resource",
         "//storage",
+
+        "//concept/tests:test_utils_concept",
+        "//encoding/tests:test_utils_encoding",
         "//util/test:test_utils",
+
         "@vaticle_typeql//rust:typeql",
 
         "@crates//:criterion",

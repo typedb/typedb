@@ -6,7 +6,7 @@
 
 #![deny(unused_must_use)]
 
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap};
 
 use concept::{
     error::ConceptReadError,
@@ -14,65 +14,43 @@ use concept::{
         attribute::Attribute,
         entity::Entity,
         object::{Object, ObjectAPI},
-        relation::Relation,
-        statistics::Statistics,
-        thing_manager::ThingManager,
+        relation::Relation
+
+        ,
     },
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
         attribute_type::AttributeTypeAnnotation,
+        Ordering,
+        OwnerAPI,
         owns::OwnsAnnotation,
-        relates::RelatesAnnotation,
-        type_manager::TypeManager,
-        Ordering, OwnerAPI, PlayerAPI,
+        PlayerAPI, relates::RelatesAnnotation, type_manager::TypeManager,
     },
 };
-use durability::{wal::WAL, DurabilitySequenceNumber};
 use encoding::{
     error::EncodingError,
-    graph::{
-        definition::{definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator},
-        thing::vertex_generator::ThingVertexGenerator,
-        type_::vertex_generator::TypeVertexGenerator,
-    },
+    graph::definition::definition_key::DefinitionKey,
     value::{
         label::Label,
         value::Value,
         value_struct::StructValue,
         value_type::{ValueType, ValueTypeCategory},
-    },
-    EncodingKeyspace,
+    }
+    ,
 };
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot},
-    MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot}
+    ,
 };
-use test_utils::{create_tmp_dir, init_logging};
-
-fn load_managers(storage: Arc<MVCCStorage<WALClient>>) -> (Arc<TypeManager>, ThingManager) {
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage).unwrap());
-    let type_manager =
-        Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
-    let thing_manager = ThingManager::new(
-        thing_vertex_generator.clone(),
-        type_manager.clone(),
-        Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
-    );
-    (type_manager, thing_manager)
-}
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
 #[test]
 fn thing_create_iterate() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
@@ -101,12 +79,8 @@ fn thing_create_iterate() {
 
 #[test]
 fn attribute_create() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     let age_label = Label::build("age");
     let name_label = Label::build("name");
@@ -171,12 +145,8 @@ fn attribute_create() {
 
 #[test]
 fn has() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     let age_label = Label::build("age");
     let name_label = Label::build("name");
@@ -249,12 +219,8 @@ fn has() {
 
 #[test]
 fn attribute_cleanup_on_concurrent_detach() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     let age_label = Label::build("age");
     let name_label = Label::build("name");
@@ -391,12 +357,8 @@ fn attribute_cleanup_on_concurrent_detach() {
 
 #[test]
 fn role_player_distinct() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     let employment_label = Label::build("employment");
     let employee_role = "employee";
@@ -528,12 +490,8 @@ fn role_player_distinct() {
 
 #[test]
 fn role_player_duplicates() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
 
     let list_label = Label::build("list");
     let entry_role_label = "entry";
@@ -707,14 +665,10 @@ fn role_player_duplicates() {
 
 #[test]
 fn attribute_string_write_read() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
-
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone());
+
     let attr_label = Label::build("test_string_attr");
     let short_string = "short".to_owned();
     let long_string = "this string is 33 characters long".to_owned();
@@ -779,13 +733,8 @@ fn attribute_string_write_read() {
 
 #[test]
 fn attribute_struct_write_read() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
-
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let attr_label = Label::build("struct_test_attr");
@@ -862,13 +811,8 @@ fn attribute_struct_write_read() {
 
 #[test]
 fn read_attribute_struct_by_field() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
-
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let attr_label = Label::build("index_test_attr");
@@ -949,14 +893,9 @@ fn read_attribute_struct_by_field() {
 
 #[test]
 fn attribute_struct_errors() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
-
-    let (type_manager, _) = load_managers(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let (struct_key, nested_struct_key) = {
         let mut snapshot = storage.clone().open_snapshot_write();

@@ -6,7 +6,11 @@
 
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
+use cucumber::gherkin::Step;
+use itertools::{Itertools, izip};
+use macro_rules_attribute::apply;
+
+use answer::{Thing, variable_value::VariableValue};
 use compiler::{
     insert::WriteCompilationError,
     match_::{
@@ -15,7 +19,6 @@ use compiler::{
     },
 };
 use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::TypeAPI};
-use cucumber::gherkin::Step;
 use encoding::value::label::Label;
 use executor::{
     program_executor::ProgramExecutor,
@@ -24,20 +27,18 @@ use executor::{
 };
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
-    translation::{match_::translate_match, writes::translate_insert, TranslationContext},
+    translation::{match_::translate_match, TranslationContext, writes::translate_insert},
 };
-use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
-use macro_rules_attribute::apply;
 use primitive::either::Either;
 use query::query_manager::QueryManager;
 
 use crate::{
     assert::assert_matches,
-    generic_step, params,
+    Context, generic_step,
+    params,
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     util::iter_table_map,
-    Context,
 };
 
 fn execute_match_query(
@@ -51,6 +52,7 @@ fn execute_match_query(
         .finish();
 
     let variable_position_index;
+    let variable_registry = Arc::new(translation_context.variable_registry);
     let rows = with_read_tx!(context, |tx| {
         let (type_annotations, _) = infer_types(
             &block,
@@ -58,14 +60,14 @@ fn execute_match_query(
             &*tx.snapshot,
             &tx.type_manager,
             &IndexedAnnotatedFunctions::empty(),
-            &translation_context.variable_registry,
+            &variable_registry,
         )
         .unwrap();
 
         let match_plan = compiler::match_::compile(
+            variable_registry.clone(),
             &block,
             &type_annotations,
-            &translation_context.variable_registry,
             &HashMap::new(),
             tx.thing_manager.statistics(),
         );
@@ -81,7 +83,7 @@ fn execute_match_query(
             .map_err(Either::Second)?
     });
 
-    let variable_names = &translation_context.variable_registry.variable_names();
+    let variable_names = variable_registry.variable_names();
 
     let answers = rows
         .into_iter()
@@ -131,9 +133,13 @@ fn execute_insert_query(
         .unwrap()
     });
 
-    let insert_plan =
-        compiler::insert::program::compile(block.conjunction().constraints(), &HashMap::new(), &mock_annotations)
-            .map_err(Either::First)?;
+    let insert_plan = compiler::insert::program::compile(
+        Arc::new(translation_context.variable_registry),
+        block.conjunction().constraints(),
+        &HashMap::new(),
+        &mock_annotations,
+    )
+        .map_err(Either::First)?;
 
     let mut output_vec = vec![VariableValue::Empty; insert_plan.output_row_schema.len()];
     with_write_tx!(context, |tx| {
@@ -236,7 +242,7 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
 }
 
 fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &Context) -> bool {
-    let VariableValue::Thing(thing) = var_value else { return false };
+    let VariableValue::Thing(thing) = var_value else { return false; };
     let (key_label, key_value) =
         id.split_once(':').expect("key concept specifier must be of the form `key:<type>:<value>`");
     with_read_tx!(context, |tx| {
@@ -296,7 +302,7 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
 }
 
 fn does_type_match(context: &Context, var_value: &VariableValue<'_>, expected: &str) -> bool {
-    let VariableValue::Type(type_) = var_value else { return false };
+    let VariableValue::Type(type_) = var_value else { return false; };
     let label = with_read_tx!(context, |tx| {
         match type_ {
             answer::Type::Entity(type_) => type_.get_label(&*tx.snapshot, &tx.type_manager),

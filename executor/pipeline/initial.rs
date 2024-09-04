@@ -5,37 +5,42 @@
  */
 
 use std::{array, sync::Arc};
+use std::collections::HashMap;
+use compiler::VariablePosition;
 
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    pipeline::{PipelineError, StageAPI, StageIterator},
+    pipeline::{PipelineExecutionError, StageAPI, StageIterator},
     row::MaybeOwnedRow,
 };
 
 pub struct InitialStage<Snapshot: ReadableSnapshot + 'static> {
     snapshot: Arc<Snapshot>,
-    thing_manager: Arc<ThingManager>,
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> InitialStage<Snapshot> {
-    pub fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
-        Self { snapshot, thing_manager }
+    pub fn new(snapshot: Arc<Snapshot>) -> Self {
+        Self { snapshot }
     }
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for InitialStage<Snapshot> {
     type OutputIterator = InitialIterator;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
-        Ok((InitialIterator::new(), self.snapshot.clone(), self.thing_manager.clone()))
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
+        HashMap::new()
+    }
+
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+        Ok((InitialIterator::new(), self.snapshot))
     }
 }
 
 pub struct InitialIterator {
-    single_iterator: AsLendingIterator<array::IntoIter<Result<MaybeOwnedRow<'static>, PipelineError>, 1>>,
+    single_iterator: AsLendingIterator<array::IntoIter<Result<MaybeOwnedRow<'static>, PipelineExecutionError>, 1>>,
 }
 
 impl InitialIterator {
@@ -45,7 +50,7 @@ impl InitialIterator {
 }
 
 impl LendingIterator for InitialIterator {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.single_iterator.next()

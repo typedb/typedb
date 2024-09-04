@@ -8,11 +8,13 @@
 // There is a need to construct the executor though.
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use answer::variable::Variable;
 use encoding::{graph::type_::Kind, value::value::Value};
 use ir::pattern::{constraint::Constraint, expression::Expression};
 use itertools::Itertools;
+use ir::program::block::VariableRegistry;
 
 use crate::{
     filter_variants,
@@ -29,8 +31,7 @@ pub struct InsertProgram {
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub output_row_schema: Vec<(Variable, VariableSource)>,
-    // Where to copy from
-    pub debug_info: HashMap<VariableSource, Variable>,
+    pub variable_registry: Arc<VariableRegistry>,
 }
 
 /*
@@ -40,6 +41,7 @@ pub struct InsertProgram {
  */
 
 pub fn compile(
+    variable_registry: Arc<VariableRegistry>,
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
@@ -57,12 +59,11 @@ pub fn compile(
         output_row_schema.push((v, VariableSource::InputVariable(i)));
     });
 
-    let debug_info = HashMap::new(); // TODO
     Ok(InsertProgram {
         concept_instructions: concept_inserts,
         connection_instructions: connection_inserts,
         output_row_schema,
-        debug_info,
+        variable_registry,
     })
 }
 

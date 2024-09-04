@@ -11,27 +11,20 @@ use std::{collections::BTreeMap, sync::Arc};
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager, ThingAPI},
     type_::{
-        annotation::AnnotationCardinality, relates::RelatesAnnotation, type_manager::TypeManager, ObjectTypeAPI,
-        Ordering, OwnerAPI, PlayerAPI,
+        annotation::AnnotationCardinality, ObjectTypeAPI, Ordering,
+        OwnerAPI, PlayerAPI, relates::RelatesAnnotation,
     },
 };
-use durability::{wal::WAL, DurabilitySequenceNumber};
-use encoding::{
-    graph::{
-        definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
-        type_::vertex_generator::TypeVertexGenerator,
-    },
-    value::{label::Label, value::Value, value_type::ValueType},
-    EncodingKeyspace,
-};
+use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use lending_iterator::LendingIterator;
 use storage::{
-    durability_client::{DurabilityClient, WALClient},
+    durability_client::WALClient,
+    MVCCStorage,
     sequence_number::SequenceNumber,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
-    MVCCStorage,
 };
-use test_utils::{create_tmp_dir, init_logging, TempDir};
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
 macro_rules! assert_statistics_eq {
     ($lhs:expr, $rhs:expr) => {
@@ -108,7 +101,7 @@ macro_rules! assert_statistics_eq {
     };
 }
 
-fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: ThingManager) -> Statistics {
+fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingManager) -> Statistics {
     let snapshot = storage.clone().open_snapshot_read();
 
     let mut statistics = Statistics::new(snapshot.open_sequence_number());
@@ -119,7 +112,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: ThingMan
         statistics.total_entity_count += 1;
         *statistics.entity_counts.entry(entity.type_()).or_default() += 1;
         let owner_type = entity.type_().into_owned_object_type();
-        let mut has_iter = entity.get_has_unordered(&snapshot, &thing_manager);
+        let mut has_iter = entity.get_has_unordered(&snapshot, thing_manager);
         while let Some(has) = has_iter.next() {
             let (attribute, count) = has.unwrap();
             *statistics
@@ -143,7 +136,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: ThingMan
         statistics.total_relation_count += 1;
         *statistics.relation_counts.entry(relation.type_()).or_default() += 1;
         let owner_type = relation.type_().into_owned_object_type();
-        let mut has_iter = relation.get_has_unordered(&snapshot, &thing_manager);
+        let mut has_iter = relation.get_has_unordered(&snapshot, thing_manager);
         while let Some(has) = has_iter.next() {
             let (attribute, count) = has.unwrap();
             *statistics
@@ -159,7 +152,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: ThingMan
                 .entry(owner_type.clone())
                 .or_default() += count;
         }
-        let mut relates_iter = relation.get_players(&snapshot, &thing_manager);
+        let mut relates_iter = relation.get_players(&snapshot, thing_manager);
         let mut this_relation_players = BTreeMap::<_, u64>::new();
         while let Some(relates) = relates_iter.next() {
             let (roleplayer, count) = relates.unwrap();
@@ -218,31 +211,11 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: ThingMan
     statistics
 }
 
-fn setup() -> (Arc<MVCCStorage<WALClient>>, Arc<TypeManager>, ThingManager, TempDir) {
-    init_logging();
-    let storage_path = create_tmp_dir(); // NOTE: dir is deleted when TempDir goes out of scope
-    let wal = WAL::create(&storage_path).unwrap();
-    let mut wal_client = WALClient::new(wal);
-    wal_client.register_record_type::<Statistics>();
-    let storage = Arc::new(MVCCStorage::create::<EncodingKeyspace>("storage", &storage_path, wal_client).unwrap());
-    let _guard = storage_path;
-
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    let type_manager = Arc::new(TypeManager::new(definition_key_generator, type_vertex_generator, None));
-
-    let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-    let thing_manager = ThingManager::new(
-        thing_vertex_generator,
-        type_manager.clone(),
-        Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
-    );
-    (storage, type_manager, thing_manager, _guard)
-}
-
 #[test]
 fn create_entity() {
-    let (storage, type_manager, thing_manager, _guard) = setup();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let person_label = Label::build("person");
 
@@ -260,12 +233,14 @@ fn create_entity() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise(&storage).unwrap();
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }
 
 #[test]
 fn delete_twice() {
-    let (storage, type_manager, thing_manager, _guard) = setup();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let person_label = Label::build("person");
 
@@ -288,12 +263,14 @@ fn delete_twice() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise(&storage).unwrap();
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }
 
 #[test]
 fn put_has_twice() {
-    let (storage, type_manager, thing_manager, _guard) = setup();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let person_label = Label::build("person");
     let name_label = Label::build("name");
@@ -321,12 +298,14 @@ fn put_has_twice() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise(&storage).unwrap();
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }
 
 #[test]
 fn put_plays() {
-    let (storage, type_manager, thing_manager, _guard) = setup();
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone());
 
     let person_label = Label::build("person");
     let friendship_label = Label::build("friendship");
@@ -363,5 +342,5 @@ fn put_plays() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise(&storage).unwrap();
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }

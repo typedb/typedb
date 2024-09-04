@@ -8,6 +8,7 @@ use std::{
     collections::{hash_map, HashMap, HashSet},
     mem,
 };
+use std::sync::Arc;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -36,7 +37,7 @@ use crate::{
 #[derive(Debug)]
 pub struct MatchProgram {
     pub(crate) programs: Vec<Program>,
-    pub(crate) variable_registry: VariableRegistry,
+    pub(crate) variable_registry: Arc<VariableRegistry>,
 
     variable_positions: HashMap<Variable, VariablePosition>,
     variable_positions_index: Vec<Variable>,
@@ -49,13 +50,13 @@ impl MatchProgram {
         variable_positions: HashMap<Variable, VariablePosition>,
         variable_positions_index: Vec<Variable>,
     ) -> Self {
-        Self { programs, variable_registry, variable_positions, variable_positions_index }
+        Self { programs, variable_registry: Arc::new(variable_registry), variable_positions, variable_positions_index }
     }
 
     pub fn from_block(
         block: &FunctionalBlock,
         type_annotations: &TypeAnnotations,
-        variable_registry: &VariableRegistry,
+        variable_registry: Arc<VariableRegistry>,
         _expressions: &HashMap<Variable, CompiledExpression>,
         statistics: &Statistics,
     ) -> Self {
@@ -63,7 +64,7 @@ impl MatchProgram {
         let conjunction = block.conjunction();
         assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
 
-        let mut plan_builder = PlanBuilder::init(variable_registry, type_annotations, statistics);
+        let mut plan_builder = PlanBuilder::init(&variable_registry, type_annotations, statistics);
         plan_builder.register_constraints(conjunction, type_annotations, statistics);
         let ordering = plan_builder.initialise_greedy();
 

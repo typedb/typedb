@@ -13,7 +13,9 @@ rust_library(
     srcs = glob([
         "*.rs",
     ]),
-    deps = []
+    deps = [
+        "@vaticle_typeql//rust:typeql",
+    ]
 )
 
 checkstyle_test(

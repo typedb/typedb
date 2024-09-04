@@ -6,15 +6,14 @@
 
 use query::query_manager::QueryManager;
 use storage::snapshot::CommittableSnapshot;
-
-use crate::common::{load_managers, setup_storage};
-
-mod common;
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
 #[test]
 fn basic() {
-    let (_tmp_dir, storage) = setup_storage();
-    let (type_manager, thing_manager, _) = load_managers(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone());
     let mut snapshot = storage.clone().open_snapshot_schema();
     let query_manager = QueryManager::new();
 

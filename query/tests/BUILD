@@ -20,20 +20,16 @@ deps = [
     "//query:query",
     "//storage",
     "@vaticle_typeql//rust:typeql",
+
+    "//concept/tests:test_utils_concept",
+    "//encoding/tests:test_utils_encoding",
     "//util/test:test_utils",
 ]
 
 rust_test(
     name = "test_define",
     crate_root = "define.rs",
-    srcs = ["define.rs", "common.rs"],
-    deps = deps,
-)
-#
-rust_test(
-    name = "test_pipeline",
-    crate_root = "pipeline.rs",
-    srcs = ["pipeline.rs", "common.rs"],
+    srcs = ["define.rs"],
     deps = deps,
 )
 

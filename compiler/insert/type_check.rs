@@ -10,7 +10,9 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
+use concept::type_::type_manager::TypeManager;
 use ir::{pattern::constraint::Constraint, program::block::FunctionalBlock};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::match_::inference::{
     type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
@@ -32,6 +34,8 @@ impl<'a> ValidCombinations<'a> {
 }
 
 pub fn check_annotations(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
     block: &FunctionalBlock,
     input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -47,6 +51,8 @@ pub fn check_annotations(
                     .as_left_right()
                     .left_to_right();
                 validate_input_combinations_insertable(
+                    snapshot,
+                    type_manager,
                     constraint,
                     input_annotations_variables,
                     input_annotations_constraints,
@@ -57,12 +63,16 @@ pub fn check_annotations(
                 let links_annotations =
                     insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_left_right_filtered();
                 validate_input_combinations_insertable(
+                    snapshot,
+                    type_manager,
                     constraint,
                     input_annotations_variables,
                     input_annotations_constraints,
                     &ValidCombinations::Links(&links_annotations.filters_on_left()),
                 )?;
                 validate_input_combinations_insertable(
+                    snapshot,
+                    type_manager,
                     constraint,
                     input_annotations_variables,
                     input_annotations_constraints,
@@ -84,6 +94,8 @@ pub fn check_annotations(
 }
 
 fn validate_input_combinations_insertable(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
     constraint: &Constraint<Variable>,
     input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -103,10 +115,19 @@ fn validate_input_combinations_insertable(
     if let Some((left_type, right_type)) = invalid_iter.find(|_| true) {
         Err(TypeInferenceError::IllegalInsertTypes {
             constraint: constraint.clone(),
-            left_type: left_type.clone(),
-            right_type: right_type.clone(),
+            left_type: left_type
+                .get_label(snapshot, type_manager)
+                .map_err(|err| TypeInferenceError::ConceptRead { source: err })?
+                .scoped_name()
+                .as_str()
+                .to_string(),
+            right_type: right_type
+                .get_label(snapshot, type_manager)
+                .map_err(|err| TypeInferenceError::ConceptRead { source: err })?
+                .scoped_name()
+                .as_str()
+                .to_string(),
         })?;
     }
-
     Ok(())
 }

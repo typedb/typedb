@@ -19,7 +19,7 @@ pub(crate) enum ProtocolError {
     QueryStreamNotFound { query_request_id: Uuid },
 }
 
-impl StatusConvertible for ProtocolError {
+impl IntoGRPCStatus for ProtocolError {
     fn into_status(self) -> Status {
         match self {
             Self::MissingField { name, description } => Status::with_error_details(
@@ -56,28 +56,39 @@ impl StatusConvertible for ProtocolError {
     }
 }
 
-pub(crate) trait StatusConvertible {
-    fn into_status(self) -> Status;
+pub(crate) trait IntoProtocolErrorMessage {
+    fn into_error_message(self) -> typedb_protocol::Error;
 }
 
-impl<T: TypeDBError> StatusConvertible for T {
-    fn into_status(self) -> Status {
+impl<T: TypeDBError> IntoProtocolErrorMessage for T {
+    fn into_error_message(self) -> typedb_protocol::Error {
         let root_source = self.root_source_typedb_error();
         let code = root_source.code();
         let domain = root_source.domain();
-        let mut metadata = HashMap::new();
-        metadata.insert(String::from("description"), root_source.format_description());
-        let mut details = ErrorDetails::with_error_info(code, domain, metadata);
-        let mut stack_trace = Vec::with_capacity(4); // definitely non-zero!
 
+        let mut stack_trace = Vec::with_capacity(4); // definitely non-zero!
         let mut error: &dyn TypeDBError = &self;
         stack_trace.push(error.format_description());
         while let Some(source) = error.source_typedb_error() {
             error = source;
             stack_trace.push(error.format_description());
         }
-        details.set_debug_info(stack_trace, "");
+        typedb_protocol::Error {
+            error_code: code.to_string(),
+            domain: domain.to_string(),
+            stack_trace
+        }
+    }
+}
 
+pub(crate) trait IntoGRPCStatus {
+    fn into_status(self) -> Status;
+}
+
+impl IntoGRPCStatus for typedb_protocol::Error {
+    fn into_status(self) -> Status {
+        let mut details = ErrorDetails::with_error_info(self.error_code, self.domain, HashMap::new());
+        details.set_debug_info(self.stack_trace, "");
         Status::with_error_details(Code::InvalidArgument, "Request generated error", details)
     }
 }

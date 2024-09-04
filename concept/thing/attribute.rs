@@ -11,6 +11,8 @@ use std::{
     hash::{Hash, Hasher},
     sync::Arc,
 };
+use std::cell::OnceCell;
+use std::sync::OnceLock;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -42,7 +44,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Attribute<'a> {
     vertex: AttributeVertex<'a>,
-    value: Option<Arc<Value<'a>>>, // TODO: if we end up doing traversals over Vertex instead of Concept, we could embed the Value cache into the AttributeVertex
+    value: OnceLock<Arc<Value<'static>>>,
 }
 
 impl<'a> Attribute<'a> {}
@@ -57,15 +59,15 @@ impl<'a> Attribute<'a> {
     }
 
     pub fn get_value(
-        &mut self,
+        &'a self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Value<'_>, ConceptReadError> {
-        if self.value.is_none() {
+        if self.value.get().is_none() {
             let value = thing_manager.get_attribute_value(snapshot, self)?;
-            self.value = Some(Arc::new(value));
+            let _ = self.value.set(Arc::new(value));
         }
-        Ok(self.value.as_ref().unwrap().as_reference())
+        Ok(self.value.get().unwrap().as_reference())
     }
 
     pub fn has_owners(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> bool {
@@ -116,7 +118,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::ATTRIBUTE_MIN, Prefix::ATTRIBUTE_MAX);
 
     fn new(vertex: Self::Vertex<'a>) -> Self {
-        Attribute { vertex, value: None }
+        Attribute { vertex, value: OnceLock::new() }
     }
 
     fn vertex(&self) -> Self::Vertex<'_> {

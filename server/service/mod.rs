@@ -7,5 +7,6 @@
 mod error;
 pub(crate) mod transaction_service;
 pub(crate) mod typedb_service;
+mod answer;
 
 pub(crate) type RequestID = [u8; 16];

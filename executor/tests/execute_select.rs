@@ -28,22 +28,22 @@ use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translat
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot},
     MVCCStorage,
 };
-
-use crate::common::{load_managers, setup_storage};
-
-mod common;
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const AGE_LABEL: Label = Label::new_static("age");
 const NAME_LABEL: Label = Label::new_static("name");
 const EMAIL_LABEL: Label = Label::new_static("email");
 
-fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
-    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+    setup_concept_storage(storage);
+
     let (type_manager, thing_manager) = load_managers(storage.clone());
+    let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
@@ -131,9 +131,8 @@ fn setup_database(storage: Arc<MVCCStorage<WALClient>>) {
 
 #[test]
 fn anonymous_vars_not_enumerated_or_counted() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -186,7 +185,6 @@ fn anonymous_vars_not_enumerated_or_counted() {
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone());
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
@@ -210,9 +208,8 @@ fn anonymous_vars_not_enumerated_or_counted() {
 
 #[test]
 fn unselected_named_vars_counted() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -267,7 +264,6 @@ fn unselected_named_vars_counted() {
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone());
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);
@@ -291,9 +287,8 @@ fn unselected_named_vars_counted() {
 
 #[test]
 fn cartesian_named_counted_checked() {
-    let (_tmp_dir, storage) = setup_storage();
-
-    setup_database(storage.clone());
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
 
     // query:
     //   match
@@ -368,7 +363,6 @@ fn cartesian_named_counted_checked() {
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone());
-    let thing_manager = Arc::new(thing_manager);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let iterator = executor.into_iterator(snapshot, thing_manager);

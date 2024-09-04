@@ -5,49 +5,59 @@
  */
 
 use std::{marker::PhantomData, sync::Arc};
+use std::collections::HashMap;
 
 use compiler::match_::planner::pattern_plan::MatchProgram;
+use compiler::VariablePosition;
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern_executor::{PatternExecutor, PatternIterator},
-    pipeline::{PipelineError, StageAPI, StageIterator},
+    pipeline::{PipelineExecutionError, StageAPI, StageIterator},
     row::MaybeOwnedRow,
 };
 
 pub struct MatchStageExecutor<Snapshot: ReadableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
     program: MatchProgram,
     previous: PreviousStage,
+    thing_manager: Arc<ThingManager>,
     phantom: PhantomData<Snapshot>,
 }
 
 impl<Snapshot, PreviousStage> MatchStageExecutor<Snapshot, PreviousStage>
-where
-    Snapshot: ReadableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    where
+        Snapshot: ReadableSnapshot + 'static,
+        PreviousStage: StageAPI<Snapshot>,
 {
-    pub fn new(program: MatchProgram, previous: PreviousStage) -> Self {
-        Self { program, previous, phantom: PhantomData::default() }
+    pub fn new(program: MatchProgram, previous: PreviousStage, thing_manager: Arc<ThingManager>) -> Self {
+        Self { program, previous, thing_manager, phantom: PhantomData::default() }
     }
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for MatchStageExecutor<Snapshot, PreviousStage>
-where
-    Snapshot: ReadableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    where
+        Snapshot: ReadableSnapshot + 'static,
+        PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
-    fn into_iterator(mut self) -> Result<(Self::OutputIterator, Arc<Snapshot>, Arc<ThingManager>), PipelineError> {
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
+        self.program.outputs().iter().filter_map(|position| {
+            let variable = self.program.variable_positions_index()[position.as_usize()];
+            self.program.variable_registry().variable_names().get(&variable)
+                .map(|name| (*position, name.to_string()))
+        }).collect()
+    }
+
+    fn into_iterator(mut self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { previous: previous_stage, program, .. } = self;
-        let (previous_iterator, snapshot, thing_manager) = previous_stage.into_iterator()?;
+        let (previous_iterator, snapshot) = previous_stage.into_iterator()?;
         let iterator = previous_iterator;
         Ok((
-            MatchStageIterator::new(iterator, program, snapshot.clone(), thing_manager.clone()),
+            MatchStageIterator::new(iterator, program, snapshot.clone(), self.thing_manager.clone()),
             snapshot,
-            thing_manager,
         ))
     }
 }
@@ -69,31 +79,14 @@ impl<Snapshot: ReadableSnapshot + 'static, Iterator: StageIterator> MatchStageIt
     ) -> Self {
         Self { snapshot, program, thing_manager, source_iterator: iterator, current_iterator: None }
     }
-
-    fn create_next_current_iterator(&mut self) -> Result<(), PipelineError> {
-        while self.current_iterator.is_none() {
-            let start = self.source_iterator.next();
-            match start {
-                None => return Ok(()),
-                Some(start) => {
-                    let start = start?;
-                    // TODO uses start to initialise new pattern iterator
-                    let iterator = PatternExecutor::new(&self.program, &self.snapshot, &self.thing_manager)
-                        .map_err(|err| PipelineError::InitialisingMatchIterator(err))?;
-                }
-            }
-        }
-
-        Ok(())
-    }
 }
 
 impl<Snapshot, Iterator> LendingIterator for MatchStageIterator<Snapshot, Iterator>
-where
-    Snapshot: ReadableSnapshot + 'static,
-    Iterator: StageIterator,
+    where
+        Snapshot: ReadableSnapshot + 'static,
+        Iterator: StageIterator,
 {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         while !self.current_iterator.as_mut().is_some_and(|iter| iter.peek().is_some()) {
@@ -102,7 +95,7 @@ where
                 Some(source_next) => {
                     // TODO: use the start to initialise the next iterator
                     let iterator = PatternExecutor::new(&self.program, &self.snapshot, &self.thing_manager)
-                        .map_err(|err| PipelineError::InitialisingMatchIterator(err));
+                        .map_err(|err| PipelineExecutionError::InitialisingMatchIterator { source: err });
                     match iterator {
                         Ok(iterator) => {
                             self.current_iterator = Some(Peekable::new(
@@ -118,13 +111,12 @@ where
             .as_mut()
             .unwrap()
             .next()
-            .map(|result| result.map_err(|err| PipelineError::ConceptRead(err.clone())))
+            .map(|result| result.map_err(|err| PipelineExecutionError::ConceptRead { source: err.clone() }))
     }
 }
 
 impl<Snapshot, Iterator> StageIterator for MatchStageIterator<Snapshot, Iterator>
-where
-    Snapshot: ReadableSnapshot + 'static,
-    Iterator: StageIterator,
-{
-}
+    where
+        Snapshot: ReadableSnapshot + 'static,
+        Iterator: StageIterator,
+{}
