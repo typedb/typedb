@@ -200,12 +200,12 @@ fn test_match() {
 }
 
 #[test]
-fn test_match_as_pipeline() {
-    todo!("This hits a todo");
+fn test_match_match() {
+    todo!()
 }
 
 #[test]
-fn match_delete_has() {
+fn test_match_delete_has() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 10;";
@@ -250,4 +250,9 @@ fn match_delete_has() {
     assert!(matches!(iterator.next(), None));
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
+}
+
+#[test]
+fn test_insert_match_insert() {
+    todo!()
 }

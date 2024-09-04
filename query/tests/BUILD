@@ -33,13 +33,6 @@ rust_test(
     deps = deps,
 )
 
-rust_test(
-    name = "test_pipeline",
-    crate_root = "pipeline.rs",
-    srcs = ["pipeline.rs"],
-    deps = deps,
-)
-
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
