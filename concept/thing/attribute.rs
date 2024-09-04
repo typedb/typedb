@@ -9,10 +9,8 @@ use std::{
     collections::HashSet,
     fmt::{Display, Formatter},
     hash::{Hash, Hasher},
-    sync::Arc,
+    sync::{Arc, OnceLock},
 };
-use std::cell::OnceCell;
-use std::sync::OnceLock;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{

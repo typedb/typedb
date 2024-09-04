@@ -5,6 +5,7 @@
  */
 
 use std::error::Error;
+
 use crate::TypeDBError;
 
 // Adapt TypeQL error as a TypeDB error so the errors are visible in the stack trace

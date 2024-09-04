@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use compiler::{
@@ -98,8 +97,12 @@ fn compile_stage(
         }
         AnnotatedStage::Insert { block, annotations } => {
             let plan = compiler::insert::program::compile(
-                variable_registry, block.conjunction().constraints(), input_variables, annotations,
-            ).map_err(|source| QueryError::WriteCompilation { source })?;
+                variable_registry,
+                block.conjunction().constraints(),
+                input_variables,
+                annotations,
+            )
+            .map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Insert(plan))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations } => {
@@ -108,7 +111,8 @@ fn compile_stage(
                 annotations,
                 block.conjunction().constraints(),
                 deleted_variables,
-            ).map_err(|source| QueryError::WriteCompilation { source })?;
+            )
+            .map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Delete(plan))
         }
         _ => todo!(),

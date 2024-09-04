@@ -73,11 +73,7 @@ impl<T: TypeDBError> IntoProtocolErrorMessage for T {
             error = source;
             stack_trace.push(error.format_description());
         }
-        typedb_protocol::Error {
-            error_code: code.to_string(),
-            domain: domain.to_string(),
-            stack_trace
-        }
+        typedb_protocol::Error { error_code: code.to_string(), domain: domain.to_string(), stack_trace }
     }
 }
 

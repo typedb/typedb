@@ -4,13 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub use snapshot::{
+    CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, SnapshotGetError,
+    WritableSnapshot, WriteSnapshot,
+};
+
 pub mod buffer;
 pub mod iterator;
 pub mod lock;
 mod snapshot;
 pub mod write;
-
-pub use snapshot::{
-    CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, SnapshotGetError,
-    WritableSnapshot, WriteSnapshot,
-};

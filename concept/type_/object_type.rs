@@ -20,9 +20,10 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
+    thing::{object::Object, thing_manager::ThingManager},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relation_type::RelationType,
-        role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
+        role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
     },
     ConceptAPI,
 };
@@ -36,11 +37,6 @@ macro_rules! with_object_type {
     };
 }
 pub(crate) use with_object_type;
-
-use crate::{
-    thing::{object::Object, thing_manager::ThingManager},
-    type_::ThingTypeAPI,
-};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ObjectType<'a> {

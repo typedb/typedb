@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+mod answer;
 mod error;
 pub(crate) mod transaction_service;
 pub(crate) mod typedb_service;
-mod answer;
 
 pub(crate) type RequestID = [u8; 16];

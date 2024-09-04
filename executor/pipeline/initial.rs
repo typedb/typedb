@@ -4,10 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{array, sync::Arc};
-use std::collections::HashMap;
-use compiler::VariablePosition;
+use std::{array, collections::HashMap, sync::Arc};
 
+use compiler::VariablePosition;
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;

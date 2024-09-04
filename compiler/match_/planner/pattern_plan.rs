@@ -7,8 +7,8 @@
 use std::{
     collections::{hash_map, HashMap, HashSet},
     mem,
+    sync::Arc,
 };
-use std::sync::Arc;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;

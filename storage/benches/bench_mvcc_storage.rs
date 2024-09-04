@@ -23,6 +23,8 @@ use storage::{
 };
 use test_utils::{create_tmp_dir, init_logging};
 
+use self::TestKeyspaceSet::Keyspace;
+
 macro_rules! test_keyspace_set {
     {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
         #[derive(Copy, Clone)]
@@ -42,8 +44,6 @@ macro_rules! test_keyspace_set {
 test_keyspace_set! {
     Keyspace => 0: "keyspace",
 }
-use self::TestKeyspaceSet::Keyspace;
-
 fn random_key_24(keyspace: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE> {
     let mut bytes: [u8; 24] = rand::random();
     bytes[0] = 0b0;

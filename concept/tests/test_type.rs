@@ -13,17 +13,16 @@ use std::{
 };
 
 use chrono_tz::Tz;
-
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::{
         annotation::{AnnotationAbstract, AnnotationRange, AnnotationValues},
         attribute_type::AttributeTypeAnnotation,
-        Capability,
         entity_type::EntityTypeAnnotation,
-        KindAPI,
         object_type::ObjectType,
-        Ordering, OwnerAPI, owns::{Owns, OwnsAnnotation}, PlayerAPI, type_manager::{type_cache::TypeCache, TypeManager}, TypeAPI,
+        owns::{Owns, OwnsAnnotation},
+        type_manager::{type_cache::TypeCache, TypeManager},
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 use durability::DurabilitySequenceNumber;
@@ -35,13 +34,12 @@ use encoding::{
         thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
-    value::{decimal_value::Decimal, label::Label, value::Value, value_type::ValueType}
-    ,
+    value::{decimal_value::Decimal, label::Label, value::Value, value_type::ValueType},
 };
 use storage::{
     durability_client::WALClient,
+    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
-    snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot},
 };
 use test_utils_concept::setup_concept_storage;
 use test_utils_encoding::create_core_storage;
@@ -996,7 +994,7 @@ fn annotations_with_value_arguments() {
         assert!(!schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(
                 chrono::offset::Local::now().with_timezone(&tz)
-            ), ]))
+            ),]))
         ));
         assert!(schedule_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
 

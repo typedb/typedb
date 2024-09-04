@@ -29,7 +29,7 @@ use test_utils_encoding::create_core_storage;
 
 #[test]
 fn generate_string_attribute_vertex() {
-   let (_tmp_dir, storage) = create_core_storage();
+    let (_tmp_dir, storage) = create_core_storage();
 
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_id = TypeID::build(0);

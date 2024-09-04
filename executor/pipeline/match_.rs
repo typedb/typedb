@@ -4,11 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{marker::PhantomData, sync::Arc};
-use std::collections::HashMap;
+use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
-use compiler::match_::planner::pattern_plan::MatchProgram;
-use compiler::VariablePosition;
+use compiler::{match_::planner::pattern_plan::MatchProgram, VariablePosition};
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
@@ -27,9 +25,9 @@ pub struct MatchStageExecutor<Snapshot: ReadableSnapshot + 'static, PreviousStag
 }
 
 impl<Snapshot, PreviousStage> MatchStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: ReadableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     pub fn new(program: MatchProgram, previous: PreviousStage, thing_manager: Arc<ThingManager>) -> Self {
         Self { program, previous, thing_manager, phantom: PhantomData::default() }
@@ -37,28 +35,34 @@ impl<Snapshot, PreviousStage> MatchStageExecutor<Snapshot, PreviousStage>
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for MatchStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: ReadableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
     fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
-        self.program.outputs().iter().filter_map(|position| {
-            let variable = self.program.variable_positions_index()[position.as_usize()];
-            self.program.variable_registry().variable_names().get(&variable)
-                .map(|name| (*position, name.to_string()))
-        }).collect()
+        self.program
+            .outputs()
+            .iter()
+            .filter_map(|position| {
+                let variable = self.program.variable_positions_index()[position.as_usize()];
+                self.program
+                    .variable_registry()
+                    .variable_names()
+                    .get(&variable)
+                    .map(|name| (*position, name.to_string()))
+            })
+            .collect()
     }
 
-    fn into_iterator(mut self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+    fn into_iterator(
+        mut self,
+    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { previous: previous_stage, program, .. } = self;
         let (previous_iterator, snapshot) = previous_stage.into_iterator()?;
         let iterator = previous_iterator;
-        Ok((
-            MatchStageIterator::new(iterator, program, snapshot.clone(), self.thing_manager.clone()),
-            snapshot,
-        ))
+        Ok((MatchStageIterator::new(iterator, program, snapshot.clone(), self.thing_manager.clone()), snapshot))
     }
 }
 
@@ -82,9 +86,9 @@ impl<Snapshot: ReadableSnapshot + 'static, Iterator: StageIterator> MatchStageIt
 }
 
 impl<Snapshot, Iterator> LendingIterator for MatchStageIterator<Snapshot, Iterator>
-    where
-        Snapshot: ReadableSnapshot + 'static,
-        Iterator: StageIterator,
+where
+    Snapshot: ReadableSnapshot + 'static,
+    Iterator: StageIterator,
 {
     type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
 
@@ -116,7 +120,8 @@ impl<Snapshot, Iterator> LendingIterator for MatchStageIterator<Snapshot, Iterat
 }
 
 impl<Snapshot, Iterator> StageIterator for MatchStageIterator<Snapshot, Iterator>
-    where
-        Snapshot: ReadableSnapshot + 'static,
-        Iterator: StageIterator,
-{}
+where
+    Snapshot: ReadableSnapshot + 'static,
+    Iterator: StageIterator,
+{
+}

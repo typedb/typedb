@@ -8,7 +8,6 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use logger::initialise_logging;
-use resource::constants::server::ASCII_LOGO;
 
 #[tokio::main]
 async fn main() {

@@ -26,7 +26,6 @@ use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCS
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
-
 const ANIMAL_LABEL: Label = Label::new_static("animal");
 const CAT_LABEL: Label = Label::new_static("cat");
 const DOG_LABEL: Label = Label::new_static("dog");

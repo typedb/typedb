@@ -5,15 +5,8 @@
  */
 
 use std::sync::Arc;
-use typeql::parser::Rule::var;
 
-use typeql::query::SchemaQuery;
-use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
-
-use concept::{
-    thing::thing_manager::ThingManager,
-    type_::type_manager::TypeManager,
-};
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::{
     pipeline::{
         delete::DeleteStageExecutor,
@@ -25,11 +18,11 @@ use executor::{
     write::{delete::DeleteExecutor, insert::InsertExecutor},
 };
 use function::function_manager::FunctionManager;
-use function::FunctionError;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use typeql::query::SchemaQuery;
 
 use crate::{
-    annotation::{AnnotatedPipeline, infer_types_for_pipeline},
+    annotation::{infer_types_for_pipeline, AnnotatedPipeline},
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
     define,
     error::QueryError,
@@ -70,14 +63,15 @@ impl QueryManager {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
-    ) -> Result<ReadPipelineStage<Snapshot>,QueryError> {
+    ) -> Result<ReadPipelineStage<Snapshot>, QueryError> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         let mut snapshot = snapshot;
         // 1: Translate
         let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } =
             translate_pipeline(snapshot.as_ref(), function_manager, query)?;
 
-        let annotated_functions = function_manager.get_annotated_functions(snapshot.as_ref(), &type_manager)
+        let annotated_functions = function_manager
+            .get_annotated_functions(snapshot.as_ref(), &type_manager)
             .map_err(|err| QueryError::FunctionRetrieval { source: err })?;
 
         // 2: Annotate
@@ -143,7 +137,8 @@ impl QueryManager {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         // 1: Translate
         let translated_pipeline = translate_pipeline(&snapshot, function_manager, query);
-        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } = match translated_pipeline {
+        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } = match translated_pipeline
+        {
             Ok(translated_pipeline) => translated_pipeline,
             Err(err) => return Err((snapshot, err)),
         };
@@ -190,11 +185,10 @@ impl QueryManager {
             compile_pipeline(thing_manager.statistics(), variable_registry, annotated_preamble, annotated_stages);
         let CompiledPipeline { compiled_functions, compiled_stages } = match compiled_pipeline {
             Ok(compiled_pipeline) => compiled_pipeline,
-            Err(err) => return Err((snapshot, err))
+            Err(err) => return Err((snapshot, err)),
         };
 
-        let mut last_stage =
-            WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot)));
+        let mut last_stage = WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot)));
         for compiled_stage in compiled_stages {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
@@ -204,11 +198,19 @@ impl QueryManager {
                     last_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(insert_program) => {
-                    let insert_stage = InsertStageExecutor::new(InsertExecutor::new(insert_program), last_stage, thing_manager.clone());
+                    let insert_stage = InsertStageExecutor::new(
+                        InsertExecutor::new(insert_program),
+                        last_stage,
+                        thing_manager.clone(),
+                    );
                     last_stage = WritePipelineStage::Insert(Box::new(insert_stage));
                 }
                 CompiledStage::Delete(delete_program) => {
-                    let delete_stage = DeleteStageExecutor::new(DeleteExecutor::new(delete_program), last_stage, thing_manager.clone());
+                    let delete_stage = DeleteStageExecutor::new(
+                        DeleteExecutor::new(delete_program),
+                        last_stage,
+                        thing_manager.clone(),
+                    );
                     last_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
             }

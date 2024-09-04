@@ -14,9 +14,6 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler, SamplingMode};
-use pprof::ProfilerGuard;
-
 use answer::variable_value::VariableValue;
 use compiler::{
     match_::inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
@@ -24,19 +21,20 @@ use compiler::{
 };
 use concept::{
     thing::thing_manager::ThingManager,
-    type_::{Ordering, OwnerAPI, type_manager::TypeManager},
+    type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
-use concept::type_::PlayerAPI;
+use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use encoding::value::{label::Label, value_type::ValueType};
 use executor::{
     row::Row,
     write::{insert::InsertExecutor, WriteError},
 };
 use ir::translation::TranslationContext;
+use pprof::ProfilerGuard;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, WritableSnapshot},
+    MVCCStorage,
 };
 use test_utils::init_logging;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -119,12 +117,17 @@ fn execute_insert(
         type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
-    ).unwrap();
+    )
+    .unwrap();
 
     let variable_registry = Arc::new(translation_context.variable_registry);
     let insert_plan = compiler::insert::program::compile(
-        variable_registry, block.conjunction().constraints(), &input_row_format, &entry_annotations,
-    ).unwrap();
+        variable_registry,
+        block.conjunction().constraints(),
+        &input_row_format,
+        &entry_annotations,
+    )
+    .unwrap();
 
     let mut output_rows = Vec::with_capacity(input_rows.len());
     let output_width = insert_plan.output_row_schema.len();
@@ -176,7 +179,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 &vec![],
                 vec![vec![]],
             )
-                .unwrap();
+            .unwrap();
             snapshot.commit().unwrap();
         });
     });

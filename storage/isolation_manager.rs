@@ -853,7 +853,12 @@ mod tests {
         thread::{self, JoinHandle},
     };
 
-    use crate::keyspace::{KeyspaceId, KeyspaceSet};
+    use crate::{
+        isolation_manager::{CommitRecord, CommitStatus, CommitType, Timeline, TIMELINE_WINDOW_SIZE},
+        keyspace::{KeyspaceId, KeyspaceSet},
+        sequence_number::SequenceNumber,
+        snapshot::buffer::OperationsBuffer,
+    };
 
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
@@ -874,12 +879,6 @@ mod tests {
     test_keyspace_set! {
         Keyspace => 0: "keyspace",
     }
-
-    use crate::{
-        isolation_manager::{CommitRecord, CommitStatus, CommitType, Timeline, TIMELINE_WINDOW_SIZE},
-        sequence_number::SequenceNumber,
-        snapshot::buffer::OperationsBuffer,
-    };
 
     struct MockTransaction {
         read_sequence_number: SequenceNumber,

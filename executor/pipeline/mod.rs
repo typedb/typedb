@@ -5,18 +5,18 @@
  */
 
 use std::{
+    collections::HashMap,
     error::Error,
     fmt::{Display, Formatter},
     sync::Arc,
 };
-use std::collections::HashMap;
 
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use itertools::Itertools;
 use compiler::VariablePosition;
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::typedb_error;
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use storage::snapshot::{ReadableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{batch::Batch, row::MaybeOwnedRow, write::WriteError};
 
@@ -34,8 +34,9 @@ pub trait StageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)>;
 }
 
-pub trait StageIterator: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>> + Sized {
-
+pub trait StageIterator:
+    for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>> + Sized
+{
     fn collect_owned(mut self) -> Result<Batch, PipelineExecutionError> {
         // specific iterators can optimise this by not iterating + collecting!
         let first = self.next();

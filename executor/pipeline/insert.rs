@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{marker::PhantomData, sync::Arc};
-use std::collections::HashMap;
+use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
 use compiler::VariablePosition;
 use concept::thing::thing_manager::ThingManager;
@@ -27,9 +26,9 @@ pub struct InsertStageExecutor<Snapshot: WritableSnapshot + 'static, PreviouStag
 }
 
 impl<Snapshot, PreviousStage> InsertStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: WritableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: WritableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     pub fn new(inserter: InsertExecutor, previous: PreviousStage, thing_manager: Arc<ThingManager>) -> Self {
         Self { inserter, previous, thing_manager, snapshot: PhantomData::default() }
@@ -60,18 +59,24 @@ impl<Snapshot, PreviousStage> InsertStageExecutor<Snapshot, PreviousStage>
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for InsertStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: WritableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: WritableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = WrittenRowsIterator;
 
     fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
-        (0..self.inserter.output_width()).filter_map(|position| {
-            let variable = self.inserter.program().output_row_schema[position].0;
-            self.inserter.program().variable_registry.variable_names().get(&variable)
-                .map(|name| (VariablePosition::new(position as u32), name.to_string()))
-        }).collect()
+        (0..self.inserter.output_width())
+            .filter_map(|position| {
+                let variable = self.inserter.program().output_row_schema[position].0;
+                self.inserter
+                    .program()
+                    .variable_registry
+                    .variable_names()
+                    .get(&variable)
+                    .map(|name| (VariablePosition::new(position as u32), name.to_string()))
+            })
+            .collect()
     }
 
     fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {

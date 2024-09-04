@@ -7,14 +7,15 @@
 // jk there's no planning to be done here, just execution.
 // There is a need to construct the executor though.
 
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use encoding::{graph::type_::Kind, value::value::Value};
-use ir::pattern::{constraint::Constraint, expression::Expression};
+use ir::{
+    pattern::{constraint::Constraint, expression::Expression},
+    program::block::VariableRegistry,
+};
 use itertools::Itertools;
-use ir::program::block::VariableRegistry;
 
 use crate::{
     filter_variants,

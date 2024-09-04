@@ -11,6 +11,7 @@ use storage::{
     durability_client::WALClient, keyspace::KeyspaceSet, recovery::checkpoint::Checkpoint, MVCCStorage,
     StorageOpenError,
 };
+
 #[macro_export]
 macro_rules! test_keyspace_set {
     {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {

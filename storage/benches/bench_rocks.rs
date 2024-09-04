@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod bench_rocks_impl;
-
 use std::{
     collections::HashMap,
     sync::{
@@ -22,6 +20,8 @@ use rand_core::RngCore;
 use xoshiro::Xoshiro256Plus;
 
 use crate::bench_rocks_impl::rocks_database::{create_typedb, rocks};
+
+pub mod bench_rocks_impl;
 
 const N_DATABASES: usize = 1;
 

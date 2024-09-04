@@ -42,7 +42,7 @@ use std::{
     fmt::{Debug, Display, Formatter},
 };
 
-use answer::{variable::Variable, Type};
+use answer::variable::Variable;
 use concept::error::ConceptReadError;
 use ir::pattern::{constraint::Constraint, variable_category::VariableCategory};
 

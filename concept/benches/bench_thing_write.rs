@@ -22,14 +22,13 @@ use concept::{
     },
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
-use durability::{wal::WAL, DurabilitySequenceNumber};
+use durability::DurabilitySequenceNumber;
 use encoding::{
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
     value::{label::Label, value::Value, value_type::ValueType},
-    EncodingKeyspace,
 };
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
@@ -38,7 +37,7 @@ use storage::{
     snapshot::{CommittableSnapshot, WriteSnapshot},
     MVCCStorage,
 };
-use test_utils::{create_tmp_dir, init_logging};
+use test_utils::init_logging;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -61,11 +60,7 @@ fn write_entity_attributes(
             type_vertex_generator.clone(),
             Some(schema_cache),
         ));
-        let thing_manager = ThingManager::new(
-            thing_vertex_generator.clone(),
-            type_manager.clone(),
-            statistics,
-        );
+        let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone(), statistics);
 
         let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot, AGE_LABEL.get().unwrap()).unwrap().unwrap();
@@ -87,9 +82,7 @@ fn write_entity_attributes(
     snapshot.commit().unwrap();
 }
 
-fn create_schema(
-    storage: Arc<MVCCStorage<WALClient>>,
-) {
+fn create_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let (type_manager, thing_manager) = load_managers(storage.clone());
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap()).unwrap();

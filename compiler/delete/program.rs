@@ -12,10 +12,7 @@ use ir::pattern::constraint::Constraint;
 
 use crate::{
     delete::instructions::{ConnectionInstruction, Has, RolePlayer, ThingInstruction},
-    insert::{
-        get_thing_source, program::collect_role_type_bindings, ThingSource, TypeSource, VariableSource,
-        WriteCompilationError,
-    },
+    insert::{get_thing_source, program::collect_role_type_bindings, ThingSource, TypeSource, WriteCompilationError},
     match_::inference::type_annotations::TypeAnnotations,
     VariablePosition,
 };
@@ -94,13 +91,7 @@ pub fn compile(
     // To produce the output stream, we remove the deleted concepts from each map in the stream.
     let output_row_schema = input_variables
         .iter()
-        .map(|(variable, position)| {
-            if deleted_concepts.contains(variable) {
-                None
-            } else {
-                Some(*variable)
-            }
-        })
+        .map(|(variable, position)| if deleted_concepts.contains(variable) { None } else { Some(*variable) })
         .collect::<Vec<_>>();
 
     Ok(DeleteProgram {

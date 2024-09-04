@@ -6,10 +6,7 @@
 
 use std::sync::Arc;
 
-use concept::{
-    thing::{thing_manager::ThingManager},
-    type_::type_manager::TypeManager,
-};
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
     value::{label::Label, value::Value},
@@ -18,7 +15,7 @@ use executor::pipeline::{StageAPI, StageIterator};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
-use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -56,7 +53,6 @@ fn setup_common() -> Context {
     query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, define).unwrap();
     let seq = snapshot.commit().unwrap();
 
-
     // reload to obtain latest vertex generators and statistics entries
     let (type_manager, thing_manager) = load_managers(storage.clone());
     Context { storage, type_manager, function_manager, query_manager, thing_manager }
@@ -87,9 +83,8 @@ fn test_insert() {
     {
         let snapshot = context.storage.clone().open_snapshot_read();
         let age_type = context.type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
-        let attr_age_10 = context
-            .thing_manager
-            .get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+        let attr_age_10 =
+            context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
         assert_eq!(1, attr_age_10.get_owners(&snapshot, &context.thing_manager).count());
         snapshot.close_resources()
     }
@@ -107,15 +102,13 @@ fn test_insert_insert() {
         (group: $org, member: $p) isa membership;
     "#;
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let pipeline = context
-        .query_manager
-        .prepare_write_pipeline(
-            snapshot,
-            &context.type_manager,
-            context.thing_manager.clone(),
-            &context.function_manager,
-            &query,
-        );
+    let pipeline = context.query_manager.prepare_write_pipeline(
+        snapshot,
+        &context.type_manager,
+        context.thing_manager.clone(),
+        &context.function_manager,
+        &query,
+    );
     if let Err((_, err)) = pipeline {
         dbg!(err);
     }
@@ -135,7 +128,6 @@ fn test_insert_insert() {
         snapshot.close_resources()
     }
 }
-
 
 #[test]
 fn test_match() {

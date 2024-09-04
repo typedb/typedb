@@ -35,7 +35,6 @@ use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCS
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
-
 const PERSON_LABEL: Label = Label::new_static("person");
 const GROUP_LABEL: Label = Label::new_static("group");
 const MEMBERSHIP_LABEL: Label = Label::new_static("membership");

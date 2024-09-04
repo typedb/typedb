@@ -4,12 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod typeql;
-
 use std::{
     error::Error,
     fmt::{Debug, Display, Formatter},
 };
+
+mod typeql;
 
 pub trait TypeDBError {
     fn variant_name(&self) -> &'static str;

@@ -14,17 +14,15 @@ use concept::{
         attribute::Attribute,
         entity::Entity,
         object::{Object, ObjectAPI},
-        relation::Relation
-
-        ,
+        relation::Relation,
     },
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
         attribute_type::AttributeTypeAnnotation,
-        Ordering,
-        OwnerAPI,
         owns::OwnsAnnotation,
-        PlayerAPI, relates::RelatesAnnotation, type_manager::TypeManager,
+        relates::RelatesAnnotation,
+        type_manager::TypeManager,
+        Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use encoding::{
@@ -35,14 +33,12 @@ use encoding::{
         value::Value,
         value_struct::StructValue,
         value_type::{ValueType, ValueTypeCategory},
-    }
-    ,
+    },
 };
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot}
-    ,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot},
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;

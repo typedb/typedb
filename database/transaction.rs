@@ -55,7 +55,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
         ));
         let function_manager = Arc::new(FunctionManager::new(
             database.definition_key_generator.clone(),
-            Some(schema.function_cache.clone())
+            Some(schema.function_cache.clone()),
         ));
 
         drop(schema);
@@ -109,7 +109,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         ));
         let function_manager = Arc::new(FunctionManager::new(
             database.definition_key_generator.clone(),
-            Some(schema.function_cache.clone())
+            Some(schema.function_cache.clone()),
         ));
         drop(schema);
 
@@ -247,7 +247,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
     fn try_commit(self) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
-        let mut snapshot = Arc::into_inner(self.snapshot).expect("Failed to unwrap Arc<Snapshot>");;
+        let mut snapshot = Arc::into_inner(self.snapshot).expect("Failed to unwrap Arc<Snapshot>");
         self.type_manager.validate(&snapshot).map_err(|errors| ConceptWrite { errors })?;
 
         self.thing_manager.finalise(&mut snapshot).map_err(|errors| ConceptWrite { errors })?;

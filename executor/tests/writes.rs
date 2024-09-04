@@ -30,7 +30,6 @@ use storage::{
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
-
 const PERSON_LABEL: Label = Label::new_static("person");
 const GROUP_LABEL: Label = Label::new_static("group");
 const MEMBERSHIP_LABEL: Label = Label::new_static("membership");
@@ -113,8 +112,12 @@ fn execute_insert(
     let variable_registry = Arc::new(translation_context.variable_registry);
 
     let insert_plan = compiler::insert::program::compile(
-        variable_registry, block.conjunction().constraints(), &input_row_format, &entry_annotations
-    ).unwrap();
+        variable_registry,
+        block.conjunction().constraints(),
+        &input_row_format,
+        &entry_annotations,
+    )
+    .unwrap();
 
     println!("Insert Vertex:\n{:?}", &insert_plan.concept_instructions);
     println!("Insert Edges:\n{:?}", &insert_plan.connection_instructions);

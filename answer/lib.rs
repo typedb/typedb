@@ -4,25 +4,25 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
-use std::ops::Deref;
+use std::{
+    fmt::{Display, Formatter},
+    ops::Deref,
+};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use concept::{
+    error::ConceptReadError,
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
-        role_type::RoleType, ObjectTypeAPI, TypeAPI,
+        role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI,
     },
 };
-use concept::error::ConceptReadError;
-use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::type_::{vertex::TypeVertex, Kind},
-    value::value::Value,
+    value::{label::Label, value::Value},
     AsBytes,
 };
-use encoding::value::label::Label;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::ReadableSnapshot;
@@ -59,7 +59,7 @@ impl Type {
     pub fn get_label<'a>(
         &'a self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'a TypeManager
+        type_manager: &'a TypeManager,
     ) -> Result<MaybeOwns<'a, Label<'static>>, ConceptReadError> {
         match self {
             Type::Entity(entity) => entity.get_label(snapshot, type_manager),

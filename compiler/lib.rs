@@ -6,6 +6,8 @@
 
 use std::fmt::{Display, Formatter};
 
+use ir::pattern::IrID;
+
 pub mod delete;
 pub mod expression;
 pub mod insert;
@@ -17,7 +19,6 @@ macro_rules! filter_variants {
     };
 }
 pub(crate) use filter_variants;
-use ir::pattern::IrID;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct VariablePosition {

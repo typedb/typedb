@@ -4,10 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{marker::PhantomData, sync::Arc};
-use std::collections::HashMap;
-use compiler::VariablePosition;
+use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
+use compiler::VariablePosition;
 use concept::thing::thing_manager::ThingManager;
 use storage::snapshot::WritableSnapshot;
 
@@ -24,9 +23,9 @@ pub struct DeleteStageExecutor<Snapshot: WritableSnapshot + 'static, PreviousSta
 }
 
 impl<Snapshot, PreviousStage> DeleteStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: WritableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: WritableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     pub fn new(deleter: DeleteExecutor, previous: PreviousStage, thing_manager: Arc<ThingManager>) -> Self {
         Self { deleter, previous, thing_manager, phantom: PhantomData::default() }
@@ -34,9 +33,9 @@ impl<Snapshot, PreviousStage> DeleteStageExecutor<Snapshot, PreviousStage>
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DeleteStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: WritableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: WritableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = WrittenRowsIterator;
 
@@ -64,7 +63,7 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DeleteStageExecutor<Snapsho
             let mut row = batch.get_row_mut(index);
             match self.deleter.execute_delete(snapshot_ref, self.thing_manager.as_ref(), &mut row) {
                 Ok(_) => {}
-                Err(err) => return Err((snapshot, PipelineExecutionError::WriteError{ source: err })),
+                Err(err) => return Err((snapshot, PipelineExecutionError::WriteError { source: err })),
             }
         }
 

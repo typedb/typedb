@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt};
-
 use compiler::{
     expression::ExpressionCompileError, insert::WriteCompilationError, match_::inference::TypeInferenceError,
 };
