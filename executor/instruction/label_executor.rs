@@ -24,7 +24,7 @@ use crate::{
     VariablePosition,
 };
 
-pub(crate) struct TypeExecutor {
+pub(crate) struct LabelExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     types: Vec<Type>,
@@ -33,7 +33,7 @@ pub(crate) struct TypeExecutor {
 pub(crate) type TypeIterator =
     NarrowingTupleIterator<Map<AsLendingIterator<vec::IntoIter<Type>>, TypeToTupleFn, AdHocHkt<TupleResult<'static>>>>;
 
-impl TypeExecutor {
+impl LabelExecutor {
     pub(crate) fn new(
         type_: LabelInstruction<VariablePosition>,
         variable_modes: VariableModes,

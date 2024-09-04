@@ -42,7 +42,7 @@ use crate::{
         sub_executor::{SubBoundedSortedSuper, SubUnboundedSortedSub},
         sub_reverse_executor::{SubReverseBoundedSortedSuper, SubReverseUnboundedSortedSub},
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
-        type_executor::TypeIterator,
+        label_executor::TypeIterator,
         VariableMode, VariableModes,
     },
     row::Row,

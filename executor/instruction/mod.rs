@@ -25,9 +25,10 @@ use crate::{
     instruction::{
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
-        iterator::TupleIterator, links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
-        owns_executor::OwnsExecutor, owns_reverse_executor::OwnsReverseExecutor, sub_executor::SubExecutor,
-        sub_reverse_executor::SubReverseExecutor, type_executor::TypeExecutor,
+        iterator::TupleIterator, label_executor::LabelExecutor, links_executor::LinksExecutor,
+        links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
+        owns_reverse_executor::OwnsReverseExecutor, sub_executor::SubExecutor,
+        sub_reverse_executor::SubReverseExecutor,
     },
     row::MaybeOwnedRow,
     VariablePosition,
@@ -39,6 +40,7 @@ mod has_reverse_executor;
 mod isa_executor;
 mod isa_reverse_executor;
 pub(crate) mod iterator;
+mod label_executor;
 mod links_executor;
 mod links_reverse_executor;
 mod owns_executor;
@@ -46,10 +48,9 @@ mod owns_reverse_executor;
 mod sub_executor;
 mod sub_reverse_executor;
 pub(crate) mod tuple;
-mod type_executor;
 
 pub(crate) enum InstructionExecutor {
-    Type(TypeExecutor),
+    Label(LabelExecutor),
 
     Sub(SubExecutor),
     SubReverse(SubReverseExecutor),
@@ -81,7 +82,7 @@ impl InstructionExecutor {
     ) -> Result<Self, ConceptReadError> {
         let variable_modes = VariableModes::new_for(&instruction, selected, named);
         match instruction {
-            ConstraintInstruction::Label(type_) => Ok(Self::Type(TypeExecutor::new(type_, variable_modes, sort_by))),
+            ConstraintInstruction::Label(type_) => Ok(Self::Label(LabelExecutor::new(type_, variable_modes, sort_by))),
             ConstraintInstruction::Sub(sub) => Ok(Self::Sub(SubExecutor::new(sub, variable_modes, sort_by))),
             ConstraintInstruction::SubReverse(sub_reverse) => {
                 Ok(Self::SubReverse(SubReverseExecutor::new(sub_reverse, variable_modes, sort_by)))
@@ -129,7 +130,7 @@ impl InstructionExecutor {
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
-            Self::Type(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Label(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Sub(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::SubReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Owns(executor) => executor.get_iterator(snapshot, thing_manager, row),
