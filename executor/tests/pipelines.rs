@@ -6,10 +6,9 @@
 
 use std::sync::Arc;
 
-use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
 use concept::{
-    thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
-    type_::{type_manager::TypeManager, OwnerAPI},
+    thing::{thing_manager::ThingManager},
+    type_::type_manager::TypeManager,
 };
 use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
@@ -19,10 +18,9 @@ use executor::pipeline::{StageAPI, StageIterator};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
-
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const AGE_LABEL: Label = Label::new_static("age");
@@ -70,7 +68,7 @@ fn test_insert() {
     let snapshot = context.storage.clone().open_snapshot_write();
     let query_str = "insert $p isa person, has age 10;";
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let mut pipeline = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -108,14 +106,13 @@ fn test_match() {
        $r isa person, has age 30, has name 'Harry';
    "#;
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let mut pipeline = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
             &context.function_manager,
-            &IndexedAnnotatedFunctions::empty(),
             &query,
         )
         .unwrap();
@@ -125,35 +122,32 @@ fn test_match() {
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
 
-    let snapshot = context.storage.open_snapshot_read();
+    let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $p isa person;";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    let mut pipeline = context
+    let pipeline = context
         .query_manager
         .prepare_read_pipeline(
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
             &context.function_manager,
-            &IndexedAnnotatedFunctions::empty(),
             &match_,
         )
         .unwrap();
     let (iterator, snapshot) = pipeline.into_iterator().unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 3);
-    let snapshot = Arc::into_inner(snapshot).unwrap();
 
     let query = "match $person isa person, has name 'John', has age $age;";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    let mut pipeline = context
+    let pipeline = context
         .query_manager
         .prepare_read_pipeline(
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
             &context.function_manager,
-            &IndexedAnnotatedFunctions::empty(),
             &match_,
         )
         .unwrap();
@@ -174,14 +168,13 @@ fn match_delete_has() {
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 10;";
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
-    let mut insert_pipeline = context
+    let insert_pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
             &context.function_manager,
-            &IndexedAnnotatedFunctions::empty(),
             &insert_query,
         )
         .unwrap();
@@ -206,7 +199,6 @@ fn match_delete_has() {
             &context.type_manager,
             context.thing_manager.clone(),
             &context.function_manager,
-            &IndexedAnnotatedFunctions::empty(),
             &delete_query,
         )
         .unwrap();

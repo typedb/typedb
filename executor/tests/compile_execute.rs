@@ -117,7 +117,7 @@ fn test_has_planning_traversal() {
     let pattern_plan = MatchProgram::from_block(
         &block,
         &entry_annotations,
-        &translation_context.variable_registry,
+        Arc::new(translation_context.variable_registry),
         &HashMap::new(),
         &statistics,
     );
@@ -253,7 +253,7 @@ fn test_links_planning_traversal() {
     let pattern_plan = MatchProgram::from_block(
         &block,
         &entry_annotations,
-        &translation_context.variable_registry,
+        Arc::new(translation_context.variable_registry),
         &HashMap::new(),
         &statistics,
     );

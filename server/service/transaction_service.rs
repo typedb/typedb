@@ -12,8 +12,6 @@ use std::{
     },
     sync::Arc,
 };
-use std::future::Future;
-use std::pin::Pin;
 use std::time::SystemTime;
 
 use itertools::Itertools;
@@ -22,7 +20,6 @@ use tokio::{
     task::{JoinHandle, spawn_blocking},
 };
 use tokio::sync::mpsc::{channel, Receiver};
-use tokio::sync::mpsc::error::SendError;
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
@@ -36,7 +33,6 @@ use typeql::{
 use uuid::Uuid;
 
 use compiler::VariablePosition;
-use concept::error::ConceptReadError;
 use concept::thing::thing_manager::ThingManager;
 use concept::type_::type_manager::TypeManager;
 use database::{
@@ -46,16 +42,16 @@ use database::{
 use error::typedb_error;
 use executor::batch::Batch;
 use executor::pipeline::{PipelineExecutionError, StageAPI, StageIterator};
-use executor::pipeline::stage::{ReadPipelineStage, ReadStageIterator, WritePipelineStage, WriteStageIterator};
+use executor::pipeline::stage::{ReadPipelineStage, WriteStageIterator};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use options::TransactionOptions;
 use query::{error::QueryError, query_manager::QueryManager};
 use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
-use storage::snapshot::{ReadableSnapshot, ReadSnapshot};
+use storage::snapshot::{ReadableSnapshot};
 
-use crate::service::answer::{encode_row, encode_variable_value};
+use crate::service::answer::{encode_row};
 use crate::service::error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError};
 
 // TODO: where does this belong?
@@ -546,7 +542,7 @@ impl TransactionService {
         prefetch_size: usize,
         network_latency_millis: usize,
         req_id: Uuid,
-        mut query_response_receiver: Receiver<Option<QueryResponse>>,
+        query_response_receiver: Receiver<Option<QueryResponse>>,
     ) -> ControlFlow<(), (Uuid, Receiver<Option<QueryResponse>>)> {
         // stream PREFETCH answers in one big message (increases message throughput. Note: tested in Java impl)
         let (req_id, query_response_receiver) = Self::stream_while_or_finish(

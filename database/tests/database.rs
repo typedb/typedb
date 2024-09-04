@@ -12,7 +12,6 @@ use test_utils::{create_tmp_dir, init_logging};
 fn create_delete_database() {
     init_logging();
     let database_path = create_tmp_dir();
-    database_path.exists();
     let db_result = Database::<WALClient>::open(&database_path.join("create_delete"));
     assert!(db_result.is_ok(), "{:?}", db_result.unwrap_err());
     let db = db_result.unwrap();

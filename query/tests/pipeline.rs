@@ -6,7 +6,6 @@
 
 use std::sync::Arc;
 
-use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
@@ -71,7 +70,6 @@ fn insert_match_insert_pipeline() {
             &type_manager,
             thing_manager.clone(),
             &function_manager,
-            &IndexedAnnotatedFunctions::empty(),
             &query,
         )
         .unwrap();
@@ -107,7 +105,6 @@ fn insert_insert_pipeline() {
             &type_manager,
             thing_manager.clone(),
             &function_manager,
-            &IndexedAnnotatedFunctions::empty(),
             &query,
         )
         .unwrap();

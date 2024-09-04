@@ -119,12 +119,12 @@ fn execute_insert(
         type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
-    )
-    .unwrap();
+    ).unwrap();
 
-    let insert_plan =
-        compiler::insert::program::compile(block.conjunction().constraints(), &input_row_format, &entry_annotations)
-            .unwrap();
+    let variable_registry = Arc::new(translation_context.variable_registry);
+    let insert_plan = compiler::insert::program::compile(
+        variable_registry, block.conjunction().constraints(), &input_row_format, &entry_annotations,
+    ).unwrap();
 
     let mut output_rows = Vec::with_capacity(input_rows.len());
     let output_width = insert_plan.output_row_schema.len();
@@ -176,7 +176,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 &vec![],
                 vec![vec![]],
             )
-            .unwrap();
+                .unwrap();
             snapshot.commit().unwrap();
         });
     });
