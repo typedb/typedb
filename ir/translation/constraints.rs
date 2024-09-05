@@ -102,8 +102,10 @@ fn add_type_statement(
             },
             typeql::statement::type_::ConstraintBase::ValueType(_) => todo!(),
             typeql::statement::type_::ConstraintBase::Owns(owns) => add_typeql_owns(constraints, var, owns)?,
-            typeql::statement::type_::ConstraintBase::Relates(_) => todo!(),
-            typeql::statement::type_::ConstraintBase::Plays(_) => todo!(),
+            typeql::statement::type_::ConstraintBase::Relates(relates) => {
+                add_typeql_relates(constraints, var, relates)?
+            }
+            typeql::statement::type_::ConstraintBase::Plays(plays) => add_typeql_plays(constraints, var, plays)?,
         }
     }
     Ok(())
@@ -205,6 +207,26 @@ fn add_typeql_owns(
 ) -> Result<(), PatternDefinitionError> {
     let attribute_type = register_typeql_type_var_any(constraints, &owns.owned)?;
     constraints.add_owns(owner_type, attribute_type)?;
+    Ok(())
+}
+
+fn add_typeql_relates(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    relation_type: Variable,
+    relates: &typeql::statement::type_::Relates,
+) -> Result<(), PatternDefinitionError> {
+    let role_type = register_typeql_type_var_any(constraints, &relates.related)?;
+    constraints.add_relates(relation_type, role_type)?;
+    Ok(())
+}
+
+fn add_typeql_plays(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    player_type: Variable,
+    plays: &typeql::statement::type_::Plays,
+) -> Result<(), PatternDefinitionError> {
+    let role_type = register_typeql_type_var(constraints, &plays.role)?;
+    constraints.add_plays(player_type, role_type)?;
     Ok(())
 }
 

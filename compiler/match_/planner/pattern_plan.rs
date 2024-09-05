@@ -5,6 +5,7 @@
  */
 
 use std::{
+    cmp::Ord,
     collections::{HashMap, HashSet},
     mem,
     sync::Arc,
@@ -424,7 +425,7 @@ fn lower_plan(
                 if inputs.len() == 2 {
                     let lhs_producer = producers.get(&lhs).expect("bound lhs must have been produced");
                     let rhs_producer = producers.get(&rhs).expect("bound rhs must have been produced");
-                    let (program, instruction) = std::cmp::Ord::max(*lhs_producer, *rhs_producer);
+                    let (program, instruction) = Ord::max(*lhs_producer, *rhs_producer);
                     let lhs_pos = match_builder.position(lhs);
                     let rhs_pos = match_builder.position(rhs);
                     match_builder.get_program_mut(program).instructions[instruction]

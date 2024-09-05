@@ -27,7 +27,8 @@ use crate::{
         has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
         iterator::TupleIterator, label_executor::LabelExecutor, links_executor::LinksExecutor,
         links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
-        owns_reverse_executor::OwnsReverseExecutor, sub_executor::SubExecutor,
+        owns_reverse_executor::OwnsReverseExecutor, relates_executor::RelatesExecutor,
+        relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
         sub_reverse_executor::SubReverseExecutor,
     },
     row::MaybeOwnedRow,
@@ -45,6 +46,10 @@ mod links_executor;
 mod links_reverse_executor;
 mod owns_executor;
 mod owns_reverse_executor;
+mod plays_executor;
+mod plays_reverse_executor;
+mod relates_executor;
+mod relates_reverse_executor;
 mod sub_executor;
 mod sub_reverse_executor;
 pub(crate) mod tuple;
@@ -58,6 +63,11 @@ pub(crate) enum InstructionExecutor {
     Owns(OwnsExecutor),
     OwnsReverse(OwnsReverseExecutor),
 
+    Relates(RelatesExecutor),
+    RelatesReverse(RelatesReverseExecutor),
+
+    // Plays(PlaysExecutor),
+    // PlaysReverse(PlaysReverseExecutor),
     Isa(IsaExecutor),
     IsaReverse(IsaReverseExecutor),
 
@@ -91,13 +101,11 @@ impl InstructionExecutor {
             ConstraintInstruction::OwnsReverse(owns_reverse) => {
                 Ok(Self::OwnsReverse(OwnsReverseExecutor::new(owns_reverse, variable_modes, sort_by)))
             }
-            ConstraintInstruction::Relates(_relates) => {
-                todo!()
-                // Ok(Self::Relates(RelatesExecutor::new(relates, variable_modes, sort_by)))
+            ConstraintInstruction::Relates(relates) => {
+                Ok(Self::Relates(RelatesExecutor::new(relates, variable_modes, sort_by)))
             }
-            ConstraintInstruction::RelatesReverse(_relates_reverse) => {
-                todo!()
-                // Ok(Self::RelatesReverse(RelatesReverseExecutor::new(relates_reverse, variable_modes, sort_by)))
+            ConstraintInstruction::RelatesReverse(relates_reverse) => {
+                Ok(Self::RelatesReverse(RelatesReverseExecutor::new(relates_reverse, variable_modes, sort_by)))
             }
             ConstraintInstruction::Plays(_plays) => {
                 todo!()
@@ -151,6 +159,10 @@ impl InstructionExecutor {
             Self::SubReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Owns(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::OwnsReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Relates(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::RelatesReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            // Self::Plays(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            // Self::PlaysReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),

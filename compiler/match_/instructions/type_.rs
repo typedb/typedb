@@ -275,7 +275,7 @@ impl<ID: IrID> RelatesInstruction<ID> {
 pub struct RelatesReverseInstruction<ID> {
     pub relates: Relates<ID>,
     pub inputs: Inputs<ID>,
-    role_type_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    role_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
     relation_types: Arc<HashSet<Type>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
@@ -285,7 +285,7 @@ impl RelatesReverseInstruction<Variable> {
         let relation_types = type_annotations.variable_annotations_of(relates.relation()).unwrap().clone();
         let edge_annotations = type_annotations.constraint_annotations_of(relates.clone().into()).unwrap().as_left_right();
         let role_type_relation_types = edge_annotations.right_to_left();
-        Self { relates, inputs, role_type_relation_types, relation_types, checks: Vec::new() }
+        Self { relates, inputs, role_relation_types: role_type_relation_types, relation_types, checks: Vec::new() }
     }
 }
 
@@ -294,8 +294,8 @@ impl<ID> RelatesReverseInstruction<ID> {
         self.checks.push(check)
     }
 
-    pub fn role_type_relation_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
-        &self.role_type_relation_types
+    pub fn role_relation_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.role_relation_types
     }
 
     pub fn relation_types(&self) -> &Arc<HashSet<Type>> {
@@ -305,11 +305,11 @@ impl<ID> RelatesReverseInstruction<ID> {
 
 impl<ID: IrID> RelatesReverseInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> RelatesReverseInstruction<T> {
-        let Self { relates, inputs, role_type_relation_types, relation_types, checks } = self;
+        let Self { relates, inputs, role_relation_types: role_type_relation_types, relation_types, checks } = self;
         RelatesReverseInstruction {
             relates: relates.map(mapping),
             inputs: inputs.map(mapping),
-            role_type_relation_types,
+            role_relation_types: role_type_relation_types,
             relation_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }

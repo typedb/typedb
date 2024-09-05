@@ -11,7 +11,7 @@ use concept::{
         has::Has,
         relation::{Relation, RolePlayer},
     },
-    type_::owns::Owns,
+    type_::{owns::Owns, plays::Plays, relates::Relates},
 };
 use lending_iterator::higher_order::Hkt;
 
@@ -158,6 +158,56 @@ pub(crate) fn owns_to_tuple_attribute_owner(result: Result<Owns<'static>, Concep
         Ok(owns) => Ok(Tuple::Pair(
             [Type::Attribute(owns.attribute().to_owned()), Type::from(owns.owner().into_owned())]
                 .map(VariableValue::Type),
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) type RelatesToTupleFn = fn(Result<Relates<'static>, ConceptReadError>) -> TupleResult<'static>;
+
+pub(crate) fn relates_to_tuple_relation_role(
+    result: Result<Relates<'static>, ConceptReadError>,
+) -> TupleResult<'static> {
+    match result {
+        Ok(relates) => Ok(Tuple::Pair(
+            [Type::Relation(relates.relation().into_owned()), Type::RoleType(relates.role().to_owned())]
+                .map(VariableValue::Type),
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) fn relates_to_tuple_role_relation(
+    result: Result<Relates<'static>, ConceptReadError>,
+) -> TupleResult<'static> {
+    match result {
+        Ok(relates) => Ok(Tuple::Pair(
+            [Type::RoleType(relates.role().to_owned()), Type::Relation(relates.relation().into_owned())]
+                .map(VariableValue::Type),
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) type PlaysToTupleFn = fn(Result<Plays<'static>, ConceptReadError>) -> TupleResult<'static>;
+
+pub(crate) fn plays_to_tuple_player_role(
+    result: Result<Plays<'static>, ConceptReadError>,
+) -> TupleResult<'static> {
+    match result {
+        Ok(plays) => Ok(Tuple::Pair(
+            [Type::from(plays.player().into_owned()), Type::RoleType(plays.role().to_owned())].map(VariableValue::Type),
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) fn plays_to_tuple_role_player(
+    result: Result<Plays<'static>, ConceptReadError>,
+) -> TupleResult<'static> {
+    match result {
+        Ok(plays) => Ok(Tuple::Pair(
+            [Type::RoleType(plays.role().to_owned()), Type::from(plays.player().into_owned())].map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }

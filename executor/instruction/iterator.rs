@@ -28,6 +28,7 @@ use crate::{
             IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedThingMerged, IsaReverseUnboundedSortedThingSingle,
             IsaReverseUnboundedSortedTypeMerged, IsaReverseUnboundedSortedTypeSingle,
         },
+        label_executor::TypeIterator,
         links_executor::{
             LinksBoundedRelationPlayer, LinksBoundedRelationSortedPlayer, LinksUnboundedSortedPlayerMerged,
             LinksUnboundedSortedPlayerSingle, LinksUnboundedSortedRelation,
@@ -39,10 +40,11 @@ use crate::{
         },
         owns_executor::{OwnsBoundedSortedAttribute, OwnsUnboundedSortedOwner},
         owns_reverse_executor::{OwnsReverseBoundedSortedOwner, OwnsReverseUnboundedSortedAttribute},
+        relates_executor::{RelatesBoundedSortedRole, RelatesUnboundedSortedRelation},
+        relates_reverse_executor::{RelatesReverseBoundedSortedRelation, RelatesReverseUnboundedSortedRole},
         sub_executor::{SubBoundedSortedSuper, SubUnboundedSortedSub},
         sub_reverse_executor::{SubReverseBoundedSortedSuper, SubReverseUnboundedSortedSub},
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
-        label_executor::TypeIterator,
         VariableMode, VariableModes,
     },
     row::Row,
@@ -103,6 +105,18 @@ pub(crate) enum TupleIterator {
 
     OwnsReverseUnbounded(SortedTupleIterator<OwnsReverseUnboundedSortedAttribute>),
     OwnsReverseBounded(SortedTupleIterator<OwnsReverseBoundedSortedOwner>),
+
+    RelatesUnbounded(SortedTupleIterator<RelatesUnboundedSortedRelation>),
+    RelatesBounded(SortedTupleIterator<RelatesBoundedSortedRole>),
+
+    RelatesReverseUnbounded(SortedTupleIterator<RelatesReverseUnboundedSortedRole>),
+    RelatesReverseBounded(SortedTupleIterator<RelatesReverseBoundedSortedRelation>),
+
+    // PlaysUnbounded(SortedTupleIterator<PlaysUnboundedSortedPlayer>),
+    // PlaysBounded(SortedTupleIterator<PlaysBoundedSortedRole>),
+
+    // PlaysReverseUnbounded(SortedTupleIterator<PlaysReverseUnboundedSortedRole>),
+    // PlaysReverseBounded(SortedTupleIterator<PlaysReverseBoundedSortedPlayer>),
 
     IsaUnboundedSingle(SortedTupleIterator<IsaUnboundedSortedThingSingle>),
     IsaUnboundedMerged(SortedTupleIterator<IsaUnboundedSortedThingMerged>),
