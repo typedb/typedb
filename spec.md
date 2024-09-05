@@ -1,6 +1,20 @@
 # TypeDB - Behaviour Specification
 
-<!-- TODO 
+<!-- TODO
+* Ensure role player set semantics
+  * idempotency non-list inserts
+* Improve explanation of dependent list types
+* distinct, select distinct
+* simplify match semantics. in cmaps have
+  * type vars (typed by type kinds)
+  * instance vars (always have direct type)
+  * value vars (always have value type)
+  * list vars (can have any list type)
+* cascade
+* "coarsen" and "refine" terminology
+* relates abstract
+* owns order in match semantics
+* "overwrite"/override -> specialization
 -->
 
 **Table of contents**
@@ -1031,7 +1045,7 @@ _Remark: these two are still not a natural constraint, as foreshadowed by a prev
 * `$x has $B[] $y` is satisfied if $`m(y) : [m(B)](m(x):O_{m(B)})`$ for some $`m(B) : \mathbf{Att}`$.
 * `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
 
-_Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes (e.g. when $`x : A`$ and $`A <_! O_B`$).
+_Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes (e.g. when $`m(x) : A`$ and $`A <_! O_B`$).
 
 **Case IS_PATT**
 * `$x is $y` is satisfied if $`m(x) :_! A`$, $`m(y) :_! A`$, $`m(x) = m(y)`$, for $`A : \mathbf{ERA}`$
@@ -1342,14 +1356,14 @@ An `insert` clause comprises collection of _insert statements_
 3. `<EXPR>` cannot contain function calls.
 
 **Case LINKS_INS** 
-* `$x links ($I: $y)` refines $`x :_! A(a : J, b : K, ...)`$ to $`x :_! A(m(y)a : m(I), b : K, ...)`$ 
+* `$x links ($I: $y)` refines $`m(x) :_! A(a : J, b : K, ...)`$ to $`m(x) :_! A(m(y)a : m(I), b : K, ...)`$ 
 
 **Case LINKS_LIST_INS** 
-* `$x links ($I[]: <T_LIST>)` refines $`x :_! A()`$ to $`x :_! A(l : [m(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
+* `$x links ($I[]: <T_LIST>)` refines $`m(x) :_! A()`$ to $`m(x) :_! A(l : [m(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
 
 ***System property***:
 
-1. Transaction should fail if $`x :_! A(...)`$ already has a roleplayer list. (Need "Update" instead!)
+1. Transaction should fail if $`m(x) :_! A(...)`$ already has a roleplayer list. (Need "Update" instead!)
 
 **Case HAS_INS**
 * `$x has $A $y` adds new $`m(y) :_! m(A)(m(x) : O_{m(A)})`$
@@ -1515,7 +1529,7 @@ A `update` clause comprises collection of _update statements_.
 1. Require that each update happens at most once, or fail the transaction. (STICKY: discuss!)
 
 **Case LINKS_LIST_UP** 
-* `$x links ($I[]: <T_LIST>)` updates $`x :_! A(j : [m(I)])`$ to $`x :_! A(l : [m(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
+* `$x links ($I[]: <T_LIST>)` updates $`m(x) :_! A(j : [m(I)])`$ to $`m(x) :_! A(l : [m(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
 
 ***System property***:
 
