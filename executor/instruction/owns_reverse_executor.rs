@@ -28,7 +28,7 @@ use crate::{
         iterator::{SortedTupleIterator, TupleIterator},
         owns_executor::{OwnsFilterFn, OwnsTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         sub_executor::NarrowingTupleIterator,
-        tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions},
+        tuple::{owns_to_tuple_attribute_owner, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
     row::MaybeOwnedRow,
@@ -151,11 +151,11 @@ impl OwnsReverseExecutor {
                 let type_manager = thing_manager.type_manager();
                 let owns = attribute.get_owns(&**snapshot, type_manager)?.values().cloned().collect_vec();
 
-                let iterator = owns.into_iter().sorted_by_key(|owns| (owns.owner(), owns.attribute())).map(Ok as _);
+                let iterator = owns.into_iter().sorted_by_key(|owns| owns.owner()).map(Ok as _);
                 let as_tuples: OwnsReverseBoundedSortedOwner = NarrowingTupleIterator(
                     AsLendingIterator::new(iterator)
                         .try_filter::<_, OwnsFilterFn, AdHocHkt<Owns<'_>>, _>(filter_for_row)
-                        .map(owns_to_tuple_owner_attribute),
+                        .map(owns_to_tuple_attribute_owner),
                 );
                 Ok(TupleIterator::OwnsReverseBounded(SortedTupleIterator::new(
                     as_tuples,
@@ -167,19 +167,19 @@ impl OwnsReverseExecutor {
     }
 }
 
-fn create_owns_filter_owner_attribute(owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<OwnsFilterFn> {
+fn create_owns_filter_owner_attribute(attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok(owns) => match owner_attribute_types.get(&Type::from(owns.owner())) {
-            Some(attribute_types) => Ok(attribute_types.contains(&Type::Attribute(owns.attribute()))),
+        Ok(owns) => match attribute_owner_types.get(&Type::Attribute(owns.attribute())) {
+            Some(owner_types) => Ok(owner_types.contains(&Type::from(owns.owner()))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
     })
 }
 
-fn create_owns_filter_attribute(attribute_types: Arc<HashSet<Type>>) -> Arc<OwnsFilterFn> {
+fn create_owns_filter_attribute(owner_types: Arc<HashSet<Type>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok(owns) => Ok(attribute_types.contains(&Type::Attribute(owns.attribute()))),
+        Ok(owns) => Ok(owner_types.contains(&Type::from(owns.owner()))),
         Err(err) => Err(err.clone()),
     })
 }

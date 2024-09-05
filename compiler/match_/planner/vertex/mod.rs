@@ -24,6 +24,12 @@ const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
 const REGEX_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 const CONTAINS_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Direction {
+    Canonical,
+    Reverse,
+}
+
 // FIXME name
 #[derive(Debug)]
 pub(super) enum PlannerVertex {
@@ -108,6 +114,25 @@ impl PlannerVertex {
         match self {
             Self::Owns(v) => Some(v),
             _ => None,
+        }
+    }
+
+    pub(super) fn unbound_direction(&self) -> Direction {
+        match self {
+            PlannerVertex::Constant => todo!(),
+            PlannerVertex::Label(_) => todo!(),
+            PlannerVertex::Type(_) => unreachable!(),
+            PlannerVertex::Thing(_) => unreachable!(),
+            PlannerVertex::Value(_) => unreachable!(),
+            PlannerVertex::Isa(inner) => inner.unbound_direction,
+            PlannerVertex::Has(inner) => inner.unbound_direction,
+            PlannerVertex::Links(inner) => inner.unbound_direction,
+            PlannerVertex::Expression(_) => todo!(),
+            PlannerVertex::Sub(inner) => inner.unbound_direction,
+            PlannerVertex::Owns(inner) => inner.unbound_direction,
+            PlannerVertex::Relates(inner) => inner.unbound_direction,
+            PlannerVertex::Plays(inner) => inner.unbound_direction,
+            PlannerVertex::ValueType(_) => todo!(),
         }
     }
 
@@ -388,6 +413,7 @@ impl Costed for ValuePlanner {
 pub(super) struct IsaPlanner {
     thing: usize,
     type_: usize,
+    unbound_direction: Direction, //FIXME
 }
 
 impl IsaPlanner {
@@ -397,7 +423,11 @@ impl IsaPlanner {
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> Self {
-        Self { thing: variable_index[&isa.thing()], type_: variable_index[&isa.type_()] }
+        Self {
+            thing: variable_index[&isa.thing()],
+            type_: variable_index[&isa.type_()],
+            unbound_direction: Direction::Reverse,
+        }
     }
 
     fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
@@ -417,7 +447,7 @@ pub(super) struct HasPlanner {
     pub attribute: usize,
     expected_size: f64,
     expected_unbound_size: f64,
-    pub unbound_is_forward: bool, //FIXME
+    unbound_direction: Direction, //FIXME
 }
 
 impl HasPlanner {
@@ -452,14 +482,15 @@ impl HasPlanner {
             .sum::<u64>() as f64;
 
         let expected_unbound_size = f64::min(unbound_forward_size, unbound_backward_size);
-        let unbound_is_forward = unbound_forward_size <= unbound_backward_size;
+        let unbound_direction =
+            if unbound_forward_size <= unbound_backward_size { Direction::Canonical } else { Direction::Reverse };
 
         Self {
             owner: variable_index[&owner],
             attribute: variable_index[&attribute],
             expected_size,
             expected_unbound_size,
-            unbound_is_forward,
+            unbound_direction,
         }
     }
 
@@ -502,7 +533,7 @@ pub(super) struct LinksPlanner {
     pub role: usize,
     expected_size: f64,
     expected_unbound_size: f64,
-    pub unbound_is_forward: bool, //FIXME
+    unbound_direction: Direction, //FIXME
 }
 
 impl LinksPlanner {
@@ -561,7 +592,8 @@ impl LinksPlanner {
             .sum::<u64>() as f64;
 
         let expected_unbound_size = f64::min(unbound_forward_size, unbound_backward_size);
-        let unbound_is_forward = unbound_forward_size <= unbound_backward_size;
+        let unbound_direction =
+            if unbound_forward_size <= unbound_backward_size { Direction::Canonical } else { Direction::Reverse };
 
         Self {
             relation: variable_index[&relation],
@@ -569,7 +601,7 @@ impl LinksPlanner {
             role: variable_index[&role],
             expected_size,
             expected_unbound_size,
-            unbound_is_forward,
+            unbound_direction,
         }
     }
 
@@ -610,6 +642,7 @@ pub(super) struct SubPlanner {
     type_: usize,
     supertype: usize,
     kind: SubKind,
+    unbound_direction: Direction, //FIXME
 }
 
 impl SubPlanner {
@@ -622,11 +655,12 @@ impl SubPlanner {
             type_: variable_index[&sub.subtype()],
             supertype: variable_index[&sub.supertype()],
             kind: sub.sub_kind(),
+            unbound_direction: Direction::Reverse,
         }
     }
 
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [None; 3].into_iter().flatten()
+        [Some(self.type_), Some(self.supertype), None].into_iter().flatten()
     }
 }
 
@@ -640,6 +674,7 @@ impl Costed for SubPlanner {
 pub(super) struct OwnsPlanner {
     owner: usize,
     attribute: usize,
+    unbound_direction: Direction, //FIXME
 }
 
 impl OwnsPlanner {
@@ -651,7 +686,7 @@ impl OwnsPlanner {
     ) -> OwnsPlanner {
         let owner = variable_index[&owns.owner()];
         let attribute = variable_index[&owns.attribute()];
-        Self { owner, attribute }
+        Self { owner, attribute, unbound_direction: Direction::Canonical }
     }
 
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
@@ -669,6 +704,7 @@ impl Costed for OwnsPlanner {
 pub(super) struct RelatesPlanner {
     relation: usize,
     role_type: usize,
+    unbound_direction: Direction, //FIXME
 }
 
 impl RelatesPlanner {
@@ -680,7 +716,7 @@ impl RelatesPlanner {
     ) -> RelatesPlanner {
         let relation = variable_index[&relates.relation()];
         let role_type = variable_index[&relates.role_type()];
-        Self { relation, role_type }
+        Self { relation, role_type, unbound_direction: Direction::Canonical }
     }
 
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
@@ -698,6 +734,7 @@ impl Costed for RelatesPlanner {
 pub(super) struct PlaysPlanner {
     player: usize,
     role_type: usize,
+    unbound_direction: Direction, //FIXME
 }
 
 impl PlaysPlanner {
@@ -709,7 +746,7 @@ impl PlaysPlanner {
     ) -> PlaysPlanner {
         let player = variable_index[&plays.player()];
         let role_type = variable_index[&plays.role_type()];
-        Self { player, role_type }
+        Self { player, role_type, unbound_direction: Direction::Canonical }
     }
 
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {

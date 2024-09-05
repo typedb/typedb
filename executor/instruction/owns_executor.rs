@@ -31,9 +31,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         sub_executor::NarrowingTupleIterator,
-        tuple::{
-            owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult,
-        },
+        tuple::{owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     row::MaybeOwnedRow,
@@ -185,7 +183,7 @@ impl OwnsExecutor {
                 let as_tuples: OwnsBoundedSortedAttribute = NarrowingTupleIterator(
                     AsLendingIterator::new(iterator)
                         .try_filter::<_, OwnsFilterFn, AdHocHkt<Owns<'_>>, _>(filter_for_row)
-                        .map(owns_to_tuple_attribute_owner),
+                        .map(owns_to_tuple_owner_attribute),
                 );
                 Ok(TupleIterator::OwnsBounded(SortedTupleIterator::new(
                     as_tuples,

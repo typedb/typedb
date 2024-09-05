@@ -26,7 +26,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions, TupleResult},
+        tuple::{sub_to_tuple_sub_super, SubToTupleFn, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     row::MaybeOwnedRow,
@@ -195,7 +195,7 @@ impl SubExecutor {
                 let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
-                        .map(sub_to_tuple_super_sub),
+                        .map(sub_to_tuple_sub_super),
                 );
                 Ok(TupleIterator::SubBounded(SortedTupleIterator::new(
                     as_tuples,

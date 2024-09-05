@@ -37,8 +37,8 @@ use crate::{
             CheckInstruction, ConstraintInstruction, Inputs,
         },
         planner::vertex::{
-            Costed, HasPlanner, IsaPlanner, LabelPlanner, LinksPlanner, OwnsPlanner, PlannerVertex, PlaysPlanner,
-            RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner, ValuePlanner, VertexCost,
+            Costed, Direction, HasPlanner, IsaPlanner, LabelPlanner, LinksPlanner, OwnsPlanner, PlannerVertex,
+            PlaysPlanner, RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner, ValuePlanner, VertexCost,
         },
     },
     VariablePosition,
@@ -432,21 +432,23 @@ fn lower_plan(
                     continue;
                 }
 
-                // let planner = planner.as_has().unwrap();
-                let sort_variable =
-                    if inputs.is_empty()
-                        /* && planner.unbound_is_forward */
-                            || inputs.contains(&rhs) { lhs } else { rhs };
+                let sort_variable = if inputs.is_empty() && planner.unbound_direction() == Direction::Canonical
+                    || inputs.contains(&rhs)
+                {
+                    lhs
+                } else {
+                    rhs
+                };
 
                 let con = $con.clone();
                 let instruction = if inputs.contains(&lhs) {
                     ConstraintInstruction::$fw($fwi::new(con, Inputs::Single([lhs]), type_annotations))
                 } else if inputs.contains(&rhs) {
                     ConstraintInstruction::$bw($bwi::new(con, Inputs::Single([rhs]), type_annotations))
-                // } else if !planner.unbound_is_forward {
-                //     ConstraintInstruction::$bw($bwi::new(con, Inputs::None([]), type_annotations))
-                } else {
+                } else if planner.unbound_direction() == Direction::Canonical {
                     ConstraintInstruction::$fw($fwi::new(con, Inputs::None([]), type_annotations))
+                } else {
+                    ConstraintInstruction::$bw($bwi::new(con, Inputs::None([]), type_annotations))
                 };
                 let producer_index = match_builder.push_instruction(sort_variable, instruction, &[lhs, rhs]);
 
@@ -483,6 +485,10 @@ fn lower_plan(
                 binary!(player plays role_type, Plays(PlaysInstruction), PlaysReverse(PlaysReverseInstruction))
             }
 
+            Constraint::Has(has) => {
+                binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
+            }
+
             Constraint::Links(links) => {
                 let relation = links.relation();
                 let player = links.player();
@@ -502,8 +508,9 @@ fn lower_plan(
                     continue;
                 }
 
-                let planner = planner.as_links().unwrap();
-                let sort_variable = if inputs.is_empty() && planner.unbound_is_forward || inputs.contains(&player) {
+                let sort_variable = if inputs.is_empty() && planner.unbound_direction() == Direction::Canonical
+                    || inputs.contains(&player)
+                {
                     relation
                 } else {
                     player
@@ -522,7 +529,7 @@ fn lower_plan(
                         Inputs::Single([player]),
                         type_annotations,
                     ))
-                } else if planner.unbound_is_forward {
+                } else if planner.unbound_direction() == Direction::Canonical {
                     ConstraintInstruction::Links(LinksInstruction::new(links, Inputs::None([]), type_annotations))
                 } else {
                     ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
@@ -539,10 +546,6 @@ fn lower_plan(
                         producers.insert(var, producer_index);
                     }
                 }
-            }
-
-            Constraint::Has(has) => {
-                binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
             }
 
             Constraint::ExpressionBinding(_) => todo!("expression binding"),

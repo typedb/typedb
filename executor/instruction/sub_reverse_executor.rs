@@ -23,7 +23,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         sub_executor::{NarrowingTupleIterator, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
-        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, TuplePositions},
+        tuple::{sub_to_tuple_super_sub, TuplePositions},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     row::MaybeOwnedRow,
@@ -116,7 +116,7 @@ impl SubReverseExecutor {
                 let as_tuples: SubReverseUnboundedSortedSub = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
-                        .map(sub_to_tuple_sub_super),
+                        .map(sub_to_tuple_super_sub),
                 );
                 Ok(TupleIterator::SubReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
