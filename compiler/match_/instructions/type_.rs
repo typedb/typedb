@@ -21,28 +21,28 @@ use crate::match_::{
 };
 
 #[derive(Debug, Clone)]
-pub struct LabelInstruction<ID> {
+pub struct TypeListInstruction<ID> {
     pub type_var: ID,
     types: Arc<HashSet<Type>>,
 }
 
-impl LabelInstruction<Variable> {
+impl TypeListInstruction<Variable> {
     pub(crate) fn new(type_var: Variable, type_annotations: &TypeAnnotations) -> Self {
         let types = type_annotations.variable_annotations_of(type_var).unwrap().clone();
         Self { type_var, types }
     }
 }
 
-impl<ID> LabelInstruction<ID> {
+impl<ID> TypeListInstruction<ID> {
     pub fn types(&self) -> &HashSet<Type> {
         &self.types
     }
 }
 
-impl<ID: IrID> LabelInstruction<ID> {
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> LabelInstruction<T> {
+impl<ID: IrID> TypeListInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> TypeListInstruction<T> {
         let Self { type_var, types } = self;
-        LabelInstruction { type_var: mapping[&type_var], types }
+        TypeListInstruction { type_var: mapping[&type_var], types }
     }
 }
 
@@ -238,7 +238,8 @@ pub struct RelatesInstruction<ID> {
 impl RelatesInstruction<Variable> {
     pub fn new(relates: Relates<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let role_types = type_annotations.variable_annotations_of(relates.role_type()).unwrap().clone();
-        let edge_annotations = type_annotations.constraint_annotations_of(relates.clone().into()).unwrap().as_left_right();
+        let edge_annotations =
+            type_annotations.constraint_annotations_of(relates.clone().into()).unwrap().as_left_right();
         let relation_role_types = edge_annotations.left_to_right();
         Self { relates, inputs, relation_role_types, role_types, checks: Vec::new() }
     }
@@ -283,7 +284,8 @@ pub struct RelatesReverseInstruction<ID> {
 impl RelatesReverseInstruction<Variable> {
     pub fn new(relates: Relates<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let relation_types = type_annotations.variable_annotations_of(relates.relation()).unwrap().clone();
-        let edge_annotations = type_annotations.constraint_annotations_of(relates.clone().into()).unwrap().as_left_right();
+        let edge_annotations =
+            type_annotations.constraint_annotations_of(relates.clone().into()).unwrap().as_left_right();
         let role_type_relation_types = edge_annotations.right_to_left();
         Self { relates, inputs, role_relation_types: role_type_relation_types, relation_types, checks: Vec::new() }
     }
@@ -328,7 +330,8 @@ pub struct PlaysInstruction<ID> {
 impl PlaysInstruction<Variable> {
     pub fn new(plays: Plays<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let role_types = type_annotations.variable_annotations_of(plays.role_type()).unwrap().clone();
-        let edge_annotations = type_annotations.constraint_annotations_of(plays.clone().into()).unwrap().as_left_right();
+        let edge_annotations =
+            type_annotations.constraint_annotations_of(plays.clone().into()).unwrap().as_left_right();
         let player_role_types = edge_annotations.left_to_right();
         Self { plays, inputs, player_role_types, role_types, checks: Vec::new() }
     }
@@ -365,7 +368,7 @@ impl<ID: IrID> PlaysInstruction<ID> {
 pub struct PlaysReverseInstruction<ID> {
     pub plays: Plays<ID>,
     pub inputs: Inputs<ID>,
-    role_type_player_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    role_player_types: Arc<BTreeMap<Type, Vec<Type>>>,
     player_types: Arc<HashSet<Type>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
@@ -373,9 +376,10 @@ pub struct PlaysReverseInstruction<ID> {
 impl PlaysReverseInstruction<Variable> {
     pub fn new(plays: Plays<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let player_types = type_annotations.variable_annotations_of(plays.player()).unwrap().clone();
-        let edge_annotations = type_annotations.constraint_annotations_of(plays.clone().into()).unwrap().as_left_right();
+        let edge_annotations =
+            type_annotations.constraint_annotations_of(plays.clone().into()).unwrap().as_left_right();
         let role_type_player_types = edge_annotations.right_to_left();
-        Self { plays, inputs, role_type_player_types, player_types, checks: Vec::new() }
+        Self { plays, inputs, role_player_types: role_type_player_types, player_types, checks: Vec::new() }
     }
 }
 
@@ -384,8 +388,8 @@ impl<ID> PlaysReverseInstruction<ID> {
         self.checks.push(check)
     }
 
-    pub fn role_type_player_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
-        &self.role_type_player_types
+    pub fn role_player_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.role_player_types
     }
 
     pub fn player_types(&self) -> &Arc<HashSet<Type>> {
@@ -395,11 +399,11 @@ impl<ID> PlaysReverseInstruction<ID> {
 
 impl<ID: IrID> PlaysReverseInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> PlaysReverseInstruction<T> {
-        let Self { plays, inputs, role_type_player_types, player_types, checks } = self;
+        let Self { plays, inputs, role_player_types: role_type_player_types, player_types, checks } = self;
         PlaysReverseInstruction {
             plays: plays.map(mapping),
             inputs: inputs.map(mapping),
-            role_type_player_types,
+            role_player_types: role_type_player_types,
             player_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }

@@ -18,7 +18,7 @@ pub mod type_;
 
 #[derive(Debug, Clone)]
 pub enum ConstraintInstruction<ID> {
-    Label(type_::LabelInstruction<ID>),
+    TypeList(type_::TypeListInstruction<ID>),
 
     // sub -> super
     Sub(type_::SubInstruction<ID>),
@@ -83,7 +83,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub fn ids_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
-            &Self::Label(type_::LabelInstruction { type_var, .. }) => apply(type_var),
+            &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(|var, _| apply(var)),
             Self::Owns(type_::OwnsInstruction { owns, .. })
@@ -117,7 +117,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn input_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
-            Self::Label(_) => (),
+            Self::TypeList(_) => (),
             | Self::Sub(type_::SubInstruction { inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { inputs, .. })
             | Self::Owns(type_::OwnsInstruction { inputs, .. })
@@ -144,7 +144,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
-            &Self::Label(type_::LabelInstruction { type_var, .. }) => apply(type_var),
+            &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, inputs, .. }) => sub.ids_foreach(|var, _| {
                 if !inputs.contains(var) {
@@ -206,7 +206,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         match self {
-            Self::Label(_) => unreachable!("free-standing type variable can't have checks"),
+            Self::TypeList(_) => unreachable!("free-standing type variable can't have checks"),
             Self::Sub(inner) => inner.add_check(check),
             Self::SubReverse(inner) => inner.add_check(check),
             Self::Owns(inner) => inner.add_check(check),
@@ -231,7 +231,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ConstraintInstruction<T> {
         match self {
-            Self::Label(inner) => ConstraintInstruction::Label(inner.map(mapping)),
+            Self::TypeList(inner) => ConstraintInstruction::TypeList(inner.map(mapping)),
             Self::Sub(inner) => ConstraintInstruction::Sub(inner.map(mapping)),
             Self::SubReverse(inner) => ConstraintInstruction::SubReverse(inner.map(mapping)),
             Self::Owns(inner) => ConstraintInstruction::Owns(inner.map(mapping)),
@@ -258,7 +258,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 impl<ID: Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
     fn constraint(&self) -> Constraint<ID> {
         match self {
-            Self::Label(_) => todo!(), // TODO label?
+            Self::TypeList(_) => todo!(), // TODO underlying constraint?
             Self::Sub(type_::SubInstruction { sub, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.clone().into(),
             Self::Owns(type_::OwnsInstruction { owns, .. })

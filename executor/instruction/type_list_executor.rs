@@ -7,7 +7,7 @@
 use std::{sync::Arc, vec};
 
 use answer::Type;
-use compiler::match_::instructions::type_::LabelInstruction;
+use compiler::match_::instructions::type_::TypeListInstruction;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
 use lending_iterator::{adaptors::Map, higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
@@ -24,7 +24,7 @@ use crate::{
     VariablePosition,
 };
 
-pub(crate) struct LabelExecutor {
+pub(crate) struct TypeListExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     types: Vec<Type>,
@@ -33,16 +33,16 @@ pub(crate) struct LabelExecutor {
 pub(crate) type TypeIterator =
     NarrowingTupleIterator<Map<AsLendingIterator<vec::IntoIter<Type>>, TypeToTupleFn, AdHocHkt<TupleResult<'static>>>>;
 
-impl LabelExecutor {
+impl TypeListExecutor {
     pub(crate) fn new(
-        type_: LabelInstruction<VariablePosition>,
+        type_: TypeListInstruction<VariablePosition>,
         variable_modes: VariableModes,
         _sort_by: Option<VariablePosition>,
     ) -> Self {
         debug_assert!(!variable_modes.all_inputs());
         let types = type_.types().iter().cloned().sorted().collect_vec();
         debug_assert!(!types.is_empty());
-        let LabelInstruction { type_var, .. } = type_;
+        let TypeListInstruction { type_var, .. } = type_;
         debug_assert_eq!(Some(type_var), _sort_by);
         let tuple_positions = TuplePositions::Single([type_var]);
         Self { variable_modes, tuple_positions, types }

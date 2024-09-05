@@ -32,8 +32,8 @@ use crate::{
                 LinksReverseInstruction,
             },
             type_::{
-                LabelInstruction, OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction,
-                RelatesInstruction, RelatesReverseInstruction, SubInstruction, SubReverseInstruction,
+                OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction, RelatesInstruction,
+                RelatesReverseInstruction, SubInstruction, SubReverseInstruction, TypeListInstruction,
             },
             CheckInstruction, ConstraintInstruction, Inputs,
         },
@@ -176,6 +176,15 @@ impl<'a> PlanBuilder<'a> {
 
         for constraint in conjunction.constraints() {
             let planner = match constraint {
+                Constraint::Kind(kind) => {
+                    let planner = PlannerVertex::Label(LabelPlanner::from_kind_constraint(
+                        kind,
+                        &self.variable_index,
+                        type_annotations,
+                    ));
+                    self.elements.push(planner);
+                    self.elements.last()
+                }
                 Constraint::RoleName(role_name) => {
                     let planner = PlannerVertex::Label(LabelPlanner::from_role_name_constraint(
                         role_name,
@@ -470,15 +479,21 @@ fn lower_plan(
         }
 
         match constraint {
+            Constraint::Kind(kind) => {
+                let var = kind.type_();
+                let instruction = ConstraintInstruction::TypeList(TypeListInstruction::new(var, type_annotations));
+                let producer_index = match_builder.push_instruction(var, instruction, &[var]);
+                producers.insert(var, producer_index);
+            }
             Constraint::RoleName(name) => {
                 let var = name.left();
-                let instruction = ConstraintInstruction::Label(LabelInstruction::new(var, type_annotations));
+                let instruction = ConstraintInstruction::TypeList(TypeListInstruction::new(var, type_annotations));
                 let producer_index = match_builder.push_instruction(var, instruction, &[var]);
                 producers.insert(var, producer_index);
             }
             Constraint::Label(label) => {
                 let var = label.left();
-                let instruction = ConstraintInstruction::Label(LabelInstruction::new(var, type_annotations));
+                let instruction = ConstraintInstruction::TypeList(TypeListInstruction::new(var, type_annotations));
                 let producer_index = match_builder.push_instruction(var, instruction, &[var]);
                 producers.insert(var, producer_index);
             }

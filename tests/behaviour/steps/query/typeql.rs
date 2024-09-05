@@ -196,6 +196,19 @@ async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
 }
 
 #[apply(generic_step)]
+#[step(expr = r"typeql read query{typeql_may_error}")]
+async fn typeql_read(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+    let parse_result = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
+    if may_error.check_parsing(parse_result.as_ref()).is_some() {
+        context.close_transaction();
+        return;
+    }
+    let query = parse_result.unwrap();
+    let result = execute_match_query(context, query);
+    may_error.check_logic(result);
+}
+
+#[apply(generic_step)]
 #[step(expr = r"get answers of typeql read query")]
 async fn get_answers_of_typeql_read(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();

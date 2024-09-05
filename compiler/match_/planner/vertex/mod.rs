@@ -274,6 +274,14 @@ impl LabelPlanner {
     ) -> LabelPlanner {
         Self { var: variable_index[&role_name.left()] }
     }
+
+    pub(crate) fn from_kind_constraint(
+        kind: &ir::pattern::constraint::Kind<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+    ) -> LabelPlanner {
+        Self { var: variable_index[&kind.type_()] }
+    }
 }
 
 #[derive(Debug)]

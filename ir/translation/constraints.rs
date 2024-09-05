@@ -9,6 +9,7 @@ use encoding::value::label::Label;
 use typeql::{
     expression::{FunctionCall, FunctionName},
     statement::{comparison::ComparisonStatement, Assignment, AssignmentPattern, InIterable},
+    token::Kind,
     type_::NamedType,
     ScopedLabel, TypeRef, TypeRefAny,
 };
@@ -90,6 +91,9 @@ fn add_type_statement(
     type_: &typeql::statement::Type,
 ) -> Result<(), PatternDefinitionError> {
     let var = register_typeql_type_var_any(constraints, &type_.type_)?;
+    if let Some(kind) = type_.kind {
+        add_typeql_kind(constraints, var, kind)?;
+    }
     for constraint in &type_.constraints {
         assert!(constraint.annotations.is_empty(), "TODO: handle type statement annotations");
         match &constraint.base {
@@ -220,9 +224,18 @@ fn register_type_role_name_var(
     Ok(variable)
 }
 
+fn add_typeql_kind(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    type_: Variable,
+    kind: Kind,
+) -> Result<(), PatternDefinitionError> {
+    constraints.add_kind(kind, type_)?;
+    Ok(())
+}
+
 fn add_typeql_sub(
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    thing: Variable,
+    subtype: Variable,
     sub: &typeql::statement::type_::Sub,
 ) -> Result<(), PatternDefinitionError> {
     let kind = match sub.kind {
@@ -230,7 +243,7 @@ fn add_typeql_sub(
         typeql::statement::type_::SubKind::Transitive => SubKind::Subtype,
     };
     let type_ = register_typeql_type_var_any(constraints, &sub.supertype)?;
-    constraints.add_sub(kind, thing, type_)?;
+    constraints.add_sub(kind, subtype, type_)?;
     Ok(())
 }
 

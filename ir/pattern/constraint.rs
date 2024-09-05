@@ -104,6 +104,24 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(as_ref.as_role_name().unwrap())
     }
 
+    pub(crate) fn add_kind(
+        &mut self,
+        kind: typeql::token::Kind,
+        variable: Variable,
+    ) -> Result<&Kind<Variable>, PatternDefinitionError> {
+        debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
+        let category = match kind {
+            typeql::token::Kind::Entity => VariableCategory::ThingType,
+            typeql::token::Kind::Relation => VariableCategory::ThingType,
+            typeql::token::Kind::Attribute => VariableCategory::ThingType,
+            typeql::token::Kind::Role => VariableCategory::RoleType,
+        };
+        let kind = Kind::new(kind, variable);
+        self.context.set_variable_category(variable, category, kind.clone().into())?;
+        let as_ref = self.constraints.add_constraint(kind);
+        Ok(as_ref.as_kind().unwrap())
+    }
+
     pub fn add_sub(
         &mut self,
         kind: SubKind,
@@ -316,6 +334,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Constraint<ID> {
+    Kind(Kind<ID>),
     Label(Label<ID>),
     RoleName(RoleName<ID>),
     Sub(Sub<ID>),
@@ -333,6 +352,7 @@ pub enum Constraint<ID> {
 impl<ID: IrID> Constraint<ID> {
     pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
+            Constraint::Kind(kind) => Box::new(kind.ids()),
             Constraint::Label(label) => Box::new(label.ids()),
             Constraint::RoleName(role_name) => Box::new(role_name.ids()),
             Constraint::Sub(sub) => Box::new(sub.ids()),
@@ -353,35 +373,37 @@ impl<ID: IrID> Constraint<ID> {
         F: FnMut(ID, ConstraintIDSide),
     {
         match self {
-            Constraint::Label(label) => label.ids_foreach(function),
-            Constraint::RoleName(role_name) => role_name.ids_foreach(function),
-            Constraint::Sub(sub) => sub.ids_foreach(function),
-            Constraint::Isa(isa) => isa.ids_foreach(function),
-            Constraint::Links(rp) => rp.ids_foreach(function),
-            Constraint::Has(has) => has.ids_foreach(function),
-            Constraint::ExpressionBinding(binding) => binding.ids_foreach(function),
-            Constraint::FunctionCallBinding(binding) => binding.ids_foreach(function),
-            Constraint::Comparison(comparison) => comparison.ids_foreach(function),
-            Constraint::Owns(owns) => owns.ids_foreach(function),
-            Constraint::Relates(relates) => relates.ids_foreach(function),
-            Constraint::Plays(plays) => plays.ids_foreach(function),
+            Self::Kind(kind) => kind.ids_foreach(function),
+            Self::Label(label) => label.ids_foreach(function),
+            Self::RoleName(role_name) => role_name.ids_foreach(function),
+            Self::Sub(sub) => sub.ids_foreach(function),
+            Self::Isa(isa) => isa.ids_foreach(function),
+            Self::Links(rp) => rp.ids_foreach(function),
+            Self::Has(has) => has.ids_foreach(function),
+            Self::ExpressionBinding(binding) => binding.ids_foreach(function),
+            Self::FunctionCallBinding(binding) => binding.ids_foreach(function),
+            Self::Comparison(comparison) => comparison.ids_foreach(function),
+            Self::Owns(owns) => owns.ids_foreach(function),
+            Self::Relates(relates) => relates.ids_foreach(function),
+            Self::Plays(plays) => plays.ids_foreach(function),
         }
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Constraint<T> {
         match self {
-            Constraint::Label(inner) => todo!(),
-            Constraint::RoleName(inner) => todo!(),
-            Constraint::Sub(inner) => todo!(),
-            Constraint::Isa(inner) => Constraint::Isa(inner.map(mapping)),
-            Constraint::Links(inner) => Constraint::Links(inner.map(mapping)),
-            Constraint::Has(inner) => Constraint::Has(inner.map(mapping)),
-            Constraint::ExpressionBinding(inner) => todo!(),
-            Constraint::FunctionCallBinding(inner) => todo!(),
-            Constraint::Comparison(inner) => todo!(),
-            Constraint::Owns(inner) => todo!(),
-            Constraint::Relates(inner) => todo!(),
-            Constraint::Plays(inner) => todo!(),
+            Self::Kind(inner) => Constraint::Kind(inner.map(mapping)),
+            Self::Label(inner) => Constraint::Label(inner.map(mapping)),
+            Self::RoleName(inner) => Constraint::RoleName(inner.map(mapping)),
+            Self::Sub(inner) => Constraint::Sub(inner.map(mapping)),
+            Self::Isa(inner) => Constraint::Isa(inner.map(mapping)),
+            Self::Links(inner) => Constraint::Links(inner.map(mapping)),
+            Self::Has(inner) => Constraint::Has(inner.map(mapping)),
+            Self::ExpressionBinding(inner) => todo!(),
+            Self::FunctionCallBinding(inner) => todo!(),
+            Self::Comparison(inner) => todo!(),
+            Self::Owns(inner) => Constraint::Owns(inner.map(mapping)),
+            Self::Relates(inner) => Constraint::Relates(inner.map(mapping)),
+            Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
         }
     }
 
@@ -409,6 +431,13 @@ impl<ID: IrID> Constraint<ID> {
             }
         });
         id.unwrap()
+    }
+
+    pub(crate) fn as_kind(&self) -> Option<&Kind<ID>> {
+        match self {
+            Constraint::Kind(kind) => Some(kind),
+            _ => None,
+        }
     }
 
     pub(crate) fn as_label(&self) -> Option<&Label<ID>> {
@@ -499,6 +528,7 @@ impl<ID: IrID> Constraint<ID> {
 impl<ID: IrID> fmt::Display for Constraint<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Constraint::Kind(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Label(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::RoleName(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Sub(constraint) => fmt::Display::fmt(constraint, f),
@@ -529,8 +559,8 @@ pub struct Label<ID> {
 }
 
 impl<ID: IrID> Label<ID> {
-    fn new(identifier: ID, type_: String) -> Self {
-        Self { left: identifier, type_label: type_ }
+    fn new(left: ID, type_label: String) -> Self {
+        Self { left, type_label }
     }
 
     pub fn left(&self) -> ID {
@@ -550,6 +580,10 @@ impl<ID: IrID> Label<ID> {
         F: FnMut(ID, ConstraintIDSide),
     {
         function(self.left, ConstraintIDSide::Left)
+    }
+
+    fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Label<T> {
+        Label::new(mapping[&self.left], self.type_label)
     }
 }
 
@@ -596,6 +630,10 @@ impl<ID: IrID> RoleName<ID> {
     {
         function(self.left, ConstraintIDSide::Left)
     }
+
+    fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> RoleName<T> {
+        RoleName::new(mapping[&self.left], self.name)
+    }
 }
 
 impl<ID> From<RoleName<ID>> for Constraint<ID> {
@@ -607,6 +645,53 @@ impl<ID> From<RoleName<ID>> for Constraint<ID> {
 impl<ID: IrID> fmt::Display for RoleName<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} role-name {}", self.left, &self.name)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Kind<ID> {
+    kind: typeql::token::Kind,
+    type_: ID,
+}
+
+impl<ID: IrID> Kind<ID> {
+    pub fn new(kind: typeql::token::Kind, type_: ID) -> Self {
+        Self { kind, type_ }
+    }
+
+    pub fn type_(&self) -> ID {
+        self.type_
+    }
+
+    pub fn kind(&self) -> typeql::token::Kind {
+        self.kind
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [self.type_].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+    where
+        F: FnMut(ID, ConstraintIDSide),
+    {
+        function(self.type_, ConstraintIDSide::Left);
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Kind<T> {
+        Kind::new(self.kind, mapping[&self.type_])
+    }
+}
+
+impl<ID> From<Kind<ID>> for Constraint<ID> {
+    fn from(kind: Kind<ID>) -> Self {
+        Constraint::Kind(kind)
+    }
+}
+
+impl<ID: IrID> fmt::Display for Kind<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {}", self.kind, self.type_)
     }
 }
 
@@ -653,7 +738,7 @@ impl<ID: IrID> Sub<ID> {
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Sub<T> {
-        Sub::new(self.kind, *mapping.get(&self.subtype).unwrap(), *mapping.get(&self.supertype).unwrap())
+        Sub::new(self.kind, mapping[&self.subtype], mapping[&self.supertype])
     }
 }
 
@@ -706,7 +791,7 @@ impl<ID: IrID> Isa<ID> {
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Isa<T> {
-        Isa::new(self.kind, *mapping.get(&self.thing).unwrap(), *mapping.get(&self.type_).unwrap())
+        Isa::new(self.kind, mapping[&self.thing], mapping[&self.type_])
     }
 }
 
@@ -766,11 +851,7 @@ impl<ID: IrID> Links<ID> {
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Links<T> {
-        Links::new(
-            *mapping.get(&self.relation).unwrap(),
-            *mapping.get(&self.player).unwrap(),
-            *mapping.get(&self.role_type).unwrap(),
-        )
+        Links::new(mapping[&self.relation], mapping[&self.player], mapping[&self.role_type])
     }
 }
 
@@ -818,7 +899,7 @@ impl<ID: IrID> Has<ID> {
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Has<T> {
-        Has::new(*mapping.get(&self.owner).unwrap(), *mapping.get(&self.attribute).unwrap())
+        Has::new(mapping[&self.owner], mapping[&self.attribute])
     }
 }
 
@@ -1054,7 +1135,7 @@ impl<ID: IrID> Owns<ID> {
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Owns<T> {
-        Owns::new(*mapping.get(&self.owner).unwrap(), *mapping.get(&self.attribute).unwrap())
+        Owns::new(mapping[&self.owner], mapping[&self.attribute])
     }
 }
 
@@ -1102,7 +1183,7 @@ impl<ID: IrID> Relates<ID> {
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Relates<T> {
-        Relates::new(*mapping.get(&self.relation).unwrap(), *mapping.get(&self.role_type).unwrap())
+        Relates::new(mapping[&self.relation], mapping[&self.role_type])
     }
 }
 
@@ -1150,7 +1231,7 @@ impl<ID: IrID> Plays<ID> {
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Plays<T> {
-        Plays::new(*mapping.get(&self.player).unwrap(), *mapping.get(&self.role_type).unwrap())
+        Plays::new(mapping[&self.player], mapping[&self.role_type])
     }
 }
 

@@ -25,11 +25,11 @@ use crate::{
     instruction::{
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
-        iterator::TupleIterator, label_executor::LabelExecutor, links_executor::LinksExecutor,
-        links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
-        owns_reverse_executor::OwnsReverseExecutor, relates_executor::RelatesExecutor,
+        iterator::TupleIterator, links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
+        owns_executor::OwnsExecutor, owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
+        plays_reverse_executor::PlaysReverseExecutor, relates_executor::RelatesExecutor,
         relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
-        sub_reverse_executor::SubReverseExecutor,
+        sub_reverse_executor::SubReverseExecutor, type_list_executor::TypeListExecutor,
     },
     row::MaybeOwnedRow,
     VariablePosition,
@@ -41,7 +41,6 @@ mod has_reverse_executor;
 mod isa_executor;
 mod isa_reverse_executor;
 pub(crate) mod iterator;
-mod label_executor;
 mod links_executor;
 mod links_reverse_executor;
 mod owns_executor;
@@ -53,9 +52,10 @@ mod relates_reverse_executor;
 mod sub_executor;
 mod sub_reverse_executor;
 pub(crate) mod tuple;
+mod type_list_executor;
 
 pub(crate) enum InstructionExecutor {
-    Label(LabelExecutor),
+    TypeList(TypeListExecutor),
 
     Sub(SubExecutor),
     SubReverse(SubReverseExecutor),
@@ -66,8 +66,9 @@ pub(crate) enum InstructionExecutor {
     Relates(RelatesExecutor),
     RelatesReverse(RelatesReverseExecutor),
 
-    // Plays(PlaysExecutor),
-    // PlaysReverse(PlaysReverseExecutor),
+    Plays(PlaysExecutor),
+    PlaysReverse(PlaysReverseExecutor),
+
     Isa(IsaExecutor),
     IsaReverse(IsaReverseExecutor),
 
@@ -92,7 +93,9 @@ impl InstructionExecutor {
     ) -> Result<Self, ConceptReadError> {
         let variable_modes = VariableModes::new_for(&instruction, selected, named);
         match instruction {
-            ConstraintInstruction::Label(type_) => Ok(Self::Label(LabelExecutor::new(type_, variable_modes, sort_by))),
+            ConstraintInstruction::TypeList(type_) => {
+                Ok(Self::TypeList(TypeListExecutor::new(type_, variable_modes, sort_by)))
+            }
             ConstraintInstruction::Sub(sub) => Ok(Self::Sub(SubExecutor::new(sub, variable_modes, sort_by))),
             ConstraintInstruction::SubReverse(sub_reverse) => {
                 Ok(Self::SubReverse(SubReverseExecutor::new(sub_reverse, variable_modes, sort_by)))
@@ -107,13 +110,9 @@ impl InstructionExecutor {
             ConstraintInstruction::RelatesReverse(relates_reverse) => {
                 Ok(Self::RelatesReverse(RelatesReverseExecutor::new(relates_reverse, variable_modes, sort_by)))
             }
-            ConstraintInstruction::Plays(_plays) => {
-                todo!()
-                // Ok(Self::Plays(PlaysExecutor::new(plays, variable_modes, sort_by)))
-            }
-            ConstraintInstruction::PlaysReverse(_plays_reverse) => {
-                todo!()
-                // Ok(Self::PlaysReverse(PlaysReverseExecutor::new(plays_reverse, variable_modes, sort_by)))
+            ConstraintInstruction::Plays(plays) => Ok(Self::Plays(PlaysExecutor::new(plays, variable_modes, sort_by))),
+            ConstraintInstruction::PlaysReverse(plays_reverse) => {
+                Ok(Self::PlaysReverse(PlaysReverseExecutor::new(plays_reverse, variable_modes, sort_by)))
             }
             ConstraintInstruction::Isa(isa) => Ok(Self::Isa(IsaExecutor::new(isa, variable_modes, sort_by))),
             ConstraintInstruction::IsaReverse(isa_reverse) => {
@@ -154,15 +153,15 @@ impl InstructionExecutor {
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
-            Self::Label(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::TypeList(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Sub(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::SubReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Owns(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::OwnsReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Relates(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::RelatesReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            // Self::Plays(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            // Self::PlaysReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Plays(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::PlaysReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
