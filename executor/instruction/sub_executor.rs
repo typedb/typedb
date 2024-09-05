@@ -121,8 +121,6 @@ impl SubExecutor {
         thing_manager: &Arc<ThingManager>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
-        debug_assert_eq!(self.sub.sub_kind(), SubKind::Subtype);
-
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
         let filter_for_row: Box<SubFilterFn> = Box::new(move |item| match filter(item) {
@@ -130,8 +128,8 @@ impl SubExecutor {
             fail => fail,
         });
 
-        match self.iterate_mode {
-            BinaryIterateMode::Unbound => {
+        match (self.sub.sub_kind(), self.iterate_mode) {
+            (SubKind::Subtype, BinaryIterateMode::Unbound) => {
                 let sub_with_super = self
                     .sub_to_supertypes
                     .iter()
@@ -149,11 +147,29 @@ impl SubExecutor {
                 )))
             }
 
-            BinaryIterateMode::UnboundInverted => {
+            (SubKind::Exact, BinaryIterateMode::Unbound) => {
+                let sub_with_super = self
+                    .sub_to_supertypes
+                    .iter()
+                    .flat_map(|(sub, supers)| supers.iter().map(|sup| Ok((sub.clone(), sup.clone()))))
+                    .collect_vec();
+                let as_tuples: SubUnboundedSortedSub = NarrowingTupleIterator(
+                    AsLendingIterator::new(sub_with_super)
+                        .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
+                        .map(sub_to_tuple_sub_super),
+                );
+                Ok(TupleIterator::SubUnbounded(SortedTupleIterator::new(
+                    as_tuples,
+                    self.tuple_positions.clone(),
+                    &self.variable_modes,
+                )))
+            }
+
+            (_, BinaryIterateMode::UnboundInverted) => {
                 todo!() // is this ever relevant?
             }
 
-            BinaryIterateMode::BoundFrom => {
+            (SubKind::Subtype, BinaryIterateMode::BoundFrom) => {
                 debug_assert!(row.len() > self.sub.subtype().as_usize());
                 let VariableValue::Type(sub) = row.get(self.sub.subtype()).to_owned() else {
                     unreachable!("Subtype must be a type")
@@ -182,6 +198,34 @@ impl SubExecutor {
                 supertypes.sort();
 
                 let sub_with_super = supertypes.into_iter().map(|sup| Ok((sub.clone(), sup))).collect_vec(); // TODO cache this
+
+                let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
+                    AsLendingIterator::new(sub_with_super)
+                        .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
+                        .map(sub_to_tuple_sub_super),
+                );
+                Ok(TupleIterator::SubBounded(SortedTupleIterator::new(
+                    as_tuples,
+                    self.tuple_positions.clone(),
+                    &self.variable_modes,
+                )))
+            }
+
+            (SubKind::Exact, BinaryIterateMode::BoundFrom) => {
+                debug_assert!(row.len() > self.sub.subtype().as_usize());
+                let VariableValue::Type(sub) = row.get(self.sub.subtype()).to_owned() else {
+                    unreachable!("Subtype must be a type")
+                };
+
+                let type_manager = thing_manager.type_manager();
+                let sup = match &sub {
+                    Type::Entity(type_) => type_.get_supertype(&**snapshot, type_manager)?.map(Type::Entity),
+                    Type::Relation(type_) => type_.get_supertype(&**snapshot, type_manager)?.map(Type::Relation),
+                    Type::Attribute(type_) => type_.get_supertype(&**snapshot, type_manager)?.map(Type::Attribute),
+                    Type::RoleType(type_) => type_.get_supertype(&**snapshot, type_manager)?.map(Type::RoleType),
+                };
+
+                let sub_with_super = sup.map(|sup| Ok((sub, sup))).as_slice().to_vec(); // TODO cache this
 
                 let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)

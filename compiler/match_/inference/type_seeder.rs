@@ -22,7 +22,7 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparison, Constraint, FunctionCallBinding, Has, Isa, IsaKind, Kind, Label, Links, Owns, Plays, Relates,
-            RoleName, Sub,
+            RoleName, Sub, SubKind,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
@@ -901,45 +901,70 @@ impl BinaryConstraint for Sub<Variable> {
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
-        match left_type {
-            TypeAnnotation::Attribute(attribute) => {
-                attribute
-                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
-                    .iter()
-                    .map(|subtype| subtype.clone().into_owned().into())
-                    .for_each(|subtype| {
-                        collector.insert(subtype);
-                    });
+        if self.sub_kind() == SubKind::Subtype {
+            match left_type {
+                TypeAnnotation::Attribute(attribute) => {
+                    attribute
+                        .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
+                TypeAnnotation::Entity(entity) => {
+                    entity
+                        .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::Entity(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
+                TypeAnnotation::Relation(relation) => {
+                    relation
+                        .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::Relation(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
+                TypeAnnotation::RoleType(role_type) => {
+                    role_type
+                        .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
             }
-            TypeAnnotation::Entity(entity) => {
-                entity
-                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
-                    .iter()
-                    .map(|subtype| TypeAnnotation::Entity(subtype.clone().into_owned()))
-                    .for_each(|subtype| {
-                        collector.insert(subtype);
-                    });
-            }
-            TypeAnnotation::Relation(relation) => {
-                relation
-                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
-                    .iter()
-                    .map(|subtype| TypeAnnotation::Relation(subtype.clone().into_owned()))
-                    .for_each(|subtype| {
-                        collector.insert(subtype);
-                    });
-            }
-            TypeAnnotation::RoleType(role_type) => {
-                role_type
-                    .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
-                    .iter()
-                    .map(|subtype| TypeAnnotation::RoleType(subtype.clone().into_owned()))
-                    .for_each(|subtype| {
-                        collector.insert(subtype);
-                    });
+            collector.insert(left_type.clone());
+        } else {
+            match left_type {
+                TypeAnnotation::Attribute(attribute) => {
+                    if let Some(subtype) = attribute.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::Attribute(subtype));
+                    }
+                }
+                TypeAnnotation::Entity(entity) => {
+                    if let Some(subtype) = entity.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::Entity(subtype));
+                    }
+                }
+                TypeAnnotation::Relation(relation) => {
+                    if let Some(subtype) = relation.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::Relation(subtype));
+                    }
+                }
+                TypeAnnotation::RoleType(role_type) => {
+                    if let Some(subtype) = role_type.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::RoleType(subtype));
+                    }
+                }
             }
         }
-        collector.insert(left_type.clone());
         Ok(())
     }
 
@@ -949,45 +974,86 @@ impl BinaryConstraint for Sub<Variable> {
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
-        match right_type {
-            TypeAnnotation::Attribute(attribute) => {
-                attribute
-                    .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
-                    .iter()
-                    .map(|subtype| TypeAnnotation::Attribute(subtype.clone().into_owned()))
-                    .for_each(|subtype| {
-                        collector.insert(subtype);
-                    });
+        if self.sub_kind() == SubKind::Subtype {
+            match right_type {
+                TypeAnnotation::Attribute(attribute) => {
+                    attribute
+                        .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
+                TypeAnnotation::Entity(entity) => {
+                    entity
+                        .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::Entity(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
+                TypeAnnotation::Relation(relation) => {
+                    relation
+                        .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::Relation(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
+                TypeAnnotation::RoleType(role_type) => {
+                    role_type
+                        .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
             }
-            TypeAnnotation::Entity(entity) => {
-                entity
-                    .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
-                    .iter()
-                    .map(|subtype| TypeAnnotation::Entity(subtype.clone().into_owned()))
-                    .for_each(|subtype| {
-                        collector.insert(subtype);
-                    });
-            }
-            TypeAnnotation::Relation(relation) => {
-                relation
-                    .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
-                    .iter()
-                    .map(|subtype| TypeAnnotation::Relation(subtype.clone().into_owned()))
-                    .for_each(|subtype| {
-                        collector.insert(subtype);
-                    });
-            }
-            TypeAnnotation::RoleType(role_type) => {
-                role_type
-                    .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
-                    .iter()
-                    .map(|subtype| TypeAnnotation::RoleType(subtype.clone().into_owned()))
-                    .for_each(|subtype| {
-                        collector.insert(subtype);
-                    });
+            collector.insert(right_type.clone());
+        } else {
+            match right_type {
+                TypeAnnotation::Attribute(attribute) => {
+                    attribute
+                        .get_subtypes(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
+                TypeAnnotation::Entity(entity) => {
+                    entity
+                        .get_subtypes(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::Entity(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
+                TypeAnnotation::Relation(relation) => {
+                    relation
+                        .get_subtypes(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::Relation(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
+                TypeAnnotation::RoleType(role_type) => {
+                    role_type
+                        .get_subtypes(seeder.snapshot, seeder.type_manager)?
+                        .iter()
+                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone()))
+                        .for_each(|subtype| {
+                            collector.insert(subtype);
+                        });
+                }
             }
         }
-        collector.insert(right_type.clone());
         Ok(())
     }
 }

@@ -97,8 +97,6 @@ impl SubReverseExecutor {
         thing_manager: &Arc<ThingManager>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
-        debug_assert_eq!(self.sub.sub_kind(), SubKind::Subtype);
-
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
         let filter_for_row: Box<SubFilterFn> = Box::new(move |item| match filter(item) {
@@ -106,8 +104,8 @@ impl SubReverseExecutor {
             fail => fail,
         });
 
-        match self.iterate_mode {
-            BinaryIterateMode::Unbound => {
+        match (self.sub.sub_kind(), self.iterate_mode) {
+            (SubKind::Subtype, BinaryIterateMode::Unbound) => {
                 let sub_with_super = self
                     .super_to_subtypes
                     .iter()
@@ -125,11 +123,29 @@ impl SubReverseExecutor {
                 )))
             }
 
-            BinaryIterateMode::UnboundInverted => {
+            (SubKind::Exact, BinaryIterateMode::Unbound) => {
+                let sub_with_super = self
+                    .super_to_subtypes
+                    .iter()
+                    .flat_map(|(sup, subs)| subs.iter().map(|sub| Ok((sub.clone(), sup.clone()))))
+                    .collect_vec();
+                let as_tuples: SubReverseUnboundedSortedSub = NarrowingTupleIterator(
+                    AsLendingIterator::new(sub_with_super)
+                        .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
+                        .map(sub_to_tuple_super_sub),
+                );
+                Ok(TupleIterator::SubReverseUnbounded(SortedTupleIterator::new(
+                    as_tuples,
+                    self.tuple_positions.clone(),
+                    &self.variable_modes,
+                )))
+            }
+
+            (_, BinaryIterateMode::UnboundInverted) => {
                 todo!() // is this ever relevant?
             }
 
-            BinaryIterateMode::BoundFrom => {
+            (SubKind::Subtype, BinaryIterateMode::BoundFrom) => {
                 debug_assert!(row.len() > self.sub.supertype().as_usize());
                 let VariableValue::Type(sup) = row.get(self.sub.supertype()).to_owned() else {
                     unreachable!("Subtype must be a type")
@@ -156,8 +172,46 @@ impl SubReverseExecutor {
                 };
                 subtypes.push(sup.clone());
                 subtypes.sort();
-                eprintln!("sup = {:?}", sup);
-                eprintln!("subtypes = {:?}", subtypes);
+
+                let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, sup.clone()))).collect_vec(); // TODO cache this
+                let as_tuples: SubReverseBoundedSortedSuper = NarrowingTupleIterator(
+                    AsLendingIterator::new(sub_with_super)
+                        .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
+                        .map(sub_to_tuple_super_sub),
+                );
+                Ok(TupleIterator::SubReverseBounded(SortedTupleIterator::new(
+                    as_tuples,
+                    self.tuple_positions.clone(),
+                    &self.variable_modes,
+                )))
+            }
+
+            (SubKind::Exact, BinaryIterateMode::BoundFrom) => {
+                debug_assert!(row.len() > self.sub.supertype().as_usize());
+                let VariableValue::Type(sup) = row.get(self.sub.supertype()).to_owned() else {
+                    unreachable!("Subtype must be a type")
+                };
+
+                let type_manager = thing_manager.type_manager();
+                let mut subtypes = match &sup {
+                    Type::Entity(type_) => {
+                        let subtypes = type_.get_subtypes(&**snapshot, type_manager)?;
+                        subtypes.iter().cloned().map(Type::Entity).collect_vec()
+                    }
+                    Type::Relation(type_) => {
+                        let subtypes = type_.get_subtypes(&**snapshot, type_manager)?;
+                        subtypes.iter().cloned().map(Type::Relation).collect_vec()
+                    }
+                    Type::Attribute(type_) => {
+                        let subtypes = type_.get_subtypes(&**snapshot, type_manager)?;
+                        subtypes.iter().cloned().map(Type::Attribute).collect_vec()
+                    }
+                    Type::RoleType(type_) => {
+                        let subtypes = type_.get_subtypes(&**snapshot, type_manager)?;
+                        subtypes.iter().cloned().map(Type::RoleType).collect_vec()
+                    }
+                };
+                subtypes.sort();
 
                 let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, sup.clone()))).collect_vec(); // TODO cache this
                 let as_tuples: SubReverseBoundedSortedSuper = NarrowingTupleIterator(
