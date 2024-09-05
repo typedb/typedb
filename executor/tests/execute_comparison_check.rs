@@ -96,7 +96,7 @@ fn attribute_equality() {
     )
     .unwrap();
 
-    let vars = entry.block_variables().collect_vec();
+    let vars = vec![var_age_a, var_age_type_a, var_age_b, var_age_type_b];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -107,6 +107,7 @@ fn attribute_equality() {
             vec![ConstraintInstruction::Isa(IsaInstruction::new(isa_a, Inputs::None([]), &entry_annotations))
                 .map(&variable_positions)],
             &[variable_positions[&var_age_a]],
+            2,
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_age_b],
@@ -119,6 +120,7 @@ fn attribute_equality() {
             ))
             .map(&variable_positions)],
             &[variable_positions[&var_age_a], variable_positions[&var_age_b]],
+            4,
         )),
     ];
 

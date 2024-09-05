@@ -153,6 +153,7 @@ fn traverse_has_unbounded_sorted_from() {
             HasInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_person], variable_positions[&var_age]],
+        4,
     ))];
     // TODO: incorporate the filter
     let pattern_plan =
@@ -221,7 +222,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     )
     .unwrap();
 
-    let vars = vec![var_person_type, var_person_1, var_name_type, var_person_2, var_name];
+    let vars = vec![var_person_1, var_person_type, var_person_2, var_name, var_name_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -233,6 +234,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
                 IsaReverseInstruction::new(isa_person_1, Inputs::None([]), &entry_annotations).map(&variable_positions),
             )],
             &[variable_positions[&var_person_1]],
+            2,
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_name],
@@ -247,6 +249,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
                 ),
             ],
             &[variable_positions[&var_person_1], variable_positions[&var_person_2], variable_positions[&var_name]],
+            5,
         )),
     ];
     // TODO: incorporate the filter
@@ -334,6 +337,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
             ),
         ],
         &[variable_positions[&var_person], variable_positions[&var_name], variable_positions[&var_age]],
+        3,
     ))];
     // TODO: incorporate the filter
     let pattern_plan =
@@ -402,6 +406,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
             HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_person], variable_positions[&var_attribute]],
+        2,
     ))];
     let pattern_plan =
         MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
@@ -492,6 +497,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
             HasReverseInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_person], variable_positions[&var_age]],
+        2,
     ))];
     let pattern_plan =
         MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);

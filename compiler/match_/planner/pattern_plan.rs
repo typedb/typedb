@@ -339,6 +339,7 @@ impl ProgramBuilder {
             sort_variable,
             self.instructions,
             &(0..self.last_output.unwrap()).map(VariablePosition::new).collect_vec(),
+            self.last_output.unwrap()
         ))
     }
 }
@@ -645,6 +646,7 @@ impl IntersectionProgram {
         sort_variable: VariablePosition,
         instructions: Vec<ConstraintInstruction<VariablePosition>>,
         selected_variables: &[VariablePosition],
+        output_width: u32,
     ) -> Self {
         let mut input_variables = Vec::with_capacity(instructions.len() * 2);
         let mut new_variables = Vec::with_capacity(instructions.len() * 2);
@@ -660,11 +662,6 @@ impl IntersectionProgram {
                 }
             });
         });
-
-        // FIXME: currently since the intersection always creates at least one new variable,
-        // and since we never shrink the row, this is valid.
-        // In future this should be injected instead.
-        let output_width = new_variables.iter().max().unwrap().as_usize() as u32 + 1;
 
         Self {
             sort_variable,

@@ -102,6 +102,7 @@ fn traverse_isa_unbounded_sorted_thing() {
             IsaInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
+        2,
     ))];
 
     let pattern_plan =
@@ -168,6 +169,7 @@ fn traverse_isa_unbounded_sorted_type() {
             IsaInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
+        2,
     ))];
 
     let pattern_plan =
@@ -238,6 +240,7 @@ fn traverse_isa_bounded_thing() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_thing]],
+            2,
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_type_to],
@@ -246,6 +249,7 @@ fn traverse_isa_bounded_thing() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_type_to]],
+            3,
         )),
     ];
 
@@ -313,6 +317,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
             IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
+        2,
     ))];
 
     let pattern_plan =
@@ -379,6 +384,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
             IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
+        2,
     ))];
 
     let pattern_plan =
@@ -448,6 +454,7 @@ fn traverse_isa_reverse_bounded_type() {
                 IsaInstruction::new(isa_from_thing, Inputs::None([]), &entry_annotations).map(&variable_positions),
             )],
             &[variable_positions[&var_thing_from], variable_positions[&var_type]],
+            2,
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_thing_to],
@@ -456,6 +463,7 @@ fn traverse_isa_reverse_bounded_type() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_thing_from], variable_positions[&var_type], variable_positions[&var_thing_to]],
+            3,
         )),
     ];
 

@@ -177,6 +177,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
             HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_person]],
+        4,
     ))];
     let pattern_plan =
         MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
@@ -244,7 +245,7 @@ fn unselected_named_vars_counted() {
         .unwrap()
     };
 
-    let vars = vec![var_person_type, var_attribute, var_attribute_type, var_person];
+    let vars = vec![var_person, var_attribute, var_attribute_type, var_person_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -255,6 +256,7 @@ fn unselected_named_vars_counted() {
             HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_person]],
+        2,
     ))];
 
     let pattern_plan =
@@ -335,7 +337,7 @@ fn cartesian_named_counted_checked() {
     };
 
     let vars =
-        vec![var_age_type, var_person_type, var_name_type, var_email_type, var_name, var_email, var_person, var_age];
+        vec![var_person, var_age, var_name, var_email, var_age_type, var_person_type, var_name_type, var_email_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -354,6 +356,7 @@ fn cartesian_named_counted_checked() {
             ),
         ],
         &[variable_positions[&var_person], variable_positions[&var_age]],
+        4,
     ))];
 
     let pattern_plan =

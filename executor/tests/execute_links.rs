@@ -220,14 +220,14 @@ fn traverse_links_unbounded_sorted_from() {
     .unwrap();
 
     let vars = vec![
-        var_membership_group_type,
-        var_membership_member_type,
-        var_membership_type,
-        var_group_type,
-        var_person_type,
         var_membership,
         var_group,
         var_person,
+        var_membership_type,
+        var_group_type,
+        var_person_type,
+        var_membership_group_type,
+        var_membership_member_type,
     ];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
@@ -246,6 +246,7 @@ fn traverse_links_unbounded_sorted_from() {
             ),
         ],
         &[variable_positions[&var_membership], variable_positions[&var_group], variable_positions[&var_person]],
+        8,
     ))];
 
     let pattern_plan =
@@ -317,7 +318,7 @@ fn traverse_links_unbounded_sorted_to() {
     )
     .unwrap();
 
-    let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_membership, var_person];
+    let vars = vec![var_membership, var_person, var_person_type, var_membership_type, var_membership_member_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -329,6 +330,7 @@ fn traverse_links_unbounded_sorted_to() {
                 .map(&variable_positions),
         )],
         &[variable_positions[&var_membership], variable_positions[&var_person]],
+        5,
     ))];
 
     let pattern_plan =
@@ -402,7 +404,7 @@ fn traverse_links_bounded_relation() {
     )
     .unwrap();
 
-    let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_membership, var_person];
+    let vars = vec![var_membership, var_membership_type, var_person, var_person_type, var_membership_member_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -415,6 +417,7 @@ fn traverse_links_bounded_relation() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_membership]],
+            2,
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_person],
@@ -423,6 +426,7 @@ fn traverse_links_bounded_relation() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_person]],
+            5,
         )),
     ];
 
@@ -498,7 +502,7 @@ fn traverse_links_bounded_relation_player() {
     )
     .unwrap();
 
-    let vars = vec![var_membership_type, var_person_type, var_membership, var_person, var_membership_member_type];
+    let vars = vec![var_membership, var_membership_type, var_person, var_person_type, var_membership_member_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -511,6 +515,7 @@ fn traverse_links_bounded_relation_player() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_membership]],
+            2,
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_person],
@@ -518,6 +523,7 @@ fn traverse_links_bounded_relation_player() {
                 IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&variable_positions),
             )],
             &[variable_positions[&var_membership], variable_positions[&var_person]],
+            4,
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_membership_member_type],
@@ -530,6 +536,7 @@ fn traverse_links_bounded_relation_player() {
                 .map(&variable_positions),
             )],
             &[variable_positions[&var_membership_member_type]],
+            5,
         )),
     ];
 
@@ -602,7 +609,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     )
     .unwrap();
 
-    let vars = vec![var_membership_type, var_person_type, var_membership_member_type, var_membership, var_person];
+    let vars = vec![var_membership, var_person, var_membership_type, var_person_type, var_membership_member_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -614,6 +621,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
                 .map(&variable_positions),
         )],
         &[variable_positions[&var_membership], variable_positions[&var_person]],
+        5,
     ))];
 
     let pattern_plan =
@@ -685,7 +693,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     )
     .unwrap();
 
-    let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_membership, var_person];
+    let vars = vec![var_membership, var_person, var_membership_type, var_person_type, var_membership_member_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -697,6 +705,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
                 .map(&variable_positions),
         )],
         &[variable_positions[&var_membership], variable_positions[&var_person]],
+        5,
     ))];
 
     let pattern_plan =
@@ -769,7 +778,7 @@ fn traverse_links_reverse_bounded_player() {
     )
     .unwrap();
 
-    let vars = vec![var_person_type, var_membership_type, var_membership_member_type, var_person, var_membership];
+    let vars = vec![var_person, var_person_type, var_membership, var_membership_type, var_membership_member_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -781,6 +790,7 @@ fn traverse_links_reverse_bounded_player() {
                 IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&variable_positions),
             )],
             &[variable_positions[&var_person]],
+            2,
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_membership],
@@ -789,6 +799,7 @@ fn traverse_links_reverse_bounded_player() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_membership]],
+            5,
         )),
     ];
 
@@ -864,7 +875,7 @@ fn traverse_links_reverse_bounded_player_relation() {
     )
     .unwrap();
 
-    let vars = vec![var_membership_type, var_person_type, var_person, var_membership, var_membership_member_type];
+    let vars = vec![var_person, var_person_type, var_membership, var_membership_type, var_membership_member_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -876,6 +887,7 @@ fn traverse_links_reverse_bounded_player_relation() {
                 IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&variable_positions),
             )],
             &[variable_positions[&var_person]],
+            2,
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_membership],
@@ -884,6 +896,7 @@ fn traverse_links_reverse_bounded_player_relation() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_person], variable_positions[&var_membership]],
+            4,
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_membership_member_type],
@@ -895,7 +908,8 @@ fn traverse_links_reverse_bounded_player_relation() {
                 )
                 .map(&variable_positions),
             )],
-            &[variable_positions[&var_membership_member_type]],
+            &[variable_positions[&var_person], variable_positions[&var_membership]],
+            5,
         )),
     ];
 
