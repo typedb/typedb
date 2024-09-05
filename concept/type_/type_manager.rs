@@ -105,7 +105,7 @@ macro_rules! get_supertype_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            pub fn $method_name(
+            pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
             ) -> Result<Option<$type_<'static>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
@@ -124,7 +124,7 @@ macro_rules! get_supertypes_transitive_methods {
     )*) => {
         $(
             // WARN: supertypes currently do NOT include themselves
-            pub fn $method_name(
+            pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
             ) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
@@ -143,7 +143,7 @@ macro_rules! get_subtypes_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            pub fn $method_name(
+            pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
             ) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
