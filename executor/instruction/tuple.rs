@@ -191,9 +191,7 @@ pub(crate) fn relates_to_tuple_role_relation(
 
 pub(crate) type PlaysToTupleFn = fn(Result<Plays<'static>, ConceptReadError>) -> TupleResult<'static>;
 
-pub(crate) fn plays_to_tuple_player_role(
-    result: Result<Plays<'static>, ConceptReadError>,
-) -> TupleResult<'static> {
+pub(crate) fn plays_to_tuple_player_role(result: Result<Plays<'static>, ConceptReadError>) -> TupleResult<'static> {
     match result {
         Ok(plays) => Ok(Tuple::Pair(
             [Type::from(plays.player().into_owned()), Type::RoleType(plays.role().to_owned())].map(VariableValue::Type),
@@ -202,9 +200,7 @@ pub(crate) fn plays_to_tuple_player_role(
     }
 }
 
-pub(crate) fn plays_to_tuple_role_player(
-    result: Result<Plays<'static>, ConceptReadError>,
-) -> TupleResult<'static> {
+pub(crate) fn plays_to_tuple_role_player(result: Result<Plays<'static>, ConceptReadError>) -> TupleResult<'static> {
     match result {
         Ok(plays) => Ok(Tuple::Pair(
             [Type::RoleType(plays.role().to_owned()), Type::from(plays.player().into_owned())].map(VariableValue::Type),

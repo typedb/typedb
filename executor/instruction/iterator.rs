@@ -28,7 +28,6 @@ use crate::{
             IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedThingMerged, IsaReverseUnboundedSortedThingSingle,
             IsaReverseUnboundedSortedTypeMerged, IsaReverseUnboundedSortedTypeSingle,
         },
-        type_list_executor::TypeIterator,
         links_executor::{
             LinksBoundedRelationPlayer, LinksBoundedRelationSortedPlayer, LinksUnboundedSortedPlayerMerged,
             LinksUnboundedSortedPlayerSingle, LinksUnboundedSortedRelation,
@@ -47,6 +46,7 @@ use crate::{
         sub_executor::{SubBoundedSortedSuper, SubUnboundedSortedSub},
         sub_reverse_executor::{SubReverseBoundedSortedSuper, SubReverseUnboundedSortedSub},
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
+        type_list_executor::TypeIterator,
         VariableMode, VariableModes,
     },
     row::Row,
