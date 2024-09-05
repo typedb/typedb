@@ -14,6 +14,7 @@ rust_library(
         "//common/concurrency",
         "//common/logger",
         "//common/options",
+        "//common/error",
         "//concept",
         "//encoding",
         "//function",

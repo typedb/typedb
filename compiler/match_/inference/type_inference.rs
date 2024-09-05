@@ -21,7 +21,7 @@ use super::pattern_type_inference::infer_types_for_block;
 use crate::match_::inference::{
     annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
     type_annotations::{FunctionAnnotations, TypeAnnotations},
-    TypeInferenceError,
+    FunctionTypeInferenceError, TypeInferenceError,
 };
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
@@ -35,17 +35,18 @@ pub fn infer_types<Snapshot: ReadableSnapshot>(
     annotated_schema_functions: &IndexedAnnotatedFunctions,
     variable_registry: &VariableRegistry,
 ) -> Result<(TypeAnnotations, AnnotatedUnindexedFunctions), TypeInferenceError> {
-    let preamble_functions = infer_types_for_functions(functions, snapshot, type_manager, annotated_schema_functions)?;
-    let root_tig = infer_types_for_block(
-        snapshot,
-        entry,
-        variable_registry,
-        type_manager,
-        &HashMap::new(),
-        annotated_schema_functions,
-        Some(&preamble_functions),
-    )?;
-    Ok((TypeAnnotations::build(root_tig), preamble_functions))
+    // let preamble_functions = infer_types_for_functions(functions, snapshot, type_manager, annotated_schema_functions)?;
+    // let root_tig = infer_types_for_block(
+    //     snapshot,
+    //     entry,
+    //     variable_registry,
+    //     type_manager,
+    //     &HashMap::new(),
+    //     annotated_schema_functions,
+    //     Some(&preamble_functions),
+    // )?;
+    // Ok((TypeAnnotations::build(root_tig), preamble_functions))
+    todo!()
 }
 
 pub fn infer_types_for_functions(
@@ -53,9 +54,9 @@ pub fn infer_types_for_functions(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
-) -> Result<AnnotatedUnindexedFunctions, TypeInferenceError> {
+) -> Result<AnnotatedUnindexedFunctions, FunctionTypeInferenceError> {
     // In the preliminary annotations, functions are annotated based only on the variable categories of the called function.
-    let preliminary_annotations_res: Result<Vec<FunctionAnnotations>, TypeInferenceError> = functions
+    let preliminary_annotations_res: Result<Vec<FunctionAnnotations>, FunctionTypeInferenceError> = functions
         .iter()
         .map(|function| infer_types_for_function(function, snapshot, type_manager, indexed_annotated_functions, None))
         .collect();
@@ -74,7 +75,7 @@ pub fn infer_types_for_functions(
                 Some(&preliminary_annotations),
             )
         })
-        .collect::<Result<Vec<FunctionAnnotations>, TypeInferenceError>>()?;
+        .collect::<Result<Vec<FunctionAnnotations>, FunctionTypeInferenceError>>()?;
 
     // TODO: ^Optimise. There's no reason to do all of type inference again. We can re-use the tigs, and restart at the source of any SCC.
     // TODO: We don't propagate annotations until convergence, so we don't always detect unsatisfiable queries
@@ -91,7 +92,7 @@ pub fn infer_types_for_function(
     type_manager: &TypeManager,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
-) -> Result<FunctionAnnotations, TypeInferenceError> {
+) -> Result<FunctionAnnotations, FunctionTypeInferenceError> {
     let root_tig = infer_types_for_block(
         snapshot,
         function.block(),
@@ -100,7 +101,11 @@ pub fn infer_types_for_function(
         &HashMap::new(),
         indexed_annotated_functions,
         local_functions,
-    )?;
+    )
+    .map_err(|err| FunctionTypeInferenceError::TypeInference {
+        function_name: function.name().to_string(),
+        source: err,
+    })?;
     let body_annotations = TypeAnnotations::build(root_tig);
     let return_annotations = function.return_operation().output_annotations(body_annotations.variable_annotations());
     Ok(FunctionAnnotations { return_annotations, block_annotations: body_annotations })
@@ -330,6 +335,7 @@ pub mod tests {
             f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type).unwrap();
             f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
             let f_ir = Function::new(
+                "fn_test",
                 builder.finish(),
                 function_context.variable_registry,
                 vec![],

@@ -13,6 +13,7 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     pipeline::{PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator},
     write::delete::DeleteExecutor,
+    ExecutionInterrupt,
 };
 
 pub struct DeleteStageExecutor<Snapshot: WritableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
@@ -49,21 +50,33 @@ where
         inputs
     }
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
-        let (previous_iterator, mut snapshot) = self.previous.into_iterator()?;
+    fn into_iterator(
+        self,
+        mut interrupt: ExecutionInterrupt,
+    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+        let (previous_iterator, mut snapshot) = self.previous.into_iterator(interrupt.clone())?;
         // accumulate once, then we will operate in-place
         let mut batch = match previous_iterator.collect_owned() {
             Ok(batch) => batch,
             Err(err) => return Err((snapshot, err)),
         };
 
+        // TODO: all write stages will have the same block below: we could merge them
+
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot_ref = Arc::get_mut(&mut snapshot).unwrap();
         for index in 0..batch.len() {
+            // TODO: parallelise -- though this requires our snapshots support parallel writes!
             let mut row = batch.get_row_mut(index);
             match self.deleter.execute_delete(snapshot_ref, self.thing_manager.as_ref(), &mut row) {
                 Ok(_) => {}
                 Err(err) => return Err((snapshot, PipelineExecutionError::WriteError { source: err })),
+            }
+
+            if index % 100 == 0 {
+                if interrupt.check() {
+                    return Err((snapshot, PipelineExecutionError::Interrupted {}));
+                }
             }
         }
 

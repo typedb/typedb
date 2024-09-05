@@ -4,39 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-/*
-Affect of clause statements on inferred types from parent variables:
-
-1. Conjunction: intersection over types
-2. Disjunction: union over types
-3. Optional: no effect (consider match $x isa person; try { $x has dob $dob; };)
-4. Negation: no effect (advanced: subtraction over types when unspecialised: match $x isa person; not { $x isa child; }. However, unsafe in: match $x isa person; not { $x isa child, has name "bob"; }
-
-This means we can infer types for optional & negation blocks after the conjunction & disjunction have been annotated.
-
-Want: good error messages when impossibility arises:
-
-match
-$x isa person;
-$y isa company;
-($x, $y) isa friendship;
-
-Error:
-Given:
-$x is any of [person, child, adult]
-($x, $y) is any of [friendship, child-friendship]
-Then $y is not satisfiable
-
-
-Algorithm:
-when we find an empty answer for a variable, we go back through its neighbors and build the stack
-in reverse, through named variables.
-
-We should assign a search order over variables, based on connectedness.
-On error, show the inferred types for variables (in minimal original query format, either named or ($x, $y))
-In the order that are connected to the variable.
- */
-
 use std::{
     error::Error,
     fmt::{Debug, Display, Formatter},
@@ -55,21 +22,30 @@ pub mod type_annotations;
 pub mod type_inference;
 mod type_seeder;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub enum FunctionTypeInferenceError {
+    TypeInference { function_name: String, source: TypeInferenceError },
+}
+
+impl Display for FunctionTypeInferenceError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for FunctionTypeInferenceError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            FunctionTypeInferenceError::TypeInference { source, .. } => Some(source),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum TypeInferenceError {
     ConceptRead { source: ConceptReadError },
     LabelNotResolved(String),
-
-    MultipleAssignmentsForSingleVariable { assign_variable: Variable },
-    CircularDependencyInExpressions { assign_variable: Variable },
-    // TODO: Improve error
-    CouldNotDetermineValueTypeForVariable { variable: Variable },
-    ExpressionVariableDidNotHaveSingleValueType { variable: Variable },
-    ExpressionVariableHasNoValueType { variable: Variable },
-    ExpressionCompilation { source: ExpressionCompileError },
-    VariableInExpressionMustBeValueOrAttribute { variable: Variable, actual_category: VariableCategory },
     RoleNameNotResolved(String),
-    MultipleLabelsForSingleTypeVariable { variable: Variable },
     IllegalInsertTypes { constraint: Constraint<Variable>, left_type: String, right_type: String },
 }
 
@@ -83,16 +59,8 @@ impl Error for TypeInferenceError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             TypeInferenceError::ConceptRead { source } => Some(source),
-            TypeInferenceError::ExpressionCompilation { source } => Some(source),
             TypeInferenceError::LabelNotResolved(_) => None,
             TypeInferenceError::RoleNameNotResolved(_) => None,
-            TypeInferenceError::MultipleAssignmentsForSingleVariable { .. } => None,
-            TypeInferenceError::CircularDependencyInExpressions { .. } => None,
-            TypeInferenceError::CouldNotDetermineValueTypeForVariable { .. } => None,
-            TypeInferenceError::ExpressionVariableDidNotHaveSingleValueType { .. } => None,
-            TypeInferenceError::ExpressionVariableHasNoValueType { .. } => None,
-            TypeInferenceError::VariableInExpressionMustBeValueOrAttribute { .. } => None,
-            TypeInferenceError::MultipleLabelsForSingleTypeVariable { .. } => None,
             TypeInferenceError::IllegalInsertTypes { .. } => None,
         }
     }

@@ -24,15 +24,15 @@ pub trait TypeDBError {
 
     fn format_description(&self) -> String;
 
-    fn source(&self) -> Option<&dyn Error>;
+    fn source(&self) -> Option<&(dyn Error + Send)>;
 
-    fn source_typedb_error(&self) -> Option<&dyn TypeDBError>;
+    fn source_typedb_error(&self) -> Option<&(dyn TypeDBError + Send)>;
 
-    fn root_source_typedb_error(&self) -> &dyn TypeDBError
+    fn root_source_typedb_error(&self) -> &(dyn TypeDBError + Send)
     where
-        Self: Sized,
+        Self: Sized + Send,
     {
-        let mut error: &dyn TypeDBError = self;
+        let mut error: &(dyn TypeDBError + Send) = self;
         while let Some(source) = error.source_typedb_error() {
             error = source;
         }
@@ -76,9 +76,10 @@ macro_rules! typedb_error {
             $(, ( typedb_source : $typedb_source: ty ) )?
         ),
     )*}) => {
+        #[derive(Clone)]
         $vis enum $name {
             $(
-                $variant { $(source: $source, )? $(typedb_source: $typedb_source, )? $($payload_name: $payload_type )* },
+                $variant { $(source: $source, )? $(typedb_source: $typedb_source, )? $($payload_name: $payload_type, )* },
             )*
 
         }
@@ -137,12 +138,12 @@ macro_rules! typedb_error {
                 }
             }
 
-            fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+            fn source(&self) -> Option<&(dyn std::error::Error + Send + 'static)> {
                 let error = match self {
                     $(
                         $( Self::$variant { source, .. } => {
                             let source: &$source = source;
-                            Some(source as &dyn std::error::Error)
+                            Some(source as &(dyn std::error::Error + Send))
                         } )?
                     )*
                     _ => None
@@ -150,12 +151,12 @@ macro_rules! typedb_error {
                 error
             }
 
-            fn source_typedb_error(&self) -> Option<&(dyn error::TypeDBError + 'static)> {
+            fn source_typedb_error(&self) -> Option<&(dyn error::TypeDBError + Send + 'static)> {
                 let error = match self {
                     $(
                         $( Self::$variant { typedb_source, .. } => {
                             let typedb_source: &$typedb_source = typedb_source;
-                            Some(typedb_source as &dyn error::TypeDBError)
+                            Some(typedb_source as &(dyn error::TypeDBError + Send))
                         } )?
                     )*
                     _ => None

@@ -38,9 +38,7 @@ impl FunctionCache {
         type_manager: &TypeManager,
         open_sequence_number: SequenceNumber,
     ) -> Result<Self, FunctionError> {
-        let snapshot = storage
-            .open_snapshot_read_at(open_sequence_number)
-            .map_err(|error| FunctionError::SnapshotOpen { source: error })?;
+        let snapshot = storage.open_snapshot_read_at(open_sequence_number);
 
         let (function_index, indexed_schema_functions, indexed_annotated_functions) =
             Self::build_indexed_annotated_schema_functions(&snapshot, type_manager)?;
@@ -57,18 +55,18 @@ impl FunctionCache {
         type_manager: &TypeManager,
     ) -> Result<(HashMapFunctionSignatureIndex, Box<[Option<SchemaFunction>]>, IndexedAnnotatedFunctions), FunctionError>
     {
-        let schema_functions =
-            FunctionReader::get_functions_all(snapshot).map_err(|source| FunctionError::FunctionRead { source })?;
+        let schema_functions = FunctionReader::get_functions_all(snapshot)
+            .map_err(|source| FunctionError::FunctionRetrieval { source })?;
         // Prepare ir
         let function_index = HashMapFunctionSignatureIndex::build(
             schema_functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)),
         );
-        let ir = FunctionManager::translate_functions(&function_index, &schema_functions)?;
+        let functions_ir = FunctionManager::translate_functions(&schema_functions, &function_index)?;
 
         // Run type-inference
         let unindexed_cache =
-            infer_types_for_functions(ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
-                .map_err(|source| FunctionError::TypeInference { source })?;
+            infer_types_for_functions(functions_ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
+                .map_err(|source| FunctionError::CommittedFunctionsTypeCheck { source })?;
 
         // Convert them to our cache
         let required_cache_count =

@@ -171,6 +171,18 @@ impl InstructionExecutor {
             Self::FunctionCallBinding(_executor) => todo!(),
         }
     }
+
+    pub(crate) const fn name(&self) -> &'static str {
+        match self {
+            InstructionExecutor::Isa(_) => "isa",
+            InstructionExecutor::IsaReverse(_) => "isa_reverse",
+            InstructionExecutor::Has(_) => "has",
+            InstructionExecutor::HasReverse(_) => "has_reverse",
+            InstructionExecutor::Links(_) => "links",
+            InstructionExecutor::LinksReverse(_) => "links_reverse",
+            InstructionExecutor::FunctionCallBinding(_) => "fn_call_binding",
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

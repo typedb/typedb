@@ -6,19 +6,19 @@
 
 use std::marker::PhantomData;
 
-use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
+use encoding::value::{value::NativeValueConvertible, value_type::ValueTypeCategory};
 
 use crate::expression::{expression_compiler::ExpressionCompilationContext, ExpressionCompileError};
 
-pub trait UnaryExpression<T1: DBValue, R: DBValue> {
+pub trait UnaryExpression<T1: NativeValueConvertible, R: NativeValueConvertible> {
     const OP_CODE: ExpressionOpCode;
     fn evaluate(a1: T1) -> Result<R, ExpressionEvaluationError>;
 }
 
 pub struct Unary<T1, R, F>
 where
-    T1: DBValue,
-    R: DBValue,
+    T1: NativeValueConvertible,
+    R: NativeValueConvertible,
     F: UnaryExpression<T1, R>,
 {
     phantom: PhantomData<(T1, R, F)>,
@@ -26,8 +26,8 @@ where
 
 impl<T1, R, F> ExpressionInstruction for Unary<T1, R, F>
 where
-    T1: DBValue,
-    R: DBValue,
+    T1: NativeValueConvertible,
+    R: NativeValueConvertible,
     F: UnaryExpression<T1, R>,
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
@@ -35,8 +35,8 @@ where
 
 impl<T1, R, F> CompilableExpression for Unary<T1, R, F>
 where
-    T1: DBValue,
-    R: DBValue,
+    T1: NativeValueConvertible,
+    R: NativeValueConvertible,
     F: UnaryExpression<T1, R>,
 {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {

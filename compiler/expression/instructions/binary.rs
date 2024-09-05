@@ -12,20 +12,20 @@
 
 use std::{marker::PhantomData, ops::Rem};
 
-use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
+use encoding::value::{value::NativeValueConvertible, value_type::ValueTypeCategory};
 
 use crate::expression::{expression_compiler::ExpressionCompilationContext, ExpressionCompileError};
 
-pub trait BinaryExpression<T1: DBValue, T2: DBValue, R: DBValue> {
+pub trait BinaryExpression<T1: NativeValueConvertible, T2: NativeValueConvertible, R: NativeValueConvertible> {
     const OP_CODE: ExpressionOpCode;
     fn evaluate(a1: T1, a2: T2) -> Result<R, ExpressionEvaluationError>;
 }
 
 pub struct Binary<T1, T2, R, F>
 where
-    T1: DBValue,
-    T2: DBValue,
-    R: DBValue,
+    T1: NativeValueConvertible,
+    T2: NativeValueConvertible,
+    R: NativeValueConvertible,
     F: BinaryExpression<T1, T2, R>,
 {
     pub phantom: PhantomData<(T1, T2, R, F)>,
@@ -33,9 +33,9 @@ where
 
 impl<T1, T2, R, F> ExpressionInstruction for Binary<T1, T2, R, F>
 where
-    T1: DBValue,
-    T2: DBValue,
-    R: DBValue,
+    T1: NativeValueConvertible,
+    T2: NativeValueConvertible,
+    R: NativeValueConvertible,
     F: BinaryExpression<T1, T2, R>,
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
@@ -43,9 +43,9 @@ where
 
 impl<T1, T2, R, F> CompilableExpression for Binary<T1, T2, R, F>
 where
-    T1: DBValue,
-    T2: DBValue,
-    R: DBValue,
+    T1: NativeValueConvertible,
+    T2: NativeValueConvertible,
+    R: NativeValueConvertible,
     F: BinaryExpression<T1, T2, R>,
 {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {

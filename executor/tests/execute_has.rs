@@ -21,12 +21,11 @@ use compiler::{
     VariablePosition,
 };
 use concept::{
-    error::ConceptReadError,
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
+use executor::{error::ReadExecutionError, program_executor::ProgramExecutor, row::MaybeOwnedRow, ExecutionInterrupt};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
@@ -163,9 +162,9 @@ fn traverse_has_unbounded_sorted_from() {
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager);
+    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 7);
 
@@ -260,9 +259,9 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager);
+    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 3); // $person-1 is $person-2, one per name
 
@@ -348,9 +347,9 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let snapshot = Arc::new(snapshot);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager);
+    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 7);
 
@@ -418,9 +417,9 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     let variable_positions = executor.entry_variable_positions().clone();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager);
+    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
 
     // person 1 - has age 1, has age 2, has age 3, has name 1, has name 2 => 5 answers
@@ -506,9 +505,9 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     // Executor
     let snapshot = Arc::new(snapshot);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(snapshot, thing_manager);
+    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 7);
 

@@ -6,6 +6,8 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
+use itertools::Itertools;
+
 use compiler::{
     match_::{
         inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
@@ -17,16 +19,15 @@ use compiler::{
     },
     VariablePosition,
 };
-use concept::{
-    error::ConceptReadError,
-    type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation},
-};
+use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
+use executor::{ExecutionInterrupt, program_executor::ProgramExecutor};
+use executor::error::ReadExecutionError;
+use executor::row::MaybeOwnedRow;
 use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -130,9 +131,9 @@ fn attribute_equality() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager);
+    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ConceptReadError>> =
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
     assert_eq!(rows.len(), 25);
 

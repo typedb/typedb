@@ -443,7 +443,7 @@ struct CommittedWrites {
     operations: OperationsBuffer,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StatisticsError {
     DurablyWrite { source: DurabilityClientError },
     ReloadCommitData { source: CommitRecoveryError },

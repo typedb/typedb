@@ -6,6 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    fmt::{Display, Formatter},
     hash::Hash,
 };
 
@@ -379,6 +380,15 @@ pub enum Ordering {
     // ##########################################################################
     Unordered,
     Ordered,
+}
+
+impl Display for Ordering {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Ordering::Unordered => write!(f, ""),
+            Ordering::Ordered => write!(f, "[]"),
+        }
+    }
 }
 
 impl Ordering {

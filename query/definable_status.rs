@@ -140,7 +140,7 @@ pub(crate) fn get_type_annotation_status<'a, T: KindAPI<'a>>(
 pub(crate) fn get_capability_annotation_status<'a, CAP: Capability<'a>>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    capability: CAP,
+    capability: &CAP,
     annotation: &CAP::AnnotationType,
     annotation_category: AnnotationCategory,
 ) -> Result<DefinableStatus<CAP::AnnotationType>, ConceptReadError> {
@@ -177,7 +177,7 @@ pub(crate) fn get_sub_status<'a, T: TypeAPI<'a>>(
 pub(crate) fn get_override_status<'a, CAP: Capability<'a>>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    capability: CAP,
+    capability: &CAP,
     new_override: CAP,
 ) -> Result<DefinableStatus<CAP>, ConceptReadError> {
     let existing_override_opt = capability.get_override(snapshot, type_manager)?.clone();

@@ -17,7 +17,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicU64, Ordering},
-        RwLock, RwLockReadGuard,
+        Arc, RwLock, RwLockReadGuard,
     },
 };
 
@@ -45,14 +45,14 @@ impl WAL {
         if wal_dir.exists() {
             Err(WALError::CreateErrorDirectoryExists { directory: wal_dir.clone() })?
         } else {
-            fs::create_dir_all(wal_dir.clone()).map_err(|err| WALError::CreateError { source: err })?;
+            fs::create_dir_all(wal_dir.clone()).map_err(|err| WALError::CreateError { source: Arc::new(err) })?;
         }
 
-        let files = Files::open(wal_dir.clone()).map_err(|err| WALError::CreateError { source: err })?;
+        let files = Files::open(wal_dir.clone()).map_err(|err| WALError::CreateError { source: Arc::new(err) })?;
 
         let files = RwLock::new(files);
         let next = RecordIterator::new(files.read().unwrap(), DurabilitySequenceNumber::MIN)
-            .map_err(|err| WALError::CreateError { source: err })?
+            .map_err(|err| WALError::CreateError { source: Arc::new(err) })?
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
@@ -66,11 +66,11 @@ impl WAL {
             Err(WALError::LoadErrorDirectoryMissing { directory: wal_dir.clone() })?
         }
 
-        let files = Files::open(wal_dir.clone()).map_err(|err| WALError::LoadError { source: err })?;
+        let files = Files::open(wal_dir.clone()).map_err(|err| WALError::LoadError { source: Arc::new(err) })?;
 
         let files = RwLock::new(files);
         let next = RecordIterator::new(files.read().unwrap(), DurabilitySequenceNumber::MIN)
-            .map_err(|err| WALError::LoadError { source: err })?
+            .map_err(|err| WALError::LoadError { source: Arc::new(err) })?
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
@@ -147,7 +147,7 @@ impl DurabilityService for WAL {
         let files_newest_first = files.iter().rev();
         for file in files_newest_first {
             let iterator = FileRecordIterator::new(file, DurabilitySequenceNumber::MIN)
-                .map_err(|err| DurabilityServiceError::IO { source: err })?;
+                .map_err(|err| DurabilityServiceError::IO { source: Arc::new(err) })?;
 
             let mut found_record = None;
             for record_result in iterator {
@@ -166,20 +166,20 @@ impl DurabilityService for WAL {
 
     fn delete_durability(self) -> Result<(), DurabilityServiceError> {
         let files = self.files.into_inner().unwrap();
-        files.delete().map_err(|err| DurabilityServiceError::DeleteFailed { source: err })
+        files.delete().map_err(|err| DurabilityServiceError::DeleteFailed { source: Arc::new(err) })
     }
 
     fn reset(&mut self) -> Result<(), DurabilityServiceError> {
         self.next_sequence_number.store(DurabilitySequenceNumber::MIN.next().number, Ordering::SeqCst);
-        self.files.write().unwrap().reset().map_err(|err| DurabilityServiceError::IO { source: err })
+        self.files.write().unwrap().reset().map_err(|err| DurabilityServiceError::IO { source: Arc::new(err) })
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum WALError {
-    CreateError { source: io::Error },
+    CreateError { source: Arc<io::Error> },
     CreateErrorDirectoryExists { directory: PathBuf },
-    LoadError { source: io::Error },
+    LoadError { source: Arc<io::Error> },
     LoadErrorDirectoryMissing { directory: PathBuf },
 }
 
@@ -427,12 +427,12 @@ impl<'a> Iterator for RecordIterator<'a> {
         let reader = self.reader.as_mut()?;
         match reader.read_one_record().transpose() {
             Some(Ok(item)) => Some(Ok(item)),
-            Some(Err(error)) => Some(Err(DurabilityServiceError::IO { source: error })),
+            Some(Err(error)) => Some(Err(DurabilityServiceError::IO { source: Arc::new(error) })),
             None => match self.advance_file().transpose()? {
                 Ok(()) => self.next(),
                 Err(error) => {
                     self.reader = None;
-                    Some(Err(DurabilityServiceError::IO { source: error }))
+                    Some(Err(DurabilityServiceError::IO { source: Arc::new(error) }))
                 }
             },
         }
@@ -475,7 +475,7 @@ impl<'a> Iterator for FileRecordIterator<'a> {
         let reader = self.reader.as_mut()?;
         match reader.read_one_record().transpose() {
             Some(Ok(item)) => Some(Ok(item)),
-            Some(Err(error)) => Some(Err(DurabilityServiceError::IO { source: error })),
+            Some(Err(error)) => Some(Err(DurabilityServiceError::IO { source: Arc::new(error) })),
             None => None,
         }
     }

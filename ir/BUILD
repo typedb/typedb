@@ -20,11 +20,12 @@ rust_library(
     ]),
     deps = [
         "//answer",
+        "//common/primitive",
+        "//common/error",
         "//concept",
         "//durability",
         "//encoding",
         "//storage",
-        "//common/primitive",
 
         "@vaticle_typeql//rust:typeql",
 

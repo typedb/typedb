@@ -35,6 +35,7 @@ use encoding::{
     },
     EncodingKeyspace,
 };
+use error::typedb_error;
 use function::{function_cache::FunctionCache, FunctionError};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
@@ -174,7 +175,7 @@ impl Database<WALClient> {
 
         let name = name.as_ref();
 
-        fs::create_dir(path).map_err(|error| DirectoryCreate { path: path.to_owned(), source: error })?;
+        fs::create_dir(path).map_err(|error| DirectoryCreate { path: path.to_owned(), source: Arc::new(error) })?;
 
         let wal = WAL::create(path).map_err(|error| WALOpen { source: error })?;
         let mut wal_client = WALClient::new(wal);
@@ -201,7 +202,7 @@ impl Database<WALClient> {
                 &TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None),
                 SequenceNumber::MIN,
             )
-            .map_err(|error| FunctionCacheInitialise { source: error })?,
+            .map_err(|error| FunctionCacheInitialise { typedb_source: error })?,
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
@@ -224,9 +225,10 @@ impl Database<WALClient> {
 
     fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
-            CheckpointCreate, CheckpointLoad, DurabilityRead, Encoding, StatisticsInitialise, StorageOpen,
+            CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, StatisticsInitialise, StorageOpen,
             TypeCacheInitialise, WALOpen,
         };
+        let name = name.as_ref();
 
         let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
         let wal_last_sequence_number = wal.previous();
@@ -234,7 +236,8 @@ impl Database<WALClient> {
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
 
-        let checkpoint = Checkpoint::open_latest(path).map_err(|err| CheckpointLoad { source: err })?;
+        let checkpoint =
+            Checkpoint::open_latest(path).map_err(|err| CheckpointLoad { name: name.to_string(), source: err })?;
         let storage = Arc::new(
             MVCCStorage::load::<EncodingKeyspace>(&name, path, wal_client, &checkpoint)
                 .map_err(|error| StorageOpen { source: error })?,
@@ -247,7 +250,7 @@ impl Database<WALClient> {
         let mut thing_statistics = storage
             .durability()
             .find_last_unsequenced_type::<Statistics>()
-            .map_err(|err| DurabilityRead { source: err })?
+            .map_err(|err| DurabilityClientRead { source: err })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
         thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { source: err })?;
         let thing_statistics = Arc::new(thing_statistics);
@@ -263,7 +266,7 @@ impl Database<WALClient> {
                 &TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None),
                 SequenceNumber::MIN,
             )
-            .map_err(|error| FunctionCacheInitialise { source: error })?,
+            .map_err(|error| FunctionCacheInitialise { typedb_source: error })?,
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
@@ -272,7 +275,7 @@ impl Database<WALClient> {
         let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone());
 
         let database = Database::<WALClient> {
-            name: name.as_ref().to_owned(),
+            name: name.to_owned(),
             path: path.to_owned(),
             storage,
             definition_key_generator,
@@ -283,10 +286,13 @@ impl Database<WALClient> {
             _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         };
 
-        let checkpoint_sequence_number =
-            checkpoint.as_ref().unwrap().read_sequence_number().map_err(|err| CheckpointLoad { source: err })?;
+        let checkpoint_sequence_number = checkpoint
+            .as_ref()
+            .unwrap()
+            .read_sequence_number()
+            .map_err(|err| CheckpointLoad { name: name.to_string(), source: err })?;
         if checkpoint_sequence_number < wal_last_sequence_number {
-            database.checkpoint().map_err(|err| CheckpointCreate { source: err })?;
+            database.checkpoint().map_err(|err| CheckpointCreate { name: name.to_string(), source: err })?;
         }
 
         Ok(database)
@@ -324,7 +330,7 @@ impl Database<WALClient> {
             .delete_storage()
             .map_err(|err| DatabaseDeleteError::StorageDelete { source: err })?;
         let path = self.path;
-        fs::remove_dir_all(path).map_err(|err| DatabaseDeleteError::DirectoryDelete { source: err })?;
+        fs::remove_dir_all(path).map_err(|err| DatabaseDeleteError::DirectoryDelete { source: Arc::new(err) })?;
         Ok(())
     }
 
@@ -375,52 +381,25 @@ fn make_update_statistics_fn(
     }
 }
 
-#[derive(Debug)]
-pub enum DatabaseOpenError {
-    InvalidUnicodeName { name: OsString },
-    CouldNotReadDataDirectory { path: PathBuf, source: io::Error },
-    DirectoryCreate { path: PathBuf, source: io::Error },
-    StorageOpen { source: StorageOpenError },
-    WALOpen { source: WALError },
-    DurabilityOpen { source: DurabilityClientError },
-    DurabilityRead { source: DurabilityClientError },
-    CheckpointLoad { source: CheckpointLoadError },
-    CheckpointCreate { source: DatabaseCheckpointError },
-    Encoding { source: EncodingError },
-    SchemaInitialise { source: ConceptWriteError },
-    StatisticsInitialise { source: StatisticsError },
-    TypeCacheInitialise { source: TypeCacheCreateError },
-    FunctionCacheInitialise { source: FunctionError },
-}
-
-impl fmt::Display for DatabaseOpenError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+typedb_error!(
+    pub DatabaseOpenError(domain="Database", prefix = "DBO") {
+        InvalidUnicodeName(1, "Could not open database, invalid unicode name '{name:?}'.", name: OsString ),
+        CouldNotReadDataDirectory(2, "error while reading data directory at '{path:?}'.", path: PathBuf, ( source: Arc<io::Error> )),
+        DirectoryCreate(3, "Error creating directory at '{path:?}'", path: PathBuf, ( source: Arc<io::Error> )),
+        StorageOpen(4, "Error opening storage layer.", ( source: StorageOpenError )),
+        WALOpen(5, "Error opening WAL.", ( source: WALError )),
+        DurabilityClientOpen(6, "Error opening durability client.", ( source: DurabilityClientError )),
+        DurabilityClientRead(7, "Error reading from durability client.", ( source: DurabilityClientError )),
+        CheckpointLoad(8, "Error loading checkpoint for database '{name}'.", name: String, ( source: CheckpointLoadError )),
+        CheckpointCreate(9, "Error creating checkpoint for database '{name}'.", name: String,  ( source: DatabaseCheckpointError )),
+        Encoding(10, "Data encoding error.", ( source: EncodingError )),
+        StatisticsInitialise(11, "Error initialising statistics manager.", ( source: StatisticsError )),
+        TypeCacheInitialise(12, "Error initialising type cache.", ( source: TypeCacheCreateError )),
+        FunctionCacheInitialise(13, "Error initialising function cache", ( typedb_source : FunctionError )),
     }
-}
+);
 
-impl Error for DatabaseOpenError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::InvalidUnicodeName { .. } => None,
-            Self::CouldNotReadDataDirectory { source, .. } => Some(source),
-            Self::DirectoryCreate { source, .. } => Some(source),
-            Self::StorageOpen { source } => Some(source),
-            Self::WALOpen { source } => Some(source),
-            Self::DurabilityOpen { source } => Some(source),
-            Self::DurabilityRead { source } => Some(source),
-            Self::CheckpointLoad { source } => Some(source),
-            Self::CheckpointCreate { source } => Some(source),
-            Self::Encoding { source } => Some(source),
-            Self::SchemaInitialise { source } => Some(source),
-            Self::StatisticsInitialise { source } => Some(source),
-            Self::TypeCacheInitialise { source } => Some(source),
-            Self::FunctionCacheInitialise { source } => Some(source),
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DatabaseCheckpointError {
     CheckpointCreate { source: CheckpointCreateError },
 }
@@ -439,10 +418,10 @@ impl Error for DatabaseCheckpointError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DatabaseDeleteError {
     StorageDelete { source: StorageDeleteError },
-    DirectoryDelete { source: io::Error },
+    DirectoryDelete { source: Arc<io::Error> },
     InUse {},
 }
 
@@ -462,7 +441,7 @@ impl Error for DatabaseDeleteError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DatabaseResetError {
     InUse {},
     StorageInUse {},

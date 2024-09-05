@@ -73,7 +73,7 @@ pub(super) fn infer_types_for_pipeline(
 ) -> Result<AnnotatedPipeline, QueryError> {
     let annotated_preamble =
         infer_types_for_functions(translated_preamble, snapshot, type_manager, schema_function_annotations)
-            .map_err(|source| QueryError::TypeInference { source })?;
+            .map_err(|source| QueryError::FunctionTypeInference { source })?;
 
     let mut running_variable_annotations: HashMap<Variable, Arc<HashSet<answer::Type>>> = HashMap::new();
     let mut annotated_stages = Vec::with_capacity(translated_stages.len());
@@ -129,7 +129,7 @@ fn annotate_stage(
                 schema_function_annotations,
                 preamble_function_annotations,
             )
-            .map_err(|source| QueryError::TypeInference { source })?;
+            .map_err(|source| QueryError::QueryTypeInference { source })?;
             block_annotations.variable_annotations().iter().for_each(|(k, v)| {
                 running_variable_annotations.insert(*k, v.clone());
             });
@@ -148,7 +148,7 @@ fn annotate_stage(
                 &IndexedAnnotatedFunctions::empty(),
                 &AnnotatedUnindexedFunctions::empty(),
             )
-            .map_err(|source| QueryError::TypeInference { source })?;
+            .map_err(|source| QueryError::QueryTypeInference { source })?;
             block.conjunction().constraints().iter().for_each(|constraint| match constraint {
                 Constraint::Isa(isa) => {
                     running_variable_annotations
@@ -171,7 +171,7 @@ fn annotate_stage(
                 running_constraint_annotations,
                 &insert_annotations,
             )
-            .map_err(|source| QueryError::TypeInference { source })?;
+            .map_err(|source| QueryError::QueryTypeInference { source })?;
 
             Ok(AnnotatedStage::Insert { block, annotations: insert_annotations })
         }
@@ -185,7 +185,7 @@ fn annotate_stage(
                 &IndexedAnnotatedFunctions::empty(),
                 &AnnotatedUnindexedFunctions::empty(),
             )
-            .map_err(|source| QueryError::TypeInference { source })?;
+            .map_err(|source| QueryError::QueryTypeInference { source })?;
             deleted_variables.iter().for_each(|v| {
                 running_variable_annotations.remove(v);
             });

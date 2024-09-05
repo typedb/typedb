@@ -164,7 +164,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 }
 
 // TODO this should be a TypeDB error, although it can contain many errors!?
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DataCommitError {
     ConceptWriteErrors { source: Vec<ConceptWriteError> },
     SnapshotError { source: SnapshotError },
@@ -304,7 +304,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SchemaCommitError {
     ConceptWrite { errors: Vec<ConceptWriteError> },
     TypeCacheUpdate { source: TypeCacheCreateError },

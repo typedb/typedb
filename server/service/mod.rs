@@ -6,6 +6,7 @@
 
 mod answer;
 mod error;
+mod response_builders;
 pub(crate) mod transaction_service;
 pub(crate) mod typedb_service;
 

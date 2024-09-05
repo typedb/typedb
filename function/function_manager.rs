@@ -68,16 +68,16 @@ impl FunctionManager {
     }
 
     pub fn finalise(self, snapshot: &impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), FunctionError> {
-        let functions =
-            FunctionReader::get_functions_all(snapshot).map_err(|source| FunctionError::FunctionRead { source })?;
+        let functions = FunctionReader::get_functions_all(snapshot)
+            .map_err(|source| FunctionError::FunctionRetrieval { source })?;
         // TODO: Optimise: We recompile & redo type-inference on all functions here.
         // Prepare ir
         let function_index =
             HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
-        let ir = Self::translate_functions(&function_index, &functions)?;
+        let ir = Self::translate_functions(&functions, &function_index)?;
         // Run type-inference
         infer_types_for_functions(ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
-            .map_err(|source| FunctionError::TypeInference { source })?;
+            .map_err(|source| FunctionError::AllFunctionsTypeCheckFailure { source })?;
         Ok(())
     }
 
@@ -91,12 +91,12 @@ impl FunctionManager {
             let definition_key = self
                 .definition_key_generator
                 .create_function(snapshot)
-                .map_err(|source| FunctionError::Encoding { source })?;
+                .map_err(|source| FunctionError::CreateFunctionEncoding { source })?;
             let function = SchemaFunction::build(definition_key, FunctionDefinition::build_ref(definition))?;
             let index_key = NameToStructDefinitionIndex::build(function.name().as_str()).into_storage_key();
-            let existing = snapshot
-                .get::<BUFFER_VALUE_INLINE>(index_key.as_reference())
-                .map_err(|source| FunctionError::SnapshotGet { source })?;
+            let existing = snapshot.get::<BUFFER_VALUE_INLINE>(index_key.as_reference()).map_err(|source| {
+                FunctionError::FunctionRetrieval { source: FunctionReadError::FunctionRetrieval { source } }
+            })?;
             if existing.is_some() {
                 Err(FunctionError::FunctionAlreadyExists { name: function.name() })?;
             } else {
@@ -108,7 +108,7 @@ impl FunctionManager {
             HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let function_index = ReadThroughFunctionSignatureIndex::new(snapshot, self, buffered);
         // Translate to ensure the function calls are valid references. Type-inference is done at commit-time.
-        Self::translate_functions(&function_index, &functions)?;
+        Self::translate_functions(&functions, &function_index)?;
 
         for (function, definition) in zip(functions.iter(), definitions.iter()) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
@@ -123,14 +123,14 @@ impl FunctionManager {
     }
 
     pub(crate) fn translate_functions(
-        function_index: &impl FunctionSignatureIndex,
         functions: &[SchemaFunction],
+        function_index: &impl FunctionSignatureIndex,
     ) -> Result<Vec<ir::program::function::Function>, FunctionError> {
         functions
             .iter()
             .map(|function| translate_function(function_index, &function.parsed))
             .try_collect()
-            .map_err(|err| FunctionError::FunctionDefinition { source: err })
+            .map_err(|err| FunctionError::FunctionTranslation { typedb_source: err })
     }
 
     pub fn get_function_key(
@@ -176,7 +176,7 @@ impl FunctionReader {
                 )
                 .unwrap()
             })
-            .map_err(|source| FunctionReadError::SnapshotIterate { source })
+            .map_err(|source| FunctionReadError::FunctionsScan { source })
     }
 
     pub(crate) fn get_function_key(
@@ -186,7 +186,7 @@ impl FunctionReader {
         let index_key = NameToFunctionDefinitionIndex::build(name);
         let bytes_opt = snapshot
             .get(index_key.into_storage_key().as_reference())
-            .map_err(|source| FunctionReadError::SnapshotGet { source })?;
+            .map_err(|source| FunctionReadError::FunctionRetrieval { source })?;
         Ok(bytes_opt.map(|bytes| DefinitionKey::new(Bytes::Array(bytes))))
     }
 
@@ -196,7 +196,7 @@ impl FunctionReader {
     ) -> Result<SchemaFunction, FunctionReadError> {
         snapshot
             .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference())
-            .map_err(|source| FunctionReadError::SnapshotGet { source })?
+            .map_err(|source| FunctionReadError::FunctionRetrieval { source })?
             .map_or(
                 Err(FunctionReadError::FunctionNotFound { function_id: FunctionID::Schema(definition_key.clone()) }),
                 |bytes| Ok(SchemaFunction::build(definition_key, FunctionDefinition::new(Bytes::Array(bytes))).unwrap()),

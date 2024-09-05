@@ -10,6 +10,7 @@ use std::{
     collections::HashSet,
     error::Error,
     fmt,
+    fmt::Formatter,
     hash::{Hash, Hasher},
     iter::Sum,
     ops::Add,
@@ -41,14 +42,49 @@ pub enum Annotation {
     // TODO: Replace
 }
 
+impl fmt::Display for Annotation {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Annotation::Abstract(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Distinct(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Independent(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Unique(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Key(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Cardinality(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Regex(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Cascade(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Range(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Values(annotation) => fmt::Display::fmt(annotation, f),
+        }
+    }
+}
+
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationAbstract;
+
+impl fmt::Display for AnnotationAbstract {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "@abstract")
+    }
+}
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationDistinct;
 
+impl fmt::Display for AnnotationDistinct {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "@distinct")
+    }
+}
+
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationUnique;
+
+impl fmt::Display for AnnotationUnique {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "@unique")
+    }
+}
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationKey;
@@ -57,8 +93,20 @@ impl AnnotationKey {
     pub const CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(1, Some(1));
 }
 
+impl fmt::Display for AnnotationKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "@key")
+    }
+}
+
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationIndependent;
+
+impl fmt::Display for AnnotationIndependent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "@independent")
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationCardinality {
@@ -140,6 +188,15 @@ impl Sum for AnnotationCardinality {
     }
 }
 
+impl fmt::Display for AnnotationCardinality {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.end() {
+            None => write!(f, "@card({}..)", self.start_inclusive),
+            Some(end) => write!(f, "@card({}..{})", self.start_inclusive, end),
+        }
+    }
+}
+
 #[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationRegex {
     regex: Cow<'static, str>,
@@ -171,8 +228,20 @@ impl AnnotationRegex {
     }
 }
 
+impl fmt::Display for AnnotationRegex {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.regex)
+    }
+}
+
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationCascade;
+
+impl fmt::Display for AnnotationCascade {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "@cascade")
+    }
+}
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct AnnotationRange {
@@ -318,6 +387,17 @@ impl Hash for AnnotationRange {
     }
 }
 
+impl fmt::Display for AnnotationRange {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match (self.start(), self.end()) {
+            (Some(start), Some(end)) => write!(f, "@range({start}..{end})"),
+            (Some(start), None) => write!(f, "@range({start}..)"),
+            (None, Some(end)) => write!(f, "@range(..{end})"),
+            (None, None) => unreachable!("Empty range @range(..) should never be written to the schema - start or end should always be specified."),
+        }
+    }
+}
+
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct AnnotationValues {
     // ##########################################################################
@@ -409,6 +489,17 @@ impl AnnotationValues {
 impl Hash for AnnotationValues {
     fn hash<H: Hasher>(&self, state: &mut H) {
         hash_value::hash_value_vec(&self.values, state);
+    }
+}
+
+impl fmt::Display for AnnotationValues {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        assert!(!self.values.is_empty());
+        write!(f, "@values({}", self.values[0])?;
+        for value in &self.values[1..] {
+            write!(f, ", {value}")?;
+        }
+        write!(f, ")")
     }
 }
 

@@ -17,6 +17,7 @@ pub type PlaceholderTypeQLReturnOperation = String;
 
 #[derive(Debug, Clone)]
 pub struct Function {
+    name: String,
     // Variable categories for args & return can be read from the block's context.
     arguments: Vec<Variable>,
     block: FunctionalBlock,
@@ -26,12 +27,17 @@ pub struct Function {
 
 impl Function {
     pub fn new(
+        name: &str,
         block: FunctionalBlock,
         variable_registry: VariableRegistry,
         arguments: Vec<Variable>,
         return_operation: ReturnOperation,
     ) -> Self {
-        Self { block, variable_registry, arguments, return_operation }
+        Self { name: name.to_string(), block, variable_registry, arguments, return_operation }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn arguments(&self) -> &[Variable] {

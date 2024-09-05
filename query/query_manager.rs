@@ -48,11 +48,11 @@ impl QueryManager {
     ) -> Result<(), QueryError> {
         match query {
             SchemaQuery::Define(define) => define::execute(snapshot, type_manager, thing_manager, define)
-                .map_err(|err| QueryError::Define { source: err }),
+                .map_err(|err| QueryError::Define { typedb_source: err }),
             SchemaQuery::Redefine(redefine) => redefine::execute(snapshot, type_manager, thing_manager, redefine)
-                .map_err(|err| QueryError::Redefine { source: err }),
+                .map_err(|err| QueryError::Redefine { typedb_source: err }),
             SchemaQuery::Undefine(undefine) => undefine::execute(snapshot, type_manager, thing_manager, undefine)
-                .map_err(|err| QueryError::Undefine { source: err }),
+                .map_err(|err| QueryError::Undefine { typedb_source: err }),
         }
     }
 
@@ -72,7 +72,7 @@ impl QueryManager {
 
         let annotated_functions = function_manager
             .get_annotated_functions(snapshot.as_ref(), &type_manager)
-            .map_err(|err| QueryError::FunctionRetrieval { source: err })?;
+            .map_err(|err| QueryError::FunctionRetrieval { typedb_source: err })?;
 
         // 2: Annotate
         let AnnotatedPipeline { annotated_preamble, annotated_stages } = infer_types_for_pipeline(
@@ -145,7 +145,7 @@ impl QueryManager {
 
         let annotated_functions = match function_manager.get_annotated_functions(&snapshot, &type_manager) {
             Ok(annotated_functions) => annotated_functions,
-            Err(err) => return Err((snapshot, QueryError::FunctionRetrieval { source: err })),
+            Err(err) => return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err })),
         };
 
         // 2: Annotate

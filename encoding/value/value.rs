@@ -7,6 +7,7 @@
 use std::{
     borrow::Cow,
     cmp::Ordering,
+    fmt,
     fmt::{Display, Formatter},
     hash::{Hash, Hasher},
     ops::Deref,
@@ -303,7 +304,25 @@ impl TryInto<f64> for Value<'static> {
     }
 }
 
-pub trait DBValue: Sized {
+impl<'a> fmt::Display for Value<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Value::Boolean(bool) => write!(f, "{bool}"),
+            Value::Long(long) => write!(f, "{long}"),
+            Value::Double(double) => write!(f, "{double}"),
+            Value::Decimal(decimal) => write!(f, "{decimal}[decimal]"),
+            Value::Date(date) => write!(f, "{date}"),
+            Value::DateTime(datetime) => write!(f, "{datetime}"),
+            Value::DateTimeTZ(datetime_tz) => write!(f, "{datetime_tz}"),
+            Value::Duration(duration) => write!(f, "{duration}"),
+            Value::String(string) => write!(f, "\"{string}\""),
+            // TODO: this string will not have field names, only field IDs!
+            Value::Struct(struct_) => write!(f, "{struct_}"),
+        }
+    }
+}
+
+pub trait NativeValueConvertible: Sized {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory;
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()>;
@@ -311,7 +330,7 @@ pub trait DBValue: Sized {
     fn to_db_value(self) -> Value<'static>;
 }
 
-impl DBValue for bool {
+impl NativeValueConvertible for bool {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Boolean;
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
@@ -326,7 +345,7 @@ impl DBValue for bool {
     }
 }
 
-impl DBValue for f64 {
+impl NativeValueConvertible for f64 {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Double;
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
@@ -341,7 +360,7 @@ impl DBValue for f64 {
     }
 }
 
-impl DBValue for i64 {
+impl NativeValueConvertible for i64 {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Long;
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
@@ -356,7 +375,7 @@ impl DBValue for i64 {
     }
 }
 
-impl DBValue for String {
+impl NativeValueConvertible for String {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::String;
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
@@ -370,7 +389,7 @@ impl DBValue for String {
     }
 }
 
-impl DBValue for Decimal {
+impl NativeValueConvertible for Decimal {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Decimal;
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
@@ -384,7 +403,7 @@ impl DBValue for Decimal {
     }
 }
 
-impl DBValue for NaiveDate {
+impl NativeValueConvertible for NaiveDate {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Date;
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
@@ -399,7 +418,7 @@ impl DBValue for NaiveDate {
     }
 }
 
-impl DBValue for NaiveDateTime {
+impl NativeValueConvertible for NaiveDateTime {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::DateTime;
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
@@ -414,7 +433,7 @@ impl DBValue for NaiveDateTime {
     }
 }
 
-impl DBValue for DateTime<Tz> {
+impl NativeValueConvertible for DateTime<Tz> {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::DateTimeTZ;
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
@@ -429,7 +448,7 @@ impl DBValue for DateTime<Tz> {
     }
 }
 
-impl DBValue for Duration {
+impl NativeValueConvertible for Duration {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Duration;
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
@@ -441,11 +460,5 @@ impl DBValue for Duration {
 
     fn to_db_value(self) -> Value<'static> {
         Value::Duration(self)
-    }
-}
-
-impl<'a> Display for Value<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
     }
 }

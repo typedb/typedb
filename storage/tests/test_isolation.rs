@@ -639,14 +639,14 @@ fn isolation_manager_reads_evicted_from_disk() {
     }
 
     {
-        let mut snapshot_passes = storage.clone().open_snapshot_write_at(watermark_after_0).unwrap();
+        let mut snapshot_passes = storage.clone().open_snapshot_write_at(watermark_after_0);
         snapshot_passes.put_val(key_2.clone().into_owned_array(), value_1.clone());
         let snapshot_passes_result = snapshot_passes.commit();
 
         assert!(snapshot_passes_result.is_ok());
     }
     {
-        let mut snapshot_conflicts = storage.open_snapshot_write_at(watermark_after_0).unwrap();
+        let mut snapshot_conflicts = storage.open_snapshot_write_at(watermark_after_0);
         snapshot_conflicts.get_required(key_1.clone()).unwrap();
         snapshot_conflicts.put_val(key_2.clone().into_owned_array(), value_1.clone());
         let snapshot_conflicts_result = snapshot_conflicts.commit();

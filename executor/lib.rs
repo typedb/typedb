@@ -10,8 +10,10 @@
 use std::slice;
 
 use compiler::VariablePosition;
+use tokio::sync::broadcast::error::TryRecvError;
 
 pub mod batch;
+pub mod error;
 pub mod expression_executor;
 mod function_executor;
 pub(crate) mod instruction;
@@ -40,5 +42,42 @@ impl<'a> IntoIterator for &'a SelectedPositions {
 
     fn into_iter(self) -> Self::IntoIter {
         self.selected.iter()
+    }
+}
+
+#[derive(Debug)]
+pub struct ExecutionInterrupt {
+    signal: Option<tokio::sync::broadcast::Receiver<()>>,
+}
+
+impl ExecutionInterrupt {
+    pub fn new(signal: tokio::sync::broadcast::Receiver<()>) -> Self {
+        Self { signal: Some(signal) }
+    }
+
+    pub fn new_uninterruptible() -> Self {
+        Self { signal: None }
+    }
+
+    pub fn check(&mut self) -> bool {
+        // TODO: if this becomes expensive to check frequently (try_recv may acquire locks), we could
+        //       optimise it by caching the last time it was checked, and only actually check
+        //       the signal once T micros/millis are elapsed... if this is really really cheap we can
+        //       check the optimised interrupt in really hot loops as well.
+        match &mut self.signal {
+            None => false,
+            Some(signal) => match signal.try_recv() {
+                Ok(_) => true,
+                Err(TryRecvError::Empty) => false,
+                Err(TryRecvError::Closed) | Err(TryRecvError::Lagged(_)) => {
+                    panic!("Unexpected interrupt signal state. They should never be lagged or closed before cleaning up the receivers.")
+                }
+            },
+        }
+    }
+
+    // Note: going against tokio's broadcast signal convention, which explicitly isn't `clone()`
+    pub fn clone(&self) -> Self {
+        Self { signal: self.signal.as_ref().clone().map(|signal| signal.resubscribe()) }
     }
 }

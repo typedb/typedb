@@ -12,7 +12,7 @@
 
 use std::marker::PhantomData;
 
-use encoding::value::{value::DBValue, value_type::ValueTypeCategory};
+use encoding::value::{value::NativeValueConvertible, value_type::ValueTypeCategory};
 
 use crate::expression::{
     expression_compiler::ExpressionCompilationContext,
@@ -42,30 +42,30 @@ impl ExpressionInstruction for LoadConstant {
 }
 
 // Casts
-pub trait ImplicitCast<From: DBValue>: DBValue {
+pub trait ImplicitCast<From: NativeValueConvertible>: NativeValueConvertible {
     const CAST_UNARY_OPCODE: ExpressionOpCode;
     const CAST_LEFT_OPCODE: ExpressionOpCode;
     const CAST_RIGHT_OPCODE: ExpressionOpCode;
     fn cast(from: From) -> Result<Self, ExpressionEvaluationError>;
 }
 
-pub struct CastUnary<From: DBValue, To: ImplicitCast<From>> {
+pub struct CastUnary<From: NativeValueConvertible, To: ImplicitCast<From>> {
     phantom: PhantomData<(From, To)>,
 }
 
-pub struct CastBinaryLeft<From: DBValue, To: ImplicitCast<From>> {
+pub struct CastBinaryLeft<From: NativeValueConvertible, To: ImplicitCast<From>> {
     phantom: PhantomData<(From, To)>,
 }
 
-pub struct CastBinaryRight<From: DBValue, To: ImplicitCast<From>> {
+pub struct CastBinaryRight<From: NativeValueConvertible, To: ImplicitCast<From>> {
     phantom: PhantomData<(From, To)>,
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> ExpressionInstruction for CastUnary<From, To> {
+impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionInstruction for CastUnary<From, To> {
     const OP_CODE: ExpressionOpCode = To::CAST_UNARY_OPCODE;
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> CompilableExpression for CastUnary<From, To> {
+impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression for CastUnary<From, To> {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }
@@ -82,11 +82,11 @@ impl<From: DBValue, To: ImplicitCast<From>> CompilableExpression for CastUnary<F
     }
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> ExpressionInstruction for CastBinaryLeft<From, To> {
+impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionInstruction for CastBinaryLeft<From, To> {
     const OP_CODE: ExpressionOpCode = To::CAST_LEFT_OPCODE;
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> CompilableExpression for CastBinaryLeft<From, To> {
+impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression for CastBinaryLeft<From, To> {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }
@@ -105,11 +105,11 @@ impl<From: DBValue, To: ImplicitCast<From>> CompilableExpression for CastBinaryL
     }
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> ExpressionInstruction for CastBinaryRight<From, To> {
+impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionInstruction for CastBinaryRight<From, To> {
     const OP_CODE: ExpressionOpCode = To::CAST_RIGHT_OPCODE;
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> CompilableExpression for CastBinaryRight<From, To> {
+impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression for CastBinaryRight<From, To> {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }

@@ -58,7 +58,7 @@ pub(super) fn translate_pipeline(
         .iter()
         .map(|preamble| translate_function(&all_function_signatures, &preamble.function))
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|source| QueryError::FunctionDefinition { source })?;
+        .map_err(|source| QueryError::FunctionDefinition { typedb_source: source })?;
 
     let mut translation_context = TranslationContext::new();
     let mut translated_stages: Vec<TranslatedStage> = Vec::with_capacity(query.stages.len());

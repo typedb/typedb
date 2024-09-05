@@ -34,11 +34,11 @@ impl TypeDBError for typeql::Error {
         format!("Causes:\n{}", self)
     }
 
-    fn source(&self) -> Option<&dyn Error> {
+    fn source(&self) -> Option<&(dyn Error + Send)> {
         None
     }
 
-    fn source_typedb_error(&self) -> Option<&dyn TypeDBError> {
+    fn source_typedb_error(&self) -> Option<&(dyn TypeDBError + Send)> {
         None
     }
 }

@@ -510,7 +510,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SnapshotError {
     Commit { source: StorageCommitError },
 }

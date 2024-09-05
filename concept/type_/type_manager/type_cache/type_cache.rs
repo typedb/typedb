@@ -15,7 +15,7 @@ use encoding::{
     graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition},
     value::{label::Label, value_type::ValueType},
 };
-use storage::{sequence_number::SequenceNumber, MVCCStorage, ReadSnapshotOpenError};
+use storage::{sequence_number::SequenceNumber, MVCCStorage};
 
 use crate::type_::{
     annotation::AnnotationIndependent,
@@ -87,12 +87,10 @@ impl TypeCache {
         storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
     ) -> Result<Self, TypeCacheCreateError> {
-        use TypeCacheCreateError::SnapshotOpen;
         // note: since we will parse out many heterogenous properties/edges from the schema, we will scan once into a vector,
         //       then go through it again to pull out the type information.
 
-        let snapshot =
-            storage.open_snapshot_read_at(open_sequence_number).map_err(|error| SnapshotOpen { source: error })?;
+        let snapshot = storage.open_snapshot_read_at(open_sequence_number);
 
         let entity_type_caches = EntityTypeCache::create(&snapshot);
         let relation_type_caches = RelationTypeCache::create(&snapshot);
@@ -486,23 +484,17 @@ impl TypeCache {
     }
 }
 
-#[derive(Debug)]
-pub enum TypeCacheCreateError {
-    SnapshotOpen { source: ReadSnapshotOpenError },
-}
+#[derive(Debug, Clone)]
+pub enum TypeCacheCreateError {}
 
 impl fmt::Display for TypeCacheCreateError {
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::SnapshotOpen { .. } => todo!(),
-        }
+        todo!()
     }
 }
 
 impl Error for TypeCacheCreateError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::SnapshotOpen { source } => Some(source),
-        }
+        todo!()
     }
 }

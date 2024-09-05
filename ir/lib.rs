@@ -26,7 +26,7 @@ use crate::{
 pub mod pattern;
 pub mod program;
 pub mod translation;
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PatternDefinitionError {
     DisjointVariableReuse {
         variable_name: String,
@@ -122,7 +122,7 @@ impl Error for PatternDefinitionError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LiteralParseError {
     FragmentParseError { fragment: String },
     ScientificNotationNotAllowedForDecimal { literal: String },

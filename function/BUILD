@@ -16,6 +16,7 @@ rust_library(
         "//answer",
         "//common/bytes",
         "//common/primitive",
+        "//common/error",
         "//resource",
         "//concept",
         "//compiler",

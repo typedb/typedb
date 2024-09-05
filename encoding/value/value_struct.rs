@@ -6,12 +6,15 @@
 
 use std::{
     collections::HashMap,
+    fmt,
+    fmt::Formatter,
     hash::{Hash, Hasher},
     ops::Range,
     sync::Arc,
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use itertools::Itertools;
 use primitive::either::Either;
 use resource::constants::{
     encoding::StructFieldIDUInt,
@@ -152,6 +155,17 @@ impl<'a> Hash for StructValue<'a> {
             Hash::hash(id, state);
             Hash::hash(value, state);
         }
+    }
+}
+
+// Prints struct with inner values, but without the right labels, since these are not available inline
+impl<'a> fmt::Display for StructValue<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{{")?;
+        for (field_id, value) in self.fields.iter().sorted_by_key(|(id, _)| **id) {
+            write!(f, "_{field_id}: {value}")?;
+        }
+        write!(f, "}}")
     }
 }
 

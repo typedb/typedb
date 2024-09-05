@@ -14,7 +14,8 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    function_executor::FunctionExecutor, pattern_executor::PatternExecutor, row::MaybeOwnedRow, VariablePosition,
+    error::ReadExecutionError, function_executor::FunctionExecutor, pattern_executor::PatternExecutor,
+    row::MaybeOwnedRow, ExecutionInterrupt, VariablePosition,
 };
 
 pub struct ProgramExecutor {
@@ -48,7 +49,8 @@ impl ProgramExecutor {
         self,
         snapshot: Arc<impl ReadableSnapshot + 'static>,
         thing_manager: Arc<ThingManager>,
-    ) -> impl for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, &'a ConceptReadError>> {
-        self.entry.into_iterator(snapshot, thing_manager)
+        interrupt: ExecutionInterrupt,
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, &'a ReadExecutionError>> {
+        self.entry.into_iterator(snapshot, thing_manager, interrupt)
     }
 }

@@ -16,7 +16,6 @@ pub(crate) enum ProtocolError {
     TransactionAlreadyOpen {},
     TransactionClosed {},
     UnrecognisedTransactionType { enum_variant: i32 },
-    QueryStreamNotFound { query_request_id: Uuid },
 }
 
 impl IntoGRPCStatus for ProtocolError {
@@ -44,14 +43,6 @@ impl IntoGRPCStatus for ProtocolError {
                     ),
                 ),
             ),
-            ProtocolError::QueryStreamNotFound { query_request_id } => Status::new(
-                Code::NotFound,
-                format!(
-                    "Query stream with protocol id '{:?}' was not found in the transaction. \
-                    The transaction could be closed, committed, rolled back, or this is an error state.",
-                    query_request_id
-                ),
-            ),
         }
     }
 }
@@ -60,7 +51,7 @@ pub(crate) trait IntoProtocolErrorMessage {
     fn into_error_message(self) -> typedb_protocol::Error;
 }
 
-impl<T: TypeDBError> IntoProtocolErrorMessage for T {
+impl<T: TypeDBError + Send> IntoProtocolErrorMessage for T {
     fn into_error_message(self) -> typedb_protocol::Error {
         let root_source = self.root_source_typedb_error();
         let code = root_source.code();

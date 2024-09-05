@@ -14,6 +14,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     pipeline::{PipelineExecutionError, StageAPI, StageIterator},
     row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 
 pub struct InitialStage<Snapshot: ReadableSnapshot + 'static> {
@@ -33,7 +34,10 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for InitialStage<S
         HashMap::new()
     }
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+    fn into_iterator(
+        self,
+        interrupt: ExecutionInterrupt,
+    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         Ok((InitialIterator::new(), self.snapshot))
     }
 }

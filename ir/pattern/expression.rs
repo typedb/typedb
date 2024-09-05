@@ -232,7 +232,7 @@ impl<ID: IrID> Display for Expression<ID> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExpressionDefinitionError {
     ExpectedValueArgumentReceivedList,
     ExpectedListArgumentReceivedValue,
