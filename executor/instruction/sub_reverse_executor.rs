@@ -13,7 +13,7 @@ use std::{
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::SubReverseInstruction;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::TypeAPI};
 use ir::pattern::constraint::SubKind;
 use itertools::Itertools;
 use lending_iterator::{higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
@@ -68,9 +68,9 @@ impl SubReverseExecutor {
             }
         };
         let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([sub.supertype(), sub.subtype()])
-        } else {
             TuplePositions::Pair([sub.subtype(), sub.supertype()])
+        } else {
+            TuplePositions::Pair([sub.supertype(), sub.subtype()])
         };
 
         let checker = Checker::<AdHocHkt<(Type, Type)>> {
@@ -136,35 +136,28 @@ impl SubReverseExecutor {
                 };
 
                 let type_manager = thing_manager.type_manager();
-                let subtypes = match sup.clone() {
+                let mut subtypes = match &sup {
                     Type::Entity(type_) => {
-                        let mut subtypes =
-                            type_manager.get_entity_type_subtypes(&**snapshot, type_.clone())?.to_owned();
-                        subtypes.push(type_);
-                        subtypes.sort();
-                        subtypes.into_iter().map(Type::Entity).collect_vec()
+                        let subtypes = type_.get_subtypes_transitive(&**snapshot, type_manager)?;
+                        subtypes.iter().cloned().map(Type::Entity).collect_vec()
                     }
                     Type::Relation(type_) => {
-                        let mut subtypes =
-                            type_manager.get_relation_type_subtypes(&**snapshot, type_.clone())?.to_owned();
-                        subtypes.push(type_);
-                        subtypes.sort();
-                        subtypes.into_iter().map(Type::Relation).collect_vec()
+                        let subtypes = type_.get_subtypes_transitive(&**snapshot, type_manager)?;
+                        subtypes.iter().cloned().map(Type::Relation).collect_vec()
                     }
                     Type::Attribute(type_) => {
-                        let mut subtypes =
-                            type_manager.get_attribute_type_subtypes(&**snapshot, type_.clone())?.to_owned();
-                        subtypes.push(type_);
-                        subtypes.sort();
-                        subtypes.into_iter().map(Type::Attribute).collect_vec()
+                        let subtypes = type_.get_subtypes_transitive(&**snapshot, type_manager)?;
+                        subtypes.iter().cloned().map(Type::Attribute).collect_vec()
                     }
                     Type::RoleType(type_) => {
-                        let mut subtypes = type_manager.get_role_type_subtypes(&**snapshot, type_.clone())?.to_owned();
-                        subtypes.push(type_);
-                        subtypes.sort();
-                        subtypes.into_iter().map(Type::RoleType).collect_vec()
+                        let subtypes = type_.get_subtypes_transitive(&**snapshot, type_manager)?;
+                        subtypes.iter().cloned().map(Type::RoleType).collect_vec()
                     }
                 };
+                subtypes.push(sup.clone());
+                subtypes.sort();
+                eprintln!("sup = {:?}", sup);
+                eprintln!("subtypes = {:?}", subtypes);
 
                 let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, sup.clone()))).collect_vec(); // TODO cache this
                 let as_tuples: SubReverseBoundedSortedSuper = NarrowingTupleIterator(

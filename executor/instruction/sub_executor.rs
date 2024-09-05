@@ -13,7 +13,7 @@ use std::{
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::SubInstruction;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::TypeAPI};
 use ir::pattern::constraint::SubKind;
 use itertools::Itertools;
 use lending_iterator::{
@@ -160,36 +160,27 @@ impl SubExecutor {
                 };
 
                 let type_manager = thing_manager.type_manager();
-                let supertypes = match sub.clone() {
+                let mut supertypes = match &sub {
                     Type::Entity(type_) => {
-                        let mut supertypes =
-                            type_manager.get_entity_type_supertypes(&**snapshot, type_.clone())?.to_owned();
-                        supertypes.push(type_);
-                        supertypes.sort();
-                        supertypes.into_iter().map(Type::Entity).collect_vec()
+                        let supertypes = type_.get_supertypes_transitive(&**snapshot, type_manager)?;
+                        supertypes.iter().cloned().map(Type::Entity).collect_vec()
                     }
                     Type::Relation(type_) => {
-                        let mut supertypes =
-                            type_manager.get_relation_type_supertypes(&**snapshot, type_.clone())?.to_owned();
-                        supertypes.push(type_);
-                        supertypes.sort();
-                        supertypes.into_iter().map(Type::Relation).collect_vec()
+                        let supertypes = type_.get_supertypes_transitive(&**snapshot, type_manager)?;
+                        supertypes.iter().cloned().map(Type::Relation).collect_vec()
                     }
                     Type::Attribute(type_) => {
-                        let mut supertypes =
-                            type_manager.get_attribute_type_supertypes(&**snapshot, type_.clone())?.to_owned();
-                        supertypes.push(type_);
-                        supertypes.sort();
-                        supertypes.into_iter().map(Type::Attribute).collect_vec()
+                        let supertypes = type_.get_supertypes_transitive(&**snapshot, type_manager)?;
+                        supertypes.iter().cloned().map(Type::Attribute).collect_vec()
                     }
                     Type::RoleType(type_) => {
-                        let mut supertypes =
-                            type_manager.get_role_type_supertypes(&**snapshot, type_.clone())?.to_owned();
-                        supertypes.push(type_);
-                        supertypes.sort();
-                        supertypes.into_iter().map(Type::RoleType).collect_vec()
+                        let supertypes = type_.get_supertypes_transitive(&**snapshot, type_manager)?;
+                        supertypes.iter().cloned().map(Type::RoleType).collect_vec()
                     }
                 };
+                supertypes.push(sub.clone());
+                supertypes.sort();
+
                 let sub_with_super = supertypes.into_iter().map(|sup| Ok((sub.clone(), sup))).collect_vec(); // TODO cache this
 
                 let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
