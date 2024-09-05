@@ -48,7 +48,7 @@ use tokio::{
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
-use typedb_protocol::transaction::{stream_signal::Req, Client, Server, Type};
+use typedb_protocol::transaction::stream_signal::Req;
 use typeql::{
     parse_query,
     query::{stage::Stage, Pipeline, SchemaQuery},
@@ -83,7 +83,7 @@ macro_rules! with_readable_transaction {
 pub(crate) struct TransactionService {
     database_manager: Arc<DatabaseManager>,
 
-    request_stream: Streaming<Client>,
+    request_stream: Streaming<typedb_protocol::transaction::Client>,
     response_sender: Sender<Result<typedb_protocol::transaction::Server, Status>>,
     read_responder_interrupt_sender: broadcast::Sender<()>,
     read_responder_interrupt_receiver: broadcast::Receiver<()>,
@@ -238,7 +238,7 @@ impl StreamingCondition {
 
 impl TransactionService {
     pub(crate) fn new(
-        request_stream: Streaming<Client>,
+        request_stream: Streaming<typedb_protocol::transaction::Client>,
         response_sender: Sender<Result<typedb_protocol::transaction::Server, Status>>,
         database_manager: Arc<DatabaseManager>,
     ) -> Self {
@@ -395,9 +395,9 @@ impl TransactionService {
         })?;
 
         let transaction = match transaction_type {
-            Type::Read => Transaction::Read(TransactionRead::open(database, transaction_options)),
-            Type::Write => Transaction::Write(TransactionWrite::open(database, transaction_options)),
-            Type::Schema => Transaction::Schema(TransactionSchema::open(database, transaction_options)),
+            typedb_protocol::transaction::Type::Read => Transaction::Read(TransactionRead::open(database, transaction_options)),
+            typedb_protocol::transaction::Type::Write => Transaction::Write(TransactionWrite::open(database, transaction_options)),
+            typedb_protocol::transaction::Type::Schema => Transaction::Schema(TransactionSchema::open(database, transaction_options)),
         };
         self.transaction = Some(transaction);
         self.is_open = true;
@@ -511,7 +511,7 @@ impl TransactionService {
     }
 
     async fn stream_parts(
-        response_sender: Sender<Result<Server, Status>>,
+        response_sender: Sender<Result<typedb_protocol::transaction::Server, Status>>,
         prefetch_size: usize,
         network_latency_millis: usize,
         req_id: Uuid,
@@ -539,7 +539,7 @@ impl TransactionService {
     }
 
     async fn stream_while_or_finish(
-        response_sender: &Sender<Result<Server, Status>>,
+        response_sender: &Sender<Result<typedb_protocol::transaction::Server, Status>>,
         req_id: Uuid,
         mut query_response_receiver: Receiver<Option<QueryResponse>>,
         streaming_condition: StreamingCondition,
