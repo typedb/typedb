@@ -616,7 +616,7 @@ impl SubPlanner {
     pub(crate) fn from_constraint(
         sub: &ir::pattern::constraint::Sub<Variable>,
         variable_index: &HashMap<Variable, usize>,
-        type_annotations: &TypeAnnotations,
+        _type_annotations: &TypeAnnotations,
     ) -> Self {
         Self {
             type_: variable_index[&sub.subtype()],
@@ -631,7 +631,7 @@ impl SubPlanner {
 }
 
 impl Costed for SubPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
         VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }
@@ -660,37 +660,65 @@ impl OwnsPlanner {
 }
 
 impl Costed for OwnsPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
         VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }
 
 #[derive(Debug)]
-pub(super) struct RelatesPlanner {}
+pub(super) struct RelatesPlanner {
+    relation: usize,
+    role_type: usize,
+}
 
 impl RelatesPlanner {
+    pub(crate) fn from_constraint(
+        relates: &ir::pattern::constraint::Relates<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> RelatesPlanner {
+        let relation = variable_index[&relates.relation()];
+        let role_type = variable_index[&relates.role_type()];
+        Self { relation, role_type }
+    }
+
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [None; 3].into_iter().flatten()
+        [Some(self.relation), Some(self.role_type), None].into_iter().flatten()
     }
 }
 
 impl Costed for RelatesPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
         VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }
 
 #[derive(Debug)]
-pub(super) struct PlaysPlanner {}
+pub(super) struct PlaysPlanner {
+    player: usize,
+    role_type: usize,
+}
 
 impl PlaysPlanner {
+    pub(crate) fn from_constraint(
+        plays: &ir::pattern::constraint::Plays<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> PlaysPlanner {
+        let player = variable_index[&plays.player()];
+        let role_type = variable_index[&plays.role_type()];
+        Self { player, role_type }
+    }
+
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [None; 3].into_iter().flatten()
+        [Some(self.player), Some(self.role_type), None].into_iter().flatten()
     }
 }
 
 impl Costed for PlaysPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
         VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }
@@ -705,7 +733,7 @@ impl ValueTypePlanner {
 }
 
 impl Costed for ValueTypePlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
         VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }

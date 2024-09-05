@@ -1100,6 +1100,10 @@ impl<ID: IrID> Relates<ID> {
         function(self.relation, ConstraintIDSide::Left);
         function(self.role_type, ConstraintIDSide::Right);
     }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Relates<T> {
+        Relates::new(*mapping.get(&self.relation).unwrap(), *mapping.get(&self.role_type).unwrap())
+    }
 }
 
 impl<ID> From<Relates<ID>> for Constraint<ID> {
@@ -1143,6 +1147,10 @@ impl<ID: IrID> Plays<ID> {
     {
         function(self.player, ConstraintIDSide::Left);
         function(self.role_type, ConstraintIDSide::Right);
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Plays<T> {
+        Plays::new(*mapping.get(&self.player).unwrap(), *mapping.get(&self.role_type).unwrap())
     }
 }
 

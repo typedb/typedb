@@ -91,6 +91,22 @@ impl InstructionExecutor {
             ConstraintInstruction::OwnsReverse(owns_reverse) => {
                 Ok(Self::OwnsReverse(OwnsReverseExecutor::new(owns_reverse, variable_modes, sort_by)))
             }
+            ConstraintInstruction::Relates(_relates) => {
+                todo!()
+                // Ok(Self::Relates(RelatesExecutor::new(relates, variable_modes, sort_by)))
+            }
+            ConstraintInstruction::RelatesReverse(_relates_reverse) => {
+                todo!()
+                // Ok(Self::RelatesReverse(RelatesReverseExecutor::new(relates_reverse, variable_modes, sort_by)))
+            }
+            ConstraintInstruction::Plays(_plays) => {
+                todo!()
+                // Ok(Self::Plays(PlaysExecutor::new(plays, variable_modes, sort_by)))
+            }
+            ConstraintInstruction::PlaysReverse(_plays_reverse) => {
+                todo!()
+                // Ok(Self::PlaysReverse(PlaysReverseExecutor::new(plays_reverse, variable_modes, sort_by)))
+            }
             ConstraintInstruction::Isa(isa) => Ok(Self::Isa(IsaExecutor::new(isa, variable_modes, sort_by))),
             ConstraintInstruction::IsaReverse(isa_reverse) => {
                 Ok(Self::IsaReverse(IsaReverseExecutor::new(isa_reverse, variable_modes, sort_by)))
