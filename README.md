@@ -1,12 +1,10 @@
 [![TypeDB](./docs/banner.png)](https://typedb.com/introduction)
 
-[![Factory](https://factory.vaticle.com/api/status/vaticle/typedb/badge.svg)](https://factory.vaticle.com/vaticle/typedb)
-[![CircleCI](https://circleci.com/gh/vaticle/typedb/tree/master.svg?style=shield)](https://circleci.com/gh/vaticle/typedb/tree/master)
-[![GitHub release](https://img.shields.io/github/release/vaticle/typedb.svg)](https://github.com/vaticle/typedb/releases/latest)
-[![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff)](https://typedb.com/discord)
+[![Factory](https://factory.vaticle.com/api/status/typedb/typedb/badge.svg)](https://factory.vaticle.com/typedb/typedb)
+[![CircleCI](https://circleci.com/gh/typedb/typedb/tree/master.svg?style=shield)](https://circleci.com/gh/typedb/typedb/tree/master)
+[![GitHub release](https://img.shields.io/github/release/typedb/typedb.svg)](https://github.com/typedb/typedb/releases/latest)
+[![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=discord&logo=discord&logoColor=ffffff)](https://typedb.com/discord)
 [![Discussion Forum](https://img.shields.io/discourse/https/forum.typedb.com/topics.svg)](https://forum.typedb.com)
-[![Stack Overflow](https://img.shields.io/badge/stackoverflow-typedb-796de3.svg)](https://stackoverflow.com/questions/tagged/typedb)
-[![Stack Overflow](https://img.shields.io/badge/stackoverflow-typeql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/typeql)
 
 # Introducing TypeDB
 
@@ -111,14 +109,14 @@ rule transitive-team-membership:
     };
 
 insert
-$john isa user, has email "john@vaticle.com";
+$john isa user, has email "john@typedb.com";
 $eng isa team, has name "Engineering ";
 $cloud isa team, has name "Cloud";
 (team: $eng, member: $cloud) isa team-membership;
 (team: $cloud, member: $john) isa team-membership;
 
 match
-$john isa user, has email "john@vaticle.com";
+$john isa user, has email "john@typedb.com";
 (team: $team, member: $john) isa team-membership;
 # This will return both Cloud and Engineering for $team due to the defined rule
 ```
@@ -141,7 +139,7 @@ TypeDB breaks down the patchwork of existing database paradigms into three funda
 ### TypeDB editions
 
 * [TypeDB Cloud](https://cloud.typedb.com) — multi-cloud DBaaS
-* [TypeDB Enterprise](mailto://sales@vaticle.com) — Enterprise edition of TypeDB
+* [TypeDB Enterprise](mailto://enterprise@typedb.com) — Enterprise edition of TypeDB
 * **TypeDB Core** — Open-source edition of TypeDB ← _This repository_
 
 For a comparison of all three editions, see the [Deploy](https://typedb.com/deploy) page on our website.
@@ -149,7 +147,7 @@ For a comparison of all three editions, see the [Deploy](https://typedb.com/depl
 
 ### Download and run TypeDB Core
 
-You can download TypeDB from the [GitHub Releases](https://github.com/vaticle/typedb/releases). 
+You can download TypeDB from the [GitHub Releases](https://github.com/typedb/typedb/releases). 
 
 Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) to get started.
 
@@ -199,8 +197,8 @@ If you want to begin your journey with TypeDB, you can explore the following res
 * In-depth dive into TypeDB's [philosophy](https://typedb.com/philosophy)
 * Our [TypeDB quickstart](https://typedb.com/docs/home/quickstart)
 * [TypeDB in 25 queries](https://typedb.com/docs/home/25-queries)
-* **[TypeQL](https://github.com/vaticle/typeql)**
-* **[TypeDB Studio](https://github.com/vaticle/typedb-studio)**
+* **[TypeQL](https://github.com/typedb/typeql)**
+* **[TypeDB Studio](https://github.com/typedb/typedb-studio)**
 
 
 ## Contributions
@@ -229,11 +227,5 @@ and [JanusGraph](http://janusgraph.org).
 
 ## Licensing
 
-This software is developed by [Vaticle](https://vaticle.com/).  
 It's released under the Mozilla Public License 2.0 (MPL 2.0).
-For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE).
-
-Vaticle also provides a commercial license for TypeDB Enterprise - get in touch with our team at 
-[commercial@vaticle.com](emailto://sales@vaticle.com).
-
-Copyright (C) 2023 Vaticle.
+For license information, please see [LICENSE](https://github.com/typedb/typedb/blob/master/LICENSE).
