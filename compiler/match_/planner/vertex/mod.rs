@@ -259,12 +259,20 @@ impl LabelPlanner {
         [Some(self.var), None, None].into_iter().flatten()
     }
 
-    pub(crate) fn from_constraint(
+    pub(crate) fn from_label_constraint(
         label: &ir::pattern::constraint::Label<Variable>,
         variable_index: &HashMap<Variable, usize>,
         _type_annotations: &TypeAnnotations,
     ) -> LabelPlanner {
         Self { var: variable_index[&label.left()] }
+    }
+
+    pub(crate) fn from_role_name_constraint(
+        role_name: &ir::pattern::constraint::RoleName<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+    ) -> LabelPlanner {
+        Self { var: variable_index[&role_name.left()] }
     }
 }
 

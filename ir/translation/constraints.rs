@@ -167,6 +167,31 @@ fn register_typeql_type_var(
     }
 }
 
+fn register_typeql_role_type_var_any(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    type_: &typeql::TypeRefAny,
+) -> Result<Variable, PatternDefinitionError> {
+    match type_ {
+        typeql::TypeRefAny::Type(type_) => register_typeql_role_type_var(constraints, type_),
+        typeql::TypeRefAny::Optional(_) => todo!(),
+        typeql::TypeRefAny::List(_) => todo!(),
+    }
+}
+
+fn register_typeql_role_type_var(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    type_: &typeql::TypeRef,
+) -> Result<Variable, PatternDefinitionError> {
+    match type_ {
+        typeql::TypeRef::Named(NamedType::Label(label)) => register_type_role_name_var(constraints, label),
+        typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
+            register_type_scoped_label_var(constraints, scoped_label)
+        }
+        typeql::TypeRef::Named(NamedType::BuiltinValueType(builtin)) => todo!(),
+        typeql::TypeRef::Variable(var) => register_typeql_var(constraints, var),
+    }
+}
+
 fn register_type_scoped_label_var(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     scoped_label: &ScopedLabel,
@@ -183,6 +208,15 @@ fn register_type_label_var(
 ) -> Result<Variable, PatternDefinitionError> {
     let variable = constraints.create_anonymous_variable()?;
     constraints.add_label(variable, label.ident.as_str())?;
+    Ok(variable)
+}
+
+fn register_type_role_name_var(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    label: &typeql::Label,
+) -> Result<Variable, PatternDefinitionError> {
+    let variable = constraints.create_anonymous_variable()?;
+    constraints.add_role_name(variable, label.ident.as_str())?;
     Ok(variable)
 }
 
@@ -215,7 +249,7 @@ fn add_typeql_relates(
     relation_type: Variable,
     relates: &typeql::statement::type_::Relates,
 ) -> Result<(), PatternDefinitionError> {
-    let role_type = register_typeql_type_var_any(constraints, &relates.related)?;
+    let role_type = register_typeql_role_type_var_any(constraints, &relates.related)?;
     constraints.add_relates(relation_type, role_type)?;
     Ok(())
 }
@@ -225,7 +259,7 @@ fn add_typeql_plays(
     player_type: Variable,
     plays: &typeql::statement::type_::Plays,
 ) -> Result<(), PatternDefinitionError> {
-    let role_type = register_typeql_type_var(constraints, &plays.role)?;
+    let role_type = register_typeql_role_type_var(constraints, &plays.role)?;
     constraints.add_plays(player_type, role_type)?;
     Ok(())
 }

@@ -176,9 +176,17 @@ impl<'a> PlanBuilder<'a> {
 
         for constraint in conjunction.constraints() {
             let planner = match constraint {
-                Constraint::RoleName(_) => todo!(),
+                Constraint::RoleName(role_name) => {
+                    let planner = PlannerVertex::Label(LabelPlanner::from_role_name_constraint(
+                        role_name,
+                        &self.variable_index,
+                        type_annotations,
+                    ));
+                    self.elements.push(planner);
+                    self.elements.last()
+                }
                 Constraint::Label(label) => {
-                    let planner = PlannerVertex::Label(LabelPlanner::from_constraint(
+                    let planner = PlannerVertex::Label(LabelPlanner::from_label_constraint(
                         label,
                         &self.variable_index,
                         type_annotations,
@@ -462,7 +470,12 @@ fn lower_plan(
         }
 
         match constraint {
-            Constraint::RoleName(_) => todo!("type constraint"),
+            Constraint::RoleName(name) => {
+                let var = name.left();
+                let instruction = ConstraintInstruction::Label(LabelInstruction::new(var, type_annotations));
+                let producer_index = match_builder.push_instruction(var, instruction, &[var]);
+                producers.insert(var, producer_index);
+            }
             Constraint::Label(label) => {
                 let var = label.left();
                 let instruction = ConstraintInstruction::Label(LabelInstruction::new(var, type_annotations));
