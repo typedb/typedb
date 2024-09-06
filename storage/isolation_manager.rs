@@ -197,7 +197,6 @@ impl IsolationManager {
             let validate_against = SequenceNumber::from(validate_against);
             let window = &windows[window_index];
             debug_assert!(window_index < windows.len());
-            debug_assert!(commit_sequence_number > validate_against);
             if let Some(conflict) = resolve_concurrent(commit_record, validate_against, window) {
                 return Some(conflict);
             }

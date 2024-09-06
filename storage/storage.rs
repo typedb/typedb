@@ -217,15 +217,14 @@ impl<Durability> MVCCStorage<Durability> {
             .map_err(|error| Durability { name: self.name.to_string(), source: error })?;
 
         let sync_notifier = self.durability_client.request_sync();
-
         let validated_commit = self
             .isolation_manager
             .validate_commit(commit_sequence_number, commit_record, &self.durability_client)
             .map_err(|error| Durability { name: self.name.to_owned(), source: error })?;
-
         let result = match validated_commit {
             ValidatedCommit::Write(write_batches) => {
-                // Write to the k-v storage
+                sync_notifier.recv().unwrap(); // Ensure WAL is persisted inserting to RocksDB
+                                               // Write to the k-v storage
                 self.keyspaces
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.to_owned(), source: Arc::new(error) })?;
@@ -246,7 +245,6 @@ impl<Durability> MVCCStorage<Durability> {
                 Err(StorageCommitError::Isolation { name: self.name.clone(), conflict })
             }
         };
-        sync_notifier.recv().unwrap();
         result
     }
 

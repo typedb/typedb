@@ -6,7 +6,6 @@
 
 use std::{
     borrow::Cow,
-    cmp::max,
     collections::HashMap,
     error::Error,
     ffi::OsStr,
@@ -108,14 +107,6 @@ impl WAL {
     pub fn previous(&self) -> DurabilitySequenceNumber {
         DurabilitySequenceNumber::from(self.next_sequence_number.load(Ordering::Relaxed) - 1)
     }
-
-    // Synchronously fsync
-    // pub fn request_sync(&self) -> mpsc::Receiver<()> {
-    //     let (sender, recv) = mpsc::channel();
-    //     self.files.write().unwrap().sync_all();
-    //     sender.send(()).unwrap();
-    //     recv
-    // }
 
     pub fn request_sync(&self) -> mpsc::Receiver<()> {
         self.fsync_thread.subscribe_to_next_flush()
@@ -245,7 +236,7 @@ impl Files {
         Ok(Self { directory, writer, files })
     }
 
-    fn init_files_writer(directory: &Path) -> io::Result<(Vec<File>, Option<BufWriter<std::fs::File>>)> {
+    fn init_files_writer(directory: &Path) -> io::Result<(Vec<File>, Option<BufWriter<StdFile>>)> {
         let mut files: Vec<File> = directory
             .read_dir()?
             .map_ok(|entry| entry.path())
@@ -285,11 +276,10 @@ impl Files {
         writer.flush()?;
 
         self.files.last_mut().unwrap().len = writer.stream_position()?;
-        // writer.get_mut().sync_all().unwrap();
         Ok(())
     }
 
-    pub fn sync_all(&mut self) {
+    pub(crate) fn sync_all(&mut self) {
         self.files.last_mut().unwrap().writer().unwrap().get_mut().sync_all().unwrap()
     }
 
@@ -521,7 +511,7 @@ impl<'a> Iterator for FileRecordIterator<'a> {
 #[derive(Debug)]
 pub struct FsyncThreadContext {
     files: Arc<RwLock<Files>>,
-    shutting_down: AtomicBool, // Only for internal-mutability
+    shutting_down: AtomicBool,
     signalling: [Mutex<Vec<mpsc::Sender<()>>>; 2],
     current_signal: AtomicU8,
 }
@@ -597,7 +587,7 @@ impl Drop for FsyncThread {
     fn drop(&mut self) {
         self.context.shutting_down.store(true, Ordering::Relaxed);
         if let Some(handle) = self.handle.take() {
-            handle.join().unwrap_or_log(); // TODO
+            handle.join().unwrap_or_log();
         }
     }
 }
