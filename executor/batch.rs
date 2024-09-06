@@ -173,7 +173,7 @@ impl Batch {
         Row::new(slice, &mut self.multiplicities[index])
     }
 
-    pub(crate) fn into_iterator_mut(self) -> MutableBatchRowIterator {
+    pub fn into_iterator_mut(self) -> MutableBatchRowIterator {
         MutableBatchRowIterator::new(self)
     }
 

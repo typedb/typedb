@@ -30,7 +30,7 @@ impl<'a> Row<'a> {
         self.row.len()
     }
 
-    pub(crate) fn get(&self, position: VariablePosition) -> &VariableValue<'static> {
+    pub fn get(&self, position: VariablePosition) -> &VariableValue<'static> {
         &self.row[position.as_usize()]
     }
 

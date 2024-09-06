@@ -22,6 +22,7 @@ rust_library(
         "//database:database",
         "//executor:executor",
         "//encoding:encoding",
+        "//function",
         "//ir:ir",
         "//query:query",
         "//server:server",

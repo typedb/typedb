@@ -61,6 +61,17 @@ rust_test(
     crate_features = ["bazel"],
 )
 
+rust_test(
+    name = "test_pipelines",
+    srcs = ["pipelines.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@vaticle_typedb_behaviour//query/language:pipelines.feature"],
+    crate_features = ["bazel"],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
