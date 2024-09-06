@@ -222,6 +222,15 @@ fn test_match_delete_has() {
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
 
+    {
+        let snapshot = context.storage.clone().open_snapshot_read();
+        let age_type = context.type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
+        let attr_age_10 =
+            context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+        assert_eq!(1, attr_age_10.get_owners(&snapshot, &context.thing_manager).count());
+        snapshot.close_resources()
+    }
+
     let snapshot = context.storage.clone().open_snapshot_write();
     let delete_query_str = r#"
         match $p isa person, has age $a;
@@ -245,6 +254,15 @@ fn test_match_delete_has() {
     assert!(matches!(iterator.next(), None));
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
+
+    {
+        let snapshot = context.storage.clone().open_snapshot_read();
+        let age_type = context.type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
+        let attr_age_10 =
+            context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+        assert_eq!(0, attr_age_10.get_owners(&snapshot, &context.thing_manager).count());
+        snapshot.close_resources()
+    }
 }
 
 #[test]
