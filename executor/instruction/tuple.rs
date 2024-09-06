@@ -209,21 +209,18 @@ pub(crate) fn plays_to_tuple_role_player(result: Result<Plays<'static>, ConceptR
     }
 }
 
-pub(crate) type ThingToTupleFn = for<'a> fn(Result<Thing<'a>, ConceptReadError>) -> TupleResult<'a>;
+pub(crate) type IsaToTupleFn = for<'a> fn(Result<(Thing<'a>, Type), ConceptReadError>) -> TupleResult<'a>;
 
-pub(crate) fn isa_to_tuple_thing_type(result: Result<Thing<'_>, ConceptReadError>) -> TupleResult<'_> {
+pub(crate) fn isa_to_tuple_thing_type(result: Result<(Thing<'_>, Type), ConceptReadError>) -> TupleResult<'_> {
     match result {
-        Ok(thing) => {
-            let type_ = thing.type_();
-            Ok(Tuple::Pair([VariableValue::Thing(thing), VariableValue::Type(type_)]))
-        }
+        Ok((thing, type_)) => Ok(Tuple::Pair([VariableValue::Thing(thing), VariableValue::Type(type_)])),
         Err(err) => Err(err),
     }
 }
 
-pub(crate) fn isa_to_tuple_type_thing(result: Result<Thing<'_>, ConceptReadError>) -> TupleResult<'_> {
+pub(crate) fn isa_to_tuple_type_thing(result: Result<(Thing<'_>, Type), ConceptReadError>) -> TupleResult<'_> {
     match result {
-        Ok(thing) => Ok(Tuple::Pair([VariableValue::Type(thing.type_()), VariableValue::Thing(thing)])),
+        Ok((thing, type_)) => Ok(Tuple::Pair([VariableValue::Type(type_), VariableValue::Thing(thing)])),
         Err(err) => Err(err),
     }
 }

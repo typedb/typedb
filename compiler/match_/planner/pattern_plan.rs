@@ -339,7 +339,7 @@ impl ProgramBuilder {
             sort_variable,
             self.instructions,
             &(0..self.last_output.unwrap()).map(VariablePosition::new).collect_vec(),
-            self.last_output.unwrap()
+            self.last_output.unwrap(),
         ))
     }
 }

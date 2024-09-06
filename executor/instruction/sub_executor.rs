@@ -13,7 +13,11 @@ use std::{
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::SubInstruction;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::TypeAPI};
+use concept::{
+    error::ConceptReadError,
+    thing::thing_manager::ThingManager,
+    type_::{type_manager::TypeManager, TypeAPI},
+};
 use ir::pattern::constraint::SubKind;
 use itertools::Itertools;
 use lending_iterator::{
@@ -128,8 +132,8 @@ impl SubExecutor {
             fail => fail,
         });
 
-        match (self.sub.sub_kind(), self.iterate_mode) {
-            (SubKind::Subtype, BinaryIterateMode::Unbound) => {
+        match self.iterate_mode {
+            BinaryIterateMode::Unbound => {
                 let sub_with_super = self
                     .sub_to_supertypes
                     .iter()
@@ -147,56 +151,18 @@ impl SubExecutor {
                 )))
             }
 
-            (SubKind::Exact, BinaryIterateMode::Unbound) => {
-                let sub_with_super = self
-                    .sub_to_supertypes
-                    .iter()
-                    .flat_map(|(sub, supers)| supers.iter().map(|sup| Ok((sub.clone(), sup.clone()))))
-                    .collect_vec();
-                let as_tuples: SubUnboundedSortedSub = NarrowingTupleIterator(
-                    AsLendingIterator::new(sub_with_super)
-                        .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
-                        .map(sub_to_tuple_sub_super),
-                );
-                Ok(TupleIterator::SubUnbounded(SortedTupleIterator::new(
-                    as_tuples,
-                    self.tuple_positions.clone(),
-                    &self.variable_modes,
-                )))
-            }
-
-            (_, BinaryIterateMode::UnboundInverted) => {
+            BinaryIterateMode::UnboundInverted => {
                 todo!() // is this ever relevant?
             }
 
-            (SubKind::Subtype, BinaryIterateMode::BoundFrom) => {
+            BinaryIterateMode::BoundFrom => {
                 debug_assert!(row.len() > self.sub.subtype().as_usize());
                 let VariableValue::Type(sub) = row.get(self.sub.subtype()).to_owned() else {
                     unreachable!("Subtype must be a type")
                 };
 
                 let type_manager = thing_manager.type_manager();
-                let mut supertypes = match &sub {
-                    Type::Entity(type_) => {
-                        let supertypes = type_.get_supertypes_transitive(&**snapshot, type_manager)?;
-                        supertypes.iter().cloned().map(Type::Entity).collect_vec()
-                    }
-                    Type::Relation(type_) => {
-                        let supertypes = type_.get_supertypes_transitive(&**snapshot, type_manager)?;
-                        supertypes.iter().cloned().map(Type::Relation).collect_vec()
-                    }
-                    Type::Attribute(type_) => {
-                        let supertypes = type_.get_supertypes_transitive(&**snapshot, type_manager)?;
-                        supertypes.iter().cloned().map(Type::Attribute).collect_vec()
-                    }
-                    Type::RoleType(type_) => {
-                        let supertypes = type_.get_supertypes_transitive(&**snapshot, type_manager)?;
-                        supertypes.iter().cloned().map(Type::RoleType).collect_vec()
-                    }
-                };
-                supertypes.push(sub.clone());
-                supertypes.sort();
-
+                let supertypes = get_supertypes(&**snapshot, type_manager, &sub, self.sub.sub_kind())?;
                 let sub_with_super = supertypes.into_iter().map(|sup| Ok((sub.clone(), sup))).collect_vec(); // TODO cache this
 
                 let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
@@ -210,34 +176,52 @@ impl SubExecutor {
                     &self.variable_modes,
                 )))
             }
+        }
+    }
+}
 
-            (SubKind::Exact, BinaryIterateMode::BoundFrom) => {
-                debug_assert!(row.len() > self.sub.subtype().as_usize());
-                let VariableValue::Type(sub) = row.get(self.sub.subtype()).to_owned() else {
-                    unreachable!("Subtype must be a type")
-                };
-
-                let type_manager = thing_manager.type_manager();
-                let sup = match &sub {
-                    Type::Entity(type_) => type_.get_supertype(&**snapshot, type_manager)?.map(Type::Entity),
-                    Type::Relation(type_) => type_.get_supertype(&**snapshot, type_manager)?.map(Type::Relation),
-                    Type::Attribute(type_) => type_.get_supertype(&**snapshot, type_manager)?.map(Type::Attribute),
-                    Type::RoleType(type_) => type_.get_supertype(&**snapshot, type_manager)?.map(Type::RoleType),
-                };
-
-                let sub_with_super = sup.map(|sup| Ok((sub, sup))).as_slice().to_vec(); // TODO cache this
-
-                let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
-                    AsLendingIterator::new(sub_with_super)
-                        .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
-                        .map(sub_to_tuple_sub_super),
-                );
-                Ok(TupleIterator::SubBounded(SortedTupleIterator::new(
-                    as_tuples,
-                    self.tuple_positions.clone(),
-                    &self.variable_modes,
-                )))
+pub(super) fn get_supertypes(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    sub: &Type,
+    sub_kind: SubKind,
+) -> Result<Vec<Type>, ConceptReadError> {
+    match sub_kind {
+        SubKind::Exact => {
+            let supertype = match sub {
+                Type::Entity(type_) => type_.get_supertype(snapshot, type_manager)?.map(Type::Entity),
+                Type::Relation(type_) => type_.get_supertype(snapshot, type_manager)?.map(Type::Relation),
+                Type::Attribute(type_) => type_.get_supertype(snapshot, type_manager)?.map(Type::Attribute),
+                Type::RoleType(type_) => type_.get_supertype(snapshot, type_manager)?.map(Type::RoleType),
+            };
+            if let Some(x) = supertype {
+                Ok(vec![x])
+            } else {
+                Ok(Vec::new())
             }
+        }
+        SubKind::Subtype => {
+            let mut supertypes = match sub {
+                Type::Entity(type_) => {
+                    let supertypes = type_.get_supertypes_transitive(snapshot, type_manager)?;
+                    supertypes.iter().cloned().map(Type::Entity).collect_vec()
+                }
+                Type::Relation(type_) => {
+                    let supertypes = type_.get_supertypes_transitive(snapshot, type_manager)?;
+                    supertypes.iter().cloned().map(Type::Relation).collect_vec()
+                }
+                Type::Attribute(type_) => {
+                    let supertypes = type_.get_supertypes_transitive(snapshot, type_manager)?;
+                    supertypes.iter().cloned().map(Type::Attribute).collect_vec()
+                }
+                Type::RoleType(type_) => {
+                    let supertypes = type_.get_supertypes_transitive(snapshot, type_manager)?;
+                    supertypes.iter().cloned().map(Type::RoleType).collect_vec()
+                }
+            };
+            supertypes.push(sub.clone());
+            supertypes.sort();
+            Ok(supertypes)
         }
     }
 }
