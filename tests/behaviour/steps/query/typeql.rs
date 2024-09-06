@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::{collections::HashMap, error::Error, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::{
@@ -14,7 +14,7 @@ use compiler::{
         planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
     },
 };
-use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::TypeAPI};
+use concept::{thing::object::ObjectAPI, type_::TypeAPI};
 use cucumber::gherkin::Step;
 use encoding::value::label::Label;
 use executor::{
@@ -43,12 +43,11 @@ use crate::{
 fn execute_match_query(
     context: &mut Context,
     query: typeql::Query,
-) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Either<WriteCompilationError, ConceptReadError>> {
+) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Box<dyn Error>> {
     let mut translation_context = TranslationContext::new();
     let typeql_match = query.into_pipeline().stages.pop().unwrap().into_match();
-    let block = translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &typeql_match)
-        .unwrap()
-        .finish();
+    let block =
+        translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &typeql_match)?.finish();
 
     let variable_position_index;
     let variable_registry = Arc::new(translation_context.variable_registry);
@@ -60,7 +59,7 @@ fn execute_match_query(
             &tx.type_manager,
             &IndexedAnnotatedFunctions::empty(),
             &variable_registry,
-        )
+        )?;
         .unwrap();
 
         let match_plan = MatchProgram::compile(
@@ -72,14 +71,13 @@ fn execute_match_query(
         );
 
         let program_plan = ProgramPlan::new(match_plan, HashMap::new(), HashMap::new());
-        let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager).map_err(Either::Second)?;
+        let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager)?;
         variable_position_index = executor.entry_variable_positions_index().to_owned();
         executor
             .into_iterator(tx.snapshot.clone(), tx.thing_manager.clone())
             .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
             .into_iter()
-            .try_collect::<_, Vec<_>, _>()
-            .map_err(Either::Second)?
+            .try_collect::<_, Vec<_>, _>()?
     });
 
     let variable_names = variable_registry.variable_names();
