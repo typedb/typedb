@@ -476,8 +476,8 @@ impl HasPlanner {
         let owner = constraint.owner();
         let attribute = constraint.attribute();
 
-        let owner_types = dbg!(type_annotations.variable_annotations_of(owner).unwrap().deref());
-        let attribute_types = dbg!(type_annotations.variable_annotations_of(attribute).unwrap().deref());
+        let owner_types = type_annotations.variable_annotations_of(owner).unwrap().deref();
+        let attribute_types = type_annotations.variable_annotations_of(attribute).unwrap().deref();
 
         let expected_size = itertools::iproduct!(owner_types, attribute_types)
             .filter_map(|(owner, attribute)| {
