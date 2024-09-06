@@ -123,35 +123,28 @@ pub struct LeftRightFilteredAnnotations {
 impl LeftRightFilteredAnnotations {
     pub(crate) fn build(
         relation_to_role: BTreeMap<Type, BTreeSet<Type>>,
-        role_to_relation: BTreeMap<Type, BTreeSet<Type>>,
+        mut role_to_relation: BTreeMap<Type, BTreeSet<Type>>,
         player_to_role: BTreeMap<Type, BTreeSet<Type>>,
-        role_to_player: BTreeMap<Type, BTreeSet<Type>>,
+        mut role_to_player: BTreeMap<Type, BTreeSet<Type>>,
     ) -> Self {
-        let mut role_to_player = role_to_player;
-        let mut role_to_relation = role_to_relation;
-        let mut left_to_right = BTreeMap::new();
-        let mut right_to_left = BTreeMap::new();
-        let mut filters_on_right = BTreeMap::new();
-        let mut filters_on_left = BTreeMap::new();
-        for (relation, role_set) in relation_to_role {
-            for role in &role_set {
-                left_to_right.insert(
-                    relation.clone(),
-                    role_to_player.get(role).unwrap().iter().map(|type_| type_.clone()).collect(),
-                );
-            }
-            filters_on_left.insert(relation, role_set.into_iter().collect());
-        }
+        let left_to_right = relation_to_role
+            .iter()
+            .map(|(relation, role_set)| {
+                (relation.clone(), role_set.iter().flat_map(|role| role_to_player.remove(role).unwrap()).collect())
+            })
+            .collect();
+        let filters_on_left =
+            relation_to_role.into_iter().map(|(rel, role_set)| (rel, role_set.into_iter().collect())).collect();
 
-        for (player, role_set) in player_to_role {
-            for role in &role_set {
-                right_to_left.insert(
-                    player.clone(),
-                    role_to_relation.get(role).unwrap().iter().map(|type_| type_.clone()).collect(),
-                );
-            }
-            filters_on_right.insert(player, role_set.into_iter().collect());
-        }
+        let right_to_left = player_to_role
+            .iter()
+            .map(|(player, role_set)| {
+                (player.clone(), role_set.iter().flat_map(|role| role_to_relation.remove(role).unwrap()).collect())
+            })
+            .collect();
+        let filters_on_right =
+            player_to_role.into_iter().map(|(player, role_set)| (player, role_set.into_iter().collect())).collect();
+
         Self {
             left_to_right: Arc::new(left_to_right),
             filters_on_right: Arc::new(filters_on_right),
