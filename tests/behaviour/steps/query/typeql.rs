@@ -7,13 +7,10 @@
 use std::{collections::HashMap, error::Error, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
-use compiler::{
-    insert::WriteCompilationError,
-    match_::{
-        inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-        planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
-    },
-};
+use compiler::{insert::WriteCompilationError, match_::{
+    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+    planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
+}, VariablePosition};
 use concept::{thing::object::ObjectAPI, type_::TypeAPI};
 use cucumber::gherkin::Step;
 use futures::TryFutureExt;
@@ -46,7 +43,6 @@ use executor::row::MaybeOwnedRow;
 use function::function_manager::FunctionManager;
 use primitive::either::Either;
 use query::error::QueryError;
-use query::error::QueryError::WritePipelineExecutionError;
 use query::query_manager::QueryManager;
 use storage::snapshot::WritableSnapshot;
 
@@ -59,63 +55,47 @@ use crate::{
 };
 use crate::transaction_context::ActiveTransaction;
 
-fn execute_match_query(
-    context: &mut Context,
-    query: typeql::Query,
-) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Box<dyn TypeDBError>> {
-    let mut translation_context = TranslationContext::new();
-    let typeql_match = query.into_pipeline().stages.pop().unwrap().into_match();
-    let block = translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &typeql_match)
-        .map_err(|err| Box::new(err) as _)?
-        .finish();
-
-    let variable_position_index;
-    let variable_registry = Arc::new(translation_context.variable_registry);
-    let rows = with_read_tx!(context, |tx| {
-        let (type_annotations, _) = infer_types(
-            &block,
-            Vec::new(),
-            &*tx.snapshot,
-            &tx.type_manager,
-            &IndexedAnnotatedFunctions::empty(),
-            &variable_registry,
-        )
-        .map_err(|err| Box::new(err) as _)?;
-
-        let match_plan = MatchProgram::compile(
-            &block,
-            &type_annotations,
-            variable_registry.clone(),
-            &HashMap::new(),
-            tx.thing_manager.statistics(),
-        );
-
-        let program_plan = ProgramPlan::new(match_plan, HashMap::new(), HashMap::new());
-        let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager)
-            .map_err(|err| Box::new(ReadExecutionError::ConceptRead { source: err }) as _)?;
-        variable_position_index = executor.entry_variable_positions_index().to_owned();
-        executor
-            .into_iterator(tx.snapshot.clone(), tx.thing_manager.clone(), ExecutionInterrupt::new_uninterruptible())
-            .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| Box::new(err.clone()) as _))
-            .into_iter()
-            .try_collect::<_, Vec<_>, _>()?
-    });
-
-    let variable_names = variable_registry.variable_names();
-
-    let answers = rows
-        .into_iter()
-        .map(|row| {
-            izip!(&variable_position_index, row)
-                .filter_map(|(var, value)| Some((variable_names.get(var).cloned()?, value)))
-                .collect()
-        })
-        .collect();
-
-    Ok(answers)
+fn batch_result_to_answer(batch: Batch, selected_outputs: HashMap<VariablePosition, String>) -> Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError> {
+    batch.into_iterator_mut().map_static(move |row| {
+        let answer_map: HashMap<String, VariableValue<'static>> = selected_outputs.iter().map(|(p, v)| {
+            (v.clone().to_owned(), row.get(*p).clone().into_owned())
+        }).collect::<HashMap<_, _>>();
+        Ok(answer_map)
+    }).collect::<Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError>>()
 }
 
-fn execute_insert_query(
+fn execute_read_query(
+    context: &mut Context,
+    query: typeql::Query,
+) -> Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError> {
+    with_read_tx!(context, |tx| {
+        let qm = QueryManager::new();
+        let final_stage = match qm.prepare_read_pipeline(tx.snapshot.clone(), &tx.type_manager, tx.thing_manager.clone(), &tx.function_manager, &query.into_pipeline()) {
+            Ok(final_stage) => final_stage,
+            Err(error) => return Err(error)
+        };
+        let selected_outputs = final_stage.named_selected_outputs().clone();
+        let (snapshot, result_as_batch) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
+            Ok((iterator, snapshot)) => {
+                (snapshot, iterator.collect_owned())
+            },
+            Err((_snapshot, err)) => {
+                return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
+            }
+        };
+
+        match result_as_batch {
+            Ok(batch) => {
+                batch_result_to_answer(batch, selected_outputs)
+            },
+            Err(typedb_source) => {
+                Err(QueryError::WritePipelineExecutionError { typedb_source })
+            }
+        }
+    })
+}
+
+fn execute_write_query(
     active_transaction: ActiveTransaction,
     query: typeql::Query,
 ) -> (ActiveTransaction, Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError>) {
@@ -142,7 +122,7 @@ fn execute_insert_query_impl<Snapshot: WritableSnapshot + 'static>(snapshot : Sn
         Err((snapshot, error)) => return (snapshot, Err(error))
     };
     let selected_outputs = final_stage.named_selected_outputs().clone();
-    let (snapshot, result_as_batch, ) = match final_stage.into_iterator() {
+    let (snapshot, result_as_batch, ) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
         Ok((iterator, snapshot)) => {
             (Arc::into_inner(snapshot).unwrap(), iterator.collect_owned())
         },
@@ -153,17 +133,10 @@ fn execute_insert_query_impl<Snapshot: WritableSnapshot + 'static>(snapshot : Sn
             )
         }
     };
+
     let result_as_answers = match result_as_batch {
         Ok(batch) => {
-            batch.into_iterator_mut().map_static(move |row_result| {
-                let row = row_result.map_err(|source| {
-                    QueryError::WritePipelineExecutionError { typedb_source: PipelineExecutionError::ConceptRead { source: source.clone() }}
-                })?;
-                let answer_map: HashMap<String, VariableValue<'static>> = selected_outputs.iter().map(|(p,v)| {
-                    (v.clone().to_owned(), row.get(*p).clone().into_owned())
-                }).collect::<HashMap<_,_>>();
-                Ok(answer_map)
-            }).collect::<Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError>>()
+            batch_result_to_answer(batch, selected_outputs)
         },
         Err(typedb_source) => {
             Err(QueryError::WritePipelineExecutionError { typedb_source })
@@ -203,7 +176,7 @@ async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, 
         return;
     }
     let query = parse_result.unwrap();
-    let (tx, result) = execute_insert_query(context.active_transaction.take().unwrap(), query);
+    let (tx, result) = execute_write_query(context.active_transaction.take().unwrap(), query);
     context.active_transaction = Some(tx);
     if result.is_err() {
         may_error.check_logic(result);
@@ -217,7 +190,7 @@ async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, 
 async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
     let tx = context.active_transaction.take().unwrap();
-    let (tx, result) = execute_insert_query(tx, query);
+    let (tx, result) = execute_write_query(tx, query);
     context.active_transaction = Some(tx);
     context.answers =  result.unwrap();
 }
@@ -231,7 +204,7 @@ async fn typeql_read(context: &mut Context, may_error: params::TypeQLMayError, s
         return;
     }
     let query = parse_result.unwrap();
-    let result = execute_match_query(context, query);
+    let result = execute_read_query(context, query);
     may_error.check_logic(result);
 }
 
@@ -239,7 +212,7 @@ async fn typeql_read(context: &mut Context, may_error: params::TypeQLMayError, s
 #[step(expr = r"get answers of typeql read query")]
 async fn get_answers_of_typeql_read(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
-    context.answers = execute_match_query(context, query).unwrap();
+    context.answers = execute_read_query(context, query).unwrap();
 }
 
 #[apply(generic_step)]
