@@ -15,6 +15,7 @@ rust_test(
     ]),
     deps = [
         "//answer",
+        "//common/lending_iterator",
         "//compiler",
         "//concept",
         "//durability",
@@ -47,6 +48,7 @@ rust_test(
     ]),
     deps = [
         "//answer",
+        "//common/lending_iterator",
         "//compiler",
         "//concept",
         "//durability",

@@ -34,6 +34,7 @@ use executor::{
 };
 use ir::translation::TranslationContext;
 use rand::distributions::DistString;
+use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -158,7 +159,7 @@ fn multi_threaded_inserts() {
     setup_database(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.read_watermark()));
     const NUM_THREADS: usize = 32;
-    const INTERNAL_ITERS: u64 = 25;
+    const INTERNAL_ITERS: usize = 1000;
     let start_signal_rw_lock = Arc::new(RwLock::new(()));
     let write_guard = start_signal_rw_lock.write().unwrap();
     let join_handles: [JoinHandle<()>; NUM_THREADS] = array::from_fn(|_| {
@@ -193,7 +194,17 @@ fn multi_threaded_inserts() {
         join_handle.join().unwrap()
     }
     let time_taken_ms = start.elapsed().as_millis();
-    println!("{NUM_THREADS} threads * {INTERNAL_ITERS} iters took: {time_taken_ms} ms");
+    println!("{NUM_THREADS} threads * {INTERNAL_ITERS} iters took: {time_taken_ms} ms = {} inserts/s",
+        (NUM_THREADS * INTERNAL_ITERS * 1000) / time_taken_ms as usize
+    );
+
+
+    {
+        let snapshot = storage.clone().open_snapshot_read();
+        let person_type = type_manager.get_entity_type(&snapshot, &Label::parse_from("person")).unwrap().unwrap();
+        assert_eq!(NUM_THREADS as usize * INTERNAL_ITERS, thing_manager_arced.get_entities_in(&snapshot, person_type).count());
+        snapshot.close_resources();
+    }
 }
 
 fn main() {
