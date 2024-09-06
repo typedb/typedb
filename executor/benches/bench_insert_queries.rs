@@ -163,7 +163,6 @@ fn criterion_benchmark(c: &mut Criterion) {
     // group.measurement_time(Duration::from_secs(200));
     group.sampling_mode(SamplingMode::Linear);
 
-
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.read_watermark()));

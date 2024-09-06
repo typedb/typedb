@@ -9,10 +9,7 @@
 use std::{
     array,
     collections::HashMap,
-    ffi::c_int,
-    fs::File,
-    path::Path,
-    sync::{mpsc, Arc, OnceLock, RwLock},
+    sync::{Arc, OnceLock, RwLock},
     thread,
     thread::{sleep, JoinHandle},
     time::{Duration, Instant},
@@ -29,12 +26,11 @@ use concept::{
 };
 use encoding::value::{label::Label, value_type::ValueType};
 use executor::{
-    batch::Row,
+    row::Row,
     write::{insert::InsertExecutor, WriteError},
 };
 use ir::translation::TranslationContext;
 use lending_iterator::LendingIterator;
-use rand::distributions::DistString;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -122,9 +118,13 @@ fn execute_insert(
     )
     .unwrap();
 
-    let insert_plan =
-        compiler::insert::program::compile(Arc::new(translation_context.variable_registry), block.conjunction().constraints(), &input_row_format, &entry_annotations)
-            .unwrap();
+    let insert_plan = compiler::insert::program::compile(
+        Arc::new(translation_context.variable_registry),
+        block.conjunction().constraints(),
+        &input_row_format,
+        &entry_annotations,
+    )
+    .unwrap();
 
     let mut output_rows = Vec::with_capacity(input_rows.len());
     let output_width = insert_plan.output_row_schema.len();
@@ -204,7 +204,7 @@ fn multi_threaded_inserts() {
         let person_type = type_manager.get_entity_type(&snapshot, &Label::parse_from("person")).unwrap().unwrap();
         assert_eq!(
             NUM_THREADS as usize * INTERNAL_ITERS,
-            thing_manager_arced.get_entities_in(&snapshot, person_type).count()
+            thing_manager.get_entities_in(&snapshot, person_type).count()
         );
         snapshot.close_resources();
     }

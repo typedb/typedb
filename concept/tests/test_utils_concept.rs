@@ -17,16 +17,19 @@ use encoding::graph::{
 };
 use storage::{
     durability_client::{DurabilityClient, WALClient},
+    sequence_number::SequenceNumber,
     MVCCStorage,
 };
-use storage::sequence_number::SequenceNumber;
 
 pub fn setup_concept_storage(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let mut storage = Arc::get_mut(storage).unwrap();
     storage.durability_mut().register_record_type::<Statistics>();
 }
 
-pub fn load_managers(storage: Arc<MVCCStorage<WALClient>>, type_cache_at: Option<SequenceNumber>) -> (Arc<TypeManager>, Arc<ThingManager>) {
+pub fn load_managers(
+    storage: Arc<MVCCStorage<WALClient>>,
+    type_cache_at: Option<SequenceNumber>,
+) -> (Arc<TypeManager>, Arc<ThingManager>) {
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let mut statistics = Statistics::new(DurabilitySequenceNumber::MIN);
     statistics.may_synchronise(storage.as_ref()).unwrap();
