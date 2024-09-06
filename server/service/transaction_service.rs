@@ -395,9 +395,15 @@ impl TransactionService {
         })?;
 
         let transaction = match transaction_type {
-            typedb_protocol::transaction::Type::Read => Transaction::Read(TransactionRead::open(database, transaction_options)),
-            typedb_protocol::transaction::Type::Write => Transaction::Write(TransactionWrite::open(database, transaction_options)),
-            typedb_protocol::transaction::Type::Schema => Transaction::Schema(TransactionSchema::open(database, transaction_options)),
+            typedb_protocol::transaction::Type::Read => {
+                Transaction::Read(TransactionRead::open(database, transaction_options))
+            }
+            typedb_protocol::transaction::Type::Write => {
+                Transaction::Write(TransactionWrite::open(database, transaction_options))
+            }
+            typedb_protocol::transaction::Type::Schema => {
+                Transaction::Schema(TransactionSchema::open(database, transaction_options))
+            }
         };
         self.transaction = Some(transaction);
         self.is_open = true;

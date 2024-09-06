@@ -17,13 +17,3 @@ pub mod inference;
 pub mod instructions;
 mod optimisation;
 pub mod planner;
-
-pub fn compile(
-    variable_registry: Arc<VariableRegistry>,
-    block: &FunctionalBlock,
-    type_annotations: &TypeAnnotations,
-    expressions: &HashMap<Variable, CompiledExpression>,
-    statistics: &Statistics,
-) -> MatchProgram {
-    MatchProgram::from_block(block, type_annotations, variable_registry, expressions, statistics)
-}

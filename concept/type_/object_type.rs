@@ -45,7 +45,7 @@ pub enum ObjectType<'a> {
 }
 
 impl<'a> ObjectType<'a> {
-    pub(crate) fn into_owned(self) -> ObjectType<'static> {
+    pub fn into_owned(self) -> ObjectType<'static> {
         match self {
             Self::Entity(entity_type) => ObjectType::Entity(entity_type.into_owned()),
             Self::Relation(relation_type) => ObjectType::Relation(relation_type.into_owned()),

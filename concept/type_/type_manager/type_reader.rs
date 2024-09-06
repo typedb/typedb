@@ -23,7 +23,6 @@ use encoding::{
     Keyable,
 };
 use iterator::Collector;
-use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
@@ -47,7 +46,8 @@ use crate::{
     },
 };
 
-pub struct TypeReader {}
+// non-instantiable
+pub enum TypeReader {}
 
 impl TypeReader {
     pub(crate) fn get_labelled_type<T>(
@@ -80,7 +80,7 @@ impl TypeReader {
         let key = LabelToTypeVertexIndex::build(&Label::build(name_with_colon.as_str())).into_storage_key();
         let vec = snapshot
             .iterate_range(KeyRange::new_within(key, IdentifierIndex::<TypeVertex<'static>>::FIXED_WIDTH_ENCODING))
-            .collect_cloned_vec(|key, value| match RoleType::from_bytes(Bytes::copy(value.bytes())) {
+            .collect_cloned_vec(|_key, value| match RoleType::from_bytes(Bytes::copy(value.bytes())) {
                 Err(_) => None,
                 Ok(role_type) => Some(role_type),
             })

@@ -4,13 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::{variable_value::VariableValue, Thing};
+use answer::{variable_value::VariableValue, Thing, Type};
 use concept::{
     error::ConceptReadError,
     thing::{
         has::Has,
         relation::{Relation, RolePlayer},
     },
+    type_::{owns::Owns, plays::Plays, relates::Relates},
 };
 use lending_iterator::higher_order::Hkt;
 
@@ -118,19 +119,108 @@ pub(crate) type TupleIndex = u16;
 
 pub(crate) type TupleResult<'a> = Result<Tuple<'a>, ConceptReadError>;
 
-pub(crate) fn isa_to_tuple_thing_type(result: Result<Thing<'_>, ConceptReadError>) -> TupleResult<'_> {
+pub(crate) type TypeToTupleFn = fn(Type) -> TupleResult<'static>;
+
+pub(crate) fn type_to_tuple(type_: Type) -> TupleResult<'static> {
+    Ok(Tuple::Single([VariableValue::Type(type_)]))
+}
+
+pub(crate) type SubToTupleFn = fn(Result<(Type, Type), ConceptReadError>) -> TupleResult<'static>;
+
+pub(crate) fn sub_to_tuple_sub_super(result: Result<(Type, Type), ConceptReadError>) -> TupleResult<'static> {
     match result {
-        Ok(thing) => {
-            let type_ = thing.type_();
-            Ok(Tuple::Pair([VariableValue::Thing(thing), VariableValue::Type(type_)]))
-        }
+        Ok((sub, sup)) => Ok(Tuple::Pair([VariableValue::Type(sub), VariableValue::Type(sup)])),
         Err(err) => Err(err),
     }
 }
 
-pub(crate) fn isa_to_tuple_type_thing(result: Result<Thing<'_>, ConceptReadError>) -> TupleResult<'_> {
+pub(crate) fn sub_to_tuple_super_sub(result: Result<(Type, Type), ConceptReadError>) -> TupleResult<'static> {
     match result {
-        Ok(thing) => Ok(Tuple::Pair([VariableValue::Type(thing.type_()), VariableValue::Thing(thing)])),
+        Ok((sub, sup)) => Ok(Tuple::Pair([VariableValue::Type(sup), VariableValue::Type(sub)])),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) type OwnsToTupleFn = fn(Result<Owns<'static>, ConceptReadError>) -> TupleResult<'static>;
+
+pub(crate) fn owns_to_tuple_owner_attribute(result: Result<Owns<'static>, ConceptReadError>) -> TupleResult<'static> {
+    match result {
+        Ok(owns) => Ok(Tuple::Pair(
+            [Type::from(owns.owner().into_owned()), Type::Attribute(owns.attribute().to_owned())]
+                .map(VariableValue::Type),
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) fn owns_to_tuple_attribute_owner(result: Result<Owns<'static>, ConceptReadError>) -> TupleResult<'static> {
+    match result {
+        Ok(owns) => Ok(Tuple::Pair(
+            [Type::Attribute(owns.attribute().to_owned()), Type::from(owns.owner().into_owned())]
+                .map(VariableValue::Type),
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) type RelatesToTupleFn = fn(Result<Relates<'static>, ConceptReadError>) -> TupleResult<'static>;
+
+pub(crate) fn relates_to_tuple_relation_role(
+    result: Result<Relates<'static>, ConceptReadError>,
+) -> TupleResult<'static> {
+    match result {
+        Ok(relates) => Ok(Tuple::Pair(
+            [Type::Relation(relates.relation().into_owned()), Type::RoleType(relates.role().to_owned())]
+                .map(VariableValue::Type),
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) fn relates_to_tuple_role_relation(
+    result: Result<Relates<'static>, ConceptReadError>,
+) -> TupleResult<'static> {
+    match result {
+        Ok(relates) => Ok(Tuple::Pair(
+            [Type::RoleType(relates.role().to_owned()), Type::Relation(relates.relation().into_owned())]
+                .map(VariableValue::Type),
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) type PlaysToTupleFn = fn(Result<Plays<'static>, ConceptReadError>) -> TupleResult<'static>;
+
+pub(crate) fn plays_to_tuple_player_role(result: Result<Plays<'static>, ConceptReadError>) -> TupleResult<'static> {
+    match result {
+        Ok(plays) => Ok(Tuple::Pair(
+            [Type::from(plays.player().into_owned()), Type::RoleType(plays.role().to_owned())].map(VariableValue::Type),
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) fn plays_to_tuple_role_player(result: Result<Plays<'static>, ConceptReadError>) -> TupleResult<'static> {
+    match result {
+        Ok(plays) => Ok(Tuple::Pair(
+            [Type::RoleType(plays.role().to_owned()), Type::from(plays.player().into_owned())].map(VariableValue::Type),
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) type IsaToTupleFn = for<'a> fn(Result<(Thing<'a>, Type), ConceptReadError>) -> TupleResult<'a>;
+
+pub(crate) fn isa_to_tuple_thing_type(result: Result<(Thing<'_>, Type), ConceptReadError>) -> TupleResult<'_> {
+    match result {
+        Ok((thing, type_)) => Ok(Tuple::Pair([VariableValue::Thing(thing), VariableValue::Type(type_)])),
+        Err(err) => Err(err),
+    }
+}
+
+pub(crate) fn isa_to_tuple_type_thing(result: Result<(Thing<'_>, Type), ConceptReadError>) -> TupleResult<'_> {
+    match result {
+        Ok((thing, type_)) => Ok(Tuple::Pair([VariableValue::Type(type_), VariableValue::Thing(thing)])),
         Err(err) => Err(err),
     }
 }
@@ -138,13 +228,13 @@ pub(crate) fn isa_to_tuple_type_thing(result: Result<Thing<'_>, ConceptReadError
 pub(crate) type HasToTupleFn = for<'a> fn(Result<(Has<'a>, u64), ConceptReadError>) -> TupleResult<'a>;
 
 pub(crate) fn has_to_tuple_owner_attribute(result: Result<(Has<'_>, u64), ConceptReadError>) -> TupleResult<'_> {
-    let (has, count) = result?;
+    let (has, _count) = result?;
     let (owner, attribute) = has.into_owner_attribute();
     Ok(Tuple::Pair([VariableValue::Thing(owner.into()), VariableValue::Thing(attribute.into())]))
 }
 
 pub(crate) fn has_to_tuple_attribute_owner(result: Result<(Has<'_>, u64), ConceptReadError>) -> TupleResult<'_> {
-    let (has, count) = result?;
+    let (has, _count) = result?;
     let (owner, attribute) = has.into_owner_attribute();
     Ok(Tuple::Pair([VariableValue::Thing(attribute.into()), VariableValue::Thing(owner.into())]))
 }
@@ -155,7 +245,7 @@ pub(crate) type LinksToTupleFn =
 pub(crate) fn links_to_tuple_relation_player_role<'a>(
     result: Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>,
 ) -> TupleResult<'a> {
-    let (rel, rp, count) = result?;
+    let (rel, rp, _count) = result?;
     let role_type = rp.role_type();
     Ok(Tuple::Triple([
         VariableValue::Thing(rel.into()),
@@ -167,7 +257,7 @@ pub(crate) fn links_to_tuple_relation_player_role<'a>(
 pub(crate) fn links_to_tuple_player_relation_role<'a>(
     result: Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>,
 ) -> TupleResult<'a> {
-    let (rel, rp, count) = result?;
+    let (rel, rp, _count) = result?;
     let role_type = rp.role_type();
     Ok(Tuple::Triple([
         VariableValue::Thing(rp.into_player().into()),

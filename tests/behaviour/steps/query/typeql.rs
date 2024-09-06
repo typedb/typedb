@@ -4,17 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::{collections::HashMap, error::Error, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::{
     insert::WriteCompilationError,
     match_::{
         inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-        planner::program_plan::ProgramPlan,
+        planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
     },
 };
-use concept::{error::ConceptReadError, thing::object::ObjectAPI, type_::TypeAPI};
+use concept::{thing::object::ObjectAPI, type_::TypeAPI};
 use cucumber::gherkin::Step;
 use encoding::value::label::Label;
 use executor::{
@@ -43,12 +43,11 @@ use crate::{
 fn execute_match_query(
     context: &mut Context,
     query: typeql::Query,
-) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Either<WriteCompilationError, ConceptReadError>> {
+) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Box<dyn Error>> {
     let mut translation_context = TranslationContext::new();
     let typeql_match = query.into_pipeline().stages.pop().unwrap().into_match();
-    let block = translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &typeql_match)
-        .unwrap()
-        .finish();
+    let block =
+        translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &typeql_match)?.finish();
 
     let variable_position_index;
     let variable_registry = Arc::new(translation_context.variable_registry);
@@ -60,26 +59,24 @@ fn execute_match_query(
             &tx.type_manager,
             &IndexedAnnotatedFunctions::empty(),
             &variable_registry,
-        )
-        .unwrap();
+        )?;
 
-        let match_plan = compiler::match_::compile(
-            variable_registry.clone(),
+        let match_plan = MatchProgram::compile(
             &block,
             &type_annotations,
+            variable_registry.clone(),
             &HashMap::new(),
             tx.thing_manager.statistics(),
         );
 
         let program_plan = ProgramPlan::new(match_plan, HashMap::new(), HashMap::new());
-        let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager).map_err(Either::Second)?;
+        let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager)?;
         variable_position_index = executor.entry_variable_positions_index().to_owned();
         executor
             .into_iterator(tx.snapshot.clone(), tx.thing_manager.clone())
             .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
             .into_iter()
-            .try_collect::<_, Vec<_>, _>()
-            .map_err(Either::Second)?
+            .try_collect::<_, Vec<_>, _>()?
     });
 
     let variable_names = variable_registry.variable_names();
@@ -193,6 +190,19 @@ async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, 
 async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
     context.answers = execute_insert_query(context, query).unwrap();
+}
+
+#[apply(generic_step)]
+#[step(expr = r"typeql read query{typeql_may_error}")]
+async fn typeql_read(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+    let parse_result = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
+    if may_error.check_parsing(parse_result.as_ref()).is_some() {
+        context.close_transaction();
+        return;
+    }
+    let query = parse_result.unwrap();
+    let result = execute_match_query(context, query);
+    may_error.check_logic(result);
 }
 
 #[apply(generic_step)]

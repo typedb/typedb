@@ -34,6 +34,58 @@ where
     }
 }
 
+pub struct RepeatEach<I: LendingIterator> {
+    inner: Peekable<I>,
+    repeats: usize,
+    repeated_last: usize,
+}
+
+impl<I: LendingIterator> RepeatEach<I> {
+    pub fn new(inner: I, repeats: usize) -> Self {
+        Self { inner: Peekable::new(inner), repeats, repeated_last: 0 }
+    }
+}
+
+impl<I> LendingIterator for RepeatEach<I>
+where
+    I: LendingIterator,
+{
+    type Item<'a> = &'a I::Item<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        if self.repeated_last < self.repeats {
+            self.repeated_last += 1;
+        } else {
+            self.repeated_last = 0;
+            self.inner.next();
+        }
+        self.inner.peek()
+    }
+}
+
+pub struct Zip<I1, I2> {
+    iter_1: I1,
+    iter_2: I2,
+}
+
+impl<I1, I2> Zip<I1, I2> {
+    pub fn new(iter_1: I1, iter_2: I2) -> Self {
+        Self { iter_1, iter_2 }
+    }
+}
+
+impl<I1, I2> LendingIterator for Zip<I1, I2>
+where
+    I1: LendingIterator,
+    I2: LendingIterator,
+{
+    type Item<'a> = (I1::Item<'a>, I2::Item<'a>);
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        Some((self.iter_1.next()?, self.iter_2.next()?))
+    }
+}
+
 pub struct Map<I, F, B> {
     iter: I,
     mapper: F,

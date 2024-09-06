@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::match_::instructions::HasInstruction;
+use compiler::match_::instructions::thing::HasInstruction;
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -22,8 +22,7 @@ use concept::{
     },
 };
 use lending_iterator::{
-    adaptors::{Filter, Map, TryFilter},
-    higher_order::FnHktHelper,
+    adaptors::{Map, TryFilter},
     kmerge::KMergeBy,
     AsHkt, LendingIterator, Peekable,
 };

@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::{Display, Formatter},
-    ops::Deref,
-};
+use std::fmt;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use concept::{
@@ -125,6 +122,10 @@ impl Type {
     }
 }
 
+impl Hkt for Type {
+    type HktSelf<'a> = Self;
+}
+
 impl From<EntityType<'static>> for Type {
     fn from(value: EntityType<'static>) -> Self {
         Self::Entity(value)
@@ -158,8 +159,8 @@ impl From<ObjectType<'static>> for Type {
     }
 }
 
-impl Display for Type {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Type::Entity(entity) => write!(f, "{}", entity),
             Type::Relation(relation) => write!(f, "{}", relation),
@@ -271,8 +272,8 @@ impl<'a> From<Attribute<'a>> for Thing<'a> {
     }
 }
 
-impl<'a> Display for Thing<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for Thing<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Thing::Entity(entity) => write!(f, "{}", entity),
             Thing::Relation(relation) => write!(f, "{}", relation),

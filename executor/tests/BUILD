@@ -22,15 +22,14 @@ deps = [
     "//concept/tests:test_utils_concept",
     "//encoding/tests:test_utils_encoding",
     "//util/test:test_utils",
+    "@crates//:itertools",
 ]
 
 rust_test(
     name = "test_compile_execute",
     crate_root = "compile_execute.rs",
     srcs = ["compile_execute.rs"],
-    deps = deps + [
-        "@crates//:itertools",
-    ],
+    deps = deps,
 )
 
 rust_test(
@@ -74,9 +73,7 @@ rust_test(
     name = "test_execute_expression",
     crate_root = "execute_expression.rs",
     srcs = ["execute_expression.rs"],
-    deps = deps + [
-        "@crates//:itertools"
-    ],
+    deps = deps,
 )
 
 rust_test(
@@ -86,7 +83,6 @@ rust_test(
     deps = deps + [
         "//function",
         "//query:query",
-        "@crates//:itertools"
     ],
 )
 

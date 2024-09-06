@@ -12,10 +12,7 @@ use std::{
 };
 
 use answer::variable_value::VariableValue;
-use compiler::match_::{
-    instructions::{CheckInstruction, ConstraintInstruction},
-    planner::pattern_plan::InstructionAPI,
-};
+use compiler::match_::instructions::{CheckInstruction, ConstraintInstruction};
 use concept::{
     error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
@@ -29,6 +26,10 @@ use crate::{
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
         iterator::TupleIterator, links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
+        owns_executor::OwnsExecutor, owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
+        plays_reverse_executor::PlaysReverseExecutor, relates_executor::RelatesExecutor,
+        relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
+        sub_reverse_executor::SubReverseExecutor, type_list_executor::TypeListExecutor,
     },
     row::MaybeOwnedRow,
     VariablePosition,
@@ -42,9 +43,32 @@ mod isa_reverse_executor;
 pub(crate) mod iterator;
 mod links_executor;
 mod links_reverse_executor;
+mod owns_executor;
+mod owns_reverse_executor;
+mod plays_executor;
+mod plays_reverse_executor;
+mod relates_executor;
+mod relates_reverse_executor;
+mod sub_executor;
+mod sub_reverse_executor;
 pub(crate) mod tuple;
+mod type_list_executor;
 
 pub(crate) enum InstructionExecutor {
+    TypeList(TypeListExecutor),
+
+    Sub(SubExecutor),
+    SubReverse(SubReverseExecutor),
+
+    Owns(OwnsExecutor),
+    OwnsReverse(OwnsReverseExecutor),
+
+    Relates(RelatesExecutor),
+    RelatesReverse(RelatesReverseExecutor),
+
+    Plays(PlaysExecutor),
+    PlaysReverse(PlaysReverseExecutor),
+
     Isa(IsaExecutor),
     IsaReverse(IsaReverseExecutor),
 
@@ -69,31 +93,51 @@ impl InstructionExecutor {
     ) -> Result<Self, ConceptReadError> {
         let variable_modes = VariableModes::new_for(&instruction, selected, named);
         match instruction {
-            ConstraintInstruction::Isa(isa) => {
-                let executor = IsaExecutor::new(isa, variable_modes, sort_by);
-                Ok(Self::Isa(executor))
+            ConstraintInstruction::TypeList(type_) => {
+                Ok(Self::TypeList(TypeListExecutor::new(type_, variable_modes, sort_by)))
             }
+            ConstraintInstruction::Sub(sub) => Ok(Self::Sub(SubExecutor::new(sub, variable_modes, sort_by))),
+            ConstraintInstruction::SubReverse(sub_reverse) => {
+                Ok(Self::SubReverse(SubReverseExecutor::new(sub_reverse, variable_modes, sort_by)))
+            }
+            ConstraintInstruction::Owns(owns) => Ok(Self::Owns(OwnsExecutor::new(owns, variable_modes, sort_by))),
+            ConstraintInstruction::OwnsReverse(owns_reverse) => {
+                Ok(Self::OwnsReverse(OwnsReverseExecutor::new(owns_reverse, variable_modes, sort_by)))
+            }
+            ConstraintInstruction::Relates(relates) => {
+                Ok(Self::Relates(RelatesExecutor::new(relates, variable_modes, sort_by)))
+            }
+            ConstraintInstruction::RelatesReverse(relates_reverse) => {
+                Ok(Self::RelatesReverse(RelatesReverseExecutor::new(relates_reverse, variable_modes, sort_by)))
+            }
+            ConstraintInstruction::Plays(plays) => Ok(Self::Plays(PlaysExecutor::new(plays, variable_modes, sort_by))),
+            ConstraintInstruction::PlaysReverse(plays_reverse) => {
+                Ok(Self::PlaysReverse(PlaysReverseExecutor::new(plays_reverse, variable_modes, sort_by)))
+            }
+            ConstraintInstruction::Isa(isa) => Ok(Self::Isa(IsaExecutor::new(isa, variable_modes, sort_by))),
             ConstraintInstruction::IsaReverse(isa_reverse) => {
-                let executor = IsaReverseExecutor::new(isa_reverse, variable_modes, sort_by);
-                Ok(Self::IsaReverse(executor))
+                Ok(Self::IsaReverse(IsaReverseExecutor::new(isa_reverse, variable_modes, sort_by)))
             }
             ConstraintInstruction::Has(has) => {
-                let executor = HasExecutor::new(has, variable_modes, sort_by, snapshot, thing_manager)?;
-                Ok(Self::Has(executor))
+                Ok(Self::Has(HasExecutor::new(has, variable_modes, sort_by, snapshot, thing_manager)?))
             }
-            ConstraintInstruction::HasReverse(has_reverse) => {
-                let executor = HasReverseExecutor::new(has_reverse, variable_modes, sort_by, snapshot, thing_manager)?;
-                Ok(Self::HasReverse(executor))
-            }
+            ConstraintInstruction::HasReverse(has_reverse) => Ok(Self::HasReverse(HasReverseExecutor::new(
+                has_reverse,
+                variable_modes,
+                sort_by,
+                snapshot,
+                thing_manager,
+            )?)),
             ConstraintInstruction::Links(links) => {
-                let executor = LinksExecutor::new(links, variable_modes, sort_by, snapshot, thing_manager)?;
-                Ok(Self::Links(executor))
+                Ok(Self::Links(LinksExecutor::new(links, variable_modes, sort_by, snapshot, thing_manager)?))
             }
-            ConstraintInstruction::LinksReverse(links_reverse) => {
-                let executor =
-                    LinksReverseExecutor::new(links_reverse, variable_modes, sort_by, snapshot, thing_manager)?;
-                Ok(Self::LinksReverse(executor))
-            }
+            ConstraintInstruction::LinksReverse(links_reverse) => Ok(Self::LinksReverse(LinksReverseExecutor::new(
+                links_reverse,
+                variable_modes,
+                sort_by,
+                snapshot,
+                thing_manager,
+            )?)),
             ConstraintInstruction::FunctionCallBinding(_function_call) => todo!(),
             ConstraintInstruction::ComparisonGenerator(_comparison) => todo!(),
             ConstraintInstruction::ComparisonGeneratorReverse(_comparison) => todo!(),
@@ -109,13 +153,22 @@ impl InstructionExecutor {
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
-            InstructionExecutor::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::Links(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::LinksReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            InstructionExecutor::FunctionCallBinding(_executor) => todo!(),
+            Self::TypeList(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Sub(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::SubReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Owns(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::OwnsReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Relates(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::RelatesReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Plays(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::PlaysReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Links(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::LinksReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::FunctionCallBinding(_executor) => todo!(),
         }
     }
 }
@@ -156,9 +209,8 @@ impl VariableModes {
         selected: &[VariablePosition],
         named: &HashMap<VariablePosition, String>,
     ) -> Self {
-        let constraint = instruction.constraint();
         let mut modes = Self::new();
-        constraint.ids_foreach(|id, _| {
+        instruction.ids_foreach(|id| {
             let var_mode =
                 VariableMode::new(instruction.is_input_variable(id), selected.contains(&id), named.contains_key(&id));
             modes.insert(id, var_mode)
@@ -328,6 +380,7 @@ impl<T: Hkt> Checker<T> {
         thing_manager: &Arc<ThingManager>,
         row: &MaybeOwnedRow<'_>,
     ) -> Box<FilterFn<T>> {
+        type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>>;
         let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> Result<bool, ConceptReadError>>> =
             Vec::with_capacity(self.checks.len());
         for check in &self.checks {
@@ -351,45 +404,69 @@ impl<T: Hkt> Checker<T> {
                     let maybe_attribute_extractor = self.extractors.get(&attribute);
                     let snapshot = snapshot.clone();
                     let thing_manager = thing_manager.clone();
-                    match (maybe_owner_extractor, maybe_attribute_extractor) {
-                        (None, None) => unreachable!("filter unrelated to the iterator"),
-                        (None, Some(&attr)) => {
+                    let owner: BoxExtractor<T> = match maybe_owner_extractor {
+                        Some(&owner) => Box::new(owner),
+                        None => {
                             let owner = row.get(owner).to_owned();
-                            filters.push(Box::new({
-                                move |value| {
-                                    owner.as_thing().as_object().has_attribute(
-                                        &*snapshot,
-                                        &thing_manager,
-                                        attr(value).as_thing().as_attribute().as_reference(),
-                                    )
-                                }
-                            }));
+                            Box::new(move |_| owner.clone())
                         }
-                        (Some(&owner), None) => {
-                            let attr = row.get(attribute).to_owned();
-                            filters.push(Box::new({
-                                move |value| {
-                                    owner(value).as_thing().as_object().has_attribute(
-                                        &*snapshot,
-                                        &thing_manager,
-                                        attr.as_thing().as_attribute().as_reference(),
-                                    )
-                                }
-                            }));
+                    };
+                    let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
+                        Some(&attribute) => Box::new(attribute),
+                        None => {
+                            let attribute = row.get(attribute).to_owned();
+                            Box::new(move |_| attribute.clone())
                         }
-                        (Some(&owner), Some(&attr)) => {
-                            filters.push(Box::new({
-                                move |value| {
-                                    owner(value).as_thing().as_object().has_attribute(
-                                        &*snapshot,
-                                        &thing_manager,
-                                        attr(value).as_thing().as_attribute().as_reference(),
-                                    )
-                                }
-                            }));
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            owner(value).as_thing().as_object().has_attribute(
+                                &*snapshot,
+                                &thing_manager,
+                                attribute(value).as_thing().as_attribute().as_reference(),
+                            )
                         }
-                    }
+                    }));
                 }
+                CheckInstruction::Links { relation, player, role } => {
+                    let maybe_relation_extractor = self.extractors.get(&relation);
+                    let maybe_player_extractor = self.extractors.get(&player);
+                    let maybe_role_extractor = self.extractors.get(&role);
+                    let snapshot = snapshot.clone();
+                    let thing_manager = thing_manager.clone();
+                    let relation: BoxExtractor<T> = match maybe_relation_extractor {
+                        Some(&relation) => Box::new(relation),
+                        None => {
+                            let relation = row.get(relation).to_owned();
+                            Box::new(move |_| relation.clone())
+                        }
+                    };
+                    let player: BoxExtractor<T> = match maybe_player_extractor {
+                        Some(&player) => Box::new(player),
+                        None => {
+                            let player = row.get(player).to_owned();
+                            Box::new(move |_| player.clone())
+                        }
+                    };
+                    let role: BoxExtractor<T> = match maybe_role_extractor {
+                        Some(&role) => Box::new(role),
+                        None => {
+                            let role = row.get(role).to_owned();
+                            Box::new(move |_| role.clone())
+                        }
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            relation(value).as_thing().as_relation().has_role_player(
+                                &*snapshot,
+                                &thing_manager,
+                                &player(value).as_thing().as_object(),
+                                role(value).as_type().as_role_type().clone(),
+                            )
+                        }
+                    }));
+                }
+                _ => todo!(),
             }
         }
 

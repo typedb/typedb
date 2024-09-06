@@ -7,7 +7,7 @@
 use std::{borrow::Borrow, cmp::Ordering, iter, mem::transmute};
 
 use crate::{
-    adaptors::{Chain, Filter, FilterMap, FlatMap, Flatten, Map, TakeWhile, TryFilter, TryFlatMap},
+    adaptors::{Chain, Filter, FilterMap, FlatMap, Flatten, Map, RepeatEach, TakeWhile, TryFilter, TryFlatMap, Zip},
     higher_order::{AdHocHkt, FnHktHelper, FnMutHktHelper, Hkt},
 };
 
@@ -26,6 +26,21 @@ pub trait LendingIterator: 'static {
         Other: for<'a> LendingIterator<Item<'a> = Self::Item<'a>>,
     {
         Chain::new(self, other)
+    }
+
+    fn repeat_each(self, n: usize) -> RepeatEach<Self>
+    where
+        Self: Sized,
+    {
+        RepeatEach::new(self, n)
+    }
+
+    fn zip<Other>(self, other: Other) -> Zip<Self, Other>
+    where
+        Self: Sized,
+        Other: LendingIterator,
+    {
+        Zip::new(self, other)
     }
 
     fn filter<P, F>(self, pred: P) -> Filter<Self, P>

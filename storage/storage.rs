@@ -19,7 +19,6 @@ use std::{
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
-use itertools::Itertools;
 use keyspace::KeyspaceDeleteError;
 use lending_iterator::LendingIterator;
 use logger::{error, result::ResultExt};

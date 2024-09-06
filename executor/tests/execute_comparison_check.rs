@@ -9,7 +9,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 use compiler::{
     match_::{
         inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-        instructions::{ConstraintInstruction, Inputs, IsaInstruction},
+        instructions::{thing::IsaInstruction, ConstraintInstruction, Inputs},
         planner::{
             pattern_plan::{IntersectionProgram, MatchProgram, Program},
             program_plan::ProgramPlan,
@@ -22,15 +22,13 @@ use concept::{
     type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{program_executor::ProgramExecutor};
-use executor::row::MaybeOwnedRow;
+use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
-
 
 const AGE_LABEL: Label = Label::new_static("age");
 const NAME_LABEL: Label = Label::new_static("name");
@@ -96,7 +94,7 @@ fn attribute_equality() {
     )
     .unwrap();
 
-    let vars = entry.block_variables().collect_vec();
+    let vars = vec![var_age_a, var_age_type_a, var_age_b, var_age_type_b];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
@@ -107,6 +105,7 @@ fn attribute_equality() {
             vec![ConstraintInstruction::Isa(IsaInstruction::new(isa_a, Inputs::None([]), &entry_annotations))
                 .map(&variable_positions)],
             &[variable_positions[&var_age_a]],
+            2,
         )),
         Program::Intersection(IntersectionProgram::new(
             variable_positions[&var_age_b],
@@ -119,6 +118,7 @@ fn attribute_equality() {
             ))
             .map(&variable_positions)],
             &[variable_positions[&var_age_a], variable_positions[&var_age_b]],
+            4,
         )),
     ];
 

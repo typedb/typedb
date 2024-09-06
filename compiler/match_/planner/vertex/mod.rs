@@ -13,7 +13,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::{Has, Links};
+use ir::pattern::constraint::{Has, Links, SubKind};
 use itertools::Itertools;
 
 use crate::match_::inference::type_annotations::TypeAnnotations;
@@ -24,40 +24,67 @@ const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
 const REGEX_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 const CONTAINS_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Direction {
+    Canonical,
+    Reverse,
+}
+
 // FIXME name
 #[derive(Debug)]
 pub(super) enum PlannerVertex {
     Constant,
-    Value(ValuePlanner),
+    Label(LabelPlanner),
+
+    Type(TypePlanner),
     Thing(ThingPlanner),
+    Value(ValuePlanner),
+
+    Isa(IsaPlanner),
     Has(HasPlanner),
     Links(LinksPlanner),
     Expression(()),
+
+    Sub(SubPlanner),
+    Owns(OwnsPlanner),
+    Relates(RelatesPlanner),
+    Plays(PlaysPlanner),
+    ValueType(ValueTypePlanner),
 }
 
 impl PlannerVertex {
-    pub(super) fn is_valid(&self, ordered: &[usize]) -> bool {
+    pub(super) fn is_valid(&self, index: usize, ordered: &[usize], adjacency: &HashMap<usize, HashSet<usize>>) -> bool {
         match self {
-            Self::Constant => true,                              // always valid: comes from query
-            Self::Thing(_) => true,                              // always valid: isa iterator
-            Self::Has(_) => true,                                // always valid: has iterator
-            Self::Links(_) => true,                              // always valid: links iterator
-            Self::Value(value) => value.is_valid(ordered), // may be invalid: has to be from an attribute or a expression
+            Self::Type(_) | Self::Thing(_) | Self::Value(_) => {
+                let adjacent = &adjacency[&index];
+                ordered.iter().any(|x| adjacent.contains(x))
+            } // may be invalid: must be produced
+
             Self::Expression(_) => todo!("validate expression"), // may be invalid: inputs must be bound
+
+            Self::Constant | Self::Label(_) => true, // always valid: comes from query
+
+            | Self::Isa(_)
+            | Self::Has(_)
+            | Self::Links(_)
+            | Self::Sub(_)
+            | Self::Owns(_)
+            | Self::Relates(_)
+            | Self::Plays(_)
+            | Self::ValueType(_) => true, // always valid: iterators
         }
-    }
-
-    pub(super) fn is_constant(&self) -> bool {
-        matches!(self, Self::Constant)
-    }
-
-    pub(crate) fn is_iterator(&self) -> bool {
-        matches!(self, Self::Has(_) | Self::Links(_))
     }
 
     fn as_thing(&self) -> Option<&ThingPlanner> {
         match self {
             Self::Thing(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub(super) fn as_isa(&self) -> Option<&IsaPlanner> {
+        match self {
+            Self::Isa(v) => Some(v),
             _ => None,
         }
     }
@@ -76,58 +103,107 @@ impl PlannerVertex {
         }
     }
 
+    pub(super) fn as_sub(&self) -> Option<&SubPlanner> {
+        match self {
+            Self::Sub(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub(super) fn as_owns(&self) -> Option<&OwnsPlanner> {
+        match self {
+            Self::Owns(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub(super) fn unbound_direction(&self) -> Direction {
+        match self {
+            PlannerVertex::Constant => todo!(),
+            PlannerVertex::Label(_) => todo!(),
+            PlannerVertex::Type(_) => unreachable!(),
+            PlannerVertex::Thing(_) => unreachable!(),
+            PlannerVertex::Value(_) => unreachable!(),
+            PlannerVertex::Isa(inner) => inner.unbound_direction,
+            PlannerVertex::Has(inner) => inner.unbound_direction,
+            PlannerVertex::Links(inner) => inner.unbound_direction,
+            PlannerVertex::Expression(_) => todo!(),
+            PlannerVertex::Sub(inner) => inner.unbound_direction,
+            PlannerVertex::Owns(inner) => inner.unbound_direction,
+            PlannerVertex::Relates(inner) => inner.unbound_direction,
+            PlannerVertex::Plays(inner) => inner.unbound_direction,
+            PlannerVertex::ValueType(_) => todo!(),
+        }
+    }
+
     pub(super) fn variables(&self) -> impl Iterator<Item = usize> {
         match self {
-            PlannerVertex::Constant => [None; 3].into_iter().flatten(),
-            PlannerVertex::Value(_inner) => todo!(),
-            PlannerVertex::Thing(_inner) => todo!(),
-            PlannerVertex::Has(inner) => inner.variables(),
-            PlannerVertex::Links(inner) => inner.variables(),
-            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+            Self::Constant => [None; 3].into_iter().flatten(),
+            Self::Label(inner) => inner.variables(),
+
+            Self::Type(_inner) => todo!(),
+            Self::Thing(_inner) => todo!(),
+            Self::Value(_inner) => todo!(),
+
+            Self::Isa(inner) => inner.variables(),
+            Self::Has(inner) => inner.variables(),
+            Self::Links(inner) => inner.variables(),
+            Self::Expression(_inner) => todo!(),
+
+            Self::Sub(inner) => inner.variables(),
+            Self::Owns(inner) => inner.variables(),
+            Self::Relates(inner) => inner.variables(),
+            Self::Plays(inner) => inner.variables(),
+            Self::ValueType(inner) => inner.variables(),
         }
     }
 
     pub(super) fn add_is(&mut self, other: usize) {
         match self {
-            PlannerVertex::Constant => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Thing(inner) => inner.add_is(other),
-            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+            Self::Constant => todo!(),
+            Self::Label(_) => todo!(),
+
+            Self::Type(_inner) => todo!(),
+            Self::Thing(inner) => inner.add_is(other),
+            Self::Value(_inner) => todo!(),
+
+            Self::Isa(_inner) => todo!(),
+            Self::Has(_inner) => todo!(),
+            Self::Links(_inner) => todo!(),
+            Self::Expression(_inner) => todo!(),
+
+            Self::Sub(_inner) => todo!(),
+            Self::Owns(_inner) => todo!(),
+            Self::Relates(_inner) => todo!(),
+            Self::Plays(_inner) => todo!(),
+            Self::ValueType(_inner) => todo!(),
         }
     }
 
     pub(super) fn add_equal(&mut self, other: usize) {
         match self {
-            PlannerVertex::Constant => (),
-            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Thing(inner) => inner.add_equal(other),
-            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+            Self::Constant => (),
+            Self::Value(_inner) => todo!(),
+            Self::Thing(inner) => inner.add_equal(other),
+            _ => todo!(),
         }
     }
 
     pub(super) fn add_lower_bound(&mut self, other: usize) {
         match self {
-            PlannerVertex::Constant => (),
-            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Thing(inner) => inner.add_lower_bound(other),
-            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+            Self::Constant => (),
+            Self::Value(_inner) => todo!(),
+            Self::Thing(inner) => inner.add_lower_bound(other),
+            _ => todo!(),
         }
     }
 
     pub(super) fn add_upper_bound(&mut self, other: usize) {
         match self {
-            PlannerVertex::Constant => (),
-            PlannerVertex::Value(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Thing(inner) => inner.add_upper_bound(other),
-            PlannerVertex::Has(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Links(_inner) => todo!("{}:{}", file!(), line!()),
-            PlannerVertex::Expression(_inner) => todo!("{}:{}", file!(), line!()),
+            Self::Constant => (),
+            Self::Value(_inner) => todo!(),
+            Self::Thing(inner) => inner.add_upper_bound(other),
+            _ => todo!(),
         }
     }
 }
@@ -153,39 +229,76 @@ impl Costed for PlannerVertex {
     fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
         match self {
             Self::Constant => VertexCost::default(),
-            Self::Value(inner) => inner.cost(inputs, elements),
+            Self::Label(_) => VertexCost::default(),
+
+            Self::Type(inner) => inner.cost(inputs, elements),
             Self::Thing(inner) => inner.cost(inputs, elements),
+            Self::Value(inner) => inner.cost(inputs, elements),
+
+            Self::Isa(inner) => inner.cost(inputs, elements),
             Self::Has(inner) => inner.cost(inputs, elements),
             Self::Links(inner) => inner.cost(inputs, elements),
             Self::Expression(_) => todo!("expression cost"),
+
+            Self::Sub(inner) => inner.cost(inputs, elements),
+            Self::Owns(inner) => inner.cost(inputs, elements),
+            Self::Relates(inner) => inner.cost(inputs, elements),
+            Self::Plays(inner) => inner.cost(inputs, elements),
+            Self::ValueType(inner) => inner.cost(inputs, elements),
         }
     }
 }
 
 #[derive(Debug)]
-pub(super) struct ValuePlanner;
+pub(super) struct LabelPlanner {
+    var: usize,
+}
 
-impl ValuePlanner {
-    pub(crate) fn from_variable(_: Variable) -> Self {
-        Self
+impl LabelPlanner {
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [Some(self.var), None, None].into_iter().flatten()
     }
 
-    pub(crate) fn is_valid(&self, _ordered: &[usize]) -> bool {
-        todo!("value planner is valid")
+    pub(crate) fn from_label_constraint(
+        label: &ir::pattern::constraint::Label<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+    ) -> LabelPlanner {
+        Self { var: variable_index[&label.left()] }
     }
 
-    fn expected_size(&self, _inputs: &[usize]) -> f64 {
-        todo!("value planner expected size")
+    pub(crate) fn from_role_name_constraint(
+        role_name: &ir::pattern::constraint::RoleName<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+    ) -> LabelPlanner {
+        Self { var: variable_index[&role_name.left()] }
+    }
+
+    pub(crate) fn from_kind_constraint(
+        kind: &ir::pattern::constraint::Kind<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+    ) -> LabelPlanner {
+        Self { var: variable_index[&kind.type_()] }
     }
 }
 
-impl Costed for ValuePlanner {
-    fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        if inputs.is_empty() {
-            VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
-        } else {
-            VertexCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
-        }
+#[derive(Debug)]
+pub(super) struct TypePlanner {
+    branching_factor: f64,
+}
+
+impl TypePlanner {
+    pub(crate) fn from_variable(variable: Variable, type_annotations: &TypeAnnotations) -> Self {
+        let num_types = type_annotations.variable_annotations_of(variable).unwrap().len();
+        Self { branching_factor: num_types as f64 }
+    }
+}
+
+impl Costed for TypePlanner {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost::default()
     }
 }
 
@@ -290,12 +403,67 @@ impl Costed for ThingPlanner {
 }
 
 #[derive(Debug)]
+pub(super) struct ValuePlanner;
+
+impl ValuePlanner {
+    pub(crate) fn from_variable(_: Variable) -> Self {
+        Self
+    }
+
+    fn expected_size(&self, _inputs: &[usize]) -> f64 {
+        todo!("value planner expected size")
+    }
+}
+
+impl Costed for ValuePlanner {
+    fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        if inputs.is_empty() {
+            VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+        } else {
+            VertexCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct IsaPlanner {
+    thing: usize,
+    type_: usize,
+    unbound_direction: Direction, //FIXME
+}
+
+impl IsaPlanner {
+    pub(crate) fn from_constraint(
+        isa: &ir::pattern::constraint::Isa<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> Self {
+        Self {
+            thing: variable_index[&isa.thing()],
+            type_: variable_index[&isa.type_()],
+            unbound_direction: Direction::Reverse,
+        }
+    }
+
+    fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [Some(self.thing), Some(self.type_), None].into_iter().flatten()
+    }
+}
+
+impl Costed for IsaPlanner {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        elements[self.thing].cost(inputs, elements)
+    }
+}
+
+#[derive(Debug)]
 pub(super) struct HasPlanner {
     pub owner: usize,
     pub attribute: usize,
     expected_size: f64,
     expected_unbound_size: f64,
-    pub unbound_is_forward: bool, //FIXME
+    unbound_direction: Direction, //FIXME
 }
 
 impl HasPlanner {
@@ -330,14 +498,15 @@ impl HasPlanner {
             .sum::<u64>() as f64;
 
         let expected_unbound_size = f64::min(unbound_forward_size, unbound_backward_size);
-        let unbound_is_forward = unbound_forward_size <= unbound_backward_size;
+        let unbound_direction =
+            if unbound_forward_size <= unbound_backward_size { Direction::Canonical } else { Direction::Reverse };
 
         Self {
             owner: variable_index[&owner],
             attribute: variable_index[&attribute],
             expected_size,
             expected_unbound_size,
-            unbound_is_forward,
+            unbound_direction,
         }
     }
 
@@ -380,7 +549,7 @@ pub(super) struct LinksPlanner {
     pub role: usize,
     expected_size: f64,
     expected_unbound_size: f64,
-    pub unbound_is_forward: bool, //FIXME
+    unbound_direction: Direction, //FIXME
 }
 
 impl LinksPlanner {
@@ -439,7 +608,8 @@ impl LinksPlanner {
             .sum::<u64>() as f64;
 
         let expected_unbound_size = f64::min(unbound_forward_size, unbound_backward_size);
-        let unbound_is_forward = unbound_forward_size <= unbound_backward_size;
+        let unbound_direction =
+            if unbound_forward_size <= unbound_backward_size { Direction::Canonical } else { Direction::Reverse };
 
         Self {
             relation: variable_index[&relation],
@@ -447,7 +617,7 @@ impl LinksPlanner {
             role: variable_index[&role],
             expected_size,
             expected_unbound_size,
-            unbound_is_forward,
+            unbound_direction,
         }
     }
 
@@ -480,5 +650,143 @@ impl Costed for LinksPlanner {
         };
 
         VertexCost { per_input, per_output, branching_factor }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct SubPlanner {
+    type_: usize,
+    supertype: usize,
+    kind: SubKind,
+    unbound_direction: Direction, //FIXME
+}
+
+impl SubPlanner {
+    pub(crate) fn from_constraint(
+        sub: &ir::pattern::constraint::Sub<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+    ) -> Self {
+        Self {
+            type_: variable_index[&sub.subtype()],
+            supertype: variable_index[&sub.supertype()],
+            kind: sub.sub_kind(),
+            unbound_direction: Direction::Reverse,
+        }
+    }
+
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [Some(self.type_), Some(self.supertype), None].into_iter().flatten()
+    }
+}
+
+impl Costed for SubPlanner {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct OwnsPlanner {
+    owner: usize,
+    attribute: usize,
+    unbound_direction: Direction, //FIXME
+}
+
+impl OwnsPlanner {
+    pub(crate) fn from_constraint(
+        owns: &ir::pattern::constraint::Owns<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> OwnsPlanner {
+        let owner = variable_index[&owns.owner()];
+        let attribute = variable_index[&owns.attribute()];
+        Self { owner, attribute, unbound_direction: Direction::Canonical }
+    }
+
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [Some(self.owner), Some(self.attribute), None].into_iter().flatten()
+    }
+}
+
+impl Costed for OwnsPlanner {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct RelatesPlanner {
+    relation: usize,
+    role_type: usize,
+    unbound_direction: Direction, //FIXME
+}
+
+impl RelatesPlanner {
+    pub(crate) fn from_constraint(
+        relates: &ir::pattern::constraint::Relates<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> RelatesPlanner {
+        let relation = variable_index[&relates.relation()];
+        let role_type = variable_index[&relates.role_type()];
+        Self { relation, role_type, unbound_direction: Direction::Canonical }
+    }
+
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [Some(self.relation), Some(self.role_type), None].into_iter().flatten()
+    }
+}
+
+impl Costed for RelatesPlanner {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct PlaysPlanner {
+    player: usize,
+    role_type: usize,
+    unbound_direction: Direction, //FIXME
+}
+
+impl PlaysPlanner {
+    pub(crate) fn from_constraint(
+        plays: &ir::pattern::constraint::Plays<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> PlaysPlanner {
+        let player = variable_index[&plays.player()];
+        let role_type = variable_index[&plays.role_type()];
+        Self { player, role_type, unbound_direction: Direction::Canonical }
+    }
+
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [Some(self.player), Some(self.role_type), None].into_iter().flatten()
+    }
+}
+
+impl Costed for PlaysPlanner {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct ValueTypePlanner {}
+
+impl ValueTypePlanner {
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [None; 3].into_iter().flatten()
+    }
+}
+
+impl Costed for ValueTypePlanner {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }

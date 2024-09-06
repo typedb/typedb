@@ -43,8 +43,8 @@ pub fn check_annotations(
 ) -> Result<(), TypeInferenceError> {
     for constraint in block.conjunction().constraints() {
         match constraint {
-            Constraint::Isa(_) => {} // Nothing to do
-            Constraint::Has(has) => {
+            Constraint::Isa(_) => (), // Nothing to do
+            Constraint::Has(_) => {
                 let valid_combinations = insert_annotations
                     .constraint_annotations_of(constraint.clone())
                     .unwrap()
@@ -59,7 +59,7 @@ pub fn check_annotations(
                     &ValidCombinations::Has(&valid_combinations),
                 )?;
             }
-            Constraint::Links(links) => {
+            Constraint::Links(_) => {
                 let links_annotations =
                     insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_left_right_filtered();
                 validate_input_combinations_insertable(
@@ -79,7 +79,8 @@ pub fn check_annotations(
                     &ValidCombinations::Links(&links_annotations.filters_on_right()),
                 )?;
             }
-            Constraint::Label(_)
+            | Constraint::Kind(_)
+            | Constraint::Label(_)
             | Constraint::RoleName(_)
             | Constraint::Sub(_)
             | Constraint::ExpressionBinding(_)
@@ -87,7 +88,7 @@ pub fn check_annotations(
             | Constraint::Comparison(_)
             | Constraint::Owns(_)
             | Constraint::Relates(_)
-            | Constraint::Plays(_) => {}
+            | Constraint::Plays(_) => (),
         }
     }
     Ok(())

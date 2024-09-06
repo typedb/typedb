@@ -61,7 +61,8 @@ pub fn compile(
                 };
                 connection_deletes.push(ConnectionInstruction::RolePlayer(RolePlayer { relation, player, role }));
             }
-            Constraint::Isa(_)
+            | Constraint::Isa(_)
+            | Constraint::Kind(_)
             | Constraint::Label(_)
             | Constraint::RoleName(_)
             | Constraint::Owns(_)

@@ -37,7 +37,16 @@ use crate::{
             LinksReverseUnboundedSortedPlayer, LinksReverseUnboundedSortedRelationMerged,
             LinksReverseUnboundedSortedRelationSingle,
         },
+        owns_executor::{OwnsBoundedSortedAttribute, OwnsUnboundedSortedOwner},
+        owns_reverse_executor::{OwnsReverseBoundedSortedOwner, OwnsReverseUnboundedSortedAttribute},
+        plays_executor::{PlaysBoundedSortedRole, PlaysUnboundedSortedPlayer},
+        plays_reverse_executor::{PlaysReverseBoundedSortedPlayer, PlaysReverseUnboundedSortedRole},
+        relates_executor::{RelatesBoundedSortedRole, RelatesUnboundedSortedRelation},
+        relates_reverse_executor::{RelatesReverseBoundedSortedRelation, RelatesReverseUnboundedSortedRole},
+        sub_executor::{SubBoundedSortedSuper, SubUnboundedSortedSub},
+        sub_reverse_executor::{SubReverseBoundedSortedSuper, SubReverseUnboundedSortedSub},
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
+        type_list_executor::TypeIterator,
         VariableMode, VariableModes,
     },
     row::Row,
@@ -85,6 +94,32 @@ macro_rules! dispatch_tuple_iterator {
 dispatch_tuple_iterator! {
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum TupleIterator {
+    Type(SortedTupleIterator<TypeIterator>),
+
+    SubUnbounded(SortedTupleIterator<SubUnboundedSortedSub>),
+    SubBounded(SortedTupleIterator<SubBoundedSortedSuper>),
+
+    SubReverseUnbounded(SortedTupleIterator<SubReverseUnboundedSortedSub>),
+    SubReverseBounded(SortedTupleIterator<SubReverseBoundedSortedSuper>),
+
+    OwnsUnbounded(SortedTupleIterator<OwnsUnboundedSortedOwner>),
+    OwnsBounded(SortedTupleIterator<OwnsBoundedSortedAttribute>),
+
+    OwnsReverseUnbounded(SortedTupleIterator<OwnsReverseUnboundedSortedAttribute>),
+    OwnsReverseBounded(SortedTupleIterator<OwnsReverseBoundedSortedOwner>),
+
+    RelatesUnbounded(SortedTupleIterator<RelatesUnboundedSortedRelation>),
+    RelatesBounded(SortedTupleIterator<RelatesBoundedSortedRole>),
+
+    RelatesReverseUnbounded(SortedTupleIterator<RelatesReverseUnboundedSortedRole>),
+    RelatesReverseBounded(SortedTupleIterator<RelatesReverseBoundedSortedRelation>),
+
+    PlaysUnbounded(SortedTupleIterator<PlaysUnboundedSortedPlayer>),
+    PlaysBounded(SortedTupleIterator<PlaysBoundedSortedRole>),
+
+    PlaysReverseUnbounded(SortedTupleIterator<PlaysReverseUnboundedSortedRole>),
+    PlaysReverseBounded(SortedTupleIterator<PlaysReverseBoundedSortedPlayer>),
+
     IsaUnboundedSingle(SortedTupleIterator<IsaUnboundedSortedThingSingle>),
     IsaUnboundedMerged(SortedTupleIterator<IsaUnboundedSortedThingMerged>),
     IsaUnboundedInvertedSingle(SortedTupleIterator<IsaUnboundedSortedTypeSingle>),
