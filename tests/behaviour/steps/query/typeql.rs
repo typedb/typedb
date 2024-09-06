@@ -60,12 +60,11 @@ fn execute_match_query(
             &IndexedAnnotatedFunctions::empty(),
             &variable_registry,
         )?;
-        .unwrap();
 
         let match_plan = MatchProgram::compile(
             &block,
             &type_annotations,
-            &translation_context.variable_registry,
+            variable_registry.clone(),
             &HashMap::new(),
             tx.thing_manager.statistics(),
         );

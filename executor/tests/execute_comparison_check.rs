@@ -22,15 +22,13 @@ use concept::{
     type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{program_executor::ProgramExecutor};
-use executor::row::MaybeOwnedRow;
+use executor::{program_executor::ProgramExecutor, row::MaybeOwnedRow};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
-
 
 const AGE_LABEL: Label = Label::new_static("age");
 const NAME_LABEL: Label = Label::new_static("name");
