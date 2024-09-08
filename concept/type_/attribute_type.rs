@@ -32,10 +32,11 @@ use crate::{
     thing::{attribute::Attribute, thing_manager::ThingManager},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
+        constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
         owns::Owns,
         type_manager::TypeManager,
-        KindAPI, ThingTypeAPI, TypeAPI,
+        Capability, KindAPI, ThingTypeAPI, TypeAPI,
     },
     ConceptAPI,
 };
@@ -98,7 +99,7 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        type_manager.get_type_is_abstract(snapshot, self.clone())
+        Ok(self.get_constraint_abstract(snapshot, type_manager)?.is_some())
     }
 
     fn delete(
@@ -138,7 +139,7 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<AttributeType<'static>>>, ConceptReadError> {
         type_manager.get_attribute_type_subtypes(snapshot, self.clone().into_owned())
     }
 
@@ -163,12 +164,12 @@ impl<'a> KindAPI<'a> for AttributeType<'a> {
         type_manager.get_attribute_type_annotations_declared(snapshot, self.clone().into_owned())
     }
 
-    fn get_annotations<'m>(
+    fn get_constraints<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<AttributeTypeAnnotation, AttributeType<'static>>>, ConceptReadError> {
-        type_manager.get_attribute_type_annotations(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<AttributeType<'static>>>>, ConceptReadError> {
+        type_manager.get_attribute_type_constraints(snapshot, self.clone().into_owned())
     }
 }
 
@@ -189,9 +190,16 @@ impl<'a> AttributeType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
+    ) -> Result<Option<(ValueType, AttributeType<'static>)>, ConceptReadError> {
+        type_manager.get_attribute_type_value_type(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_value_type_without_source(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
     ) -> Result<Option<ValueType>, ConceptReadError> {
-        type_manager
-            .get_attribute_type_value_type(snapshot, self.clone().into_owned())
+        self.get_value_type(snapshot, type_manager)
             .map(|value_type_opt| value_type_opt.map(|(value_type, _)| value_type))
     }
 
@@ -227,19 +235,6 @@ impl<'a> AttributeType<'a> {
             .collect())
     }
 
-    pub fn get_value_type_annotations(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<HashMap<AttributeTypeAnnotation, AttributeType<'static>>, ConceptReadError> {
-        Ok(self
-            .get_annotations(snapshot, type_manager)?
-            .into_iter()
-            .filter(|(annotation, _)| annotation.is_value_type_annotation())
-            .map(|(annotation, source)| (annotation.clone(), source.clone().into_owned()))
-            .collect())
-    }
-
     pub fn set_label(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -268,36 +263,52 @@ impl<'a> AttributeType<'a> {
         type_manager.unset_attribute_type_supertype(snapshot, thing_manager, self.clone().into_owned())
     }
 
-    pub(crate) fn is_independent(
+    pub fn get_constraint_abstract(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<TypeConstraint<AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_type_abstract_constraint(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_constraints_independent(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<TypeConstraint<AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_independent_constraints(snapshot, self.clone().into_owned())
+    }
+
+    pub fn is_independent(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        type_manager.get_attribute_type_is_independent(snapshot, self.clone())
+        Ok(!self.get_constraints_independent(snapshot, type_manager)?.is_empty())
     }
 
-    pub fn get_constraint_regex(
+    pub fn get_constraints_regex(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<AnnotationRegex>, ConceptReadError> {
-        type_manager.get_attribute_type_regex(snapshot, self.clone())
+    ) -> Result<HashSet<TypeConstraint<AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_regex_constraints(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_constraint_range(
+    pub fn get_constraints_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<AnnotationRange>, ConceptReadError> {
-        type_manager.get_attribute_type_range(snapshot, self.clone())
+    ) -> Result<HashSet<TypeConstraint<AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_range_constraints(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_constraint_values(
+    pub fn get_constraints_values(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<AnnotationValues>, ConceptReadError> {
-        type_manager.get_attribute_type_values(snapshot, self.clone())
+    ) -> Result<HashSet<TypeConstraint<AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_values_constraints(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(
@@ -308,9 +319,11 @@ impl<'a> AttributeType<'a> {
         annotation: AttributeTypeAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
-            AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.set_annotation_abstract(snapshot, thing_manager, self.clone().into_owned())?
-            }
+            AttributeTypeAnnotation::Abstract(_) => type_manager.set_attribute_type_annotation_abstract(
+                snapshot,
+                thing_manager,
+                self.clone().into_owned(),
+            )?,
             AttributeTypeAnnotation::Independent(_) => {
                 type_manager.set_annotation_independent(snapshot, thing_manager, self.clone().into_owned())?
             }
@@ -368,25 +381,29 @@ impl<'a> Display for AttributeType<'a> {
 
 // --- Owned API ---
 impl<'a> AttributeType<'a> {
-    pub fn get_owns_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_for_attribute_declared(snapshot, self.clone().into_owned())
-    }
-
     pub fn get_owns<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_for_attribute(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_owns(snapshot, self.clone().into_owned())
     }
 
-    fn get_owns_owners(&self) {
-        // TODO: Why not just have owns?
-        todo!()
+    pub fn get_owner_types<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Owns<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_owner_types(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_constraints_for_owner<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        owner_type: ObjectType<'static>,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError> {
+        type_manager.get_type_owns_constraints(snapshot, owner_type, self.clone().into_owned())
     }
 }
 

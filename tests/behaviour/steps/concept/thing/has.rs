@@ -311,7 +311,7 @@ async fn object_get_has_with_annotations(
             .into_iter()
             .filter(|owns| {
                 annotations.iter().all(|anno| {
-                    owns.get_annotations(tx.snapshot.as_ref(), &tx.type_manager).unwrap().contains_key(anno)
+                    owns.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().contains_key(anno)
                 })
             })
             .map(|owns| owns.attribute())

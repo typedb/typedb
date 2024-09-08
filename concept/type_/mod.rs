@@ -5,9 +5,11 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fmt::{Display, Formatter},
     hash::Hash,
+    iter,
+    ops::{Deref, DerefMut},
 };
 
 use bytes::{byte_reference::ByteReference, Bytes};
@@ -33,6 +35,7 @@ use crate::{
     type_::{
         annotation::{Annotation, AnnotationCardinality, AnnotationError},
         attribute_type::AttributeType,
+        constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
@@ -44,7 +47,7 @@ use crate::{
 
 pub mod annotation;
 pub mod attribute_type;
-mod constraint;
+pub(crate) mod constraint;
 pub mod entity_type;
 pub mod object_type;
 pub mod owns;
@@ -55,7 +58,7 @@ pub mod role_type;
 pub mod sub;
 pub mod type_manager;
 
-macro_rules! get_with_overridden {
+macro_rules! get_with_specialised {
     ($(
         $vis:vis fn $method_name:ident() -> $output_type:ident = $input_type:ty | $get_method:ident;
     )*) => {
@@ -84,7 +87,7 @@ macro_rules! get_with_overridden {
         )*
     }
 }
-pub(crate) use get_with_overridden;
+pub(crate) use get_with_specialised;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone + Hash + Eq + 'a {
     type SelfStatic: KindAPI<'static> + 'static;
@@ -140,13 +143,68 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<Self>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<Self>>, ConceptReadError>;
 
     fn get_subtypes_transitive<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<Self>>, ConceptReadError>;
+
+    fn is_supertype_of<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        other: Self,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(other.get_supertype(snapshot, type_manager)?.eq(&Some(self.clone())))
+    }
+
+    fn is_supertype_transitive_of<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        other: Self,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(other.get_supertypes_transitive(snapshot, type_manager)?.contains(self))
+    }
+
+    fn is_subtype_of<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        other: Self,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(other.get_subtypes(snapshot, type_manager)?.contains(self))
+    }
+
+    fn is_subtype_transitive_of<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        other: Self,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(other.get_subtypes_transitive(snapshot, type_manager)?.contains(self))
+    }
+
+    fn inheritance_cmp<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        other: Self,
+    ) -> Result<std::cmp::Ordering, ConceptReadError> {
+        Ok(if self.is_subtype_transitive_of(snapshot, type_manager, other.clone())? {
+            std::cmp::Ordering::Less
+        } else if self.is_supertype_transitive_of(snapshot, type_manager, other.clone())? {
+            std::cmp::Ordering::Greater
+        } else {
+            std::cmp::Ordering::Equal
+        })
+    }
+
+    fn chain_types<C: IntoIterator<Item = Self>>(first: Self, others: C) -> impl Iterator<Item = Self> {
+        iter::once(first).chain(others.into_iter())
+    }
 }
 
 pub trait KindAPI<'a>: TypeAPI<'a> {
@@ -159,11 +217,11 @@ pub trait KindAPI<'a>: TypeAPI<'a> {
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, ConceptReadError>;
 
-    fn get_annotations<'this>(
+    fn get_constraints<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashMap<Self::AnnotationType, Self>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'this, HashSet<TypeConstraint<Self>>>, ConceptReadError>;
 }
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> + ThingTypeAPI<'a> {
@@ -181,6 +239,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
+        ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError>;
 
     fn unset_owns(
@@ -203,11 +262,67 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError>;
 
-    fn get_owns_overrides<'m>(
+    fn get_owns_with_specialised<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError>;
+
+    fn get_type_owns_constraints<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        interface_type: AttributeType<'static>,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError>;
+
+    fn get_type_owns_constraints_cardinality<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        interface_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+
+    fn get_type_owns_constraints_distinct<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        interface_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+
+    fn is_type_owns_distinct<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        interface_type: AttributeType<'static>,
+    ) -> Result<bool, ConceptReadError>;
+
+    fn get_type_owns_constraints_regex<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        interface_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+
+    fn get_type_owns_constraints_range<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        interface_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+
+    fn get_type_owns_constraints_values<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        interface_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+
+    fn get_type_owns_constraint_unique<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
     fn get_owns_attribute_declared(
         &self,
@@ -240,8 +355,8 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         Ok(self.get_owns(snapshot, type_manager)?.iter().find(|owns| owns.attribute() == attribute_type).cloned())
     }
 
-    get_with_overridden! {
-        fn get_owns_attribute_with_overridden() -> Owns = AttributeType<'static> | get_owns_attribute;
+    get_with_specialised! {
+        fn get_owns_attribute_with_specialised() -> Owns = AttributeType<'static> | get_owns_attribute;
     }
 
     fn has_owns_attribute(
@@ -299,6 +414,26 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
 
+    fn get_plays_with_specialised<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
+
+    fn get_type_plays_constraints<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, ConceptReadError>;
+
+    fn get_type_plays_constraints_cardinality<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, ConceptReadError>;
+
     fn get_plays_role_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -351,9 +486,9 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         Ok(result)
     }
 
-    get_with_overridden! {
-        fn get_plays_role_with_overridden() -> Plays = RoleType<'static> | get_plays_role;
-        fn get_plays_role_name_with_overridden() -> Plays = &str | get_plays_role_name;
+    get_with_specialised! {
+        fn get_plays_role_with_specialised() -> Plays = RoleType<'static> | get_plays_role;
+        fn get_plays_role_name_with_specialised() -> Plays = &str | get_plays_role_name;
     }
 
     fn try_get_plays_role(
@@ -435,23 +570,11 @@ pub trait Capability<'a>:
 
     fn interface(&self) -> Self::InterfaceType;
 
-    fn get_override<'this>(
-        &'this self,
+    fn is_abstract(
+        &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, Option<Self>>, ConceptReadError>;
-
-    fn get_overriding<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Self>>, ConceptReadError>;
-
-    fn get_overriding_transitive<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Self>>, ConceptReadError>;
+        type_manager: &TypeManager,
+    ) -> Result<bool, ConceptReadError>;
 
     fn get_annotations_declared<'this>(
         &'this self,
@@ -459,47 +582,21 @@ pub trait Capability<'a>:
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, ConceptReadError>;
 
-    fn get_annotations<'this>(
+    fn get_constraints<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashMap<Self::AnnotationType, Self>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Self>>>, ConceptReadError>;
+
+    fn get_cardinality_constraints(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<CapabilityConstraint<Self>>, ConceptReadError>;
 
     fn get_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<AnnotationCardinality, ConceptReadError> {
-        type_manager.get_cardinality(snapshot, self.clone())
-    }
-
-    fn get_cardinality_declared(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Option<AnnotationCardinality>, ConceptReadError> {
-        type_manager.get_cardinality_declared(snapshot, self.clone())
-    }
-
-    fn get_default_cardinality(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError>;
-}
-
-pub struct EdgeOverride<EDGE: TypeEdgeEncoding<'static>> {
-    overrides: EDGE, // TODO: Consider storing EDGE::To instead
-}
-
-impl<'a, EDGE: TypeEdgeEncoding<'static>> TypeEdgePropertyEncoding<'a> for EdgeOverride<EDGE> {
-    const INFIX: Infix = Infix::PropertyOverride;
-
-    fn from_value_bytes(value: ByteReference<'_>) -> Self {
-        Self { overrides: EDGE::decode_canonical_edge(Bytes::Reference(value).into_owned()) }
-    }
-
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::Reference(self.overrides.to_canonical_type_edge().bytes()).into_owned())
-    }
 }

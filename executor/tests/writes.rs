@@ -53,7 +53,6 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             MEMBERSHIP_MEMBER_LABEL.name().as_str(),
             Ordering::Unordered,
-            None,
         )
         .unwrap();
     let membership_member_type = relates_member.role();
@@ -64,7 +63,6 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             MEMBERSHIP_GROUP_LABEL.name().as_str(),
             Ordering::Unordered,
-            None,
         )
         .unwrap();
     let membership_group_type = relates_group.role();

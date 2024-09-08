@@ -126,17 +126,25 @@ pub async fn get_owners_contain(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
 
         let mut actual_labels = Vec::new();
-        attribute_type.get_owns(tx.snapshot.as_ref(), &tx.type_manager).unwrap().iter().for_each(|(owner, _owns)| {
-            let owner_label = match owner {
-                ObjectType::Entity(owner) => {
-                    owner.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
-                }
-                ObjectType::Relation(owner) => {
-                    owner.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
-                }
-            };
-            actual_labels.push(owner_label);
-        });
+        attribute_type.get_owner_types(tx.snapshot.as_ref(), &tx.type_manager).unwrap().iter().for_each(
+            |(owner, _owns)| {
+                let owner_label = match owner {
+                    ObjectType::Entity(owner) => owner
+                        .get_label(tx.snapshot.as_ref(), &tx.type_manager)
+                        .unwrap()
+                        .scoped_name()
+                        .as_str()
+                        .to_owned(),
+                    ObjectType::Relation(owner) => owner
+                        .get_label(tx.snapshot.as_ref(), &tx.type_manager)
+                        .unwrap()
+                        .scoped_name()
+                        .as_str()
+                        .to_owned(),
+                };
+                actual_labels.push(owner_label);
+            },
+        );
         contains.check(&expected_labels, &actual_labels);
     });
 }
@@ -155,7 +163,7 @@ pub async fn get_declaring_owners_contain(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
 
         let mut actual_labels = Vec::new();
-        attribute_type.get_owns_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().iter().for_each(|owns| {
+        attribute_type.get_owns(tx.snapshot.as_ref(), &tx.type_manager).unwrap().iter().for_each(|owns| {
             let owner_label = match owns.owner() {
                 ObjectType::Entity(owner) => {
                     owner.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name().as_str().to_owned()

@@ -177,10 +177,12 @@ fn has() {
             .unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        let owns_age = person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone()).unwrap();
-        owns_age.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
-        let owns_name = person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone()).unwrap();
-        owns_name.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
+        person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
+            .unwrap();
+        person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
+            .unwrap();
 
         let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
         let age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
@@ -235,13 +237,17 @@ fn attribute_cleanup_on_concurrent_detach() {
         name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        let owns_age = person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone()).unwrap();
-        owns_age.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Ordered).unwrap();
+        let owns_age = person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Ordered)
+            .unwrap();
         owns_age
             .set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Distinct(AnnotationDistinct))
             .unwrap();
 
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone()).unwrap();
+        let person_name = person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Ordered)
+            .unwrap();
+        person_name.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
 
         let alice = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
         let bob = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
@@ -368,7 +374,7 @@ fn role_player_distinct() {
 
         let employment_type = type_manager.create_relation_type(&mut snapshot, &employment_label).unwrap();
         employment_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, employee_role, Ordering::Ordered, None)
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, employee_role, Ordering::Ordered)
             .unwrap();
         let employee_relates =
             employment_type.get_relates_role_name(&snapshot, &type_manager, employee_role).unwrap().unwrap();
@@ -391,7 +397,7 @@ fn role_player_distinct() {
         let employee_type = employee_relates.role();
 
         employment_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, employer_role, Ordering::Ordered, None)
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, employer_role, Ordering::Ordered)
             .unwrap();
         let employer_relates =
             employment_type.get_relates_role_name(&snapshot, &type_manager, employer_role).unwrap().unwrap();
@@ -500,7 +506,7 @@ fn role_player_duplicates() {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let list_type = type_manager.create_relation_type(&mut snapshot, &list_label).unwrap();
         list_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Unordered, None)
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Unordered)
             .unwrap();
         let entry_relates =
             list_type.get_relates_role_name(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
@@ -514,7 +520,7 @@ fn role_player_duplicates() {
             .unwrap();
         let entry_type = entry_relates.role();
         list_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Unordered, None)
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Unordered)
             .unwrap();
         let owner_type =
             list_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();

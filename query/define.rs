@@ -13,7 +13,7 @@ use concept::{
         attribute_type::AttributeType,
         owns::Owns,
         plays::Plays,
-        relates::{Relates, RelatesAnnotation},
+        relates::Relates,
         type_manager::TypeManager,
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
@@ -41,14 +41,13 @@ use typeql::{
 
 use crate::{
     definable_resolution::{
-        filter_variants, get_struct_field_value_type_optionality, named_type_to_label, resolve_attribute_type,
-        resolve_owns, resolve_owns_declared, resolve_plays_declared, resolve_plays_role_label, resolve_relates,
+        filter_variants, get_struct_field_value_type_optionality, resolve_attribute_type, resolve_relates,
         resolve_relates_declared, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type,
         resolve_value_type, try_resolve_typeql_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type,
         SymbolResolutionError,
     },
     definable_status::{
-        get_capability_annotation_status, get_override_status, get_owns_status, get_plays_status, get_relates_status,
+        get_capability_annotation_status, get_owns_status, get_plays_status, get_relates_status,
         get_struct_field_status, get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status,
         DefinableStatus,
     },
@@ -58,7 +57,7 @@ macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path) => {
         if let Some(typeql_annotation) = &$capability.annotations.first() {
             let annotation =
-                translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+                translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { source })?;
             Err(DefineError::IllegalAnnotation { source: $annotation_error(annotation.category()) })
         } else {
             Ok(())
@@ -111,19 +110,13 @@ fn process_type_definitions(
     })?;
     declarations
         .clone()
-        .try_for_each(|declaration| define_relates_overrides(snapshot, type_manager, thing_manager, declaration))?;
+        .try_for_each(|declaration| define_relates_specialises(snapshot, type_manager, thing_manager, declaration))?;
     declarations
         .clone()
         .try_for_each(|declaration| define_owns_with_annotations(snapshot, type_manager, thing_manager, declaration))?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| define_owns_overrides(snapshot, type_manager, thing_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| {
         define_plays_with_annotations(snapshot, type_manager, thing_manager, declaration)
     })?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| define_plays_overrides(snapshot, type_manager, thing_manager, declaration))?;
     Ok(())
 }
 
@@ -145,7 +138,7 @@ fn define_struct(
     let name = struct_definable.ident.as_str();
 
     let definition_status = get_struct_status(snapshot, type_manager, name)
-        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => {}
         DefinableStatus::ExistsSame(_) => return Ok(()),
@@ -165,11 +158,11 @@ fn define_struct_fields(
 ) -> Result<(), DefineError> {
     let name = struct_definable.ident.as_str();
     let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
-        .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+        .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
 
     for field in &struct_definable.fields {
         let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+            .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
 
         let definition_status = get_struct_field_status(
             snapshot,
@@ -179,7 +172,7 @@ fn define_struct_fields(
             value_type.clone(),
             optional,
         )
-        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?;
         match definition_status {
             DefinableStatus::DoesNotExist => {}
             DefinableStatus::ExistsSame(_) => return Ok(()),
@@ -262,10 +255,10 @@ fn define_type_annotations(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+        .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
     for typeql_annotation in &type_declaration.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { source })?;
         match type_.clone() {
             TypeEnum::Entity(entity) => {
                 if let Some(converted) = type_convert_and_validate_annotation_definition_need(
@@ -358,7 +351,7 @@ fn define_sub(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+        .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
 
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Sub(sub) = &capability.base else {
@@ -366,7 +359,7 @@ fn define_sub(
         };
         let supertype_label = Label::parse_from(sub.supertype_label.ident.as_str());
         let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+            .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
         if type_.kind() != supertype.kind() {
             return Err(err_capability_kind_mismatch(
                 &label,
@@ -384,7 +377,7 @@ fn define_sub(
                 if need_define {
                     type_
                         .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                        .map_err(|source| DefineError::SetSupertype { sub: sub.clone(), source })?;
+                        .map_err(|typedb_source| DefineError::SetSupertype { sub: sub.clone(), source })?;
                 }
             }
             (TypeEnum::Relation(type_), TypeEnum::Relation(supertype)) => {
@@ -393,7 +386,7 @@ fn define_sub(
                 if need_define {
                     type_
                         .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                        .map_err(|source| DefineError::SetSupertype { sub: sub.clone(), source })?;
+                        .map_err(|typedb_source| DefineError::SetSupertype { sub: sub.clone(), source })?;
                 }
             }
             (TypeEnum::Attribute(type_), TypeEnum::Attribute(supertype)) => {
@@ -402,7 +395,7 @@ fn define_sub(
                 if need_define {
                     type_
                         .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                        .map_err(|source| DefineError::SetSupertype { sub: sub.clone(), source })?;
+                        .map_err(|typedb_source| DefineError::SetSupertype { sub: sub.clone(), source })?;
                 }
             }
             (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => {
@@ -428,7 +421,7 @@ fn define_value_type(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+        .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::ValueType(value_type_statement) = &capability.base else {
             continue;
@@ -437,11 +430,11 @@ fn define_value_type(
             return Err(err_unsupported_capability(&label, type_.kind(), capability));
         };
         let value_type = resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
-            .map_err(|source| DefineError::ValueTypeSymbolResolution { typedb_source: source })?;
+            .map_err(|typedb_source| DefineError::ValueTypeSymbolResolution { typedb_source })?;
 
         let definition_status =
             get_value_type_status(snapshot, type_manager, attribute_type.clone(), value_type.clone())
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+                .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?;
         let define_needed = match definition_status {
             DefinableStatus::DoesNotExist => true,
             DefinableStatus::ExistsSame(_) => false,
@@ -457,7 +450,7 @@ fn define_value_type(
         if define_needed {
             attribute_type
                 .set_value_type(snapshot, type_manager, thing_manager, value_type.clone())
-                .map_err(|source| DefineError::SetValueType { label: label.to_owned(), value_type, source })?;
+                .map_err(|typedb_source| DefineError::SetValueType { label: label.to_owned(), value_type, source })?;
         }
 
         define_value_type_annotations(
@@ -482,7 +475,7 @@ fn define_value_type_annotations<'a>(
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { source })?;
         if let Some(converted) = type_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -515,7 +508,7 @@ fn define_relates_with_annotations(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+        .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Relates(relates) = &capability.base else {
             continue;
@@ -525,44 +518,19 @@ fn define_relates_with_annotations(
         };
 
         let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &relates.related)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+            .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
 
         let definition_status =
             get_relates_status(snapshot, type_manager, relation_type.clone(), &role_label, ordering)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let (defined, is_new) = match definition_status {
+                .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?;
+        let defined = match definition_status {
             DefinableStatus::DoesNotExist => {
-                let init_cardinality = if let Some(typeql_cardinality) = capability
-                    .annotations
-                    .iter()
-                    .find(|annotation| matches!(annotation, typeql::Annotation::Cardinality(_)))
-                {
-                    let annotation = translate_annotation(typeql_cardinality)
-                        .map_err(|source| DefineError::LiteralParseError { source })?;
-                    match annotation {
-                        Annotation::Cardinality(card) => Some(card),
-                        other => {
-                            debug_assert!(false, "Expected to translate found typeql annotation for relates to Cardinality. Got {:?} instead", other);
-                            None
-                        }
-                    }
-                } else {
-                    None
-                };
-
                 let relates = relation_type
-                    .create_relates(
-                        snapshot,
-                        type_manager,
-                        thing_manager,
-                        role_label.name.as_str(),
-                        ordering,
-                        init_cardinality,
-                    )
-                    .map_err(|source| DefineError::CreateRelates { source, relates: relates.to_owned() })?;
-                (relates, true)
+                    .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering)
+                    .map_err(|typedb_source| DefineError::CreateRelates { source, relates: relates.to_owned() })?;
+                relates
             }
-            DefinableStatus::ExistsSame(Some((existing_relates, _))) => (existing_relates, false),
+            DefinableStatus::ExistsSame(Some((existing_relates, _))) => existing_relates,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing relates concept expected"),
             DefinableStatus::ExistsDifferent((existing_relates, existing_ordering)) => {
                 return Err(DefineError::RelatesAlreadyDefinedButDifferent {
@@ -580,7 +548,7 @@ fn define_relates_with_annotations(
             }
         };
 
-        define_relates_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), capability, is_new)?;
+        define_relates_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), capability)?;
     }
     Ok(())
 }
@@ -592,11 +560,10 @@ fn define_relates_annotations<'a>(
     relation_label: &Label<'a>,
     relates: Relates<'a>,
     typeql_capability: &TypeQLCapability,
-    is_new: bool,
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { source })?;
         let converted_for_relates = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -606,16 +573,8 @@ fn define_relates_annotations<'a>(
         );
         match converted_for_relates {
             Ok(Some(relates_annotation)) => {
-                // New relates should set Cardinality on initialization
-                if matches!(relates_annotation, RelatesAnnotation::Cardinality(_)) && is_new {
-                    debug_assert!(relates
-                        .get_annotations_declared(snapshot, type_manager)
-                        .unwrap()
-                        .contains(&relates_annotation));
-                    continue;
-                }
                 relates.set_annotation(snapshot, type_manager, thing_manager, relates_annotation).map_err(
-                    |source| DefineError::SetAnnotation {
+                    |typedb_source| DefineError::SetAnnotation {
                         label: relation_label.clone().into_owned(),
                         source,
                         annotation_declaration: typeql_annotation.clone(),
@@ -632,7 +591,7 @@ fn define_relates_annotations<'a>(
                     annotation.clone(),
                 )? {
                     relates.role().set_annotation(snapshot, type_manager, thing_manager, converted_for_role).map_err(
-                        |source| DefineError::SetAnnotation {
+                        |typedb_source| DefineError::SetAnnotation {
                             label: relation_label.clone().into_owned(),
                             source,
                             annotation_declaration: typeql_annotation.clone(),
@@ -645,7 +604,7 @@ fn define_relates_annotations<'a>(
     Ok(())
 }
 
-fn define_relates_overrides(
+fn define_relates_specialises(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -653,7 +612,7 @@ fn define_relates_overrides(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+        .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Relates(typeql_relates) = &capability.base else {
             continue;
@@ -663,39 +622,51 @@ fn define_relates_overrides(
         };
 
         let (role_label, _ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+            .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
         let relates = resolve_relates_declared(snapshot, type_manager, relation_type.clone(), role_label.name.as_str())
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+            .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
 
-        define_relates_override(snapshot, type_manager, thing_manager, &label, relates, typeql_relates)?;
+        define_relates_specialise(snapshot, type_manager, thing_manager, &label, relates, typeql_relates)?;
     }
     Ok(())
 }
 
-fn define_relates_override(
+fn define_relates_specialise<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    relation_label: &Label<'_>,
+    relation_label: &Label<'a>,
     relates: Relates<'static>,
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), DefineError> {
-    if let Some(overridden_label) = &typeql_relates.overridden {
-        let overridden_relates =
-            resolve_relates(snapshot, type_manager, relates.relation(), overridden_label.ident.as_str())
-                .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+    // TODO: change to .specialised
+    if let Some(specialised_label) = &typeql_relates.overridden {
+        let specialised_relates =
+            resolve_relates(snapshot, type_manager, relates.relation(), specialised_label.ident.as_str())
+                .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
 
-        let need_define = check_can_and_need_define_override(
-            snapshot,
-            type_manager,
-            relation_label,
-            relates.clone(),
-            overridden_relates.clone(),
-        )?;
+        let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())
+            .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?;
+        let need_define = match definition_status {
+            DefinableStatus::DoesNotExist => Ok(true),
+            DefinableStatus::ExistsSame(_) => Ok(false),
+            DefinableStatus::ExistsDifferent(existing_superrole) => Err(DefineError::RelatesSpecialiseAlreadyDefinedButDifferent {
+                label: relation_label.clone().into_owned(),
+                specialised_interface: specialised_relates.role()
+                    .get_label_cloned(snapshot, type_manager)
+                    .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?
+                    .into_owned(),
+                existing_specialised_interface: existing_superrole
+                    .get_label_cloned(snapshot, type_manager)
+                    .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?
+                    .into_owned(),
+            }),
+        }?;
+
         if need_define {
             relates
-                .set_override(snapshot, type_manager, thing_manager, overridden_relates)
-                .map_err(|source| DefineError::SetOverride { label: relation_label.clone().into_owned(), source })?;
+                .set_specialise(snapshot, type_manager, thing_manager, specialised_relates)
+                .map_err(|typedb_source| DefineError::SetSpecialise { label: relation_label.clone().into_owned(), source })?;
         }
     }
     Ok(())
@@ -709,30 +680,30 @@ fn define_owns_with_annotations(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+        .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Owns(owns) = &capability.base else {
             continue;
         };
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&label, &owns.owned)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+            .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
         let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+            .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
 
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
 
         let definition_status =
             get_owns_status(snapshot, type_manager, object_type.clone(), attribute_type.clone(), ordering)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-        let (defined, is_new) = match definition_status {
+                .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?;
+        let defined = match definition_status {
             DefinableStatus::DoesNotExist => {
                 let owns = object_type
-                    .set_owns(snapshot, type_manager, thing_manager, attribute_type)
-                    .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), source })?;
-                (owns, true)
+                    .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
+                    .map_err(|typedb_source| DefineError::CreateOwns { owns: owns.clone(), source })?;
+                owns
             }
-            DefinableStatus::ExistsSame(Some((existing_owns, _))) => (existing_owns, false),
+            DefinableStatus::ExistsSame(Some((existing_owns, _))) => existing_owns,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing owns concept expected"),
             DefinableStatus::ExistsDifferent((existing_owns, existing_ordering)) => {
                 return Err(DefineError::OwnsAlreadyDefinedButDifferent {
@@ -749,13 +720,7 @@ fn define_owns_with_annotations(
             }
         };
 
-        if is_new {
-            defined
-                .set_ordering(snapshot, type_manager, thing_manager, ordering)
-                .map_err(|source| DefineError::SetOwnsOrdering { owns: owns.clone(), source })?;
-        }
-
-        define_owns_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), capability)?;
+        define_owns_annotations(snapshot, type_manager, thing_manager, &label, defined, capability)?;
     }
     Ok(())
 }
@@ -770,7 +735,7 @@ fn define_owns_annotations<'a>(
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -790,64 +755,6 @@ fn define_owns_annotations<'a>(
     Ok(())
 }
 
-fn define_owns_overrides(
-    snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
-    thing_manager: &ThingManager,
-    type_declaration: &Type,
-) -> Result<(), DefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
-    for capability in &type_declaration.capabilities {
-        let CapabilityBase::Owns(typeql_owns) = &capability.base else {
-            continue;
-        };
-        let (attr_label, _) = type_ref_to_label_and_ordering(&label, &typeql_owns.owned)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
-        let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
-
-        let object_type =
-            type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
-        let owns = resolve_owns_declared(snapshot, type_manager, object_type.clone(), attribute_type.clone())
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
-
-        define_owns_override(snapshot, type_manager, thing_manager, &label, owns, typeql_owns)?;
-    }
-    Ok(())
-}
-
-fn define_owns_override(
-    snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
-    thing_manager: &ThingManager,
-    owner_label: &Label<'_>,
-    owns: Owns<'static>,
-    typeql_owns: &TypeQLOwns,
-) -> Result<(), DefineError> {
-    if let Some(overridden_label) = &typeql_owns.overridden {
-        let overridden_label = Label::parse_from(overridden_label.ident.as_str());
-        let overridden_attribute_type = resolve_attribute_type(snapshot, type_manager, &overridden_label)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
-        let overridden_owns = resolve_owns(snapshot, type_manager, owns.owner(), overridden_attribute_type)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
-
-        let need_define = check_can_and_need_define_override(
-            snapshot,
-            type_manager,
-            owner_label,
-            owns.clone(),
-            overridden_owns.clone(),
-        )?;
-        if need_define {
-            owns.set_override(snapshot, type_manager, thing_manager, overridden_owns)
-                .map_err(|source| DefineError::SetOverride { label: owner_label.clone().into_owned(), source })?
-        }
-    }
-    Ok(())
-}
-
 fn define_plays_with_annotations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
@@ -856,24 +763,24 @@ fn define_plays_with_annotations(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+        .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Plays(plays) = &capability.base else {
             continue;
         };
         let role_label = Label::build_scoped(plays.role.name.ident.as_str(), plays.role.scope.ident.as_str());
         let role_type = resolve_role_type(snapshot, type_manager, &role_label)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
+            .map_err(|typedb_source| DefineError::DefinitionResolution { typedb_source })?;
 
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
 
         let definition_status = get_plays_status(snapshot, type_manager, object_type.clone(), role_type.clone())
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+            .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => object_type
                 .set_plays(snapshot, type_manager, thing_manager, role_type)
-                .map_err(|source| DefineError::CreatePlays { plays: plays.clone(), source })?,
+                .map_err(|typedb_source| DefineError::CreatePlays { plays: plays.clone(), source })?,
             DefinableStatus::ExistsSame(Some(existing_plays)) => existing_plays,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing plays concept expected"),
             DefinableStatus::ExistsDifferent(_) => unreachable!("Plays cannot differ"),
@@ -894,7 +801,7 @@ fn define_plays_annotations<'a>(
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -909,64 +816,6 @@ fn define_plays_annotations<'a>(
                     annotation_declaration: typeql_annotation.clone(),
                 }
             })?;
-        }
-    }
-    Ok(())
-}
-
-fn define_plays_overrides(
-    snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
-    thing_manager: &ThingManager,
-    type_declaration: &Type,
-) -> Result<(), DefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
-    for capability in &type_declaration.capabilities {
-        let CapabilityBase::Plays(typeql_plays) = &capability.base else {
-            continue;
-        };
-        let role_label =
-            Label::build_scoped(typeql_plays.role.name.ident.as_str(), typeql_plays.role.scope.ident.as_str());
-        let role_type = resolve_role_type(snapshot, type_manager, &role_label)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
-
-        let object_type =
-            type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
-        let plays = resolve_plays_declared(snapshot, type_manager, object_type.clone(), role_type.clone())
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
-
-        define_plays_override(snapshot, type_manager, thing_manager, &label, plays, typeql_plays)?;
-    }
-    Ok(())
-}
-
-fn define_plays_override(
-    snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
-    thing_manager: &ThingManager,
-    player_label: &Label<'_>,
-    plays: Plays<'static>,
-    typeql_plays: &TypeQLPlays,
-) -> Result<(), DefineError> {
-    if let Some(overridden_type_name) = &typeql_plays.overridden {
-        let overridden_label = named_type_to_label(overridden_type_name)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
-        let overridden_plays = resolve_plays_role_label(snapshot, type_manager, plays.player(), &overridden_label)
-            .map_err(|source| DefineError::DefinitionResolution { typedb_source: source })?;
-
-        let need_define = check_can_and_need_define_override(
-            snapshot,
-            type_manager,
-            player_label,
-            plays.clone(),
-            overridden_plays.clone(),
-        )?;
-        if need_define {
-            plays
-                .set_override(snapshot, type_manager, thing_manager, overridden_plays)
-                .map_err(|source| DefineError::SetOverride { label: player_label.clone().into_owned(), source })?
         }
     }
     Ok(())
@@ -988,7 +837,7 @@ fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
     new_supertype: T,
 ) -> Result<bool, DefineError> {
     let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype.clone())
-        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(true),
         DefinableStatus::ExistsSame(_) => Ok(false),
@@ -996,39 +845,11 @@ fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
             label: label.clone().into_owned(),
             supertype: new_supertype
                 .get_label_cloned(snapshot, type_manager)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
             existing_supertype: existing
                 .get_label_cloned(snapshot, type_manager)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
-                .into_owned(),
-        }),
-    }
-}
-
-fn check_can_and_need_define_override<'a, CAP: Capability<'a>>(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    label: &Label<'a>,
-    capability: CAP,
-    new_override: CAP,
-) -> Result<bool, DefineError> {
-    let definition_status = get_override_status(snapshot, type_manager, &capability, new_override.clone())
-        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
-    match definition_status {
-        DefinableStatus::DoesNotExist => Ok(true),
-        DefinableStatus::ExistsSame(_) => Ok(false),
-        DefinableStatus::ExistsDifferent(existing) => Err(DefineError::CapabilityOverrideAlreadyDefinedButDifferent {
-            label: label.clone().into_owned(),
-            overridden_interface: new_override
-                .interface()
-                .get_label_cloned(snapshot, type_manager)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
-                .into_owned(),
-            existing_overridden_interface: existing
-                .interface()
-                .get_label_cloned(snapshot, type_manager)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
         }),
     }
@@ -1042,11 +863,11 @@ fn type_convert_and_validate_annotation_definition_need<'a, T: KindAPI<'a>>(
     annotation: Annotation,
 ) -> Result<Option<T::AnnotationType>, DefineError> {
     let converted =
-        T::AnnotationType::try_from(annotation.clone()).map_err(|source| DefineError::IllegalAnnotation { source })?;
+        T::AnnotationType::try_from(annotation.clone()).map_err(|typedb_source| DefineError::IllegalAnnotation { source })?;
 
     let definition_status =
         get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+            .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(Some(converted)),
         DefinableStatus::ExistsSame(_) => Ok(None),
@@ -1066,11 +887,11 @@ fn capability_convert_and_validate_annotation_definition_need<'a, CAP: Capabilit
     typeql_capability: &TypeQLCapability,
 ) -> Result<Option<CAP::AnnotationType>, DefineError> {
     let converted = CAP::AnnotationType::try_from(annotation.clone())
-        .map_err(|source| DefineError::IllegalAnnotation { source })?;
+        .map_err(|typedb_source| DefineError::IllegalAnnotation { source })?;
 
     let definition_status =
         get_capability_annotation_status(snapshot, type_manager, &capability, &converted, annotation.category())
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+            .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(Some(converted)),
         DefinableStatus::ExistsSame(_) => Ok(None),
@@ -1163,12 +984,12 @@ typedb_error!(
             existing_supertype: Label<'static>
         ),
         // TODO: remove/specialise wording, since we can only override relates now! Also, need the label that is the overriding type should be provided - need all 4: <x> relates <y> as <z> failed because <q> exists
-        CapabilityOverrideAlreadyDefinedButDifferent(
+        RelatesSpecialiseAlreadyDefinedButDifferent(
             14,
-            "On type '{label}', the define of override using '{overridden_interface}' failed since it already has override '{existing_overridden_interface}'. Try redefine instead?",
+            "On type '{label}', the define of specialise using '{specialised_interface}' failed since it already has specialise '{existing_specialised_interface}'. Try redefine instead?",
             label: Label<'static>,
-            overridden_interface: Label<'static>,
-            existing_overridden_interface: Label<'static>
+            specialised_interface: Label<'static>,
+            existing_specialised_interface: Label<'static>
         ),
         AttributeTypeValueTypeAlreadyDefinedButDifferent(
             15,
@@ -1234,7 +1055,7 @@ typedb_error!(
         ),
         OwnsAlreadyDefinedButDifferent(
             24,
-            "Type '{label}' define 'owns' failed because it already has existing owns '{existing_owns}{existing_ordering}'. Try redefine instead?\nSource:\n{declaration}.",
+            "Type '{label}' define 'owns{ordering}' failed because it already has existing owns '{existing_owns}{existing_ordering}'. Try redefine instead?\nSource:\n{declaration}.",
             label: Label<'static>,
             declaration: TypeQLCapability,
             existing_owns: String,
@@ -1253,7 +1074,7 @@ typedb_error!(
             annotation_declaration: typeql::annotation::Annotation,
             ( source: ConceptWriteError )
         ),
-        SetOverride(
+        SetSpecialise(
             27,
             "On type '{label}', defining override failed.",
             label: Label<'static>,

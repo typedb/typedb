@@ -174,22 +174,6 @@ pub(crate) fn get_sub_status<'a, T: TypeAPI<'a>>(
     })
 }
 
-pub(crate) fn get_override_status<'a, CAP: Capability<'a>>(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    capability: &CAP,
-    new_override: CAP,
-) -> Result<DefinableStatus<CAP>, ConceptReadError> {
-    let existing_override_opt = capability.get_override(snapshot, type_manager)?.clone();
-    get_some_or_return_does_not_exist!(existing_override = existing_override_opt);
-
-    Ok(if existing_override == new_override {
-        DefinableStatus::ExistsSame(None)
-    } else {
-        DefinableStatus::ExistsDifferent(existing_override)
-    })
-}
-
 pub(crate) fn get_value_type_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,

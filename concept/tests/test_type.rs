@@ -90,7 +90,7 @@ fn entity_usage() {
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
 
-        assert!(age_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(age_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
         assert_eq!(*age_type.get_label(&snapshot, &type_manager).unwrap(), age_label);
         assert_eq!(age_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
 
@@ -107,7 +107,7 @@ fn entity_usage() {
             .unwrap();
 
         assert!(person_type
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&EntityTypeAnnotation::Abstract(AnnotationAbstract)));
         assert_eq!(*person_type.get_label(&snapshot, &type_manager).unwrap(), person_label);
@@ -128,9 +128,9 @@ fn entity_usage() {
         assert_eq!(supertypes.len(), 1);
 
         // --- child owns age ---
-        let owns_age =
-            child_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone().into_owned()).unwrap();
-        owns_age.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
+        child_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone().into_owned(), Ordering::Unordered)
+            .unwrap();
         let owns =
             child_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone().into_owned()).unwrap().unwrap();
         // TODO: test 'owns' structure directly
@@ -150,9 +150,9 @@ fn entity_usage() {
         // --- owns inheritance ---
         let height_label = Label::new_static("height");
         let height_type = type_manager.create_attribute_type(&mut snapshot, &height_label).unwrap();
-        let owns_height =
-            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, height_type.clone()).unwrap();
-        owns_height.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
+        person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, height_type.clone(), Ordering::Unordered)
+            .unwrap();
 
         match child_type.get_owns_attribute(&snapshot, &type_manager, height_type.clone()).unwrap() {
             None => panic!("child should inherit ownership of height"),
@@ -173,7 +173,7 @@ fn entity_usage() {
         let age_label = Label::build("age");
         let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
 
-        assert!(age_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(age_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
         assert_eq!(*age_type.get_label(&snapshot, &type_manager).unwrap(), age_label);
         assert_eq!(age_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
 
@@ -181,7 +181,7 @@ fn entity_usage() {
         let person_label = Label::build("person");
         let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
         assert!(person_type
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&EntityTypeAnnotation::Abstract(AnnotationAbstract)));
         assert_eq!(*person_type.get_label(&snapshot, &type_manager).unwrap(), person_label);
@@ -244,8 +244,12 @@ fn role_usage() {
 
         // --- friendship sub relation, relates friend ---
         let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
-        friendship_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, friend_name, Ordering::Unordered, None)
+        let friendship_friend_relates = friendship_type
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, friend_name, Ordering::Ordered)
+            .unwrap();
+        friendship_friend_relates
+            .role()
+            .set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered)
             .unwrap();
         let relates = friendship_type.get_relates_role_name(&snapshot, &type_manager, friend_name).unwrap().unwrap();
         let role_type =
@@ -337,41 +341,103 @@ fn annotations_with_range_arguments() {
         let empty_type = type_manager.create_attribute_type(&mut snapshot, &empty_label).unwrap();
         empty_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Boolean).unwrap();
 
-        assert_eq!(age_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
-        assert_eq!(name_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::String));
-        assert_eq!(empty_name_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::String));
-        assert_eq!(balance_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Decimal));
-        assert_eq!(measurement_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Double));
-        assert_eq!(empty_measurement_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Double));
-        assert_eq!(schedule_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::DateTimeTZ));
-        assert_eq!(valid_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Boolean));
-        assert_eq!(empty_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Boolean));
+        assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
+        assert_eq!(name_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::String));
+        assert_eq!(
+            empty_name_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::String)
+        );
+        assert_eq!(
+            balance_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::Decimal)
+        );
+        assert_eq!(
+            measurement_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::Double)
+        );
+        assert_eq!(
+            empty_measurement_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::Double)
+        );
+        assert_eq!(
+            schedule_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::DateTimeTZ)
+        );
+        assert_eq!(
+            valid_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::Boolean)
+        );
+        assert_eq!(
+            empty_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::Boolean)
+        );
 
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone().into_owned()).unwrap();
-        let owns_name =
-            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone().into_owned()).unwrap();
-        owns_name.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Ordered).unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_name_type.clone().into_owned())
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone().into_owned(), Ordering::Unordered)
             .unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, balance_type.clone().into_owned()).unwrap();
-        let owns_measurement = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, measurement_type.clone().into_owned())
+        person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone().into_owned(), Ordering::Ordered)
             .unwrap();
-        owns_measurement.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Ordered).unwrap();
-        let owns_empty_measurement = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_measurement_type.clone().into_owned())
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_name_type.clone().into_owned(),
+                Ordering::Unordered,
+            )
             .unwrap();
-        owns_empty_measurement.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Ordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, schedule_type.clone().into_owned()).unwrap();
-        let owns_valid = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, valid_type.clone().into_owned())
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                balance_type.clone().into_owned(),
+                Ordering::Unordered,
+            )
             .unwrap();
-        owns_valid.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Ordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, empty_type.clone().into_owned()).unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                measurement_type.clone().into_owned(),
+                Ordering::Ordered,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_measurement_type.clone().into_owned(),
+                Ordering::Ordered,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                schedule_type.clone().into_owned(),
+                Ordering::Unordered,
+            )
+            .unwrap();
+        person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, valid_type.clone().into_owned(), Ordering::Ordered)
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_type.clone().into_owned(),
+                Ordering::Unordered,
+            )
+            .unwrap();
 
         let name_owns =
             person_type.get_owns_attribute(&snapshot, &type_manager, name_type.clone().into_owned()).unwrap().unwrap();
@@ -537,119 +603,119 @@ fn annotations_with_range_arguments() {
         let empty_owns =
             person_type.get_owns_attribute(&snapshot, &type_manager, empty_type.clone().into_owned()).unwrap().unwrap();
 
-        assert!(age_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(age_type.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::Long(0)), Some(Value::Long(18))))
         ));
         assert!(!age_type
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::Long(18))))));
-        assert!(age_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(age_owns.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
 
-        assert!(name_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(name_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Range(
+        assert!(name_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(name_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Range(
             AnnotationRange::new(Some(Value::String(Cow::Borrowed("A"))), Some(Value::String(Cow::Borrowed("z"))))
         )));
-        assert!(!name_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Range(
+        assert!(!name_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Range(
             AnnotationRange::new(Some(Value::String(Cow::Borrowed("a"))), Some(Value::String(Cow::Borrowed("z"))))
         )));
-        assert!(!name_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Range(
+        assert!(!name_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Range(
             AnnotationRange::new(Some(Value::String(Cow::Borrowed("A"))), Some(Value::String(Cow::Borrowed("Z"))))
         )));
 
-        assert!(empty_name_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(empty_name_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
         assert!(empty_name_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::String(Cow::Borrowed(" ")))))));
         assert!(!empty_name_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::String(Cow::Borrowed(" "))), None))));
         assert!(!empty_name_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, None))));
 
-        assert!(balance_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(balance_type.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::Decimal(Decimal::MAX))))
         ));
-        assert!(!balance_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(!balance_type.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::Decimal(Decimal::MAX)), None))
         ));
-        assert!(balance_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(balance_owns.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
 
-        assert!(measurement_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(measurement_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(measurement_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(measurement_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.01)), Some(Value::Double(0.3339848944))))
         ));
-        assert!(!measurement_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(!measurement_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.001)), Some(Value::Double(0.3339848944))))
         ));
-        assert!(!measurement_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(!measurement_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.01)), Some(Value::Double(0.33398489441))))
         ));
 
-        assert!(empty_measurement_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(empty_measurement_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
         assert!(empty_measurement_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Double(0.0))))));
         assert!(!empty_measurement_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.0)), None))));
-        assert!(!empty_measurement_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
-            &OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.0)), Some(Value::Double(0.0))))
+        assert!(!empty_measurement_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
+            &OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.0)), Some(Value::Double(0.0)),))
         ));
         assert!(!empty_measurement_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Double(0.00000000001))))));
 
         assert!(schedule_type
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None))));
         assert!(!schedule_type
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, None))));
         assert!(!schedule_type
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::DateTimeTZ(now))))));
-        assert!(!schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(!schedule_type.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(
                 Some(Value::DateTimeTZ(chrono::offset::Local::now().with_timezone(&tz))),
                 None,
             ))
         ));
-        assert!(schedule_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(schedule_owns.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
 
-        assert!(valid_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(valid_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Range(
+        assert!(valid_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(valid_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Range(
             AnnotationRange::new(Some(Value::Boolean(false)), Some(Value::Boolean(true)))
         )));
         assert!(!valid_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Boolean(false)), None))));
         assert!(!valid_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Boolean(true))))));
 
-        assert!(empty_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(empty_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
         assert!(empty_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Boolean(false)), None))));
-        assert!(!empty_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Range(
-            AnnotationRange::new(Some(Value::Boolean(false)), Some(Value::Boolean(false)))
+        assert!(!empty_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Range(
+            AnnotationRange::new(Some(Value::Boolean(false)), Some(Value::Boolean(false)),)
         )));
         assert!(!empty_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Boolean(true))))));
     }
@@ -705,51 +771,102 @@ fn annotations_with_value_arguments() {
         let empty_type = type_manager.create_attribute_type(&mut snapshot, &empty_label).unwrap();
         empty_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Boolean).unwrap();
 
-        assert_eq!(age_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
-        assert_eq!(name_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::String));
-        assert_eq!(empty_name_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::String));
-        assert_eq!(balance_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Decimal));
-        assert_eq!(measurement_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Double));
-        assert_eq!(empty_measurement_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Double));
-        assert_eq!(schedule_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::DateTimeTZ));
-        assert_eq!(valid_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Boolean));
-        assert_eq!(empty_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Boolean));
+        assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
+        assert_eq!(name_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::String));
+        assert_eq!(
+            empty_name_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::String)
+        );
+        assert_eq!(
+            balance_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::Decimal)
+        );
+        assert_eq!(
+            measurement_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::Double)
+        );
+        assert_eq!(
+            empty_measurement_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::Double)
+        );
+        assert_eq!(
+            schedule_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::DateTimeTZ)
+        );
+        assert_eq!(
+            valid_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::Boolean)
+        );
+        assert_eq!(
+            empty_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
+            Some(ValueType::Boolean)
+        );
 
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
-        let owns_age =
-            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone().into_owned()).unwrap();
-        owns_age.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
-        let owns_name =
-            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone().into_owned()).unwrap();
-        owns_name.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Ordered).unwrap();
-        let owns_empty_name = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_name_type.clone().into_owned())
+        person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone().into_owned(), Ordering::Unordered)
             .unwrap();
-        owns_empty_name.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
-        let owns_balance = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, balance_type.clone().into_owned())
+        person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone().into_owned(), Ordering::Ordered)
             .unwrap();
-        owns_balance.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
-        let owns_measurement = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, measurement_type.clone().into_owned())
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_name_type.clone().into_owned(),
+                Ordering::Unordered,
+            )
             .unwrap();
-        owns_measurement.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Ordered).unwrap();
-        let owns_empty_measurement = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_measurement_type.clone().into_owned())
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                balance_type.clone().into_owned(),
+                Ordering::Unordered,
+            )
             .unwrap();
-        owns_empty_measurement.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Ordered).unwrap();
-        let owns_schedule = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, schedule_type.clone().into_owned())
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                measurement_type.clone().into_owned(),
+                Ordering::Ordered,
+            )
             .unwrap();
-        owns_schedule.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
-        let owns_valid = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, valid_type.clone().into_owned())
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_measurement_type.clone().into_owned(),
+                Ordering::Ordered,
+            )
             .unwrap();
-        owns_valid.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Ordered).unwrap();
-        let owns_empty = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_type.clone().into_owned())
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                schedule_type.clone().into_owned(),
+                Ordering::Unordered,
+            )
+            .unwrap();
+        person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, valid_type.clone().into_owned(), Ordering::Ordered)
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_type.clone().into_owned(),
+                Ordering::Unordered,
+            )
             .unwrap();
         owns_empty.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
 
@@ -914,123 +1031,123 @@ fn annotations_with_value_arguments() {
         let empty_owns =
             person_type.get_owns_attribute(&snapshot, &type_manager, empty_type.clone().into_owned()).unwrap().unwrap();
 
-        assert!(age_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(age_type.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Long(0), Value::Long(18)]))
         ));
         assert!(!age_type
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![]))));
-        assert!(!age_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(!age_type.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Long(1), Value::Long(18)]))
         ));
-        assert!(!age_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(!age_type.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Long(18), Value::Long(0)]))
         ));
-        assert!(age_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(age_owns.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
 
-        assert!(name_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(name_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
+        assert!(name_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(name_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
             AnnotationValues::new(vec![Value::String(Cow::Borrowed("A")), Value::String(Cow::Borrowed("z"))])
         )));
-        assert!(!name_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
+        assert!(!name_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
             AnnotationValues::new(vec![Value::String(Cow::Borrowed("z")), Value::String(Cow::Borrowed("A"))])
         )));
 
-        assert!(empty_name_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(empty_name_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
         assert!(empty_name_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::String(Cow::Borrowed(" "))]))));
         assert!(!empty_name_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![]))));
 
         assert!(balance_type
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Decimal(Decimal::MAX)]))));
         assert!(!balance_type
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![]))));
-        assert!(balance_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(balance_owns.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
 
-        assert!(measurement_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(measurement_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(measurement_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(measurement_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.01), Value::Double(0.3339848944)]))
         ));
-        assert!(!measurement_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(!measurement_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.3339848944), Value::Double(0.01)]))
         ));
-        assert!(!measurement_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(!measurement_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.1), Value::Double(0.3339848944)]))
         ));
-        assert!(!measurement_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(!measurement_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.01), Value::Double(0.3339848945)]))
         ));
 
-        assert!(empty_measurement_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(empty_measurement_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
         assert!(empty_measurement_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.0)]))));
         assert!(!empty_measurement_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.0000000001)]))));
 
         assert!(schedule_type
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)]))));
-        assert!(!schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(!schedule_type.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
                 Value::DateTimeTZ(now),
                 Value::DateTimeTZ(now),
             ]))
         ));
-        assert!(!schedule_type.get_annotations(&snapshot, &type_manager).unwrap().contains_key(
+        assert!(!schedule_type.get_constraints(&snapshot, &type_manager).unwrap().contains_key(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(
                 chrono::offset::Local::now().with_timezone(&tz)
-            ),]))
+            )]))
         ));
-        assert!(schedule_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(schedule_owns.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
 
-        assert!(valid_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(valid_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
+        assert!(valid_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(valid_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
             AnnotationValues::new(vec![Value::Boolean(false), Value::Boolean(true)])
         )));
-        assert!(!valid_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
+        assert!(!valid_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
             AnnotationValues::new(vec![Value::Boolean(false), Value::Boolean(false)])
         )));
         assert!(!valid_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(false)]))));
         assert!(!valid_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(true)]))));
-        assert!(!valid_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
+        assert!(!valid_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
             AnnotationValues::new(vec![Value::Boolean(true), Value::Boolean(false)])
         )));
 
-        assert!(empty_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(empty_type.get_constraints(&snapshot, &type_manager).unwrap().is_empty());
         assert!(empty_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(false)]))));
         assert!(!empty_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(true)]))));
         assert!(!empty_owns
-            .get_annotations(&snapshot, &type_manager)
+            .get_constraints(&snapshot, &type_manager)
             .unwrap()
             .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![]))));
-        assert!(!empty_owns.get_annotations(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
+        assert!(!empty_owns.get_constraints(&snapshot, &type_manager).unwrap().contains_key(&OwnsAnnotation::Values(
             AnnotationValues::new(vec![Value::Boolean(false), Value::Boolean(false)])
         )));
     }

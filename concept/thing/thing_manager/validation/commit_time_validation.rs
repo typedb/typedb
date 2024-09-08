@@ -4,9 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::HashSet;
 
-use itertools::Itertools;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -14,13 +13,79 @@ use crate::{
     thing::{
         object::{Object, ObjectAPI},
         relation::Relation,
-        thing_manager::{validation::DataValidationError, ThingManager},
+        thing_manager::{
+            validation::{validation::DataValidation, DataValidationError},
+            ThingManager,
+        },
     },
     type_::{
-        annotation::AnnotationCardinality, attribute_type::AttributeType, owns::Owns, plays::Plays, relates::Relates,
-        role_type::RoleType, Capability, OwnerAPI, PlayerAPI,
+        attribute_type::AttributeType,
+        constraint::{CapabilityConstraint, Constraint},
+        owns::Owns,
+        plays::Plays,
+        relates::Relates,
+        role_type::RoleType,
+        Capability, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
+
+macro_rules! validate_capability_cardinality_constraint {
+    ($func_name:ident, $capability_type:ident, $object_instance:ident, $get_cardinality_constraints_func:ident, $get_interface_counts_func:ident, $check_func:path) => {
+        pub(crate) fn $func_name<'a>(
+            snapshot: &impl ReadableSnapshot,
+            thing_manager: &ThingManager,
+            object: $object_instance<'a>,
+            interface_types_to_check: HashSet<<$capability_type<'static> as Capability<'static>>::InterfaceType>,
+        ) -> Result<(), DataValidationError> {
+            let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type<'static>>> = HashSet::new();
+            let counts =
+                object.$get_interface_counts_func(snapshot, thing_manager).map_err(DataValidationError::ConceptRead)?;
+
+            for interface_type in interface_types_to_check {
+                for constraint in object
+                    .type_()
+                    .$get_cardinality_constraints_func(snapshot, thing_manager.type_manager(), interface_type.clone())
+                    .map_err(DataValidationError::ConceptRead)?
+                    .into_iter()
+                {
+                    cardinality_constraints.insert(constraint);
+                }
+            }
+
+            for constraint in cardinality_constraints {
+                if constraint
+                    .description()
+                    .unwrap_cardinality()
+                    .map_err(|source| ConceptReadError::Constraint { source })
+                    .map_err(DataValidationError::ConceptRead)?
+                    .is_unchecked()
+                {
+                    continue;
+                }
+
+                let source_interface_type = constraint.source().interface();
+                let sub_interface_types = source_interface_type
+                    .get_subtypes_transitive(snapshot, thing_manager.type_manager())
+                    .map_err(DataValidationError::ConceptRead)?
+                    .into_iter()
+                    .cloned();
+                let count = TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types)
+                    .filter_map(|interface_type| counts.get(&interface_type))
+                    .sum();
+                $check_func(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    &constraint,
+                    object.as_reference(),
+                    source_interface_type,
+                    count,
+                )?;
+            }
+
+            Ok(())
+        }
+    };
+}
 
 macro_rules! collect_errors {
     ($vec:ident, $expr:expr, $wrap:expr) => {
@@ -35,49 +100,8 @@ macro_rules! collect_errors {
         }
     };
 }
+
 pub(crate) use collect_errors;
-
-macro_rules! validate_capability_cardinality_constraint {
-    ($func_name:ident, $capability_type:ident, $interface_type:ident, $object_instance:ident, $check_func:path) => {
-        pub(crate) fn $func_name(
-            snapshot: &impl ReadableSnapshot,
-            thing_manager: &ThingManager,
-            owner: &$object_instance<'_>,
-            capability: $capability_type<'static>,
-            counts: &HashMap<$interface_type<'static>, u64>,
-        ) -> Result<(), DataValidationError> {
-            if !CommitTimeValidation::needs_cardinality_validation(snapshot, thing_manager, capability.clone())
-                .map_err(DataValidationError::ConceptRead)?
-            {
-                return Ok(());
-            }
-
-            let count = counts.get(&capability.interface()).unwrap_or(&0).clone();
-            $check_func(snapshot, thing_manager, owner, capability.clone(), count)?;
-
-            let mut next_capability = capability;
-            while let Some(checked_capability) = &*next_capability
-                .get_override(snapshot, thing_manager.type_manager())
-                .map_err(DataValidationError::ConceptRead)?
-            {
-                let overriding = checked_capability
-                    .get_overriding_transitive(snapshot, thing_manager.type_manager())
-                    .map_err(DataValidationError::ConceptRead)?;
-                let count = overriding
-                    .iter()
-                    .map(|overriding| overriding.interface())
-                    .unique()
-                    .filter_map(|interface_type| counts.get(&interface_type))
-                    .sum();
-                $check_func(snapshot, thing_manager, owner, checked_capability.clone(), count)?;
-
-                next_capability = checked_capability.clone();
-            }
-
-            Ok(())
-        }
-    };
-}
 
 pub struct CommitTimeValidation {}
 
@@ -85,158 +109,68 @@ impl CommitTimeValidation {
     pub(crate) fn validate_object_has(
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
-        object: &Object<'_>,
+        object: Object<'_>,
+        modified_attribute_types: HashSet<AttributeType<'static>>,
         out_errors: &mut Vec<DataValidationError>,
     ) -> Result<(), ConceptReadError> {
-        let type_ = object.type_();
-        let object_owns = type_.get_owns(snapshot, thing_manager.type_manager())?;
-        let has_counts = object.get_has_counts(snapshot, thing_manager)?;
-
-        for owns in object_owns.iter() {
-            let cardinality_check = CommitTimeValidation::validate_owns_cardinality_constraint(
-                snapshot,
-                thing_manager,
-                object,
-                owns.clone().into_owned(),
-                &has_counts,
-            );
-            collect_errors!(out_errors, cardinality_check);
-        }
+        let cardinality_check = CommitTimeValidation::validate_owns_cardinality_constraint(
+            snapshot,
+            thing_manager,
+            object,
+            modified_attribute_types,
+        );
+        collect_errors!(out_errors, cardinality_check);
         Ok(())
     }
 
     pub(crate) fn validate_object_links(
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
-        object: &Object<'_>,
+        object: Object<'_>,
+        modified_role_types: HashSet<RoleType<'static>>,
         out_errors: &mut Vec<DataValidationError>,
     ) -> Result<(), ConceptReadError> {
-        let type_ = object.type_();
-        let object_plays = type_.get_plays(snapshot, thing_manager.type_manager())?;
-        let played_roles_counts = object.get_played_roles_counts(snapshot, thing_manager)?;
-
-        for plays in object_plays.iter() {
-            let cardinality_check = Self::validate_plays_cardinality_constraint(
-                snapshot,
-                thing_manager,
-                object,
-                plays.clone().into_owned(),
-                &played_roles_counts,
-            );
-            collect_errors!(out_errors, cardinality_check);
-        }
+        let cardinality_check =
+            Self::validate_plays_cardinality_constraint(snapshot, thing_manager, object, modified_role_types);
+        collect_errors!(out_errors, cardinality_check);
         Ok(())
     }
 
     pub(crate) fn validate_relation_links(
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
-        relation: &Relation<'_>,
+        relation: Relation<'_>,
+        modified_role_types: HashSet<RoleType<'static>>,
         out_errors: &mut Vec<DataValidationError>,
     ) -> Result<(), ConceptReadError> {
-        let type_ = relation.type_();
-        let relation_relates = type_.get_relates(snapshot, thing_manager.type_manager())?;
-        let role_player_count = relation.get_player_counts(snapshot, thing_manager)?;
-
-        for relates in relation_relates.iter() {
-            let cardinality_check = Self::validate_relates_cardinality_constraint(
-                snapshot,
-                thing_manager,
-                relation,
-                relates.clone().into_owned(),
-                &role_player_count,
-            );
-            collect_errors!(out_errors, cardinality_check);
-        }
+        let cardinality_check =
+            Self::validate_relates_cardinality_constraint(snapshot, thing_manager, relation, modified_role_types);
+        collect_errors!(out_errors, cardinality_check);
         Ok(())
-    }
-
-    fn check_owns_cardinality(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        owner: &Object<'_>,
-        owns: Owns<'static>,
-        count: u64,
-    ) -> Result<(), DataValidationError> {
-        let cardinality =
-            owns.get_cardinality(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
-        let is_key: bool =
-            owns.is_key(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
-        if !cardinality.value_valid(count) {
-            let owner = owner.clone().into_owned();
-            if is_key {
-                Err(DataValidationError::KeyCardinalityViolated { owner, owns, count })
-            } else {
-                Err(DataValidationError::OwnsCardinalityViolated { owner, owns, count, cardinality })
-            }
-        } else {
-            Ok(())
-        }
-    }
-
-    fn check_plays_cardinality(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        player: &Object<'_>,
-        plays: Plays<'static>,
-        count: u64,
-    ) -> Result<(), DataValidationError> {
-        let cardinality =
-            plays.get_cardinality(snapshot, thing_manager.type_manager()).map_err(DataValidationError::ConceptRead)?;
-        if !cardinality.value_valid(count) {
-            let player = player.clone().into_owned();
-            Err(DataValidationError::PlaysCardinalityViolated { player, plays, count, cardinality })
-        } else {
-            Ok(())
-        }
-    }
-
-    fn check_relates_cardinality(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        relation: &Relation<'_>,
-        relates: Relates<'static>,
-        count: u64,
-    ) -> Result<(), DataValidationError> {
-        let cardinality = relates
-            .get_cardinality(snapshot, thing_manager.type_manager())
-            .map_err(DataValidationError::ConceptRead)?;
-        if !cardinality.value_valid(count) {
-            let relation = relation.clone().into_owned();
-            Err(DataValidationError::RelatesCardinalityViolated { relation, relates, count, cardinality })
-        } else {
-            Ok(())
-        }
-    }
-
-    fn needs_cardinality_validation<CAP: Capability<'static>>(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        capability: CAP,
-    ) -> Result<bool, ConceptReadError> {
-        let cardinality = capability.get_cardinality(snapshot, thing_manager.type_manager())?;
-        Ok(cardinality != AnnotationCardinality::unchecked())
     }
 
     validate_capability_cardinality_constraint!(
         validate_owns_cardinality_constraint,
         Owns,
-        AttributeType,
         Object,
-        Self::check_owns_cardinality
+        get_type_owns_constraints_cardinality,
+        get_has_counts,
+        DataValidation::validate_owns_instances_cardinality_constraint
     );
     validate_capability_cardinality_constraint!(
         validate_plays_cardinality_constraint,
         Plays,
-        RoleType,
         Object,
-        Self::check_plays_cardinality
+        get_type_plays_constraints_cardinality,
+        get_played_roles_counts,
+        DataValidation::validate_plays_instances_cardinality_constraint
     );
     validate_capability_cardinality_constraint!(
         validate_relates_cardinality_constraint,
         Relates,
-        RoleType,
         Relation,
-        Self::check_relates_cardinality
+        get_type_relates_constraints_cardinality,
+        get_player_counts,
+        DataValidation::validate_relates_instances_cardinality_constraint
     );
 }

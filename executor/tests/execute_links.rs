@@ -65,7 +65,6 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             MEMBERSHIP_MEMBER_LABEL.name().as_str(),
             Ordering::Unordered,
-            None,
         )
         .unwrap();
     relates_member.set_annotation(&mut snapshot, &type_manager, &thing_manager, RELATES_CARDINALITY_ANY).unwrap();
@@ -78,7 +77,6 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             MEMBERSHIP_GROUP_LABEL.name().as_str(),
             Ordering::Unordered,
-            None,
         )
         .unwrap();
     relates_group.set_annotation(&mut snapshot, &type_manager, &thing_manager, RELATES_CARDINALITY_ANY).unwrap();
@@ -92,8 +90,9 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let person_owns_age = person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone()).unwrap();
     person_owns_age.set_annotation(&mut snapshot, &type_manager, &thing_manager, OWNS_CARDINALITY_ANY).unwrap();
 
-    let person_owns_name =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone()).unwrap();
+    let person_owns_name = person_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
+        .unwrap();
     person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, OWNS_CARDINALITY_ANY).unwrap();
 
     person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_member_type.clone()).unwrap();

@@ -25,8 +25,7 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     error::ConceptWriteError,
     type_::{
-        attribute_type::AttributeType, owns::Owns, sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride,
-        Ordering, TypeAPI,
+        attribute_type::AttributeType, owns::Owns, sub::Sub, type_manager::type_reader::TypeReader, Ordering, TypeAPI,
     },
 };
 
@@ -212,21 +211,6 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         } else {
             snapshot.unput(key.into_owned_array())
         }
-    }
-
-    pub(crate) fn storage_set_type_edge_overridden<E>(snapshot: &mut Snapshot, edge: E, overridden: E)
-    where
-        E: TypeEdgeEncoding<'static>,
-    {
-        let overridden_to = EdgeOverride::<E> { overrides: overridden };
-        Self::storage_put_type_edge_property(snapshot, edge, Some(overridden_to))
-    }
-
-    pub(crate) fn storage_delete_type_edge_overridden<E>(snapshot: &mut Snapshot, edge: E)
-    where
-        E: TypeEdgeEncoding<'static>,
-    {
-        Self::storage_delete_type_edge_property::<EdgeOverride<E>>(snapshot, edge)
     }
 
     pub(crate) fn storage_set_owns_ordering(snapshot: &mut Snapshot, owns: Owns<'_>, ordering: Ordering) {

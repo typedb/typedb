@@ -12,7 +12,7 @@ pub struct BooleanBytes {
 }
 
 impl BooleanBytes {
-    pub(crate) const LENGTH: usize = AttributeIDLength::Short.length();
+    pub const LENGTH: usize = AttributeIDLength::Short.length();
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }

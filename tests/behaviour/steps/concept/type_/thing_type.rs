@@ -256,7 +256,7 @@ pub async fn type_annotations_contain(
     with_read_tx!(context, |tx| {
         with_type_and_value_type!(tx, root_label, type_label, type_, value_type, {
             let actual_contains = type_
-                .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
+                .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .contains_key(&annotation.into_typedb(value_type).try_into().unwrap());
             assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -282,7 +282,7 @@ pub async fn type_annotation_categories_contain(
                     .unwrap()
                     .unwrap();
                 let actual_contains = type_
-                    .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
+                    .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
                     .unwrap()
                     .iter()
                     .map(|(annotation, _)| {
@@ -295,7 +295,7 @@ pub async fn type_annotation_categories_contain(
                 let type_ =
                     tx.type_manager.get_entity_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
                 let actual_contains = type_
-                    .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
+                    .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
                     .unwrap()
                     .iter()
                     .map(|(annotation, _)| {
@@ -311,7 +311,7 @@ pub async fn type_annotation_categories_contain(
                     .unwrap()
                     .unwrap();
                 let actual_contains = type_
-                    .get_annotations(tx.snapshot.as_ref(), &tx.type_manager)
+                    .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
                     .unwrap()
                     .iter()
                     .map(|(annotation, _)| {
@@ -355,7 +355,7 @@ pub async fn type_annotations_is_empty(
 ) {
     with_read_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
-            let actual_is_empty = type_.get_annotations(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+            let actual_is_empty = type_.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
             is_empty_or_not.check(actual_is_empty);
         });
     });

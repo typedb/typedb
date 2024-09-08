@@ -40,6 +40,11 @@ def vaticle_typedb_protocol():
     )
 
 def vaticle_typedb_behaviour():
+    # TODO: Return github typedb ref before merge
+#    native.local_repository(
+#        name = "vaticle_typedb_behaviour",
+#        path = "../typedb-behaviour",
+#    )
     git_repository(
         name = "vaticle_typedb_behaviour",
         remote = "https://github.com/typedb/typedb-behaviour",
