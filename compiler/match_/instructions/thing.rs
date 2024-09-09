@@ -9,7 +9,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{variable::Variable, variable_value::VariableValue, Type};
 use ir::pattern::{
     constraint::{Has, Isa, Links},
     IrID,
@@ -19,6 +19,36 @@ use crate::match_::{
     inference::type_annotations::TypeAnnotations,
     instructions::{CheckInstruction, Inputs},
 };
+
+#[derive(Debug, Clone)]
+pub struct ConstantInstruction<ID> {
+    pub value: VariableValue<'static>,
+    pub var: ID,
+    pub checks: Vec<CheckInstruction<ID>>,
+}
+
+impl ConstantInstruction<Variable> {
+    pub fn new(value: VariableValue<'static>, var: Variable) -> Self {
+        Self { value, var, checks: Vec::new() }
+    }
+}
+
+impl<ID> ConstantInstruction<ID> {
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+}
+
+impl<ID: IrID> ConstantInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ConstantInstruction<T> {
+        let Self { value, var, checks } = self;
+        ConstantInstruction {
+            value,
+            var: mapping[&var],
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct IsaInstruction<ID> {

@@ -160,6 +160,7 @@ impl LinksExecutor {
             Ok(true) => check(item),
             fail => fail,
         });
+
         match self.iterate_mode {
             TernaryIterateMode::Unbound => {
                 let first_from_type = self.relation_player_types.first_key_value().unwrap().0;

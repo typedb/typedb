@@ -23,10 +23,11 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-        has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
-        iterator::TupleIterator, links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
-        owns_executor::OwnsExecutor, owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
+        constant_executor::ConstantExecutor, function_call_binding_executor::FunctionCallBindingIteratorExecutor,
+        has_executor::HasExecutor, has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor,
+        isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator, links_executor::LinksExecutor,
+        links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
+        owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
         plays_reverse_executor::PlaysReverseExecutor, relates_executor::RelatesExecutor,
         relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
         sub_reverse_executor::SubReverseExecutor, type_list_executor::TypeListExecutor,
@@ -35,6 +36,7 @@ use crate::{
     VariablePosition,
 };
 
+mod constant_executor;
 mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
@@ -68,6 +70,8 @@ pub(crate) enum InstructionExecutor {
 
     Plays(PlaysExecutor),
     PlaysReverse(PlaysReverseExecutor),
+
+    Constant(ConstantExecutor),
 
     Isa(IsaExecutor),
     IsaReverse(IsaReverseExecutor),
@@ -153,6 +157,7 @@ impl InstructionExecutor {
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
+            Self::Constant(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::TypeList(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::Sub(executor) => executor.get_iterator(snapshot, thing_manager, row),
             Self::SubReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
