@@ -269,18 +269,18 @@ pub trait Constraint<T>: Sized + Clone + Hash + Eq {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct TypeConstraint<T: KindAPI<'_>> {
+pub struct TypeConstraint<T: KindAPI<'static>> {
     description: ConstraintDescription,
     source: T,
 }
 
-impl<'a, T: KindAPI<'a>> TypeConstraint<T> {
+impl<T: KindAPI<'static>> TypeConstraint<T> {
     pub(crate) fn new(description: ConstraintDescription, source: T) -> Self {
         Self { description, source }
     }
 }
 
-impl<'a, T: KindAPI<'a>> Constraint<T> for TypeConstraint<T> {
+impl<T: KindAPI<'static>> Constraint<T> for TypeConstraint<T> {
     fn description(&self) -> ConstraintDescription {
         self.description.clone()
     }
@@ -291,18 +291,18 @@ impl<'a, T: KindAPI<'a>> Constraint<T> for TypeConstraint<T> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct CapabilityConstraint<CAP: Capability<'_>> {
+pub struct CapabilityConstraint<CAP: Capability<'static>> {
     description: ConstraintDescription,
     source: CAP,
 }
 
-impl<'a, CAP: Capability<'a>> CapabilityConstraint<CAP> {
+impl<CAP: Capability<'static>> CapabilityConstraint<CAP> {
     pub(crate) fn new(description: ConstraintDescription, source: CAP) -> Self {
         Self { description, source }
     }
 }
 
-impl<'a, CAP: Capability<'a>> Constraint<CAP> for CapabilityConstraint<CAP> {
+impl<CAP: Capability<'static>> Constraint<CAP> for CapabilityConstraint<CAP> {
     fn description(&self) -> ConstraintDescription {
         self.description.clone()
     }
@@ -333,7 +333,7 @@ macro_rules! filter_by_constraint_category {
 pub(crate) use filter_by_constraint_category;
 
 macro_rules! filter_by_source {
-    ($constraints_iter:expr, $source:ident) => {
+    ($constraints_iter:expr, $source:expr) => {
         $constraints_iter.filter(|constraint| &constraint.source() == &$source)
     };
 }

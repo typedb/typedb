@@ -83,9 +83,9 @@ pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constrai
     let supertype_constraints =
         supertype.get_constraints(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
     let subtype_constraints =
-        subtype.get_constraints(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?.into_iter();
+        subtype.get_constraints(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
 
-    for subtype_constraint in filter_by_source!(subtype_constraints, subtype) {
+    for subtype_constraint in filter_by_source!(subtype_constraints.into_iter(), subtype.clone()) {
         for supertype_constraint in supertype_constraints.iter() {
             supertype_constraint.validate_narrowed_by_any_type(&subtype_constraint.description()).map_err(
                 |source| {

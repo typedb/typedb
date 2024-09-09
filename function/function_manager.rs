@@ -389,6 +389,7 @@ pub mod tests {
                 entity_type::EntityTypeAnnotation, type_manager::TypeManager, OwnerAPI,
             },
         };
+        use concept::type_::Ordering;
         use encoding::value::{label::Label, value_type::ValueType};
         use storage::{
             durability_client::WALClient,
@@ -447,9 +448,6 @@ pub mod tests {
                 .unwrap();
 
             // Ownerships
-            let animal_owns = animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
-            let cat_owns = cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone()).unwrap();
-            let dog_owns = dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone()).unwrap();
             let animal_owns =
                 animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
             let cat_owns =

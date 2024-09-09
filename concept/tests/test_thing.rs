@@ -777,7 +777,7 @@ fn attribute_struct_write_read() {
         )
         .unwrap();
 
-        let attr_value_type = attr_type.get_value_type(&snapshot, &type_manager).unwrap().unwrap();
+        let attr_value_type = attr_type.get_value_type_without_source(&snapshot, &type_manager).unwrap().unwrap();
         assert_eq!(ValueTypeCategory::Struct, attr_value_type.category());
         let attr_instance = thing_manager
             .create_attribute(&mut snapshot, attr_type, Value::Struct(Cow::Owned(struct_value.clone())))

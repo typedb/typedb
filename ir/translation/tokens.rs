@@ -12,7 +12,7 @@ use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use typeql::{annotation::CardinalityRange, token};
 
 use crate::{
-    translation::literal::{extract_string_literal, translate_literal, FromTypeQLLiteral},
+    translation::literal::{translate_literal, FromTypeQLLiteral},
     LiteralParseError,
 };
 

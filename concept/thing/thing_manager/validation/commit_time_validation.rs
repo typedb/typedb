@@ -29,6 +29,22 @@ use crate::{
     },
 };
 
+macro_rules! collect_errors {
+    ($vec:ident, $expr:expr, $wrap:expr) => {
+        if let Err(e) = $expr {
+            $vec.push($wrap(e));
+        }
+    };
+
+    ($vec:ident, $expr:expr) => {
+        if let Err(e) = $expr {
+            $vec.push(e);
+        }
+    };
+}
+
+pub(crate) use collect_errors;
+
 macro_rules! validate_capability_cardinality_constraint {
     ($func_name:ident, $capability_type:ident, $object_instance:ident, $get_cardinality_constraints_func:ident, $get_interface_counts_func:ident, $check_func:path) => {
         pub(crate) fn $func_name<'a>(
@@ -66,10 +82,8 @@ macro_rules! validate_capability_cardinality_constraint {
                 let source_interface_type = constraint.source().interface();
                 let sub_interface_types = source_interface_type
                     .get_subtypes_transitive(snapshot, thing_manager.type_manager())
-                    .map_err(DataValidationError::ConceptRead)?
-                    .into_iter()
-                    .cloned();
-                let count = TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types)
+                    .map_err(DataValidationError::ConceptRead)?;
+                let count = TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types.into_iter().cloned())
                     .filter_map(|interface_type| counts.get(&interface_type))
                     .sum();
                 $check_func(
@@ -86,22 +100,6 @@ macro_rules! validate_capability_cardinality_constraint {
         }
     };
 }
-
-macro_rules! collect_errors {
-    ($vec:ident, $expr:expr, $wrap:expr) => {
-        if let Err(e) = $expr {
-            $vec.push($wrap(e));
-        }
-    };
-
-    ($vec:ident, $expr:expr) => {
-        if let Err(e) = $expr {
-            $vec.push(e);
-        }
-    };
-}
-
-pub(crate) use collect_errors;
 
 pub struct CommitTimeValidation {}
 

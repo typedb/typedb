@@ -221,7 +221,7 @@ pub trait KindAPI<'a>: TypeAPI<'a> {
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<TypeConstraint<Self>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'this, HashSet<TypeConstraint<Self>>>, ConceptReadError> where 'a: 'static;
 }
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> + ThingTypeAPI<'a> {
@@ -586,13 +586,13 @@ pub trait Capability<'a>:
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Self>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Self>>>, ConceptReadError> where 'a: 'static;
 
     fn get_cardinality_constraints(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Self>>, ConceptReadError>;
+    ) -> Result<HashSet<CapabilityConstraint<Self>>, ConceptReadError> where 'a: 'static;
 
     fn get_cardinality(
         &self,

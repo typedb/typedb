@@ -214,7 +214,7 @@ impl<'a> Capability<'a> for Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates<'static>>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates<'static>>>>, ConceptReadError> where 'a: 'static {
         type_manager.get_relates_constraints(snapshot, self.clone().into_owned())
     }
 

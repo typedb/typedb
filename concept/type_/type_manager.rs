@@ -979,7 +979,7 @@ impl TypeManager {
         capability: CAP,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         let constraints = capability.get_constraints(snapshot, self)?;
-        Ok(get_cardinality_constraint(capability, constraints.into_iter())
+        Ok(get_cardinality_constraint(capability.clone(), constraints.into_iter())
             .description()
             .unwrap_cardinality()
             .map_err(|source| ConceptReadError::Constraint { source })?)
