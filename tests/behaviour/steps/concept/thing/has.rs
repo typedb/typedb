@@ -290,30 +290,24 @@ async fn object_get_has_type(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} get has with annotations: {annotations}; {contains_or_doesnt}: {var}")]
+#[step(expr = r"{object_root_label} {var} get key has; {contains_or_doesnt}: {var}")]
 async fn object_get_has_with_annotations(
     context: &mut Context,
     object_root: params::ObjectRootLabel,
     object_var: params::Var,
-    annotations: params::Annotations,
     contains_or_doesnt: params::ContainsOrDoesnt,
     attribute_var: params::Var,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
     object_root.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
-    let annotations = annotations.into_typedb().into_iter().map(|anno| anno.try_into().unwrap()).collect_vec();
     let actuals = with_read_tx!(context, |tx| {
         let attribute_types = object
             .type_()
             .get_owns_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .into_iter()
-            .filter(|owns| {
-                annotations.iter().all(|anno| {
-                    owns.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().contains_key(anno)
-                })
-            })
+            .filter(|owns| owns.is_key(tx.snapshot.as_ref(), &tx.type_manager).unwrap())
             .map(|owns| owns.attribute())
             .collect_vec();
         attribute_types

@@ -175,7 +175,7 @@ fn encode_attribute_type(
         label: attribute.get_label(snapshot, type_manager)?.scoped_name().to_string(),
         value_type: {
             attribute
-                .get_value_type(snapshot, type_manager)?
+                .get_value_type_without_source(snapshot, type_manager)?
                 .map(|value_type| encode_value_type(value_type, snapshot, type_manager))
                 .transpose()?
         },

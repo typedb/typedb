@@ -514,7 +514,6 @@ fn redefine_relates(
             &label,
             relates.clone(),
             capability,
-            type_declaration,
         )?;
         redefine_relates_specialise(
             snapshot,
@@ -537,50 +536,26 @@ fn redefine_relates_annotations(
     relation_label: &Label<'_>,
     relates: Relates<'static>,
     typeql_capability: &Capability,
-    typeql_type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
-        let converted_for_relates = capability_convert_and_validate_annotation_redefinition_need(
+        if let Some(converted) = capability_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
             relation_label,
             relates.clone(),
             annotation.clone(),
             typeql_capability,
-        );
-        match converted_for_relates {
-            Ok(Some(relates_annotation)) => {
-                error_if_anything_redefined_else_set_true(anything_redefined)?;
-                relates.set_annotation(snapshot, type_manager, thing_manager, relates_annotation).map_err(
-                    |source| RedefineError::SetCapabilityAnnotation {
-                        annotation,
-                        declaration: typeql_capability.clone(),
-                        source,
-                    },
-                )?;
-            }
-            Ok(None) => {}
-            Err(_) => {
-                if let Some(converted_for_role) = type_convert_and_validate_annotation_redefinition_need(
-                    snapshot,
-                    type_manager,
-                    relation_label,
-                    relates.role(),
-                    annotation.clone(),
-                    typeql_type_declaration,
-                )? {
-                    error_if_anything_redefined_else_set_true(anything_redefined)?;
-                    relates.role().set_annotation(snapshot, type_manager, thing_manager, converted_for_role).map_err(
-                        |source| RedefineError::SetCapabilityAnnotation {
-                            declaration: typeql_capability.clone(),
-                            annotation,
-                            source,
-                        },
-                    )?;
-                }
-            }
+        )? {
+            error_if_anything_redefined_else_set_true(anything_redefined)?;
+            relates.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(
+                |source| RedefineError::SetCapabilityAnnotation {
+                    annotation,
+                    declaration: typeql_capability.clone(),
+                    source,
+                },
+            )?;
         }
     }
     Ok(())

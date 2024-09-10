@@ -386,10 +386,9 @@ pub mod tests {
             thing::thing_manager::ThingManager,
             type_::{
                 annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation,
-                entity_type::EntityTypeAnnotation, type_manager::TypeManager, OwnerAPI,
+                entity_type::EntityTypeAnnotation, type_manager::TypeManager, Ordering, OwnerAPI,
             },
         };
-        use concept::type_::Ordering;
         use encoding::value::{label::Label, value_type::ValueType};
         use storage::{
             durability_client::WALClient,

@@ -564,41 +564,20 @@ fn define_relates_annotations<'a>(
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { source })?;
-        let converted_for_relates = capability_convert_and_validate_annotation_definition_need(
+        if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
             relates.clone(),
             annotation.clone(),
             typeql_capability,
-        );
-        match converted_for_relates {
-            Ok(Some(relates_annotation)) => {
-                relates.set_annotation(snapshot, type_manager, thing_manager, relates_annotation).map_err(
-                    |typedb_source| DefineError::SetAnnotation {
-                        label: relation_label.clone().into_owned(),
-                        source,
-                        annotation_declaration: typeql_annotation.clone(),
-                    },
-                )?;
-            }
-            Ok(None) => {}
-            Err(_) => {
-                if let Some(converted_for_role) = type_convert_and_validate_annotation_definition_need(
-                    snapshot,
-                    type_manager,
-                    relation_label,
-                    relates.role(),
-                    annotation.clone(),
-                )? {
-                    relates.role().set_annotation(snapshot, type_manager, thing_manager, converted_for_role).map_err(
-                        |typedb_source| DefineError::SetAnnotation {
-                            label: relation_label.clone().into_owned(),
-                            source,
-                            annotation_declaration: typeql_annotation.clone(),
-                        },
-                    )?;
-                }
-            }
+        )? {
+            relates.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(
+                |typedb_source| DefineError::SetAnnotation {
+                    label: relation_label.clone().into_owned(),
+                    source,
+                    annotation_declaration: typeql_annotation.clone(),
+                },
+            )?;
         }
     }
     Ok(())
@@ -979,7 +958,7 @@ typedb_error!(
         // TODO: add source TypeQL fragment here so we get line number, ideally!
         TypeSubAlreadyDefinedButDifferent(
             13,
-            "Defining supertype of type '{label}' to '{supertype}' failed since it already has supertype '{existing_supertype}'. Try redefine instead?",
+            "Defining supertype of type '{label}' to '{supertype_label}' failed since it already has supertype '{existing_supertype_label}'. Try redefine instead?",
             label: Label<'static>,
             supertype_label: Label<'static>,
             existing_supertype_label: Label<'static>

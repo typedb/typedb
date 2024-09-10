@@ -7,8 +7,9 @@
 use std::sync::Arc;
 
 use concept::type_::{
-    annotation, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation, object_type::ObjectType,
-    relation_type::RelationTypeAnnotation, KindAPI, TypeAPI,
+    annotation, attribute_type::AttributeTypeAnnotation, constraint::Constraint as TypeDBConstraint,
+    entity_type::EntityTypeAnnotation, object_type::ObjectType, relation_type::RelationTypeAnnotation, KindAPI,
+    TypeAPI,
 };
 use cucumber::gherkin::Step;
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
@@ -18,13 +19,12 @@ use macro_rules_attribute::apply;
 use crate::{
     generic_step,
     params::{
-        Annotation, AnnotationCategory, ContainsOrDoesnt, ExistsOrDoesnt, IsEmptyOrNot, Label, MayError, RootLabel,
-        RootLabelExtended,
+        Annotation, AnnotationCategory, Constraint, ConstraintCategory, ContainsOrDoesnt, ExistsOrDoesnt, IsEmptyOrNot,
+        Label, MayError, RootLabel, RootLabelExtended,
     },
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     util, with_type, Context,
 };
-use crate::params::{Constraint, ConstraintCategory};
 
 #[macro_export]
 macro_rules! with_type {
@@ -61,7 +61,7 @@ macro_rules! with_type_and_value_type {
                 let $assign_type_to =
                     $tx.type_manager.get_attribute_type($tx.snapshot.as_ref(), &$label.into_typedb()).unwrap().unwrap();
                 $assign_value_type_to =
-                    $assign_type_to.get_value_type($tx.snapshot.as_ref(), &$tx.type_manager).unwrap();
+                    $assign_type_to.get_value_type_without_source($tx.snapshot.as_ref(), &$tx.type_manager).unwrap();
                 $block
             }
             Kind::Entity => {
@@ -260,6 +260,7 @@ pub async fn type_constraints_contain(
             let actual_contains = type_
                 .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
+                .into_iter()
                 .find(|constraint| &constraint.description() == &expected_constraint)
                 .is_some();
             assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -282,6 +283,7 @@ pub async fn type_constraint_categories_contain(
             let actual_contains = type_
                 .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
+                .into_iter()
                 .find(|constraint| constraint.category() == expected_constraint_category)
                 .is_some();
             assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -326,7 +328,9 @@ pub async fn type_declared_annotations_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation_category}")]
+#[step(
+    expr = "{root_label}\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation_category}"
+)]
 pub async fn type_declared_annotation_categories_contain(
     context: &mut Context,
     root_label: RootLabel,

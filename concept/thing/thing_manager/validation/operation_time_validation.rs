@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{BTreeMap, HashMap},
-};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use encoding::value::{value::Value, value_type::ValueType, ValueEncodable};
 use lending_iterator::LendingIterator;
@@ -28,16 +25,9 @@ use crate::{
         },
     },
     type_::{
-        attribute_type::AttributeType,
-        constraint::Constraint,
-        entity_type::EntityType,
-        object_type::ObjectType,
-        owns::Owns,
-        plays::Plays,
-        relates::Relates,
-        relation_type::RelationType,
-        role_type::RoleType,
-        Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
+        attribute_type::AttributeType, constraint::Constraint, entity_type::EntityType, object_type::ObjectType,
+        owns::Owns, plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, Capability,
+        ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 

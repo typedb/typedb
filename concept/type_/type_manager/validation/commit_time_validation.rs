@@ -409,8 +409,8 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
         let constraints = type_.get_constraints(snapshot, type_manager)?;
-        let declared_constraint_descriptions =
-            filter_by_source!(constraints.iter().cloned(), type_.clone()).map(|constraint| constraint.description().clone());
+        let declared_constraint_descriptions = filter_by_source!(constraints.iter().cloned(), type_.clone())
+            .map(|constraint| constraint.description().clone());
 
         for constraint in constraints.into_iter() {
             if &constraint.source() == &type_ {

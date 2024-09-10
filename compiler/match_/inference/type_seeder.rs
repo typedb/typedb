@@ -1085,7 +1085,9 @@ impl BinaryConstraint for Comparison<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
         let left_value_type = match left_type {
-            TypeAnnotation::Attribute(attribute) => attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?,
+            TypeAnnotation::Attribute(attribute) => {
+                attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+            }
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
@@ -1093,7 +1095,9 @@ impl BinaryConstraint for Comparison<Variable> {
         if let Some(value_type) = left_value_type {
             let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
             for subattr in seeder.type_manager.get_attribute_types(seeder.snapshot)?.iter() {
-                if let Some(subvaluetype) = subattr.get_value_type_without_source(seeder.snapshot, seeder.type_manager)? {
+                if let Some(subvaluetype) =
+                    subattr.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+                {
                     if comparable_types.contains(&subvaluetype.category()) {
                         collector.insert(TypeAnnotation::Attribute(subattr.clone()));
                     }
@@ -1110,13 +1114,17 @@ impl BinaryConstraint for Comparison<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
         let right_value_type = match right_type {
-            TypeAnnotation::Attribute(attribute) => attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?,
+            TypeAnnotation::Attribute(attribute) => {
+                attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+            }
             _ => todo!("Error for expected attribute type"),
         };
         if let Some(value_type) = right_value_type {
             let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
             for subattr in seeder.type_manager.get_attribute_types(seeder.snapshot)?.iter() {
-                if let Some(subvaluetype) = subattr.get_value_type_without_source(seeder.snapshot, seeder.type_manager)? {
+                if let Some(subvaluetype) =
+                    subattr.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+                {
                     if comparable_types.contains(&subvaluetype.category()) {
                         collector.insert(TypeAnnotation::Attribute(subattr.clone()));
                     }

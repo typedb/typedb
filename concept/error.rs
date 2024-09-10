@@ -15,9 +15,7 @@ use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 use crate::{
     thing::thing_manager::validation::DataValidationError,
     type_::{
-        annotation::AnnotationError,
-        attribute_type::AttributeType,
-        constraint::ConstraintError,
+        annotation::AnnotationError, attribute_type::AttributeType, constraint::ConstraintError,
         type_manager::validation::SchemaValidationError,
     },
 };

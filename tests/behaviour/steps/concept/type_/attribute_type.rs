@@ -70,7 +70,7 @@ pub async fn attribute_type_get_value_type(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         assert_eq!(
             value_type.into_typedb(&tx.type_manager, tx.snapshot.as_ref()),
-            attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap()
+            attribute_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap()
         );
     });
 }

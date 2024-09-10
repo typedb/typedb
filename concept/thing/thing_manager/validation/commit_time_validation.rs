@@ -83,9 +83,10 @@ macro_rules! validate_capability_cardinality_constraint {
                 let sub_interface_types = source_interface_type
                     .get_subtypes_transitive(snapshot, thing_manager.type_manager())
                     .map_err(DataValidationError::ConceptRead)?;
-                let count = TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types.into_iter().cloned())
-                    .filter_map(|interface_type| counts.get(&interface_type))
-                    .sum();
+                let count =
+                    TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types.into_iter().cloned())
+                        .filter_map(|interface_type| counts.get(&interface_type))
+                        .sum();
                 $check_func(
                     snapshot,
                     thing_manager.type_manager(),

@@ -6,7 +6,9 @@
 
 use std::sync::Arc;
 
-use concept::type_::{annotation, plays::PlaysAnnotation, Capability, PlayerAPI, TypeAPI};
+use concept::type_::{
+    annotation, constraint::Constraint as TypeDBConstraint, plays::PlaysAnnotation, Capability, PlayerAPI, TypeAPI,
+};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
@@ -15,11 +17,13 @@ use super::thing_type::get_as_object_type;
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
-    params::{Annotation, AnnotationCategory, ContainsOrDoesnt, IsEmptyOrNot, Label, MayError, RootLabel},
+    params::{
+        Annotation, AnnotationCategory, Constraint, ConstraintCategory, ContainsOrDoesnt, IsEmptyOrNot, Label,
+        MayError, RootLabel,
+    },
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
-use crate::params::{Constraint, ConstraintCategory};
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) set plays: {type_label}{may_error}")]
@@ -216,6 +220,7 @@ pub async fn get_plays_annotations_contains(
         let actual_contains = plays
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
+            .into_iter()
             .find(|constraint| &constraint.description() == &expected_constraint)
             .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -244,6 +249,7 @@ pub async fn get_plays_constraint_categories_contains(
         let actual_contains = plays
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
+            .into_iter()
             .find(|constraint| constraint.category() == expected_constraint_category)
             .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -315,9 +321,7 @@ pub async fn get_plays_declared_annotation_categories_contains(
             .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
-            .map(|annotation| {
-                <PlaysAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
-            })
+            .map(|annotation| <PlaysAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category())
             .contains(&annotation_category.into_typedb());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });

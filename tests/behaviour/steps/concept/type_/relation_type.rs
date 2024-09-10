@@ -10,6 +10,7 @@ use concept::{
     error::ConceptWriteError,
     type_::{
         annotation::{Annotation as TypeDBAnnotation, DefaultFrom},
+        constraint::Constraint as TypeDBConstraint,
         object_type::ObjectType,
         relates::{Relates, RelatesAnnotation},
         role_type::RoleTypeAnnotation,
@@ -23,11 +24,13 @@ use macro_rules_attribute::apply;
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
-    params::{Annotation, AnnotationCategory, ContainsOrDoesnt, ExistsOrDoesnt, IsEmptyOrNot, Label, MayError},
+    params::{
+        Annotation, AnnotationCategory, Constraint, ConstraintCategory, ContainsOrDoesnt, ExistsOrDoesnt, IsEmptyOrNot,
+        Label, MayError,
+    },
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
-use crate::params::{Constraint, ConstraintCategory};
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) create role: {type_label}{may_error}")]
@@ -110,7 +113,7 @@ pub async fn relation_role_set_specialise(
                 return;
             }
         }
-        may_error.check::<(), BehaviourConceptTestExecutionError>(&Err(
+        may_error.check::<(), BehaviourConceptTestExecutionError>(Err(
             BehaviourConceptTestExecutionError::CannotFindRelationTypeRoleTypeToSpecialise,
         ));
     });
@@ -358,11 +361,6 @@ pub async fn relation_role_get_supertype(
             .unwrap();
         let role = relates.role();
         let superrole = role.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap();
-        let relates_specialise = relates.get_specialise(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
-        assert_eq!(
-            relates_specialise.clone().unwrap(),
-            *superrole.get_relates(tx.snapshot.as_ref(), &tx.type_manager).unwrap()
-        );
         assert_eq!(
             expected_superrole_label.into_typedb().scoped_name(),
             superrole.get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().scoped_name()
@@ -664,6 +662,7 @@ pub async fn relation_role_constraints_contain(
         let actual_contains = relates
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
+            .into_iter()
             .find(|constraint| &constraint.description() == &expected_constraint)
             .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -694,6 +693,7 @@ pub async fn relation_role_constraint_categories_contain(
         let actual_contains = relates
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
+            .into_iter()
             .find(|constraint| constraint.category() == expected_constraint_category)
             .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -778,7 +778,8 @@ pub async fn relation_role_declared_annotation_categories_contain(
         let actual_contains = relates
             .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
-            .map(|annotation| annotation.clone().into().category())
+            .into_iter()
+            .map(|annotation| TypeDBAnnotation::from(annotation.clone()).category())
             .contains(&parsed_annotation_category);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });

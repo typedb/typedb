@@ -343,7 +343,7 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
             .unwrap_or_else(|| panic!("attribute type {key_label} not found"));
         let expected = params::Value::from_str(key_value).unwrap().into_typedb(
             key_type
-                .get_value_type(&*tx.snapshot, &tx.type_manager)
+                .get_value_type_without_source(&*tx.snapshot, &tx.type_manager)
                 .unwrap()
                 .unwrap_or_else(|| panic!("expected the key type {key_label} to have a value type")),
         );

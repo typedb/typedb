@@ -16,7 +16,7 @@ use concept::{
             AnnotationCategory as TypeDBAnnotationCategory, AnnotationDistinct, AnnotationIndependent, AnnotationKey,
             AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
-        constraint::{ConstraintDescription as TypeDBConstraint, ConstraintCategory as TypeDBConstraintCategory},
+        constraint::{ConstraintCategory as TypeDBConstraintCategory, ConstraintDescription as TypeDBConstraint},
         object_type::ObjectType,
         type_manager::{validation::SchemaValidationError, TypeManager},
     },
@@ -49,27 +49,6 @@ impl MayError {
                 None
             }
             MayError::True => Some(res.unwrap_err()),
-        }
-    }
-
-    pub fn check_either_err<T, E1, E2>(&self, res: &Result<T, Either<E1, E2>>)
-    where
-        T: fmt::Debug + Clone,
-        E1: fmt::Debug + Clone,
-        E2: fmt::Debug + Clone,
-    {
-        match res {
-            Ok(res) => {
-                self.check(&Ok::<T, E1>(res.clone()));
-            }
-            Err(either_err) => match either_err {
-                Either::First(err) => {
-                    self.check(&Err::<T, E1>(err.clone()));
-                }
-                Either::Second(err) => {
-                    self.check(&Err::<T, E2>(err.clone()));
-                }
-            },
         }
     }
 
@@ -177,8 +156,7 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
-use concept::type_::attribute_type::AttributeTypeAnnotation;
-use concept::type_::constraint::ConstraintDescription;
+use concept::type_::{attribute_type::AttributeTypeAnnotation, constraint::ConstraintDescription};
 use primitive::either::Either;
 
 impl FromStr for Boolean {
@@ -642,9 +620,7 @@ fn parse_values_annotation(values: &str, value_type: Option<TypeDBValueType>) ->
     let values = values["@values(".len()..values.len() - ")".len()].trim();
     let values = values.split(',');
     TypeDBAnnotation::Values(AnnotationValues::new(
-        values
-            .map(|value| Value::from_str(value.trim()).unwrap().into_typedb(value_type.clone()))
-            .collect_vec(),
+        values.map(|value| Value::from_str(value.trim()).unwrap().into_typedb(value_type.clone())).collect_vec(),
     ))
 }
 
@@ -658,11 +634,7 @@ fn parse_range_annotation(range: &str, value_type: Option<TypeDBValueType>) -> T
     let range = range["@range(".len()..range.len() - ")".len()].trim();
     let (min, max) = range.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
     TypeDBAnnotation::Range(AnnotationRange::new(
-        if min.is_empty() {
-            None
-        } else {
-            Some(Value::from_str(min).unwrap().into_typedb(value_type.clone()))
-        },
+        if min.is_empty() { None } else { Some(Value::from_str(min).unwrap().into_typedb(value_type.clone())) },
         if max.is_empty() { None } else { Some(Value::from_str(max).unwrap().into_typedb(value_type)) },
     ))
 }
@@ -801,7 +773,10 @@ impl Constraint {
             _ => unreachable!("Cannot parse constraint {:?}", self.raw_constraint),
         });
         if constraints.len() != 1 {
-            panic!("Cannot parse constraint {}. Make sure you expect a constraint, not an annotation.", self.raw_constraint);
+            panic!(
+                "Cannot parse constraint {}. Make sure you expect a constraint, not an annotation.",
+                self.raw_constraint
+            );
         }
         constraints.iter().next().unwrap().clone()
     }

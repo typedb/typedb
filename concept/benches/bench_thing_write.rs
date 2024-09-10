@@ -18,7 +18,7 @@ use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
     type_::{
         type_manager::{type_cache::TypeCache, TypeManager},
-        OwnerAPI,
+        Ordering, OwnerAPI,
     },
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
@@ -32,7 +32,6 @@ use encoding::{
 };
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
-use concept::type_::Ordering;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WriteSnapshot},

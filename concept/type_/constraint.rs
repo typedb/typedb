@@ -15,7 +15,7 @@ use crate::type_::{
         Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationDistinct, AnnotationIndependent,
         AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
     },
-    Capability, KindAPI, TypeAPI
+    Capability, KindAPI, TypeAPI,
 };
 
 macro_rules! with_constraint_description {

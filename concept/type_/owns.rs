@@ -279,7 +279,10 @@ impl<'a> Capability<'a> for Owns<'a> {
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError> where 'a: 'static {
+    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError>
+    where
+        'a: 'static,
+    {
         type_manager.get_owns_constraints(snapshot, self.clone().into_owned())
     }
 

@@ -17,7 +17,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType, ValueEncodable},
 };
 use itertools::Itertools;
-use lending_iterator::{LendingIterator};
+use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

@@ -6,7 +6,10 @@
 
 use std::sync::Arc;
 
-use concept::type_::{annotation, owns::OwnsAnnotation, Capability, OwnerAPI, TypeAPI};
+use concept::type_::{
+    annotation, annotation::Annotation, constraint::Constraint, owns::OwnsAnnotation, Capability, Ordering, OwnerAPI,
+    TypeAPI,
+};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
@@ -40,6 +43,34 @@ pub async fn set_owns_unordered(
             &tx.type_manager,
             &tx.thing_manager,
             attr_type,
+            Ordering::Unordered,
+        );
+        may_error.check_concept_write_without_read_errors(&res);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) set owns: {type_label}[]{may_error}")]
+pub async fn set_owns_ordered(
+    context: &mut Context,
+    root_label: params::RootLabel,
+    type_label: params::Label,
+    attribute_type_label: params::Label,
+    may_error: params::MayError,
+) {
+    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    with_schema_tx!(context, |tx| {
+        let attr_type = tx
+            .type_manager
+            .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
+            .unwrap()
+            .unwrap();
+        let res = object_type.set_owns(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            &tx.thing_manager,
+            attr_type,
+            Ordering::Ordered,
         );
         may_error.check_concept_write_without_read_errors(&res);
     });
@@ -87,7 +118,7 @@ pub async fn get_owns_set_annotation(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns =
             object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type.clone()).unwrap().unwrap();
-        let value_type = attr_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+        let value_type = attr_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let res = owns.set_annotation(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
@@ -127,7 +158,7 @@ pub async fn get_owns_unset_annotation(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get constraints {contains_or_doesnt}: {annotation}"
+    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}"
 )]
 pub async fn get_owns_constraints_contains(
     context: &mut Context,
@@ -142,12 +173,14 @@ pub async fn get_owns_constraints_contains(
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
-        let value_type = owns.attribute().get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+        let value_type =
+            owns.attribute().get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
 
         let expected_constraint = constraint.into_typedb(value_type);
         let actual_contains = owns
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
+            .into_iter()
             .find(|constraint| &constraint.description() == &expected_constraint)
             .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -176,6 +209,7 @@ pub async fn get_owns_constraints_categories_contains(
         let actual_contains = owns
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
+            .into_iter()
             .find(|constraint| constraint.category() == expected_constraint_category)
             .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
@@ -219,7 +253,8 @@ pub async fn get_owns_declared_annotations_contains(
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
-        let value_type = owns.attribute().get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+        let value_type =
+            owns.attribute().get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let actual_contains = owns
             .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
@@ -230,7 +265,7 @@ pub async fn get_owns_declared_annotations_contains(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation}"
+    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation_category}"
 )]
 pub async fn get_owns_declared_annotation_categories_contains(
     context: &mut Context,
@@ -250,7 +285,8 @@ pub async fn get_owns_declared_annotation_categories_contains(
         let actual_contains = owns
             .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
-            .map(|annotation| annotation.clone().into().category())
+            .into_iter()
+            .map(|annotation| Annotation::from(annotation.clone()).category())
             .contains(&parsed_annotation_category);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });

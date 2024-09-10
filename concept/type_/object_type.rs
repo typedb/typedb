@@ -23,8 +23,8 @@ use crate::{
     thing::{object::Object, thing_manager::ThingManager},
     type_::{
         attribute_type::AttributeType, constraint::CapabilityConstraint, entity_type::EntityType, owns::Owns,
-        plays::Plays, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager,
-        ObjectTypeAPI, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
+        plays::Plays, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI,
+        OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
     },
     ConceptAPI,
 };
