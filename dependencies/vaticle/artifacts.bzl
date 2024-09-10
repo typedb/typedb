@@ -12,7 +12,7 @@ def vaticle_typedb_console_artifact():
         artifact_name = "typedb-console-{platform}-{version}.{ext}",
         tag_source = deployment["artifact"]["release"]["download"],
         commit_source = deployment["artifact"]["snapshot"]["download"],
-        commit = "f6db966139f26da5f10f2d4f298161ad25104daf",
+        commit = "060397dac5bca395b99b65a50e6424a45c87b353"
     )
 
 maven_artifacts = {
