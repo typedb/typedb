@@ -141,6 +141,21 @@ pub async fn get_plays_is_empty(
 }
 
 #[apply(generic_step)]
+#[step(expr = "{kind}\\({type_label}\\) get declared plays {is_empty_or_not}")]
+pub async fn get_declared_plays_is_empty(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
+) {
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    with_read_tx!(context, |tx| {
+        let actual_is_empty = object_type.get_plays_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+        is_empty_or_not.check(actual_is_empty);
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) set annotation: {annotation}{may_error}")]
 pub async fn get_plays_set_annotation(
     context: &mut Context,

@@ -405,6 +405,21 @@ pub async fn get_declared_owns_contain(
 }
 
 #[apply(generic_step)]
+#[step(expr = "{kind}\\({type_label}\\) get declared owns {is_empty_or_not}")]
+pub async fn get_declared_owns_is_empty(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
+) {
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    with_read_tx!(context, |tx| {
+        let actual_is_empty = object_type.get_owns_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+        is_empty_or_not.check(actual_is_empty);
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get label: {type_label}")]
 pub async fn get_owns_get_label(
     context: &mut Context,

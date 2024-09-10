@@ -318,92 +318,6 @@ impl TypeReader {
         Ok(transitive_capabilities)
     }
 
-    // TODO: Looks like specialises are not needed! Try to work without them!
-    // pub(crate) fn get_type_capability_specialises<CAP: Capability<'static>>(
-    //     snapshot: &impl ReadableSnapshot,
-    //     object_type: CAP::ObjectType,
-    //     capability: CAP,
-    // ) -> Result<Option<CAP>, ConceptReadError> {
-    //     let owned_capabilities: HashSet<CAP> = Self::get_capabilities(snapshot, object_type.clone(), false)?;
-    //     if !owned_capabilities.contains(&capability) {
-    //         return Ok(None);
-    //     }
-    //
-    //     let all_capabilities: HashSet<CAP> = Self::get_capabilities(snapshot, object_type.clone(), true)?;
-    //     let mut current_interface_type_opt = Some(capability.interface());
-    //
-    //     while let Some(current_interface_type) = current_interface_type_opt {
-    //         let specialised = all_capabilities.iter().filter(|potential_specialised| {
-    //             potential_specialised != capability
-    //                 && &potential_specialised.interface() == &current_interface_type
-    //         }).sorted_by(|lhs, rhs| lhs.interface().is_subtype_transitive_of(rhs.interface())).next();
-    //         if specialised.is_some() {
-    //             return Ok(specialised);
-    //         }
-    //         current_interface_type_opt = Self::get_supertype(snapshot, current_interface_type)?;
-    //     }
-    //
-    //     Ok(None)
-    // }
-
-    // pub(crate) fn get_capability_specialises_transitive<CAP: Capability<'static>>(
-    //     snapshot: &impl ReadableSnapshot,
-    //     capability: CAP,
-    // ) -> Result<Vec<CAP>, ConceptReadError> {
-    //     let mut capability_specialises: Vec<CAP> = Vec::new();
-    //
-    //     let mut specialises_opt = TypeReader::get_type_capability_specialises(snapshot, capability)?;
-    //     while let Some(specialises) = specialises_opt {
-    //         capability_specialises.push(specialises.clone());
-    //         specialises_opt = TypeReader::get_supertype(snapshot, specialises)?;
-    //     }
-    //
-    //     Ok(capability_specialises)
-    // }
-    //
-    // pub(crate) fn get_specialising_capabilities<CAP: Capability<'static>>(
-    //     snapshot: &impl ReadableSnapshot,
-    //     capability: CAP,
-    // ) -> Result<HashSet<CAP>, ConceptReadError> {
-    //     let mut specialising_capabilities: HashSet<CAP> = HashSet::new();
-    //     let mut object_types_to_check: Vec<CAP::ObjectType> = Vec::from([capability.object()]);
-    //
-    //     while let Some(current_object_type) = object_types_to_check.pop() {
-    //         let object_type_capabilities = Self::get_capabilities_declared::<CAP>(snapshot, current_object_type.clone())?;
-    //         let is_hidden = object_type_capabilities.get(&capability).is_none();
-    //         for potential_specialising in object_type_capabilities.into_iter() {
-    //             let specialises = Self::get_type_capability_specialises(snapshot, potential_specialising.clone())?;
-    //             if specialises == capability {
-    //                 specialising_capabilities.insert(potential_specialising);
-    //             }
-    //         }
-    //
-    //         if !is_hidden {
-    //             Self::get_subtypes(snapshot, current_object_type)?
-    //                 .into_iter()
-    //                 .for_each(|object_type| object_types_to_check.push(object_type));
-    //         }
-    //     }
-    //
-    //     Ok(specialising_capabilities)
-    // }
-
-    // pub(crate) fn get_specialising_capabilities_transitive<CAP: Capability<'static>>(
-    //     snapshot: &impl ReadableSnapshot,
-    //     capability: CAP,
-    // ) -> Result<Vec<CAP>, ConceptReadError> {
-    //     let mut specialising_capabilities: Vec<CAP> = Vec::new();
-    //     let mut capabilities_to_check: Vec<CAP> = Vec::from([capability]);
-    //
-    //     while let Some(capability) = capabilities_to_check.pop() {
-    //         let specialisings = Self::get_specialising_capabilities(snapshot, capability)?;
-    //         capabilities_to_check.extend(specialisings.iter());
-    //         specialising_capabilities.extend(specialisings.into_iter());
-    //     }
-    //
-    //     Ok(specialising_capabilities)
-    // }
-
     pub(crate) fn get_capabilities_for_interface<CAP>(
         snapshot: &impl ReadableSnapshot,
         interface_type: CAP::InterfaceType,
@@ -669,8 +583,10 @@ impl TypeReader {
                     Infix::PropertyAnnotationValues => {
                         Annotation::Values(<AnnotationValues as TypeEdgePropertyEncoding>::from_value_bytes(value))
                     }
+                    Infix::PropertyAnnotationAbstract => {
+                        Annotation::Abstract(<AnnotationAbstract as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                    }
                     | Infix::_PropertyAnnotationLast
-                    | Infix::PropertyAnnotationAbstract
                     | Infix::PropertyAnnotationCascade
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
@@ -767,6 +683,22 @@ impl TypeReader {
             }
         }
 
+        Ok(all_constraints)
+    }
+
+    pub(crate) fn get_type_capabilities_constraints<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        object_type: CAP::ObjectType,
+    ) -> Result<HashMap<CAP::InterfaceType, HashSet<CapabilityConstraint<CAP>>>, ConceptReadError> {
+        let mut all_constraints: HashMap<CAP::InterfaceType, HashSet<CapabilityConstraint<CAP>>> = HashMap::new();
+        for object_capability in TypeReader::get_capabilities::<CAP>(snapshot, object_type.clone(), false)? {
+            let interface_type = object_capability.interface();
+            debug_assert!(!all_constraints.contains_key(&interface_type), "Specialised are not allowed here!");
+            all_constraints.insert(
+                interface_type.clone(),
+                Self::get_type_capability_constraints(snapshot, object_type.clone(), object_capability.interface())?,
+            );
+        }
         Ok(all_constraints)
     }
 

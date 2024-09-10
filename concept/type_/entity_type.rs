@@ -310,13 +310,13 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         type_manager.get_entity_type_owns_with_specialised(snapshot, self.clone().into_owned())
     }
 
-    fn get_type_owns_constraints<'m>(
+    fn get_owned_attribute_type_constraints<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError> {
-        type_manager.get_type_owns_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
+        type_manager.get_entity_type_owned_attribute_type_constraints(snapshot, self.clone().into_owned(), attribute_type)
     }
 
     fn get_type_owns_constraints_cardinality<'m>(
@@ -432,13 +432,13 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         type_manager.get_entity_type_plays_with_specialised(snapshot, self.clone().into_owned())
     }
 
-    fn get_type_plays_constraints<'m>(
+    fn get_played_role_type_constraints<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, ConceptReadError> {
-        type_manager.get_type_plays_constraints(snapshot, self.clone().into_owned_object_type(), role_type)
+        type_manager.get_entity_type_played_role_type_constraints(snapshot, self.clone().into_owned(), role_type)
     }
 
     fn get_type_plays_constraints_cardinality<'m>(

@@ -254,21 +254,25 @@ macro_rules! get_constraints_methods {
 
 macro_rules! get_type_capability_constraints_methods {
     ($(
-        fn $method_name:ident() -> $capability:ident = $reader_method:ident;
+        fn $method_name:ident($type_decl:ident => |$type_:ident| $reader_convert:expr) -> $capability:ident = $reader_method:ident | $cache_method:ident;
     )*) => {
         $(
             pub(crate) fn $method_name(
                 &self,
                 snapshot: &impl ReadableSnapshot,
-                object_type: <$capability<'static> as Capability<'static>>::ObjectType,
+                $type_: $type_decl<'static>,
                 interface_type: <$capability<'static> as Capability<'static>>::InterfaceType,
             ) -> Result<MaybeOwns<'_, HashSet<CapabilityConstraint<$capability<'static>>>>, ConceptReadError> {
-                //  if let Some(cache) = &self.type_cache { // TODO: Add cache
-                //     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
-                // } else {
-                    let constraints = TypeReader::$reader_method(snapshot, object_type, interface_type)?;
+                 if let Some(cache) = &self.type_cache {
+                     Ok(match cache.$cache_method($type_).get(&interface_type) {
+                         Some(cached) => MaybeOwns::Borrowed(cached),
+                         None => MaybeOwns::Owned(HashSet::new()),
+                     })
+                } else {
+                     let $type_ = $reader_convert;
+                    let constraints = TypeReader::$reader_method(snapshot, $type_, interface_type)?;
                     Ok(MaybeOwns::Owned(constraints))
-                // }
+                }
             }
         )*
     }
@@ -907,9 +911,11 @@ impl TypeManager {
     }
 
     get_type_capability_constraints_methods! {
-        fn get_type_owns_constraints() -> Owns = get_type_capability_constraints;
-        fn get_type_plays_constraints() -> Plays = get_type_capability_constraints;
-        fn get_type_relates_constraints() -> Relates = get_type_capability_constraints;
+        fn get_entity_type_owned_attribute_type_constraints(EntityType => |type_| { type_.into_owned_object_type() }) -> Owns = get_type_capability_constraints | get_owned_attribute_type_constraints;
+        fn get_relation_type_owned_attribute_type_constraints(RelationType => |type_| { type_.into_owned_object_type() }) -> Owns = get_type_capability_constraints | get_owned_attribute_type_constraints;
+        fn get_entity_type_played_role_type_constraints(EntityType => |type_| { type_.into_owned_object_type() }) -> Plays = get_type_capability_constraints | get_played_role_type_constraints;
+        fn get_relation_type_played_role_type_constraints(RelationType => |type_| { type_.into_owned_object_type() }) -> Plays = get_type_capability_constraints | get_played_role_type_constraints;
+        fn get_relation_type_related_role_type_constraints(RelationType => |type_| { type_ }) -> Relates = get_type_capability_constraints | get_relation_type_related_role_type_constraints;
     }
 
     get_filtered_constraints_methods! {
@@ -928,14 +934,14 @@ impl TypeManager {
     }
 
     get_type_capability_filtered_constraints_methods! {
-        fn get_type_owns_distinct_constraints() -> Owns = get_type_owns_constraints + get_distinct_constraints;
-        fn get_type_relates_distinct_constraints() -> Relates = get_type_relates_constraints + get_distinct_constraints;
-        fn get_type_owns_cardinality_constraints() -> Owns = get_type_owns_constraints + get_cardinality_constraints;
-        fn get_type_plays_cardinality_constraints() -> Plays = get_type_plays_constraints + get_cardinality_constraints;
-        fn get_type_relates_cardinality_constraints() -> Relates = get_type_relates_constraints + get_cardinality_constraints;
-        fn get_type_owns_regex_constraints() -> Owns = get_type_owns_constraints + get_regex_constraints;
-        fn get_type_owns_range_constraints() -> Owns = get_type_owns_constraints + get_range_constraints;
-        fn get_type_owns_values_constraints() -> Owns = get_type_owns_constraints + get_values_constraints;
+        fn get_type_owns_distinct_constraints() -> Owns = get_owned_attribute_type_constraints + get_distinct_constraints;
+        fn get_type_relates_distinct_constraints() -> Relates = get_related_role_type_constraints + get_distinct_constraints;
+        fn get_type_owns_cardinality_constraints() -> Owns = get_owned_attribute_type_constraints + get_cardinality_constraints;
+        fn get_type_plays_cardinality_constraints() -> Plays = get_played_role_type_constraints + get_cardinality_constraints;
+        fn get_type_relates_cardinality_constraints() -> Relates = get_related_role_type_constraints + get_cardinality_constraints;
+        fn get_type_owns_regex_constraints() -> Owns = get_owned_attribute_type_constraints + get_regex_constraints;
+        fn get_type_owns_range_constraints() -> Owns = get_owned_attribute_type_constraints + get_range_constraints;
+        fn get_type_owns_values_constraints() -> Owns = get_owned_attribute_type_constraints + get_values_constraints;
     }
 
     pub(crate) fn get_type_abstract_constraint<T: KindAPI<'static>>(
@@ -970,7 +976,7 @@ impl TypeManager {
         object_type: ObjectType<'static>,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
-        Ok(get_unique_constraint(object_type.get_type_owns_constraints(snapshot, self, attribute_type)?.into_iter()))
+        Ok(get_unique_constraint(object_type.get_owned_attribute_type_constraints(snapshot, self, attribute_type)?.into_iter()))
     }
 
     pub(crate) fn get_capability_cardinality<CAP: Capability<'static>>(

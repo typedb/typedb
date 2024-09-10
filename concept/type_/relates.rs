@@ -100,7 +100,7 @@ impl<'a> Relates<'a> {
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             RelatesAnnotation::Abstract(_) => {
-                unimplemented!("Manual setting of Abstract annotation for Relates is not supported yet.")
+                type_manager.set_relates_annotation_abstract(snapshot, thing_manager, self.clone().into_owned())?
             }
             RelatesAnnotation::Distinct(_) => {
                 type_manager.set_relates_annotation_distinct(snapshot, thing_manager, self.clone().into_owned())?
@@ -126,7 +126,7 @@ impl<'a> Relates<'a> {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match relates_annotation {
             RelatesAnnotation::Abstract(_) => {
-                unimplemented!("Manual setting of Abstract annotation for Relates is not supported yet.")
+                type_manager.unset_relates_annotation_abstract(snapshot, self.clone().into_owned())?
             }
             RelatesAnnotation::Distinct(_) => {
                 type_manager.unset_capability_annotation_distinct(snapshot, self.clone().into_owned())?

@@ -315,6 +315,17 @@ impl TypeCache {
         &T::get_cache(self, type_).object_cache().owns_with_specialised
     }
 
+    pub(crate) fn get_owned_attribute_type_constraints<'a, 'this, T, CACHE>(
+        &'this self,
+        type_: T,
+    ) -> &'this HashMap<AttributeType<'static>, HashSet<CapabilityConstraint<Owns<'static>>>>
+        where
+            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+            CACHE: HasObjectCache + 'this,
+    {
+        &T::get_cache(self, type_).object_cache().owned_attribute_type_constraints
+    }
+
     pub(crate) fn get_role_type_ordering(&self, role_type: RoleType<'_>) -> Ordering {
         RoleType::get_cache(self, role_type).ordering
     }
@@ -346,6 +357,13 @@ impl TypeCache {
         relation_type: RelationType<'_>,
     ) -> &HashSet<Relates<'static>> {
         &RelationType::get_cache(self, relation_type).relates_with_specialised
+    }
+
+    pub(crate) fn get_relation_type_related_role_type_constraints(
+        &self,
+        relation_type: RelationType<'_>,
+    ) -> &HashMap<RoleType<'static>, HashSet<CapabilityConstraint<Relates<'static>>>> {
+        &RelationType::get_cache(self, relation_type).related_role_type_constraints
     }
 
     pub(crate) fn get_relates_annotations_declared<'c>(
@@ -393,11 +411,22 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &'this HashSet<Plays<'static>>
-    where
-        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasObjectCache + 'this,
+        where
+            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+            CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().plays_with_specialised
+    }
+
+    pub(crate) fn get_played_role_type_constraints<'a, 'this, T, CACHE>(
+        &'this self,
+        type_: T,
+    ) -> &'this HashMap<RoleType<'static>, HashSet<CapabilityConstraint<Plays<'static>>>>
+        where
+            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+            CACHE: HasObjectCache + 'this,
+    {
+        &T::get_cache(self, type_).object_cache().played_role_type_constraints
     }
 
     pub(crate) fn get_plays_annotations_declared<'c>(&'c self, plays: Plays<'c>) -> &'c HashSet<PlaysAnnotation> {

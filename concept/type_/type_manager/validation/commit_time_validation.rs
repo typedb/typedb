@@ -315,12 +315,12 @@ impl CommitTimeValidation {
         relates: Relates<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        if let Some(role_supertype) = relates.role().get_supertype(snapshot, type_manager)? {
+        if let Some(role_subtype) = relates.role().get_subtypes(snapshot, type_manager)?.into_iter().next() {
             if !relates.is_abstract(snapshot, type_manager)? {
                 validation_errors.push(SchemaValidationError::SpecialisedRelatesIsNotAbstract(
                     get_label_or_concept_read_err(snapshot, type_manager, relates.relation())?,
                     get_label_or_concept_read_err(snapshot, type_manager, relates.role())?,
-                    get_label_or_concept_read_err(snapshot, type_manager, role_supertype)?,
+                    get_label_or_concept_read_err(snapshot, type_manager, role_subtype.clone())?,
                 ))
             }
         }

@@ -156,8 +156,10 @@ pub(crate) fn validate_sibling_owns_ordering_match_for_type(
         .chain(filtered_existing_owns);
 
     for (owns, ordering_opt) in all_updated_owns {
-        let ordering = ordering_opt
-            .unwrap_or(owns.get_ordering(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?);
+        let ordering = match ordering_opt {
+            None => owns.get_ordering(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?,
+            Some(ordering) => ordering,
+        };
         let attribute_type = owns.attribute();
         let root_attribute_type = if let Some(root) = attribute_type
             .get_supertypes_transitive(snapshot, type_manager)

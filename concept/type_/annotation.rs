@@ -766,10 +766,10 @@ macro_rules! unreachable_type_edge_property_encoder {
     };
 }
 
-unreachable_type_edge_property_encoder!(AnnotationAbstract, PropertyAnnotationAbstract);
 unreachable_type_edge_property_encoder!(AnnotationIndependent, PropertyAnnotationIndependent);
 unreachable_type_edge_property_encoder!(AnnotationCascade, PropertyAnnotationCascade);
 
+empty_type_edge_property_encoder!(AnnotationAbstract, PropertyAnnotationAbstract);
 empty_type_edge_property_encoder!(AnnotationDistinct, PropertyAnnotationDistinct);
 empty_type_edge_property_encoder!(AnnotationUnique, PropertyAnnotationUnique);
 empty_type_edge_property_encoder!(AnnotationKey, PropertyAnnotationKey);

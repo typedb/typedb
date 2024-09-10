@@ -40,6 +40,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::object_type::with_object_type;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
@@ -406,7 +407,10 @@ impl<'a> AttributeType<'a> {
         type_manager: &'m TypeManager,
         owner_type: ObjectType<'static>,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError> {
-        type_manager.get_type_owns_constraints(snapshot, owner_type, self.clone().into_owned())
+        match owner_type {
+            ObjectType::Entity(entity_type) => type_manager.get_entity_type_owned_attribute_type_constraints(snapshot, entity_type, self.clone().into_owned()),
+            ObjectType::Relation(relation_type) => type_manager.get_relation_type_owned_attribute_type_constraints(snapshot, relation_type, self.clone().into_owned()),
+        }
     }
 }
 
