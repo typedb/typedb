@@ -861,7 +861,7 @@ _Remark 2_. Currently, only implicit named anon vars (`$_`) can be used by the u
     1. If `$x links ($B[]: $y)` in `P` then require $`T_m(y) \leq m(B)`$ and $`T_m(x) : \mathbf{Rel}([m(B)])`$
     1. If `$x has $B $y` in `P` then require $`T_m(x) \leq O_{m(B)}`$ and
         * either $`T_m(y) \leq m(B)`$
-        * or $`T_m(y) = V$ for $V : \mathbf{Val}`$ and $`m(B) <_! V`$
+        * or $`T_m(y) = V`$ for $`V : \mathbf{Val}`$ and $`m(B) <_! V`$
     1. If `$x has $B[] $y` in `P` then require $`T_m(x) \leq O_{m(B)}`$ and
         * either $`T_m(y) \leq [m(B)]`$
         * or $`T_m(y) = [V]`$ for $`V : \mathbf{Val}`$ and $`m(B) <_! V`$
