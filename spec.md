@@ -841,7 +841,7 @@ _Remark 2_. Currently, only implicit named anon vars (`$_`) can be used by the u
   (math. notation: $`(x \mapsto a:T, y \mapsto b:S, ...)`$).
 
   To emphasize: **Types are non-dependent** (i.e. dissallow `$x -> a:T($y:I)`, only allow `$x -> a:T`). 
-  * _Assigned concepts_. Write `m($x)` (math. notation $m(x)$) for the concept that `m` assigns to `$x`.
+  * _Assigned concepts_. Write `m($x)` (math. notation $`m(x)`$) for the concept that `m` assigns to `$x`.
   * _Assigned types_. Write `T($x)` (math. notation $`T_m(x)`$) for the type that `m` assigns to `$x`.
     * _Special case: assigned kinds_. Note that `T($x)` may be `Ent`, `Rel`, `Att`, `Itf` (`Rol`), or `Val` (for value types) when `$x` is assigned a type as a concept — we speak of `T($x)` as the **type kind** of `m($x)` in this case.
 
