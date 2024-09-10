@@ -127,56 +127,78 @@ pub async fn get_owns_unset_annotation(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get annotations {contains_or_doesnt}: {annotation}"
+    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get constraints {contains_or_doesnt}: {annotation}"
 )]
-pub async fn get_owns_annotations_contains(
+pub async fn get_owns_constraints_contains(
     context: &mut Context,
     root_label: params::RootLabel,
     type_label: params::Label,
     attr_type_label: params::Label,
     contains_or_doesnt: params::ContainsOrDoesnt,
-    annotation: params::Annotation,
+    constraint: params::Constraint,
 ) {
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
-        let value_type = owns.attribute().get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+        let value_type = owns.attribute().get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+
+        let expected_constraint = constraint.into_typedb(value_type);
         let actual_contains = owns
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
-            .contains_key(&annotation.into_typedb(value_type).try_into().unwrap());
+            .find(|constraint| &constraint.description() == &expected_constraint)
+            .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get annotation categories {contains_or_doesnt}: {annotation_category}"
+    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get constraints categories {contains_or_doesnt}: {constraint_category}"
 )]
-pub async fn get_owns_annotations_categories_contains(
+pub async fn get_owns_constraints_categories_contains(
     context: &mut Context,
     root_label: params::RootLabel,
     type_label: params::Label,
     attr_type_label: params::Label,
     contains_or_doesnt: params::ContainsOrDoesnt,
-    annotation_category: params::AnnotationCategory,
+    constraint_category: params::ConstraintCategory,
 ) {
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
+
+        let expected_constraint_category = constraint_category.into_typedb();
         let actual_contains = owns
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
-            .iter()
-            .map(|(annotation, _)| {
-                <OwnsAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
-            })
-            .contains(&annotation_category.into_typedb());
+            .find(|constraint| constraint.category() == expected_constraint_category)
+            .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get constraints {is_empty_or_not}")]
+pub async fn get_owns_constraints_is_empty(
+    context: &mut Context,
+    root_label: params::RootLabel,
+    type_label: params::Label,
+    attr_type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
+) {
+    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    with_read_tx!(context, |tx| {
+        let attr_type =
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
+
+        let actual_is_empty = owns.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+        is_empty_or_not.check(actual_is_empty);
     });
 }
 
@@ -197,7 +219,7 @@ pub async fn get_owns_declared_annotations_contains(
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
-        let value_type = owns.attribute().get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+        let value_type = owns.attribute().get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let actual_contains = owns
             .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
@@ -207,13 +229,16 @@ pub async fn get_owns_declared_annotations_contains(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get annotations {is_empty_or_not}")]
-pub async fn get_owns_annotations_is_empty(
+#[step(
+    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation}"
+)]
+pub async fn get_owns_declared_annotation_categories_contains(
     context: &mut Context,
     root_label: params::RootLabel,
     type_label: params::Label,
     attr_type_label: params::Label,
-    is_empty_or_not: params::IsEmptyOrNot,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    annotation_category: params::AnnotationCategory,
 ) {
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
@@ -221,8 +246,13 @@ pub async fn get_owns_annotations_is_empty(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
 
-        let actual_is_empty = owns.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
-        is_empty_or_not.check(actual_is_empty);
+        let parsed_annotation_category = annotation_category.into_typedb();
+        let actual_contains = owns
+            .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
+            .unwrap()
+            .map(|annotation| annotation.clone().into().category())
+            .contains(&parsed_annotation_category);
+        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
 
@@ -261,7 +291,7 @@ pub async fn get_owns_cardinality(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let value_type = owns.attribute().get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
-        let actual_cardinality = owns.get_cardinality_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+        let actual_cardinality = owns.get_cardinality(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
             annotation::Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
             _ => panic!("Expected annotations is not Cardinality"),

@@ -27,6 +27,7 @@ use crate::{
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
+use crate::params::{Constraint, ConstraintCategory};
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) create role: {type_label}{may_error}")]
@@ -642,13 +643,13 @@ pub async fn relation_role_unset_annotation(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get annotations {contains_or_doesnt}: {annotation}")]
-pub async fn relation_role_annotations_contain(
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get constraints {contains_or_doesnt}: {constraint}")]
+pub async fn relation_role_constraints_contain(
     context: &mut Context,
     relation_label: Label,
     role_label: Label,
     contains_or_doesnt: ContainsOrDoesnt,
-    annotation: Annotation,
+    constraint: Constraint,
 ) {
     with_read_tx!(context, |tx| {
         let relation =
@@ -659,26 +660,26 @@ pub async fn relation_role_annotations_contain(
             .unwrap()
             .unwrap();
 
-        let parsed_annotation = annotation.into_typedb(None);
-        let parsed_annotation_category = parsed_annotation.clone().category();
+        let expected_constraint = constraint.into_typedb(None);
         let actual_contains = relates
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
-            .contains_key(&parsed_annotation.try_into().unwrap());
+            .find(|constraint| &constraint.description() == &expected_constraint)
+            .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
 
 #[apply(generic_step)]
 #[step(
-    expr = r"relation\({type_label}\) get role\({type_label}\) get annotation categories {contains_or_doesnt}: {annotation_category}"
+    expr = r"relation\({type_label}\) get role\({type_label}\) get constraint categories {contains_or_doesnt}: {constraint_category}"
 )]
-pub async fn relation_role_annotation_categories_contain(
+pub async fn relation_role_constraint_categories_contain(
     context: &mut Context,
     relation_label: Label,
     role_label: Label,
     contains_or_doesnt: ContainsOrDoesnt,
-    annotation_category: AnnotationCategory,
+    constraint_category: ConstraintCategory,
 ) {
     with_read_tx!(context, |tx| {
         let relation =
@@ -689,16 +690,37 @@ pub async fn relation_role_annotation_categories_contain(
             .unwrap()
             .unwrap();
 
-        let parsed_annotation_category = annotation_category.into_typedb();
-        let relates
+        let expected_constraint_category = constraint_category.into_typedb();
+        let actual_contains = relates
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
-            .iter()
-            .map(|(annotation, _)| {
-                <RoleTypeAnnotation as Into<TypeDBAnnotation>>::into(annotation.clone()).category()
-            })
-            .contains(&parsed_annotation_category);
+            .find(|constraint| constraint.category() == expected_constraint_category)
+            .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get constraints {is_empty_or_not}")]
+pub async fn relation_role_constraints_is_empty(
+    context: &mut Context,
+    relation_label: Label,
+    role_label: Label,
+    is_empty_or_not: IsEmptyOrNot,
+) {
+    with_read_tx!(context, |tx| {
+        let relation =
+            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
+        let relates = tx
+            .type_manager
+            .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
+            .unwrap()
+            .unwrap();
+        let relates_empty = relates.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+        let role_empty = relates.role().get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+
+        let actual_is_empty = relates_empty && role_empty;
+        is_empty_or_not.check(actual_is_empty);
     });
 }
 
@@ -733,12 +755,15 @@ pub async fn relation_role_declared_annotations_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get annotations {is_empty_or_not}")]
-pub async fn relation_role_annotations_is_empty(
+#[step(
+    expr = r"relation\({type_label}\) get role\({type_label}\) get declared annotation categories {contains_or_doesnt}: {annotation_category}"
+)]
+pub async fn relation_role_declared_annotation_categories_contain(
     context: &mut Context,
     relation_label: Label,
     role_label: Label,
-    is_empty_or_not: IsEmptyOrNot,
+    contains_or_doesnt: ContainsOrDoesnt,
+    annotation_category: AnnotationCategory,
 ) {
     with_read_tx!(context, |tx| {
         let relation =
@@ -748,11 +773,14 @@ pub async fn relation_role_annotations_is_empty(
             .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
-        let relates_empty = relates.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
-        let role_empty = relates.role().get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
 
-        let actual_is_empty = relates_empty && role_empty;
-        is_empty_or_not.check(actual_is_empty);
+        let parsed_annotation_category = annotation_category.into_typedb();
+        let actual_contains = relates
+            .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
+            .unwrap()
+            .map(|annotation| annotation.clone().into().category())
+            .contains(&parsed_annotation_category);
+        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
 
@@ -798,7 +826,7 @@ pub async fn relation_role_cardinality(
             .resolve_relates(tx.snapshot.as_ref(), relation, role_label.into_typedb().name().as_str())
             .unwrap()
             .unwrap();
-        let actual_cardinality = relates.get_cardinality_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+        let actual_cardinality = relates.get_cardinality(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
             TypeDBAnnotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
             _ => panic!("Expected annotations is not Cardinality"),

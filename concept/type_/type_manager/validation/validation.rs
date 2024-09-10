@@ -29,8 +29,8 @@ pub(crate) fn get_label_or_concept_read_err<'a>(
     type_: impl TypeAPI<'a>,
 ) -> Result<Label<'static>, ConceptReadError> {
     type_
-        .get_label_cloned(snapshot, type_manager)
-        .map(|label| label.into_owned())
+        .get_label(snapshot, type_manager)
+        .map(|label| label.clone().into_owned())
         .map_err(|_| ConceptReadError::CorruptMissingLabelOfType)
 }
 

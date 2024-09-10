@@ -64,7 +64,7 @@ pub enum ConstraintDescription {
 }
 
 impl ConstraintDescription {
-    pub(crate) fn from_annotation(annotation: Annotation) -> HashSet<Self> {
+    pub fn from_annotation(annotation: Annotation) -> HashSet<Self> {
         static KEY_CONSTRAINTS: [ConstraintDescription; 2] = [
             ConstraintDescription::Unique(AnnotationKey::UNIQUE),
             ConstraintDescription::Cardinality(AnnotationKey::CARDINALITY),

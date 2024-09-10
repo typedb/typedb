@@ -34,8 +34,8 @@ pub(crate) fn get_label_or_data_err<'a>(
     type_: impl TypeAPI<'a>,
 ) -> Result<Label<'static>, DataValidationError> {
     type_
-        .get_label_cloned(snapshot, type_manager)
-        .map(|label| label.into_owned())
+        .get_label(snapshot, type_manager)
+        .map(|label| label.clone().into_owned())
         .map_err(DataValidationError::ConceptRead)
 }
 

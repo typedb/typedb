@@ -19,6 +19,7 @@ use crate::{
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
+use crate::params::{Constraint, ConstraintCategory};
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) set plays: {type_label}{may_error}")]
@@ -195,7 +196,7 @@ pub async fn get_plays_unset_annotation(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get annotations {contains_or_doesnt}: {annotation}"
+    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}"
 )]
 pub async fn get_plays_annotations_contains(
     context: &mut Context,
@@ -203,47 +204,68 @@ pub async fn get_plays_annotations_contains(
     type_label: Label,
     role_label: Label,
     contains_or_doesnt: ContainsOrDoesnt,
-    annotation: Annotation,
+    constraint: Constraint,
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
+
+        let expected_constraint = constraint.into_typedb(None);
         let actual_contains = plays
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
-            .contains_key(&annotation.into_typedb(None).try_into().unwrap());
+            .find(|constraint| &constraint.description() == &expected_constraint)
+            .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get annotation categories {contains_or_doesnt}: {annotation_category}"
+    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get constraint categories {contains_or_doesnt}: {constraint_category}"
 )]
-pub async fn get_plays_annotation_categories_contains(
+pub async fn get_plays_constraint_categories_contains(
     context: &mut Context,
     root_label: RootLabel,
     type_label: Label,
     role_label: Label,
     contains_or_doesnt: ContainsOrDoesnt,
-    annotation_category: AnnotationCategory,
+    constraint_category: ConstraintCategory,
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
+
+        let expected_constraint_category = constraint_category.into_typedb();
         let actual_contains = plays
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
-            .iter()
-            .map(|(annotation, _)| {
-                <PlaysAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
-            })
-            .contains(&annotation_category.into_typedb());
+            .find(|constraint| constraint.category() == expected_constraint_category)
+            .is_some();
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get constraints {is_empty_or_not}")]
+pub async fn get_owns_constraints_is_empty(
+    context: &mut Context,
+    root_label: RootLabel,
+    type_label: Label,
+    role_label: Label,
+    is_empty_or_not: IsEmptyOrNot,
+) {
+    let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    with_read_tx!(context, |tx| {
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+        let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
+        let actual_is_empty = plays.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+        is_empty_or_not.check(actual_is_empty);
     });
 }
 
@@ -273,21 +295,31 @@ pub async fn get_plays_declared_annotations_contains(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get annotations {is_empty_or_not}")]
-pub async fn get_owns_annotations_is_empty(
+#[step(
+    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation_category}"
+)]
+pub async fn get_plays_declared_annotation_categories_contains(
     context: &mut Context,
     root_label: RootLabel,
     type_label: Label,
     role_label: Label,
-    is_empty_or_not: IsEmptyOrNot,
+    contains_or_doesnt: ContainsOrDoesnt,
+    annotation_category: AnnotationCategory,
 ) {
     let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
-        let actual_is_empty = plays.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
-        is_empty_or_not.check(actual_is_empty);
+        let actual_contains = plays
+            .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
+            .unwrap()
+            .iter()
+            .map(|annotation| {
+                <PlaysAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
+            })
+            .contains(&annotation_category.into_typedb());
+        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
 
@@ -325,7 +357,7 @@ pub async fn get_plays_cardinality(
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
-        let actual_cardinality = plays.get_cardinality_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+        let actual_cardinality = plays.get_cardinality(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
             annotation::Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
             _ => panic!("Expected annotations is not Cardinality"),

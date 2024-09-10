@@ -829,15 +829,17 @@ fn check_can_redefine_sub<'a, T: TypeAPI<'a>>(
         DefinableStatus::DoesNotExist => Err(RedefineError::TypeSubIsNotDefined {
             label: label.clone().into_owned(),
             new_supertype_label: new_supertype
-                .get_label_cloned(snapshot, type_manager)
+                .get_label(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                .clone()
                 .into_owned(),
         }),
         DefinableStatus::ExistsSame(_) => Err(RedefineError::TypeSubRemainsSame {
             label: label.clone().into_owned(),
             supertype_label: new_supertype
-                .get_label_cloned(snapshot, type_manager)
+                .get_label(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                .clone()
                 .into_owned(),
         }),
         DefinableStatus::ExistsDifferent(_) => Ok(()),

@@ -843,13 +843,14 @@ fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
         DefinableStatus::ExistsSame(_) => Ok(false),
         DefinableStatus::ExistsDifferent(existing) => Err(DefineError::TypeSubAlreadyDefinedButDifferent {
             label: label.clone().into_owned(),
-            supertype: new_supertype
-                .get_label_cloned(snapshot, type_manager)
-                .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?
-                .into_owned(),
-            existing_supertype: existing
-                .get_label_cloned(snapshot, type_manager)
-                .map_err(|typedb_source| DefineError::UnexpectedConceptRead { source })?
+            supertype_label: new_supertype
+                .get_label(snapshot, type_manager)
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                .clone().into_owned(),
+            existing_supertype_label: existing
+                .get_label(snapshot, type_manager)
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                .clone()
                 .into_owned(),
         }),
     }
@@ -980,8 +981,8 @@ typedb_error!(
             13,
             "Defining supertype of type '{label}' to '{supertype}' failed since it already has supertype '{existing_supertype}'. Try redefine instead?",
             label: Label<'static>,
-            supertype: Label<'static>,
-            existing_supertype: Label<'static>
+            supertype_label: Label<'static>,
+            existing_supertype_label: Label<'static>
         ),
         // TODO: remove/specialise wording, since we can only override relates now! Also, need the label that is the overriding type should be provided - need all 4: <x> relates <y> as <z> failed because <q> exists
         RelatesSpecialiseAlreadyDefinedButDifferent(

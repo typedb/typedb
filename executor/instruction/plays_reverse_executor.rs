@@ -149,7 +149,7 @@ impl PlaysReverseExecutor {
                 };
 
                 let type_manager = thing_manager.type_manager();
-                let plays = role.get_plays(&**snapshot, type_manager)?.values().cloned().collect_vec();
+                let plays = role.get_plays(&**snapshot, type_manager)?.into_iter().cloned().collect_vec(); // TODO: DO not recollect!
 
                 let iterator = plays.into_iter().sorted_by_key(|plays| plays.player()).map(Ok as _);
                 let as_tuples: PlaysReverseBoundedSortedPlayer = NarrowingTupleIterator(

@@ -24,6 +24,7 @@ use crate::{
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     util, with_type, Context,
 };
+use crate::params::{Constraint, ConstraintCategory};
 
 #[macro_export]
 macro_rules! with_type {
@@ -245,83 +246,62 @@ pub async fn type_unset_annotation(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get annotations {contains_or_doesnt}: {annotation}")]
-pub async fn type_annotations_contain(
+#[step(expr = "{root_label}\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}")]
+pub async fn type_constraints_contain(
     context: &mut Context,
     root_label: RootLabel,
     type_label: Label,
     contains_or_doesnt: ContainsOrDoesnt,
-    annotation: Annotation,
+    constraint: Constraint,
 ) {
     with_read_tx!(context, |tx| {
         with_type_and_value_type!(tx, root_label, type_label, type_, value_type, {
+            let expected_constraint = constraint.into_typedb(value_type);
             let actual_contains = type_
                 .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
-                .contains_key(&annotation.into_typedb(value_type).try_into().unwrap());
+                .find(|constraint| &constraint.description() == &expected_constraint)
+                .is_some();
             assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
         });
     });
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get annotation categories {contains_or_doesnt}: {annotation_category}")]
-pub async fn type_annotation_categories_contain(
+#[step(expr = "{root_label}\\({type_label}\\) get constraint categories {contains_or_doesnt}: {constraint_category}")]
+pub async fn type_constraint_categories_contain(
     context: &mut Context,
     root_label: RootLabel,
     type_label: Label,
     contains_or_doesnt: ContainsOrDoesnt,
-    annotation_category: AnnotationCategory,
+    constraint_category: ConstraintCategory,
 ) {
     with_read_tx!(context, |tx| {
-        match root_label.into_typedb() {
-            Kind::Attribute => {
-                let type_ = tx
-                    .type_manager
-                    .get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb())
-                    .unwrap()
-                    .unwrap();
-                let actual_contains = type_
-                    .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
-                    .unwrap()
-                    .iter()
-                    .map(|(annotation, _)| {
-                        <AttributeTypeAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
-                    })
-                    .contains(&annotation_category.into_typedb());
-                assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
-            }
-            Kind::Entity => {
-                let type_ =
-                    tx.type_manager.get_entity_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
-                let actual_contains = type_
-                    .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
-                    .unwrap()
-                    .iter()
-                    .map(|(annotation, _)| {
-                        <EntityTypeAnnotation as Into<annotation::Annotation>>::into(*annotation).category()
-                    })
-                    .contains(&annotation_category.into_typedb());
-                assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
-            }
-            Kind::Relation => {
-                let type_ = tx
-                    .type_manager
-                    .get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb())
-                    .unwrap()
-                    .unwrap();
-                let actual_contains = type_
-                    .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
-                    .unwrap()
-                    .iter()
-                    .map(|(annotation, _)| {
-                        <RelationTypeAnnotation as Into<annotation::Annotation>>::into(*annotation).category()
-                    })
-                    .contains(&annotation_category.into_typedb());
-                assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
-            }
-            Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),
-        };
+        with_type!(tx, root_label, type_label, type_, {
+            let expected_constraint_category = constraint_category.into_typedb();
+            let actual_contains = type_
+                .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
+                .unwrap()
+                .find(|constraint| constraint.category() == expected_constraint_category)
+                .is_some();
+            assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+        });
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) get constraints {is_empty_or_not}")]
+pub async fn type_constraints_is_empty(
+    context: &mut Context,
+    root_label: RootLabel,
+    type_label: Label,
+    is_empty_or_not: IsEmptyOrNot,
+) {
+    with_read_tx!(context, |tx| {
+        with_type!(tx, root_label, type_label, type_, {
+            let actual_is_empty = type_.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+            is_empty_or_not.check(actual_is_empty);
+        });
     });
 }
 
@@ -346,18 +326,63 @@ pub async fn type_declared_annotations_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get annotations {is_empty_or_not}")]
-pub async fn type_annotations_is_empty(
+#[step(expr = "{root_label}\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation_category}")]
+pub async fn type_declared_annotation_categories_contain(
     context: &mut Context,
     root_label: RootLabel,
     type_label: Label,
-    is_empty_or_not: IsEmptyOrNot,
+    contains_or_doesnt: ContainsOrDoesnt,
+    annotation_category: AnnotationCategory,
 ) {
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
-            let actual_is_empty = type_.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
-            is_empty_or_not.check(actual_is_empty);
-        });
+        match root_label.into_typedb() {
+            Kind::Attribute => {
+                let type_ = tx
+                    .type_manager
+                    .get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb())
+                    .unwrap()
+                    .unwrap();
+                let actual_contains = type_
+                    .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
+                    .unwrap()
+                    .iter()
+                    .map(|annotation| {
+                        <AttributeTypeAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
+                    })
+                    .contains(&annotation_category.into_typedb());
+                assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+            }
+            Kind::Entity => {
+                let type_ =
+                    tx.type_manager.get_entity_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+                let actual_contains = type_
+                    .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
+                    .unwrap()
+                    .iter()
+                    .map(|annotation| {
+                        <EntityTypeAnnotation as Into<annotation::Annotation>>::into(*annotation).category()
+                    })
+                    .contains(&annotation_category.into_typedb());
+                assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+            }
+            Kind::Relation => {
+                let type_ = tx
+                    .type_manager
+                    .get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb())
+                    .unwrap()
+                    .unwrap();
+                let actual_contains = type_
+                    .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
+                    .unwrap()
+                    .iter()
+                    .map(|annotation| {
+                        <RelationTypeAnnotation as Into<annotation::Annotation>>::into(*annotation).category()
+                    })
+                    .contains(&annotation_category.into_typedb());
+                assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+            }
+            Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),
+        };
     });
 }
 

@@ -47,7 +47,7 @@ use crate::{
 
 pub mod annotation;
 pub mod attribute_type;
-pub(crate) mod constraint;
+pub mod constraint;
 pub mod entity_type;
 pub mod object_type;
 pub mod owns;
@@ -118,14 +118,6 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
-
-    fn get_label_cloned<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<Label<'m>, ConceptReadError> {
-        self.get_label(snapshot, type_manager).map(|label| label.clone())
-    }
 
     fn get_supertype(
         &self,
