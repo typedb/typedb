@@ -1295,7 +1295,7 @@ _Syntax_:
 
 Functions can be called recursively, as long as negation can be stratified:
 * The set of all defined functions is divided into groups called "strata" which are ordered
-* If a function `F` calls a function `G` if must be a in an equal or higher stratum. Moreover, if `G` appears behind an odd number of `not { ... }` in the body of `F`, then `F` must be in a strictly strictly stratum.
+* If a function `F` calls a function `G` if must be a in an equal or higher stratum. Moreover, if `G` appears behind an odd number of `not { ... }` in the body of `F`, then `F` must be in a strictly higher stratum.
 
 The semantics in this case is computed "stratum by stratum" from lower strata to higher strata. New facts in our type systems ($`t : T`$) are derived in a bottom-up fashion for each stratum separately.
 
