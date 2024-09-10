@@ -4,37 +4,32 @@
 [![CircleCI](https://circleci.com/gh/typedb/typedb/tree/master.svg?style=shield)](https://circleci.com/gh/typedb/typedb/tree/master)
 [![GitHub release](https://img.shields.io/github/release/typedb/typedb.svg)](https://github.com/typedb/typedb/releases/latest)
 [![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=discord&logo=discord&logoColor=ffffff)](https://typedb.com/discord)
-[![Discussion Forum](https://img.shields.io/discourse/https/forum.typedb.com/topics.svg)](https://forum.typedb.com)
+[![Discussion Forum](https://img.shields.io/badge/discourse-forum-blue.svg)](https://forum.typedb.com)
+[![Hosted By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat)](https://cloudsmith.com)
 
 # Introducing TypeDB
 
-TypeDB is a [polymorphic](https://typedb.com/features#polymorphic-queries) database with a [conceptual](https://typedb.com/features#conceptual-modeling) data model, a strong [subtyping](https://typedb.com/features#strong-type-system) system, a symbolic [reasoning](https://typedb.com/features#symbolic-reasoning) engine, and a beautiful and elegant [type-theoretic](https://typedb.com/features#modern-language) language TypeQL.
+**TypeDB** is a next-gen database with a modern programming paradigm that lets you build data applications faster, safer, and more elegantly. Its intuitive and powerful data model unifies the strengths of relational, document and graph databases without their shortcomings. **TypeQL**, its groundbreaking query language, is declarative, functional, and strongly-typed, drastically simplifying data handling and logic. So now, even the most nested and interconnected datasets can be managed with ease. With TypeDB, we’ve reinvented the database for the modern programming era.
+
+## Getting started
+
+- Get started by [installing TypeDB](https://typedb.com/docs/home/install/overview).
+- Explore the basics of TypeDB in our [Quickstart](https://typedb.com/docs/home/quickstart) and [Crash Course](https://typedb.com/docs/home/crash-course).
+- Master TypeDB with [TypeDB Academy](https://typedb.com/docs/academy).
+- Discover more of TypeDB’s unique [Features](https://typedb.com/features).
+- Find further articles and lectures in our [Learning Center](https://typedb.com/learn).
+
+> **IMPORTANT NOTE:** TypeDB & TypeQL are in the process of being rewritten in [Rust](https://www.rust-lang.org). There will be significant refinement to the language, and minor breaks in backwards compatibility. Learn about the changes on our [roadmap blog post](https://typedb.com/blog/typedb-3-roadmap). The biggest change to TypeDB 3.0 will be our storage data structure and architecture that significantly boosts performance. We’re aiming to release 3.0 in the summer this year, along with preliminary benchmarks of TypeDB.
+
+##  Why TypeDB?
+
+* TypeDB was crafted to natively express and combine diverse data features, allowing users to build advanced data models from a set of simple and intuitive building blocks.
+* TypeDB's type system provides safety and flexibility at the same time, which makes both prototyping and building performant, production-ready data applications fast, elegant, and _enjoyable_.
+* With TypeDB, and its query language TypeQL, we envision databases catching up with modern typed programming languages, allowing users to write clear, intuitive, and easy to maintain code.
+* TypeDB comes with a mature ecosystem include language drivers and a graphical user interface: **TypeDB Studio!**
 
 
-## Polymorphic databases
-
-###  Why TypeDB was built
-
-Data frequently exhibits polymorphic features in the form of inheritance hierarchies and interface dependencies. TypeDB was crafted to solve the inability of current database paradigms to natively express these polymorphic features.
-
-- Relational schemas have [no native capability for modeling polymorphic data](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database).
-- Unstructured databases eliminate the schemas entirely, but this [prevents declarative data retrieval](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database).
-- [ORMs work around the fundamental problem](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database) by trading off performance.
-
-
-### Providing full support for polymorphism
-
-<!-- Polymorphism in programming languages and data modeling comes in the form of [interface](https://typedb.com/philosophy#what-defines-a-polymorphic-database), [inheritance](https://typedb.com/philosophy#what-defines-a-polymorphic-database), and [parametric polymorphism](https://typedb.com/philosophy#what-defines-a-polymorphic-database).  -->
-
-In order to fully support polymorphism, a database needs to implement three key components:
-
-- Support for [**polymorphic** **schemas**](https://typedb.com/features#conceptual-modeling) that can express inheritance hierarchies and interface implementations.
-- Implementation of a fully [**variablizable** **query language**](https://typedb.com/features#polymorphic-queries) to support powerful [parametric](https://typedb.com/philosophy#what-defines-a-polymorphic-database) database operations.
-- Integration of an [**inference engine**](https://typedb.com/features#strong-type-system) to interpret variables in the semantic context given by the schema.
-
-
-
-## The TypeDB database
+## Database Fundamentals
 
 ### The schema
 
@@ -70,7 +65,7 @@ mentorship sub relation,
 
 ### The query language
 
-The query language of TypeDB is [TypeQL](‣). The syntax of TypeQL is fully variablizable and provides native support for polymorphic queries. The language is based on [fully declarative and composable](https://typedb.com/features#modern-language) patterns, mirroring the structure of natural language.
+The query language of TypeDB is [TypeQL](https://typedb.com/docs/typeql/overview). The syntax of TypeQL is fully variablizable and provides native support for polymorphic queries. The language is based on [fully declarative and composable](https://typedb.com/features#modern-language) patterns, mirroring the structure of natural language.
 
 ```php
 match $user isa user,
@@ -139,7 +134,7 @@ TypeDB breaks down the patchwork of existing database paradigms into three funda
 ### TypeDB editions
 
 * [TypeDB Cloud](https://cloud.typedb.com) — multi-cloud DBaaS
-* [TypeDB Enterprise](mailto://enterprise@typedb.com) — Enterprise edition of TypeDB
+* [TypeDB Enterprise](mailto://enterprise@typedb.com) — allows you to deploy TypeDB Cloud in your own environment
 * **TypeDB Core** — Open-source edition of TypeDB ← _This repository_
 
 For a comparison of all three editions, see the [Deploy](https://typedb.com/deploy) page on our website.
@@ -194,9 +189,8 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
 If you want to begin your journey with TypeDB, you can explore the following resources:
 
 * More on TypeDB's [features](https://typedb.com/features)
-* In-depth dive into TypeDB's [philosophy](https://typedb.com/philosophy)
-* Our [TypeDB quickstart](https://typedb.com/docs/home/quickstart)
-* [TypeDB in 25 queries](https://typedb.com/docs/home/25-queries)
+* [TypeDB Quickstart](https://typedb.com/docs/home/quickstart) and [Crash Course](https://typedb.com/docs/home/crash-course)
+* [TypeDB Academy](https://typedb.com/docs/academy)
 * **[TypeQL](https://github.com/typedb/typeql)**
 * **[TypeDB Studio](https://github.com/typedb/typedb-studio)**
 
@@ -224,8 +218,13 @@ In the past, TypeDB was enabled by various open-source products and communities 
 [Apache TinkerPop](http://tinkerpop.apache.org), 
 and [JanusGraph](http://janusgraph.org). 
 
+### Package hosting
+Package repository hosting is graciously provided by  [Cloudsmith](https://cloudsmith.com).
+Cloudsmith is the only fully hosted, cloud-native, universal package management solution, that
+enables your organization to create, store and share packages in any format, to any place, with total
+confidence.
 
 ## Licensing
 
 It's released under the Mozilla Public License 2.0 (MPL 2.0).
-For license information, please see [LICENSE](https://github.com/typedb/typedb/blob/master/LICENSE).
+For license information, please see [LICENSE](https://github.com/typedb/typedb/blob/master/LICENSE). 
