@@ -31,7 +31,7 @@ macro_rules! impl_cache_getter {
             type CacheType = $cache_type;
             fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: $inner_type<'a>) -> &'cache Self::CacheType {
                 use ::encoding::graph::Typed;
-                use $crate::type_::TypeAPI;
+                use encoding::graph::type_::vertex::TypeVertexEncoding;
                 let as_u16 = type_.vertex().type_id_().as_u16();
                 type_cache.$member_name[as_u16 as usize].as_ref().unwrap()
             }

@@ -10,7 +10,7 @@ use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
         thing::{vertex_object::ObjectVertex, ThingVertex},
-        type_::vertex::PrefixedTypeVertexEncoding,
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
     layout::prefix::Prefix,

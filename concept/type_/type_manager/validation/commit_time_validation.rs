@@ -418,7 +418,7 @@ impl CommitTimeValidation {
             }
             if declared_constraint_descriptions.clone().contains(&constraint.description()) {
                 validation_errors.push(SchemaValidationError::CannotRedeclareConstraintOnSubtypeWithoutSpecialisation(
-                    T::ROOT_KIND,
+                    T::KIND,
                     get_label_or_concept_read_err(snapshot, type_manager, type_.clone())?,
                     get_label_or_concept_read_err(snapshot, type_manager, constraint.source())?,
                     constraint.description(),

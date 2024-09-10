@@ -17,7 +17,7 @@ use encoding::{
             vertex_object::ObjectVertex,
             ThingVertex,
         },
-        type_::vertex::PrefixedTypeVertexEncoding,
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
     layout::prefix::Prefix,

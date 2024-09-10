@@ -2340,7 +2340,7 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         type_: T,
     ) -> Result<bool, ConceptReadError> {
-        match T::ROOT_KIND {
+        match T::KIND {
             Kind::Entity => {
                 let entity_type = EntityType::new(type_.vertex().into_owned());
                 let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone().into_owned());

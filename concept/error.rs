@@ -46,7 +46,6 @@ impl Error for ConceptError {
 
 #[derive(Debug, Clone)]
 pub enum ConceptWriteError {
-    RootModification,
     SnapshotGet { source: SnapshotGetError },
     SnapshotIterate { source: Arc<SnapshotIteratorError> },
     ConceptRead { source: ConceptReadError },
@@ -77,7 +76,6 @@ impl Error for ConceptWriteError {
             Self::Encoding { source, .. } => Some(source),
             Self::SchemaValidation { source, .. } => Some(source),
             Self::DataValidation { source, .. } => Some(source),
-            Self::RootModification { .. } => None,
             Self::Annotation { .. } => None,
             Self::SetHasOrderedOwnsUnordered { .. } => None,
             Self::SetPlayersOrderedRoleUnordered { .. } => None,

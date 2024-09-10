@@ -109,7 +109,7 @@ impl<'a> TypeVertexPropertyEncoding<'a> for Label<'a> {
         Label::parse_from_bytes(string_bytes)
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::from(self.scoped_name().bytes())))
     }
 }

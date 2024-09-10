@@ -11,15 +11,15 @@ use macro_rules_attribute::apply;
 
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
-    generic_step, params,
-    params::{check_boolean, ContainsOrDoesnt, ExistsOrDoesnt, Label, MayError, Optional, ValueType},
+    generic_step,
+    params::{self, check_boolean},
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
 
 #[apply(generic_step)]
 #[step(expr = "create struct: {type_label}{may_error}")]
-pub async fn struct_create(context: &mut Context, type_label: Label, may_error: MayError) {
+pub async fn struct_create(context: &mut Context, type_label: params::Label, may_error: params::MayError) {
     with_schema_tx!(context, |tx| {
         may_error.check_concept_write_without_read_errors(&tx.type_manager.create_struct(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
@@ -30,7 +30,7 @@ pub async fn struct_create(context: &mut Context, type_label: Label, may_error: 
 
 #[apply(generic_step)]
 #[step(expr = "delete struct: {type_label}{may_error}")]
-pub async fn struct_delete(context: &mut Context, type_label: Label, may_error: MayError) {
+pub async fn struct_delete(context: &mut Context, type_label: params::Label, may_error: params::MayError) {
     with_schema_tx!(context, |tx| {
         if let Some(definition_key) = &tx
             .type_manager
@@ -50,7 +50,7 @@ pub async fn struct_delete(context: &mut Context, type_label: Label, may_error: 
 
 #[apply(generic_step)]
 #[step(expr = "struct\\({type_label}\\) {exists_or_doesnt}")]
-pub async fn struct_exists(context: &mut Context, type_label: Label, exists: ExistsOrDoesnt) {
+pub async fn struct_exists(context: &mut Context, type_label: params::Label, exists: params::ExistsOrDoesnt) {
     with_read_tx!(context, |tx| {
         let definition_key_opt = &tx
             .type_manager
@@ -72,11 +72,11 @@ pub async fn struct_exists(context: &mut Context, type_label: Label, exists: Exi
 )]
 pub async fn struct_create_field_with_value_type(
     context: &mut Context,
-    type_label: Label,
-    field_label: Label,
-    value_type: ValueType,
-    optional: Optional,
-    may_error: MayError,
+    type_label: params::Label,
+    field_label: params::Label,
+    value_type: params::ValueType,
+    optional: params::Optional,
+    may_error: params::MayError,
 ) {
     with_schema_tx!(context, |tx| {
         let definition_key = &tx
@@ -97,7 +97,12 @@ pub async fn struct_create_field_with_value_type(
 
 #[apply(generic_step)]
 #[step(expr = "struct\\({type_label}\\) delete field: {type_label}{may_error}")]
-pub async fn struct_delete_field(context: &mut Context, type_label: Label, field_label: Label, may_error: MayError) {
+pub async fn struct_delete_field(
+    context: &mut Context,
+    type_label: params::Label,
+    field_label: params::Label,
+    may_error: params::MayError,
+) {
     with_schema_tx!(context, |tx| {
         let definition_key = &tx
             .type_manager
@@ -117,8 +122,8 @@ pub async fn struct_delete_field(context: &mut Context, type_label: Label, field
 #[step(expr = "struct\\({type_label}\\) get fields {contains_or_doesnt}:")]
 pub async fn struct_get_fields_contains_or_doesnt(
     context: &mut Context,
-    type_label: Label,
-    contains_or_doesnt: ContainsOrDoesnt,
+    type_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
     step: &Step,
 ) {
     let expected_fields: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect();
@@ -140,9 +145,9 @@ pub async fn struct_get_fields_contains_or_doesnt(
 #[step(expr = "struct\\({type_label}\\) get field\\({type_label}\\) get value type: {value_type}")]
 pub async fn struct_get_field_get_value_type(
     context: &mut Context,
-    type_label: Label,
-    field_label: Label,
-    value_type: ValueType,
+    type_label: params::Label,
+    field_label: params::Label,
+    value_type: params::ValueType,
 ) {
     with_read_tx!(context, |tx| {
         let definition_key = &tx
@@ -166,8 +171,8 @@ pub async fn struct_get_field_get_value_type(
 #[step(expr = "struct\\({type_label}\\) get field\\({type_label}\\) is optional: {boolean}")]
 pub async fn struct_get_field_is_optional(
     context: &mut Context,
-    type_label: Label,
-    field_label: Label,
+    type_label: params::Label,
+    field_label: params::Label,
     is_optional: params::Boolean,
 ) {
     with_read_tx!(context, |tx| {

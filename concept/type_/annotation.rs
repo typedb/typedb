@@ -657,7 +657,7 @@ macro_rules! empty_type_vertex_property_encoding {
                 $property
             }
 
-            fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+            fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
                 None
             }
         }
@@ -675,7 +675,7 @@ macro_rules! unreachable_type_vertex_property_encoding {
                 unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
             }
 
-            fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+            fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
                 unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
             }
         }
@@ -700,7 +700,7 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
         AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::copy(self.regex().as_bytes())))
     }
 }
@@ -713,8 +713,8 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRange {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 
@@ -726,8 +726,8 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationValues {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 
@@ -741,7 +741,7 @@ macro_rules! empty_type_edge_property_encoder {
                 $property
             }
 
-            fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+            fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
                 None
             }
         }
@@ -759,7 +759,7 @@ macro_rules! unreachable_type_edge_property_encoder {
                 unreachable!("TypeEdgePropertyEncoding is not be implemented for {}", stringify!($property))
             }
 
-            fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+            fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
                 unreachable!("TypeEdgePropertyEncoding is not be implemented for {}", stringify!($property))
             }
         }
@@ -782,8 +782,8 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 
@@ -795,7 +795,7 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
         AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::copy(self.regex().as_bytes())))
     }
 }
@@ -808,8 +808,8 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 
@@ -821,8 +821,8 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationValues {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 

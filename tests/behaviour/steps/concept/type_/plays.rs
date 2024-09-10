@@ -6,9 +6,7 @@
 
 use std::sync::Arc;
 
-use concept::type_::{
-    annotation, constraint::Constraint as TypeDBConstraint, plays::PlaysAnnotation, Capability, PlayerAPI, TypeAPI,
-};
+use concept::type_::{annotation, constraint::Constraint, plays::PlaysAnnotation, Capability, PlayerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
@@ -17,24 +15,20 @@ use super::thing_type::get_as_object_type;
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
-    params::{
-        Annotation, AnnotationCategory, Constraint, ConstraintCategory, ContainsOrDoesnt, IsEmptyOrNot, Label,
-        MayError, RootLabel,
-    },
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) set plays: {type_label}{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) set plays: {type_label}{may_error}")]
 pub async fn set_plays(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    role_label: Label,
-    may_error: MayError,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -49,15 +43,15 @@ pub async fn set_plays(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) unset plays: {type_label}{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) unset plays: {type_label}{may_error}")]
 pub async fn unset_plays(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    role_label: Label,
-    may_error: MayError,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -72,16 +66,16 @@ pub async fn unset_plays(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get plays {contains_or_doesnt}:")]
+#[step(expr = "{kind}\\({type_label}\\) get plays {contains_or_doesnt}:")]
 pub async fn get_plays_contain(
     context: &mut Context,
     step: &Step,
-    root_label: RootLabel,
-    type_label: Label,
-    contains: ContainsOrDoesnt,
+    kind: params::Kind,
+    type_label: params::Label,
+    contains: params::ContainsOrDoesnt,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
             .get_plays(tx.snapshot.as_ref(), &tx.type_manager)
@@ -102,16 +96,16 @@ pub async fn get_plays_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get declared plays {contains_or_doesnt}:")]
+#[step(expr = "{kind}\\({type_label}\\) get declared plays {contains_or_doesnt}:")]
 pub async fn get_declared_plays_contain(
     context: &mut Context,
     step: &Step,
-    root_label: RootLabel,
-    type_label: Label,
-    contains: ContainsOrDoesnt,
+    kind: params::Kind,
+    type_label: params::Label,
+    contains: params::ContainsOrDoesnt,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
             .get_plays_declared(tx.snapshot.as_ref(), &tx.type_manager)
@@ -132,14 +126,14 @@ pub async fn get_declared_plays_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get plays {is_empty_or_not}")]
+#[step(expr = "{kind}\\({type_label}\\) get plays {is_empty_or_not}")]
 pub async fn get_plays_is_empty(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    is_empty_or_not: IsEmptyOrNot,
+    kind: params::Kind,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_is_empty = object_type.get_plays(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
@@ -147,16 +141,16 @@ pub async fn get_plays_is_empty(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) set annotation: {annotation}{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) set annotation: {annotation}{may_error}")]
 pub async fn get_plays_set_annotation(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    role_label: Label,
-    annotation: Annotation,
-    may_error: MayError,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    annotation: params::Annotation,
+    may_error: params::MayError,
 ) {
-    let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -173,17 +167,17 @@ pub async fn get_plays_set_annotation(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) unset annotation: {annotation_category}{may_error}"
+    expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) unset annotation: {annotation_category}{may_error}"
 )]
 pub async fn get_plays_unset_annotation(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    role_label: Label,
-    annotation_category: AnnotationCategory,
-    may_error: MayError,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    annotation_category: params::AnnotationCategory,
+    may_error: params::MayError,
 ) {
-    let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -200,17 +194,17 @@ pub async fn get_plays_unset_annotation(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}"
+    expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}"
 )]
 pub async fn get_plays_annotations_contains(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    role_label: Label,
-    contains_or_doesnt: ContainsOrDoesnt,
-    constraint: Constraint,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    constraint: params::Constraint,
 ) {
-    let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -229,17 +223,17 @@ pub async fn get_plays_annotations_contains(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get constraint categories {contains_or_doesnt}: {constraint_category}"
+    expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get constraint categories {contains_or_doesnt}: {constraint_category}"
 )]
 pub async fn get_plays_constraint_categories_contains(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    role_label: Label,
-    contains_or_doesnt: ContainsOrDoesnt,
-    constraint_category: ConstraintCategory,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    constraint_category: params::ConstraintCategory,
 ) {
-    let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -257,15 +251,15 @@ pub async fn get_plays_constraint_categories_contains(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get constraints {is_empty_or_not}")]
+#[step(expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get constraints {is_empty_or_not}")]
 pub async fn get_owns_constraints_is_empty(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    role_label: Label,
-    is_empty_or_not: IsEmptyOrNot,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -277,17 +271,17 @@ pub async fn get_owns_constraints_is_empty(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get declared annotations {contains_or_doesnt}: {annotation}"
+    expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get declared annotations {contains_or_doesnt}: {annotation}"
 )]
 pub async fn get_plays_declared_annotations_contains(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    role_label: Label,
-    contains_or_doesnt: ContainsOrDoesnt,
-    annotation: Annotation,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    annotation: params::Annotation,
 ) {
-    let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -302,17 +296,17 @@ pub async fn get_plays_declared_annotations_contains(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation_category}"
+    expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation_category}"
 )]
 pub async fn get_plays_declared_annotation_categories_contains(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    role_label: Label,
-    contains_or_doesnt: ContainsOrDoesnt,
-    annotation_category: AnnotationCategory,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    annotation_category: params::AnnotationCategory,
 ) {
-    let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -328,15 +322,15 @@ pub async fn get_plays_declared_annotation_categories_contains(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get declared annotations {is_empty_or_not}")]
+#[step(expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get declared annotations {is_empty_or_not}")]
 pub async fn get_owns_declared_annotations_is_empty(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    role_label: Label,
-    is_empty_or_not: IsEmptyOrNot,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -348,15 +342,15 @@ pub async fn get_owns_declared_annotations_is_empty(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get cardinality: {annotation}")]
+#[step(expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get cardinality: {annotation}")]
 pub async fn get_plays_cardinality(
     context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    role_label: Label,
-    cardinality_annotation: Annotation,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    cardinality_annotation: params::Annotation,
 ) {
-    let player_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();

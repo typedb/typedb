@@ -23,15 +23,15 @@ use crate::{
 };
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) set owns: {type_label}{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) set owns: {type_label}{may_error}")]
 pub async fn set_owns_unordered(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attribute_type_label: params::Label,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type = tx
             .type_manager
@@ -50,15 +50,15 @@ pub async fn set_owns_unordered(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) set owns: {type_label}[]{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) set owns: {type_label}[]{may_error}")]
 pub async fn set_owns_ordered(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attribute_type_label: params::Label,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type = tx
             .type_manager
@@ -77,15 +77,15 @@ pub async fn set_owns_ordered(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) unset owns: {type_label}{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) unset owns: {type_label}{may_error}")]
 pub async fn unset_owns(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attribute_type_label: params::Label,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type = tx
             .type_manager
@@ -103,16 +103,16 @@ pub async fn unset_owns(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) set annotation: {annotation}{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) set annotation: {annotation}{may_error}")]
 pub async fn get_owns_set_annotation(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     annotation: params::Annotation,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -130,18 +130,16 @@ pub async fn get_owns_set_annotation(
 }
 
 #[apply(generic_step)]
-#[step(
-    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) unset annotation: {annotation_category}{may_error}"
-)]
+#[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) unset annotation: {annotation_category}{may_error}")]
 pub async fn get_owns_unset_annotation(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     annotation_category: params::AnnotationCategory,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -157,18 +155,16 @@ pub async fn get_owns_unset_annotation(
 }
 
 #[apply(generic_step)]
-#[step(
-    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}"
-)]
+#[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}")]
 pub async fn get_owns_constraints_contains(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     contains_or_doesnt: params::ContainsOrDoesnt,
     constraint: params::Constraint,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -189,17 +185,17 @@ pub async fn get_owns_constraints_contains(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get constraints categories {contains_or_doesnt}: {constraint_category}"
+    expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get constraints categories {contains_or_doesnt}: {constraint_category}"
 )]
 pub async fn get_owns_constraints_categories_contains(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     contains_or_doesnt: params::ContainsOrDoesnt,
     constraint_category: params::ConstraintCategory,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -217,15 +213,15 @@ pub async fn get_owns_constraints_categories_contains(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get constraints {is_empty_or_not}")]
+#[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get constraints {is_empty_or_not}")]
 pub async fn get_owns_constraints_is_empty(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -238,17 +234,17 @@ pub async fn get_owns_constraints_is_empty(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get declared annotations {contains_or_doesnt}: {annotation}"
+    expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get declared annotations {contains_or_doesnt}: {annotation}"
 )]
 pub async fn get_owns_declared_annotations_contains(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     contains_or_doesnt: params::ContainsOrDoesnt,
     annotation: params::Annotation,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -265,17 +261,17 @@ pub async fn get_owns_declared_annotations_contains(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation_category}"
+    expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation_category}"
 )]
 pub async fn get_owns_declared_annotation_categories_contains(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     contains_or_doesnt: params::ContainsOrDoesnt,
     annotation_category: params::AnnotationCategory,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -293,15 +289,15 @@ pub async fn get_owns_declared_annotation_categories_contains(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get declared annotations {is_empty_or_not}")]
+#[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get declared annotations {is_empty_or_not}")]
 pub async fn get_owns_declared_annotations_is_empty(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -313,15 +309,15 @@ pub async fn get_owns_declared_annotations_is_empty(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get cardinality: {annotation}")]
+#[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get cardinality: {annotation}")]
 pub async fn get_owns_cardinality(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     cardinality_annotation: params::Annotation,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -336,16 +332,16 @@ pub async fn get_owns_cardinality(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns {contains_or_doesnt}:")]
+#[step(expr = "{kind}\\({type_label}\\) get owns {contains_or_doesnt}:")]
 pub async fn get_owns_contain(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     contains: params::ContainsOrDoesnt,
     step: &Step,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
             .get_owns(tx.snapshot.as_ref(), &tx.type_manager)
@@ -365,14 +361,14 @@ pub async fn get_owns_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns {is_empty_or_not}")]
+#[step(expr = "{kind}\\({type_label}\\) get owns {is_empty_or_not}")]
 pub async fn get_owns_is_empty(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_is_empty = object_type.get_owns(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
@@ -380,16 +376,16 @@ pub async fn get_owns_is_empty(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get declared owns {contains_or_doesnt}:")]
+#[step(expr = "{kind}\\({type_label}\\) get declared owns {contains_or_doesnt}:")]
 pub async fn get_declared_owns_contain(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     contains: params::ContainsOrDoesnt,
     step: &Step,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
             .get_owns_declared(tx.snapshot.as_ref(), &tx.type_manager)
@@ -409,15 +405,15 @@ pub async fn get_declared_owns_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get label: {type_label}")]
+#[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get label: {type_label}")]
 pub async fn get_owns_get_label(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     expected_label: params::Label,
 ) {
-    let owner = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let owner = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -434,16 +430,16 @@ pub async fn get_owns_get_label(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) set ordering: {ordering}{may_error}")]
+#[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) set ordering: {ordering}{may_error}")]
 pub async fn get_owns_set_ordering(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     ordering: params::Ordering,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -459,15 +455,15 @@ pub async fn get_owns_set_ordering(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get ordering: {ordering}")]
+#[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get ordering: {ordering}")]
 pub async fn get_owns_get_ordering(
     context: &mut Context,
-    root_label: params::RootLabel,
+    kind: params::Kind,
     type_label: params::Label,
     attr_type_label: params::Label,
     ordering: params::Ordering,
 ) {
-    let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();

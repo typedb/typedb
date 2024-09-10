@@ -1403,7 +1403,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, type_.clone()).is_ok());
 
-        match T::ROOT_KIND {
+        match T::KIND {
             Kind::Entity | Kind::Attribute => {
                 OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
                     .map_err(|source| ConceptWriteError::SchemaValidation { source })?;

@@ -140,6 +140,8 @@ pub trait TypeVertexEncoding<'a>: Sized {
         Self::from_vertex(TypeVertex::new(bytes))
     }
 
+    fn vertex(&self) -> TypeVertex<'_>;
+
     fn into_vertex(self) -> TypeVertex<'a>;
 }
 

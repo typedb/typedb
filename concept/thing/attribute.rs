@@ -16,7 +16,7 @@ use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
         thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex, ThingVertex},
-        type_::vertex::PrefixedTypeVertexEncoding,
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
     layout::prefix::Prefix,

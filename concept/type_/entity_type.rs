@@ -75,6 +75,10 @@ impl<'a> TypeVertexEncoding<'a> for EntityType<'a> {
         }
     }
 
+    fn vertex(&self) -> TypeVertex<'_> {
+        self.vertex.as_reference()
+    }
+
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }
@@ -84,10 +88,6 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
     type SelfStatic = EntityType<'static>;
     fn new(vertex: TypeVertex<'a>) -> EntityType<'a> {
         Self::from_vertex(vertex).unwrap()
-    }
-
-    fn vertex(&self) -> TypeVertex<'_> {
-        self.vertex.as_reference()
     }
 
     fn is_abstract(
@@ -156,7 +156,7 @@ impl<'a> ObjectTypeAPI<'a> for EntityType<'a> {
 
 impl<'a> KindAPI<'a> for EntityType<'a> {
     type AnnotationType = EntityTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Entity;
+    const KIND: Kind = Kind::Entity;
 
     fn get_annotations_declared<'m>(
         &self,

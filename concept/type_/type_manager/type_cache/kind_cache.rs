@@ -11,7 +11,7 @@ use encoding::{
     graph::{
         type_::{
             edge::TypeEdge,
-            vertex::{PrefixedTypeVertexEncoding, TypeVertex},
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
         },
         Typed,
     },

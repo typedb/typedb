@@ -7,7 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
+    graph::type_::{edge::TypeEdgeEncoding, vertex::TypeVertexEncoding, CapabilityKind},
     layout::prefix::Prefix,
 };
 use primitive::maybe_owns::MaybeOwns;

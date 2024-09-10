@@ -307,18 +307,18 @@ impl FromStr for Label {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "root_label", regex = r"(attribute|entity|relation)")]
-pub(crate) struct RootLabel {
+#[param(name = "kind", regex = r"(attribute|entity|relation)")]
+pub(crate) struct Kind {
     kind: TypeDBTypeKind,
 }
 
-impl RootLabel {
+impl Kind {
     pub fn into_typedb(&self) -> TypeDBTypeKind {
         self.kind
     }
 }
 
-impl FromStr for RootLabel {
+impl FromStr for Kind {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let kind = match s {
@@ -327,17 +327,17 @@ impl FromStr for RootLabel {
             "relation" => TypeDBTypeKind::Relation,
             _ => unreachable!(),
         };
-        Ok(RootLabel { kind })
+        Ok(Kind { kind })
     }
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "object_root_label", regex = r"(entity|relation|entities|relations)")]
-pub(crate) struct ObjectRootLabel {
+#[param(name = "object_kind", regex = r"(entity|relation|entities|relations)")]
+pub(crate) struct ObjectKind {
     kind: TypeDBTypeKind,
 }
 
-impl ObjectRootLabel {
+impl ObjectKind {
     pub fn into_typedb(&self) -> TypeDBTypeKind {
         self.kind
     }
@@ -346,12 +346,12 @@ impl ObjectRootLabel {
         match self.kind {
             TypeDBTypeKind::Entity => assert_matches!(object, ObjectType::Entity(_)),
             TypeDBTypeKind::Relation => assert_matches!(object, ObjectType::Relation(_)),
-            _ => unreachable!("an ObjectRootLabel contains a non-object kind: {:?}", self.kind),
+            _ => unreachable!("an ObjectKind contains a non-object kind: {:?}", self.kind),
         }
     }
 }
 
-impl FromStr for ObjectRootLabel {
+impl FromStr for ObjectKind {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let kind = match s {
@@ -364,8 +364,8 @@ impl FromStr for ObjectRootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "root_label_extended", regex = r"(attribute|entity|relation|role|object)")]
-pub(crate) enum RootLabelExtended {
+#[param(name = "kind_extended", regex = r"(attribute|entity|relation|role|object)")]
+pub(crate) enum KindExtended {
     Attribute,
     Entity,
     Relation,
@@ -373,7 +373,7 @@ pub(crate) enum RootLabelExtended {
     Object,
 }
 
-impl FromStr for RootLabelExtended {
+impl FromStr for KindExtended {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
@@ -382,7 +382,7 @@ impl FromStr for RootLabelExtended {
             "relation" => Self::Relation,
             "role" => Self::Role,
             "object" => Self::Object,
-            invalid => return Err(format!("Invalid `RootLabelExtended`: {invalid}")),
+            invalid => return Err(format!("Invalid `KindExtended`: {invalid}")),
         })
     }
 }
