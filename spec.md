@@ -15,6 +15,7 @@
 * relates abstract
 * owns order in match semantics
 * "overwrite"/override -> specialization
+* reduce in fetch returning single value using curved brackets ()
 -->
 
 **Table of contents**
