@@ -382,8 +382,6 @@ impl IntersectionExecutor {
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.output.is_none());
-        // TODO: this may not have to reopen iterators
-        self.may_create_intersection_iterators(snapshot, thing_manager)?;
         self.may_compute_next_batch(snapshot, thing_manager)?;
         Ok(self.output.take())
     }
