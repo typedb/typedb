@@ -101,6 +101,14 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         }
         // Advanced TODO: Copying upstream binary constraints as schema constraints.
         self.seed_types_impl(&mut tig, context, &BTreeMap::new())?;
+
+        debug_assert!({
+            conjunction.constraints().iter()
+                .flat_map(|constraint| constraint.ids())
+                .dedup()
+                .all(|id| tig.vertices.contains_key(&id))
+        });
+
         Ok(tig)
     }
 

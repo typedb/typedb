@@ -6,13 +6,7 @@
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
-use typeql::{
-    expression::{FunctionCall, FunctionName},
-    statement::{comparison::ComparisonStatement, Assignment, AssignmentPattern, InIterable},
-    token::Kind,
-    type_::NamedType,
-    Function, ScopedLabel, TypeRef, TypeRefAny,
-};
+use typeql::{expression::{FunctionCall, FunctionName}, statement::{comparison::ComparisonStatement, Assignment, AssignmentPattern, InIterable}, token::Kind, type_::NamedType, ScopedLabel, TypeRef, TypeRefAny};
 
 use crate::{
     pattern::{
@@ -23,6 +17,8 @@ use crate::{
     translation::expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
     PatternDefinitionError,
 };
+use crate::pattern::expression::{Expression, ExpressionTree};
+use crate::translation::literal::translate_literal;
 
 pub(super) fn add_statement(
     function_index: &impl FunctionSignatureIndex,
@@ -55,8 +51,26 @@ pub(super) fn add_statement(
             add_typeql_expression(function_index, constraints, assigned, rhs)?
         }
         typeql::Statement::Thing(thing) => add_thing_statement(function_index, constraints, thing)?,
-        typeql::Statement::AttributeValue(attribute_value) => todo!(),
-        typeql::Statement::AttributeComparison(_) => todo!(),
+        typeql::Statement::AttributeValue(attribute_value) => {
+            // TODO: Strip the expressions out once we have a ValueRegister.
+            let attribute = register_typeql_var(constraints, &attribute_value.var)?;
+            add_typeql_isa(constraints, attribute, &attribute_value.isa)?;
+            let rhs_var = constraints.create_anonymous_variable()?;
+            let mut rhs_value = ExpressionTree::empty();
+            let value = translate_literal(&attribute_value.value).map_err(|source| {
+                PatternDefinitionError::LiteralParseError { source, literal: attribute_value.value.to_string().clone() }
+            })?;
+            rhs_value.add(Expression::Constant(value));
+            constraints.add_expression(rhs_var, rhs_value)?;
+            constraints.add_comparison(attribute, rhs_var, Comparator::Equal)?;
+        },
+        typeql::Statement::AttributeComparison(attribute_comparison) => {
+            let attribute = register_typeql_var(constraints, &attribute_comparison.var)?;
+            add_typeql_isa(constraints, attribute, &attribute_comparison.isa)?;
+            let rhs_var = constraints.create_anonymous_variable()?;
+            add_typeql_expression(function_index, constraints, rhs_var, &attribute_comparison.comparison.rhs)?;
+            constraints.add_comparison(attribute, rhs_var, attribute_comparison.comparison.comparator.into())?;
+        },
         typeql::Statement::Type(type_) => add_type_statement(constraints, type_)?,
     }
     Ok(())

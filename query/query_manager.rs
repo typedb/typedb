@@ -147,7 +147,6 @@ impl QueryManager {
             Ok(annotated_functions) => annotated_functions,
             Err(err) => return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err })),
         };
-
         // 2: Annotate
         let annotated_pipeline = infer_types_for_pipeline(
             &snapshot,

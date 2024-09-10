@@ -133,6 +133,7 @@ impl<'a> PlanBuilder<'a> {
         statistics: &'a Statistics,
     ) -> Self {
         let mut elements = Vec::new();
+        // TODO: Variable registry contains variables from across stages. I need to scope that down to the ones in constraints
         let variable_index = variable_registry
             .variable_categories()
             .map(|(variable, category)| match category {
