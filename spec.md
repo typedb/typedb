@@ -1289,7 +1289,7 @@ _Syntax_:
     * output type `[A]`
     * returns list of all non-empty `m($x)` in concept map `m`
     * `$x` can be optional
-* Each `<AGG>` reduces the concept map `{ m }` passsed to it from the function's body to a single value in the specified way.
+* Each `<AGG>` reduces the concept map `{ m }` passsed to it from the function's body to a single concept in the specified way.
 
 ### Recursion and recursive semantics
 
