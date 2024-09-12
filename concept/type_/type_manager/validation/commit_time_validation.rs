@@ -174,18 +174,23 @@ impl CommitTimeValidation {
         relation_type: RelationType<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        let relates_declared = relation_type.get_relates_declared(snapshot, type_manager)?;
+        let relates_declared = relation_type.get_relates_root(snapshot, type_manager)?;
 
         for relates in relates_declared.into_iter() {
             let role = relates.role();
 
-            Self::validate_role_is_unique_for_relation_type_hierarchy(
-                snapshot,
-                type_manager,
-                relation_type.clone(),
-                role.clone(),
-                validation_errors,
-            )?;
+            if !relates.is_specialising(snapshot, type_manager)? {
+                Self::validate_role_is_unique_for_relation_type_hierarchy(
+                    snapshot,
+                    type_manager,
+                    relation_type.clone(),
+                    role.clone(),
+                    validation_errors,
+                )?;
+            } else {
+                debug_assert!(relates.relation() != relation_type);
+            }
+
             Self::validate_type_ordering(snapshot, type_manager, role.clone(), validation_errors)?;
             Self::validate_type_constraints(snapshot, type_manager, role.clone(), validation_errors)?;
         }
@@ -289,21 +294,25 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
         let relates_declared = relation_type.get_relates_declared(snapshot, type_manager)?;
+        debug_assert!({
+            let relates_root = relation_type.get_relates_root(snapshot, type_manager)?;
+            relates_root.into_iter().all(|relates| {
+                relates_declared.contains(&relates)
+                    && !relates.is_specialising(snapshot, type_manager).unwrap()
+                    && relates.role().get_label(snapshot, type_manager).unwrap().scope().unwrap()
+                        == relates.relation().get_label(snapshot, type_manager).unwrap().name()
+            })
+        });
 
         for relates in relates_declared.into_iter() {
-            let invalid_specialised = produced_errors!(
-                validation_errors,
-                Self::validate_specialised_relates(snapshot, type_manager, relates.clone(), validation_errors)?
-            );
+            Self::validate_specialised_relates(snapshot, type_manager, relates.clone(), validation_errors)?;
 
-            if !invalid_specialised {
-                Self::validate_capabilities_constraints::<Relates<'static>>(
-                    snapshot,
-                    type_manager,
-                    relates.clone(),
-                    validation_errors,
-                )?;
-            }
+            Self::validate_capabilities_constraints::<Relates<'static>>(
+                snapshot,
+                type_manager,
+                relates.clone(),
+                validation_errors,
+            )?;
         }
 
         Ok(())
@@ -315,14 +324,11 @@ impl CommitTimeValidation {
         relates: Relates<'static>,
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
-        if let Some(role_subtype) = relates.role().get_subtypes(snapshot, type_manager)?.into_iter().next() {
-            if !relates.is_abstract(snapshot, type_manager)? {
-                validation_errors.push(SchemaValidationError::SpecialisedRelatesIsNotAbstract(
-                    get_label_or_concept_read_err(snapshot, type_manager, relates.relation())?,
-                    get_label_or_concept_read_err(snapshot, type_manager, relates.role())?,
-                    get_label_or_concept_read_err(snapshot, type_manager, role_subtype.clone())?,
-                ))
-            }
+        if relates.is_specialising(snapshot, type_manager)? && !relates.is_abstract(snapshot, type_manager)? {
+            validation_errors.push(SchemaValidationError::SpecialisingRelatesIsNotAbstract(
+                get_label_or_concept_read_err(snapshot, type_manager, relates.relation())?,
+                get_label_or_concept_read_err(snapshot, type_manager, relates.role())?,
+            ))
         }
 
         Ok(())

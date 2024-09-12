@@ -245,7 +245,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             Ordering::Ordered => return Err(ConceptWriteError::SetHasUnorderedOwnsOrdered {}),
         }
 
-        OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, owns)
+        OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, attribute.type_())
             .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         thing_manager.set_has_unordered(snapshot, self, attribute.as_reference())
@@ -303,7 +303,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             Ordering::Ordered => (),
         }
 
-        OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, owns)
+        OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, attribute_type.clone())
             .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
         let mut new_counts = BTreeMap::<_, u64>::new();

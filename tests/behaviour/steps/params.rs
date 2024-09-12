@@ -253,7 +253,7 @@ impl ContainsOrDoesnt {
                 actual.contains(expected_item),
                 "{:?} {} {:?} ",
                 actual,
-                if expected_contains { "contains" } else { "does not contain" },
+                if expected_contains { "should contain" } else { "should not contain" },
                 expected
             );
         }

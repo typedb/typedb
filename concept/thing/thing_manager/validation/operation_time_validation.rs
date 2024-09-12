@@ -83,10 +83,11 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: &impl ObjectAPI<'a>,
-        owns: Owns<'static>,
+        attribute_type: AttributeType<'static>,
     ) -> Result<(), DataValidationError> {
-        if let Some(abstract_constraint) = owns
-            .get_constraint_abstract(snapshot, thing_manager.type_manager())
+        if let Some(abstract_constraint) = owner
+            .type_()
+            .get_owned_attribute_type_constraint_abstract(snapshot, thing_manager.type_manager(), attribute_type)
             .map_err(DataValidationError::ConceptRead)?
         {
             Err(DataValidation::create_data_validation_owns_abstractness_error(
@@ -102,10 +103,11 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         player: &Object<'_>,
-        plays: Plays<'static>,
+        role_type: RoleType<'static>,
     ) -> Result<(), DataValidationError> {
-        if let Some(abstract_constraint) = plays
-            .get_constraint_abstract(snapshot, thing_manager.type_manager())
+        if let Some(abstract_constraint) = player
+            .type_()
+            .get_played_role_type_constraint_abstract(snapshot, thing_manager.type_manager(), role_type)
             .map_err(DataValidationError::ConceptRead)?
         {
             Err(DataValidation::create_data_validation_plays_abstractness_error(
@@ -121,10 +123,11 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         relation: &Relation<'_>,
-        relates: Relates<'static>,
+        role_type: RoleType<'static>,
     ) -> Result<(), DataValidationError> {
-        if let Some(abstract_constraint) = relates
-            .get_constraint_abstract(snapshot, thing_manager.type_manager())
+        if let Some(abstract_constraint) = relation
+            .type_()
+            .get_related_role_type_constraint_abstract(snapshot, thing_manager.type_manager(), role_type)
             .map_err(DataValidationError::ConceptRead)?
         {
             Err(DataValidation::create_data_validation_relates_abstractness_error(
@@ -205,7 +208,7 @@ impl OperationTimeValidation {
     ) -> Result<(), DataValidationError> {
         let distinct = relation
             .type_()
-            .get_type_relates_constraints_distinct(snapshot, thing_manager.type_manager(), role_type.clone())
+            .get_related_role_type_constraints_distinct(snapshot, thing_manager.type_manager(), role_type.clone())
             .map_err(DataValidationError::ConceptRead)?;
         if let Some(distinct_constraint) = distinct.into_iter().next() {
             for (player, count) in players_counts {
@@ -230,7 +233,7 @@ impl OperationTimeValidation {
     ) -> Result<(), DataValidationError> {
         let distinct = owner
             .type_()
-            .get_type_owns_constraints_distinct(snapshot, thing_manager.type_manager(), attribute_type)
+            .get_owned_attribute_type_constraints_distinct(snapshot, thing_manager.type_manager(), attribute_type)
             .map_err(DataValidationError::ConceptRead)?;
         if let Some(distinct_constraint) = distinct.into_iter().next() {
             for (attribute, count) in attributes_counts {
@@ -311,7 +314,7 @@ impl OperationTimeValidation {
     ) -> Result<(), DataValidationError> {
         for constraint in owner
             .type_()
-            .get_type_owns_constraints_regex(snapshot, thing_manager.type_manager(), attribute_type.clone())
+            .get_owned_attribute_type_constraints_regex(snapshot, thing_manager.type_manager(), attribute_type.clone())
             .map_err(DataValidationError::ConceptRead)?
         {
             DataValidation::validate_owns_regex_constraint(
@@ -333,7 +336,7 @@ impl OperationTimeValidation {
     ) -> Result<(), DataValidationError> {
         for constraint in owner
             .type_()
-            .get_type_owns_constraints_range(snapshot, thing_manager.type_manager(), attribute_type.clone())
+            .get_owned_attribute_type_constraints_range(snapshot, thing_manager.type_manager(), attribute_type.clone())
             .map_err(DataValidationError::ConceptRead)?
         {
             DataValidation::validate_owns_range_constraint(
@@ -355,7 +358,7 @@ impl OperationTimeValidation {
     ) -> Result<(), DataValidationError> {
         for constraint in owner
             .type_()
-            .get_type_owns_constraints_values(snapshot, thing_manager.type_manager(), attribute_type.clone())
+            .get_owned_attribute_type_constraints_values(snapshot, thing_manager.type_manager(), attribute_type.clone())
             .map_err(DataValidationError::ConceptRead)?
         {
             DataValidation::validate_owns_values_constraint(
@@ -377,7 +380,7 @@ impl OperationTimeValidation {
     ) -> Result<(), DataValidationError> {
         if let Some(constraint) = owner
             .type_()
-            .get_type_owns_constraint_unique(snapshot, thing_manager.type_manager(), attribute_type.clone())
+            .get_owned_attribute_type_constraint_unique(snapshot, thing_manager.type_manager(), attribute_type.clone())
             .map_err(DataValidationError::ConceptRead)?
         {
             let root_owner_type = constraint.source().owner();

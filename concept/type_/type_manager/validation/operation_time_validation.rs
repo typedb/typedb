@@ -1511,15 +1511,15 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_no_specialising_relates_to_unset_abstract_annotation_from_relates(
+    pub(crate) fn validate_relates_is_not_specialising_to_unset_abstract_annotation(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         relates: Relates<'static>,
     ) -> Result<(), SchemaValidationError> {
-        if relates.role().get_subtypes(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?.is_empty() {
-            Ok(())
+        if relates.is_specialising(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)? {
+            Err(SchemaValidationError::CannotUnsetRelatesAbstractnessAsItIsASpecialisingRelates(relates))
         } else {
-            Err(SchemaValidationError::CannotUnsetRelatesAbstractnessAsItHasSpecialisingRelates(relates))
+            Ok(())
         }
     }
 
@@ -1923,9 +1923,13 @@ impl OperationTimeValidation {
                                 }
                                 Some(sub_subtype_constraint_source) => {
                                     if lost_source == sub_subtype_constraint_source {
-                                        let type_has_instances =
-                                            Self::has_instances_of_type(snapshot, thing_manager, type_.clone())
-                                                .map_err(SchemaValidationError::ConceptRead)?;
+                                        let type_has_instances = Self::has_instances_of_type(
+                                            snapshot,
+                                            type_manager,
+                                            thing_manager,
+                                            type_.clone(),
+                                        )
+                                        .map_err(SchemaValidationError::ConceptRead)?;
                                         if type_has_instances {
                                             return Err(SchemaValidationError::ChangingAttributeSupertypeLeadsToImplicitIndependentAnnotationLossAndUnexpectedDataLoss(
                                             get_label_or_schema_err(snapshot, type_manager, attribute_type.clone())?,
@@ -2236,7 +2240,7 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         type_: impl KindAPI<'a>,
     ) -> Result<(), SchemaValidationError> {
-        let has_instances = Self::has_instances_of_type(snapshot, thing_manager, type_.clone())
+        let has_instances = Self::has_instances_of_type(snapshot, type_manager, thing_manager, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
 
         if has_instances {
@@ -2257,7 +2261,7 @@ impl OperationTimeValidation {
         attribute_type: AttributeType<'static>,
     ) -> Result<(), SchemaValidationError> {
         for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType<'static>| {
-            let has_instances = Self::has_instances_of_type(snapshot, thing_manager, type_.clone())
+            let has_instances = Self::has_instances_of_type(snapshot, type_manager, thing_manager, type_.clone())
                 .map_err(SchemaValidationError::ConceptRead)?;
 
             if has_instances {
@@ -2280,7 +2284,7 @@ impl OperationTimeValidation {
         attribute_type: AttributeType<'static>,
     ) -> Result<(), SchemaValidationError> {
         for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType<'static>| {
-            let has_instances = Self::has_instances_of_type(snapshot, thing_manager, type_.clone())
+            let has_instances = Self::has_instances_of_type(snapshot, type_manager, thing_manager, type_.clone())
                 .map_err(SchemaValidationError::ConceptRead)?;
 
             if has_instances {
@@ -2302,7 +2306,7 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        let has_instances = Self::has_instances_of_type(snapshot, thing_manager, role_type.clone())
+        let has_instances = Self::has_instances_of_type(snapshot, type_manager, thing_manager, role_type.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
 
         if has_instances {
@@ -2337,6 +2341,7 @@ impl OperationTimeValidation {
 
     fn has_instances_of_type<'a, T: KindAPI<'a>>(
         snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         thing_manager: &ThingManager,
         type_: T,
     ) -> Result<bool, ConceptReadError> {
@@ -2367,8 +2372,7 @@ impl OperationTimeValidation {
             }
             Kind::Role => {
                 let role_type = RoleType::new(type_.vertex().into_owned());
-                let relation_type =
-                    TypeReader::get_role_type_relates_declared(snapshot, role_type.clone().into_owned())?.relation();
+                let relation_type = role_type.get_relates_root(snapshot, type_manager)?.relation();
                 Self::has_instances_of_relates(snapshot, thing_manager, relation_type, role_type)
             }
         }

@@ -946,7 +946,7 @@ impl ThingManager {
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptReadError> {
         let unique_constraint_opt =
-            owner.type_().get_type_owns_constraint_unique(snapshot, self.type_manager(), attribute_type)?;
+            owner.type_().get_owned_attribute_type_constraint_unique(snapshot, self.type_manager(), attribute_type)?;
         if let Some(unique_constraint) = unique_constraint_opt {
             let lock_key = create_custom_lock_key(
                 [
@@ -972,7 +972,7 @@ impl ThingManager {
         let cardinality_constraints = get_checked_constraints(
             owner
                 .type_()
-                .get_type_owns_constraints_cardinality(snapshot, self.type_manager(), attribute_type)?
+                .get_owned_attribute_type_constraints_cardinality(snapshot, self.type_manager(), attribute_type)?
                 .into_iter(),
         );
         if cardinality_constraints.is_empty() {
@@ -1003,7 +1003,7 @@ impl ThingManager {
         let cardinality_constraints = get_checked_constraints(
             player
                 .type_()
-                .get_type_plays_constraints_cardinality(snapshot, self.type_manager(), role_type)?
+                .get_played_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?
                 .into_iter(),
         );
         if cardinality_constraints.is_empty() {
@@ -1034,7 +1034,7 @@ impl ThingManager {
         let cardinality_constraints = get_checked_constraints(
             relation
                 .type_()
-                .get_type_relates_constraints_cardinality(snapshot, self.type_manager(), role_type)?
+                .get_related_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?
                 .into_iter(),
         );
         if cardinality_constraints.is_empty() {

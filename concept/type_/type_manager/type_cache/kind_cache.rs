@@ -44,6 +44,7 @@ pub(crate) struct EntityTypeCache {
 #[derive(Debug)]
 pub(crate) struct RelationTypeCache {
     pub(super) common_type_cache: CommonTypeCache<RelationType<'static>>,
+    pub(super) relates_root: HashSet<Relates<'static>>,
     pub(super) relates_declared: HashSet<Relates<'static>>,
     pub(super) relates: HashSet<Relates<'static>>,
     pub(super) relates_with_specialised: HashSet<Relates<'static>>,
@@ -56,7 +57,8 @@ pub(crate) struct RelationTypeCache {
 pub(crate) struct RoleTypeCache {
     pub(super) common_type_cache: CommonTypeCache<RoleType<'static>>,
     pub(super) ordering: Ordering,
-    pub(super) relates: Relates<'static>,
+    pub(super) relates_root: Relates<'static>,
+    pub(super) relates: HashSet<Relates<'static>>,
     pub(super) relation_types: HashMap<RelationType<'static>, Relates<'static>>,
     pub(super) plays: HashSet<Plays<'static>>,
     pub(super) player_types: HashMap<ObjectType<'static>, Plays<'static>>,
@@ -73,8 +75,8 @@ pub(crate) struct AttributeTypeCache {
 
 #[derive(Debug)]
 pub(crate) struct OwnsCache {
-    pub(super) common_capability_cache: CommonCapabilityCache<Owns<'static>>,
     pub(super) ordering: Ordering,
+    pub(super) common_capability_cache: CommonCapabilityCache<Owns<'static>>,
 }
 
 #[derive(Debug)]
@@ -84,6 +86,7 @@ pub(crate) struct PlaysCache {
 
 #[derive(Debug)]
 pub(crate) struct RelatesCache {
+    pub(super) is_specialising: bool,
     pub(super) common_capability_cache: CommonCapabilityCache<Relates<'static>>,
 }
 
@@ -129,12 +132,12 @@ impl EntityTypeCache {
         let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_entity_id).map(|_| None).collect::<Box<[_]>>();
 
-        for entity in entities.into_iter() {
+        for entity_type in entities.into_iter() {
             let cache = EntityTypeCache {
-                common_type_cache: CommonTypeCache::create(snapshot, entity.clone()),
-                object_cache: ObjectCache::create(snapshot, entity.clone()),
+                common_type_cache: CommonTypeCache::create(snapshot, entity_type.clone()),
+                object_cache: ObjectCache::create(snapshot, entity_type.clone()),
             };
-            caches[entity.vertex().type_id_().as_u16() as usize] = Some(cache);
+            caches[entity_type.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
         caches
     }
@@ -151,25 +154,29 @@ impl RelationTypeCache {
             .unwrap();
         let max_relation_id = relations.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_relation_id).map(|_| None).collect::<Box<[_]>>();
-        for relation in relations.into_iter() {
-            let common_type_cache = CommonTypeCache::create(snapshot, relation.clone());
-            let object_cache = ObjectCache::create(snapshot, relation.clone());
+        for relation_type in relations.into_iter() {
+            let common_type_cache = CommonTypeCache::create(snapshot, relation_type.clone());
+            let object_cache = ObjectCache::create(snapshot, relation_type.clone());
+            let relates_root = TypeReader::get_relation_type_relates_root(snapshot, relation_type.clone()).unwrap();
             let relates_declared =
-                TypeReader::get_capabilities_declared::<Relates<'static>>(snapshot, relation.clone()).unwrap();
-            let relates = TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation.clone(), false).unwrap();
+                TypeReader::get_capabilities_declared::<Relates<'static>>(snapshot, relation_type.clone()).unwrap();
+            let relates =
+                TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation_type.clone(), false).unwrap();
             let relates_with_specialised =
-                TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation.clone(), true).unwrap();
+                TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation_type.clone(), true).unwrap();
             let related_role_type_constraints =
-                TypeReader::get_type_capabilities_constraints::<Relates<'static>>(snapshot, relation.clone()).unwrap();
+                TypeReader::get_type_capabilities_constraints::<Relates<'static>>(snapshot, relation_type.clone())
+                    .unwrap();
             let cache = RelationTypeCache {
                 common_type_cache,
+                relates_root,
                 relates_declared,
                 relates,
                 relates_with_specialised,
                 related_role_type_constraints,
                 object_cache,
             };
-            caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
+            caches[relation_type.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
         caches
     }
@@ -183,19 +190,20 @@ impl AttributeTypeCache {
             .unwrap();
         let max_attribute_id = attributes.iter().map(|a| a.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Box<[_]>>();
-        for attribute in attributes {
+        for attribute_type in attributes {
             let cache = AttributeTypeCache {
-                common_type_cache: CommonTypeCache::create(snapshot, attribute.clone()),
-                value_type_declared: TypeReader::get_value_type_declared(snapshot, attribute.clone()).unwrap(),
-                value_type: TypeReader::get_value_type(snapshot, attribute.clone()).unwrap(),
-                owns: TypeReader::get_capabilities_for_interface::<Owns<'static>>(snapshot, attribute.clone()).unwrap(),
+                common_type_cache: CommonTypeCache::create(snapshot, attribute_type.clone()),
+                value_type_declared: TypeReader::get_value_type_declared(snapshot, attribute_type.clone()).unwrap(),
+                value_type: TypeReader::get_value_type(snapshot, attribute_type.clone()).unwrap(),
+                owns: TypeReader::get_capabilities_for_interface::<Owns<'static>>(snapshot, attribute_type.clone())
+                    .unwrap(),
                 owner_types: TypeReader::get_object_types_with_capabilities_for_interface::<Owns<'static>>(
                     snapshot,
-                    attribute.clone(),
+                    attribute_type.clone(),
                 )
                 .unwrap(),
             };
-            caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
+            caches[attribute_type.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
         caches
     }
@@ -209,25 +217,28 @@ impl RoleTypeCache {
             .unwrap();
         let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_role_id).map(|_| None).collect::<Box<[_]>>();
-        for role in roles.into_iter() {
-            let ordering = TypeReader::get_type_ordering(snapshot, role.clone()).unwrap();
+        for role_type in roles.into_iter() {
+            let ordering = TypeReader::get_type_ordering(snapshot, role_type.clone()).unwrap();
             let cache = RoleTypeCache {
-                common_type_cache: CommonTypeCache::create(snapshot, role.clone()),
+                common_type_cache: CommonTypeCache::create(snapshot, role_type.clone()),
                 ordering,
-                relates: TypeReader::get_role_type_relates_declared(snapshot, role.clone()).unwrap(),
+                relates_root: TypeReader::get_role_type_relates_root(snapshot, role_type.clone()).unwrap(),
+                relates: TypeReader::get_capabilities_for_interface::<Relates<'static>>(snapshot, role_type.clone())
+                    .unwrap(),
                 relation_types: TypeReader::get_object_types_with_capabilities_for_interface::<Relates<'static>>(
                     snapshot,
-                    role.clone(),
+                    role_type.clone(),
                 )
                 .unwrap(),
-                plays: TypeReader::get_capabilities_for_interface::<Plays<'static>>(snapshot, role.clone()).unwrap(),
+                plays: TypeReader::get_capabilities_for_interface::<Plays<'static>>(snapshot, role_type.clone())
+                    .unwrap(),
                 player_types: TypeReader::get_object_types_with_capabilities_for_interface::<Plays<'static>>(
                     snapshot,
-                    role.clone(),
+                    role_type.clone(),
                 )
                 .unwrap(),
             };
-            caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
+            caches[role_type.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
         caches
     }
@@ -246,8 +257,8 @@ impl OwnsCache {
             let owner = ObjectType::new(edge.to().into_owned());
             let owns = Owns::new(owner, attribute);
             let cache = OwnsCache {
-                common_capability_cache: CommonCapabilityCache::create(snapshot, owns.clone()),
                 ordering: TypeReader::get_capability_ordering(snapshot, owns.clone()).unwrap(),
+                common_capability_cache: CommonCapabilityCache::create(snapshot, owns.clone()),
             };
             map.insert(owns.clone(), cache);
         }
@@ -288,8 +299,11 @@ impl RelatesCache {
             let relation = RelationType::new(edge.from().into_owned());
             let role = RoleType::new(edge.to().into_owned());
             let relates = Relates::new(relation, role);
-            let cache =
-                RelatesCache { common_capability_cache: CommonCapabilityCache::create(snapshot, relates.clone()) };
+            let is_specialising = TypeReader::is_relates_specialising(snapshot, relates.clone()).unwrap();
+            let cache = RelatesCache {
+                is_specialising,
+                common_capability_cache: CommonCapabilityCache::create(snapshot, relates.clone()),
+            };
             map.insert(relates.clone(), cache);
         }
         map

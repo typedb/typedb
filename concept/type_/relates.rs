@@ -47,13 +47,12 @@ impl<'a> Relates<'a> {
         self.role.clone()
     }
 
-    // TODO: It may be risky to use methods purely on constraints, so maybe we need to remove them and use only is_type_relates_distinct instead!
     pub fn get_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<CapabilityConstraint<Relates<'static>>>, ConceptReadError> {
-        type_manager.get_capability_abstract_constraints(snapshot, self.clone().into_owned())
+        type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
     }
 
     pub fn get_constraints_distinct(
@@ -89,6 +88,14 @@ impl<'a> Relates<'a> {
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError> {
         type_manager.unset_relates_specialise(snapshot, thing_manager, self.clone().into_owned())
+    }
+
+    pub fn is_specialising(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, ConceptReadError> {
+        type_manager.get_relates_is_specialising(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(
@@ -221,7 +228,6 @@ impl<'a> Capability<'a> for Relates<'a> {
         type_manager.get_relates_constraints(snapshot, self.clone().into_owned())
     }
 
-    // TODO: It may be risky to use methods purely on constraints, so maybe we need to remove them and use only get_type_***_cardinality_constraints instead!
     fn get_cardinality_constraints(
         &self,
         snapshot: &impl ReadableSnapshot,

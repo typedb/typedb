@@ -330,7 +330,11 @@ impl TypeCache {
         RoleType::get_cache(self, role_type).ordering
     }
 
-    pub(crate) fn get_role_type_relates(&self, role_type: RoleType<'_>) -> &Relates<'static> {
+    pub(crate) fn get_role_type_relates_root(&self, role_type: RoleType<'_>) -> &Relates<'static> {
+        &RoleType::get_cache(self, role_type).relates_root
+    }
+
+    pub(crate) fn get_role_type_relates(&self, role_type: RoleType<'_>) -> &HashSet<Relates<'static>> {
         &RoleType::get_cache(self, role_type).relates
     }
 
@@ -339,6 +343,10 @@ impl TypeCache {
         role_type: RoleType<'_>,
     ) -> &HashMap<RelationType<'static>, Relates<'static>> {
         &RoleType::get_cache(self, role_type).relation_types
+    }
+
+    pub(crate) fn get_relation_type_relates_root(&self, relation_type: RelationType<'_>) -> &HashSet<Relates<'static>> {
+        &RelationType::get_cache(self, relation_type).relates_root
     }
 
     pub(crate) fn get_relation_type_relates_declared(
@@ -378,6 +386,10 @@ impl TypeCache {
         relates: Relates<'c>,
     ) -> &'c HashSet<CapabilityConstraint<Relates<'static>>> {
         &self.relates.get(&relates).unwrap().common_capability_cache.constraints
+    }
+
+    pub(crate) fn get_relates_is_specialising<'c>(&'c self, relates: Relates<'c>) -> bool {
+        self.relates.get(&relates).unwrap().is_specialising
     }
 
     pub(crate) fn get_role_type_plays(&self, role_type: RoleType<'_>) -> &HashSet<Plays<'static>> {

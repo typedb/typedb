@@ -55,13 +55,12 @@ impl<'a> Owns<'a> {
         type_manager.get_is_key(snapshot, self.clone().into_owned())
     }
 
-    // TODO: It may be risky to use methods purely on constraints, so maybe we need to remove them and use only is_type_owns_distinct instead!
     pub fn get_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
-        type_manager.get_capability_abstract_constraints(snapshot, self.clone().into_owned())
+        type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
     }
 
     pub fn get_constraints_distinct(

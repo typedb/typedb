@@ -152,7 +152,7 @@ impl CommitTimeValidation {
         validate_owns_cardinality_constraint,
         Owns,
         Object,
-        get_type_owns_constraints_cardinality,
+        get_owned_attribute_type_constraints_cardinality,
         get_has_counts,
         DataValidation::validate_owns_instances_cardinality_constraint
     );
@@ -160,7 +160,7 @@ impl CommitTimeValidation {
         validate_plays_cardinality_constraint,
         Plays,
         Object,
-        get_type_plays_constraints_cardinality,
+        get_played_role_type_constraints_cardinality,
         get_played_roles_counts,
         DataValidation::validate_plays_instances_cardinality_constraint
     );
@@ -168,7 +168,7 @@ impl CommitTimeValidation {
         validate_relates_cardinality_constraint,
         Relates,
         Relation,
-        get_type_relates_constraints_cardinality,
+        get_related_role_type_constraints_cardinality,
         get_player_counts,
         DataValidation::validate_relates_instances_cardinality_constraint
     );

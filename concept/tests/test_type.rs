@@ -253,7 +253,7 @@ fn role_usage() {
             .unwrap();
         let relates = friendship_type.get_relates_role_name(&snapshot, &type_manager, friend_name).unwrap().unwrap();
         let role_type =
-            type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
+            friendship_type.get_relates_role_name(&snapshot, &type_manager, friend_name).unwrap().unwrap().role();
         debug_assert_eq!(relates.relation(), friendship_type.clone());
         debug_assert_eq!(relates.role(), role_type);
 
@@ -278,7 +278,7 @@ fn role_usage() {
         debug_assert!(relates.is_some());
         let relates = relates.unwrap();
         let role_type =
-            type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
+            friendship_type.get_relates_role_name(&snapshot, &type_manager, friend_name).unwrap().unwrap().role();
         debug_assert_eq!(relates.relation(), friendship_type.clone());
         debug_assert_eq!(relates.role(), role_type);
 

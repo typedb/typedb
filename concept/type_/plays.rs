@@ -85,7 +85,7 @@ impl<'a> Plays<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
-        type_manager.get_capability_abstract_constraints(snapshot, self.clone().into_owned())
+        type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
     }
 
     pub fn get_default_cardinality() -> AnnotationCardinality {

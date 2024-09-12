@@ -146,78 +146,80 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         })
     }
 
-    fn get_type_owns_constraints_cardinality<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_type_owns_constraints_cardinality(snapshot, type_manager, attribute_type)
-        })
-    }
-
-    fn get_type_owns_constraints_distinct<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_type_owns_constraints_distinct(snapshot, type_manager, attribute_type)
-        })
-    }
-
-    fn is_type_owns_distinct<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<bool, ConceptReadError> {
-        with_object_type!(self, |object| { object.is_type_owns_distinct(snapshot, type_manager, attribute_type) })
-    }
-
-    fn get_type_owns_constraints_regex<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_type_owns_constraints_regex(snapshot, type_manager, attribute_type)
-        })
-    }
-
-    fn get_type_owns_constraints_range<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_type_owns_constraints_range(snapshot, type_manager, attribute_type)
-        })
-    }
-
-    fn get_type_owns_constraints_values<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
-        with_object_type!(self, |object| {
-            object.get_type_owns_constraints_values(snapshot, type_manager, attribute_type)
-        })
-    }
-
-    fn get_type_owns_constraint_unique<'m>(
+    fn get_owned_attribute_type_constraint_abstract<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| {
-            object.get_type_owns_constraint_unique(snapshot, type_manager, attribute_type)
+            object.get_owned_attribute_type_constraint_abstract(snapshot, type_manager, attribute_type)
+        })
+    }
+
+    fn get_owned_attribute_type_constraints_cardinality<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        with_object_type!(self, |object| {
+            object.get_owned_attribute_type_constraints_cardinality(snapshot, type_manager, attribute_type)
+        })
+    }
+
+    fn get_owned_attribute_type_constraints_distinct<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        with_object_type!(self, |object| {
+            object.get_owned_attribute_type_constraints_distinct(snapshot, type_manager, attribute_type)
+        })
+    }
+
+    fn get_owned_attribute_type_constraints_regex<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        with_object_type!(self, |object| {
+            object.get_owned_attribute_type_constraints_regex(snapshot, type_manager, attribute_type)
+        })
+    }
+
+    fn get_owned_attribute_type_constraints_range<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        with_object_type!(self, |object| {
+            object.get_owned_attribute_type_constraints_range(snapshot, type_manager, attribute_type)
+        })
+    }
+
+    fn get_owned_attribute_type_constraints_values<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        with_object_type!(self, |object| {
+            object.get_owned_attribute_type_constraints_values(snapshot, type_manager, attribute_type)
+        })
+    }
+
+    fn get_owned_attribute_type_constraint_unique<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        with_object_type!(self, |object| {
+            object.get_owned_attribute_type_constraint_unique(snapshot, type_manager, attribute_type)
         })
     }
 }
@@ -373,14 +375,25 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         with_object_type!(self, |object| { object.get_played_role_type_constraints(snapshot, type_manager, role_type) })
     }
 
-    fn get_type_plays_constraints_cardinality<'m>(
+    fn get_played_role_type_constraint_abstract<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
+        with_object_type!(self, |object| {
+            object.get_played_role_type_constraint_abstract(snapshot, type_manager, role_type)
+        })
+    }
+
+    fn get_played_role_type_constraints_cardinality<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| {
-            object.get_type_plays_constraints_cardinality(snapshot, type_manager, role_type)
+            object.get_played_role_type_constraints_cardinality(snapshot, type_manager, role_type)
         })
     }
 }

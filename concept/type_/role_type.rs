@@ -94,7 +94,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        self.get_relates(snapshot, type_manager)?.is_abstract(snapshot, type_manager)
+        self.get_relates_root(snapshot, type_manager)?.is_abstract(snapshot, type_manager)
     }
 
     fn delete(
@@ -206,11 +206,19 @@ impl<'a> RoleType<'a> {
 
 // --- Related API ---
 impl<'a> RoleType<'a> {
+    pub fn get_relates_root(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Relates<'static>, ConceptReadError> {
+        type_manager.get_role_type_relates_root(snapshot, self.clone().into_owned())
+    }
+
     pub fn get_relates<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Relates<'static>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {
         type_manager.get_role_type_relates(snapshot, self.clone().into_owned())
     }
 

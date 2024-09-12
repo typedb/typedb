@@ -264,52 +264,70 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        interface_type: AttributeType<'static>,
+        attribute_type: AttributeType<'static>,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError>;
 
-    fn get_type_owns_constraints_cardinality<'m>(
+    fn get_owned_attribute_type_constraint_abstract<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        interface_type: AttributeType<'static>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+
+    fn get_owned_attribute_type_constraints_cardinality<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
-    fn get_type_owns_constraints_distinct<'m>(
+    fn get_owned_attribute_type_constraints_distinct<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        interface_type: AttributeType<'static>,
+        attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
-    fn is_type_owns_distinct<'m>(
+    fn is_owned_attribute_type_abstract<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        interface_type: AttributeType<'static>,
-    ) -> Result<bool, ConceptReadError>;
+        attribute_type: AttributeType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_owned_attribute_type_constraint_abstract(snapshot, type_manager, attribute_type)?.is_some())
+    }
 
-    fn get_type_owns_constraints_regex<'m>(
+    fn is_owned_attribute_type_distinct<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        interface_type: AttributeType<'static>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(!self.get_owned_attribute_type_constraints_distinct(snapshot, type_manager, attribute_type)?.is_empty())
+    }
+
+    fn get_owned_attribute_type_constraints_regex<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
-    fn get_type_owns_constraints_range<'m>(
+    fn get_owned_attribute_type_constraints_range<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        interface_type: AttributeType<'static>,
+        attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
-    fn get_type_owns_constraints_values<'m>(
+    fn get_owned_attribute_type_constraints_values<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        interface_type: AttributeType<'static>,
+        attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
-    fn get_type_owns_constraint_unique<'m>(
+    fn get_owned_attribute_type_constraint_unique<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
@@ -419,7 +437,23 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         role_type: RoleType<'static>,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, ConceptReadError>;
 
-    fn get_type_plays_constraints_cardinality<'m>(
+    fn get_played_role_type_constraint_abstract<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, ConceptReadError>;
+
+    fn is_played_role_type_abstract<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_played_role_type_constraint_abstract(snapshot, type_manager, role_type)?.is_some())
+    }
+
+    fn get_played_role_type_constraints_cardinality<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
@@ -556,7 +590,7 @@ pub trait Capability<'a>:
     type InterfaceType: KindAPI<'a>;
     const KIND: CapabilityKind;
 
-    fn new(object_type: Self::ObjectType, interface_type: Self::InterfaceType) -> Self;
+    fn new(object_type: Self::ObjectType, attribute_type: Self::InterfaceType) -> Self;
 
     fn object(&self) -> Self::ObjectType;
 

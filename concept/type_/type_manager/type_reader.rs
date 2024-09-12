@@ -372,13 +372,45 @@ impl TypeReader {
         Ok(object_types)
     }
 
-    pub(crate) fn get_role_type_relates_declared(
+    pub(crate) fn get_role_type_relates_root(
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'static>,
     ) -> Result<Relates<'static>, ConceptReadError> {
-        let relates = Self::get_capabilities_for_interface::<Relates<'static>>(snapshot, role_type)?;
-        debug_assert!(relates.len() == 1);
-        relates.into_iter().next().ok_or(ConceptReadError::CorruptMissingMandatoryRelatesForRole)
+        let mut root_relates = None;
+        let all_relates = Self::get_capabilities_for_interface::<Relates<'static>>(snapshot, role_type)?;
+        for relates in all_relates.into_iter() {
+            if !Self::is_relates_specialising(snapshot, relates.clone())? {
+                debug_assert!(root_relates.is_none());
+                root_relates = Some(relates);
+            }
+        }
+        root_relates.ok_or(ConceptReadError::CorruptMissingMandatoryRootRelatesForRole)
+    }
+
+    pub(crate) fn get_relation_type_relates_root(
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<HashSet<Relates<'static>>, ConceptReadError> {
+        let mut root_relates = HashSet::new();
+        let all_declared_relates = Self::get_capabilities_declared::<Relates<'static>>(snapshot, relation_type)?;
+        for relates in all_declared_relates.into_iter() {
+            if !Self::is_relates_specialising(snapshot, relates.clone())? {
+                root_relates.insert(relates);
+            }
+        }
+        Ok(root_relates)
+    }
+
+    pub(crate) fn is_relates_specialising(
+        snapshot: &impl ReadableSnapshot,
+        relates: Relates<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        let relation_type_label =
+            Self::get_label(snapshot, relates.relation())?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?;
+        let role_type_label =
+            Self::get_label(snapshot, relates.role())?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?;
+        Ok(relation_type_label.name()
+            != role_type_label.scope().ok_or(ConceptReadError::CorruptMissingMandatoryScopeForRoleTypeLabel)?)
     }
 
     pub(crate) fn get_value_type_declared(
