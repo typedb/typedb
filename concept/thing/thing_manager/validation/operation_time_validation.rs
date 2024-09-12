@@ -98,10 +98,10 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_plays_is_not_abstract<'a>(
+    pub(crate) fn validate_plays_is_not_abstract(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        player: &Object<'a>,
+        player: &Object<'_>,
         plays: Plays<'static>,
     ) -> Result<(), DataValidationError> {
         if let Some(abstract_constraint) = plays
@@ -117,10 +117,10 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relates_is_not_abstract<'a>(
+    pub(crate) fn validate_relates_is_not_abstract(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        relation: &Relation<'a>,
+        relation: &Relation<'_>,
         relates: Relates<'static>,
     ) -> Result<(), DataValidationError> {
         if let Some(abstract_constraint) = relates
@@ -196,12 +196,12 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relates_distinct_constraint<'a>(
+    pub(crate) fn validate_relates_distinct_constraint(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        relation: Relation<'a>,
+        relation: Relation<'_>,
         role_type: RoleType<'static>,
-        players_counts: &HashMap<&Object<'a>, u64>,
+        players_counts: &HashMap<&Object<'_>, u64>,
     ) -> Result<(), DataValidationError> {
         let distinct = relation
             .type_()

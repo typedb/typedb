@@ -78,11 +78,11 @@ macro_rules! create_data_validation_capability_abstractness_error_methods {
 pub(crate) struct DataValidation {}
 
 impl DataValidation {
-    pub(crate) fn validate_owns_instances_cardinality_constraint<'a>(
+    pub(crate) fn validate_owns_instances_cardinality_constraint(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns<'static>>,
-        owner: Object<'a>,
+        owner: Object<'_>,
         attribute_type: AttributeType<'static>,
         count: u64,
     ) -> Result<(), DataValidationError> {
@@ -112,11 +112,11 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_plays_instances_cardinality_constraint<'a>(
+    pub(crate) fn validate_plays_instances_cardinality_constraint(
         _snapshot: &impl ReadableSnapshot,
         _type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Plays<'static>>,
-        player: Object<'a>,
+        player: Object<'_>,
         role_type: RoleType<'static>,
         count: u64,
     ) -> Result<(), DataValidationError> {
@@ -190,9 +190,9 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_owns_regex_constraint<'a>(
+    pub(crate) fn validate_owns_regex_constraint(
         constraint: &CapabilityConstraint<Owns<'static>>,
-        owner: Object<'a>,
+        owner: Object<'_>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
@@ -205,9 +205,9 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_owns_range_constraint<'a>(
+    pub(crate) fn validate_owns_range_constraint(
         constraint: &CapabilityConstraint<Owns<'static>>,
-        owner: Object<'a>,
+        owner: Object<'_>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
@@ -220,9 +220,9 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_owns_values_constraint<'a>(
+    pub(crate) fn validate_owns_values_constraint(
         constraint: &CapabilityConstraint<Owns<'static>>,
-        owner: Object<'a>,
+        owner: Object<'_>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
@@ -235,10 +235,10 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_owns_distinct_constraint<'a>(
+    pub(crate) fn validate_owns_distinct_constraint(
         constraint: &CapabilityConstraint<Owns<'static>>,
-        owner: Object<'a>,
-        attribute: Attribute<'a>,
+        owner: Object<'_>,
+        attribute: Attribute<'_>,
         count: u64,
     ) -> Result<(), DataValidationError> {
         debug_assert!(constraint.description().unwrap_distinct().is_ok());
@@ -253,11 +253,11 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_relates_distinct_constraint<'a>(
+    pub(crate) fn validate_relates_distinct_constraint(
         constraint: &CapabilityConstraint<Relates<'static>>,
-        relation: Relation<'a>,
+        relation: Relation<'_>,
         role_type: RoleType<'static>,
-        player: Object<'a>,
+        player: Object<'_>,
         count: u64,
     ) -> Result<(), DataValidationError> {
         debug_assert!(constraint.description().unwrap_distinct().is_ok());
@@ -284,11 +284,11 @@ impl DataValidation {
         fn create_data_validation_relates_abstractness_error(Relates, Relation) -> RelatesConstraintViolated = relation + role_type + player;
     }
 
-    pub(crate) fn create_data_validation_uniqueness_error<'a>(
+    pub(crate) fn create_data_validation_uniqueness_error(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns<'static>>,
-        owner: Object<'a>,
+        owner: Object<'_>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> DataValidationError {

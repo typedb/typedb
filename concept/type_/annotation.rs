@@ -177,9 +177,7 @@ impl AnnotationCardinality {
     }
 
     pub fn narrowed_correctly_by(&self, other: &Self) -> bool {
-        // We allow other.min < self.min and other.max > self.max.
-        // The only limitation is other.min <= self.max.
-        self.value_satisfies_end(Some(other.start()))
+        self.value_satisfies_start(other.start()) && self.value_satisfies_end(other.end())
     }
 
     pub fn value_satisfies_start(&self, value: u64) -> bool {

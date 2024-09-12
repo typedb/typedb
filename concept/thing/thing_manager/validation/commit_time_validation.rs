@@ -47,10 +47,10 @@ pub(crate) use collect_errors;
 
 macro_rules! validate_capability_cardinality_constraint {
     ($func_name:ident, $capability_type:ident, $object_instance:ident, $get_cardinality_constraints_func:ident, $get_interface_counts_func:ident, $check_func:path) => {
-        pub(crate) fn $func_name<'a>(
+        pub(crate) fn $func_name(
             snapshot: &impl ReadableSnapshot,
             thing_manager: &ThingManager,
-            object: $object_instance<'a>,
+            object: $object_instance<'_>,
             interface_types_to_check: HashSet<<$capability_type<'static> as Capability<'static>>::InterfaceType>,
         ) -> Result<(), DataValidationError> {
             let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type<'static>>> = HashSet::new();
