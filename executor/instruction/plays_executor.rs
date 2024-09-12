@@ -22,15 +22,13 @@ use concept::{
 use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
-    higher_order::AdHocHkt,
-    AsLendingIterator, LendingIterator,
+    AsHkt, AsNarrowingIterator, LendingIterator,
 };
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        sub_executor::NarrowingTupleIterator,
         tuple::{plays_to_tuple_player_role, PlaysToTupleFn, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
@@ -46,34 +44,31 @@ pub(crate) struct PlaysExecutor {
     player_role_types: Arc<BTreeMap<Type, Vec<Type>>>,
     role_types: Arc<HashSet<Type>>,
     filter_fn: Arc<PlaysFilterFn>,
-    checker: Checker<AdHocHkt<Plays<'static>>>,
+    checker: Checker<AsHkt![Plays<'_>]>,
 }
 
-pub(super) type PlaysTupleIterator<I> = NarrowingTupleIterator<
-    Map<
-        TryFilter<I, Box<PlaysFilterFn>, AdHocHkt<Plays<'static>>, ConceptReadError>,
-        PlaysToTupleFn,
-        AdHocHkt<TupleResult<'static>>,
-    >,
->;
+pub(super) type PlaysTupleIterator<I> =
+    Map<TryFilter<I, Box<PlaysFilterFn>, AsHkt![Plays<'_>], ConceptReadError>, PlaysToTupleFn, AsHkt![TupleResult<'_>]>;
 
 pub(super) type PlaysUnboundedSortedPlayer = PlaysTupleIterator<
-    AsLendingIterator<
+    AsNarrowingIterator<
         iter::Map<
             iter::Flatten<vec::IntoIter<HashSet<Plays<'static>>>>,
             fn(Plays<'static>) -> Result<Plays<'static>, ConceptReadError>,
         >,
+        Result<AsHkt![Plays<'_>], ConceptReadError>,
     >,
 >;
 pub(super) type PlaysBoundedSortedRole = PlaysTupleIterator<
-    AsLendingIterator<
+    AsNarrowingIterator<
         iter::Map<vec::IntoIter<Plays<'static>>, fn(Plays<'static>) -> Result<Plays<'static>, ConceptReadError>>,
+        Result<AsHkt![Plays<'_>], ConceptReadError>,
     >,
 >;
 
-pub(super) type PlaysFilterFn = FilterFn<AdHocHkt<Plays<'static>>>;
+pub(super) type PlaysFilterFn = FilterFn<AsHkt![Plays<'_>]>;
 
-type PlaysVariableValueExtractor = fn(&Plays<'static>) -> VariableValue<'static>;
+type PlaysVariableValueExtractor = for<'a> fn(&'a Plays<'_>) -> VariableValue<'a>;
 pub(super) const EXTRACT_PLAYER: PlaysVariableValueExtractor =
     |plays| VariableValue::Type(Type::from(plays.player().into_owned()));
 pub(super) const EXTRACT_ROLE: PlaysVariableValueExtractor =
@@ -104,7 +99,7 @@ impl PlaysExecutor {
             TuplePositions::Pair([plays.player(), plays.role_type()])
         };
 
-        let checker = Checker::<AdHocHkt<Plays<'static>>> {
+        let checker = Checker::<AsHkt![Plays<'_>]> {
             checks,
             extractors: HashMap::from([(plays.player(), EXTRACT_PLAYER), (plays.role_type(), EXTRACT_ROLE)]),
             _phantom_data: PhantomData,
@@ -149,11 +144,10 @@ impl PlaysExecutor {
                     .map_ok(|set| set.to_owned())
                     .try_collect()?;
                 let iterator = plays.into_iter().flatten().map(Ok as _);
-                let as_tuples: PlaysUnboundedSortedPlayer = NarrowingTupleIterator(
-                    AsLendingIterator::new(iterator)
-                        .try_filter::<_, PlaysFilterFn, AdHocHkt<Plays<'_>>, _>(filter_for_row)
-                        .map(plays_to_tuple_player_role),
-                );
+                let as_tuples: PlaysUnboundedSortedPlayer =
+                    AsNarrowingIterator::<_, Result<Plays<'_>, _>>::new(iterator)
+                        .try_filter::<_, PlaysFilterFn, Plays<'_>, _>(filter_for_row)
+                        .map(plays_to_tuple_player_role);
                 Ok(TupleIterator::PlaysUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -179,11 +173,9 @@ impl PlaysExecutor {
                 };
 
                 let iterator = plays.iter().cloned().sorted_by_key(|plays| (plays.role(), plays.player())).map(Ok as _);
-                let as_tuples: PlaysBoundedSortedRole = NarrowingTupleIterator(
-                    AsLendingIterator::new(iterator)
-                        .try_filter::<_, PlaysFilterFn, AdHocHkt<Plays<'_>>, _>(filter_for_row)
-                        .map(plays_to_tuple_player_role),
-                );
+                let as_tuples: PlaysBoundedSortedRole = AsNarrowingIterator::<_, Result<Plays<'_>, _>>::new(iterator)
+                    .try_filter::<_, PlaysFilterFn, Plays<'_>, _>(filter_for_row)
+                    .map(plays_to_tuple_player_role);
                 Ok(TupleIterator::PlaysBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -196,8 +188,8 @@ impl PlaysExecutor {
 
 fn create_plays_filter_player_role_type(player_role_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<PlaysFilterFn> {
     Arc::new(move |result| match result {
-        Ok(plays) => match player_role_types.get(&Type::from(plays.player())) {
-            Some(role_types) => Ok(role_types.contains(&Type::RoleType(plays.role()))),
+        Ok(plays) => match player_role_types.get(&Type::from(plays.player().into_owned())) {
+            Some(role_types) => Ok(role_types.contains(&Type::RoleType(plays.role().into_owned()))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -206,7 +198,7 @@ fn create_plays_filter_player_role_type(player_role_types: Arc<BTreeMap<Type, Ve
 
 fn create_plays_filter_role_type(role_types: Arc<HashSet<Type>>) -> Arc<PlaysFilterFn> {
     Arc::new(move |result| match result {
-        Ok(plays) => Ok(role_types.contains(&Type::RoleType(plays.role()))),
+        Ok(plays) => Ok(role_types.contains(&Type::RoleType(plays.role().into_owned()))),
         Err(err) => Err(err.clone()),
     })
 }

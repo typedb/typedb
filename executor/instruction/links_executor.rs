@@ -73,7 +73,7 @@ pub(crate) type LinksBoundedRelationPlayer = LinksTupleIterator<LinksIterator>;
 
 pub(super) type LinksFilterFn = FilterFn<(AsHkt![Relation<'_>], AsHkt![RolePlayer<'_>], u64)>;
 
-type LinksVariableValueExtractor = for<'a, 'b> fn(&'a (Relation<'b>, RolePlayer<'b>, u64)) -> VariableValue<'a>;
+type LinksVariableValueExtractor = for<'a> fn(&'a (Relation<'_>, RolePlayer<'_>, u64)) -> VariableValue<'a>;
 pub(super) const EXTRACT_RELATION: LinksVariableValueExtractor =
     |(rel, _, _)| VariableValue::Thing(Thing::Relation(rel.as_reference()));
 pub(super) const EXTRACT_PLAYER: LinksVariableValueExtractor =

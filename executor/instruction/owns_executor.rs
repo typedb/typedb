@@ -22,15 +22,13 @@ use concept::{
 use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
-    higher_order::AdHocHkt,
-    AsLendingIterator, LendingIterator,
+    AsHkt, AsNarrowingIterator, LendingIterator,
 };
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        sub_executor::NarrowingTupleIterator,
         tuple::{owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
@@ -46,38 +44,35 @@ pub(crate) struct OwnsExecutor {
     owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
     attribute_types: Arc<HashSet<Type>>,
     filter_fn: Arc<OwnsFilterFn>,
-    checker: Checker<AdHocHkt<Owns<'static>>>,
+    checker: Checker<AsHkt![Owns<'_>]>,
 }
 
-pub(super) type OwnsTupleIterator<I> = NarrowingTupleIterator<
-    Map<
-        TryFilter<I, Box<OwnsFilterFn>, AdHocHkt<Owns<'static>>, ConceptReadError>,
-        OwnsToTupleFn,
-        AdHocHkt<TupleResult<'static>>,
-    >,
->;
+pub(super) type OwnsTupleIterator<I> =
+    Map<TryFilter<I, Box<OwnsFilterFn>, AsHkt![Owns<'_>], ConceptReadError>, OwnsToTupleFn, AsHkt![TupleResult<'_>]>;
 
 pub(super) type OwnsUnboundedSortedOwner = OwnsTupleIterator<
-    AsLendingIterator<
+    AsNarrowingIterator<
         iter::Map<
             iter::Flatten<vec::IntoIter<HashSet<Owns<'static>>>>,
             fn(Owns<'static>) -> Result<Owns<'static>, ConceptReadError>,
         >,
+        Result<AsHkt![Owns<'_>], ConceptReadError>,
     >,
 >;
 pub(super) type OwnsBoundedSortedAttribute = OwnsTupleIterator<
-    AsLendingIterator<
+    AsNarrowingIterator<
         iter::Map<vec::IntoIter<Owns<'static>>, fn(Owns<'static>) -> Result<Owns<'static>, ConceptReadError>>,
+        Result<AsHkt![Owns<'_>], ConceptReadError>,
     >,
 >;
 
-pub(super) type OwnsFilterFn = FilterFn<AdHocHkt<Owns<'static>>>;
+pub(super) type OwnsFilterFn = FilterFn<AsHkt![Owns<'_>]>;
 
-type OwnsVariableValueExtractor = fn(&Owns<'static>) -> VariableValue<'static>;
+type OwnsVariableValueExtractor = for<'a> fn(&'a Owns<'_>) -> VariableValue<'a>;
 pub(super) const EXTRACT_OWNER: OwnsVariableValueExtractor =
     |owns| VariableValue::Type(Type::from(owns.owner().into_owned()));
 pub(super) const EXTRACT_ATTRIBUTE: OwnsVariableValueExtractor =
-    |owns| VariableValue::Type(Type::Attribute(owns.attribute().into_owned()));
+    |owns| VariableValue::Type(Type::Attribute(owns.attribute()));
 
 impl OwnsExecutor {
     pub(crate) fn new(
@@ -104,7 +99,7 @@ impl OwnsExecutor {
             TuplePositions::Pair([owns.owner(), owns.attribute()])
         };
 
-        let checker = Checker::<AdHocHkt<Owns<'static>>> {
+        let checker = Checker::<AsHkt![Owns<'_>]> {
             checks,
             extractors: HashMap::from([(owns.owner(), EXTRACT_OWNER), (owns.attribute(), EXTRACT_ATTRIBUTE)]),
             _phantom_data: PhantomData,
@@ -149,11 +144,9 @@ impl OwnsExecutor {
                     .map_ok(|set| set.to_owned())
                     .try_collect()?;
                 let iterator = owns.into_iter().flatten().map(Ok as _);
-                let as_tuples: OwnsUnboundedSortedOwner = NarrowingTupleIterator(
-                    AsLendingIterator::new(iterator)
-                        .try_filter::<_, OwnsFilterFn, AdHocHkt<Owns<'_>>, _>(filter_for_row)
-                        .map(owns_to_tuple_owner_attribute),
-                );
+                let as_tuples: OwnsUnboundedSortedOwner = AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
+                    .try_filter::<_, OwnsFilterFn, Owns<'_>, _>(filter_for_row)
+                    .map(owns_to_tuple_owner_attribute);
                 Ok(TupleIterator::OwnsUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -180,11 +173,9 @@ impl OwnsExecutor {
 
                 let iterator =
                     owns.to_owned().into_iter().sorted_by_key(|owns| (owns.attribute(), owns.owner())).map(Ok as _);
-                let as_tuples: OwnsBoundedSortedAttribute = NarrowingTupleIterator(
-                    AsLendingIterator::new(iterator)
-                        .try_filter::<_, OwnsFilterFn, AdHocHkt<Owns<'_>>, _>(filter_for_row)
-                        .map(owns_to_tuple_owner_attribute),
-                );
+                let as_tuples: OwnsBoundedSortedAttribute = AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
+                    .try_filter::<_, OwnsFilterFn, Owns<'_>, _>(filter_for_row)
+                    .map(owns_to_tuple_owner_attribute);
                 Ok(TupleIterator::OwnsBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -197,7 +188,7 @@ impl OwnsExecutor {
 
 fn create_owns_filter_owner_attribute(owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok(owns) => match owner_attribute_types.get(&Type::from(owns.owner())) {
+        Ok(owns) => match owner_attribute_types.get(&Type::from(owns.owner().into_owned())) {
             Some(attribute_types) => Ok(attribute_types.contains(&Type::Attribute(owns.attribute()))),
             None => Ok(false),
         },

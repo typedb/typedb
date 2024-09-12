@@ -20,14 +20,13 @@ use concept::{
     type_::{object_type::ObjectType, owns::Owns},
 };
 use itertools::Itertools;
-use lending_iterator::{higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
+use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         owns_executor::{OwnsFilterFn, OwnsTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
-        sub_executor::NarrowingTupleIterator,
         tuple::{owns_to_tuple_attribute_owner, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
@@ -43,20 +42,22 @@ pub(crate) struct OwnsReverseExecutor {
     attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
     owner_types: Arc<HashSet<Type>>,
     filter_fn: Arc<OwnsFilterFn>,
-    checker: Checker<AdHocHkt<Owns<'static>>>,
+    checker: Checker<AsHkt![Owns<'_>]>,
 }
 
 pub(super) type OwnsReverseUnboundedSortedAttribute = OwnsTupleIterator<
-    AsLendingIterator<
+    AsNarrowingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashSet<Owns<'static>>>>,
-            fn(Owns<'static>) -> Result<Owns<'static>, ConceptReadError>,
+            iter::Flatten<vec::IntoIter<HashMap<ObjectType<'static>, Owns<'static>>>>,
+            fn((ObjectType<'static>, Owns<'static>)) -> Result<Owns<'static>, ConceptReadError>,
         >,
+        Result<AsHkt![Owns<'_>], ConceptReadError>,
     >,
 >;
 pub(super) type OwnsReverseBoundedSortedOwner = OwnsTupleIterator<
-    AsLendingIterator<
+    AsNarrowingIterator<
         iter::Map<vec::IntoIter<Owns<'static>>, fn(Owns<'static>) -> Result<Owns<'static>, ConceptReadError>>,
+        Result<AsHkt![Owns<'_>], ConceptReadError>,
     >,
 >;
 
@@ -85,7 +86,7 @@ impl OwnsReverseExecutor {
             TuplePositions::Pair([owns.attribute(), owns.owner()])
         };
 
-        let checker = Checker::<AdHocHkt<Owns<'static>>> {
+        let checker = Checker::<AsHkt![Owns<'_>]> {
             checks,
             extractors: HashMap::from([(owns.owner(), EXTRACT_OWNER), (owns.attribute(), EXTRACT_ATTRIBUTE)]),
             _phantom_data: PhantomData,
@@ -126,11 +127,10 @@ impl OwnsReverseExecutor {
                     .map_ok(|set| set.to_owned())
                     .try_collect()?;
                 let iterator = owns.into_iter().flatten().map(Ok as _);
-                let as_tuples: OwnsReverseUnboundedSortedAttribute = NarrowingTupleIterator(
-                    AsLendingIterator::new(iterator)
-                        .try_filter::<_, OwnsFilterFn, AdHocHkt<Owns<'_>>, _>(filter_for_row)
-                        .map(owns_to_tuple_attribute_owner),
-                );
+                let as_tuples: OwnsReverseUnboundedSortedAttribute =
+                    AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
+                        .try_filter::<_, OwnsFilterFn, AsHkt![Owns<'_>], _>(filter_for_row)
+                        .map(owns_to_tuple_attribute_owner);
                 Ok(TupleIterator::OwnsReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -149,14 +149,14 @@ impl OwnsReverseExecutor {
                 };
 
                 let type_manager = thing_manager.type_manager();
-                let owns = attribute.get_owns(&**snapshot, type_manager)?.to_owned();
+                let owns = attribute.get_owns(&**snapshot, type_manager)?.values().cloned().collect_vec();
 
                 let iterator = owns.into_iter().sorted_by_key(|owns| owns.owner()).map(Ok as _);
-                let as_tuples: OwnsReverseBoundedSortedOwner = NarrowingTupleIterator(
-                    AsLendingIterator::new(iterator)
-                        .try_filter::<_, OwnsFilterFn, AdHocHkt<Owns<'_>>, _>(filter_for_row)
-                        .map(owns_to_tuple_attribute_owner),
-                );
+                let as_tuples: OwnsReverseBoundedSortedOwner =
+                    AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
+                        .try_filter::<_, OwnsFilterFn, AsHkt![Owns<'_>], _>(filter_for_row)
+                        .map(owns_to_tuple_attribute_owner);
+
                 Ok(TupleIterator::OwnsReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -170,7 +170,7 @@ impl OwnsReverseExecutor {
 fn create_owns_filter_owner_attribute(attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
         Ok(owns) => match attribute_owner_types.get(&Type::Attribute(owns.attribute())) {
-            Some(owner_types) => Ok(owner_types.contains(&Type::from(owns.owner()))),
+            Some(owner_types) => Ok(owner_types.contains(&Type::from(owns.owner().into_owned()))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -179,7 +179,7 @@ fn create_owns_filter_owner_attribute(attribute_owner_types: Arc<BTreeMap<Type, 
 
 fn create_owns_filter_attribute(owner_types: Arc<HashSet<Type>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok(owns) => Ok(owner_types.contains(&Type::from(owns.owner()))),
+        Ok(owns) => Ok(owner_types.contains(&Type::from(owns.owner().into_owned()))),
         Err(err) => Err(err.clone()),
     })
 }

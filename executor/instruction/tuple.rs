@@ -141,9 +141,9 @@ pub(crate) fn sub_to_tuple_super_sub(result: Result<(Type, Type), ConceptReadErr
     }
 }
 
-pub(crate) type OwnsToTupleFn = fn(Result<Owns<'static>, ConceptReadError>) -> TupleResult<'static>;
+pub(crate) type OwnsToTupleFn = fn(Result<Owns<'_>, ConceptReadError>) -> TupleResult<'_>;
 
-pub(crate) fn owns_to_tuple_owner_attribute(result: Result<Owns<'static>, ConceptReadError>) -> TupleResult<'static> {
+pub(crate) fn owns_to_tuple_owner_attribute(result: Result<Owns<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
         Ok(owns) => Ok(Tuple::Pair(
             [Type::from(owns.owner().into_owned()), Type::Attribute(owns.attribute().to_owned())]
@@ -153,7 +153,7 @@ pub(crate) fn owns_to_tuple_owner_attribute(result: Result<Owns<'static>, Concep
     }
 }
 
-pub(crate) fn owns_to_tuple_attribute_owner(result: Result<Owns<'static>, ConceptReadError>) -> TupleResult<'static> {
+pub(crate) fn owns_to_tuple_attribute_owner(result: Result<Owns<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
         Ok(owns) => Ok(Tuple::Pair(
             [Type::Attribute(owns.attribute().to_owned()), Type::from(owns.owner().into_owned())]
@@ -163,47 +163,45 @@ pub(crate) fn owns_to_tuple_attribute_owner(result: Result<Owns<'static>, Concep
     }
 }
 
-pub(crate) type RelatesToTupleFn = fn(Result<Relates<'static>, ConceptReadError>) -> TupleResult<'static>;
+pub(crate) type RelatesToTupleFn = fn(Result<Relates<'_>, ConceptReadError>) -> TupleResult<'_>;
 
-pub(crate) fn relates_to_tuple_relation_role(
-    result: Result<Relates<'static>, ConceptReadError>,
-) -> TupleResult<'static> {
+pub(crate) fn relates_to_tuple_relation_role(result: Result<Relates<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
         Ok(relates) => Ok(Tuple::Pair(
-            [Type::Relation(relates.relation().into_owned()), Type::RoleType(relates.role().to_owned())]
+            [Type::Relation(relates.relation().into_owned()), Type::RoleType(relates.role().into_owned())]
                 .map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }
 }
 
-pub(crate) fn relates_to_tuple_role_relation(
-    result: Result<Relates<'static>, ConceptReadError>,
-) -> TupleResult<'static> {
+pub(crate) fn relates_to_tuple_role_relation(result: Result<Relates<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
         Ok(relates) => Ok(Tuple::Pair(
-            [Type::RoleType(relates.role().to_owned()), Type::Relation(relates.relation().into_owned())]
+            [Type::RoleType(relates.role().into_owned()), Type::Relation(relates.relation().into_owned())]
                 .map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }
 }
 
-pub(crate) type PlaysToTupleFn = fn(Result<Plays<'static>, ConceptReadError>) -> TupleResult<'static>;
+pub(crate) type PlaysToTupleFn = fn(Result<Plays<'_>, ConceptReadError>) -> TupleResult<'_>;
 
-pub(crate) fn plays_to_tuple_player_role(result: Result<Plays<'static>, ConceptReadError>) -> TupleResult<'static> {
+pub(crate) fn plays_to_tuple_player_role(result: Result<Plays<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
         Ok(plays) => Ok(Tuple::Pair(
-            [Type::from(plays.player().into_owned()), Type::RoleType(plays.role().to_owned())].map(VariableValue::Type),
+            [Type::from(plays.player().into_owned()), Type::RoleType(plays.role().into_owned())]
+                .map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }
 }
 
-pub(crate) fn plays_to_tuple_role_player(result: Result<Plays<'static>, ConceptReadError>) -> TupleResult<'static> {
+pub(crate) fn plays_to_tuple_role_player(result: Result<Plays<'_>, ConceptReadError>) -> TupleResult<'_> {
     match result {
         Ok(plays) => Ok(Tuple::Pair(
-            [Type::RoleType(plays.role().to_owned()), Type::from(plays.player().into_owned())].map(VariableValue::Type),
+            [Type::RoleType(plays.role().into_owned()), Type::from(plays.player().into_owned())]
+                .map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }
