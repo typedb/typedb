@@ -21,7 +21,8 @@ use ir::{
     },
 };
 use storage::snapshot::ReadableSnapshot;
-use typeql::query::stage::Stage as TypeQLStage;
+use typeql::query::stage::{Modifier, Stage as TypeQLStage};
+use ir::translation::modifiers::{translate_select, translate_sort};
 
 use crate::error::QueryError;
 
@@ -86,6 +87,15 @@ fn translate_stage(
         }
         TypeQLStage::Delete(delete) => translate_delete(translation_context, delete)
             .map(|(block, deleted_variables)| TranslatedStage::Delete { block, deleted_variables }),
+        TypeQLStage::Modifier(modifier) => {
+            match modifier {
+                Modifier::Select(select) => translate_select(translation_context, select)
+                    .map(|filter| TranslatedStage::Filter(filter)),
+                Modifier::Sort(sort) => translate_sort(translation_context, sort).map(|sort| TranslatedStage::Sort(sort) ),
+                Modifier::Offset(offset) => todo!(),
+                Modifier::Limit(limit) => todo!(),
+            }
+        }
         _ => todo!(),
     }
     .map_err(|source| QueryError::PatternDefinition { typedb_source: source })

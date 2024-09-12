@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::{collections::HashMap, sync::Arc};
+use std::collections::HashSet;
 
 use answer::variable::Variable;
 use compiler::{
@@ -12,8 +13,10 @@ use compiler::{
     match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
     VariablePosition,
 };
+use compiler::modifiers::{FilterProgram, LimitProgram, OffsetProgram, SortProgram};
 use concept::thing::statistics::Statistics;
 use ir::program::{block::VariableRegistry, function::Function};
+use ir::program::modifier::{Filter, Limit, Offset, Sort};
 
 use crate::{annotation::AnnotatedStage, error::QueryError};
 
@@ -31,6 +34,11 @@ pub enum CompiledStage {
     Match(MatchProgram),
     Insert(InsertProgram),
     Delete(DeleteProgram),
+
+    Filter(FilterProgram),
+    Sort(SortProgram),
+    Offset(OffsetProgram),
+    Limit(LimitProgram),
 }
 
 impl CompiledStage {
@@ -49,6 +57,10 @@ impl CompiledStage {
                 .enumerate()
                 .filter_map(|(i, v)| v.map(|v| (v, VariablePosition::new(i as u32))))
                 .collect(),
+            CompiledStage::Filter(program) => program.output_row_mapping.clone(),
+            CompiledStage::Sort(_) => todo!(),
+            CompiledStage::Offset(_) => todo!(),
+            CompiledStage::Limit(_) => todo!(),
         }
     }
 }
@@ -115,10 +127,24 @@ fn compile_stage(
             .map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Delete(plan))
         }
-        _ => todo!(),
-        // AnnotatedStage::Filter(_) => {}
-        // AnnotatedStage::Sort(_) => {}
-        // AnnotatedStage::Offset(_) => {}
-        // AnnotatedStage::Limit(_) => {}
+        AnnotatedStage::Filter(filter) => {
+            let mut retained_positions = HashSet::with_capacity(filter.variables.len());
+            let mut output_row_mapping = HashMap::with_capacity(filter.variables.len());
+            for variable in &filter.variables {
+                let pos = input_variables.get(variable).unwrap();
+                retained_positions.insert(pos.clone());
+                output_row_mapping.insert(variable.clone(), pos.clone());
+            }
+            Ok(CompiledStage::Filter(FilterProgram { retained_positions, output_row_mapping }))
+        }
+        AnnotatedStage::Sort(sort) => {
+            Ok(CompiledStage::Sort(SortProgram { sort_on: sort.variables.clone(), output_row_mapping: input_variables.clone() }))
+        }
+        AnnotatedStage::Offset(offset) => {
+            Ok(CompiledStage::Offset(OffsetProgram { offset: offset.offset(), output_row_mapping: input_variables.clone() }))
+        }
+        AnnotatedStage::Limit(limit) => {
+            Ok(CompiledStage::Limit(LimitProgram { limit: limit.limit(), output_row_mapping: input_variables.clone() }))
+        }
     }
 }

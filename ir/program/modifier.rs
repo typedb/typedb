@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, error::Error, fmt};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    fmt,
+};
 
 use answer::variable::Variable;
 
@@ -20,11 +24,14 @@ pub enum Modifier {
 
 #[derive(Debug, Clone)]
 pub struct Filter {
-    variables: HashSet<Variable>,
+    pub variables: HashSet<Variable>,
 }
 
 impl Filter {
-    pub(crate) fn new(variables: Vec<&str>, context: &BlockContext<'_>) -> Result<Self, ModifierDefinitionError> {
+    pub(crate) fn new_given_block_context(
+        variables: Vec<&str>,
+        context: &BlockContext<'_>,
+    ) -> Result<Self, ModifierDefinitionError> {
         use ModifierDefinitionError::FilterVariableNotAvailable;
         let mut filter_variables = HashSet::with_capacity(variables.len());
         for name in variables {
@@ -35,22 +42,37 @@ impl Filter {
         }
         Ok(Self { variables: filter_variables })
     }
+
+    pub(crate) fn new_given_variable_map(
+        variables: Vec<&str>,
+        variable_index: &HashMap<String, Variable>,
+    ) -> Result<Self, ModifierDefinitionError> {
+        use ModifierDefinitionError::FilterVariableNotAvailable;
+        let mut filter_variables = HashSet::with_capacity(variables.len());
+        for name in variables {
+            match variable_index.get(name) {
+                None => Err(FilterVariableNotAvailable { name: name.to_string() })?,
+                Some(var) => filter_variables.insert(var.clone()),
+            };
+        }
+        Ok(Self { variables: filter_variables })
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct Sort {
-    variables: Vec<SortVariable>,
+    pub variables: Vec<SortVariable>,
 }
 
 impl Sort {
     pub(crate) fn new(
         variables: Vec<(&str, bool)>,
-        context: &BlockContext<'_>,
+        variable_lookup: &impl Fn(&str) -> Option<Variable>,
     ) -> Result<Self, ModifierDefinitionError> {
         use ModifierDefinitionError::SortVariableNotAvailable;
         let mut sort_variables = Vec::with_capacity(variables.len());
         for (name, is_ascending) in variables {
-            match context.get_variable(name) {
+            match variable_lookup(name) {
                 None => Err(SortVariableNotAvailable { name: name.to_string() })?,
                 Some(var) => {
                     if is_ascending {
@@ -66,7 +88,7 @@ impl Sort {
 }
 
 #[derive(Debug, Copy, Clone)]
-enum SortVariable {
+pub enum SortVariable {
     Ascending(Variable),
     Descending(Variable),
 }
@@ -80,6 +102,10 @@ impl Offset {
     pub(crate) fn new(offset: u64) -> Self {
         Self { offset }
     }
+
+    pub fn offset(&self) -> u64 {
+        self.offset
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -91,9 +117,13 @@ impl Limit {
     pub(crate) fn new(limit: u64) -> Self {
         Self { limit }
     }
+
+    pub fn limit(&self) -> u64 {
+        self.limit
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ModifierDefinitionError {
     FilterVariableNotAvailable { name: String },
     SortVariableNotAvailable { name: String },

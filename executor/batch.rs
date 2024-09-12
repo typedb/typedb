@@ -8,6 +8,7 @@ use std::{fmt::Display, vec};
 
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
+use ir::program::modifier::SortVariable;
 use lending_iterator::LendingIterator;
 
 use crate::{

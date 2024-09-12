@@ -23,10 +23,12 @@ use crate::{
     pattern::{constraint::Constraint, expression::ExpressionDefinitionError, variable_category::VariableCategory},
     program::FunctionReadError,
 };
+use crate::program::modifier::ModifierDefinitionError;
 
 pub mod pattern;
 pub mod program;
 pub mod translation;
+
 
 // TODO: include declaration source for each error message
 typedb_error!(
@@ -124,6 +126,11 @@ typedb_error!(
             16,
             "Relation's declared role types should not contain scopes (':').\nSource:\n{declaration}",
             declaration: typeql::statement::thing::RolePlayer
+        ),
+        ModifierDefinitionError( // TODO: Should we just inline the two?
+            17,
+            "Error adding modifier",
+            source: ModifierDefinitionError
         ),
     }
 );

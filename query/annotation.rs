@@ -192,6 +192,8 @@ fn annotate_stage(
             // TODO: check_annotations on deletes. Can only delete links or has for types that actually are linked or owned
             Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations })
         }
-        _ => todo!(),
+        TranslatedStage::Sort(sort) => Ok(AnnotatedStage::Sort(sort)),
+        TranslatedStage::Filter(select) => Ok(AnnotatedStage::Filter(select)),
+        _ => todo!()
     }
 }
