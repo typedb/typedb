@@ -88,5 +88,5 @@ fn translate_stage(
             .map(|(block, deleted_variables)| TranslatedStage::Delete { block, deleted_variables }),
         _ => todo!(),
     }
-    .map_err(|source| QueryError::PatternDefinition { source })
+    .map_err(|source| QueryError::PatternDefinition { typedb_source: source })
 }

@@ -31,6 +31,7 @@ use ir::{
 use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
+use error::TypeDBError;
 use primitive::either::Either;
 use query::query_manager::QueryManager;
 
@@ -45,7 +46,7 @@ use crate::{
 fn execute_match_query(
     context: &mut Context,
     query: typeql::Query,
-) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Box<dyn Error>> {
+) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Box<dyn TypeDBError>> {
     let mut translation_context = TranslationContext::new();
     let typeql_match = query.into_pipeline().stages.pop().unwrap().into_match();
     let block =

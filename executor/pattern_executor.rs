@@ -103,7 +103,7 @@ impl PatternExecutor {
         loop {
             // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.
             if interrupt.check() {
-                return Err(ReadExecutionError::Interrupted {})
+                return Err(ReadExecutionError::Interrupted {});
             }
 
             match direction {

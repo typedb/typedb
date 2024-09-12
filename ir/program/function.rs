@@ -60,7 +60,7 @@ impl Function {
 #[derive(Debug, Clone)]
 pub enum ReturnOperation {
     Stream(Vec<Variable>),
-    Single(Vec<Reducer>),
+    Reduce(Vec<Reducer>),
 }
 
 impl ReturnOperation {
@@ -75,7 +75,7 @@ impl ReturnOperation {
                     .map(|types_as_arced_hashset| BTreeSet::from_iter(types_as_arced_hashset.iter().cloned()))
                     .collect()
             }
-            ReturnOperation::Single(_) => {
+            ReturnOperation::Reduce(_) => {
                 todo!()
             }
         }
@@ -86,7 +86,7 @@ impl ReturnOperation {
     pub(crate) fn is_stream(&self) -> bool {
         match self {
             Self::Stream(_) => true,
-            Self::Single(_) => false,
+            Self::Reduce(_) => false,
         }
     }
 }

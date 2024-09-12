@@ -259,7 +259,7 @@ mod tests {
 
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
     use chrono_tz::Europe::London;
-    use rand::{Rng, rngs::SmallRng, SeedableRng, thread_rng};
+    use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
 
     use super::{Duration, MAX_YEAR, MIN_YEAR};
 

@@ -734,7 +734,14 @@ fn redefine_owns_override(
         let overridden_owns = resolve_owns(snapshot, type_manager, owns.owner(), overridden_attribute_type)
             .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
-        check_can_redefine_override(snapshot, type_manager, owner_label, owns.clone(), overridden_owns.clone(), todo!())?;
+        check_can_redefine_override(
+            snapshot,
+            type_manager,
+            owner_label,
+            owns.clone(),
+            overridden_owns.clone(),
+            todo!(),
+        )?;
         error_if_anything_redefined_else_set_true(anything_redefined)?;
         owns.set_override(snapshot, type_manager, thing_manager, overridden_owns).map_err(|source| {
             RedefineError::SetRelatesOverride {
@@ -856,7 +863,14 @@ fn redefine_plays_override(
         let overridden_plays = resolve_plays_role_label(snapshot, type_manager, plays.player(), &overridden_label)
             .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
-        check_can_redefine_override(snapshot, type_manager, player_label, plays.clone(), overridden_plays.clone(), todo!())?;
+        check_can_redefine_override(
+            snapshot,
+            type_manager,
+            player_label,
+            plays.clone(),
+            overridden_plays.clone(),
+            todo!(),
+        )?;
         error_if_anything_redefined_else_set_true(anything_redefined)?;
         plays.set_override(snapshot, type_manager, thing_manager, overridden_plays).map_err(|source| {
             RedefineError::SetRelatesOverride {
@@ -925,7 +939,7 @@ fn check_can_redefine_override<'a, CAP: concept::type_::Capability<'a>>(
                 .get_label_cloned(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
-            declaration: typeql_relates.clone()
+            declaration: typeql_relates.clone(),
         }),
         DefinableStatus::ExistsSame(_) => Err(RedefineError::CapabilityOverrideRemainsSame {
             label: label.clone().into_owned(),
@@ -934,7 +948,7 @@ fn check_can_redefine_override<'a, CAP: concept::type_::Capability<'a>>(
                 .get_label_cloned(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
-            declaration: typeql_relates.clone()
+            declaration: typeql_relates.clone(),
         }),
         DefinableStatus::ExistsDifferent(_) => Ok(()),
     }

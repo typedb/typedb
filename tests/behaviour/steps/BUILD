@@ -13,9 +13,10 @@ rust_library(
     crate_root = "lib.rs",
     deps = [
         "//answer:answer",
-        "//common/primitive",
+        "//common/error",
         "//common/lending_iterator",
         "//common/options",
+        "//common/primitive",
         "//compiler:compiler",
         "//concept:concept",
         "//database:database",

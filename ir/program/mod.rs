@@ -58,7 +58,7 @@ typedb_error!(
             3,
             "Function pattern contains an error.\nSource:\n{declaration}",
             declaration: Function,
-            ( source: PatternDefinitionError )
+            ( typedb_source : PatternDefinitionError )
         ),
     }
 );

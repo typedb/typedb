@@ -6,9 +6,10 @@
 
 use answer::variable::Variable;
 use typeql::{
-    schema::definable::function::{Output, ReturnSingle, ReturnStatement, ReturnStream, SingleOutput},
+    schema::definable::function::{Output, ReturnStatement, ReturnStream},
     TypeRefAny,
 };
+use typeql::query::stage::reduce::Reduction;
 
 use crate::{
     pattern::{
@@ -31,11 +32,11 @@ pub fn translate_function(
     let mut context = TranslationContext::new();
     let mut builder = FunctionalBlock::builder(context.next_block_context());
     add_patterns(function_index, &mut builder.conjunction_mut(), &function.body.patterns)
-        .map_err(|source| FunctionRepresentationError::PatternDefinition { declaration: function.clone(), source })?;
+        .map_err(|source| FunctionRepresentationError::PatternDefinition { declaration: function.clone(), typedb_source: source })?;
 
     let return_operation = match &function.return_stmt {
         ReturnStatement::Stream(stream) => build_return_stream(builder.context_mut(), stream),
-        ReturnStatement::Single(single) => build_return_single(builder.context_mut(), single),
+        ReturnStatement::Reduce(reduction) => build_return_reduce(builder.context_mut(), reduction),
     }?;
     let arguments: Vec<Variable> = function
         .signature
@@ -106,22 +107,11 @@ fn build_return_stream(
     Ok(ReturnOperation::Stream(variables))
 }
 
-fn build_return_single(
+fn build_return_reduce(
     context: &BlockContext<'_>,
-    single: &ReturnSingle,
+    reduction: &Reduction,
 ) -> Result<ReturnOperation, FunctionRepresentationError> {
-    let reducers = single
-        .outputs
-        .iter()
-        .map(|output| build_return_single_output(context, output))
-        .collect::<Result<Vec<Reducer>, FunctionRepresentationError>>()?;
-    Ok(ReturnOperation::Single(reducers))
-}
-
-fn build_return_single_output(
-    context: &BlockContext<'_>,
-    single_output: &SingleOutput,
-) -> Result<Reducer, FunctionRepresentationError> {
+    // Ok(ReturnOperation::Reduction(reducers))
     todo!()
 }
 

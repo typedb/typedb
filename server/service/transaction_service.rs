@@ -277,15 +277,16 @@ impl TransactionService {
     }
 
     // TODO: any method using `Result<ControlFlow<(), ()>, Status>` should really be `ControlFlow<Result<(), Status>, ()>`
-    async fn handle_next(&mut self, next: Option<Result<typedb_protocol::transaction::Client, Status>>) -> Result<ControlFlow<(), ()>, Status> {
+    async fn handle_next(
+        &mut self,
+        next: Option<Result<typedb_protocol::transaction::Client, Status>>,
+    ) -> Result<ControlFlow<(), ()>, Status> {
         match next {
-            None => {
-                Ok(Break(()))
-            }
+            None => Ok(Break(())),
             Some(Err(error)) => {
                 event!(Level::DEBUG, ?error, "GRPC error");
                 Ok(Break(()))
-            },
+            }
             Some(Ok(message)) => {
                 for request in message.reqs {
                     let request_id = Uuid::from_slice(&request.req_id).unwrap();
@@ -295,7 +296,8 @@ impl TransactionService {
                             return Err(ProtocolError::MissingField {
                                 name: "req",
                                 description: "Transaction message must contain a request.",
-                            }.into_status());
+                            }
+                            .into_status());
                             //
                             // let result = self.response_sender.send(Err(error)).await;
                             // if let Err(send_error) = result {
@@ -309,13 +311,11 @@ impl TransactionService {
                             //
                             //     );
                         }
-                        Some(req) => {
-                            match self.handle_request(request_id, req).await {
-                                Err(err) => return Err(err),
-                                Ok(Break(())) => return Ok(Break(())),
-                                Ok(Continue(())) => {}
-                            }
-                        }
+                        Some(req) => match self.handle_request(request_id, req).await {
+                            Err(err) => return Err(err),
+                            Ok(Break(())) => return Ok(Break(())),
+                            Ok(Continue(())) => {}
+                        },
                     }
                 }
                 Ok(Continue(()))
@@ -446,7 +446,9 @@ impl TransactionService {
         self.query_interrupt_sender.send(()).unwrap();
         self.await_running_read_queries().await;
         if let Break(()) = self.cancel_queued_read_queries().await {
-            return Err(TransactionServiceError::ServiceClosingFailedQueueCleanup {}.into_error_message().into_status());
+            return Err(TransactionServiceError::ServiceClosingFailedQueueCleanup {}
+                .into_error_message()
+                .into_status());
         }
         self.await_transmitting_write_queries().await;
 
@@ -564,7 +566,7 @@ impl TransactionService {
         &mut self,
         req_id: Uuid,
         transaction: Transaction,
-        result: Result<(StreamQueryOutputDescriptor, Batch), QueryError>
+        result: Result<(StreamQueryOutputDescriptor, Batch), QueryError>,
     ) -> Result<(), Status> {
         self.transaction = Some(transaction);
         match result {

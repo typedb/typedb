@@ -109,7 +109,7 @@ pub(super) fn add_user_defined_function_call(
     let Some(callee) = callee else {
         return Err(PatternDefinitionError::UnresolvedFunction { function_name: function_name.to_owned() });
     };
-    constraints.add_function_binding(assigned, &callee, arguments)?;
+    constraints.add_function_binding(assigned, &callee, arguments, &function_name)?;
     Ok(())
 }
 

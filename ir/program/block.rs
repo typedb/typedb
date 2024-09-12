@@ -179,12 +179,11 @@ impl VariableRegistry {
                 let narrowest = existing_category.narrowest(category);
                 match narrowest {
                     None => Err(PatternDefinitionError::VariableCategoryMismatch {
-                        variable,
-                        variable_name: self.variable_names.get(&variable).cloned(),
+                        variable_name: self.variable_names.get(&variable).unwrap().clone(),
                         category_1: category,
-                        category_1_source: source,
+                        // category_1_source: source,
                         category_2: *existing_category,
-                        category_2_source: existing_source.clone(),
+                        // category_2_source: existing_source.clone(),
                     }),
                     Some(narrowed) => {
                         if narrowed == *existing_category {
@@ -310,7 +309,7 @@ impl<'a> BlockContext<'a> {
                     *existing_scope = scope;
                     Ok(*existing_variable)
                 } else {
-                    Err(PatternDefinitionError::DisjointVariableReuse { variable_name: name.to_string() })
+                    Err(PatternDefinitionError::DisjointVariableReuse { name: name.to_string() })
                 }
             }
         }
