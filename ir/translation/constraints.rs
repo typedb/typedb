@@ -6,19 +6,27 @@
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
-use typeql::{expression::{FunctionCall, FunctionName}, statement::{comparison::ComparisonStatement, Assignment, AssignmentPattern, InIterable}, token::Kind, type_::NamedType, ScopedLabel, TypeRef, TypeRefAny};
+use typeql::{
+    expression::{FunctionCall, FunctionName},
+    statement::{comparison::ComparisonStatement, Assignment, AssignmentPattern, InIterable},
+    token::Kind,
+    type_::NamedType,
+    ScopedLabel, TypeRef, TypeRefAny,
+};
 
 use crate::{
     pattern::{
         conjunction::ConjunctionBuilder,
         constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
+        expression::{Expression, ExpressionTree},
     },
     program::function_signature::FunctionSignatureIndex,
-    translation::expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
+    translation::{
+        expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
+        literal::translate_literal,
+    },
     PatternDefinitionError,
 };
-use crate::pattern::expression::{Expression, ExpressionTree};
-use crate::translation::literal::translate_literal;
 
 pub(super) fn add_statement(
     function_index: &impl FunctionSignatureIndex,
@@ -63,14 +71,14 @@ pub(super) fn add_statement(
             rhs_value.add(Expression::Constant(value));
             constraints.add_expression(rhs_var, rhs_value)?;
             constraints.add_comparison(attribute, rhs_var, Comparator::Equal)?;
-        },
+        }
         typeql::Statement::AttributeComparison(attribute_comparison) => {
             let attribute = register_typeql_var(constraints, &attribute_comparison.var)?;
             add_typeql_isa(constraints, attribute, &attribute_comparison.isa)?;
             let rhs_var = constraints.create_anonymous_variable()?;
             add_typeql_expression(function_index, constraints, rhs_var, &attribute_comparison.comparison.rhs)?;
             constraints.add_comparison(attribute, rhs_var, attribute_comparison.comparison.comparator.into())?;
-        },
+        }
         typeql::Statement::Type(type_) => add_type_statement(constraints, type_)?,
     }
     Ok(())

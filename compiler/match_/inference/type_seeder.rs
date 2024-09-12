@@ -94,16 +94,18 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
         let mut tig = self.build_recursive(context, conjunction);
         // Pre-seed with upstream variable annotations.
-        for (variable, _) in context.get_variable_scopes() {
-            if let Some(annotations) = upstream_annotations.get(variable) {
-                Self::add_or_intersect(&mut tig.vertices, *variable, Cow::Owned(annotations.iter().cloned().collect()));
+        for variable in context.referenced_variables() {
+            if let Some(annotations) = upstream_annotations.get(&variable) {
+                Self::add_or_intersect(&mut tig.vertices, variable, Cow::Owned(annotations.iter().cloned().collect()));
             }
         }
         // Advanced TODO: Copying upstream binary constraints as schema constraints.
         self.seed_types_impl(&mut tig, context, &BTreeMap::new())?;
 
         debug_assert!({
-            conjunction.constraints().iter()
+            conjunction
+                .constraints()
+                .iter()
                 .flat_map(|constraint| constraint.ids())
                 .dedup()
                 .all(|id| tig.vertices.contains_key(&id))

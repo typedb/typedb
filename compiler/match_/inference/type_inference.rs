@@ -130,7 +130,10 @@ pub fn infer_types_for_match_block(
         Some(annotated_preamble_functions),
     )?;
     let type_annotations = TypeAnnotations::build(root_tig);
-    debug_assert!(match_block.variable_scopes().all(|(v, _)| type_annotations.variable_annotations_of(*v).is_some()));
+    debug_assert!(match_block
+        .scope_context()
+        .referenced_variables()
+        .all(|v| type_annotations.variable_annotations_of(v).is_some()));
     Ok(type_annotations)
 }
 

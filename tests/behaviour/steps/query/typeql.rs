@@ -6,23 +6,37 @@
 
 use std::{collections::HashMap, error::Error, str::FromStr, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
-use compiler::{insert::WriteCompilationError, match_::{
-    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
-}, VariablePosition};
-use concept::{thing::object::ObjectAPI, type_::TypeAPI};
+use answer::{answer_map::AnswerMap, variable_value::VariableValue, Thing};
+use compiler::{
+    insert::WriteCompilationError,
+    match_::{
+        inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+        planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
+    },
+    VariablePosition,
+};
+use concept::{
+    thing::{object::ObjectAPI, thing_manager::ThingManager},
+    type_::{type_manager::TypeManager, TypeAPI},
+};
 use cucumber::gherkin::Step;
-use futures::TryFutureExt;
+use database::transaction::{TransactionRead, TransactionSchema, TransactionWrite};
 use encoding::value::label::Label;
 use error::TypeDBError;
 use executor::{
     error::ReadExecutionError,
+    batch::Batch,
+    pipeline::{
+        stage::{WritePipelineStage, WriteStageIterator},
+        PipelineExecutionError, StageAPI, StageIterator,
+    },
     program_executor::ProgramExecutor,
-    row::Row,
+    row::{MaybeOwnedRow, Row},
     write::{insert::InsertExecutor, WriteError},
     ExecutionInterrupt,
 };
+use function::function_manager::FunctionManager;
+use futures::TryFutureExt;
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, writes::translate_insert, TranslationContext},
@@ -30,38 +44,33 @@ use ir::{
 use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
-use typeql::Query;
-use typeql::query::Pipeline;
-use answer::answer_map::AnswerMap;
-use concept::thing::thing_manager::ThingManager;
-use concept::type_::type_manager::TypeManager;
-use database::transaction::{TransactionRead, TransactionSchema, TransactionWrite};
-use executor::batch::Batch;
-use executor::pipeline::{PipelineExecutionError, StageAPI, StageIterator};
-use executor::pipeline::stage::{WritePipelineStage, WriteStageIterator};
-use executor::row::MaybeOwnedRow;
-use function::function_manager::FunctionManager;
 use primitive::either::Either;
-use query::error::QueryError;
-use query::query_manager::QueryManager;
+use query::{error::QueryError, query_manager::QueryManager};
 use storage::snapshot::WritableSnapshot;
+use typeql::{query::Pipeline, Query};
 
 use crate::{
     assert::assert_matches,
     generic_step, params,
-    transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
+    transaction_context::{with_read_tx, with_schema_tx, with_write_tx, ActiveTransaction},
     util::iter_table_map,
     Context,
 };
-use crate::transaction_context::ActiveTransaction;
 
-fn batch_result_to_answer(batch: Batch, selected_outputs: HashMap<VariablePosition, String>) -> Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError> {
-    batch.into_iterator_mut().map_static(move |row| {
-        let answer_map: HashMap<String, VariableValue<'static>> = selected_outputs.iter().map(|(p, v)| {
-            (v.clone().to_owned(), row.get(*p).clone().into_owned())
-        }).collect::<HashMap<_, _>>();
-        Ok(answer_map)
-    }).collect::<Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError>>()
+fn batch_result_to_answer(
+    batch: Batch,
+    selected_outputs: HashMap<VariablePosition, String>,
+) -> Vec<HashMap<String, VariableValue<'static>>> {
+    batch
+        .into_iterator_mut()
+        .map_static(move |row| {
+            let answer_map: HashMap<String, VariableValue<'static>> = selected_outputs
+                .iter()
+                .map(|(p, v)| (v.clone().to_owned(), row.get(*p).clone().into_owned()))
+                .collect::<HashMap<_, _>>();
+            answer_map
+        })
+        .collect::<Vec<HashMap<String, VariableValue<'static>>>>()
 }
 
 fn execute_read_query(
@@ -70,27 +79,27 @@ fn execute_read_query(
 ) -> Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError> {
     with_read_tx!(context, |tx| {
         let qm = QueryManager::new();
-        let final_stage = match qm.prepare_read_pipeline(tx.snapshot.clone(), &tx.type_manager, tx.thing_manager.clone(), &tx.function_manager, &query.into_pipeline()) {
+        let final_stage = match qm.prepare_read_pipeline(
+            tx.snapshot.clone(),
+            &tx.type_manager,
+            tx.thing_manager.clone(),
+            &tx.function_manager,
+            &query.into_pipeline(),
+        ) {
             Ok(final_stage) => final_stage,
-            Err(error) => return Err(error)
+            Err(error) => return Err(error),
         };
         let selected_outputs = final_stage.named_selected_outputs().clone();
         let (snapshot, result_as_batch) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
-            Ok((iterator, snapshot)) => {
-                (snapshot, iterator.collect_owned())
-            },
+            Ok((iterator, snapshot)) => (snapshot, iterator.collect_owned()),
             Err((_snapshot, err)) => {
                 return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
             }
         };
 
         match result_as_batch {
-            Ok(batch) => {
-                batch_result_to_answer(batch, selected_outputs)
-            },
-            Err(typedb_source) => {
-                Err(QueryError::WritePipelineExecutionError { typedb_source })
-            }
+            Ok(batch) => Ok(batch_result_to_answer(batch, selected_outputs)),
+            Err(typedb_source) => Err(QueryError::WritePipelineExecutionError { typedb_source }),
         }
     })
 }
@@ -101,31 +110,87 @@ fn execute_write_query(
 ) -> (ActiveTransaction, Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError>) {
     // TODO: this needs to handle match-insert pipelines
     let (tx, result) = match active_transaction {
-        ActiveTransaction::Read(_) => { unreachable!("Attempting write in read transaction"); }
+        ActiveTransaction::Read(_) => {
+            unreachable!("Attempting write in read transaction");
+        }
         ActiveTransaction::Write(tx) => {
-            let TransactionWrite { snapshot, type_manager, thing_manager, function_manager, database, transaction_options } = tx;
-            let (snapshot, result) = execute_insert_query_impl(Arc::into_inner(snapshot).unwrap(), &type_manager, thing_manager.clone(), &function_manager, query.into_pipeline());
-            (ActiveTransaction::Write(TransactionWrite { snapshot: Arc::new(snapshot), type_manager, thing_manager, function_manager, database, transaction_options }), result)
+            let TransactionWrite {
+                snapshot,
+                type_manager,
+                thing_manager,
+                function_manager,
+                database,
+                transaction_options,
+            } = tx;
+            let (snapshot, result) = execute_insert_query_impl(
+                Arc::into_inner(snapshot).unwrap(),
+                &type_manager,
+                thing_manager.clone(),
+                &function_manager,
+                query.into_pipeline(),
+            );
+            (
+                ActiveTransaction::Write(TransactionWrite {
+                    snapshot: Arc::new(snapshot),
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    database,
+                    transaction_options,
+                }),
+                result,
+            )
         }
         ActiveTransaction::Schema(tx) => {
-            let TransactionSchema { snapshot, type_manager, thing_manager, function_manager, database, transaction_options } = tx;
-            let (snapshot, result) = execute_insert_query_impl(Arc::into_inner(snapshot).unwrap(), &type_manager, thing_manager.clone(), &function_manager, query.into_pipeline());
-            (ActiveTransaction::Schema(TransactionSchema { snapshot: Arc::new(snapshot), type_manager, thing_manager, function_manager, database, transaction_options }), result)
+            let TransactionSchema {
+                snapshot,
+                type_manager,
+                thing_manager,
+                function_manager,
+                database,
+                transaction_options,
+            } = tx;
+            let (snapshot, result) = execute_insert_query_impl(
+                Arc::into_inner(snapshot).unwrap(),
+                &type_manager,
+                thing_manager.clone(),
+                &function_manager,
+                query.into_pipeline(),
+            );
+            (
+                ActiveTransaction::Schema(TransactionSchema {
+                    snapshot: Arc::new(snapshot),
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    database,
+                    transaction_options,
+                }),
+                result,
+            )
         }
     };
     (tx, result)
 }
-fn execute_insert_query_impl<Snapshot: WritableSnapshot + 'static>(snapshot : Snapshot, type_manager: &TypeManager, thing_manager: Arc<ThingManager>, function_manager : &FunctionManager, query: Pipeline ) -> (Snapshot, Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError>) {
+fn execute_insert_query_impl<Snapshot: WritableSnapshot + 'static>(
+    snapshot: Snapshot,
+    type_manager: &TypeManager,
+    thing_manager: Arc<ThingManager>,
+    function_manager: &FunctionManager,
+    query: Pipeline,
+) -> (Snapshot, Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError>) {
     let qm = QueryManager::new();
-    let final_stage = match qm.prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &query) {
+    let final_stage = match qm.prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &query)
+    {
         Ok(final_stage) => final_stage,
-        Err((snapshot, error)) => return (snapshot, Err(error))
+        Err((snapshot, error)) => return (snapshot, Err(error)),
     };
     let selected_outputs = final_stage.named_selected_outputs().clone();
     let (snapshot, result_as_batch, ) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
         Ok((iterator, snapshot)) => {
-            (Arc::into_inner(snapshot).unwrap(), iterator.collect_owned())
-        },
+            let result = iterator.collect_owned();
+            (Arc::into_inner(snapshot).unwrap(), result)
+        }
         Err((snapshot, err)) => {
             return (
                 Arc::into_inner(snapshot).unwrap(),
@@ -135,12 +200,8 @@ fn execute_insert_query_impl<Snapshot: WritableSnapshot + 'static>(snapshot : Sn
     };
 
     let result_as_answers = match result_as_batch {
-        Ok(batch) => {
-            batch_result_to_answer(batch, selected_outputs)
-        },
-        Err(typedb_source) => {
-            Err(QueryError::WritePipelineExecutionError { typedb_source })
-        }
+        Ok(batch) => Ok(batch_result_to_answer(batch, selected_outputs)),
+        Err(typedb_source) => Err(QueryError::WritePipelineExecutionError { typedb_source }),
     };
 
     (snapshot, result_as_answers)
@@ -178,11 +239,7 @@ async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, 
     let query = parse_result.unwrap();
     let (tx, result) = execute_write_query(context.active_transaction.take().unwrap(), query);
     context.active_transaction = Some(tx);
-    if result.is_err() {
-        may_error.check_logic(result);
-    } else {
-        context.answers = result.unwrap();
-    }
+    may_error.check_logic(result);
 }
 
 #[apply(generic_step)]
@@ -192,7 +249,7 @@ async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
     let tx = context.active_transaction.take().unwrap();
     let (tx, result) = execute_write_query(tx, query);
     context.active_transaction = Some(tx);
-    context.answers =  result.unwrap();
+    context.answers = result.unwrap();
 }
 
 #[apply(generic_step)]
