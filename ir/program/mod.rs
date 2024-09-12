@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt, fmt::Display, sync::Arc};
+use std::{collections::HashMap, error::Error, fmt, ops::Index, sync::Arc};
 
+use encoding::value::value::Value;
 use error::typedb_error;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 use typeql::schema::definable::function::{Function, ReturnStream};
@@ -17,6 +18,47 @@ pub mod function;
 pub mod function_signature;
 pub mod modifier;
 
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub enum SingleValue<ID> {
+    Variable(ID),
+    Parameter(ParameterID),
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub struct ParameterID {
+    id: usize,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct ParameterRegistry {
+    registry: HashMap<ParameterID, Value<'static>>,
+}
+
+impl ParameterRegistry {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub(crate) fn register(&mut self, value: Value<'static>) -> ParameterID {
+        let id = ParameterID { id: self.registry.len() };
+        let _prev = self.registry.insert(id, value);
+        debug_assert_eq!(_prev, None);
+        id
+    }
+
+    pub fn get(&self, id: ParameterID) -> Option<&Value<'static>> {
+        self.registry.get(&id)
+    }
+}
+
+impl Index<ParameterID> for ParameterRegistry {
+    type Output = Value<'static>;
+
+    fn index(&self, id: ParameterID) -> &Self::Output {
+        self.get(id).unwrap()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum FunctionReadError {
     FunctionNotFound { function_id: FunctionID },
@@ -24,7 +66,7 @@ pub enum FunctionReadError {
     FunctionsScan { source: Arc<SnapshotIteratorError> },
 }
 
-impl Display for FunctionReadError {
+impl fmt::Display for FunctionReadError {
     fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }

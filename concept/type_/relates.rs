@@ -10,6 +10,7 @@ use encoding::{
     graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
     layout::prefix::Prefix,
 };
+use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -33,6 +34,10 @@ use crate::{
 pub struct Relates<'a> {
     relation: RelationType<'a>,
     role: RoleType<'a>,
+}
+
+impl Hkt for Relates<'static> {
+    type HktSelf<'a> = Relates<'a>;
 }
 
 impl<'a> Relates<'a> {

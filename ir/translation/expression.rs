@@ -18,7 +18,7 @@ use crate::{
             ListIndex, ListIndexRange, Operation, Operator,
         },
     },
-    program::function_signature::FunctionSignatureIndex,
+    program::{function_signature::FunctionSignatureIndex, ParameterRegistry},
     translation::{
         constraints::{register_typeql_var, split_out_inline_expressions},
         literal::translate_literal,
@@ -66,7 +66,8 @@ fn build_recursive(
         typeql::Expression::Value(literal) => {
             let value = translate_literal(literal)
                 .map_err(|source| PatternDefinitionError::LiteralParseError { literal: literal.to_string(), source })?;
-            Expression::Constant(value)
+            let id = constraints.parameters().register(value);
+            Expression::Constant(id)
         }
         typeql::Expression::Operation(operation) => {
             let left_id = build_recursive(function_index, constraints, &operation.left, tree)?;
@@ -186,7 +187,7 @@ pub mod tests {
 
     use crate::{
         pattern::expression::{Expression, Operation, Operator},
-        program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
+        program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
         translation::{match_::translate_match, TranslationContext},
         PatternDefinitionError,
     };
@@ -215,16 +216,16 @@ pub mod tests {
             .cloned()
             .collect_vec();
         assert_eq!(lhs, var_y);
-        assert_eq!(
-            rhs,
-            vec![
-                Expression::Constant(Value::Long(5)),
-                Expression::Constant(Value::Long(9)),
-                Expression::Constant(Value::Long(6)),
-                Expression::Operation(Operation::new(Operator::Multiply, 1, 2)),
-                Expression::Operation(Operation::new(Operator::Add, 0, 3)),
-            ]
-        );
+
+        assert_eq!(rhs.len(), 5);
+        let Expression::Constant(id) = rhs[0] else { panic!("Expected Constant, found: {:?}", rhs[0]) };
+        assert_eq!(context.parameters.get(id), Some(&Value::Long(5)));
+        let Expression::Constant(id) = rhs[1] else { panic!("Expected Constant, found: {:?}", rhs[1]) };
+        assert_eq!(context.parameters.get(id), Some(&Value::Long(9)));
+        let Expression::Constant(id) = rhs[2] else { panic!("Expected Constant, found: {:?}", rhs[2]) };
+        assert_eq!(context.parameters.get(id), Some(&Value::Long(6)));
+        assert_eq!(rhs[3], Expression::Operation(Operation::new(Operator::Multiply, 1, 2)));
+        assert_eq!(rhs[4], Expression::Operation(Operation::new(Operator::Add, 0, 3)));
     }
 
     fn get_named_variable(translation_context: &TranslationContext, name: &str) -> Variable {

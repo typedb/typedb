@@ -20,7 +20,7 @@ use crate::{
         constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
         expression::{Expression, ExpressionTree},
     },
-    program::function_signature::FunctionSignatureIndex,
+    program::{function_signature::FunctionSignatureIndex, ParameterRegistry},
     translation::{
         expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
         literal::translate_literal,

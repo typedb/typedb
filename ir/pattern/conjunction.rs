@@ -16,7 +16,10 @@ use super::{
     optional::Optional,
     Scope, ScopeId,
 };
-use crate::{program::block::BlockContext, PatternDefinitionError};
+use crate::{
+    program::{block::BlockContext, ParameterRegistry},
+    PatternDefinitionError,
+};
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {

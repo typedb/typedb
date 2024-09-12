@@ -11,9 +11,8 @@ use std::{
 };
 
 use answer::variable::Variable;
-use encoding::value::value::Value;
 
-use crate::{pattern::IrID, PatternDefinitionError};
+use crate::{pattern::IrID, program::ParameterID, PatternDefinitionError};
 
 enum ExpectedArgumentType {
     Single,
@@ -74,7 +73,7 @@ impl<ID: IrID> ExpressionTree<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Expression<ID> {
-    Constant(Value<'static>),
+    Constant(ParameterID),
     Variable(ID),
     Operation(Operation),
     BuiltInCall(BuiltInCall), // Other functions must be re-written as an anonymous assignment.

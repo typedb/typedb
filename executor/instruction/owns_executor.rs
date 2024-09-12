@@ -171,11 +171,11 @@ impl OwnsExecutor {
                     _ => unreachable!("owner types must be relation or entity types"),
                 };
 
-                let iterator =
-                    owns.to_owned().into_iter().sorted_by_key(|owns| (owns.attribute(), owns.owner())).map(Ok as _);
-                let as_tuples: OwnsBoundedSortedAttribute = AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
-                    .try_filter::<_, OwnsFilterFn, Owns<'_>, _>(filter_for_row)
-                    .map(owns_to_tuple_owner_attribute);
+                let iterator = owns.iter().cloned().sorted_by_key(|owns| (owns.attribute(), owns.owner())).map(Ok as _);
+                let as_tuples: OwnsBoundedSortedAttribute =
+                    AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
+                        .try_filter::<_, OwnsFilterFn, Owns<'_>, _>(filter_for_row)
+                        .map(owns_to_tuple_owner_attribute);
                 Ok(TupleIterator::OwnsBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

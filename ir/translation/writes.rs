@@ -8,7 +8,7 @@ use answer::variable::Variable;
 use typeql::query::stage::delete::DeletableKind;
 
 use crate::{
-    program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
+    program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{
         constraints::{add_statement, add_typeql_relation, register_typeql_var},
         TranslationContext,

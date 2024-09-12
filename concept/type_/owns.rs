@@ -10,6 +10,7 @@ use encoding::{
     graph::type_::{edge::TypeEdgeEncoding, vertex::TypeVertexEncoding, CapabilityKind},
     layout::prefix::Prefix,
 };
+use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -33,6 +34,10 @@ use crate::{
 pub struct Owns<'a> {
     owner: ObjectType<'a>,
     attribute: AttributeType<'a>,
+}
+
+impl Hkt for Owns<'static> {
+    type HktSelf<'a> = Owns<'a>;
 }
 
 impl<'a> Owns<'a> {

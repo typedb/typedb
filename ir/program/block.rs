@@ -19,7 +19,10 @@ use crate::{
         variable_category::{VariableCategory, VariableOptionality},
         Scope, ScopeId,
     },
-    program::modifier::{Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
+    program::{
+        modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
+        ParameterRegistry,
+    },
     PatternDefinitionError,
 };
 
@@ -260,6 +263,8 @@ pub struct BlockContext<'a> {
     variable_declaration: HashMap<Variable, ScopeId>,
     variable_names_index: &'a mut HashMap<String, Variable>,
 
+    parameters: &'a mut ParameterRegistry,
+
     scope_id_allocator: u16,
     scope_parents: HashMap<ScopeId, ScopeId>,
     referenced_variables: HashSet<Variable>, // Involved in a constraint in this block
@@ -269,6 +274,7 @@ impl<'a> BlockContext<'a> {
     pub(crate) fn new(
         variable_registry: &'a mut VariableRegistry,
         input_variable_names: &'a mut HashMap<String, Variable>,
+        parameters: &'a mut ParameterRegistry,
     ) -> BlockContext<'a> {
         let mut variable_declaration = HashMap::new();
         input_variable_names.values().for_each(|v| {
@@ -280,6 +286,7 @@ impl<'a> BlockContext<'a> {
             variable_registry,
             variable_declaration,
             variable_names_index: input_variable_names,
+            parameters,
             scope_id_allocator: 2, // `0`, `1` are reserved for INPUT, ROOT respectively.
             scope_parents,
             referenced_variables: HashSet::new(),
@@ -368,6 +375,10 @@ impl<'a> BlockContext<'a> {
 
     pub(crate) fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
         self.variable_registry.set_variable_is_optional(variable, optional)
+    }
+
+    pub fn parameters(&mut self) -> &mut ParameterRegistry {
+        self.parameters
     }
 }
 

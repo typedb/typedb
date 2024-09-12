@@ -13,7 +13,10 @@ use ir::{
         conjunction::Conjunction, expression::ExpressionTree, nested_pattern::NestedPattern,
         variable_category::VariableCategory,
     },
-    program::block::{FunctionalBlock, VariableRegistry},
+    program::{
+        block::{FunctionalBlock, VariableRegistry},
+        ParameterRegistry,
+    },
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -30,6 +33,8 @@ use crate::{
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block FunctionalBlock,
     variable_registry: &'block VariableRegistry,
+    parameters: &'block ParameterRegistry,
+
     snapshot: &'block Snapshot,
     type_manager: &'block TypeManager,
     type_annotations: &'block TypeAnnotations,
@@ -44,6 +49,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     type_manager: &'block TypeManager,
     block: &'block FunctionalBlock,
     variable_registry: &'block VariableRegistry,
+    parameters: &'block ParameterRegistry,
     type_annotations: &'block TypeAnnotations,
 ) -> Result<(HashMap<Variable, CompiledExpression>, HashMap<Variable, ExpressionValueType>), ExpressionCompileError> {
     let mut expression_index = HashMap::new();
@@ -52,6 +58,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     let mut context = BlockExpressionsCompilationContext {
         block,
         variable_registry,
+        parameters,
         snapshot,
         type_manager,
         type_annotations,
@@ -108,7 +115,8 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
     for variable in expression.variables() {
         resolve_type_for_variable(context, variable, expression_assignments)?;
     }
-    let compiled = ExpressionCompilationContext::compile(expression, &context.variable_value_types)?;
+    let compiled =
+        ExpressionCompilationContext::compile(expression, &context.variable_value_types, &context.parameters)?;
     context.variable_value_types.insert(assigned_variable, compiled.return_type);
     context.compiled_expressions.insert(assigned_variable, compiled);
     Ok(())

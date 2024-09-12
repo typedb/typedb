@@ -15,7 +15,7 @@ use executor::{
         insert::InsertStageExecutor,
         match_::MatchStageExecutor,
         modifiers::{LimitStageExecutor, OffsetStageExecutor, SelectStageExecutor, SortStageExecutor},
-        stage::{ReadPipelineStage, WritePipelineStage},
+        stage::{ReadPipelineStage, StageContext, WritePipelineStage},
     },
     write::{delete::DeleteExecutor, insert::InsertExecutor},
 };
@@ -67,9 +67,8 @@ impl QueryManager {
         query: &typeql::query::Pipeline,
     ) -> Result<(ReadPipelineStage<Snapshot>, HashMap<String, VariablePosition>), QueryError> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
-        let mut snapshot = snapshot;
         // 1: Translate
-        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } =
+        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry, parameters } =
             translate_pipeline(snapshot.as_ref(), function_manager, query)?;
 
         let annotated_functions = function_manager
@@ -82,6 +81,7 @@ impl QueryManager {
             type_manager,
             &annotated_functions,
             &variable_registry,
+            &parameters,
             translated_preamble,
             translated_stages,
         )?;
@@ -105,20 +105,17 @@ impl QueryManager {
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } = compile_pipeline(
-            thing_manager.statistics(),
-            variable_registry.clone(),
-            annotated_preamble,
-            annotated_stages,
-        )?;
+        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } =
+            compile_pipeline(thing_manager.statistics(), variable_registry, annotated_preamble, annotated_stages)?;
 
-        let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(snapshot));
+        let context = StageContext { snapshot, thing_manager, parameters: Arc::new(parameters) };
+        let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
                     // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(match_program, last_stage, thing_manager.clone());
+                    let match_stage = MatchStageExecutor::new(match_program, last_stage);
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(_) => {
@@ -164,13 +161,14 @@ impl QueryManager {
         query: &typeql::query::Pipeline,
     ) -> Result<(WritePipelineStage<Snapshot>, HashMap<String, VariablePosition>), (Snapshot, QueryError)> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
+
         // 1: Translate
         let translated_pipeline = translate_pipeline(&snapshot, function_manager, query);
-        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } = match translated_pipeline
-        {
-            Ok(translated_pipeline) => translated_pipeline,
-            Err(err) => return Err((snapshot, err)),
-        };
+        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry, parameters } =
+            match translated_pipeline {
+                Ok(translated_pipeline) => translated_pipeline,
+                Err(err) => return Err((snapshot, err)),
+            };
 
         let annotated_functions = match function_manager.get_annotated_functions(&snapshot, &type_manager) {
             Ok(annotated_functions) => annotated_functions,
@@ -182,6 +180,7 @@ impl QueryManager {
             type_manager,
             &annotated_functions,
             &variable_registry,
+            &parameters,
             translated_preamble,
             translated_stages,
         );
@@ -221,30 +220,23 @@ impl QueryManager {
                 Err(err) => return Err((snapshot, err)),
             };
 
-        let mut last_stage = WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot)));
+        let context = StageContext { snapshot: Arc::new(snapshot), thing_manager, parameters: Arc::new(parameters) };
+        let mut previous_stage = WritePipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
                     // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(match_program, last_stage, thing_manager.clone());
-                    last_stage = WritePipelineStage::Match(Box::new(match_stage));
+                    let match_stage = MatchStageExecutor::new(match_program, previous_stage);
+                    previous_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(insert_program) => {
-                    let insert_stage = InsertStageExecutor::new(
-                        InsertExecutor::new(insert_program),
-                        last_stage,
-                        thing_manager.clone(),
-                    );
-                    last_stage = WritePipelineStage::Insert(Box::new(insert_stage));
+                    let insert_stage = InsertStageExecutor::new(insert_program, previous_stage);
+                    previous_stage = WritePipelineStage::Insert(Box::new(insert_stage));
                 }
                 CompiledStage::Delete(delete_program) => {
-                    let delete_stage = DeleteStageExecutor::new(
-                        DeleteExecutor::new(delete_program),
-                        last_stage,
-                        thing_manager.clone(),
-                    );
-                    last_stage = WritePipelineStage::Delete(Box::new(delete_stage));
+                    let delete_stage = DeleteStageExecutor::new(delete_program, previous_stage);
+                    previous_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
                 CompiledStage::Filter(filter_program) => {
                     let filter_stage = SelectStageExecutor::new(filter_program, last_stage);

@@ -16,9 +16,8 @@ use crate::{
         variable_category::VariableCategory,
         IrID, ScopeId,
     },
-    program::{block::BlockContext, function_signature::FunctionSignature},
-    PatternDefinitionError,
-    PatternDefinitionError::FunctionCallArgumentCountMismatch,
+    program::{block::BlockContext, function_signature::FunctionSignature, ParameterRegistry},
+    PatternDefinitionError::{self, FunctionCallArgumentCountMismatch},
 };
 
 #[derive(Debug, Clone)]
@@ -335,6 +334,10 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub(crate) fn set_variable_optionality(&mut self, variable: Variable, optional: bool) {
         self.context.set_variable_is_optional(variable, optional)
+    }
+
+    pub(crate) fn parameters(&mut self) -> &mut ParameterRegistry {
+        self.context.parameters()
     }
 }
 

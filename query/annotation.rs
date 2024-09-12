@@ -28,7 +28,8 @@ use ir::{
     program::{
         block::{FunctionalBlock, VariableRegistry},
         function::Function,
-        modifier::{Limit, Offset, Select, Sort},
+        modifier::{Filter, Limit, Offset, Select, Sort},
+        ParameterRegistry,
     },
 };
 use storage::snapshot::ReadableSnapshot;
@@ -68,6 +69,7 @@ pub(super) fn infer_types_for_pipeline(
     type_manager: &TypeManager,
     schema_function_annotations: &IndexedAnnotatedFunctions,
     variable_registry: &VariableRegistry,
+    parameters: &ParameterRegistry,
     translated_preamble: Vec<Function>,
     translated_stages: Vec<TranslatedStage>,
 ) -> Result<AnnotatedPipeline, QueryError> {
@@ -92,6 +94,7 @@ pub(super) fn infer_types_for_pipeline(
         let annotated_stage = annotate_stage(
             &mut running_variable_annotations,
             variable_registry,
+            parameters,
             snapshot,
             type_manager,
             schema_function_annotations,
@@ -110,6 +113,7 @@ pub(super) fn infer_types_for_pipeline(
 fn annotate_stage(
     running_variable_annotations: &mut HashMap<Variable, Arc<HashSet<Type>>>,
     variable_registry: &VariableRegistry,
+    parameters: &ParameterRegistry,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     schema_function_annotations: &IndexedAnnotatedFunctions,
@@ -133,7 +137,7 @@ fn annotate_stage(
                 running_variable_annotations.insert(*k, v.clone());
             });
             let (compiled_expressions, variable_value_types) =
-                compile_expressions(snapshot, type_manager, &block, variable_registry, &block_annotations)
+                compile_expressions(snapshot, type_manager, &block, variable_registry, parameters, &block_annotations)
                     .map_err(|source| QueryError::ExpressionCompilation { source })?;
             Ok(AnnotatedStage::Match { block, block_annotations, compiled_expressions, variable_value_types })
         }

@@ -10,10 +10,10 @@
 use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
-use encoding::{graph::type_::Kind, value::value::Value};
+use encoding::graph::type_::Kind;
 use ir::{
     pattern::{constraint::Constraint, expression::Expression},
-    program::block::VariableRegistry,
+    program::{block::VariableRegistry, ParameterID},
 };
 use itertools::Itertools;
 
@@ -33,6 +33,12 @@ pub struct InsertProgram {
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub output_row_schema: Vec<(Variable, VariableSource)>,
     pub variable_registry: Arc<VariableRegistry>,
+}
+
+impl InsertProgram {
+    pub fn output_width(&self) -> usize {
+        self.output_row_schema.len()
+    }
 }
 
 /*
@@ -112,9 +118,9 @@ fn add_inserted_concepts(
             vertex_instructions.push(instruction);
         } else {
             let value_variable = resolve_value_variable_for_inserted_attribute(constraints, isa.thing())?;
-            let value = if let Some(constant) = value_bindings.get(&value_variable) {
+            let value = if let Some(&constant) = value_bindings.get(&value_variable) {
                 debug_assert!(!input_variables.contains_key(&value_variable));
-                ValueSource::ValueConstant(constant.clone().into_owned())
+                ValueSource::ValueConstant(constant)
             } else if let Some(&position) = input_variables.get(&value_variable) {
                 ValueSource::InputVariable(position)
             } else {
@@ -203,14 +209,14 @@ fn resolve_value_variable_for_inserted_attribute(
 
 fn collect_value_bindings(
     constraints: &[Constraint<Variable>],
-) -> Result<HashMap<Variable, Value<'static>>, WriteCompilationError> {
+) -> Result<HashMap<Variable, ParameterID>, WriteCompilationError> {
     let mut value_sources = HashMap::new();
     filter_variants!(Constraint::ExpressionBinding : constraints).try_for_each(|expr| {
-        let Expression::Constant(constant) = expr.expression().get_root() else {
+        let &Expression::Constant(constant) = expr.expression().get_root() else {
             unreachable!("The grammar does not allow compound expressions")
         };
         debug_assert!(!value_sources.contains_key(&expr.left()));
-        value_sources.insert(expr.left(), constant.clone().into_owned());
+        value_sources.insert(expr.left(), constant);
         Ok(())
     })?;
     Ok(value_sources)

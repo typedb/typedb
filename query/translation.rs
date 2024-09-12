@@ -11,7 +11,8 @@ use ir::{
         block::{FunctionalBlock, VariableRegistry},
         function::Function,
         function_signature::{FunctionID, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
-        modifier::{Limit, Offset, Select, Sort},
+        modifier::{Filter, Limit, Offset, Select, Sort},
+        ParameterRegistry,
     },
     translation::{
         function::translate_function,
@@ -30,6 +31,7 @@ pub(super) struct TranslatedPipeline {
     pub(super) translated_preamble: Vec<Function>,
     pub(super) translated_stages: Vec<TranslatedStage>,
     pub(super) variable_registry: VariableRegistry,
+    pub(super) parameters: ParameterRegistry,
 }
 
 pub(super) enum TranslatedStage {
@@ -71,6 +73,7 @@ pub(super) fn translate_pipeline(
         translated_preamble,
         translated_stages,
         variable_registry: translation_context.variable_registry,
+        parameters: translation_context.parameters,
     })
 }
 

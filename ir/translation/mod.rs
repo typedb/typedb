@@ -8,7 +8,10 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 
-use crate::program::block::{BlockContext, VariableRegistry};
+use crate::program::{
+    block::{BlockContext, VariableRegistry},
+    ParameterRegistry,
+};
 
 mod constraints;
 mod expression;
@@ -23,14 +26,20 @@ pub mod writes;
 pub struct TranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
     pub visible_variables: HashMap<String, Variable>,
+    pub parameters: ParameterRegistry,
 }
 
 impl TranslationContext {
     pub fn new() -> Self {
-        Self { variable_registry: VariableRegistry::new(), visible_variables: HashMap::new() }
+        Self {
+            parameters: ParameterRegistry::new(),
+            variable_registry: VariableRegistry::new(),
+            visible_variables: HashMap::new(),
+        }
     }
+
     pub fn next_block_context(&mut self) -> BlockContext<'_> {
-        let Self { variable_registry, visible_variables } = self;
-        BlockContext::new(variable_registry, visible_variables)
+        let Self { variable_registry, visible_variables, parameters } = self;
+        BlockContext::new(variable_registry, visible_variables, parameters)
     }
 }
