@@ -16,6 +16,7 @@
 [DONE] * owns order in match semantics
 [DONE] * "overwrite"/override -> specialization
 [DONE] * reduce in fetch returning single value using curved brackets ()
+[DONE] * fill in operators
 -->
 
 <!-- To be discussed:
@@ -38,29 +39,49 @@
   - [Define semantics](#define-semantics)
     - [Type axioms](#type-axioms)
     - [Constraints](#constraints)
+      - [Cardinality](#cardinality)
+      - [Behavior flags](#behavior-flags)
+      - [Values](#values)
     - [Triggers](#triggers)
     - [Value types](#value-types)
     - [Functions defs](#functions-defs)
   - [Undefine semantics](#undefine-semantics)
     - [Type axioms](#type-axioms-1)
     - [Constraints](#constraints-1)
+      - [Cardinality](#cardinality-1)
+      - [Behavior flags](#behavior-flags-1)
+      - [Values](#values-1)
     - [Triggers](#triggers-1)
     - [Value types](#value-types-1)
     - [Functions defs](#functions-defs-1)
   - [Redefine semantics](#redefine-semantics)
     - [Type axioms](#type-axioms-2)
     - [Constraints](#constraints-2)
+      - [Cardinality](#cardinality-2)
+      - [Behavior flags](#behavior-flags-2)
+      - [Values](#values-2)
     - [Triggers](#triggers-2)
     - [Value types](#value-types-2)
     - [Functions defs](#functions-defs-2)
+  - [Labels and aliases](#labels-and-aliases)
+    - [Define](#define)
+    - [Undefine](#undefine)
+    - [Redefine](#redefine)
 - [Data instance languages](#data-instance-languages)
   - [Pattern semantics](#pattern-semantics)
-    - [Basics: Variables, concept maps, satisfaction](#basics-variables-concept-maps-satisfaction)
-    - [Concept satisfaction for patterns of:](#concept-satisfaction-for-patterns-of)
+    - [Basics: Patterns, variables, concept maps, satisfaction](#basics-patterns-variables-concept-maps-satisfaction)
+      - [Statements, patterns](#statements-patterns)
+      - [Variables](#variables)
+      - [Typed concept maps](#typed-concept-maps)
+      - [Pattern satisfaction (typing map conditions)](#pattern-satisfaction-typing-map-conditions)
+      - [Answers](#answers)
+      - [Optional variables](#optional-variables)
+    - [Pattern satisfaction](#pattern-satisfaction)
       - [Types](#types)
       - [Constraints](#constraints-3)
       - [Data](#data)
-      - [Expressions](#expressions)
+      - [Expression grammar (sketch)](#expression-grammar-sketch)
+      - [Expression patterns](#expression-patterns)
       - [Functions](#functions)
       - [Patterns](#patterns)
   - [Match semantics](#match-semantics)
@@ -95,6 +116,7 @@
     - [Basics of operators](#basics-of-operators)
       - [Select](#select)
       - [Deselect](#deselect)
+      - [Distinct](#distinct)
       - [Sort](#sort)
       - [Limit](#limit)
       - [Offset](#offset)
@@ -866,10 +888,10 @@ Variables appear in statements. They fall in different categories, which can be 
   * _List variables_ (**lvar**, lowercase convention in this spec)
     * Any variable typed with a list type
     * Any variable assigned to a list expression.
-  * _Instance variables_ (**dvar**, lowercase convention in this spec)
+  * _Instance variables_ (**ivar**, lowercase convention in this spec)
     * Any remaining variable must be an instance var.
 
-.. the last three together comprise data vars (**dvars**)
+.. the last three together comprise element vars (**evars**)
 
 * _Anon vars_: anon vars start with `$_`. They behave like normal variables, but are automatically discarded (see "Deselect") at the end of the pattern.
   * _Examples_: `$_x`, `$_y`, `$_person`
@@ -902,8 +924,8 @@ A cmap `m` may **satisfy** a pattern `P`:
 * _Definition_. Satisfication  two requirements:  
     1. For type vars `$X` in `P`, `T($X)` is a type kind (`entity`, `attribute`, `relation`, `value`)
     1. For value vars `$x` in `P`, `T($x)` is a value type (primitive or struct)
-    1. For list vars `$x` in `P`, `T($x)` is a list type `A[]` for `A` a schema type or value type
-    1. For data vars `$x` in `P`, `T($x)` is a schema type `A` such that $`m(x) :_! A`$ isa **direct typing**
+    1. For list vars `$x` in `P`, `T($x)` is a list type `A[]` for ***minimal*** `A` a schema type or value type such that `A` is the minimal upper bounds of the types of the list elements `<EL>` in the list `m($x) = [<EL>, <EL>, ...]` (note: our type system does have minimal upper bounds w.r.t. subtyping)
+    1. For instance vars `$x` in `P`, `T($x)` is a schema type `A` such that $`m(x) :_! A`$ isa **direct typing**
 
     There are further conditions on the assigned concepts `m(x)` on a per statement basis, discussed in the next sections.
 <!--    
@@ -1779,31 +1801,63 @@ Operators (unlike clauses) are **pure**: they do not depend on the DB (i.e. they
 
 #### Select
 
-`select $x, $y` 
-transforms...
+`select $x1, $x2, ...`
+ 
+* input stream of maps `{ m }`
+* output stream of maps `{ p(m) }` for each `m` in the input, where `p(m)` only keeps the given variables that are among `$x1, $x2, ...`
 
 #### Deselect 
 
+`deselect $x1, $x2, ...`
+ 
+* input stream of maps `{ m }`
+* output stream of maps `{ p(m) }` for each `m` in the input, where `p(m)` only keeps the given variables that are **not** among `$x1, $x2, ...`
 
 #### Distinct
 
+`deselect $x1, $x2, ...`
+ 
+* input stream of maps `{ m }`
+* output stream of maps `{ n }` for each distinct map in the input (in other words: duplicates are removed)
+
 #### Sort
+
+`sort $x1, $x2, ...`
+ 
+* input stream of maps `{ m }`
+* output stream of maps `{ n }` obtained by ordering the input stream:
+  * first on values `m($x1)`
+  * then on values `m($x2)`,
+  * ...
+
+**Remark** absent values are sorted last.
 
 #### Limit
 
+`limit <NUM>`
+
+* outputs input stream, truncates after `<NUM>` concept maps
+
 #### Offset
+
+`limit <NUM>`
+
+* outputs input stream, offset by `<NUM>` concept maps
 
 _Remark_: Offset is only useful when streams (and the order of answers) are fully deterministic.
 
 #### Reduce
 
 * The `reduce` operator takes as input a stream of maps `{ m }`
-* It outputs a tuple of values
-* `reduce` operator is **terminal** (i.e. terminates the pipeline)
+* It outputs a stream of new concepts maps
 
+**Case RED_DEFAULT**
 ```
-reduce <AGG> , ... , <AGG>;
+reduce <AGG> as $x_1, ... , <AGG> as $x_k;
 ``` 
+
+In this case, we output a ***single concept*** map `($x_1 -> <EL>, $x_2 -> <EL>, ...)`, where `<EL>` is a output element (i.e. instance, value, or list, but _never_ type) constructed as follows:
+
 
 * `<AGG>` is one of the following **aggregate functions**:
   * `check`:
@@ -1842,6 +1896,13 @@ reduce <AGG> , ... , <AGG>;
     * `$x` can be optional
 * Each `<AGG>` reduces the concept map `{ m }` passsed to it from the function's body to a single value in the specified way.
 
+**Case RED_**
+```
+reduce @group($y_1, $y_2, ...): <AGG> as $x_1, ... , <AGG> as $x_k;
+``` 
+
+In this case, we output the following:
+* for each distinct tuple of elements `el_1, el_2, ...` assigned to `$y_1, $y_2, ...` by maps in the stream, we perform the aggregates as described above over _all maps `m`_ for which `m($y_1) = el_1, m($y__2) = el_2, ...` and then output the resulting concept map `($y_1 -> el_1, $y_2 = el_2, ..., $x_1 -> <CPT>, $x_2 -> <CPT>, ...)`
 
 ## Transactions
 
