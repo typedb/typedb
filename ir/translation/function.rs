@@ -6,9 +6,10 @@
 
 use answer::variable::Variable;
 use typeql::{
-    schema::definable::function::{Output, ReturnSingle, ReturnStatement, ReturnStream, SingleOutput},
+    schema::definable::function::{Output, ReturnStatement, ReturnStream},
     TypeRefAny,
 };
+use typeql::query::stage::reduce::Reduction;
 
 use crate::{
     pattern::{
@@ -19,7 +20,7 @@ use crate::{
         block::{BlockContext, FunctionalBlock},
         function::{Function, Reducer, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
-        FunctionDefinitionError,
+        FunctionRepresentationError,
     },
     translation::{match_::add_patterns, TranslationContext},
 };
@@ -27,15 +28,15 @@ use crate::{
 pub fn translate_function(
     function_index: &impl FunctionSignatureIndex,
     function: &typeql::Function,
-) -> Result<Function, FunctionDefinitionError> {
+) -> Result<Function, FunctionRepresentationError> {
     let mut context = TranslationContext::new();
     let mut builder = FunctionalBlock::builder(context.next_block_context());
     add_patterns(function_index, &mut builder.conjunction_mut(), &function.body.patterns)
-        .map_err(|source| FunctionDefinitionError::PatternDefinition { source })?;
+        .map_err(|source| FunctionRepresentationError::PatternDefinition { declaration: function.clone(), typedb_source: source })?;
 
     let return_operation = match &function.return_stmt {
         ReturnStatement::Stream(stream) => build_return_stream(builder.context_mut(), stream),
-        ReturnStatement::Single(single) => build_return_single(builder.context_mut(), single),
+        ReturnStatement::Reduce(reduction) => build_return_reduce(builder.context_mut(), reduction),
     }?;
     let arguments: Vec<Variable> = function
         .signature
@@ -43,12 +44,21 @@ pub fn translate_function(
         .iter()
         .map(|typeql_arg| {
             get_variable_in_block_root(builder.context_mut(), &typeql_arg.var, |var| {
-                FunctionDefinitionError::FunctionArgumentUnused { argument_variable: var.name().unwrap().to_string() }
+                FunctionRepresentationError::FunctionArgumentUnused {
+                    argument_variable: var.name().unwrap().to_string(),
+                    declaration: function.clone(),
+                }
             })
         })
-        .collect::<Result<Vec<_>, FunctionDefinitionError>>()?;
+        .collect::<Result<Vec<_>, FunctionRepresentationError>>()?;
 
-    Ok(Function::new(builder.finish(), context.variable_registry, arguments, return_operation))
+    Ok(Function::new(
+        function.signature.ident.as_str(),
+        builder.finish(),
+        context.variable_registry,
+        arguments,
+        return_operation,
+    ))
 }
 
 pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> FunctionSignature {
@@ -81,35 +91,27 @@ fn type_any_to_category_and_optionality(type_any: &TypeRefAny) -> (VariableCateg
 fn build_return_stream(
     context: &BlockContext<'_>,
     stream: &ReturnStream,
-) -> Result<ReturnOperation, FunctionDefinitionError> {
+) -> Result<ReturnOperation, FunctionRepresentationError> {
     let variables = stream
         .vars
         .iter()
         .map(|typeql_var| {
-            get_variable_in_block_root(context, typeql_var, |var| FunctionDefinitionError::ReturnVariableUnavailable {
-                variable: var.name().unwrap().to_string(),
+            get_variable_in_block_root(context, typeql_var, |var| {
+                FunctionRepresentationError::ReturnVariableUnavailable {
+                    return_variable: var.name().unwrap().to_string(),
+                    declaration: stream.clone(),
+                }
             })
         })
-        .collect::<Result<Vec<Variable>, FunctionDefinitionError>>()?;
+        .collect::<Result<Vec<Variable>, FunctionRepresentationError>>()?;
     Ok(ReturnOperation::Stream(variables))
 }
 
-fn build_return_single(
+fn build_return_reduce(
     context: &BlockContext<'_>,
-    single: &ReturnSingle,
-) -> Result<ReturnOperation, FunctionDefinitionError> {
-    let reducers = single
-        .outputs
-        .iter()
-        .map(|output| build_return_single_output(context, output))
-        .collect::<Result<Vec<Reducer>, FunctionDefinitionError>>()?;
-    Ok(ReturnOperation::Single(reducers))
-}
-
-fn build_return_single_output(
-    context: &BlockContext<'_>,
-    single_output: &SingleOutput,
-) -> Result<Reducer, FunctionDefinitionError> {
+    reduction: &Reduction,
+) -> Result<ReturnOperation, FunctionRepresentationError> {
+    // Ok(ReturnOperation::Reduction(reducers))
     todo!()
 }
 
@@ -117,9 +119,9 @@ fn get_variable_in_block_root<F>(
     context: &BlockContext<'_>,
     typeql_var: &typeql::Variable,
     err: F,
-) -> Result<Variable, FunctionDefinitionError>
+) -> Result<Variable, FunctionRepresentationError>
 where
-    F: FnOnce(&typeql::Variable) -> FunctionDefinitionError,
+    F: FnOnce(&typeql::Variable) -> FunctionRepresentationError,
 {
     context
         .get_variable_named(typeql_var.name().unwrap(), ScopeId::ROOT)

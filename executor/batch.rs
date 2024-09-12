@@ -10,7 +10,10 @@ use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
 use lending_iterator::LendingIterator;
 
-use crate::row::{MaybeOwnedRow, Row};
+use crate::{
+    error::ReadExecutionError,
+    row::{MaybeOwnedRow, Row},
+};
 
 const FIXED_BATCH_ROWS_MAX: u32 = 64;
 
@@ -82,12 +85,12 @@ impl FixedBatch {
 }
 
 pub struct FixedBatchRowIterator {
-    batch: Result<FixedBatch, ConceptReadError>,
+    batch: Result<FixedBatch, ReadExecutionError>,
     index: u32,
 }
 
 impl FixedBatchRowIterator {
-    pub(crate) fn new(batch: Result<FixedBatch, ConceptReadError>) -> Self {
+    pub(crate) fn new(batch: Result<FixedBatch, ReadExecutionError>) -> Self {
         Self { batch, index: 0 }
     }
 
@@ -97,7 +100,7 @@ impl FixedBatchRowIterator {
 }
 
 impl LendingIterator for FixedBatchRowIterator {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, &'a ConceptReadError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, &'a ReadExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self.batch.as_mut() {
@@ -173,6 +176,10 @@ impl Batch {
     pub(crate) fn into_iterator_mut(self) -> MutableBatchRowIterator {
         MutableBatchRowIterator::new(self)
     }
+
+    pub fn into_iterator(self) -> BatchRowIterator {
+        BatchRowIterator::new(self)
+    }
 }
 
 pub struct MutableBatchRowIterator {
@@ -184,14 +191,10 @@ impl MutableBatchRowIterator {
     pub(crate) fn new(batch: Batch) -> Self {
         Self { batch, index: 0 }
     }
-
-    fn has_next(&self) -> bool {
-        self.index < self.batch.len()
-    }
 }
 
 impl LendingIterator for MutableBatchRowIterator {
-    type Item<'a> = Result<Row<'a>, &'a ConceptReadError>;
+    type Item<'a> = Row<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.index >= self.batch.len() {
@@ -199,7 +202,31 @@ impl LendingIterator for MutableBatchRowIterator {
         } else {
             let row = self.batch.get_row_mut(self.index);
             self.index += 1;
-            Some(Ok(row))
+            Some(row)
+        }
+    }
+}
+pub struct BatchRowIterator {
+    batch: Batch,
+    index: usize,
+}
+
+impl BatchRowIterator {
+    pub(crate) fn new(batch: Batch) -> Self {
+        Self { batch, index: 0 }
+    }
+}
+
+impl LendingIterator for BatchRowIterator {
+    type Item<'a> = MaybeOwnedRow<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        if self.index >= self.batch.len() {
+            None
+        } else {
+            let row = self.batch.get_row(self.index);
+            self.index += 1;
+            Some(row)
         }
     }
 }

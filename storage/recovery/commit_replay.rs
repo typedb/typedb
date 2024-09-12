@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, error::Error, fmt};
+use std::{collections::BTreeMap, error::Error, fmt, sync::Arc};
 
 use durability::RawRecord;
 
@@ -46,13 +46,13 @@ pub fn load_commit_data_from(
         match record_type {
             CommitRecord::RECORD_TYPE => {
                 let commit_record = CommitRecord::deserialise_from(&mut &*bytes)
-                    .map_err(|error| DurabilityRecordDeserialize { source: error })?;
+                    .map_err(|error| DurabilityRecordDeserialize { source: Arc::new(error) })?;
                 recovered_commits.insert(sequence_number, RecoveryCommitStatus::Pending(commit_record));
             }
             StatusRecord::RECORD_TYPE => {
                 let StatusRecord { commit_record_sequence_number, was_committed } =
                     StatusRecord::deserialise_from(&mut &*bytes)
-                        .map_err(|error| DurabilityRecordDeserialize { source: error })?;
+                        .map_err(|error| DurabilityRecordDeserialize { source: Arc::new(error) })?;
                 if commit_record_sequence_number < start {
                     continue;
                 }
@@ -126,9 +126,9 @@ pub enum RecoveryCommitStatus {
     Rejected,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CommitRecoveryError {
-    DurabilityRecordDeserialize { source: bincode::Error },
+    DurabilityRecordDeserialize { source: Arc<bincode::Error> },
     DurabilityClientRead { source: DurabilityClientError },
     DurabilityClientWrite { source: DurabilityClientError },
     DurabilityRecordsMissing { expected_sequence_number: SequenceNumber, first_record_sequence_number: SequenceNumber },

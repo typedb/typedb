@@ -81,7 +81,7 @@ impl<Durability> MVCCStorage<Durability> {
         }
         fs::create_dir_all(&storage_dir).map_err(|error| StorageOpenError::StorageDirectoryCreate {
             name: name.as_ref().to_owned(),
-            source: error,
+            source: Arc::new(error),
         })?;
         Self::register_durability_record_types(&mut durability_client);
         let keyspaces = Self::create_keyspaces::<KS>(name.as_ref(), &storage_dir)?;
@@ -117,9 +117,9 @@ impl<Durability> MVCCStorage<Durability> {
         let (keyspaces, next_sequence_number) = match checkpoint {
             None => {
                 fs::remove_dir_all(&storage_dir)
-                    .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: err })?;
+                    .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
                 fs::create_dir_all(&storage_dir)
-                    .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: err })?;
+                    .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
                 let keyspaces = Self::create_keyspaces::<KS>(name, &storage_dir)?;
                 let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
                     .map_err(|err| RecoverFromDurability { name: name.to_owned(), source: err })?;
@@ -175,13 +175,10 @@ impl<Durability> MVCCStorage<Durability> {
         WriteSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_write_at(
-        self: Arc<Self>,
-        sequence_number: SequenceNumber,
-    ) -> Result<WriteSnapshot<Durability>, WriteSnapshotOpenError> {
+    pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability> {
         // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
         assert!(sequence_number <= self.read_watermark());
-        Ok(WriteSnapshot::new(self, sequence_number))
+        WriteSnapshot::new(self, sequence_number)
     }
 
     pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability> {
@@ -189,13 +186,10 @@ impl<Durability> MVCCStorage<Durability> {
         ReadSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_read_at(
-        self: Arc<Self>,
-        sequence_number: SequenceNumber,
-    ) -> Result<ReadSnapshot<Durability>, ReadSnapshotOpenError> {
+    pub fn open_snapshot_read_at(self: Arc<Self>, sequence_number: SequenceNumber) -> ReadSnapshot<Durability> {
         // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
         assert!(sequence_number <= self.read_watermark());
-        Ok(ReadSnapshot::new(self, sequence_number))
+        ReadSnapshot::new(self, sequence_number)
     }
 
     pub fn open_snapshot_schema(self: Arc<Self>) -> SchemaSnapshot<Durability> {
@@ -236,7 +230,7 @@ impl<Durability> MVCCStorage<Durability> {
                 // Inform the isolation manager and increment the watermark
                 self.isolation_manager
                     .applied(commit_sequence_number)
-                    .map_err(|error| Internal { name: self.name.clone(), source: Box::new(error) })?;
+                    .map_err(|error| Internal { name: self.name.clone(), source: Arc::new(error) })?;
 
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), source: error })?;
@@ -318,7 +312,7 @@ impl<Durability> MVCCStorage<Durability> {
         if self.path.exists() {
             std::fs::remove_dir_all(&self.path).map_err(|error| {
                 error!("Failed to delete storage {}, received error: {}", self.name, error);
-                DirectoryDelete { name: self.name.clone(), source: error }
+                DirectoryDelete { name: self.name.clone(), source: Arc::new(error) }
             })?;
         }
 
@@ -432,43 +426,13 @@ impl<Durability> MVCCStorage<Durability> {
     }
 }
 
-#[derive(Debug)]
-pub enum ReadSnapshotOpenError {}
-
-impl fmt::Display for ReadSnapshotOpenError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {}
-    }
-}
-
-impl Error for ReadSnapshotOpenError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match *self {}
-    }
-}
-
-#[derive(Debug)]
-pub enum WriteSnapshotOpenError {}
-
-impl fmt::Display for WriteSnapshotOpenError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {}
-    }
-}
-
-impl Error for WriteSnapshotOpenError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match *self {}
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StorageOpenError {
     StorageDirectoryExists { name: String, path: PathBuf },
-    StorageDirectoryCreate { name: String, source: io::Error },
-    StorageDirectoryRecreate { name: String, source: io::Error },
+    StorageDirectoryCreate { name: String, source: Arc<io::Error> },
+    StorageDirectoryRecreate { name: String, source: Arc<io::Error> },
 
-    DurabilityClientOpen { name: String, source: io::Error },
+    DurabilityClientOpen { name: String, source: Arc<io::Error> },
     DurabilityClientRead { name: String, source: DurabilityClientError },
     DurabilityClientWrite { name: String, source: DurabilityClientError },
 
@@ -506,11 +470,11 @@ impl Error for StorageOpenError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StorageCommitError {
-    Internal { name: String, source: Box<dyn Error> },
+    Internal { name: String, source: Arc<dyn Error + Send + Sync + 'static> },
     Isolation { name: String, conflict: IsolationConflict },
-    IO { name: String, source: io::Error },
+    IO { name: String, source: Arc<io::Error> },
     MVCCRead { source: MVCCReadError },
     Keyspace { name: String, source: Arc<KeyspaceError> },
     Durability { name: String, source: DurabilityClientError },
@@ -535,11 +499,11 @@ impl Error for StorageCommitError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StorageDeleteError {
     DurabilityDelete { name: String, source: DurabilityClientError },
     KeyspaceDelete { name: String, source: Vec<KeyspaceDeleteError> },
-    DirectoryDelete { name: String, source: io::Error },
+    DirectoryDelete { name: String, source: Arc<io::Error> },
 }
 
 impl fmt::Display for StorageDeleteError {
@@ -558,7 +522,7 @@ impl Error for StorageDeleteError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StorageResetError {
     KeyspaceError { name: String, source: KeyspaceError },
     Durability { name: String, source: DurabilityClientError },

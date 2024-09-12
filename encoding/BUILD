@@ -40,6 +40,7 @@ rust_library(
         "@crates//:bincode",
         "@crates//:chrono",
         "@crates//:chrono-tz",
+        "@crates//:itertools",
         "@crates//:tracing",
         "@crates//:seahash",
         "@crates//:serde",

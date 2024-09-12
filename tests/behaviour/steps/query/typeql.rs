@@ -18,9 +18,11 @@ use concept::{thing::object::ObjectAPI, type_::TypeAPI};
 use cucumber::gherkin::Step;
 use encoding::value::label::Label;
 use executor::{
+    error::ReadExecutionError,
     program_executor::ProgramExecutor,
     row::Row,
     write::{insert::InsertExecutor, WriteError},
+    ExecutionInterrupt,
 };
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
@@ -29,6 +31,7 @@ use ir::{
 use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
+use error::TypeDBError;
 use primitive::either::Either;
 use query::query_manager::QueryManager;
 
@@ -43,7 +46,7 @@ use crate::{
 fn execute_match_query(
     context: &mut Context,
     query: typeql::Query,
-) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Box<dyn Error>> {
+) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Box<dyn TypeDBError>> {
     let mut translation_context = TranslationContext::new();
     let typeql_match = query.into_pipeline().stages.pop().unwrap().into_match();
     let block =
@@ -70,10 +73,11 @@ fn execute_match_query(
         );
 
         let program_plan = ProgramPlan::new(match_plan, HashMap::new(), HashMap::new());
-        let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager)?;
+        let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager)
+            .map_err(|err| Either::Second(ReadExecutionError::ConceptRead { source: err }))?;
         variable_position_index = executor.entry_variable_positions_index().to_owned();
         executor
-            .into_iterator(tx.snapshot.clone(), tx.thing_manager.clone())
+            .into_iterator(tx.snapshot.clone(), tx.thing_manager.clone(), ExecutionInterrupt::new_uninterruptible())
             .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
             .into_iter()
             .try_collect::<_, Vec<_>, _>()?
@@ -275,7 +279,7 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
             }
             Thing::Attribute(_) => return false,
         };
-        let (mut attr, count) = has_iter
+        let (attr, count) = has_iter
             .next()
             .unwrap_or_else(|| panic!("no attributes of type {key_label} found for {var}: {thing}"))
             .unwrap();
@@ -306,7 +310,7 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
                 .unwrap()
                 .unwrap_or_else(|| panic!("expected the key type {label} to have a value type")),
         );
-        let mut attr = attr.as_reference();
+        let attr = attr.as_reference();
         let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager).unwrap();
         actual == expected
     })

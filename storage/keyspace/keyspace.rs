@@ -6,8 +6,9 @@
 
 use std::{
     error::Error,
-    fmt, fs,
+    fmt, fs, io,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use bytes::Bytes;
@@ -137,7 +138,7 @@ impl Keyspaces {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum KeyspaceValidationError {
     IdReserved { name: &'static str, id: u8 },
     IdTooLarge { name: &'static str, id: u8, max_id: u8 },
@@ -282,7 +283,7 @@ impl Keyspace {
     pub(crate) fn delete(self) -> Result<(), KeyspaceDeleteError> {
         drop(self.kv_storage);
         fs::remove_dir_all(self.path.clone())
-            .map_err(|error| KeyspaceDeleteError::DirectoryRemove { name: self.name, source: error })?;
+            .map_err(|error| KeyspaceDeleteError::DirectoryRemove { name: self.name, source: Arc::new(error) })?;
         Ok(())
     }
 
@@ -302,7 +303,7 @@ impl fmt::Debug for Keyspace {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum KeyspaceOpenError {
     SpeeDB { name: &'static str, source: rocksdb::Error },
     Validation { source: KeyspaceValidationError },
@@ -323,7 +324,7 @@ impl Error for KeyspaceOpenError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum KeyspaceCheckpointError {
     CheckpointExists { name: &'static str, dir: PathBuf },
     CreateSpeeDBCheckpoint { name: &'static str, source: rocksdb::Error },
@@ -344,9 +345,9 @@ impl Error for KeyspaceCheckpointError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum KeyspaceDeleteError {
-    DirectoryRemove { name: &'static str, source: std::io::Error },
+    DirectoryRemove { name: &'static str, source: Arc<io::Error> },
 }
 
 impl fmt::Display for KeyspaceDeleteError {

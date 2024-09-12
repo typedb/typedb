@@ -9,6 +9,7 @@ use std::{
     error::Error,
     fmt, io,
     io::{Read, Write},
+    sync::Arc,
 };
 
 use durability::{wal::WAL, DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord};
@@ -112,27 +113,27 @@ impl WALClient {
         let mut buf = Vec::new();
         let mut encoder = lz4::EncoderBuilder::new()
             .build(&mut buf)
-            .map_err(|err| DurabilityClientError::CompressionError { source: err })?;
+            .map_err(|err| DurabilityClientError::CompressionError { source: Arc::new(err) })?;
         record.serialise_into(&mut encoder)?;
-        encoder.finish().1.map_err(|err| DurabilityClientError::CompressionError { source: err })?;
+        encoder.finish().1.map_err(|err| DurabilityClientError::CompressionError { source: Arc::new(err) })?;
         Ok(buf)
     }
 
     fn deserialise_record<Record: DurabilityRecord>(raw_bytes: &[u8]) -> Result<Record, DurabilityClientError> {
         let ptr = &mut &*raw_bytes;
         let mut decoder =
-            lz4::Decoder::new(ptr).map_err(|err| DurabilityClientError::CompressionError { source: err })?;
+            lz4::Decoder::new(ptr).map_err(|err| DurabilityClientError::CompressionError { source: Arc::new(err) })?;
         let record = Record::deserialise_from(&mut decoder)
-            .map_err(|err| DurabilityClientError::SerializeError { source: err })?;
+            .map_err(|err| DurabilityClientError::SerializeError { source: Arc::new(err) })?;
         Ok(record)
     }
 
     fn decompress(raw_bytes: &[u8]) -> Result<Vec<u8>, DurabilityClientError> {
         let mut buf = Vec::new();
         lz4::Decoder::new(&mut &*raw_bytes)
-            .map_err(|err| DurabilityClientError::CompressionError { source: err })?
+            .map_err(|err| DurabilityClientError::CompressionError { source: Arc::new(err) })?
             .read_to_end(&mut buf)
-            .map_err(|err| DurabilityClientError::CompressionError { source: err })?;
+            .map_err(|err| DurabilityClientError::CompressionError { source: Arc::new(err) })?;
         Ok(buf)
     }
 }
@@ -217,7 +218,7 @@ impl DurabilityClient for WALClient {
         match self.wal.find_last_type(Record::RECORD_TYPE) {
             Ok(Some(raw_record)) => match Record::deserialise_from(&mut &*raw_record.bytes) {
                 Ok(record) => Ok(Some(record)),
-                Err(err) => Err(DurabilityClientError::SerializeError { source: err }),
+                Err(err) => Err(DurabilityClientError::SerializeError { source: Arc::new(err) }),
             },
             Ok(None) => Ok(None),
             Err(err) => Err(DurabilityClientError::ServiceError { source: err }),
@@ -233,21 +234,20 @@ impl DurabilityClient for WALClient {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DurabilityClientError {
     #[non_exhaustive]
     SerializeError {
-        source: bincode::Error,
+        source: Arc<bincode::Error>,
     },
     ServiceError {
         source: DurabilityServiceError,
     },
     CompressionError {
-        source: io::Error,
+        source: Arc<io::Error>,
     },
-
     DeleteFailed {
-        source: io::Error,
+        source: Arc<io::Error>,
     },
 }
 
@@ -259,7 +259,7 @@ impl fmt::Display for DurabilityClientError {
 
 impl From<bincode::Error> for DurabilityClientError {
     fn from(source: bincode::Error) -> Self {
-        Self::SerializeError { source }
+        Self::SerializeError { source: Arc::new(source) }
     }
 }
 

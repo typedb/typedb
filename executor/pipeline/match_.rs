@@ -10,11 +10,13 @@ use compiler::{match_::planner::pattern_plan::MatchProgram, VariablePosition};
 use concept::thing::thing_manager::ThingManager;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
+use tokio::sync::broadcast;
 
 use crate::{
     pattern_executor::{PatternExecutor, PatternIterator},
     pipeline::{PipelineExecutionError, StageAPI, StageIterator},
     row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 
 pub struct MatchStageExecutor<Snapshot: ReadableSnapshot + 'static, PreviousStage: StageAPI<Snapshot>> {
@@ -58,11 +60,15 @@ where
 
     fn into_iterator(
         mut self,
+        interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { previous: previous_stage, program, .. } = self;
-        let (previous_iterator, snapshot) = previous_stage.into_iterator()?;
+        let (previous_iterator, snapshot) = previous_stage.into_iterator(interrupt.clone())?;
         let iterator = previous_iterator;
-        Ok((MatchStageIterator::new(iterator, program, snapshot.clone(), self.thing_manager.clone()), snapshot))
+        Ok((
+            MatchStageIterator::new(iterator, program, snapshot.clone(), self.thing_manager.clone(), interrupt),
+            snapshot,
+        ))
     }
 }
 
@@ -72,6 +78,7 @@ pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
     program: MatchProgram,
     source_iterator: Iterator,
     current_iterator: Option<Peekable<PatternIterator<Snapshot>>>,
+    interrupt: ExecutionInterrupt,
 }
 
 impl<Snapshot: ReadableSnapshot + 'static, Iterator: StageIterator> MatchStageIterator<Snapshot, Iterator> {
@@ -80,8 +87,9 @@ impl<Snapshot: ReadableSnapshot + 'static, Iterator: StageIterator> MatchStageIt
         program: MatchProgram,
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
+        interrupt: ExecutionInterrupt,
     ) -> Self {
-        Self { snapshot, program, thing_manager, source_iterator: iterator, current_iterator: None }
+        Self { snapshot, program, thing_manager, source_iterator: iterator, current_iterator: None, interrupt }
     }
 }
 
@@ -102,20 +110,20 @@ where
                         .map_err(|err| PipelineExecutionError::InitialisingMatchIterator { source: err });
                     match iterator {
                         Ok(iterator) => {
-                            self.current_iterator = Some(Peekable::new(
-                                iterator.into_iterator(self.snapshot.clone(), self.thing_manager.clone()),
-                            ));
+                            self.current_iterator = Some(Peekable::new(iterator.into_iterator(
+                                self.snapshot.clone(),
+                                self.thing_manager.clone(),
+                                self.interrupt.clone(),
+                            )));
                         }
                         Err(err) => return Some(Err(err)),
                     };
                 }
             }
         }
-        self.current_iterator
-            .as_mut()
-            .unwrap()
-            .next()
-            .map(|result| result.map_err(|err| PipelineExecutionError::ConceptRead { source: err.clone() }))
+        self.current_iterator.as_mut().unwrap().next().map(|result| {
+            result.map_err(|err| PipelineExecutionError::ReadPatternExecution { typedb_source: err.clone() })
+        })
     }
 }
 

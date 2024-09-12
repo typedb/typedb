@@ -27,6 +27,7 @@ use executor::{
         stage::{ReadPipelineStage, WriteStageIterator},
         PipelineExecutionError, StageAPI, StageIterator,
     },
+    ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use itertools::Itertools;
@@ -48,7 +49,7 @@ use tokio::{
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
-use typedb_protocol::transaction::stream_signal::Req;
+use typedb_protocol::transaction::{stream_signal::Req, Server};
 use typeql::{
     parse_query,
     query::{stage::Stage, Pipeline, SchemaQuery},
@@ -59,9 +60,15 @@ use uuid::Uuid;
 use crate::service::{
     answer::encode_row,
     error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
+    response_builders::{
+        query_res_from_error, query_res_from_query_res_ok, query_res_ok_concept_row_stream, query_res_ok_empty,
+        query_res_ok_from_query_res_ok_ok, query_res_part_from_res_part_res,
+        transaction_server_res_part_stream_signal_continue, transaction_server_res_part_stream_signal_done,
+        transaction_server_res_part_stream_signal_error, transaction_server_res_parts_query_part,
+        transaction_server_res_query_res,
+    },
 };
 
-// TODO: where does this belong?
 #[derive(Debug)]
 pub enum Transaction {
     Read(TransactionRead<WALClient>),
@@ -85,10 +92,8 @@ pub(crate) struct TransactionService {
 
     request_stream: Streaming<typedb_protocol::transaction::Client>,
     response_sender: Sender<Result<typedb_protocol::transaction::Server, Status>>,
-    read_responder_interrupt_sender: broadcast::Sender<()>,
-    read_responder_interrupt_receiver: broadcast::Receiver<()>,
-    write_responder_interrupt_sender: broadcast::Sender<()>,
-    write_responder_interrupt_receiver: broadcast::Receiver<()>,
+    query_interrupt_sender: broadcast::Sender<()>,
+    query_interrupt_receiver: ExecutionInterrupt,
 
     transaction_timeout_millis: Option<u64>,
     schema_lock_acquire_timeout_millis: Option<u64>,
@@ -98,10 +103,10 @@ pub(crate) struct TransactionService {
     is_open: bool,
     transaction: Option<Transaction>,
     request_queue: Vec<(Uuid, Pipeline)>,
-    read_responders:
-        HashMap<Uuid, (JoinHandle<()>, JoinHandle<ControlFlow<(), (Uuid, Receiver<Option<QueryResponse>>)>>)>,
-    write_responders: HashMap<Uuid, JoinHandle<()>>,
-    active_write_query: Option<(Uuid, JoinHandle<(Transaction, Result<Batch, QueryError>)>)>,
+    read_responders: HashMap<Uuid, (JoinHandle<()>, StreamTransmitter)>,
+    write_responders: HashMap<Uuid, (JoinHandle<()>, StreamTransmitter)>,
+    running_write_query:
+        Option<(Uuid, JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), QueryError>)>)>,
 }
 
 macro_rules! close_service {
@@ -120,87 +125,14 @@ macro_rules! close_service_with_error {
     }};
 }
 
-macro_rules! unwrap_or_submit_error_and_return {
-    ($match_: expr, $sender: expr, |$err:ident| $err_mapper: expr) => {{
+macro_rules! unwrap_or_execute_and_return {
+    ($match_: expr, |$err:ident| $err_mapper: block) => {{
         match $match_ {
             Ok(inner) => inner,
             Err($err) => {
-                Self::submit_error_and_terminator($sender, $err_mapper);
+                $err_mapper
                 return;
             }
-        }
-    }};
-}
-
-macro_rules! query_res_ok {
-    ($message: expr) => {{
-        typedb_protocol::query::res::Ok { ok: Some($message) }
-    }};
-}
-
-macro_rules! query_res_part_res {
-    ($message: expr) => {{
-        typedb_protocol::query::res_part::Res { res: Some($message) }
-    }};
-}
-
-macro_rules! transaction_server_res_part_query_res {
-    ($messages: expr) => {{
-        typedb_protocol::transaction::res_part::ResPart::QueryRes(typedb_protocol::query::ResPart { res: $messages })
-    }};
-}
-
-macro_rules! transaction_res_part_stream_signal_done {
-    () => {{
-        typedb_protocol::transaction::res_part::ResPart::StreamRes(
-            typedb_protocol::transaction::stream_signal::ResPart {
-                state: Some(typedb_protocol::transaction::stream_signal::res_part::State::Done(
-                    typedb_protocol::transaction::stream_signal::res_part::Done {},
-                )),
-            },
-        )
-    }};
-}
-
-macro_rules! transaction_res_part_stream_signal_continue {
-    () => {{
-        typedb_protocol::transaction::res_part::ResPart::StreamRes(
-            typedb_protocol::transaction::stream_signal::ResPart {
-                state: Some(typedb_protocol::transaction::stream_signal::res_part::State::Continue(
-                    typedb_protocol::transaction::stream_signal::res_part::Continue {},
-                )),
-            },
-        )
-    }};
-}
-
-macro_rules! transaction_res_part_stream_signal_error {
-    ($error_message: expr) => {{
-        typedb_protocol::transaction::res_part::ResPart::StreamRes(
-            typedb_protocol::transaction::stream_signal::ResPart {
-                state: Some(typedb_protocol::transaction::stream_signal::res_part::State::Error($error_message)),
-            },
-        )
-    }};
-}
-
-macro_rules! transaction_server_res {
-    ($req_id: expr, $message: expr) => {{
-        typedb_protocol::transaction::Server {
-            server: Some(typedb_protocol::transaction::server::Server::Res(typedb_protocol::transaction::Res {
-                req_id: $req_id.as_bytes().to_vec(),
-                res: Some($message),
-            })),
-        }
-    }};
-}
-
-macro_rules! transaction_server_res_part {
-    ($req_id: expr, $message: expr) => {{
-        typedb_protocol::transaction::Server {
-            server: Some(typedb_protocol::transaction::server::Server::ResPart(
-                typedb_protocol::transaction::ResPart { req_id: $req_id.as_bytes().to_vec(), res_part: Some($message) },
-            )),
         }
     }};
 }
@@ -209,15 +141,56 @@ macro_rules! send_ok_message_else_return_break {
     ($response_sender: expr, $message: expr) => {{
         if let Err(err) = $response_sender.send(Ok($message)).await {
             event!(Level::TRACE, "Submit message failed: {:?}", err);
-            return ControlFlow::Break(());
+            return Break(());
         }
     }};
 }
 
-enum QueryResponse {
+enum ImmediateQueryResponse {
+    NonFatalErr(typedb_protocol::Error),
     ResOk(typedb_protocol::query::res::Ok),
-    ResErr(typedb_protocol::Error),
-    ResPartRes(typedb_protocol::query::res_part::Res),
+}
+
+impl ImmediateQueryResponse {
+    fn non_fatal_err(error: impl IntoProtocolErrorMessage) -> Self {
+        Self::NonFatalErr(error.into_error_message())
+    }
+
+    fn ok(ok_message: typedb_protocol::query::res::ok::Ok) -> Self {
+        ImmediateQueryResponse::ResOk(typedb_protocol::query::res::Ok { ok: Some(ok_message) })
+    }
+}
+
+type StreamQueryOutputDescriptor = Vec<(String, VariablePosition)>;
+
+enum StreamQueryResponse {
+    // initial open response
+    Init(typedb_protocol::query::res::Ok),
+    // stream responses
+    NextRow(typedb_protocol::query::res_part::Res),
+    DoneOk(),
+    DoneErr(typedb_protocol::Error),
+}
+
+impl StreamQueryResponse {
+    fn done_ok() -> Self {
+        Self::DoneOk()
+    }
+
+    fn done_err(error: impl IntoProtocolErrorMessage) -> Self {
+        Self::DoneErr(error.into_error_message())
+    }
+
+    fn init(columns: &StreamQueryOutputDescriptor) -> Self {
+        let columns = columns.iter().map(|(name, _)| name.to_string()).collect();
+        let message = query_res_ok_concept_row_stream(columns);
+        Self::Init(query_res_ok_from_query_res_ok_ok(message))
+    }
+
+    fn next_row(row: typedb_protocol::AnswerRow) -> Self {
+        let res_part_res_row = typedb_protocol::query::res_part::res::Res::AnswerRow(row);
+        Self::NextRow(query_res_part_from_res_part_res(res_part_res_row))
+    }
 }
 
 enum StreamingCondition {
@@ -242,18 +215,15 @@ impl TransactionService {
         response_sender: Sender<Result<typedb_protocol::transaction::Server, Status>>,
         database_manager: Arc<DatabaseManager>,
     ) -> Self {
-        let (read_interrupt_sender, read_interrupt_receiver) = broadcast::channel(1);
-        let (write_interrupt_sender, write_interrupt_receiver) = broadcast::channel(1);
+        let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
 
         Self {
             database_manager,
 
             request_stream,
             response_sender,
-            read_responder_interrupt_sender: read_interrupt_sender,
-            read_responder_interrupt_receiver: read_interrupt_receiver,
-            write_responder_interrupt_sender: write_interrupt_sender,
-            write_responder_interrupt_receiver: write_interrupt_receiver,
+            query_interrupt_sender,
+            query_interrupt_receiver: ExecutionInterrupt::new(query_interrupt_receiver),
 
             transaction_timeout_millis: None,
             schema_lock_acquire_timeout_millis: None,
@@ -265,60 +235,90 @@ impl TransactionService {
             request_queue: Vec::with_capacity(20),
             read_responders: HashMap::new(),
             write_responders: HashMap::new(),
-            active_write_query: None,
+            running_write_query: None,
         }
     }
 
     pub(crate) async fn listen(&mut self) {
         loop {
-            let next = self.request_stream.next().await; // TODO: await active write query. If finished, move to responders and unblock other queries!
-            match next {
-                None => {
-                    close_service!();
-                }
-                Some(Err(error)) => {
-                    event!(Level::DEBUG, ?error, "GRPC error");
-                    close_service!();
-                }
-                Some(Ok(message)) => {
-                    for request in message.reqs {
-                        let request_id = Uuid::from_slice(&request.req_id).unwrap();
-                        let metadata = request.metadata;
-                        match request.req {
-                            None => {
-                                close_service_with_error!(
-                                    self,
-                                    ProtocolError::MissingField {
-                                        name: "req",
-                                        description: "Transaction message must contain a request.",
-                                    }
-                                    .into_status()
-                                );
-                            }
-                            Some(req) => {
-                                // TODO:
-                                //  If we get a Write query,
-                                //      if the queue is non-empty, we queue request, and check if we need to execute from the queue
-                                //      else if there's running read queries, we queue it only (SWAP WITH ABOVE?)
-                                //      if there's no running read queries, we execute + await it immediately, and add the output iterator into the Iterators map
-                                //  if we get a Read query
-                                //      if the queue is non-empty, we queue the request, and check if we need to execute from the queue
-                                //      else if there's running or no running read queries, we execute it and add it to the running read queries
-
-                                let result = self.handle_request(request_id, req).await;
-                                match result {
-                                    Ok(Continue(())) => {}
-                                    Ok(Break(())) => {
-                                        close_service!();
-                                    }
-                                    Err(err) => {
-                                        close_service_with_error!(self, err);
-                                    }
-                                }
-                            }
-                        }
+            let result = if self.running_write_query.is_some() {
+                let (req_id, write_query_worker) = self.running_write_query.as_mut().unwrap();
+                tokio::select! { biased;
+                    write_query_result = write_query_worker => {
+                        let req_id = *req_id;
+                        self.running_write_query = None;
+                        let (transaction, result) = write_query_result.unwrap();
+                        self.write_query_finished(req_id, transaction, result)
+                            .map(|empty| ControlFlow::Continue(()))
+                    }
+                    next = self.request_stream.next() => {
+                        self.handle_next(next).await
                     }
                 }
+            } else {
+                let next = self.request_stream.next().await;
+                self.handle_next(next).await
+            };
+
+            match result {
+                Ok(Continue(())) => {}
+                Ok(Break(())) => {
+                    return;
+                }
+                Err(status) => {
+                    let result = self.response_sender.send(Err(status)).await;
+                    if let Err(send_error) = result {
+                        event!(Level::DEBUG, ?send_error, "Failed to send error to client");
+                    }
+                    return;
+                }
+            }
+        }
+    }
+
+    // TODO: any method using `Result<ControlFlow<(), ()>, Status>` should really be `ControlFlow<Result<(), Status>, ()>`
+    async fn handle_next(
+        &mut self,
+        next: Option<Result<typedb_protocol::transaction::Client, Status>>,
+    ) -> Result<ControlFlow<(), ()>, Status> {
+        match next {
+            None => Ok(Break(())),
+            Some(Err(error)) => {
+                event!(Level::DEBUG, ?error, "GRPC error");
+                Ok(Break(()))
+            }
+            Some(Ok(message)) => {
+                for request in message.reqs {
+                    let request_id = Uuid::from_slice(&request.req_id).unwrap();
+                    let metadata = request.metadata;
+                    match request.req {
+                        None => {
+                            return Err(ProtocolError::MissingField {
+                                name: "req",
+                                description: "Transaction message must contain a request.",
+                            }
+                            .into_status());
+                            //
+                            // let result = self.response_sender.send(Err(error)).await;
+                            // if let Err(send_error) = result {
+                            //     event!(Level::DEBUG, ?send_error, "Failed to send error to client");
+                            // }
+                            // return Ok();
+                            //
+                            //
+                            // close_service_with_error!(
+                            //         self,
+                            //
+                            //     );
+                        }
+                        Some(req) => match self.handle_request(request_id, req).await {
+                            Err(err) => return Err(err),
+                            Ok(Break(())) => return Ok(Break(())),
+                            Ok(Continue(())) => {}
+                        },
+                    }
+                }
+                Ok(Continue(()))
             }
         }
     }
@@ -329,26 +329,33 @@ impl TransactionService {
         req: typedb_protocol::transaction::req::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
         match (self.is_open, req) {
-            (false, typedb_protocol::transaction::req::Req::OpenReq(open_req)) => {
-                // Eagerly executed in main loop
-                match self.handle_open(open_req) {
-                    Ok(_) => {
-                        event!(Level::TRACE, "Transaction opened, request ID: {:?}", &request_id);
-                        Ok(Continue(()))
-                    }
-                    Err(status) => Err(status),
+            (false, typedb_protocol::transaction::req::Req::OpenReq(open_req)) => match self.handle_open(open_req) {
+                Ok(_) => {
+                    event!(Level::TRACE, "Transaction opened, request ID: {:?}", &request_id);
+                    Ok(Continue(()))
                 }
-            }
+                Err(status) => Err(status),
+            },
             (true, typedb_protocol::transaction::req::Req::OpenReq(_)) => {
                 Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
-                // TODO: not every query error -> Status needs to abort the transaction!
-                self.handle_query(request_id, query_req).await?;
-                Ok(Continue(()))
+                let query_response = self.handle_query(request_id, query_req).await?;
+                if let Some(query_response) = query_response {
+                    return Ok(Self::respond_query_response(&self.response_sender, request_id, query_response).await);
+                } else {
+                    return Ok(Continue(()));
+                }
             }
             (true, typedb_protocol::transaction::req::Req::StreamReq(stream_req)) => {
-                self.handle_stream_continue(request_id, stream_req).await.map(|_| Continue(()))
+                match self.handle_stream_continue(request_id, stream_req).await {
+                    None => return Ok(Continue(())),
+                    Some(query_response) => {
+                        return Ok(
+                            Self::respond_query_response(&self.response_sender, request_id, query_response).await
+                        );
+                    }
+                }
             }
             (true, typedb_protocol::transaction::req::Req::CommitReq(commit_req)) => {
                 // Eagerly executed in main loop
@@ -356,16 +363,36 @@ impl TransactionService {
                 Ok(Break(()))
             }
             (true, typedb_protocol::transaction::req::Req::RollbackReq(rollback_req)) => {
-                // Eagerly executed in main loop
-                self.handle_rollback(rollback_req)?;
-                Ok(Continue(()))
+                self.handle_rollback(rollback_req).await
             }
             (true, typedb_protocol::transaction::req::Req::CloseReq(close_req)) => {
-                // Eagerly executed in main loop
-                self.handle_close(close_req)?;
+                self.handle_close(close_req).await;
                 Ok(Break(()))
             }
             (false, _) => Err(ProtocolError::TransactionClosed {}.into_status()),
+        }
+    }
+
+    async fn respond_query_response(
+        response_sender: &Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        req_id: Uuid,
+        immediate_query_response: ImmediateQueryResponse,
+    ) -> ControlFlow<(), ()> {
+        match immediate_query_response {
+            ImmediateQueryResponse::NonFatalErr(err) => {
+                send_ok_message_else_return_break!(
+                    response_sender,
+                    transaction_server_res_query_res(req_id, query_res_from_error(err))
+                );
+                Continue(())
+            }
+            ImmediateQueryResponse::ResOk(res) => {
+                send_ok_message_else_return_break!(
+                    response_sender,
+                    transaction_server_res_query_res(req_id, query_res_from_query_res_ok(res))
+                );
+                Continue(())
+            }
         }
     }
 
@@ -385,9 +412,8 @@ impl TransactionService {
                 options.transaction_timeout_millis.or(Some(DEFAULT_TRANSACTION_TIMEOUT_MILLIS));
         }
 
-        let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type).map_err(|err| {
-            ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status()
-        })?;
+        let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type)
+            .map_err(|_| ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status())?;
 
         let database_name = open_req.database;
         let database = self.database_manager.database(database_name.as_ref()).ok_or_else(|| {
@@ -410,14 +436,24 @@ impl TransactionService {
         Ok(())
     }
 
-    async fn handle_commit(&mut self, commit_req: typedb_protocol::transaction::commit::Req) -> Result<(), Status> {
-        // Interrupt all running read queries
-        // Await all read query join handles, then clear all read responders
-        // Await currently running write query, then clear all write responders
-        // Drain queue: skip all reads, execute all writes
-        // Execute commit
+    async fn handle_commit(&mut self, _commit_req: typedb_protocol::transaction::commit::Req) -> Result<(), Status> {
+        // finish any running write query, interrupt running queries, clear all running/queued reads, finish all writes
+        //   note: if any write query errors, the whole transaction errors
+        // finish any active write query
+        self.finish_running_write_query().await?;
 
-        // TODO: take mut
+        // interrupt active queries and close write transmitters
+        self.query_interrupt_sender.send(()).unwrap();
+        self.await_running_read_queries().await;
+        if let Break(()) = self.cancel_queued_read_queries().await {
+            return Err(TransactionServiceError::ServiceClosingFailedQueueCleanup {}
+                .into_error_message()
+                .into_status());
+        }
+        self.await_transmitting_write_queries().await;
+
+        // finish executing any remaining writes so they make it into the commit
+        self.finish_queued_write_queries().await?;
 
         match self.transaction.take().unwrap() {
             Transaction::Read(_) => {
@@ -436,192 +472,214 @@ impl TransactionService {
         }
     }
 
-    fn handle_rollback(&mut self, rollback_req: typedb_protocol::transaction::rollback::Req) -> Result<(), Status> {
-        // Interrupt all running read queries and any running write query
-        // Await all read query join handles, then clear all read responders
-        // Await all running write responders, then clear all write responders
-        // Clear queue
-        // Execute rollback
+    async fn handle_rollback(
+        &mut self,
+        _rollback_req: typedb_protocol::transaction::rollback::Req,
+    ) -> Result<ControlFlow<(), ()>, Status> {
+        // interrupt all queries, cancel writes, then rollback
+        self.query_interrupt_sender.send(()).unwrap();
+        self.await_transmitting_write_queries().await;
+        self.await_running_read_queries().await;
+        if let Break(_) = self.cancel_queued_read_queries().await {
+            return Ok(Break(()));
+        }
+
+        self.finish_running_write_query().await?;
+        if let Break(_) = self.cancel_queued_write_queries().await {
+            return Ok(Break(()));
+        }
 
         match self.transaction.take().unwrap() {
             Transaction::Read(_) => {
                 return Err(TransactionServiceError::CannotRollbackReadTransaction {}
                     .into_error_message()
-                    .into_status())
+                    .into_status());
             }
             Transaction::Write(mut transaction) => transaction.rollback(),
             Transaction::Schema(mut transaction) => transaction.rollback(),
         };
-        Ok(())
+        Ok(Continue(()))
     }
 
-    fn handle_close(&mut self, close_req: typedb_protocol::transaction::close::Req) -> Result<(), Status> {
-        // Interrupt all running read queries and any running write query
-        // Await all read query join handles, then clear all read responders
-        // Await all running write responders, then clear all write responders
-        // Clear queue
-        // Execute close
+    async fn handle_close(&mut self, _close_req: typedb_protocol::transaction::close::Req) {
+        self.query_interrupt_sender.send(()).unwrap();
+        self.await_transmitting_write_queries().await;
+        self.await_running_read_queries().await;
+        let _ = self.cancel_queued_read_queries().await;
+
+        let _ = self.finish_running_write_query().await;
+        let _ = self.cancel_queued_write_queries().await;
 
         match self.transaction.take().unwrap() {
             Transaction::Read(transaction) => transaction.close(),
             Transaction::Write(transaction) => transaction.close(),
             Transaction::Schema(transaction) => transaction.close(),
         };
+    }
+
+    async fn await_running_read_queries(&mut self) {
+        for (_, (worker, transmitter)) in self.read_responders.drain() {
+            if let Err(err) = worker.await {
+                event!(Level::DEBUG, "Awaiting read query worker returned error: {:?}", err);
+            }
+            transmitter.finish().await
+        }
+    }
+
+    async fn await_transmitting_write_queries(&mut self) {
+        for (_, (worker, transmitter)) in self.write_responders.drain() {
+            if let Err(err) = worker.await {
+                event!(Level::DEBUG, "Awaiting dummy write worker returned error: {:?}", err);
+            }
+            transmitter.finish().await
+        }
+    }
+
+    async fn cancel_queued_read_queries(&mut self) -> ControlFlow<(), ()> {
+        let mut write_queries = Vec::with_capacity(self.request_queue.len());
+        for (req_id, pipeline) in self.request_queue.drain(0..self.request_queue.len()) {
+            if Self::is_write_pipeline(&pipeline) {
+                write_queries.push((req_id, pipeline));
+            }
+            Self::respond_query_response(
+                &self.response_sender,
+                req_id,
+                ImmediateQueryResponse::NonFatalErr(TransactionServiceError::QueryInterrupted {}.into_error_message()),
+            )
+            .await?;
+        }
+
+        self.request_queue = write_queries;
+        Continue(())
+    }
+
+    async fn finish_running_write_query(&mut self) -> Result<(), Status> {
+        if let Some((req_id, worker)) = self.running_write_query.take() {
+            let (transaction, result) = worker.await.unwrap();
+            self.write_query_finished(req_id, transaction, result)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn write_query_finished(
+        &mut self,
+        req_id: Uuid,
+        transaction: Transaction,
+        result: Result<(StreamQueryOutputDescriptor, Batch), QueryError>,
+    ) -> Result<(), Status> {
+        self.transaction = Some(transaction);
+        match result {
+            Ok((output_descriptor, batch)) => {
+                self.activate_write_transmitter(req_id, output_descriptor, batch);
+                return Ok(());
+            }
+            Err(err) => {
+                // we promote write errors to fatal status errors
+                return Err(err.into_error_message().into_status());
+            }
+        }
+    }
+
+    async fn cancel_queued_write_queries(&mut self) -> ControlFlow<(), ()> {
+        let mut read_queries = Vec::with_capacity(self.request_queue.len());
+        for (req_id, pipeline) in self.request_queue.drain(0..self.request_queue.len()) {
+            if Self::is_write_pipeline(&pipeline) {
+                Self::respond_query_response(
+                    &self.response_sender,
+                    req_id,
+                    ImmediateQueryResponse::NonFatalErr(
+                        TransactionServiceError::QueryInterrupted {}.into_error_message(),
+                    ),
+                )
+                .await?;
+            } else {
+                read_queries.push((req_id, pipeline));
+            }
+        }
+        self.request_queue = read_queries;
+        Continue(())
+    }
+
+    async fn finish_queued_write_queries(&mut self) -> Result<(), Status> {
+        self.finish_running_write_query().await?;
+
+        let requests: Vec<_> = self.request_queue.drain(0..self.request_queue.len()).collect();
+        for (req_id, pipeline) in requests.into_iter() {
+            if Self::is_write_pipeline(&pipeline) {
+                match self.run_write_query(req_id, pipeline) {
+                    Ok(_) => self.finish_running_write_query().await?,
+                    Err(err) => {
+                        Self::respond_query_response(
+                            &self.response_sender,
+                            req_id,
+                            ImmediateQueryResponse::non_fatal_err(err),
+                        )
+                        .await;
+                    }
+                }
+            } else {
+                self.request_queue.push((req_id, pipeline));
+            }
+        }
         Ok(())
     }
 
-    async fn handle_query(&mut self, req_id: Uuid, query_req: typedb_protocol::query::Req) -> Result<(), Status> {
-        // TODO: compile query, create executor, respond with initial message and then await initial answers to send
-        let query_string = &query_req.query;
+    async fn handle_query(
+        &mut self,
+        req_id: Uuid,
+        query_req: typedb_protocol::query::Req,
+    ) -> Result<Option<ImmediateQueryResponse>, Status> {
         let query_options = &query_req.options; // TODO: pass query options
-        let parsed = parse_query(query_string).map_err(|err| {
-            TransactionServiceError::QueryParseFailed { source: err }.into_error_message().into_status()
-        })?;
+        let parsed = match parse_query(&query_req.query) {
+            Ok(parsed) => parsed,
+            Err(err) => {
+                // non-fatal error
+                return Ok(Some(ImmediateQueryResponse::non_fatal_err(TransactionServiceError::QueryParseFailed {
+                    typedb_source: err,
+                })));
+            }
+        };
         match parsed {
-            Query::Schema(schema_query) => self.handle_query_schema(schema_query).await,
+            Query::Schema(schema_query) => {
+                // schema queries are handled immediately so there is a query response or a fatal Status
+                self.handle_query_schema(schema_query).await.map(|response| Some(response))
+            }
             Query::Pipeline(pipeline) => {
-                let is_write = pipeline.stages.iter().any(Self::is_write_stage);
+                let is_write = Self::is_write_pipeline(&pipeline);
                 if is_write {
                     if !self.request_queue.is_empty()
                         || !self.read_responders.is_empty()
-                        || self.active_write_query.is_some()
+                        || self.running_write_query.is_some()
                     {
                         self.request_queue.push((req_id, pipeline));
-                        Ok(())
+                        // queued queries are not handled yet so there will be no query response yet
+                        Ok(None)
                     } else {
-                        // TODO: inject interrupt signal
-                        let handle = self.blocking_execute_write_query(pipeline)?;
-                        self.active_write_query = Some((req_id, tokio::spawn(async move { handle.await.unwrap() })));
-                        Ok(())
+                        match self.run_write_query(req_id, pipeline) {
+                            Ok(_) => {
+                                // running write queries have no valid response yet (until they finish) and will respond asynchronously
+                                Ok(None)
+                            }
+                            Err(err) => Ok(Some(ImmediateQueryResponse::non_fatal_err(err))),
+                        }
                     }
                 } else {
-                    if !self.request_queue.is_empty() || self.active_write_query.is_some() {
+                    if !self.request_queue.is_empty() || self.running_write_query.is_some() {
                         self.request_queue.push((req_id, pipeline));
-                        Ok(())
+                        // queued queries are not handled yet so there will be no query response yet
+                        Ok(None)
                     } else {
-                        let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
-                        let worker_handle = self.blocking_execute_read_query(pipeline, sender);
-                        let transmitter_handle = tokio::spawn(Self::stream_parts(
-                            self.response_sender.clone(),
-                            self.prefetch_size.unwrap() as usize,
-                            self.network_latency_millis.unwrap() as usize,
-                            req_id,
-                            receiver,
-                        ));
-                        self.read_responders.insert(req_id, (worker_handle, transmitter_handle));
-                        Ok(())
+                        self.run_and_activate_read_transmitter(req_id, pipeline);
+                        // running read queries have no response on the main loop and will respond asynchronously
+                        Ok(None)
                     }
                 }
             }
         }
     }
 
-    async fn stream_parts(
-        response_sender: Sender<Result<typedb_protocol::transaction::Server, Status>>,
-        prefetch_size: usize,
-        network_latency_millis: usize,
-        req_id: Uuid,
-        query_response_receiver: Receiver<Option<QueryResponse>>,
-    ) -> ControlFlow<(), (Uuid, Receiver<Option<QueryResponse>>)> {
-        // stream PREFETCH answers in one big message (increases message throughput. Note: tested in Java impl)
-        let (req_id, query_response_receiver) = Self::stream_while_or_finish(
-            &response_sender,
-            req_id,
-            query_response_receiver,
-            StreamingCondition::Count(prefetch_size),
-        )
-        .await?;
-        send_ok_message_else_return_break!(response_sender, Self::message_stream_signal_continue(req_id));
-
-        // stream LATENCY number of answers
-        let (req_id, query_response_receiver) = Self::stream_while_or_finish(
-            &response_sender,
-            req_id,
-            query_response_receiver,
-            StreamingCondition::Duration(SystemTime::now(), network_latency_millis),
-        )
-        .await?;
-        ControlFlow::Continue((req_id, query_response_receiver))
-    }
-
-    async fn stream_while_or_finish(
-        response_sender: &Sender<Result<typedb_protocol::transaction::Server, Status>>,
-        req_id: Uuid,
-        mut query_response_receiver: Receiver<Option<QueryResponse>>,
-        streaming_condition: StreamingCondition,
-    ) -> ControlFlow<(), (Uuid, Receiver<Option<QueryResponse>>)> {
-        let mut res_parts_batch = Vec::new();
-        let mut iteration = 0;
-        while streaming_condition.continue_(iteration) {
-            match query_response_receiver.recv().await {
-                None => {
-                    send_ok_message_else_return_break!(
-                        response_sender,
-                        Self::message_stream_signal_error(
-                            req_id,
-                            QueryError::QueryExecutionClosedEarly {}.into_error_message()
-                        )
-                    );
-                    return ControlFlow::Break(());
-                }
-                Some(response) => match response {
-                    None => {
-                        send_ok_message_else_return_break!(response_sender, Self::message_stream_signal_done(req_id));
-                        return ControlFlow::Break(());
-                    }
-                    Some(query_response) => match query_response {
-                        QueryResponse::ResOk(_) => unreachable!("Streams should only respond ResPart or Error"),
-                        QueryResponse::ResErr(res_error) => {
-                            if !res_parts_batch.is_empty() {
-                                send_ok_message_else_return_break!(
-                                    response_sender,
-                                    Self::message_stream_res_parts(req_id, res_parts_batch)
-                                );
-                            }
-                            send_ok_message_else_return_break!(
-                                response_sender,
-                                Self::message_stream_signal_error(req_id, res_error)
-                            );
-                            return ControlFlow::Break(());
-                        }
-                        QueryResponse::ResPartRes(res_part) => res_parts_batch.push(res_part),
-                    },
-                },
-            }
-            iteration += 1;
-        }
-        if !res_parts_batch.is_empty() {
-            send_ok_message_else_return_break!(
-                response_sender,
-                Self::message_stream_res_parts(req_id, res_parts_batch)
-            );
-        }
-        ControlFlow::Continue((req_id, query_response_receiver))
-    }
-
-    fn message_stream_res_parts(
-        req_id: Uuid,
-        res_parts: Vec<typedb_protocol::query::res_part::Res>,
-    ) -> typedb_protocol::transaction::Server {
-        transaction_server_res_part!(req_id, transaction_server_res_part_query_res!(res_parts))
-    }
-
-    fn message_stream_signal_continue(req_id: Uuid) -> typedb_protocol::transaction::Server {
-        transaction_server_res_part!(req_id, transaction_res_part_stream_signal_continue!())
-    }
-
-    fn message_stream_signal_done(req_id: Uuid) -> typedb_protocol::transaction::Server {
-        transaction_server_res_part!(req_id, transaction_res_part_stream_signal_done!())
-    }
-
-    fn message_stream_signal_error(
-        req_id: Uuid,
-        error: typedb_protocol::Error,
-    ) -> typedb_protocol::transaction::Server {
-        transaction_server_res_part!(req_id, transaction_res_part_stream_signal_error!(error))
-    }
-
-    async fn handle_query_schema(&mut self, query: SchemaQuery) -> Result<(), Status> {
+    async fn handle_query_schema(&mut self, query: SchemaQuery) -> Result<ImmediateQueryResponse, Status> {
         if let Some(Transaction::Schema(schema_transaction)) = self.transaction.take() {
             let TransactionSchema {
                 snapshot,
@@ -633,18 +691,17 @@ impl TransactionService {
             } = schema_transaction;
             let mut snapshot = Arc::into_inner(snapshot).unwrap();
             let (snapshot, type_manager, thing_manager, result) = spawn_blocking(move || {
-                let result = QueryManager::new()
-                    .execute_schema(&mut snapshot, &type_manager, &thing_manager, query)
-                    .map_err(|err| {
-                        TransactionServiceError::QueryExecutionFailed { typedb_source: err }
-                            .into_error_message()
-                            .into_status()
-                    });
+                let result = QueryManager::new().execute_schema(&mut snapshot, &type_manager, &thing_manager, query);
                 (snapshot, type_manager, thing_manager, result)
             })
             .await
             .unwrap();
-            result?;
+            let message_ok_empty = result.map(|_| query_res_ok_empty()).map_err(|err| {
+                TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: err }
+                    .into_error_message()
+                    .into_status()
+            })?;
+
             let transaction = TransactionSchema::from(
                 snapshot,
                 type_manager,
@@ -654,26 +711,67 @@ impl TransactionService {
                 transaction_options,
             );
             self.transaction = Some(Transaction::Schema(transaction));
-            Ok(())
+            Ok(ImmediateQueryResponse::ok(message_ok_empty))
         } else {
-            // TODO: this doesn't need to be fatal!
-            Err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}.into_error_message().into_status())
+            Ok(ImmediateQueryResponse::non_fatal_err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}))
         }
+    }
+
+    fn run_write_query(&mut self, req_id: Uuid, pipeline: Pipeline) -> Result<(), TransactionServiceError> {
+        debug_assert!(self.running_write_query.is_none());
+        let handle = self.blocking_execute_write_query(pipeline)?;
+        self.running_write_query = Some((req_id, tokio::spawn(async move { handle.await.unwrap() })));
+        Ok(())
+    }
+
+    fn activate_write_transmitter(
+        &mut self,
+        req_id: Uuid,
+        output_descriptor: StreamQueryOutputDescriptor,
+        batch: Batch,
+    ) {
+        let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
+        let interrupt = self.query_interrupt_receiver.clone();
+        let batch_reader = self.write_query_batch_reader(output_descriptor, batch, sender, interrupt);
+        let stream_transmitter = StreamTransmitter::start_new(
+            self.response_sender.clone(),
+            receiver,
+            req_id,
+            self.prefetch_size.unwrap() as usize,
+            self.network_latency_millis.unwrap() as usize,
+        );
+        self.write_responders.insert(req_id, (batch_reader, stream_transmitter));
+    }
+
+    fn run_and_activate_read_transmitter(&mut self, req_id: Uuid, pipeline: Pipeline) {
+        let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
+        let worker_handle = self.blocking_read_query_worker(pipeline, sender);
+        let stream_transmitter = StreamTransmitter::start_new(
+            self.response_sender.clone(),
+            receiver,
+            req_id,
+            self.prefetch_size.unwrap() as usize,
+            self.network_latency_millis.unwrap() as usize,
+        );
+        self.read_responders.insert(req_id, (worker_handle, stream_transmitter));
     }
 
     fn blocking_execute_write_query(
         &mut self,
         pipeline: Pipeline,
-    ) -> Result<JoinHandle<(Transaction, Result<Batch, QueryError>)>, Status> {
+    ) -> Result<
+        JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), QueryError>)>,
+        TransactionServiceError,
+    > {
         debug_assert!(
             self.request_queue.is_empty()
                 && self.read_responders.is_empty()
-                && self.active_write_query.is_none()
+                && self.running_write_query.is_none()
                 && self.transaction.is_some()
         );
+        let interrupt = self.query_interrupt_receiver.clone();
         if let Some(Transaction::Schema(schema_transaction)) = self.transaction.take() {
             Ok(spawn_blocking(move || {
-                // TODO: pass in Interrupt Receiver
                 let TransactionSchema {
                     snapshot,
                     type_manager,
@@ -689,6 +787,7 @@ impl TransactionService {
                     thing_manager.clone(),
                     &function_manager,
                     &pipeline,
+                    interrupt,
                 );
 
                 let transaction = Transaction::Schema(TransactionSchema::from(
@@ -703,7 +802,6 @@ impl TransactionService {
             }))
         } else if let Some(Transaction::Write(write_transaction)) = self.transaction.take() {
             Ok(spawn_blocking(move || {
-                // TODO: pass in Interrupt Receiver
                 let TransactionWrite {
                     snapshot,
                     type_manager,
@@ -719,6 +817,7 @@ impl TransactionService {
                     thing_manager.clone(),
                     &function_manager,
                     &pipeline,
+                    interrupt,
                 );
 
                 let transaction = Transaction::Write(TransactionWrite::from(
@@ -732,9 +831,7 @@ impl TransactionService {
                 (transaction, result)
             }))
         } else {
-            return Err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}
-                .into_error_message()
-                .into_status());
+            Err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {})
         }
     }
 
@@ -744,7 +841,8 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         pipeline: &Pipeline,
-    ) -> (Snapshot, Result<Batch, QueryError>) {
+        interrupt: ExecutionInterrupt,
+    ) -> (Snapshot, Result<(StreamQueryOutputDescriptor, Batch), QueryError>) {
         let result = QueryManager::new().prepare_write_pipeline(
             snapshot,
             type_manager,
@@ -752,24 +850,31 @@ impl TransactionService {
             &function_manager,
             &pipeline,
         );
-        let pipeline = match result {
-            Ok(pipeline) => pipeline,
+        let (query_output_descriptor, pipeline) = match result {
+            Ok(executor) => {
+                let named_outputs: StreamQueryOutputDescriptor = executor
+                    .named_selected_outputs()
+                    .into_iter()
+                    .map(|(position, name)| (name, position))
+                    .sorted()
+                    .collect();
+                (named_outputs, executor)
+            }
             Err((snapshot, err)) => return (snapshot, Err(err)),
         };
 
-        let (iterator, snapshot) = match pipeline.into_iterator() {
+        let (iterator, snapshot) = match pipeline.into_iterator(interrupt) {
             Ok((iterator, snapshot)) => (iterator, snapshot),
             Err((snapshot, err)) => {
                 return (
                     Arc::into_inner(snapshot).unwrap(),
                     Err(QueryError::WritePipelineExecutionError { typedb_source: err }),
-                )
+                );
             }
         };
 
-        // collect so the snapshot Arc is no longer held by the iterator
         match iterator.collect_owned() {
-            Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok(batch)),
+            Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok((query_output_descriptor, batch))),
             Err(err) => (
                 Arc::into_inner(snapshot).unwrap(),
                 Err(QueryError::WritePipelineExecutionError { typedb_source: err }),
@@ -777,10 +882,59 @@ impl TransactionService {
         }
     }
 
-    fn blocking_execute_read_query(&self, pipeline: Pipeline, sender: Sender<Option<QueryResponse>>) -> JoinHandle<()> {
-        debug_assert!(self.request_queue.is_empty() && self.active_write_query.is_none() && self.transaction.is_some());
-
+    // Write query is already executed, but for simplicity, we convert it to something that conform to the same API as the read path
+    fn write_query_batch_reader(
+        &self,
+        output_descriptor: StreamQueryOutputDescriptor,
+        batch: Batch,
+        sender: Sender<StreamQueryResponse>,
+        mut interrupt: ExecutionInterrupt,
+    ) -> JoinHandle<()> {
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
+            let snapshot = transaction.snapshot.clone();
+            let type_manager = transaction.type_manager.clone();
+            let thing_manager = transaction.thing_manager.clone();
+            tokio::spawn(async move {
+                let mut as_lending_iter = batch.into_iterator();
+                Self::submit_response_async(&sender, StreamQueryResponse::init(&output_descriptor)).await;
+
+                while let Some(row) = as_lending_iter.next() {
+                    if interrupt.check() {
+                        Self::submit_response_async(
+                            &sender,
+                            StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted {}),
+                        )
+                        .await;
+                        return;
+                    }
+
+                    let encoded_row =
+                        encode_row(row, &output_descriptor, snapshot.as_ref(), &type_manager, &thing_manager);
+                    match encoded_row {
+                        Ok(encoded_row) => {
+                            Self::submit_response_async(&sender, StreamQueryResponse::next_row(encoded_row)).await;
+                        }
+                        Err(err) => {
+                            Self::submit_response_async(
+                                &sender,
+                                StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
+                            )
+                            .await;
+                            return;
+                        }
+                    }
+                }
+                Self::submit_response_async(&sender, StreamQueryResponse::done_ok()).await
+            })
+        })
+    }
+
+    fn blocking_read_query_worker(&self, pipeline: Pipeline, sender: Sender<StreamQueryResponse>) -> JoinHandle<()> {
+        debug_assert!(
+            self.request_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some()
+        );
+        let mut interrupt = self.query_interrupt_receiver.clone();
+        let handle = with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
             let thing_manager = transaction.thing_manager.clone();
@@ -794,67 +948,60 @@ impl TransactionService {
                     &pipeline,
                 );
 
-                let executor = unwrap_or_submit_error_and_return!(executor, &sender, |err| err);
+                let executor = unwrap_or_execute_and_return!(executor, |err| {
+                    Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
+                });
 
-                let named_outputs: Vec<(String, VariablePosition)> = executor
+                let descriptor: StreamQueryOutputDescriptor = executor
                     .named_selected_outputs()
                     .into_iter()
                     .map(|(position, name)| (name, position))
                     .sorted()
                     .collect();
-
-                Self::submit_stream_row_descriptor(&sender, &named_outputs);
+                let response = StreamQueryResponse::init(&descriptor);
+                Self::submit_response_sync(&sender, response);
 
                 let (mut iterator, _) =
-                    unwrap_or_submit_error_and_return!(executor.into_iterator(), &sender, |snapshot_and_err| {
-                        QueryError::ReadPipelineExecutionError { typedb_source: snapshot_and_err.1 }
+                    unwrap_or_execute_and_return!(executor.into_iterator(interrupt.clone()), |snapshot_and_err| {
+                        Self::submit_response_sync(
+                            &sender,
+                            StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError {
+                                typedb_source: snapshot_and_err.1,
+                            }),
+                        );
                     });
 
                 while let Some(next) = iterator.next() {
-                    let row = unwrap_or_submit_error_and_return!(next, &sender, |err| err);
-                    let encoded = encode_row(row, &named_outputs, snapshot.as_ref(), &type_manager, &thing_manager);
-                    match encoded {
-                        Ok(encoded) => Self::submit_stream_row(&sender, encoded),
+                    if interrupt.check() {
+                        Self::submit_response_sync(
+                            &sender,
+                            StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted {}),
+                        );
+                        return;
+                    }
+
+                    let row = unwrap_or_execute_and_return!(next, |err| {
+                        Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
+                    });
+
+                    let encoded_row = encode_row(row, &descriptor, snapshot.as_ref(), &type_manager, &thing_manager);
+                    match encoded_row {
+                        Ok(encoded_row) => {
+                            Self::submit_response_sync(&sender, StreamQueryResponse::next_row(encoded_row))
+                        }
                         Err(err) => {
-                            Self::submit_error_and_terminator(
+                            Self::submit_response_sync(
                                 &sender,
-                                PipelineExecutionError::ConceptRead { source: err },
+                                StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
                             );
                             return;
                         }
                     }
                 }
-                Self::submit_terminator(&sender);
+                Self::submit_response_sync(&sender, StreamQueryResponse::done_ok())
             })
-        })
-    }
-
-    fn submit_stream_row_descriptor(sender: &Sender<Option<QueryResponse>>, columns: &[(String, VariablePosition)]) {
-        let mut header = typedb_protocol::query::res::ok::AnswerRowStream::default();
-        header.column_variable_names.extend(columns.iter().map(|(name, _)| name.to_string()));
-        let response =
-            QueryResponse::ResOk(query_res_ok!(typedb_protocol::query::res::ok::Ok::ConceptMapStream(header)));
-        sender.blocking_send(Some(response)).unwrap()
-    }
-
-    fn submit_stream_row(sender: &Sender<Option<QueryResponse>>, row: typedb_protocol::AnswerRow) {
-        let res_part_res_row = typedb_protocol::query::res_part::res::Res::AnswerRow(row);
-        let response = QueryResponse::ResPartRes(query_res_part_res!(res_part_res_row));
-        sender.blocking_send(Some(response)).unwrap()
-    }
-
-    fn submit_error_and_terminator(sender: &Sender<Option<QueryResponse>>, error: impl IntoProtocolErrorMessage) {
-        let response = QueryResponse::ResErr(error.into_error_message());
-        match sender.blocking_send(Some(response)) {
-            Ok(_) => Self::submit_terminator(sender),
-            Err(err) => event!(Level::ERROR, "Worker failed to send error message: {:?}", err),
-        }
-    }
-
-    fn submit_terminator(sender: &Sender<Option<QueryResponse>>) {
-        if let Err(err) = sender.blocking_send(None) {
-            event!(Level::DEBUG, "Worker failed to send final empty message after error message: {:?}", err)
-        }
+        });
+        handle
     }
 
     fn prepare_read_query_in<Snapshot: ReadableSnapshot + 'static>(
@@ -867,64 +1014,213 @@ impl TransactionService {
         QueryManager::new().prepare_read_pipeline(snapshot, type_manager, thing_manager, &function_manager, &pipeline)
     }
 
-    async fn handle_stream_continue(&mut self, request_id: Uuid, stream_req: Req) -> Result<(), Status> {
-        todo!()
-        // debug_assert!(
-        //     self.read_responders.contains_key(&request_id) || self.write_responders.contains_key(&request_id)
-        // );
-        // let read_responder = self.read_responders.get_mut(&request_id);
-        // if let Some(responder) = read_responder {
-        //     match responder {
-        //         Responder::Active(handle) => {
-        //             if !handle.is_finished() {
-        //                 event!(
-        //                     Level::DEBUG,
-        //                     "Responder is already active, and received a Stream Continue request.\
-        //                          Unexpected behaviour, but not an error state."
-        //                 );
-        //             } else {
-        //                 handle.await.unwrap();
-        //                 // TODO: recreate a task to stream back out from the iterator and set the handle
-        //                 // *handle = ..
-        //             }
-        //         }
-        //         Responder::Waiting(()) => {
-        //             todo!()
-        //         }
-        //     }
-        // } else {
-        //     let write_responder = self.write_responders.get_mut(&request_id);
-        //     if let Some(responder) = write_responder {
-        //         match responder {
-        //             Responder::Active(handle) => {
-        //                 if !handle.is_finished() {
-        //                     event!(
-        //                         Level::DEBUG,
-        //                         "Responder is already active, and received a Stream Continue request.\
-        //                          Unexpected behaviour, but not an error state."
-        //                     );
-        //                 } else {
-        //                     handle.await.unwrap();
-        //                     // TODO: recreate a task to stream back out from the iterator and set the handle
-        //                     // *handle = ..
-        //                 }
-        //             }
-        //             Responder::Waiting(()) => {
-        //                 todo!()
-        //             }
-        //         }
-        //     } else {
-        //         return Err(ProtocolError::QueryStreamNotFound { query_request_id: request_id }.into_status());
-        //     }
-        // }
-        // Ok(())
+    fn submit_response_sync(sender: &Sender<StreamQueryResponse>, response: StreamQueryResponse) {
+        if let Err(err) = sender.blocking_send(response) {
+            event!(Level::ERROR, "Failed to send error message: {:?}", err)
+        }
     }
 
-    fn is_write_stage(stage: &Stage) -> bool {
-        match stage {
-            Stage::Insert(_) | Stage::Put(_) | Stage::Delete(_) | Stage::Update(_) => true,
-            Stage::Fetch(_) | Stage::Reduce(_) | Stage::Modifier(_) | Stage::Match(_) => false,
+    async fn submit_response_async(sender: &Sender<StreamQueryResponse>, response: StreamQueryResponse) {
+        if let Err(err) = sender.send(response).await {
+            event!(Level::ERROR, "Failed to send error message: {:?}", err)
         }
+    }
+
+    async fn handle_stream_continue(&mut self, request_id: Uuid, _stream_req: Req) -> Option<ImmediateQueryResponse> {
+        debug_assert!(
+            self.read_responders.contains_key(&request_id) || self.write_responders.contains_key(&request_id)
+        );
+        let read_responder = self.read_responders.get_mut(&request_id);
+        if let Some((worker_handle, stream_transmitter)) = read_responder {
+            if stream_transmitter.check_finished_else_continue().await {
+                debug_assert!(worker_handle.is_finished());
+                drop(read_responder);
+                self.read_responders.remove(&request_id);
+            }
+            // valid query stream responses and control are reported by the transmitter directly, so no response here
+            None
+        } else {
+            let write_responder = self.write_responders.get_mut(&request_id);
+            if let Some((worker_handle, stream_transmitter)) = write_responder {
+                if stream_transmitter.check_finished_else_continue().await {
+                    debug_assert!(worker_handle.is_finished());
+                    drop(write_responder);
+                    self.write_responders.remove(&request_id);
+                }
+                // valid query stream responses and control are reported by the transmitter directly, so no response here
+                None
+            } else {
+                // This could be a valid state - if the driver requests Continuing a stream that has already been
+                //       finished & removed, or the user committed/rolled back/closed and we cleaned up streams eagerly
+                Some(ImmediateQueryResponse::NonFatalErr(
+                    TransactionServiceError::QueryStreamNotFound { query_request_id: request_id }.into_error_message(),
+                ))
+            }
+        }
+    }
+
+    fn is_write_pipeline(pipeline: &Pipeline) -> bool {
+        for stage in &pipeline.stages {
+            match stage {
+                Stage::Insert(_) | Stage::Put(_) | Stage::Delete(_) | Stage::Update(_) => return true,
+                Stage::Fetch(_) | Stage::Reduce(_) | Stage::Modifier(_) | Stage::Match(_) => {}
+            }
+        }
+        false
+    }
+}
+
+#[derive(Debug)]
+struct StreamTransmitter {
+    response_sender: Sender<Result<Server, Status>>,
+    req_id: Uuid,
+    prefetch_size: usize,
+    network_latency_millis: usize,
+
+    transmitter_task: Option<JoinHandle<ControlFlow<(), Receiver<StreamQueryResponse>>>>,
+}
+
+impl StreamTransmitter {
+    fn start_new(
+        response_sender: Sender<Result<Server, Status>>,
+        query_response_receiver: Receiver<StreamQueryResponse>,
+        req_id: Uuid,
+        prefetch_size: usize,
+        network_latency_millis: usize,
+    ) -> Self {
+        let transmitter_task = tokio::spawn(Self::respond_stream_parts(
+            response_sender.clone(),
+            prefetch_size,
+            network_latency_millis,
+            req_id,
+            query_response_receiver,
+        ));
+        Self {
+            response_sender,
+            req_id,
+            prefetch_size,
+            network_latency_millis,
+            transmitter_task: Some(transmitter_task),
+        }
+    }
+
+    async fn check_finished_else_continue(&mut self) -> bool {
+        let task = self.transmitter_task.take().unwrap();
+        if task.is_finished() {
+            // Should be immediate and safe to unwrap: cancelled or panicked are the only cases
+            let control = task.await.unwrap();
+            match control {
+                Continue(query_response_receiver) => {
+                    self.transmitter_task = Some(tokio::spawn(Self::respond_stream_parts(
+                        self.response_sender.clone(),
+                        self.prefetch_size,
+                        self.network_latency_millis,
+                        self.req_id,
+                        query_response_receiver,
+                    )));
+                    false
+                }
+                Break(_) => true,
+            }
+        } else {
+            false
+        }
+    }
+
+    async fn finish(self) {
+        if let Some(task) = self.transmitter_task {
+            let _ = task.await;
+        }
+    }
+
+    async fn respond_stream_parts(
+        response_sender: Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        prefetch_size: usize,
+        network_latency_millis: usize,
+        req_id: Uuid,
+        query_response_receiver: Receiver<StreamQueryResponse>,
+    ) -> ControlFlow<(), Receiver<StreamQueryResponse>> {
+        // stream PREFETCH answers in one big message (increases message throughput. Note: tested in Java impl)
+        let query_response_receiver = Self::respond_stream_while_or_finish(
+            &response_sender,
+            req_id,
+            query_response_receiver,
+            StreamingCondition::Count(prefetch_size),
+        )
+        .await?;
+        send_ok_message_else_return_break!(response_sender, transaction_server_res_part_stream_signal_continue(req_id));
+
+        // stream LATENCY number of answers
+        let query_response_receiver = Self::respond_stream_while_or_finish(
+            &response_sender,
+            req_id,
+            query_response_receiver,
+            StreamingCondition::Duration(SystemTime::now(), network_latency_millis),
+        )
+        .await?;
+        Continue(query_response_receiver)
+    }
+
+    async fn respond_stream_while_or_finish(
+        response_sender: &Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        req_id: Uuid,
+        mut query_response_receiver: Receiver<StreamQueryResponse>,
+        streaming_condition: StreamingCondition,
+    ) -> ControlFlow<(), Receiver<StreamQueryResponse>> {
+        let mut res_parts_batch = Vec::new();
+        let mut iteration = 0;
+        while streaming_condition.continue_(iteration) {
+            match query_response_receiver.recv().await {
+                None => {
+                    send_ok_message_else_return_break!(
+                        response_sender,
+                        transaction_server_res_part_stream_signal_error(
+                            req_id,
+                            QueryError::QueryExecutionClosedEarly {}.into_error_message()
+                        )
+                    );
+                    return Break(());
+                }
+                Some(response) => match response {
+                    StreamQueryResponse::Init(res) => {
+                        // header message
+                        send_ok_message_else_return_break!(
+                            response_sender,
+                            transaction_server_res_query_res(req_id, query_res_from_query_res_ok(res))
+                        );
+                    }
+                    StreamQueryResponse::DoneOk() => {
+                        send_ok_message_else_return_break!(
+                            response_sender,
+                            transaction_server_res_part_stream_signal_done(req_id)
+                        );
+                        return Break(());
+                    }
+                    StreamQueryResponse::DoneErr(res_error) => {
+                        if !res_parts_batch.is_empty() {
+                            send_ok_message_else_return_break!(
+                                response_sender,
+                                transaction_server_res_parts_query_part(req_id, res_parts_batch)
+                            );
+                        }
+                        send_ok_message_else_return_break!(
+                            response_sender,
+                            transaction_server_res_part_stream_signal_error(req_id, res_error)
+                        );
+                        return Break(());
+                    }
+                    StreamQueryResponse::NextRow(res_part) => res_parts_batch.push(res_part),
+                },
+            }
+            iteration += 1;
+        }
+        if !res_parts_batch.is_empty() {
+            send_ok_message_else_return_break!(
+                response_sender,
+                transaction_server_res_parts_query_part(req_id, res_parts_batch)
+            );
+        }
+        Continue(query_response_receiver)
     }
 }
 
@@ -936,9 +1232,19 @@ typedb_error!(
         // TODO: these should be typedb_source
         DataCommitFailed(4, "Data transaction commit failed.", ( source : DataCommitError )),
         SchemaCommitFailed(5, "Schema transaction commit failed.", ( source : SchemaCommitError )),
-        QueryParseFailed(6, "Query parsing failed.", ( source : typeql::Error )),
+        QueryParseFailed(6, "Query parsing failed.", ( typedb_source: typeql::Error )),
         SchemaQueryRequiresSchemaTransaction(7, "Schema modification queries require schema transactions."),
         WriteQueryRequiresSchemaOrWriteTransaction(8, "Data modification queries require either write or schema transactions."),
-        QueryExecutionFailed(9, "Query execution failed.", ( typedb_source : QueryError )),
+        TxnAbortSchemaQueryFailed(9, "Aborting transaction due to failed schema query.", ( typedb_source : QueryError )),
+        QueryInterrupted(10, "Query was interrupted by a transaction close, rollback, or commit."),
+        QueryStreamNotFound(
+            11,
+            r#"
+            Query stream with id '{query_request_id}' was not found in the transaction.
+            The stream could have already finished, or the transaction could be closed, committed, rolled back (or this is a bug).
+            "#,
+            query_request_id: Uuid
+        ),
+        ServiceClosingFailedQueueCleanup(12, "The operation failed since the service is closing."),
     }
 );

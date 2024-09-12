@@ -83,6 +83,15 @@ impl<'a> Label<'a> {
         self.scoped_name.as_reference()
     }
 
+    // TODO: replace all usages of &Label<'_> with Label<'_>, then update all call sites/usages to use .as_reference() instead of clone()
+    pub fn as_reference(&self) -> Label<'_> {
+        Label {
+            name: self.name.as_reference(),
+            scope: self.scope.as_ref().map(|string_bytes| string_bytes.as_reference()),
+            scoped_name: self.scoped_name.as_reference(),
+        }
+    }
+
     pub fn into_owned(self) -> Label<'static> {
         Label {
             name: self.name.into_owned(),
@@ -107,12 +116,6 @@ impl<'a> TypeVertexPropertyEncoding<'a> for Label<'a> {
 
 impl<'a> fmt::Display for Label<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Label[name={}, scope={}, scoped_name={}]",
-            self.name(),
-            self.scope().map(|s| format!("{}", s)).unwrap_or_default(),
-            self.scoped_name()
-        )
+        write!(f, "{}", self.scoped_name())
     }
 }

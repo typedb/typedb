@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{hash_map::Entry, HashMap};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    fmt::{Display, Formatter},
+};
 
 use bytes::{byte_reference::ByteReference, Bytes};
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_VALUE_INLINE};
@@ -27,6 +30,12 @@ pub struct StructDefinitionField {
     pub index: StructFieldIDUInt,
     pub optional: bool,
     pub value_type: ValueType,
+}
+
+impl Display for StructDefinitionField {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Value type: {}, optional: {}", self.value_type, self.optional)
+    }
 }
 
 impl StructDefinition {

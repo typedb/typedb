@@ -22,7 +22,7 @@ use compiler::expression::{
         ExpressionEvaluationError,
     },
 };
-use encoding::value::value::{DBValue, Value};
+use encoding::value::value::{NativeValueConvertible, Value};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ExpressionValue {
@@ -142,9 +142,9 @@ pub trait ExpressionEvaluation {
 
 impl<T1, T2, R, F> ExpressionEvaluation for Binary<T1, T2, R, F>
 where
-    T1: DBValue,
-    T2: DBValue,
-    R: DBValue,
+    T1: NativeValueConvertible,
+    T2: NativeValueConvertible,
+    R: NativeValueConvertible,
     F: BinaryExpression<T1, T2, R>,
 {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
@@ -213,7 +213,7 @@ impl ExpressionEvaluation for LoadConstant {
     }
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastUnary<From, To> {
+impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionEvaluation for CastUnary<From, To> {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let value_before = From::from_db_value(state.pop_value()).unwrap();
         let value_after = To::cast(value_before)?.to_db_value();
@@ -222,7 +222,7 @@ impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastUnary<F
     }
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryLeft<From, To> {
+impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryLeft<From, To> {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let right = state.pop_value();
         let left_before = From::from_db_value(state.pop_value()).unwrap();
@@ -233,7 +233,7 @@ impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryL
     }
 }
 
-impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryRight<From, To> {
+impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryRight<From, To> {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let right_before = From::from_db_value(state.pop_value()).unwrap();
         let right_after = To::cast(right_before)?.to_db_value();
@@ -244,8 +244,8 @@ impl<From: DBValue, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryR
 
 impl<T1, R, F> ExpressionEvaluation for Unary<T1, R, F>
 where
-    T1: DBValue,
-    R: DBValue,
+    T1: NativeValueConvertible,
+    R: NativeValueConvertible,
     F: UnaryExpression<T1, R>,
 {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {

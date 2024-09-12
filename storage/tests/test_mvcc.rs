@@ -94,7 +94,7 @@ fn test_reading_snapshots() {
     snapshot_read_0.close_resources();
 
     // Read from further in the past.
-    let snapshot_read_02 = storage.open_snapshot_read_at(watermark_0).unwrap();
+    let snapshot_read_02 = storage.open_snapshot_read_at(watermark_0);
     assert_eq!(snapshot_read_02.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
     snapshot_read_02.close_resources();
 }
@@ -129,7 +129,7 @@ fn test_conflicting_update_fails() {
 
     {
         // Try the same, with the snapshot opened in the past
-        let mut snapshot_write_at_0 = storage.open_snapshot_write_at(watermark_after_initial_write).unwrap();
+        let mut snapshot_write_at_0 = storage.open_snapshot_write_at(watermark_after_initial_write);
         snapshot_write_at_0.get_required(key_1.clone()).unwrap();
         snapshot_write_at_0.put_val(key_2.clone().into_owned_array(), ByteArray::copy(&VALUE_2));
         let result_write_at_0 = snapshot_write_at_0.commit();
@@ -158,7 +158,7 @@ fn test_open_snapshot_write_at() {
     assert_eq!(snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
     snapshot_read_0.close_resources();
 
-    let mut snapshot_write_1 = storage.clone().open_snapshot_write_at(watermark_init).unwrap();
+    let mut snapshot_write_1 = storage.clone().open_snapshot_write_at(watermark_init);
     snapshot_write_1.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
     snapshot_write_1.commit().unwrap();
 

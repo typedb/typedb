@@ -91,6 +91,12 @@ impl ValueType {
     }
 }
 
+impl Display for ValueType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.category().name())
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum ValueTypeCategory {
     Boolean,
@@ -174,11 +180,26 @@ impl ValueTypeCategory {
             ValueTypeCategory::Struct => None,
         }
     }
+
+    const fn name(&self) -> &'static str {
+        match self {
+            ValueTypeCategory::Boolean => "boolean",
+            ValueTypeCategory::Long => "long",
+            ValueTypeCategory::Double => "double",
+            ValueTypeCategory::Decimal => "decimal",
+            ValueTypeCategory::Date => "date",
+            ValueTypeCategory::DateTime => "datetime",
+            ValueTypeCategory::DateTimeTZ => "datetime_tz",
+            ValueTypeCategory::Duration => "duration",
+            ValueTypeCategory::String => "string",
+            ValueTypeCategory::Struct => "struct",
+        }
+    }
 }
 
 impl Display for ValueTypeCategory {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{}", self.name())
     }
 }
 

@@ -296,7 +296,7 @@ fn handle_dependency(commit_dependency: CommitDependency) -> Option<IsolationCon
     None
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum DependentPut {
     Deleted { reinsert: Arc<AtomicBool> },
     Inserted { reinsert: Arc<AtomicBool> },
@@ -318,14 +318,14 @@ enum CommitDependency {
     Conflict(IsolationConflict),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum IsolationConflict {
     DeletingRequiredKey,
     RequireDeletedKey,
     ExclusiveLock,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct ExpectedWindowError {
     sequence_number: SequenceNumber,
 }

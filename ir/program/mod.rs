@@ -6,7 +6,9 @@
 
 use std::{error::Error, fmt, fmt::Display, sync::Arc};
 
+use error::typedb_error;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
+use typeql::schema::definable::function::{Function, ReturnStream};
 
 use crate::{program::function_signature::FunctionID, PatternDefinitionError};
 
@@ -15,11 +17,11 @@ pub mod function;
 pub mod function_signature;
 pub mod modifier;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FunctionReadError {
     FunctionNotFound { function_id: FunctionID },
-    SnapshotGet { source: SnapshotGetError },
-    SnapshotIterate { source: Arc<SnapshotIteratorError> },
+    FunctionRetrieval { source: SnapshotGetError },
+    FunctionsScan { source: Arc<SnapshotIteratorError> },
 }
 
 impl Display for FunctionReadError {
@@ -31,57 +33,32 @@ impl Display for FunctionReadError {
 impl Error for FunctionReadError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::SnapshotGet { source } => Some(source),
-            Self::SnapshotIterate { source } => Some(source),
+            Self::FunctionRetrieval { source } => Some(source),
+            Self::FunctionsScan { source } => Some(source),
             Self::FunctionNotFound { .. } => None,
         }
     }
 }
 
-#[derive(Debug)]
-pub enum ProgramDefinitionError {
-    FunctionRead { source: FunctionReadError },
-    FunctionDefinition { source: FunctionDefinitionError },
-    PatternDefinition { source: PatternDefinitionError },
-}
-
-impl Display for ProgramDefinitionError {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+typedb_error!(
+    pub FunctionRepresentationError(domain = "Representation", prefix = "FRP") {
+        FunctionArgumentUnused(
+            1,
+            "Function argument variable '{argument_variable}' is unused.\nSource:\n{declaration}",
+            argument_variable: String,
+            declaration: Function
+        ),
+        ReturnVariableUnavailable(
+            2,
+            "Function return variable '{return_variable}' is not available or defined.\nSource:\n{declaration:?}", // TODO: formatted
+            return_variable: String,
+            declaration: ReturnStream
+        ),
+        PatternDefinition(
+            3,
+            "Function pattern contains an error.\nSource:\n{declaration}",
+            declaration: Function,
+            ( typedb_source : PatternDefinitionError )
+        ),
     }
-}
-
-impl Error for ProgramDefinitionError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            ProgramDefinitionError::FunctionRead { source } => Some(source),
-            ProgramDefinitionError::FunctionDefinition { source } => Some(source),
-            ProgramDefinitionError::PatternDefinition { source } => Some(source),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum FunctionDefinitionError {
-    FunctionArgumentUnused { argument_variable: String },
-    ReturnVariableUnavailable { variable: String },
-    PatternDefinition { source: PatternDefinitionError },
-    ParseError { source: typeql::Error },
-}
-
-impl fmt::Display for FunctionDefinitionError {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for FunctionDefinitionError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::FunctionArgumentUnused { .. } => None,
-            Self::ReturnVariableUnavailable { .. } => None,
-            Self::PatternDefinition { source } => Some(source),
-            Self::ParseError { source } => Some(source),
-        }
-    }
-}
+);

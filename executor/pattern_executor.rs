@@ -22,9 +22,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
+    error::ReadExecutionError,
     instruction::{iterator::TupleIterator, InstructionExecutor},
     row::{MaybeOwnedRow, Row},
-    SelectedPositions, VariablePosition,
+    ExecutionInterrupt, SelectedPositions, VariablePosition,
 };
 
 pub(crate) struct PatternExecutor {
@@ -74,9 +75,10 @@ impl PatternExecutor {
         self,
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
+        interrupt: ExecutionInterrupt,
     ) -> PatternIterator<Snapshot> {
         PatternIterator::new(
-            AsLendingIterator::new(BatchIterator::new(self, snapshot.clone(), thing_manager.clone()))
+            AsLendingIterator::new(BatchIterator::new(self, snapshot.clone(), thing_manager.clone(), interrupt))
                 .flat_map(FixedBatchRowIterator::new),
             snapshot,
             thing_manager,
@@ -87,7 +89,8 @@ impl PatternExecutor {
         &mut self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Option<FixedBatch>, ConceptReadError> {
+        interrupt: &mut ExecutionInterrupt,
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         let programs_len = self.program_executors.len();
 
         let (mut current_program, mut last_program_batch, mut direction) = if self.initialised {
@@ -98,6 +101,11 @@ impl PatternExecutor {
         };
 
         loop {
+            // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.
+            if interrupt.check() {
+                return Err(ReadExecutionError::Interrupted {});
+            }
+
             match direction {
                 Direction::Forward => {
                     if current_program >= programs_len {
@@ -155,7 +163,7 @@ enum Direction {
 type PatternRowIterator<Snapshot> = FlatMap<
     AsLendingIterator<BatchIterator<Snapshot>>,
     FixedBatchRowIterator,
-    fn(Result<FixedBatch, ConceptReadError>) -> FixedBatchRowIterator,
+    fn(Result<FixedBatch, ReadExecutionError>) -> FixedBatchRowIterator,
 >;
 
 pub(crate) struct PatternIterator<Snapshot: ReadableSnapshot + 'static> {
@@ -171,7 +179,7 @@ impl<Snapshot: ReadableSnapshot> PatternIterator<Snapshot> {
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for PatternIterator<Snapshot> {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, &'a ConceptReadError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, &'a ReadExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iterator.next()
@@ -182,19 +190,25 @@ pub(crate) struct BatchIterator<Snapshot: ReadableSnapshot> {
     executor: PatternExecutor,
     snapshot: Arc<Snapshot>,
     thing_manager: Arc<ThingManager>,
+    interrupt: ExecutionInterrupt,
 }
 
 impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
-    pub(crate) fn new(executor: PatternExecutor, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
-        Self { executor, snapshot, thing_manager }
+    pub(crate) fn new(
+        executor: PatternExecutor,
+        snapshot: Arc<Snapshot>,
+        thing_manager: Arc<ThingManager>,
+        interrupt: ExecutionInterrupt,
+    ) -> Self {
+        Self { executor, snapshot, thing_manager, interrupt }
     }
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> {
-    type Item = Result<FixedBatch, ConceptReadError>;
+    type Item = Result<FixedBatch, ReadExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let batch = self.executor.compute_next_batch(&self.snapshot, &self.thing_manager);
+        let batch = self.executor.compute_next_batch(&self.snapshot, &self.thing_manager, &mut self.interrupt);
         batch.transpose()
     }
 }
@@ -265,7 +279,7 @@ impl ProgramExecutor {
         input_batch: FixedBatch,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Option<FixedBatch>, ConceptReadError> {
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
             ProgramExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, snapshot, thing_manager),
             ProgramExecutor::UnsortedJoin(unsorted) => unsorted.batch_from(input_batch),
@@ -280,7 +294,7 @@ impl ProgramExecutor {
         &mut self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Option<FixedBatch>, ConceptReadError> {
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
             ProgramExecutor::SortedJoin(sorted) => sorted.batch_continue(snapshot, thing_manager),
             ProgramExecutor::UnsortedJoin(unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
@@ -352,7 +366,7 @@ impl IntersectionExecutor {
         input_batch: FixedBatch,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Option<FixedBatch>, ConceptReadError> {
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.output.is_none() && (self.input.is_none() || self.input.as_mut().unwrap().peek().is_none()));
         self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
@@ -365,7 +379,7 @@ impl IntersectionExecutor {
         &mut self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Option<FixedBatch>, ConceptReadError> {
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.output.is_none());
         // TODO: this may not have to reopen iterators
         self.may_create_intersection_iterators(snapshot, thing_manager)?;
@@ -377,7 +391,7 @@ impl IntersectionExecutor {
         &mut self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), ReadExecutionError> {
         if self.compute_next_row(snapshot, thing_manager)? {
             // don't allocate batch until 1 answer is confirmed
             let mut batch = FixedBatch::new(self.output_width);
@@ -402,7 +416,7 @@ impl IntersectionExecutor {
         &mut self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, ReadExecutionError> {
         if self.cartesian_iterator.is_active() {
             let found = self.cartesian_iterator.find_next(snapshot, thing_manager, &self.instruction_executors)?;
             if found {
@@ -411,8 +425,13 @@ impl IntersectionExecutor {
                 // advance the first iterator past the intersection point to move to the next intersection
                 let intersection = &self.intersection_row[self.sort_variable.as_usize()];
                 let iter = &mut self.iterators[0];
-                while iter.peek_first_unbound_value().transpose()?.is_some_and(|value| value == intersection) {
-                    iter.advance_single()?;
+                while iter
+                    .peek_first_unbound_value()
+                    .transpose()
+                    .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
+                    .is_some_and(|value| value == intersection)
+                {
+                    iter.advance_single().map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
                 }
                 self.compute_next_row(snapshot, thing_manager)
             }
@@ -426,7 +445,7 @@ impl IntersectionExecutor {
                     return Ok(true);
                 } else {
                     self.iterators.clear();
-                    let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone())?;
+                    let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone());
                     if self.input.as_mut().unwrap().peek().is_some() {
                         self.may_create_intersection_iterators(snapshot, thing_manager)?;
                     }
@@ -436,7 +455,7 @@ impl IntersectionExecutor {
         }
     }
 
-    fn find_intersection(&mut self) -> Result<bool, ConceptReadError> {
+    fn find_intersection(&mut self) -> Result<bool, ReadExecutionError> {
         debug_assert!(!self.iterators.is_empty());
         if self.iterators.len() == 1 {
             // if there's only 1 iterator, we can just use it without any intersection
@@ -470,7 +489,7 @@ impl IntersectionExecutor {
                         break;
                     }
                     Some(Ok(value)) => current_max.partial_cmp(value).unwrap(),
-                    Some(Err(err)) => return Err(err.clone()),
+                    Some(Err(err)) => return Err(ReadExecutionError::ConceptRead { source: err.clone() }),
                 };
 
                 match max_cmp_peek {
@@ -481,8 +500,9 @@ impl IntersectionExecutor {
                     Ordering::Equal => {}
                     Ordering::Greater => {
                         let iter_i = &mut containing_i[i_index];
-                        let next_value_cmp =
-                            iter_i.advance_until_index_is(iter_i.first_unbound_index(), current_max)?;
+                        let next_value_cmp = iter_i
+                            .advance_until_index_is(iter_i.first_unbound_index(), current_max)
+                            .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
                         match next_value_cmp {
                             None => {
                                 failed = true;
@@ -514,22 +534,27 @@ impl IntersectionExecutor {
         &mut self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), ReadExecutionError> {
         debug_assert!(self.iterators.is_empty());
         let peek = self.input.as_mut().unwrap().peek();
         if let Some(input) = peek {
             let next_row: &MaybeOwnedRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
             for executor in &self.instruction_executors {
-                self.iterators.push(executor.get_iterator(snapshot, thing_manager, next_row.as_reference())?);
+                self.iterators.push(executor.get_iterator(snapshot, thing_manager, next_row.as_reference()).map_err(
+                    |err| ReadExecutionError::CreatingIterator {
+                        instruction_name: executor.name().to_string(),
+                        source: err,
+                    },
+                )?);
             }
         }
         Ok(())
     }
 
-    fn advance_intersection_iterators_with_multiplicity(&mut self) -> Result<(), ConceptReadError> {
+    fn advance_intersection_iterators_with_multiplicity(&mut self) -> Result<(), ReadExecutionError> {
         let mut multiplicity: u64 = 1;
         for iter in &mut self.iterators {
-            multiplicity *= iter.advance_past()? as u64;
+            multiplicity *= iter.advance_past().map_err(|err| ReadExecutionError::ConceptRead { source: err })? as u64;
         }
         self.intersection_multiplicity = multiplicity;
         Ok(())
@@ -545,7 +570,7 @@ impl IntersectionExecutor {
         rest.iter_mut().all(|iter| iter.peek_first_unbound_value().unwrap().unwrap() == peek_0)
     }
 
-    fn record_intersection(&mut self) -> Result<(), ConceptReadError> {
+    fn record_intersection(&mut self) -> Result<(), ReadExecutionError> {
         self.intersection_row.fill(VariableValue::Empty);
         let mut row = Row::new(&mut self.intersection_row, &mut self.intersection_multiplicity);
         for iter in &mut self.iterators {
@@ -566,7 +591,7 @@ impl IntersectionExecutor {
         &mut self,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), ReadExecutionError> {
         if self.iterators.len() == 1 {
             // don't delegate to cartesian iterator and incur new iterator costs if there cannot be a cartesian product
             return Ok(());
@@ -575,7 +600,8 @@ impl IntersectionExecutor {
         for iter in &mut self.iterators {
             if iter
                 .peek_first_unbound_value()
-                .transpose()?
+                .transpose()
+                .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
                 .is_some_and(|value| value == &self.intersection_row[self.sort_variable.as_usize()])
             {
                 cartesian = true;
@@ -629,7 +655,7 @@ impl CartesianIterator {
         source_intersection: &[VariableValue<'static>],
         source_multiplicity: u64,
         intersection_iterators: &mut Vec<TupleIterator>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), ReadExecutionError> {
         debug_assert!(source_intersection.len() == self.intersection_source.len());
         self.is_active = true;
         self.intersection_source.clone_from_slice(source_intersection);
@@ -640,7 +666,12 @@ impl CartesianIterator {
 
         let intersection = &source_intersection[self.sort_variable_position.as_usize()];
         for (index, iter) in intersection_iterators.iter_mut().enumerate() {
-            if iter.peek_first_unbound_value().transpose()?.is_some_and(|value| value == intersection) {
+            if iter
+                .peek_first_unbound_value()
+                .transpose()
+                .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
+                .is_some_and(|value| value == intersection)
+            {
                 self.cartesian_executor_indices.push(index);
 
                 // reopen/move existing cartesian iterators forward to the intersection point
@@ -649,7 +680,9 @@ impl CartesianIterator {
                     None => self.reopen_iterator(snapshot, thing_manager, &iterator_executors[index])?,
                     Some(mut iter) => {
                         // TODO: use seek()
-                        let next_value_cmp = iter.advance_until_index_is(iter.first_unbound_index(), intersection)?;
+                        let next_value_cmp = iter
+                            .advance_until_index_is(iter.first_unbound_index(), intersection)
+                            .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
                         debug_assert!(next_value_cmp.is_some() && next_value_cmp.unwrap().is_eq());
                         iter
                     }
@@ -665,7 +698,7 @@ impl CartesianIterator {
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
         executors: &[InstructionExecutor],
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, ReadExecutionError> {
         debug_assert!(self.is_active);
         // precondition: all required iterators are open to the intersection point
 
@@ -674,8 +707,13 @@ impl CartesianIterator {
         loop {
             let iterator_index = self.cartesian_executor_indices[executor_index];
             let iter = (&mut self.iterators)[iterator_index].as_mut().unwrap();
-            iter.advance_single()?;
-            if !iter.peek_first_unbound_value().transpose()?.is_some_and(|value| value == intersection) {
+            iter.advance_single().map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
+            if !iter
+                .peek_first_unbound_value()
+                .transpose()
+                .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
+                .is_some_and(|value| value == intersection)
+            {
                 if executor_index == 0 {
                     self.is_active = false;
                     return Ok(false);
@@ -695,15 +733,19 @@ impl CartesianIterator {
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
         executor: &InstructionExecutor,
-    ) -> Result<TupleIterator, ConceptReadError> {
-        let mut reopened = executor.get_iterator(
-            snapshot,
-            thing_manager,
-            MaybeOwnedRow::new_borrowed(&self.intersection_source, &self.intersection_multiplicity),
-        )?;
+    ) -> Result<TupleIterator, ReadExecutionError> {
+        let mut reopened = executor
+            .get_iterator(
+                snapshot,
+                thing_manager,
+                MaybeOwnedRow::new_borrowed(&self.intersection_source, &self.intersection_multiplicity),
+            )
+            .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
         let intersection = &self.intersection_source[self.sort_variable_position.as_usize()];
         // TODO: use seek()
-        reopened.advance_until_index_is(reopened.first_unbound_index(), intersection)?;
+        reopened
+            .advance_until_index_is(reopened.first_unbound_index(), intersection)
+            .map_err(|err| ReadExecutionError::AdvancingIteratorTo { source: err })?;
         Ok(reopened)
     }
 
@@ -738,7 +780,7 @@ impl UnsortedJoinExecutor {
         Self { iterate, checks, output_width: total_vars, output: None }
     }
 
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ConceptReadError> {
+    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 
@@ -753,7 +795,7 @@ struct AssignExecutor {
 }
 
 impl AssignExecutor {
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ConceptReadError> {
+    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 }
@@ -770,11 +812,11 @@ impl DisjunctionExecutor {
         Self { executors }
     }
 
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ConceptReadError> {
+    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 
-    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ConceptReadError> {
+    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 }
@@ -788,7 +830,7 @@ impl NegationExecutor {
         Self { executor }
     }
 
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ConceptReadError> {
+    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 }
@@ -802,11 +844,11 @@ impl OptionalExecutor {
         Self { executor }
     }
 
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ConceptReadError> {
+    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 
-    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ConceptReadError> {
+    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 }

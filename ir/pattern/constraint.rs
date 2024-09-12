@@ -211,8 +211,9 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         assigned: Vec<Variable>,
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
+        function_name: &str, // for errors
     ) -> Result<&FunctionCallBinding<Variable>, PatternDefinitionError> {
-        let function_call = self.create_function_call(&assigned, callee_signature, arguments)?;
+        let function_call = self.create_function_call(&assigned, callee_signature, arguments, function_name)?;
         let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream);
         for (index, var) in binding.ids_assigned().enumerate() {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
@@ -233,6 +234,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         assigned: &[Variable],
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
+        function_name: &str, // for errors
     ) -> Result<FunctionCall<Variable>, PatternDefinitionError> {
         use PatternDefinitionError::FunctionCallReturnCountMismatch;
         debug_assert!(assigned.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
@@ -241,12 +243,14 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         // Validate
         if assigned.len() != callee_signature.returns.len() {
             Err(FunctionCallReturnCountMismatch {
+                name: function_name.to_string(),
                 assigned_var_count: assigned.len(),
                 function_return_count: callee_signature.returns.len(),
             })?
         }
         if arguments.len() != callee_signature.arguments.len() {
             Err(FunctionCallArgumentCountMismatch {
+                name: function_name.to_string(),
                 expected: callee_signature.arguments.len(),
                 actual: arguments.len(),
             })?

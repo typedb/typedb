@@ -6,13 +6,7 @@
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
-use typeql::{
-    expression::{FunctionCall, FunctionName},
-    statement::{comparison::ComparisonStatement, Assignment, AssignmentPattern, InIterable},
-    token::Kind,
-    type_::NamedType,
-    ScopedLabel, TypeRef, TypeRefAny,
-};
+use typeql::{expression::{FunctionCall, FunctionName}, statement::{comparison::ComparisonStatement, Assignment, AssignmentPattern, InIterable}, token::Kind, type_::NamedType, ScopedLabel, TypeRef, TypeRefAny, Function};
 
 use crate::{
     pattern::{
@@ -48,7 +42,7 @@ pub(super) fn add_statement(
         typeql::Statement::Assignment(Assignment { lhs, rhs, .. }) => {
             let assigned = assignment_pattern_to_variables(constraints, lhs)?;
             let [assigned] = *assigned else {
-                return Err(PatternDefinitionError::ExpressionAssignmentMustOneVariable { assigned });
+                return Err(PatternDefinitionError::ExpressionAssignmentMustOneVariable { assigned_count: assigned.len() });
             };
             add_typeql_expression(function_index, constraints, assigned, rhs)?
         }
@@ -333,7 +327,7 @@ pub(super) fn add_typeql_relation(
                     TypeRefAny::Type(TypeRef::Variable(var)) => register_typeql_var(constraints, var)?,
                     TypeRefAny::Type(TypeRef::Named(NamedType::Role(name))) => {
                         return Err(PatternDefinitionError::ScopedRoleNameInRelation {
-                            role_player: role_player.clone(),
+                            declaration: role_player.clone(),
                         });
                     }
                     TypeRefAny::Optional(_) => todo!(),
@@ -393,13 +387,13 @@ pub(super) fn add_function_call_binding_user(
         match (must_be_stream, callee.return_is_stream) {
             (true, true) | (false, false) => {}
             (false, true) => {
-                Err(PatternDefinitionError::ExpectedSingeReceivedStream { function_name: function_name.to_owned() })?
+                Err(PatternDefinitionError::ExpectedSingleFunctionReturnsStream { function_name: function_name.to_owned() })?
             }
             (true, false) => {
-                Err(PatternDefinitionError::ExpectedStreamReceivedSingle { function_name: function_name.to_owned() })?
+                Err(PatternDefinitionError::ExpectedStreamFunctionReturnsSingle { function_name: function_name.to_owned() })?
             }
         }
-        constraints.add_function_binding(assigned, &callee, arguments)?;
+        constraints.add_function_binding(assigned, &callee, arguments, function_name)?;
         Ok(())
     } else {
         Err(PatternDefinitionError::UnresolvedFunction { function_name: function_name.to_owned() })
@@ -413,7 +407,7 @@ fn assignment_pattern_to_variables(
     match assignment {
         AssignmentPattern::Variables(vars) => assignment_typeql_vars_to_variables(constraints, vars),
         AssignmentPattern::Deconstruct(struct_deconstruct) => {
-            Err(PatternDefinitionError::UnimplementedStructAssignment { deconstruct: struct_deconstruct.clone() })
+            Err(PatternDefinitionError::UnimplementedStructAssignment { declaration: struct_deconstruct.clone() })
         }
     }
 }

@@ -9,6 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use compiler::VariablePosition;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use tokio::sync::broadcast;
 
 use crate::{
     batch::Batch,
@@ -20,6 +21,7 @@ use crate::{
         PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator,
     },
     row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 
 pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
@@ -42,14 +44,17 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
         }
     }
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+    fn into_iterator(
+        self,
+        interrupt: ExecutionInterrupt,
+    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         match self {
             ReadPipelineStage::Initial(stage) => {
-                let (iterator, snapshot) = stage.into_iterator()?;
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((ReadStageIterator::Initial(iterator), snapshot))
             }
             ReadPipelineStage::Match(stage) => {
-                let (iterator, snapshot) = stage.into_iterator()?;
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((ReadStageIterator::Match(Box::new(iterator)), snapshot))
             }
         }
@@ -95,22 +100,25 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
         }
     }
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+    fn into_iterator(
+        self,
+        interrupt: ExecutionInterrupt,
+    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         match self {
             WritePipelineStage::Initial(stage) => {
-                let (iterator, snapshot) = stage.into_iterator()?;
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((WriteStageIterator::Initial(iterator), snapshot))
             }
             WritePipelineStage::Match(stage) => {
-                let (iterator, snapshot) = stage.into_iterator()?;
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((WriteStageIterator::Match(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Insert(stage) => {
-                let (iterator, snapshot) = stage.into_iterator()?;
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), snapshot))
             }
             WritePipelineStage::Delete(stage) => {
-                let (iterator, snapshot) = stage.into_iterator()?;
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), snapshot))
             }
         }

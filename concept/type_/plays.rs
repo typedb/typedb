@@ -21,7 +21,7 @@ use crate::{
         object_type::ObjectType,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, TypeAPI,
+        Capability, Ordering, TypeAPI,
     },
 };
 

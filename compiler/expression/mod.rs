@@ -19,7 +19,7 @@ pub mod compiled_expression;
 pub mod expression_compiler;
 pub mod instructions;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExpressionCompileError {
     ConceptRead {
         source: ConceptReadError,

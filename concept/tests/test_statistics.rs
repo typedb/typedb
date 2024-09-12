@@ -249,12 +249,12 @@ fn delete_twice() {
     thing_manager.finalise(&mut snapshot).unwrap();
     let create_commit_seq = snapshot.commit().unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq).unwrap();
+    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
     person.clone().delete(&mut snapshot, &thing_manager).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     snapshot.commit().unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq).unwrap();
+    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
     person.clone().delete(&mut snapshot, &thing_manager).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     snapshot.commit().unwrap().unwrap();
@@ -284,12 +284,12 @@ fn put_has_twice() {
     thing_manager.finalise(&mut snapshot).unwrap();
     let create_commit_seq = snapshot.commit().unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq).unwrap();
+    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
     person.set_has_unordered(&mut snapshot, &thing_manager, name.as_reference()).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     snapshot.commit().unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq).unwrap();
+    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
     person.set_has_unordered(&mut snapshot, &thing_manager, name.as_reference()).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     snapshot.commit().unwrap().unwrap();
@@ -332,7 +332,7 @@ fn put_plays() {
     thing_manager.finalise(&mut snapshot).unwrap();
     let create_commit_seq = snapshot.commit().unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq).unwrap();
+    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
     let person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
     friendship.add_player(&mut snapshot, &thing_manager, friend_role.clone(), person_2.into_owned_object()).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();

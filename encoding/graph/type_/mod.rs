@@ -37,6 +37,12 @@ impl std::fmt::Debug for Kind {
     }
 }
 
+impl std::fmt::Display for Kind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 #[derive(Copy, Clone)]
 pub enum CapabilityKind {
     Relates,
@@ -45,7 +51,7 @@ pub enum CapabilityKind {
 }
 
 impl CapabilityKind {
-    fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'static str {
         match self {
             CapabilityKind::Relates => "relates",
             CapabilityKind::Plays => "plays",

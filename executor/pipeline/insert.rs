@@ -16,6 +16,7 @@ use crate::{
     pipeline::{PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator},
     row::MaybeOwnedRow,
     write::insert::InsertExecutor,
+    ExecutionInterrupt,
 };
 
 pub struct InsertStageExecutor<Snapshot: WritableSnapshot + 'static, PreviouStage: StageAPI<Snapshot>> {
@@ -45,8 +46,7 @@ where
         let total_output_rows: u64 = input_batch.get_multiplicities().iter().sum();
         let mut output_batch = Batch::new(output_width, total_output_rows as usize);
         let mut input_batch_iterator = input_batch.into_iterator_mut();
-        while let Some(row) = input_batch_iterator.next() {
-            let mut row = row.map_err(|err| PipelineExecutionError::ConceptRead { source: err.clone() })?;
+        while let Some(mut row) = input_batch_iterator.next() {
             // copy out row multiplicity M, set it to 1, then append the row M times
             let multiplicity = row.get_multiplicity();
             row.set_multiplicity(1);
@@ -79,23 +79,32 @@ where
             .collect()
     }
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
-        let (previous_iterator, mut snapshot) = self.previous.into_iterator()?;
-        let mut output_rows = match Self::prepare_output_rows(self.inserter.output_width() as u32, previous_iterator) {
+    fn into_iterator(
+        self,
+        mut interrupt: ExecutionInterrupt,
+    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+        let (previous_iterator, mut snapshot) = self.previous.into_iterator(interrupt.clone())?;
+        let mut batch = match Self::prepare_output_rows(self.inserter.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
             Err(err) => return Err((snapshot, err)),
         };
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so we can get mut:
         let snapshot_ref = Arc::get_mut(&mut snapshot).unwrap();
-        for index in 0..output_rows.len() {
+        for index in 0..batch.len() {
             // TODO: parallelise -- though this requires our snapshots support parallel writes!
-            let mut row = output_rows.get_row_mut(index);
+            let mut row = batch.get_row_mut(index);
             match self.inserter.execute_insert(snapshot_ref, self.thing_manager.as_ref(), &mut row) {
                 Ok(_) => {}
                 Err(err) => return Err((snapshot, PipelineExecutionError::WriteError { source: err })),
             }
+
+            if index % 100 == 0 {
+                if interrupt.check() {
+                    return Err((snapshot, PipelineExecutionError::Interrupted {}));
+                }
+            }
         }
-        Ok((WrittenRowsIterator::new(output_rows), snapshot))
+        Ok((WrittenRowsIterator::new(batch), snapshot))
     }
 }

@@ -232,7 +232,7 @@ impl<ID: IrID> Display for Expression<ID> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExpressionDefinitionError {
     ExpectedValueArgumentReceivedList,
     ExpectedListArgumentReceivedValue,
@@ -255,7 +255,7 @@ impl Error for ExpressionDefinitionError {
             Self::ExpectedListArgumentReceivedValue => None,
             Self::ArgumentNotBound => None,
             Self::SubExpressionNotDefined => None,
-            Self::PatternDefinition { source } => Some(source),
+            Self::PatternDefinition { source } => todo!(),
             Self::EmptyExpressionTree { .. } => None,
         }
     }

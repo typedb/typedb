@@ -18,7 +18,7 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{batch::Batch, row::MaybeOwnedRow, write::WriteError};
+use crate::{batch::Batch, error::ReadExecutionError, row::MaybeOwnedRow, write::WriteError, ExecutionInterrupt};
 
 pub mod delete;
 pub mod initial;
@@ -31,7 +31,10 @@ pub trait StageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
 
     fn named_selected_outputs(&self) -> HashMap<VariablePosition, String>;
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)>;
+    fn into_iterator(
+        self,
+        interrupt: ExecutionInterrupt,
+    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)>;
 }
 
 pub trait StageIterator:
@@ -60,9 +63,11 @@ pub trait StageIterator:
 typedb_error!(
     pub PipelineExecutionError(domain = "Executor", prefix = "EXE") {
         // TODO: migrate to `typedb_error` once they are typedb errors
-        ConceptRead(1, "Error reading concept.", ( source: ConceptReadError )),
-        InitialisingMatchIterator(2, "Error initialising Match clause iterator.", ( source: ConceptReadError )),
-        WriteError(3, "Error executing write operation.", ( source: WriteError )),
+        Interrupted(1, "Query was interrupted."),
+        ConceptRead(2, "Error reading concept.", ( source: ConceptReadError )),
+        InitialisingMatchIterator(3, "Error initialising Match clause iterator.", ( source: ConceptReadError )),
+        WriteError(4, "Error executing write operation.", ( source: WriteError )),
+        ReadPatternExecution(5, "Error executing a read pattern.", ( typedb_source : ReadExecutionError )),
     }
 );
 

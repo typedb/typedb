@@ -12,6 +12,7 @@ use std::{
     error::Error,
     fmt, io,
     ops::{Add, AddAssign, Sub},
+    sync::Arc,
 };
 
 use serde::{Deserialize, Serialize};
@@ -153,20 +154,20 @@ impl Sub<DurabilitySequenceNumber> for DurabilitySequenceNumber {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DurabilityServiceError {
     // #[non_exhaustive]
     // BincodeSerialize { source: bincode::Error },
     #[non_exhaustive]
     IO {
-        source: io::Error,
+        source: Arc<io::Error>,
     },
     WAL {
         source: WALError,
     },
 
     DeleteFailed {
-        source: io::Error,
+        source: Arc<io::Error>,
     },
 }
 
@@ -184,7 +185,7 @@ impl fmt::Display for DurabilityServiceError {
 
 impl From<io::Error> for DurabilityServiceError {
     fn from(source: io::Error) -> Self {
-        Self::IO { source }
+        Self::IO { source: Arc::new(source) }
     }
 }
 

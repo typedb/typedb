@@ -24,6 +24,7 @@ use encoding::{
     graph::type_::Kind,
     value::{label::Label, value_type::ValueType},
 };
+use error::typedb_error;
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
@@ -53,12 +54,16 @@ use crate::{
     },
 };
 
-macro_rules! verify_empty_annotations_for_capability {
+macro_rules! verify_no_annotations_for_capability {
     ($capability:ident, $annotation_error:path) => {
         if let Some(typeql_annotation) = &$capability.annotations.first() {
             let annotation = translate_annotation(typeql_annotation)
                 .map_err(|source| RedefineError::LiteralParseError { source })?;
-            Err(RedefineError::IllegalAnnotation { source: $annotation_error(annotation.category()) })
+            Err(RedefineError::IllegalCapabilityAnnotation {
+                declaration: $capability.clone(),
+                source: $annotation_error(annotation.category()),
+                annotation: annotation,
+            })
         } else {
             Ok(())
         }
@@ -76,7 +81,7 @@ pub(crate) fn execute(
     let redefined_functions = process_function_redefinitions(snapshot, type_manager, &redefine.definables)?;
 
     if !redefined_structs && !redefined_types && !redefined_functions {
-        Err(RedefineError::RedefinedNothing {})
+        Err(RedefineError::NothingRedefined {})
     } else {
         Ok(())
     }
@@ -147,11 +152,11 @@ fn redefine_struct_fields(
 ) -> Result<(), RedefineError> {
     let name = struct_definable.ident.as_str();
     let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
-        .map_err(|source| RedefineError::DefinitionResolution { source })?;
+        .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
     for field in &struct_definable.fields {
         let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)
-            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
         let definition_status = get_struct_field_status(
             snapshot,
@@ -164,10 +169,10 @@ fn redefine_struct_fields(
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         match definition_status {
             DefinableStatus::DoesNotExist => {
-                return Err(RedefineError::StructFieldDoesNotExist { field: field.to_owned() });
+                return Err(RedefineError::StructFieldDoesNotExist { declaration: field.to_owned() });
             }
             DefinableStatus::ExistsSame(_) => {
-                return Err(RedefineError::StructFieldRemainsSame { field: field.to_owned() });
+                return Err(RedefineError::StructFieldRemainsSame { declaration: field.to_owned() });
             }
             DefinableStatus::ExistsDifferent(_) => {}
         }
@@ -175,18 +180,18 @@ fn redefine_struct_fields(
         error_if_anything_redefined_else_set_true(anything_redefined)?;
         type_manager.delete_struct_field(snapshot, thing_manager, struct_key.clone(), field.key.as_str()).map_err(
             |err| RedefineError::StructFieldDeleteError {
-                source: err,
                 struct_name: name.to_owned(),
-                struct_field: field.clone(),
+                declaration: field.clone(),
+                source: err,
             },
         )?;
 
         type_manager
             .create_struct_field(snapshot, struct_key.clone(), field.key.as_str(), value_type, optional)
             .map_err(|err| RedefineError::StructFieldCreateError {
-                source: err,
                 struct_name: name.to_owned(),
-                struct_field: field.clone(),
+                declaration: field.clone(),
+                source: err,
             })?;
     }
     Ok(())
@@ -201,7 +206,7 @@ fn redefine_type_annotations(
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| RedefineError::DefinitionResolution { source })?;
+        .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for typeql_annotation in &type_declaration.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
@@ -213,10 +218,16 @@ fn redefine_type_annotations(
                     &label,
                     entity.clone(),
                     annotation.clone(),
+                    type_declaration,
                 )? {
                     error_if_anything_redefined_else_set_true(anything_redefined)?;
                     entity.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                        RedefineError::SetAnnotation { source, label: label.to_owned(), annotation }
+                        RedefineError::SetTypeAnnotation {
+                            label: label.to_owned(),
+                            annotation,
+                            declaration: type_declaration.clone(),
+                            source,
+                        }
                     })?;
                 }
             }
@@ -227,10 +238,16 @@ fn redefine_type_annotations(
                     &label,
                     relation.clone(),
                     annotation.clone(),
+                    type_declaration,
                 )? {
                     error_if_anything_redefined_else_set_true(anything_redefined)?;
                     relation.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                        RedefineError::SetAnnotation { source, label: label.to_owned(), annotation }
+                        RedefineError::SetTypeAnnotation {
+                            label: label.to_owned(),
+                            annotation,
+                            declaration: type_declaration.clone(),
+                            source,
+                        }
                     })?;
                 }
             }
@@ -241,15 +258,24 @@ fn redefine_type_annotations(
                     &label,
                     attribute.clone(),
                     annotation.clone(),
+                    type_declaration,
                 )? {
                     if converted.is_value_type_annotation() {
-                        return Err(RedefineError::IllegalAnnotation {
+                        return Err(RedefineError::IllegalTypeAnnotation {
+                            label: label.to_owned(),
+                            annotation: annotation.clone(),
+                            declaration: type_declaration.clone(),
                             source: AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()),
                         });
                     }
                     error_if_anything_redefined_else_set_true(anything_redefined)?;
                     attribute.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                        RedefineError::SetAnnotation { source, label: label.to_owned(), annotation }
+                        RedefineError::SetTypeAnnotation {
+                            label: label.to_owned(),
+                            annotation,
+                            declaration: type_declaration.clone(),
+                            source,
+                        }
                     })?;
                 }
             }
@@ -269,7 +295,7 @@ fn redefine_alias(
         .capabilities
         .iter()
         .filter_map(|capability| try_unwrap!(CapabilityBase::Alias = &capability.base))
-        .try_for_each(|_| Err(RedefineError::Unimplemented))?;
+        .try_for_each(|_| Err(RedefineError::Unimplemented { description: "Aliases redefinition.".to_string() }))?;
 
     // TODO: Uncomment when alias is implemented
     // redefine_alias_annotations(capability)?;
@@ -278,7 +304,8 @@ fn redefine_alias(
 }
 
 fn redefine_alias_annotations(typeql_capability: &Capability) -> Result<(), RedefineError> {
-    verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForAlias)
+    Err(RedefineError::Unimplemented { description: "Alias redefinition is not yet implmented.".to_string() })
+    // verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForAlias)
 }
 
 fn redefine_sub(
@@ -290,7 +317,7 @@ fn redefine_sub(
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| RedefineError::DefinitionResolution { source })?;
+        .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Sub(sub) = &capability.base else {
@@ -299,7 +326,7 @@ fn redefine_sub(
 
         let supertype_label = Label::parse_from(sub.supertype_label.ident.as_str());
         let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
-            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
         if type_.kind() != supertype.kind() {
             Err(err_capability_kind_mismatch(&label, &supertype_label, capability, type_.kind(), supertype.kind()))?;
         }
@@ -310,21 +337,21 @@ fn redefine_sub(
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
                 type_
                     .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                    .map_err(|source| RedefineError::SetSupertype { sub: sub.clone(), source })?;
+                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), source })?;
             }
             (TypeEnum::Relation(type_), TypeEnum::Relation(supertype)) => {
                 check_can_redefine_sub(snapshot, type_manager, &label, type_.clone(), supertype.clone())?;
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
                 type_
                     .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                    .map_err(|source| RedefineError::SetSupertype { sub: sub.clone(), source })?;
+                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), source })?;
             }
             (TypeEnum::Attribute(type_), TypeEnum::Attribute(supertype)) => {
                 check_can_redefine_sub(snapshot, type_manager, &label, type_.clone(), supertype.clone())?;
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
                 type_
                     .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                    .map_err(|source| RedefineError::SetSupertype { sub: sub.clone(), source })?;
+                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), source })?;
             }
             (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => {
                 return Err(err_unsupported_capability(&label, Kind::Role, capability));
@@ -338,7 +365,7 @@ fn redefine_sub(
 }
 
 fn redefine_sub_annotations(typeql_capability: &Capability) -> Result<(), RedefineError> {
-    verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub)
+    verify_no_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub)
 }
 
 fn redefine_value_type(
@@ -350,7 +377,7 @@ fn redefine_value_type(
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| RedefineError::DefinitionResolution { source })?;
+        .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::ValueType(value_type_statement) = &capability.base else {
             continue;
@@ -360,7 +387,7 @@ fn redefine_value_type(
         };
 
         let value_type = resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
-            .map_err(|source| RedefineError::AttributeTypeBadValueType { source })?;
+            .map_err(|source| RedefineError::ValueTypeSymbolResolution { typedb_source: source })?;
 
         let definition_status =
             get_value_type_status(snapshot, type_manager, attribute_type.clone(), value_type.clone())
@@ -388,6 +415,7 @@ fn redefine_value_type(
             attribute_type.clone(),
             &label,
             capability,
+            type_declaration,
         )?;
     }
     Ok(())
@@ -401,6 +429,7 @@ fn redefine_value_type_annotations<'a>(
     attribute_type: AttributeType<'a>,
     attribute_type_label: &Label<'a>,
     typeql_capability: &Capability,
+    typeql_type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
@@ -411,16 +440,19 @@ fn redefine_value_type_annotations<'a>(
             attribute_type_label,
             attribute_type.clone(),
             annotation.clone(),
+            typeql_type_declaration,
         )? {
             if !converted.is_value_type_annotation() {
-                return Err(RedefineError::IllegalAnnotation {
+                return Err(RedefineError::IllegalCapabilityAnnotation {
+                    declaration: typeql_capability.clone(),
                     source: AnnotationError::UnsupportedAnnotationForValueType(annotation.category()),
+                    annotation,
                 });
             }
 
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             attribute_type.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetAnnotation { source, label: attribute_type_label.clone().into_owned(), annotation }
+                RedefineError::SetCapabilityAnnotation { declaration: typeql_capability.clone(), annotation, source }
             })?;
         }
     }
@@ -436,7 +468,7 @@ fn redefine_relates(
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| RedefineError::DefinitionResolution { source })?;
+        .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Relates(typeql_relates) = &capability.base else {
             continue;
@@ -446,7 +478,7 @@ fn redefine_relates(
         };
 
         let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
-            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
         let definition_status =
             get_relates_status(snapshot, type_manager, relation_type.clone(), &role_label, ordering)
@@ -455,16 +487,21 @@ fn redefine_relates(
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::RelatesIsNotDefined {
                     label: label.clone(),
+                    role: role_label.name.to_string(),
                     declaration: capability.to_owned(),
                     ordering,
-                })
+                });
             }
             DefinableStatus::ExistsSame(None) => unreachable!("Existing relates concept expected"),
             DefinableStatus::ExistsSame(Some((existing_relates, _))) => existing_relates, // is not a leaf of redefine query, don't error
             DefinableStatus::ExistsDifferent((existing_relates, _)) => {
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
                 existing_relates.role().set_ordering(snapshot, type_manager, thing_manager, ordering).map_err(
-                    |source| RedefineError::SetRelatesOrdering { source, relates: typeql_relates.to_owned() },
+                    |source| RedefineError::SetRelatesOrdering {
+                        label: label.clone().into_owned(),
+                        declaration: typeql_relates.to_owned(),
+                        source,
+                    },
                 )?;
                 existing_relates
             }
@@ -478,6 +515,7 @@ fn redefine_relates(
             &label,
             relates.clone(),
             capability,
+            type_declaration,
         )?;
         redefine_relates_override(
             snapshot,
@@ -500,6 +538,7 @@ fn redefine_relates_annotations(
     relation_label: &Label<'_>,
     relates: Relates<'static>,
     typeql_capability: &Capability,
+    typeql_type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
@@ -510,15 +549,16 @@ fn redefine_relates_annotations(
             relation_label,
             relates.clone(),
             annotation.clone(),
+            typeql_capability,
         );
         match converted_for_relates {
             Ok(Some(relates_annotation)) => {
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
                 relates.set_annotation(snapshot, type_manager, thing_manager, relates_annotation).map_err(
-                    |source| RedefineError::SetAnnotation {
-                        label: relation_label.clone().into_owned(),
-                        source,
+                    |source| RedefineError::SetCapabilityAnnotation {
                         annotation,
+                        declaration: typeql_capability.clone(),
+                        source,
                     },
                 )?;
             }
@@ -530,13 +570,14 @@ fn redefine_relates_annotations(
                     relation_label,
                     relates.role(),
                     annotation.clone(),
+                    typeql_type_declaration,
                 )? {
                     error_if_anything_redefined_else_set_true(anything_redefined)?;
                     relates.role().set_annotation(snapshot, type_manager, thing_manager, converted_for_role).map_err(
-                        |source| RedefineError::SetAnnotation {
-                            label: relation_label.clone().into_owned(),
-                            source,
+                        |source| RedefineError::SetCapabilityAnnotation {
+                            declaration: typeql_capability.clone(),
                             annotation,
+                            source,
                         },
                     )?;
                 }
@@ -558,7 +599,7 @@ fn redefine_relates_override(
     if let Some(overridden_label) = &typeql_relates.overridden {
         let overridden_relates =
             resolve_relates(snapshot, type_manager, relates.relation(), overridden_label.ident.as_str())
-                .map_err(|source| RedefineError::DefinitionResolution { source })?;
+                .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
         check_can_redefine_override(
             snapshot,
@@ -566,11 +607,16 @@ fn redefine_relates_override(
             relation_label,
             relates.clone(),
             overridden_relates.clone(),
+            typeql_relates,
         )?;
         error_if_anything_redefined_else_set_true(anything_redefined)?;
-        relates
-            .set_override(snapshot, type_manager, thing_manager, overridden_relates)
-            .map_err(|source| RedefineError::SetOverride { label: relation_label.clone().into_owned(), source })?;
+        relates.set_override(snapshot, type_manager, thing_manager, overridden_relates).map_err(|source| {
+            RedefineError::SetRelatesOverride {
+                label: relation_label.clone().into_owned(),
+                declaration: typeql_relates.clone(),
+                source,
+            }
+        })?;
     }
     Ok(())
 }
@@ -584,16 +630,16 @@ fn redefine_owns(
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| RedefineError::DefinitionResolution { source })?;
+        .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Owns(typeql_owns) = &capability.base else {
             continue;
         };
 
         let (attr_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_owns.owned)
-            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
         let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
-            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
@@ -605,17 +651,26 @@ fn redefine_owns(
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::OwnsIsNotDefined {
                     label: label.clone(),
+                    attribute: attribute_type
+                        .get_label(snapshot, type_manager)
+                        .map_err(|err| RedefineError::UnexpectedConceptRead { source: err })?
+                        .as_reference()
+                        .into_owned(),
                     declaration: capability.to_owned(),
                     ordering,
-                })
+                });
             }
             DefinableStatus::ExistsSame(None) => unreachable!("Existing owns concept expected"),
             DefinableStatus::ExistsSame(Some((existing_owns, _))) => existing_owns, // is not a leaf of redefine query, don't error
             DefinableStatus::ExistsDifferent((existing_owns, _)) => {
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
-                existing_owns
-                    .set_ordering(snapshot, type_manager, thing_manager, ordering)
-                    .map_err(|source| RedefineError::SetOwnsOrdering { owns: typeql_owns.clone(), source })?;
+                existing_owns.set_ordering(snapshot, type_manager, thing_manager, ordering).map_err(|source| {
+                    RedefineError::SetOwnsOrdering {
+                        label: label.clone().into_owned(),
+                        declaration: typeql_owns.clone(),
+                        source,
+                    }
+                })?;
                 existing_owns
             }
         };
@@ -652,10 +707,11 @@ fn redefine_owns_annotations(
             owner_label,
             owns.clone(),
             annotation.clone(),
+            typeql_capability,
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             owns.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetAnnotation { label: owner_label.clone().into_owned(), source, annotation }
+                RedefineError::SetCapabilityAnnotation { declaration: typeql_capability.clone(), annotation, source }
             })?;
         }
     }
@@ -674,14 +730,27 @@ fn redefine_owns_override(
     if let Some(overridden_label) = &typeql_owns.overridden {
         let overridden_label = Label::parse_from(overridden_label.ident.as_str());
         let overridden_attribute_type = resolve_attribute_type(snapshot, type_manager, &overridden_label)
-            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
         let overridden_owns = resolve_owns(snapshot, type_manager, owns.owner(), overridden_attribute_type)
-            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
-        check_can_redefine_override(snapshot, type_manager, owner_label, owns.clone(), overridden_owns.clone())?;
+        check_can_redefine_override(
+            snapshot,
+            type_manager,
+            owner_label,
+            owns.clone(),
+            overridden_owns.clone(),
+            todo!(),
+        )?;
         error_if_anything_redefined_else_set_true(anything_redefined)?;
-        owns.set_override(snapshot, type_manager, thing_manager, overridden_owns)
-            .map_err(|source| RedefineError::SetOverride { label: owner_label.clone().into_owned(), source })?
+        owns.set_override(snapshot, type_manager, thing_manager, overridden_owns).map_err(|source| {
+            RedefineError::SetRelatesOverride {
+                // TODO: this should happen after merge
+                label: owner_label.clone().into_owned(),
+                declaration: todo!(),
+                source,
+            }
+        })?
     }
     Ok(())
 }
@@ -695,7 +764,7 @@ fn redefine_plays(
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| RedefineError::DefinitionResolution { source })?;
+        .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Plays(typeql_plays) = &capability.base else {
             continue;
@@ -704,7 +773,7 @@ fn redefine_plays(
         let role_label =
             Label::build_scoped(typeql_plays.role.name.ident.as_str(), typeql_plays.role.scope.ident.as_str());
         let role_type = resolve_role_type(snapshot, type_manager, &role_label)
-            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
@@ -715,8 +784,13 @@ fn redefine_plays(
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::PlaysIsNotDefined {
                     label: label.clone(),
+                    role_label: role_type
+                        .get_label(snapshot, type_manager)
+                        .map_err(|err| RedefineError::UnexpectedConceptRead { source: err })?
+                        .as_reference()
+                        .into_owned(),
                     declaration: capability.to_owned(),
-                })
+                });
             }
             DefinableStatus::ExistsSame(Some(existing_plays)) => existing_plays,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing plays concept expected"),
@@ -763,10 +837,11 @@ fn redefine_plays_annotations(
             player_label,
             plays.clone(),
             annotation.clone(),
+            typeql_capability,
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             plays.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetAnnotation { label: player_label.clone().into_owned(), source, annotation }
+                RedefineError::SetCapabilityAnnotation { declaration: todo!(), annotation, source }
             })?;
         }
     }
@@ -784,15 +859,27 @@ fn redefine_plays_override(
 ) -> Result<(), RedefineError> {
     if let Some(overridden_type_name) = &typeql_plays.overridden {
         let overridden_label = named_type_to_label(overridden_type_name)
-            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
         let overridden_plays = resolve_plays_role_label(snapshot, type_manager, plays.player(), &overridden_label)
-            .map_err(|source| RedefineError::DefinitionResolution { source })?;
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
-        check_can_redefine_override(snapshot, type_manager, player_label, plays.clone(), overridden_plays.clone())?;
+        check_can_redefine_override(
+            snapshot,
+            type_manager,
+            player_label,
+            plays.clone(),
+            overridden_plays.clone(),
+            todo!(),
+        )?;
         error_if_anything_redefined_else_set_true(anything_redefined)?;
-        plays
-            .set_override(snapshot, type_manager, thing_manager, overridden_plays)
-            .map_err(|source| RedefineError::SetOverride { label: player_label.clone().into_owned(), source })?
+        plays.set_override(snapshot, type_manager, thing_manager, overridden_plays).map_err(|source| {
+            RedefineError::SetRelatesOverride {
+                // TODO: this should be removed after merge
+                label: player_label.clone().into_owned(),
+                declaration: todo!(),
+                source,
+            }
+        })?;
     }
     Ok(())
 }
@@ -803,7 +890,7 @@ fn redefine_functions(
     anything_redefined: &mut bool,
     function_declaration: &Function,
 ) -> Result<(), RedefineError> {
-    Err(RedefineError::Unimplemented)
+    Err(RedefineError::Unimplemented { description: "Function redefinition.".to_string() })
 }
 
 fn check_can_redefine_sub<'a, T: TypeAPI<'a>>(
@@ -818,14 +905,14 @@ fn check_can_redefine_sub<'a, T: TypeAPI<'a>>(
     match definition_status {
         DefinableStatus::DoesNotExist => Err(RedefineError::TypeSubIsNotDefined {
             label: label.clone().into_owned(),
-            supertype: new_supertype
+            new_supertype_label: new_supertype
                 .get_label_cloned(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
         }),
         DefinableStatus::ExistsSame(_) => Err(RedefineError::TypeSubRemainsSame {
             label: label.clone().into_owned(),
-            supertype: new_supertype
+            supertype_label: new_supertype
                 .get_label_cloned(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
@@ -840,25 +927,28 @@ fn check_can_redefine_override<'a, CAP: concept::type_::Capability<'a>>(
     label: &Label<'a>,
     capability: CAP,
     new_override: CAP,
+    typeql_relates: &TypeQLRelates,
 ) -> Result<(), RedefineError> {
-    let definition_status = get_override_status(snapshot, type_manager, capability, new_override.clone())
+    let definition_status = get_override_status(snapshot, type_manager, &capability, new_override.clone())
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Err(RedefineError::CapabilityOverrideIsNotDefined {
             label: label.clone().into_owned(),
-            overridden_interface: new_override
+            new_override_type: new_override
                 .interface()
                 .get_label_cloned(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
+            declaration: typeql_relates.clone(),
         }),
         DefinableStatus::ExistsSame(_) => Err(RedefineError::CapabilityOverrideRemainsSame {
             label: label.clone().into_owned(),
-            overridden_interface: new_override
+            overridden_label: new_override
                 .interface()
                 .get_label_cloned(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .into_owned(),
+            declaration: typeql_relates.clone(),
         }),
         DefinableStatus::ExistsDifferent(_) => Ok(()),
     }
@@ -870,11 +960,17 @@ fn type_convert_and_validate_annotation_redefinition_need<'a, T: KindAPI<'a>>(
     label: &Label<'a>,
     type_: T,
     annotation: Annotation,
+    typeql_declaration: &Type,
 ) -> Result<Option<T::AnnotationType>, RedefineError> {
     error_if_not_redefinable(label, annotation.clone())?;
 
-    let converted = T::AnnotationType::try_from(annotation.clone())
-        .map_err(|source| RedefineError::IllegalAnnotation { source })?;
+    let converted =
+        T::AnnotationType::try_from(annotation.clone()).map_err(|source| RedefineError::IllegalTypeAnnotation {
+            label: label.as_reference().into_owned(),
+            annotation: annotation.clone(),
+            declaration: typeql_declaration.clone(),
+            source,
+        })?;
 
     let definition_status =
         get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
@@ -896,21 +992,27 @@ fn capability_convert_and_validate_annotation_redefinition_need<'a, CAP: concept
     label: &Label<'a>,
     capability: CAP,
     annotation: Annotation,
+    typeql_capability: &Capability,
 ) -> Result<Option<CAP::AnnotationType>, RedefineError> {
     error_if_not_redefinable(label, annotation.clone())?;
 
-    let converted = CAP::AnnotationType::try_from(annotation.clone())
-        .map_err(|source| RedefineError::IllegalAnnotation { source })?;
+    let converted = CAP::AnnotationType::try_from(annotation.clone()).map_err(|source| {
+        RedefineError::IllegalCapabilityAnnotation {
+            declaration: typeql_capability.clone(),
+            annotation: annotation.clone(),
+            source,
+        }
+    })?;
 
     let definition_status =
-        get_capability_annotation_status(snapshot, type_manager, capability, &converted, annotation.category())
+        get_capability_annotation_status(snapshot, type_manager, &capability, &converted, annotation.category())
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => {
-            Err(RedefineError::CapabilityAnnotationIsNotDefined { label: label.clone().into_owned(), annotation })
+            Err(RedefineError::CapabilityAnnotationIsNotDefined { declaration: typeql_capability.clone(), annotation })
         }
         DefinableStatus::ExistsSame(_) => {
-            Err(RedefineError::CapabilityAnnotationRemainsSame { label: label.clone().into_owned(), annotation })
+            Err(RedefineError::CapabilityAnnotationRemainsSame { declaration: typeql_capability.clone(), annotation })
         }
         DefinableStatus::ExistsDifferent(_) => Ok(Some(converted)),
     }
@@ -918,24 +1020,27 @@ fn capability_convert_and_validate_annotation_redefinition_need<'a, CAP: concept
 
 fn error_if_not_redefinable(label: &Label<'_>, annotation: Annotation) -> Result<(), RedefineError> {
     match annotation.category().has_parameter() {
-        false => Err(RedefineError::AnnotationCannotBeRedefined { label: label.clone().into_owned(), annotation }),
+        false => Err(RedefineError::ParameterFreeAnnotationCannotBeRedefined {
+            label: label.clone().into_owned(),
+            annotation,
+        }),
         true => Ok(()),
     }
 }
 
 fn err_capability_kind_mismatch(
-    capability_receiver: &Label<'_>,
-    capability_provider: &Label<'_>,
+    left: &Label<'_>,
+    right: &Label<'_>,
     capability: &Capability,
-    expected_kind: Kind,
-    actual_kind: Kind,
+    left_kind: Kind,
+    right_kind: Kind,
 ) -> RedefineError {
     RedefineError::CapabilityKindMismatch {
-        capability_receiver: capability_receiver.clone().into_owned(),
-        capability_provider: capability_provider.clone().into_owned(),
-        capability: capability.clone(),
-        expected_kind,
-        actual_kind,
+        left: left.clone().into_owned(),
+        right: right.clone().into_owned(),
+        left_kind,
+        right_kind,
+        declaration: capability.clone(),
     }
 }
 
@@ -948,144 +1053,347 @@ fn error_if_anything_redefined_else_set_true(anything_redefined: &mut bool) -> R
         }
     }
 }
+//
+// #[derive(Debug, Clone)]
+// pub enum RedefineError {
+//     Unimplemented,
+//     UnexpectedConceptRead {
+//         source: ConceptReadError,
+//     },
+//     DefinitionResolution {
+//         source: SymbolResolutionError,
+//     },
+//     LiteralParseError {
+//         source: LiteralParseError,
+//     },
+//     CanOnlyRedefineOneThingPerQuery {},
+//     RedefinedNothing {},
+//     StructFieldDoesNotExist {
+//         field: Field,
+//     },
+//     StructFieldRemainsSame {
+//         field: Field,
+//     },
+//     StructFieldDeleteError {
+//         source: ConceptWriteError,
+//         struct_name: String,
+//         struct_field: Field,
+//     },
+//     StructFieldCreateError {
+//         source: ConceptWriteError,
+//         struct_name: String,
+//         struct_field: Field,
+//     },
+//     SetSupertype {
+//         sub: typeql::schema::definable::type_::capability::Sub,
+//         source: ConceptWriteError,
+//     },
+//     TypeCannotHaveCapability {
+//         label: Label<'static>,
+//         kind: Kind,
+//         capability: Capability,
+//     },
+//     AttributeTypeBadValueType {
+//         source: SymbolResolutionError,
+//     },
+//     TypeSubIsNotDefined {
+//         label: Label<'static>,
+//         supertype: Label<'static>,
+//     },
+//     TypeSubRemainsSame {
+//         label: Label<'static>,
+//         supertype: Label<'static>,
+//     },
+//     RelatesIsNotDefined {
+//         label: Label<'static>,
+//         declaration: Capability,
+//         ordering: Ordering,
+//     },
+//     OwnsIsNotDefined {
+//         label: Label<'static>,
+//         declaration: Capability,
+//         ordering: Ordering,
+//     },
+//     PlaysIsNotDefined {
+//         label: Label<'static>,
+//         declaration: Capability,
+//     },
+//     CapabilityOverrideIsNotDefined {
+//         label: Label<'static>,
+//         overridden_interface: Label<'static>,
+//     },
+//     CapabilityOverrideRemainsSame {
+//         label: Label<'static>,
+//         overridden_interface: Label<'static>,
+//     },
+//     AttributeTypeValueTypeIsNotDefined {
+//         label: Label<'static>,
+//         value_type: ValueType,
+//     },
+//     AttributeTypeValueTypeRemainsSame {
+//         label: Label<'static>,
+//         value_type: ValueType,
+//     },
+//     // Careful with the error message as it is also used for value types (stored on their attribute type)!
+//     TypeAnnotationIsNotDefined {
+//         label: Label<'static>,
+//         annotation: Annotation,
+//     },
+//     TypeAnnotationRemainsSame {
+//         label: Label<'static>,
+//         annotation: Annotation,
+//     },
+//     CapabilityAnnotationIsNotDefined {
+//         label: Label<'static>,
+//         annotation: Annotation,
+//     },
+//     CapabilityAnnotationRemainsSame {
+//         label: Label<'static>,
+//         annotation: Annotation,
+//     },
+//     AnnotationCannotBeRedefined {
+//         label: Label<'static>,
+//         annotation: Annotation,
+//     },
+//     SetValueType {
+//         label: Label<'static>,
+//         value_type: ValueType,
+//         source: ConceptWriteError,
+//     },
+//     SetRelatesOrdering {
+//         relates: TypeQLRelates,
+//         source: ConceptWriteError,
+//     },
+//     SetOwnsOrdering {
+//         owns: TypeQLOwns,
+//         source: ConceptWriteError,
+//     },
+//     IllegalAnnotation {
+//         source: AnnotationError,
+//     },
+//     SetAnnotation {
+//         source: ConceptWriteError,
+//         label: Label<'static>,
+//         annotation: Annotation,
+//     },
+//     SetOverride {
+//         source: ConceptWriteError,
+//         label: Label<'static>,
+//     },
+//     CapabilityKindMismatch {
+//         capability_receiver: Label<'static>,
+//         capability_provider: Label<'static>,
+//         capability: Capability,
+//         expected_kind: Kind,
+//         actual_kind: Kind,
+//     },
+// }
 
-#[derive(Debug)]
-pub enum RedefineError {
-    Unimplemented,
-    UnexpectedConceptRead {
-        source: ConceptReadError,
-    },
-    DefinitionResolution {
-        source: SymbolResolutionError,
-    },
-    LiteralParseError {
-        source: LiteralParseError,
-    },
-    CanOnlyRedefineOneThingPerQuery {},
-    RedefinedNothing {},
-    StructFieldDoesNotExist {
-        field: Field,
-    },
-    StructFieldRemainsSame {
-        field: Field,
-    },
-    StructFieldDeleteError {
-        source: ConceptWriteError,
-        struct_name: String,
-        struct_field: Field,
-    },
-    StructFieldCreateError {
-        source: ConceptWriteError,
-        struct_name: String,
-        struct_field: Field,
-    },
-    SetSupertype {
-        sub: typeql::schema::definable::type_::capability::Sub,
-        source: ConceptWriteError,
-    },
-    TypeCannotHaveCapability {
-        label: Label<'static>,
-        kind: Kind,
-        capability: Capability,
-    },
-    AttributeTypeBadValueType {
-        source: SymbolResolutionError,
-    },
-    TypeSubIsNotDefined {
-        label: Label<'static>,
-        supertype: Label<'static>,
-    },
-    TypeSubRemainsSame {
-        label: Label<'static>,
-        supertype: Label<'static>,
-    },
-    RelatesIsNotDefined {
-        label: Label<'static>,
-        declaration: Capability,
-        ordering: Ordering,
-    },
-    OwnsIsNotDefined {
-        label: Label<'static>,
-        declaration: Capability,
-        ordering: Ordering,
-    },
-    PlaysIsNotDefined {
-        label: Label<'static>,
-        declaration: Capability,
-    },
-    CapabilityOverrideIsNotDefined {
-        label: Label<'static>,
-        overridden_interface: Label<'static>,
-    },
-    CapabilityOverrideRemainsSame {
-        label: Label<'static>,
-        overridden_interface: Label<'static>,
-    },
-    AttributeTypeValueTypeIsNotDefined {
-        label: Label<'static>,
-        value_type: ValueType,
-    },
-    AttributeTypeValueTypeRemainsSame {
-        label: Label<'static>,
-        value_type: ValueType,
-    },
-    // Careful with the error message as it is also used for value types (stored on their attribute type)!
-    TypeAnnotationIsNotDefined {
-        label: Label<'static>,
-        annotation: Annotation,
-    },
-    TypeAnnotationRemainsSame {
-        label: Label<'static>,
-        annotation: Annotation,
-    },
-    CapabilityAnnotationIsNotDefined {
-        label: Label<'static>,
-        annotation: Annotation,
-    },
-    CapabilityAnnotationRemainsSame {
-        label: Label<'static>,
-        annotation: Annotation,
-    },
-    AnnotationCannotBeRedefined {
-        label: Label<'static>,
-        annotation: Annotation,
-    },
-    SetValueType {
-        label: Label<'static>,
-        value_type: ValueType,
-        source: ConceptWriteError,
-    },
-    SetRelatesOrdering {
-        relates: TypeQLRelates,
-        source: ConceptWriteError,
-    },
-    SetOwnsOrdering {
-        owns: TypeQLOwns,
-        source: ConceptWriteError,
-    },
-    IllegalAnnotation {
-        source: AnnotationError,
-    },
-    SetAnnotation {
-        source: ConceptWriteError,
-        label: Label<'static>,
-        annotation: Annotation,
-    },
-    SetOverride {
-        source: ConceptWriteError,
-        label: Label<'static>,
-    },
-    CapabilityKindMismatch {
-        capability_receiver: Label<'static>,
-        capability_provider: Label<'static>,
-        capability: Capability,
-        expected_kind: Kind,
-        actual_kind: Kind,
-    },
-}
+typedb_error!(
+    pub RedefineError(domain = "Redefine", prefix = "RDF") {
+        Unimplemented(1, "Unimplemented redefine functionality: {description}", description: String),
+        UnexpectedConceptRead(2, "Concept read error during redefine query execution.", ( source: ConceptReadError )),
+        NothingRedefined(3, "Nothing was redefined."),
+        DefinitionResolution(4, "Could not find symbol in redefine query.", ( typedb_source: SymbolResolutionError )),
+        LiteralParseError(5, "Error parsing literal in redefine query.", ( source : LiteralParseError )),
+        CanOnlyRedefineOneThingPerQuery(6, "Redefine queries can currently only mutate exactly one schema element per query."),
+        StructFieldDoesNotExist(7, "Struct field used in redefine query does not exist.\nSource:\n{declaration}", declaration: Field),
+        StructFieldRemainsSame(8, "Struct field in redefine was not changed. Redefine queries are required to update the schema.\nSource:\n{declaration}", declaration: Field),
+        StructFieldDeleteError(
+            9,
+            "Error removing field from struct type '{struct_name}'.\nSource:\n{declaration}",
+            struct_name: String,
+            declaration: Field,
+            ( source: ConceptWriteError )
+        ),
+        StructFieldCreateError(
+            10,
+            "Error creating new field in struct type '{struct_name}'.\nSource:\n{declaration}",
+            struct_name: String,
+            declaration: Field,
+            ( source: ConceptWriteError )
+        ),
+        SetSupertype(
+            11,
+            "Error setting supertype during redefine.\nSource:\n{declaration}",
+            declaration: typeql::schema::definable::type_::capability::Sub,
+            ( source: ConceptWriteError )
+        ),
+        TypeCannotHaveCapability(
+            12,
+            "Invalid redefine - the type '{label}' of kind '{kind}', which is not allowed to declare:\n'{declaration}'",
+            label: Label<'static>,
+            kind: Kind,
+            declaration: Capability
+        ),
+        ValueTypeSymbolResolution(
+            13,
+            "Error resolving value type in redefine query.",
+            ( typedb_source: SymbolResolutionError )
+        ),
+        TypeSubIsNotDefined(
+            14,
+            "Redefining the supertype of '{label}' to '{new_supertype_label}' failed, since there is no supertype to replace. Use define to set instead of replace the supertype.",
+            label: Label<'static>,
+            new_supertype_label: Label<'static>
+        ),
+        TypeSubRemainsSame(
+            15,
+            "Redefining the supertype of '{label}' to '{supertype_label}' failed, since this is already the supertype. Redefine can only replace existing schema elements.",
+            label: Label<'static>,
+            supertype_label: Label<'static>
+        ),
+        RelatesIsNotDefined(
+            16,
+            "On type '{label}', redefining 'relates {role}{ordering}' failed since it this 'relates' doesn't yet exist. Redefine can only replace existing schema elements.\nSource:\n{declaration}",
+            label: Label<'static>,
+            role: String,
+            ordering: Ordering,
+            declaration: Capability
+        ),
+        OwnsIsNotDefined(
+            17,
+            "On type '{label}', redefining 'owns {attribute}{ordering}' failed since this 'owns' doesn't exist yet. Redefine can only replace existing schema elements.\nSource:\n{declaration}",
+            label: Label<'static>,
+            attribute: Label<'static>,
+            declaration: Capability,
+            ordering: Ordering
+        ),
+        PlaysIsNotDefined(
+            18,
+            "On type '{label}', redefining 'plays {role_label}' failed since this 'plays' doesn't exist yet. Redefine can only replace existing schema elements.\nSource:\n{declaration}",
+            label: Label<'static>,
+            role_label: Label<'static>,
+            declaration: Capability
+        ),
+        CapabilityOverrideIsNotDefined(
+            19,
+            "For type '{label}', redefining override 'as {new_override_type}' failed as no override exists yet. Redefine can only replace existing schema elements.\nSource:\n{declaration}",
+            label: Label<'static>,
+            new_override_type: Label<'static>,
+            declaration: TypeQLRelates
+        ),
+        CapabilityOverrideRemainsSame(
+            20,
+            "For type '{label}', redefining override 'as {overridden_label}' failed since this override already exists. Redefine can only replace existing schema elements.\nSource:\n{declaration}",
+            label: Label<'static>,
+            overridden_label: Label<'static>,
+            declaration: TypeQLRelates
+        ),
+        AttributeTypeValueTypeIsNotDefined(
+            21,
+            "For attribute type '{label}', redefining value type '{value_type}' failed since no value type exists yet. Redefine can only replace existing schema elements.",
+            label: Label<'static>,
+            value_type: ValueType
+        ),
+        AttributeTypeValueTypeRemainsSame(
+            22,
+            "For attribute type '{label}', redefining value type '{value_type}' failed since this value type already exists. Redefine can only replace existing schema elements.",
+            label: Label<'static>,
+            value_type: ValueType
+        ),
+        TypeAnnotationIsNotDefined(
+            23,
+            "For type '{label}', redefining annotation '{annotation}' failed since this annotation doesn't exist yet. Redefine can only replace existing schema elements.",
+            label: Label<'static>,
+            annotation: Annotation
+        ),
+        TypeAnnotationRemainsSame(
+            24,
+            "For type '{label}', redefining annotation '{annotation}' failed since this annotation already exist identically. Redefine can only replace existing schema elements.",
+            label: Label<'static>,
+            annotation: Annotation
+        ),
+        CapabilityAnnotationIsNotDefined(
+            25,
+            "Redefining annotation '{annotation}' failed since this annotation doesn't exist yet. Redefine can only replace existing schema elements.\nSource:\n{declaration}",
+            declaration: Capability,
+            annotation: Annotation
+        ),
+        CapabilityAnnotationRemainsSame(
+            26,
+            "Redefining annotation '{annotation}' failed since this annotation exists identically. Redefine can only replace existing schema elements.\nSource:\n{declaration}",
+            declaration: Capability,
+            annotation: Annotation
+        ),
+        ParameterFreeAnnotationCannotBeRedefined(
+            27,
+            "For type '{label}', annotation '{annotation}' can never be redefined as it carries no parameters. Redefine can only replace existing schema elements.",
+            label: Label<'static>,
+            annotation: Annotation
+        ),
+        SetValueType(
+            28,
+            "Redefining '{label}' to have value type '{value_type}' failed.",
+            label: Label<'static>,
+            value_type: ValueType,
+            ( source: ConceptWriteError )
+        ),
+        SetRelatesOrdering(
+            29,
+            "Redefining '{label}' to have an updated 'relates' ordering failed.\nSource:\n{declaration}",
+            label: Label<'static>,
+            declaration: TypeQLRelates,
+            ( source: ConceptWriteError )
+        ),
+        SetOwnsOrdering(
+            30,
+            "Redefining '{label}' to have an updated 'owns' ordering failed.\nSource:\n{declaration}",
+            label: Label<'static>,
+            declaration: TypeQLOwns,
+            ( source: ConceptWriteError )
+        ),
+        IllegalTypeAnnotation(
+            31,
+            "Redefining '{label}' to have annotation '{annotation}' failed as this is an illegal annotation.\nSource:\n:{declaration}",
+            label: Label<'static>,
+            annotation: Annotation,
+            declaration: Type,
+            ( source: AnnotationError )
+        ),
+        IllegalCapabilityAnnotation(
+            32,
+            "Redefining to have annotation '{annotation}' failed.\nSource:\n{declaration}",
+            annotation: Annotation,
+            declaration: Capability,
+            ( source: AnnotationError )
+        ),
+        SetTypeAnnotation(
+            33,
+            "Redefining '{label}' to have annotation '{annotation}' failed.\nSource:\n{declaration}",
+            label: Label<'static>,
+            annotation: Annotation,
+            declaration: Type,
+            ( source: ConceptWriteError )
+        ),
+        SetCapabilityAnnotation(
+            34,
+            "Redefining '{annotation}' failed.\nSource:\n{declaration}",
+            annotation: Annotation,
+            declaration: Capability,
+            ( source: ConceptWriteError )
+        ),
+        SetRelatesOverride(
+            35,
+            "For relation type '{label}', redefining 'relates' failed.\nSource:\n{declaration}",
+            label: Label<'static>,
+            declaration: TypeQLRelates,
+            ( source: ConceptWriteError )
+        ),
+        CapabilityKindMismatch(
+            36,
+            "Redefine failed because the left type '{left}' is of kind '{left_kind}' isn't the same kind as the right type '{right}' which has kind '{right_kind}'.\nSource:\n{declaration}",
+            left: Label<'static>,
+            right: Label<'static>,
+            left_kind: Kind,
+            right_kind: Kind,
+            declaration: Capability
+        ),
+    }
+);
 
 fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &Capability) -> RedefineError {
-    RedefineError::TypeCannotHaveCapability { label: label.to_owned(), kind, capability: capability.clone() }
+    RedefineError::TypeCannotHaveCapability { label: label.to_owned(), kind, declaration: capability.clone() }
 }
 
 impl fmt::Display for RedefineError {

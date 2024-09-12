@@ -27,12 +27,12 @@ impl DatabaseManager {
         let databases = fs::read_dir(data_directory)
             .map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
                 path: data_directory.to_owned(),
-                source: error,
+                source: Arc::new(error),
             })?
             .map(|entry| {
                 let entry = entry.map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
                     path: data_directory.to_owned(),
-                    source: error,
+                    source: Arc::new(error),
                 })?;
                 let database = Database::<WALClient>::open(&entry.path())?;
                 Ok((database.name().to_owned(), Arc::new(database)))

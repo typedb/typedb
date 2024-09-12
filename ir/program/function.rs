@@ -17,6 +17,7 @@ pub type PlaceholderTypeQLReturnOperation = String;
 
 #[derive(Debug, Clone)]
 pub struct Function {
+    name: String,
     // Variable categories for args & return can be read from the block's context.
     arguments: Vec<Variable>,
     block: FunctionalBlock,
@@ -26,12 +27,17 @@ pub struct Function {
 
 impl Function {
     pub fn new(
+        name: &str,
         block: FunctionalBlock,
         variable_registry: VariableRegistry,
         arguments: Vec<Variable>,
         return_operation: ReturnOperation,
     ) -> Self {
-        Self { block, variable_registry, arguments, return_operation }
+        Self { name: name.to_string(), block, variable_registry, arguments, return_operation }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn arguments(&self) -> &[Variable] {
@@ -54,7 +60,7 @@ impl Function {
 #[derive(Debug, Clone)]
 pub enum ReturnOperation {
     Stream(Vec<Variable>),
-    Single(Vec<Reducer>),
+    Reduce(Vec<Reducer>),
 }
 
 impl ReturnOperation {
@@ -69,7 +75,7 @@ impl ReturnOperation {
                     .map(|types_as_arced_hashset| BTreeSet::from_iter(types_as_arced_hashset.iter().cloned()))
                     .collect()
             }
-            ReturnOperation::Single(_) => {
+            ReturnOperation::Reduce(_) => {
                 todo!()
             }
         }
@@ -80,7 +86,7 @@ impl ReturnOperation {
     pub(crate) fn is_stream(&self) -> bool {
         match self {
             Self::Stream(_) => true,
-            Self::Single(_) => false,
+            Self::Reduce(_) => false,
         }
     }
 }
