@@ -53,6 +53,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
+use crate::type_::constraint::get_independent_constraints;
 
 pub mod type_cache;
 pub mod type_reader;
@@ -919,7 +920,7 @@ impl TypeManager {
     }
 
     get_filtered_constraints_methods! {
-        fn get_attribute_type_independent_constraints() -> TypeConstraint<AttributeType> = get_constraints + get_regex_constraints;
+        fn get_attribute_type_independent_constraints() -> TypeConstraint<AttributeType> = get_constraints + get_independent_constraints;
         fn get_attribute_type_regex_constraints() -> TypeConstraint<AttributeType> = get_constraints + get_regex_constraints;
         fn get_attribute_type_range_constraints() -> TypeConstraint<AttributeType> = get_constraints + get_range_constraints;
         fn get_attribute_type_values_constraints() -> TypeConstraint<AttributeType> = get_constraints + get_values_constraints;
