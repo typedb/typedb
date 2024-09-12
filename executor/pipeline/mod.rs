@@ -4,21 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    error::Error,
-    fmt::{Display, Formatter},
-    sync::Arc,
-};
-
-use compiler::VariablePosition;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::error::ConceptReadError;
 use error::typedb_error;
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use storage::snapshot::ReadableSnapshot;
 
-use crate::{batch::Batch, error::ReadExecutionError, row::MaybeOwnedRow, write::WriteError, ExecutionInterrupt};
+use crate::{
+    batch::Batch, error::ReadExecutionError, pipeline::stage::StageIterator, row::MaybeOwnedRow, write::WriteError,
+    ExecutionInterrupt,
+};
 
 pub mod delete;
 pub mod initial;
@@ -26,38 +19,6 @@ pub mod insert;
 pub mod match_;
 pub mod modifiers;
 pub mod stage;
-
-pub trait StageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
-    type OutputIterator: StageIterator;
-
-    fn into_iterator(
-        self,
-        interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)>;
-}
-
-pub trait StageIterator:
-    for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>> + Sized
-{
-    fn collect_owned(mut self) -> Result<Batch, PipelineExecutionError> {
-        // specific iterators can optimise this by not iterating + collecting!
-        let first = self.next();
-        let mut batch = match first {
-            None => return Ok(Batch::new(0, 1)),
-            Some(row) => {
-                let row = row?;
-                let mut batch = Batch::new(row.len() as u32, 10);
-                batch.append(row);
-                batch
-            }
-        };
-        while let Some(row) = self.next() {
-            let row = row?;
-            batch.append(row);
-        }
-        Ok(batch)
-    }
-}
 
 typedb_error!(
     pub PipelineExecutionError(component = "Pipeline execution", prefix = "PEX") {

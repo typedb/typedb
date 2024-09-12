@@ -11,8 +11,6 @@ use std::{
 use concept::error::ConceptWriteError;
 use error::typedb_error;
 
-pub mod delete;
-pub mod insert;
 pub(crate) mod write_instruction;
 
 typedb_error!(

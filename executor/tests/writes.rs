@@ -4,7 +4,7 @@
 * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, vec};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -17,11 +17,17 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    row::Row,
-    write::{delete::DeleteExecutor, insert::InsertExecutor, WriteError},
+    pipeline::{
+        delete::DeleteStageExecutor,
+        insert::InsertStageExecutor,
+        stage::{StageAPI, StageContext, StageIterator},
+        PipelineExecutionError,
+    },
+    row::MaybeOwnedRow,
+    write::WriteError,
 };
 use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
-use lending_iterator::LendingIterator;
+use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
@@ -80,14 +86,57 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
     snapshot.commit().unwrap();
 }
 
-fn execute_insert(
-    snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
-    thing_manager: &ThingManager,
+struct ShimStage<Snapshot> {
+    rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>>,
+    context: StageContext<Snapshot>,
+}
+
+impl<Snapshot> ShimStage<Snapshot> {
+    fn new(rows: Vec<Vec<VariableValue<'static>>>, context: StageContext<Snapshot>) -> Self {
+        let rows = rows.into_iter().map(|values| Ok(MaybeOwnedRow::new_owned(values, 1))).collect();
+        Self { rows, context }
+    }
+}
+
+struct ShimIterator(
+    AsNarrowingIterator<
+        vec::IntoIter<Result<MaybeOwnedRow<'static>, PipelineExecutionError>>,
+        Result<AsHkt![MaybeOwnedRow<'_>], PipelineExecutionError>,
+    >,
+);
+
+impl StageIterator for ShimIterator {}
+
+impl LendingIterator for ShimIterator {
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.0.next()
+    }
+}
+
+impl<Snapshot> StageAPI<Snapshot> for ShimStage<Snapshot> {
+    type OutputIterator = ShimIterator;
+
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
+        todo!("named_selected_outputs() is only relevant in TransactionService?")
+    }
+
+    fn into_iterator(
+        self,
+    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+        Ok((ShimIterator(AsNarrowingIterator::new(self.rows)), self.context))
+    }
+}
+
+fn execute_insert<Snapshot: WritableSnapshot + 'static>(
+    snapshot: Snapshot,
+    type_manager: Arc<TypeManager>,
+    thing_manager: Arc<ThingManager>,
     query_str: &str,
     input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
-) -> Result<Vec<Vec<VariableValue<'static>>>, WriteError> {
+) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), WriteError> {
     let mut translation_context = TranslationContext::new();
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
     let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
@@ -100,8 +149,8 @@ fn execute_insert(
     let (entry_annotations, _) = infer_types(
         &block,
         vec![],
-        snapshot,
-        type_manager,
+        &snapshot,
+        &type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
     )
@@ -120,36 +169,38 @@ fn execute_insert(
     println!("Insert Vertex:\n{:?}", &insert_plan.concept_instructions);
     println!("Insert Edges:\n{:?}", &insert_plan.connection_instructions);
 
-    let mut output_rows = Vec::with_capacity(input_rows.len());
     println!("Insert output row schema: {:?}", &insert_plan.output_row_schema);
-    let output_width = insert_plan.output_row_schema.len();
-    let insert_executor = InsertExecutor::new(insert_plan);
-    for input_row in input_rows {
-        let mut output_multiplicity = 1;
-        output_rows.push(
-            (0..output_width)
-                .map(|i| input_row.get(i).map_or_else(|| VariableValue::Empty, |existing| existing.clone()))
-                .collect::<Vec<_>>(),
-        );
-        // Copy input row in
-        insert_executor.execute_insert(
-            snapshot,
-            thing_manager,
-            &mut Row::new(output_rows.last_mut().unwrap(), &mut output_multiplicity),
-        )?;
-    }
-    Ok(output_rows)
+
+    let snapshot = Arc::new(snapshot);
+    let initial = ShimStage::new(
+        input_rows,
+        StageContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
+    );
+    let insert_executor = InsertStageExecutor::new(insert_plan, initial);
+    let (output_iter, context) = insert_executor.into_iterator().map_err(|(err, _)| match err {
+        PipelineExecutionError::WriteError { source } => source,
+        _ => unreachable!(),
+    })?;
+    let output_rows = output_iter
+        .map_static(|res| res.map(|row| row.into_owned()))
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|err| match err {
+            PipelineExecutionError::WriteError { source } => source,
+            _ => unreachable!(),
+        })?;
+    Ok((output_rows, Arc::into_inner(context.snapshot).unwrap()))
 }
 
-fn execute_delete(
-    snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
-    thing_manager: &ThingManager,
+fn execute_delete<Snapshot: WritableSnapshot + 'static>(
+    snapshot: Snapshot,
+    type_manager: Arc<TypeManager>,
+    thing_manager: Arc<ThingManager>,
     mock_match_string_for_annotations: &str,
     delete_str: &str,
     input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
-) -> Result<Vec<Vec<VariableValue<'static>>>, WriteError> {
+) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), WriteError> {
     let mut translation_context = TranslationContext::new();
     let (entry_annotations, _) = {
         let typeql_match = typeql::parse_query(mock_match_string_for_annotations)
@@ -166,11 +217,11 @@ fn execute_delete(
         )
         .unwrap()
         .finish();
-        compiler::match_::inference::type_inference::infer_types(
+        infer_types(
             &block,
             vec![],
-            snapshot,
-            type_manager,
+            &snapshot,
+            &type_manager,
             &IndexedAnnotatedFunctions::empty(),
             &translation_context.variable_registry,
         )
@@ -193,17 +244,26 @@ fn execute_delete(
         &deleted_concepts,
     )
     .unwrap();
-    let delete_executor = DeleteExecutor::new(delete_plan);
-    let mut output_rows = Vec::with_capacity(input_rows.len());
-    for mut input_row in input_rows {
-        let mut output_vec = Vec::with_capacity(input_row.len());
-        output_vec.extend_from_slice(input_row.as_mut_slice()); // copy from input
-        let mut output_multiplicity = 1;
-        let mut output = Row::new(&mut output_vec, &mut output_multiplicity);
-        delete_executor.execute_delete(snapshot, thing_manager, &mut output);
-        output_rows.push(output_vec);
-    }
-    Ok(output_rows)
+
+    let snapshot = Arc::new(snapshot);
+    let initial = ShimStage::new(
+        input_rows,
+        StageContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
+    );
+    let delete_executor = DeleteStageExecutor::new(delete_plan, initial);
+    let (output_iter, context) = delete_executor.into_iterator().map_err(|(err, _)| match err {
+        PipelineExecutionError::WriteError { source } => source,
+        _ => unreachable!(),
+    })?;
+    let output_rows = output_iter
+        .map_static(|res| res.map(|row| row.into_owned()))
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|err| match err {
+            PipelineExecutionError::WriteError { source } => source,
+            _ => unreachable!(),
+        })?;
+    Ok((output_rows, Arc::into_inner(context.snapshot).unwrap()))
 }
 
 #[test]
@@ -213,11 +273,11 @@ fn has() {
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
-    let mut snapshot = storage.clone().open_snapshot_write();
-    execute_insert(
-        &mut snapshot,
-        &type_manager,
-        &thing_manager,
+    let snapshot = storage.clone().open_snapshot_write();
+    let (_, snapshot) = execute_insert(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
         "insert $p isa person, has age 10;",
         &[],
         vec![vec![]],
@@ -225,14 +285,11 @@ fn has() {
     .unwrap();
     snapshot.commit().unwrap();
 
-    {
-        let snapshot = storage.clone().open_snapshot_read();
-        let age_type = type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
-        let attr_age_10 =
-            thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
-        assert_eq!(1, attr_age_10.get_owners(&snapshot, &thing_manager).count());
-        snapshot.close_resources()
-    }
+    let snapshot = storage.clone().open_snapshot_read();
+    let age_type = type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
+    let attr_age_10 = thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+    assert_eq!(1, attr_age_10.get_owners(&snapshot, &thing_manager).count());
+    snapshot.close_resources()
 }
 
 #[test]
@@ -243,13 +300,13 @@ fn test() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
 
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let snapshot = storage.clone().open_snapshot_write();
     let query_str = "
         insert
          $p isa person; $g isa group;
          (member: $p, group: $g) isa membership;
     ";
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &[], vec![vec![]]).unwrap();
+    let (_, snapshot) = execute_insert(snapshot, type_manager, thing_manager, query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
 }
 
@@ -261,51 +318,50 @@ fn relation() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
 
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let snapshot = storage.clone().open_snapshot_write();
     let query_str = "
         insert
          $p isa person; $g isa group;
          (member: $p, group: $g) isa membership;
     ";
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &[], vec![vec![]]).unwrap();
+    let (_, snapshot) =
+        execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
-    // read back
-    {
-        let snapshot = storage.open_snapshot_read();
-        let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
-        let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
-        let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
-        let member_role = membership_type
-            .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name.as_str())
-            .unwrap()
-            .unwrap()
-            .role();
-        let group_role = membership_type
-            .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name.as_str())
-            .unwrap()
-            .unwrap()
-            .role();
-        let relations: Vec<Relation<'_>> = thing_manager
-            .get_relations_in(&snapshot, membership_type.clone())
-            .map_static(|item| item.map(|relation| relation.clone().into_owned()))
-            .try_collect()
-            .unwrap();
-        assert_eq!(1, relations.len());
-        let role_players = relations[0]
-            .get_players(&snapshot, &thing_manager)
-            .map_static(|item| {
-                item.map(|(roleplayer, _)| (roleplayer.player().into_owned(), roleplayer.role_type().into_owned()))
-            })
-            .try_collect::<Vec<_>, _>()
-            .unwrap();
-        assert!(role_players.iter().any(|(player, role)| {
-            (player.type_().clone(), role.clone()) == (ObjectType::Entity(person_type.clone()), member_role.clone())
-        }));
-        assert!(role_players.iter().any(|(player, role)| {
-            (player.type_().clone(), role.clone()) == (ObjectType::Entity(group_type.clone()), group_role.clone())
-        }));
-        snapshot.close_resources();
-    }
+
+    let snapshot = storage.open_snapshot_read();
+    let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
+    let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
+    let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
+    let member_role = membership_type
+        .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name.as_str())
+        .unwrap()
+        .unwrap()
+        .role();
+    let group_role = membership_type
+        .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name.as_str())
+        .unwrap()
+        .unwrap()
+        .role();
+    let relations: Vec<Relation<'_>> = thing_manager
+        .get_relations_in(&snapshot, membership_type.clone())
+        .map_static(|item| item.map(|relation| relation.clone().into_owned()))
+        .try_collect()
+        .unwrap();
+    assert_eq!(1, relations.len());
+    let role_players = relations[0]
+        .get_players(&snapshot, &thing_manager)
+        .map_static(|item| {
+            item.map(|(roleplayer, _)| (roleplayer.player().into_owned(), roleplayer.role_type().into_owned()))
+        })
+        .try_collect::<Vec<_>, _>()
+        .unwrap();
+    assert!(role_players.iter().any(|(player, role)| {
+        (player.type_().clone(), role.clone()) == (ObjectType::Entity(person_type.clone()), member_role.clone())
+    }));
+    assert!(role_players.iter().any(|(player, role)| {
+        (player.type_().clone(), role.clone()) == (ObjectType::Entity(group_type.clone()), group_role.clone())
+    }));
+    snapshot.close_resources();
 }
 
 #[test]
@@ -316,51 +372,50 @@ fn relation_with_inferred_roles() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
 
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let snapshot = storage.clone().open_snapshot_write();
     let query_str = "
         insert
          $p isa person; $g isa group;
          ($p, $g) isa membership;
     ";
-    execute_insert(&mut snapshot, &type_manager, &thing_manager, query_str, &[], vec![vec![]]).unwrap();
+    let (_, snapshot) =
+        execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
-    // read back
-    {
-        let snapshot = storage.open_snapshot_read();
-        let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
-        let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
-        let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
-        let member_role = membership_type
-            .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name.as_str())
-            .unwrap()
-            .unwrap()
-            .role();
-        let group_role = membership_type
-            .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name.as_str())
-            .unwrap()
-            .unwrap()
-            .role();
-        let relations: Vec<Relation<'_>> = thing_manager
-            .get_relations_in(&snapshot, membership_type.clone())
-            .map_static(|item| item.map(|relation| relation.clone().into_owned()))
-            .try_collect()
-            .unwrap();
-        assert_eq!(1, relations.len());
-        let role_players = relations[0]
-            .get_players(&snapshot, &thing_manager)
-            .map_static(|item| {
-                item.map(|(roleplayer, _)| (roleplayer.player().into_owned(), roleplayer.role_type().into_owned()))
-            })
-            .try_collect::<Vec<_>, _>()
-            .unwrap();
-        assert!(role_players.iter().any(|(player, role)| {
-            (player.type_().clone(), role.clone()) == (ObjectType::Entity(person_type.clone()), member_role.clone())
-        }));
-        assert!(role_players.iter().any(|(player, role)| {
-            (player.type_().clone(), role.clone()) == (ObjectType::Entity(group_type.clone()), group_role.clone())
-        }));
-        snapshot.close_resources();
-    }
+
+    let snapshot = storage.open_snapshot_read();
+    let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
+    let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
+    let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
+    let member_role = membership_type
+        .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name.as_str())
+        .unwrap()
+        .unwrap()
+        .role();
+    let group_role = membership_type
+        .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_GROUP_LABEL.name.as_str())
+        .unwrap()
+        .unwrap()
+        .role();
+    let relations: Vec<Relation<'_>> = thing_manager
+        .get_relations_in(&snapshot, membership_type.clone())
+        .map_static(|item| item.map(|relation| relation.clone().into_owned()))
+        .try_collect()
+        .unwrap();
+    assert_eq!(1, relations.len());
+    let role_players = relations[0]
+        .get_players(&snapshot, &thing_manager)
+        .map_static(|item| {
+            item.map(|(roleplayer, _)| (roleplayer.player().into_owned(), roleplayer.role_type().into_owned()))
+        })
+        .try_collect::<Vec<_>, _>()
+        .unwrap();
+    assert!(role_players.iter().any(|(player, role)| {
+        (player.type_().clone(), role.clone()) == (ObjectType::Entity(person_type.clone()), member_role.clone())
+    }));
+    assert!(role_players.iter().any(|(player, role)| {
+        (player.type_().clone(), role.clone()) == (ObjectType::Entity(group_type.clone()), group_role.clone())
+    }));
+    snapshot.close_resources();
 }
 
 #[test]
@@ -370,15 +425,21 @@ fn test_has_with_input_rows() {
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
-    let mut snapshot = storage.clone().open_snapshot_write();
-    let inserted_rows =
-        execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &[], vec![vec![]])
-            .unwrap();
+    let snapshot = storage.clone().open_snapshot_write();
+    let (inserted_rows, snapshot) = execute_insert(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
+        "insert $p isa person;",
+        &[],
+        vec![vec![]],
+    )
+    .unwrap();
     let p10 = inserted_rows[0][0].clone();
-    let inserted_rows = execute_insert(
-        &mut snapshot,
-        &type_manager,
-        &thing_manager,
+    let (inserted_rows, snapshot) = execute_insert(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
         "insert $p has age 10;",
         &["p"],
         vec![vec![p10.clone()]],
@@ -387,26 +448,24 @@ fn test_has_with_input_rows() {
     let a10 = inserted_rows[0][1].clone();
     snapshot.commit().unwrap();
 
-    {
-        let snapshot = storage.clone().open_snapshot_read();
-        let age_type = type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
-        let age_of_p10 = p10
-            .as_thing()
-            .as_object()
-            .get_has_type_unordered(&snapshot, &thing_manager, age_type.clone())
-            .unwrap()
-            .map_static(|result| result.unwrap().0.clone().into_owned())
-            .collect::<Vec<_>>();
-        assert_eq!(a10.as_thing().as_attribute(), age_of_p10[0]);
-        let owner_of_a10 = a10
-            .as_thing()
-            .as_attribute()
-            .get_owners(&snapshot, &thing_manager)
-            .map_static(|result| result.unwrap().0.clone().into_owned())
-            .collect::<Vec<_>>();
-        assert_eq!(p10.as_thing().as_object(), owner_of_a10[0]);
-        snapshot.close_resources();
-    };
+    let snapshot = storage.clone().open_snapshot_read();
+    let age_type = type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
+    let age_of_p10 = p10
+        .as_thing()
+        .as_object()
+        .get_has_type_unordered(&snapshot, &thing_manager, age_type.clone())
+        .unwrap()
+        .map_static(|result| result.unwrap().0.clone().into_owned())
+        .collect::<Vec<_>>();
+    assert_eq!(a10.as_thing().as_attribute(), age_of_p10[0]);
+    let owner_of_a10 = a10
+        .as_thing()
+        .as_attribute()
+        .get_owners(&snapshot, &thing_manager)
+        .map_static(|result| result.unwrap().0.clone().into_owned())
+        .collect::<Vec<_>>();
+    assert_eq!(p10.as_thing().as_object(), owner_of_a10[0]);
+    snapshot.close_resources();
 }
 
 #[test]
@@ -416,15 +475,21 @@ fn delete_has() {
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
-    let mut snapshot = storage.clone().open_snapshot_write();
-    let inserted_rows =
-        execute_insert(&mut snapshot, &type_manager, &thing_manager, "insert $p isa person;", &[], vec![vec![]])
-            .unwrap();
+    let snapshot = storage.clone().open_snapshot_write();
+    let (inserted_rows, snapshot) = execute_insert(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
+        "insert $p isa person;",
+        &[],
+        vec![vec![]],
+    )
+    .unwrap();
     let p10 = inserted_rows[0][0].clone();
-    let inserted_rows = execute_insert(
-        &mut snapshot,
-        &type_manager,
-        &thing_manager,
+    let (inserted_rows, snapshot) = execute_insert(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
         "insert $p has age 10;",
         &["p"],
         vec![vec![p10.clone()]],
@@ -433,12 +498,12 @@ fn delete_has() {
     let a10 = inserted_rows[0][1].clone().into_owned();
     snapshot.commit().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let snapshot = storage.clone().open_snapshot_write();
     assert_eq!(1, p10.as_thing().as_object().get_has_unordered(&snapshot, &thing_manager).count());
-    execute_delete(
-        &mut snapshot,
-        &type_manager,
-        &thing_manager,
+    let (_, snapshot) = execute_delete(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
         "match $p isa person; $a isa age;",
         "delete has $a of $p;",
         &["p", "a"],

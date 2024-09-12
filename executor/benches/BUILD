@@ -18,6 +18,7 @@ rust_test(
         "//common/lending_iterator",
         "//compiler",
         "//concept",
+        "//common/lending_iterator",
         "//durability",
         "//encoding",
         "//executor",

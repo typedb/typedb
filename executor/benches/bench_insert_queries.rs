@@ -12,13 +12,10 @@ use std::{
     fs::File,
     path::Path,
     sync::{Arc, OnceLock},
+    vec,
 };
 
-use answer::variable_value::VariableValue;
-use compiler::{
-    match_::inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    VariablePosition,
-};
+use compiler::match_::inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types};
 use concept::{
     thing::thing_manager::ThingManager,
     type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
@@ -26,10 +23,17 @@ use concept::{
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use encoding::value::{label::Label, value_type::ValueType};
 use executor::{
-    row::Row,
-    write::{insert::InsertExecutor, WriteError},
+    pipeline::{
+        initial::InitialStage,
+        insert::InsertStageExecutor,
+        stage::{StageAPI, StageContext},
+        PipelineExecutionError,
+    },
+    row::MaybeOwnedRow,
+    write::WriteError,
 };
 use ir::translation::TranslationContext;
+use lending_iterator::LendingIterator;
 use pprof::ProfilerGuard;
 use storage::{
     durability_client::WALClient,
@@ -92,33 +96,29 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     snapshot.commit().unwrap();
 }
 
-fn execute_insert(
-    snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
-    thing_manager: &ThingManager,
+fn execute_insert<Snapshot: WritableSnapshot + 'static>(
+    snapshot: Snapshot,
+    type_manager: Arc<TypeManager>,
+    thing_manager: Arc<ThingManager>,
     query_str: &str,
-    input_row_var_names: &Vec<&str>,
-    input_rows: Vec<Vec<VariableValue<'static>>>,
-) -> Result<Vec<Vec<VariableValue<'static>>>, WriteError> {
-    let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
+) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), WriteError> {
     let mut translation_context = TranslationContext::new();
+    let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
     let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
-    let input_row_format = input_row_var_names
-        .iter()
-        .enumerate()
-        .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
-        .collect::<HashMap<_, _>>();
+    let input_row_format = HashMap::new();
+
     let (entry_annotations, _) = infer_types(
         &block,
         vec![],
-        snapshot,
-        type_manager,
+        &snapshot,
+        &type_manager,
         &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
     )
     .unwrap();
 
     let variable_registry = Arc::new(translation_context.variable_registry);
+
     let insert_plan = compiler::insert::program::compile(
         variable_registry,
         block.conjunction().constraints(),
@@ -127,23 +127,27 @@ fn execute_insert(
     )
     .unwrap();
 
-    let mut output_rows = Vec::with_capacity(input_rows.len());
-    let output_width = insert_plan.output_row_schema.len();
-    let insert_executor = InsertExecutor::new(insert_plan);
-    for input_row in input_rows {
-        let mut output_multiplicity = 1;
-        output_rows.push(
-            (0..output_width)
-                .map(|i| input_row.get(i).map_or_else(|| VariableValue::Empty, |existing| existing.clone()))
-                .collect::<Vec<_>>(),
-        );
-        insert_executor.execute_insert(
-            snapshot,
-            thing_manager,
-            &mut Row::new(output_rows.last_mut().unwrap(), &mut output_multiplicity),
-        )?;
-    }
-    Ok(output_rows)
+    println!("Insert Vertex:\n{:?}", &insert_plan.concept_instructions);
+    println!("Insert Edges:\n{:?}", &insert_plan.connection_instructions);
+
+    println!("Insert output row schema: {:?}", &insert_plan.output_row_schema);
+
+    let snapshot = Arc::new(snapshot);
+    let initial = InitialStage::new(StageContext { snapshot, thing_manager, parameters: Arc::default() });
+    let insert_executor = InsertStageExecutor::new(insert_plan, initial);
+    let (output_iter, context) = insert_executor.into_iterator().map_err(|(err, _)| match err {
+        PipelineExecutionError::WriteError { source } => source,
+        _ => unreachable!(),
+    })?;
+    let output_rows = output_iter
+        .map_static(|res| res.map(|row| row.into_owned()))
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|err| match err {
+            PipelineExecutionError::WriteError { source } => source,
+            _ => unreachable!(),
+        })?;
+    Ok((output_rows, Arc::into_inner(context.snapshot).unwrap()))
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -167,15 +171,13 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     group.bench_function("insert_queries", |b| {
         b.iter(|| {
-            let mut snapshot = storage.clone().open_snapshot_write();
+            let snapshot = storage.clone().open_snapshot_write();
             let age: u32 = rand::random();
-            let row = execute_insert(
-                &mut snapshot,
-                &type_manager,
-                &thing_manager,
+            let (_, snapshot) = execute_insert(
+                snapshot,
+                type_manager.clone(),
+                thing_manager.clone(),
                 &format!("insert $p isa person, has age {age};"),
-                &vec![],
-                vec![vec![]],
             )
             .unwrap();
             snapshot.commit().unwrap();

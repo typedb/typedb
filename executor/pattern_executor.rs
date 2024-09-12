@@ -80,8 +80,6 @@ impl PatternExecutor {
         PatternIterator::new(
             AsLendingIterator::new(BatchIterator::new(self, snapshot.clone(), thing_manager.clone(), interrupt))
                 .flat_map(FixedBatchRowIterator::new),
-            snapshot,
-            thing_manager,
         )
     }
 
@@ -168,13 +166,11 @@ type PatternRowIterator<Snapshot> = FlatMap<
 
 pub(crate) struct PatternIterator<Snapshot: ReadableSnapshot + 'static> {
     iterator: PatternRowIterator<Snapshot>,
-    snapshot: Arc<Snapshot>,
-    thing_manager: Arc<ThingManager>,
 }
 
 impl<Snapshot: ReadableSnapshot> PatternIterator<Snapshot> {
-    fn new(iterator: PatternRowIterator<Snapshot>, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
-        Self { iterator, snapshot, thing_manager }
+    fn new(iterator: PatternRowIterator<Snapshot>) -> Self {
+        Self { iterator }
     }
 }
 
@@ -186,14 +182,14 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for PatternIterator<S
     }
 }
 
-pub(crate) struct BatchIterator<Snapshot: ReadableSnapshot> {
+pub(crate) struct BatchIterator<Snapshot> {
     executor: PatternExecutor,
     snapshot: Arc<Snapshot>,
     thing_manager: Arc<ThingManager>,
     interrupt: ExecutionInterrupt,
 }
 
-impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
+impl<Snapshot> BatchIterator<Snapshot> {
     pub(crate) fn new(
         executor: PatternExecutor,
         snapshot: Arc<Snapshot>,
