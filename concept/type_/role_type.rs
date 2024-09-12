@@ -257,8 +257,16 @@ impl<'a> RoleType<'a> {
         player_type: ObjectType<'static>,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, ConceptReadError> {
         match player_type {
-            ObjectType::Entity(entity_type) => type_manager.get_entity_type_played_role_type_constraints(snapshot, entity_type, self.clone().into_owned()),
-            ObjectType::Relation(relation_type) => type_manager.get_relation_type_played_role_type_constraints(snapshot, relation_type, self.clone().into_owned()),
+            ObjectType::Entity(entity_type) => type_manager.get_entity_type_played_role_type_constraints(
+                snapshot,
+                entity_type,
+                self.clone().into_owned(),
+            ),
+            ObjectType::Relation(relation_type) => type_manager.get_relation_type_played_role_type_constraints(
+                snapshot,
+                relation_type,
+                self.clone().into_owned(),
+            ),
         }
     }
 }

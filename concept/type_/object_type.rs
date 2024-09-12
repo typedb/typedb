@@ -141,7 +141,9 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         type_manager: &'m TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError> {
-        with_object_type!(self, |object| { object.get_owned_attribute_type_constraints(snapshot, type_manager, attribute_type) })
+        with_object_type!(self, |object| {
+            object.get_owned_attribute_type_constraints(snapshot, type_manager, attribute_type)
+        })
     }
 
     fn get_type_owns_constraints_cardinality<'m>(

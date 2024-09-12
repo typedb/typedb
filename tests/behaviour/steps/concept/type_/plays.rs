@@ -150,7 +150,8 @@ pub async fn get_declared_plays_is_empty(
 ) {
     let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let actual_is_empty = object_type.get_plays_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
+        let actual_is_empty =
+            object_type.get_plays_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
     });
 }

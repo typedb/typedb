@@ -319,9 +319,9 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &'this HashMap<AttributeType<'static>, HashSet<CapabilityConstraint<Owns<'static>>>>
-        where
-            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-            CACHE: HasObjectCache + 'this,
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().owned_attribute_type_constraints
     }
@@ -411,9 +411,9 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &'this HashSet<Plays<'static>>
-        where
-            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-            CACHE: HasObjectCache + 'this,
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().plays_with_specialised
     }
@@ -422,9 +422,9 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &'this HashMap<RoleType<'static>, HashSet<CapabilityConstraint<Plays<'static>>>>
-        where
-            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-            CACHE: HasObjectCache + 'this,
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().played_role_type_constraints
     }

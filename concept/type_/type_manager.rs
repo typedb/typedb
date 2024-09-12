@@ -976,7 +976,9 @@ impl TypeManager {
         object_type: ObjectType<'static>,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
-        Ok(get_unique_constraint(object_type.get_owned_attribute_type_constraints(snapshot, self, attribute_type)?.into_iter()))
+        Ok(get_unique_constraint(
+            object_type.get_owned_attribute_type_constraints(snapshot, self, attribute_type)?.into_iter(),
+        ))
     }
 
     pub(crate) fn get_capability_cardinality<CAP: Capability<'static>>(
