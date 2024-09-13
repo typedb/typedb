@@ -9,7 +9,7 @@ use std::{
     error::Error,
     fmt, io,
     io::{Read, Write},
-    sync::{Arc, mpsc},
+    sync::{mpsc, Arc},
 };
 
 use durability::{wal::WAL, DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord};
