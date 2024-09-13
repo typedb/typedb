@@ -4,9 +4,4 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#![deny(unused_must_use)]
-#![deny(elided_lifetimes_in_paths)]
-
-pub mod parameters;
-mod service;
-pub mod typedb;
+pub mod config;

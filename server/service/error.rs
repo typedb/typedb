@@ -11,11 +11,24 @@ use tonic::{Code, Status};
 use tonic_types::{ErrorDetails, StatusExt};
 use uuid::Uuid;
 
+// Errors caused by incorrect implementation or usage of the network protocol.
+// Note: NOT a typedb_error!(), since we want go directly to Status
 pub(crate) enum ProtocolError {
-    MissingField { name: &'static str, description: &'static str },
+    MissingField {
+        name: &'static str,
+        description: &'static str,
+    },
     TransactionAlreadyOpen {},
     TransactionClosed {},
-    UnrecognisedTransactionType { enum_variant: i32 },
+    UnrecognisedTransactionType {
+        enum_variant: i32,
+    },
+    IncompatibleProtocolVersion {
+        server_protocol_version: i32,
+        driver_protocol_version: i32,
+        driver_lang: String,
+        driver_version: String,
+    },
 }
 
 impl IntoGRPCStatus for ProtocolError {
@@ -32,6 +45,26 @@ impl IntoGRPCStatus for ProtocolError {
             Self::TransactionAlreadyOpen {} => Status::already_exists("Transaction already open."),
             Self::TransactionClosed {} => {
                 Status::new(Code::InvalidArgument, "Transaction already closed, no further operations possible.")
+            }
+            Self::IncompatibleProtocolVersion {
+                server_protocol_version,
+                driver_protocol_version,
+                driver_version,
+                driver_lang,
+            } => {
+                let required_driver_age = if server_protocol_version < driver_protocol_version {
+                    "an older"
+                } else if server_protocol_version > driver_protocol_version {
+                    "a newer"
+                } else {
+                    unreachable!("Incompatible protocl version should only be thrown ")
+                };
+                Status::failed_precondition(format!(
+                    r#"
+                    Incompatible driver version. This '{driver_lang}' driver version '{driver_version}' implements protocol version {driver_protocol_version},
+                    while the server supports network protocol version {server_protocol_version}. Please use {required_driver_age} driver that is compatible with this server.
+                    "#
+                ))
             }
             ProtocolError::UnrecognisedTransactionType { enum_variant, .. } => Status::with_error_details(
                 Code::InvalidArgument,

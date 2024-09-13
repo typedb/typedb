@@ -10,6 +10,7 @@ rust_library(
     name = "server",
     srcs = glob([
         "*.rs",
+        "parameters/**/*.rs",
         "service/*.rs",
     ]),
     deps = [

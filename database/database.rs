@@ -6,7 +6,6 @@
 
 use std::{
     collections::VecDeque,
-    error::Error,
     ffi::OsString,
     fmt, fs, io,
     path::{Path, PathBuf},
@@ -18,7 +17,6 @@ use std::{
 };
 
 use concept::{
-    error::ConceptWriteError,
     thing::statistics::{Statistics, StatisticsError},
     type_::type_manager::{
         type_cache::{TypeCache, TypeCacheCreateError},
@@ -44,7 +42,13 @@ use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 
-use crate::DatabaseOpenError::FunctionCacheInitialise;
+use crate::{
+    DatabaseOpenError::FunctionCacheInitialise,
+    DatabaseResetError::{
+        CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetStorageInUse,
+        CorruptionPartialResetThingVertexGeneratorInUse, CorruptionPartialResetTypeVertexGeneratorInUse,
+    },
+};
 
 #[derive(Debug, Clone)]
 pub(super) struct Schema {
@@ -298,15 +302,10 @@ impl Database<WALClient> {
         Ok(database)
     }
 
-    fn checkpoint(&self) -> Result<(), DatabaseCheckpointError> {
-        let checkpoint =
-            Checkpoint::new(&self.path).map_err(|err| DatabaseCheckpointError::CheckpointCreate { source: err })?;
-
-        self.storage
-            .checkpoint(&checkpoint)
-            .map_err(|err| DatabaseCheckpointError::CheckpointCreate { source: err })?;
-
-        checkpoint.finish().map_err(|err| DatabaseCheckpointError::CheckpointCreate { source: err })?;
+    fn checkpoint(&self) -> Result<(), CheckpointCreateError> {
+        let checkpoint = Checkpoint::new(&self.path)?;
+        self.storage.checkpoint(&checkpoint)?;
+        checkpoint.finish()?;
         Ok(())
     }
 
@@ -335,28 +334,25 @@ impl Database<WALClient> {
     }
 
     pub fn reset(&mut self) -> Result<(), DatabaseResetError> {
-        use DatabaseResetError::{
-            CorruptionDefinitionKeyGeneratorInUse, CorruptionStorageReset, CorruptionTypeVertexGeneratorInUse,
-            TypeVertexGeneratorInUse,
-        };
+        use DatabaseResetError::CorruptionPartialResetStorageInUse;
 
         self.reserve_schema_transaction(Duration::from_secs(60).as_millis() as u64); // exclusively lock out other write or schema transactions;
         let mut locked_schema = self.schema.write().unwrap();
 
         match Arc::get_mut(&mut self.storage) {
             None => return Err(DatabaseResetError::StorageInUse {}),
-            Some(storage) => storage.reset().map_err(|err| CorruptionStorageReset { source: err })?,
+            Some(storage) => storage.reset().map_err(|err| CorruptionPartialResetStorageInUse { source: err })?,
         }
         match Arc::get_mut(&mut self.definition_key_generator) {
-            None => return Err(CorruptionDefinitionKeyGeneratorInUse {}),
+            None => return Err(CorruptionPartialResetKeyGeneratorInUse {}),
             Some(definition_key_generator) => definition_key_generator.reset(),
         }
         match Arc::get_mut(&mut self.type_vertex_generator) {
-            None => return Err(CorruptionTypeVertexGeneratorInUse {}),
+            None => return Err(CorruptionPartialResetTypeVertexGeneratorInUse {}),
             Some(type_vertex_generator) => type_vertex_generator.reset(),
         }
         match Arc::get_mut(&mut self.thing_vertex_generator) {
-            None => return Err(TypeVertexGeneratorInUse {}),
+            None => return Err(CorruptionPartialResetThingVertexGeneratorInUse {}),
             Some(thing_vertex_generator) => thing_vertex_generator.reset(),
         }
 
@@ -391,7 +387,7 @@ typedb_error!(
         DurabilityClientOpen(6, "Error opening durability client.", ( source: DurabilityClientError )),
         DurabilityClientRead(7, "Error reading from durability client.", ( source: DurabilityClientError )),
         CheckpointLoad(8, "Error loading checkpoint for database '{name}'.", name: String, ( source: CheckpointLoadError )),
-        CheckpointCreate(9, "Error creating checkpoint for database '{name}'.", name: String,  ( source: DatabaseCheckpointError )),
+        CheckpointCreate(9, "Error creating checkpoint for database '{name}'.", name: String, ( source: CheckpointCreateError )),
         Encoding(10, "Data encoding error.", ( source: EncodingError )),
         StatisticsInitialise(11, "Error initialising statistics manager.", ( source: StatisticsError )),
         TypeCacheInitialise(12, "Error initialising type cache.", ( source: TypeCacheCreateError )),
@@ -399,75 +395,34 @@ typedb_error!(
     }
 );
 
-#[derive(Debug, Clone)]
-pub enum DatabaseCheckpointError {
-    CheckpointCreate { source: CheckpointCreateError },
-}
-
-impl fmt::Display for DatabaseCheckpointError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+typedb_error!(
+    pub DatabaseDeleteError(domain = "Database", prefix = "DBD") {
+        InUse(1, "Cannot delete database since it is in use."),
+        StorageDelete(2, "Error while deleting storage resources.", ( source: StorageDeleteError )),
+        DirectoryDelete(3, "Error deleting directory.", ( source: Arc<io::Error> )),
     }
-}
+);
 
-impl Error for DatabaseCheckpointError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::CheckpointCreate { source } => Some(source),
-        }
+typedb_error!(
+    pub DatabaseResetError(domain = "Database", prefix = "DBR") {
+        InUse(1, "Database cannot be reset since it is in use."),
+        StorageInUse(2, "Database cannot be reset since the storage is in use."),
+        CorruptionPartialResetStorageInUse(
+            3,
+            "Corruption warning: database reset failed partway because the storage is still in use.",
+            ( source: StorageResetError )
+        ),
+        CorruptionPartialResetKeyGeneratorInUse(
+            4,
+            "Corruption warning: Database reset failed partway because the schema key generator is still in use."
+        ),
+        CorruptionPartialResetTypeVertexGeneratorInUse(
+            5,
+            "Corruption warning: Database reset failed partway because the type key generator is still in use."
+        ),
+        CorruptionPartialResetThingVertexGeneratorInUse(
+            6,
+            "Corruption warning: Dataaase reset failed partway because the instance key generator is still in use."
+        ),
     }
-}
-
-#[derive(Debug, Clone)]
-pub enum DatabaseDeleteError {
-    StorageDelete { source: StorageDeleteError },
-    DirectoryDelete { source: Arc<io::Error> },
-    InUse {},
-}
-
-impl fmt::Display for DatabaseDeleteError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for DatabaseDeleteError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::StorageDelete { source, .. } => Some(source),
-            Self::DirectoryDelete { source } => Some(source),
-            Self::InUse { .. } => None,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum DatabaseResetError {
-    InUse {},
-    StorageInUse {},
-    CorruptionStorageReset { source: StorageResetError },
-    CorruptionDefinitionKeyGeneratorInUse {},
-    CorruptionTypeVertexGeneratorInUse {},
-    TypeVertexGeneratorInUse {},
-    SchemaInitialise { source: ConceptWriteError },
-}
-
-impl fmt::Display for DatabaseResetError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for DatabaseResetError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::InUse { .. }
-            | Self::StorageInUse { .. }
-            | Self::CorruptionDefinitionKeyGeneratorInUse { .. }
-            | Self::CorruptionTypeVertexGeneratorInUse { .. }
-            | Self::TypeVertexGeneratorInUse { .. } => None,
-            Self::CorruptionStorageReset { source, .. } => Some(source),
-            Self::SchemaInitialise { source } => Some(source),
-        }
-    }
-}
+);

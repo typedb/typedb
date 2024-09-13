@@ -7,7 +7,7 @@
 use std::sync::{Arc, Mutex, OnceLock};
 
 use macro_rules_attribute::apply;
-use server::typedb;
+use server::{parameters::config::Config, typedb};
 use test_utils::{create_tmp_dir, TempDir};
 
 use crate::{generic_step, Context};
@@ -22,7 +22,8 @@ static TYPEDB: OnceLock<(TempDir, Arc<Mutex<typedb::Server>>)> = OnceLock::new()
 pub async fn typedb_starts(context: &mut Context) {
     let (_, server) = TYPEDB.get_or_init(|| {
         let server_dir = create_tmp_dir();
-        let server = typedb::Server::open(&server_dir).unwrap();
+        let config = Config::new_with_data_directory(server_dir.as_ref());
+        let server = typedb::Server::open(config).unwrap();
         (server_dir, Arc::new(Mutex::new(server)))
     });
 
