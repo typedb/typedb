@@ -223,8 +223,8 @@ impl<Durability> MVCCStorage<Durability> {
             .map_err(|error| Durability { name: self.name.to_owned(), source: error })?;
         let result = match validated_commit {
             ValidatedCommit::Write(write_batches) => {
-                sync_notifier.recv().unwrap(); // Ensure WAL is persisted inserting to RocksDB
-                                               // Write to the k-v storage
+                sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
+               // Write to the k-v store
                 self.keyspaces
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.to_owned(), source: Arc::new(error) })?;

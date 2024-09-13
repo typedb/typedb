@@ -26,7 +26,7 @@ use std::{
 
 use itertools::Itertools;
 use logger::result::ResultExt;
-use resource::constants::storage::WAL_FLUSH_INTERVAL_MICROSECONDS;
+use resource::constants::storage::WAL_SYNC_INTERVAL_MICROSECONDS;
 
 use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, DurabilityServiceError, RawRecord};
 
@@ -109,7 +109,7 @@ impl WAL {
     }
 
     pub fn request_sync(&self) -> mpsc::Receiver<()> {
-        self.fsync_thread.subscribe_to_next_flush()
+        self.fsync_thread.subscribe_to_next_sync()
     }
 }
 
@@ -533,7 +533,7 @@ impl FsyncThread {
         Self { handle: None, context: Arc::new(context) }
     }
 
-    fn subscribe_to_next_flush(&self) -> mpsc::Receiver<()> {
+    fn subscribe_to_next_sync(&self) -> mpsc::Receiver<()> {
         let (sender, recv) = mpsc::channel();
         let mut vec = self
             .context
@@ -550,16 +550,16 @@ impl FsyncThread {
         if handle.is_none() {
             let mut context = context;
             let jh = thread::spawn(move || {
-                let mut last_flush = Instant::now();
+                let mut last_sync = Instant::now();
                 loop {
                     if context.shutting_down.load(Ordering::Relaxed) {
                         break;
                     } else {
-                        let micros_since_last_flush = (Instant::now() - last_flush).as_micros() as u64;
-                        if micros_since_last_flush < WAL_FLUSH_INTERVAL_MICROSECONDS {
-                            sleep(Duration::from_micros(WAL_FLUSH_INTERVAL_MICROSECONDS - micros_since_last_flush));
+                        let micros_since_last_sync = (Instant::now() - last_sync).as_micros() as u64;
+                        if micros_since_last_sync < WAL_SYNC_INTERVAL_MICROSECONDS {
+                            sleep(Duration::from_micros(WAL_SYNC_INTERVAL_MICROSECONDS - micros_since_last_sync));
                         }
-                        last_flush = Instant::now(); // Should we reset the timer before or after the flush completes?
+                        last_sync = Instant::now(); // Should we reset the timer before or after the sync completes?
                         Self::may_sync_and_update_state(&mut context);
                     }
                 }

@@ -26,7 +26,7 @@ pub mod snapshot {
 
 pub mod storage {
     pub const TIMELINE_WINDOW_SIZE: usize = 100;
-    pub const WAL_FLUSH_INTERVAL_MICROSECONDS: u64 = 1000;
+    pub const WAL_SYNC_INTERVAL_MICROSECONDS: u64 = 1000;
 }
 
 pub mod encoding {
