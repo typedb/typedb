@@ -25,6 +25,7 @@ use executor::{
     },
     row::MaybeOwnedRow,
     write::WriteError,
+    ExecutionInterrupt,
 };
 use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
@@ -124,6 +125,7 @@ impl<Snapshot> StageAPI<Snapshot> for ShimStage<Snapshot> {
 
     fn into_iterator(
         self,
+        _: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
         Ok((ShimIterator(AsNarrowingIterator::new(self.rows)), self.context))
     }
@@ -177,10 +179,11 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         StageContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
     );
     let insert_executor = InsertStageExecutor::new(insert_plan, initial);
-    let (output_iter, context) = insert_executor.into_iterator().map_err(|(err, _)| match err {
-        PipelineExecutionError::WriteError { source } => source,
-        _ => unreachable!(),
-    })?;
+    let (output_iter, context) =
+        insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
+            PipelineExecutionError::WriteError { source } => source,
+            _ => unreachable!(),
+        })?;
     let output_rows = output_iter
         .map_static(|res| res.map(|row| row.into_owned()))
         .into_iter()
@@ -251,10 +254,11 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         StageContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
     );
     let delete_executor = DeleteStageExecutor::new(delete_plan, initial);
-    let (output_iter, context) = delete_executor.into_iterator().map_err(|(err, _)| match err {
-        PipelineExecutionError::WriteError { source } => source,
-        _ => unreachable!(),
-    })?;
+    let (output_iter, context) =
+        delete_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
+            PipelineExecutionError::WriteError { source } => source,
+            _ => unreachable!(),
+        })?;
     let output_rows = output_iter
         .map_static(|res| res.map(|row| row.into_owned()))
         .into_iter()

@@ -179,6 +179,7 @@ impl InstructionExecutor {
 
     pub(crate) const fn name(&self) -> &'static str {
         match self {
+            InstructionExecutor::Constant(_) => "constant",
             InstructionExecutor::Isa(_) => "isa",
             InstructionExecutor::IsaReverse(_) => "isa_reverse",
             InstructionExecutor::Has(_) => "has",

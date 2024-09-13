@@ -22,7 +22,7 @@ use compiler::expression::{
         ExpressionEvaluationError,
     },
 };
-use encoding::value::value::{DBValue, NativeValueConvertible, Value};
+use encoding::value::value::{NativeValueConvertible, Value};
 use ir::program::{ParameterID, ParameterRegistry};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -31,7 +31,7 @@ pub enum ExpressionValue {
     List(Vec<Value<'static>>),
 }
 
-struct ExpressionExecutorState<'this> {
+pub struct ExpressionExecutorState<'this> {
     stack: Vec<ExpressionValue>,
     variables: Box<[ExpressionValue]>,
     next_variable_index: usize,
@@ -104,7 +104,7 @@ impl ExpressionExecutor {
             variables.push(input.get(v).unwrap().clone());
         }
 
-        let mut state = ExpressionExecutorState::new(variables.into_boxed_slice(), compiled.constants(), &parameters);
+        let mut state = ExpressionExecutorState::new(variables.into_boxed_slice(), compiled.constants(), parameters);
         for instr in compiled.instructions() {
             evaluate_instruction(instr, &mut state)?;
         }

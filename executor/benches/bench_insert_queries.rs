@@ -31,6 +31,7 @@ use executor::{
     },
     row::MaybeOwnedRow,
     write::WriteError,
+    ExecutionInterrupt,
 };
 use ir::translation::TranslationContext;
 use lending_iterator::LendingIterator;
@@ -135,10 +136,11 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let snapshot = Arc::new(snapshot);
     let initial = InitialStage::new(StageContext { snapshot, thing_manager, parameters: Arc::default() });
     let insert_executor = InsertStageExecutor::new(insert_plan, initial);
-    let (output_iter, context) = insert_executor.into_iterator().map_err(|(err, _)| match err {
-        PipelineExecutionError::WriteError { source } => source,
-        _ => unreachable!(),
-    })?;
+    let (output_iter, context) =
+        insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
+            PipelineExecutionError::WriteError { source } => source,
+            _ => unreachable!(),
+        })?;
     let output_rows = output_iter
         .map_static(|res| res.map(|row| row.into_owned()))
         .into_iter()

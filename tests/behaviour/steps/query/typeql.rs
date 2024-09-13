@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, error::Error, str::FromStr, sync::Arc};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
 
 use answer::{answer_map::AnswerMap, variable_value::VariableValue, Thing};
 use compiler::{
@@ -39,7 +39,7 @@ use function::function_manager::FunctionManager;
 use futures::TryFutureExt;
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
-    translation::{match_::translate_match, writes::translate_insert, TranslationContext},
+    translation::{match_::translate_match, TranslationContext},
 };
 use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
@@ -94,7 +94,8 @@ fn execute_read_query(
                 &query.into_pipeline(),
             )
             .unwrap();
-        let (_iterator, StageContext { snapshot, .. }) = pipeline.into_iterator().unwrap();
+        let (_iterator, StageContext { snapshot, .. }) =
+            pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
         ((), snapshot)
     });
 

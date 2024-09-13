@@ -56,7 +56,7 @@ where
         mut interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
         let Self { program, previous } = self;
-        let (previous_iterator, mut context) = previous.into_iterator()?;
+        let (previous_iterator, mut context) = previous.into_iterator(interrupt.clone())?;
         let mut batch = match prepare_output_rows(program.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
             Err(err) => return Err((err, context)),
@@ -73,13 +73,11 @@ where
                 return Err((PipelineExecutionError::WriteError { typedb_source: err }, context));
             }
 
-            if index % 100 == 0 {
-                if interrupt.check() {
-                    return Err((snapshot, PipelineExecutionError::Interrupted {}));
-                }
+            if index % 100 == 0 && interrupt.check() {
+                return Err((PipelineExecutionError::Interrupted {}, context));
             }
         }
-        Ok((WrittenRowsIterator::new(batch), snapshot))
+        Ok((WrittenRowsIterator::new(batch), context))
     }
 }
 
@@ -91,8 +89,7 @@ fn prepare_output_rows(output_width: u32, input_iterator: impl StageIterator) ->
     let total_output_rows: u64 = input_batch.get_multiplicities().iter().sum();
     let mut output_batch = Batch::new(output_width, total_output_rows as usize);
     let mut input_batch_iterator = input_batch.into_iterator_mut();
-    while let Some(row) = input_batch_iterator.next() {
-        let mut row = row.map_err(|err| PipelineExecutionError::ConceptRead { source: err.clone() })?;
+    while let Some(mut row) = input_batch_iterator.next() {
         // copy out row multiplicity M, set it to 1, then append the row M times
         let multiplicity = row.get_multiplicity();
         row.set_multiplicity(1);

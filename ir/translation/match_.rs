@@ -9,7 +9,6 @@ use crate::{
     program::{
         block::{FunctionalBlock, FunctionalBlockBuilder},
         function_signature::FunctionSignatureIndex,
-        ParameterRegistry,
     },
     translation::{constraints::add_statement, TranslationContext},
     PatternDefinitionError,

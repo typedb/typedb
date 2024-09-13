@@ -110,7 +110,7 @@ pub(crate) struct TransactionService {
 }
 
 macro_rules! unwrap_or_execute_and_return {
-    ($match_: expr, |$err:ident| $err_mapper: block) => {{
+    ($match_: expr, |$err:pat_param| $err_mapper: block) => {{
         match $match_ {
             Ok(inner) => inner,
             Err($err) => {
@@ -240,7 +240,7 @@ impl TransactionService {
                         self.running_write_query = None;
                         let (transaction, result) = write_query_result.unwrap();
                         self.write_query_finished(req_id, transaction, result)
-                            .map(|empty| ControlFlow::Continue(()))
+                            .map(|_| ControlFlow::Continue(())).transpose()
                     }
                     next = self.request_stream.next() => {
                         self.handle_next(next).await
@@ -252,11 +252,9 @@ impl TransactionService {
             };
 
             match result {
-                Ok(Continue(())) => {}
-                Ok(Break(())) => {
-                    return;
-                }
-                Err(status) => {
+                Continue(()) => (),
+                Break(Ok(())) => return,
+                Break(Err(status)) => {
                     let result = self.response_sender.send(Err(status)).await;
                     if let Err(send_error) = result {
                         event!(Level::DEBUG, ?send_error, "Failed to send error to client");
@@ -387,10 +385,12 @@ impl TransactionService {
         let mut transaction_options = TransactionOptions::default();
         if let Some(options) = open_req.options {
             // transaction options
-            options.parallel.map(|parallel| transaction_options.parallel = parallel);
-            options
-                .schema_lock_acquire_timeout_millis
-                .map(|timeout| transaction_options.schema_lock_acquire_timeout_millis = timeout);
+            if let Some(parallel) = options.parallel {
+                transaction_options.parallel = parallel;
+            }
+            if let Some(timeout) = options.schema_lock_acquire_timeout_millis {
+                transaction_options.schema_lock_acquire_timeout_millis = timeout
+            }
 
             // service options
             self.prefetch_size = options.prefetch_size.or(Some(DEFAULT_PREFETCH_SIZE));
@@ -468,30 +468,30 @@ impl TransactionService {
     async fn handle_rollback(
         &mut self,
         _rollback_req: typedb_protocol::transaction::rollback::Req,
-    ) -> Result<ControlFlow<(), ()>, Status> {
+    ) -> ControlFlow<Result<(), Status>> {
         // interrupt all queries, cancel writes, then rollback
         self.query_interrupt_sender.send(()).unwrap();
         self.close_transmitting_write_queries().await;
         self.close_running_read_queries().await;
         if let Break(_) = self.cancel_queued_read_queries().await {
-            return Ok(Break(()));
+            return Break(Ok(()));
         }
 
-        self.finish_running_write_query().await?;
-        if let Break(_) = self.cancel_queued_write_queries().await {
-            return Ok(Break(()));
+        if let Err(status) = self.finish_running_write_query().await {
+            return Break(Err(status));
         }
+        self.cancel_queued_write_queries().await.map(|_| Ok(()))?;
 
         match self.transaction.take().unwrap() {
             Transaction::Read(_) => {
-                return Err(TransactionServiceError::CannotRollbackReadTransaction {}
+                return Break(Err(TransactionServiceError::CannotRollbackReadTransaction {}
                     .into_error_message()
-                    .into_status());
+                    .into_status()));
             }
             Transaction::Write(mut transaction) => transaction.rollback(),
             Transaction::Schema(mut transaction) => transaction.rollback(),
         };
-        Ok(Continue(()))
+        Continue(())
     }
 
     async fn handle_close(&mut self, _close_req: typedb_protocol::transaction::close::Req) {
@@ -565,11 +565,11 @@ impl TransactionService {
         match result {
             Ok((output_descriptor, batch)) => {
                 self.activate_write_transmitter(req_id, output_descriptor, batch);
-                return Ok(());
+                Ok(())
             }
             Err(err) => {
                 // we promote write errors to fatal status errors
-                return Err(err.into_error_message().into_status());
+                Err(err.into_error_message().into_status())
             }
         }
     }
@@ -623,7 +623,7 @@ impl TransactionService {
         req_id: Uuid,
         query_req: typedb_protocol::query::Req,
     ) -> Result<Option<ImmediateQueryResponse>, Status> {
-        let query_options = &query_req.options; // TODO: pass query options
+        let _query_options = &query_req.options; // TODO: pass query options
         let parsed = match parse_query(&query_req.query) {
             Ok(parsed) => parsed,
             Err(err) => {
@@ -636,7 +636,7 @@ impl TransactionService {
         match parsed {
             Query::Schema(schema_query) => {
                 // schema queries are handled immediately so there is a query response or a fatal Status
-                self.handle_query_schema(schema_query).await.map(|response| Some(response))
+                self.handle_query_schema(schema_query).await.map(Some)
             }
             Query::Pipeline(pipeline) => {
                 #[allow(clippy::collapsible_else_if)]
@@ -853,8 +853,8 @@ impl TransactionService {
             Err((snapshot, err)) => return (snapshot, Err(err)),
         };
 
-        let (iterator, context) = match pipeline.into_iterator(interrupt) {
-            Ok((iterator, StageContext { snapshot, .. })) => (iterator, context),
+        let (iterator, snapshot) = match pipeline.into_iterator(interrupt) {
+            Ok((iterator, StageContext { snapshot, .. })) => (iterator, snapshot),
             Err((err, StageContext { snapshot, .. })) => {
                 return (
                     Arc::into_inner(snapshot).unwrap(),
@@ -924,7 +924,7 @@ impl TransactionService {
             self.request_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some()
         );
         let mut interrupt = self.query_interrupt_receiver.clone();
-        let handle = with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
+        with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
             let thing_manager = transaction.thing_manager.clone();
@@ -948,11 +948,11 @@ impl TransactionService {
                 Self::submit_response_sync(&sender, response);
 
                 let (mut iterator, _) =
-                    unwrap_or_execute_and_return!(executor.into_iterator(interrupt.clone()), |snapshot_and_err| {
+                    unwrap_or_execute_and_return!(executor.into_iterator(interrupt.clone()), |(err, _)| {
                         Self::submit_response_sync(
                             &sender,
                             StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError {
-                                typedb_source: snapshot_and_err.1,
+                                typedb_source: err,
                             }),
                         );
                     });
@@ -986,8 +986,7 @@ impl TransactionService {
                 }
                 Self::submit_response_sync(&sender, StreamQueryResponse::done_ok())
             })
-        });
-        handle
+        })
     }
 
     fn prepare_read_query_in<Snapshot: ReadableSnapshot + 'static>(
@@ -1020,7 +1019,6 @@ impl TransactionService {
         if let Some((worker_handle, stream_transmitter)) = read_responder {
             if stream_transmitter.check_finished_else_continue().await {
                 debug_assert!(worker_handle.is_finished());
-                drop(read_responder);
                 self.read_responders.remove(&request_id);
             }
             // valid query stream responses and control are reported by the transmitter directly, so no response here
@@ -1030,7 +1028,6 @@ impl TransactionService {
             if let Some((worker_handle, stream_transmitter)) = write_responder {
                 if stream_transmitter.check_finished_else_continue().await {
                     debug_assert!(worker_handle.is_finished());
-                    drop(write_responder);
                     self.write_responders.remove(&request_id);
                 }
                 // valid query stream responses and control are reported by the transmitter directly, so no response here
@@ -1226,6 +1223,47 @@ impl QueryStreamTransmitter {
             );
         }
         Continue(())
+    }
+}
+
+trait ControlFlowExt<B, C> {
+    fn map<T, F: FnOnce(B) -> T>(self, f: F) -> ControlFlow<T, C>;
+}
+
+impl<B, C> ControlFlowExt<B, C> for ControlFlow<B, C> {
+    fn map<T, F: FnOnce(B) -> T>(self, f: F) -> ControlFlow<T, C> {
+        match self {
+            Continue(c) => Continue(c),
+            Break(b) => Break(f(b)),
+        }
+    }
+}
+
+trait ControlFlowResultExt<T, E> {
+    fn transpose(self) -> ControlFlow<Result<T, E>>;
+}
+
+impl<T, E> ControlFlowResultExt<T, E> for Result<ControlFlow<T>, E> {
+    fn transpose(self) -> ControlFlow<Result<T, E>> {
+        match self {
+            Ok(Continue(())) => Continue(()),
+            Ok(Break(t)) => Break(Ok(t)),
+            Err(err) => Break(Err(err)),
+        }
+    }
+}
+
+trait ResultControlFlowExt<T, E> {
+    fn transpose(self) -> Result<ControlFlow<T>, E>;
+}
+
+impl<T, E> ResultControlFlowExt<T, E> for ControlFlow<Result<T, E>> {
+    fn transpose(self) -> Result<ControlFlow<T>, E> {
+        match self {
+            Continue(()) => Ok(Continue(())),
+            Break(Ok(t)) => Ok(Break(t)),
+            Break(Err(err)) => Err(err),
+        }
     }
 }
 

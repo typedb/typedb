@@ -17,10 +17,10 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     pipeline::{
         stage::{StageAPI, StageContext},
-        PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator,
+        PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
     row::Row,
-    write::{delete::DeleteExecutor, write_instruction::AsWriteInstruction, WriteError},
+    write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
 };
 
@@ -66,10 +66,8 @@ where
                 return Err((PipelineExecutionError::WriteError { typedb_source: err }, context));
             }
 
-            if index % 100 == 0 {
-                if interrupt.check() {
-                    return Err((snapshot, PipelineExecutionError::Interrupted {}));
-                }
+            if index % 100 == 0 && interrupt.check() {
+                return Err((PipelineExecutionError::Interrupted {}, context));
             }
         }
 

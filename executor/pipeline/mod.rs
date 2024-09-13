@@ -10,7 +10,6 @@ use lending_iterator::LendingIterator;
 
 use crate::{
     batch::Batch, error::ReadExecutionError, pipeline::stage::StageIterator, row::MaybeOwnedRow, write::WriteError,
-    ExecutionInterrupt,
 };
 
 pub mod delete;
@@ -52,7 +51,7 @@ impl LendingIterator for WrittenRowsIterator {
             self.index += 1;
             Some(Ok(self.rows.get_row(index)))
         } else {
-            return None;
+            None
         }
     }
 }

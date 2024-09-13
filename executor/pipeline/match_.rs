@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use compiler::{match_::planner::pattern_plan::MatchProgram, VariablePosition};
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
-use tokio::sync::broadcast;
 
 use crate::{
     pattern_executor::{PatternExecutor, PatternIterator},
@@ -40,11 +39,11 @@ where
     type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
     fn into_iterator(
-        mut self,
+        self,
         interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
         let Self { previous: previous_stage, program, .. } = self;
-        let (previous_iterator, context) = previous_stage.into_iterator()?;
+        let (previous_iterator, context) = previous_stage.into_iterator(interrupt.clone())?;
         let iterator = previous_iterator;
         Ok((MatchStageIterator::new(iterator, program, context.clone(), interrupt), context))
     }

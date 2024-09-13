@@ -8,7 +8,6 @@ use std::{
     borrow::Cow,
     cmp::Ordering,
     fmt,
-    fmt::{Display, Formatter},
     hash::{Hash, Hasher},
     ops::Deref,
 };
@@ -17,10 +16,10 @@ use bytes::byte_array::ByteArray;
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
 
-use super::date_bytes::DateBytes;
 use crate::{
     value::{
         boolean_bytes::BooleanBytes,
+        date_bytes::DateBytes,
         date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes,
         decimal_bytes::DecimalBytes,
@@ -305,7 +304,7 @@ impl TryInto<f64> for Value<'static> {
 }
 
 impl<'a> fmt::Display for Value<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Value::Boolean(bool) => write!(f, "{bool}"),
             Value::Long(long) => write!(f, "{long}"),

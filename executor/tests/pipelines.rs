@@ -16,10 +16,7 @@ use encoding::{
     value::{label::Label, value::Value},
 };
 use executor::{
-    pipeline::{
-        stage::{StageAPI, StageContext, StageIterator},
-        StageAPI, StageIterator,
-    },
+    pipeline::stage::{StageAPI, StageContext, StageIterator},
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
@@ -200,7 +197,7 @@ fn test_match() {
             &match_,
         )
         .unwrap();
-    let (iterator, StageContext { snapshot, .. }) =
+    let (iterator, StageContext { .. }) =
         pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 1);
