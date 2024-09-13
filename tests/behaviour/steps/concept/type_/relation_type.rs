@@ -282,7 +282,7 @@ pub async fn relation_role_exists(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) is specialising: {boolean}")]
+#[step(expr = r"relation\({type_label}\) get relates\({type_label}\) is specialising: {boolean}")]
 pub async fn relation_role_is_specialising(
     context: &mut Context,
     type_label: params::Label,
@@ -293,7 +293,7 @@ pub async fn relation_role_is_specialising(
         let relation_type =
             tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let relates = relation_type
-            .get_relates_role_name_declared(
+            .get_relates_role_name(
                 tx.snapshot.as_ref(),
                 &tx.type_manager,
                 role_label.into_typedb().name.as_str(),
