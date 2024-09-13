@@ -2360,12 +2360,14 @@ impl TypeManager {
 
         self.validate_set_capability_annotation_general(snapshot, relates.clone(), annotation.clone())?;
 
-        OperationTimeValidation::validate_type_supertype_abstractness_to_set_abstract_annotation(
-            snapshot,
-            self,
-            relates.role(),
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        if !relates.is_specialising(snapshot, self)? {
+            OperationTimeValidation::validate_type_supertype_abstractness_to_set_abstract_annotation(
+                snapshot,
+                self,
+                relates.role(),
+            )
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_relates_instances(
             snapshot,
