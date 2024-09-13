@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, sync::Arc};
+use std::{
+    cmp::Ordering,
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::{
@@ -335,4 +339,69 @@ fn test_match_sort() {
         })
         .collect::<Vec<_>>();
     assert_eq!([4, 3, 2, 1], values.as_slice());
+}
+
+#[test]
+fn test_select() {
+    let context = setup_common();
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let insert_query_str = r#"insert
+        $p1 isa person, has name "Alice", has age 1;
+        $p2 isa person, has name "Bob", has age 2;"#;
+    let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
+    let insert_pipeline = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &insert_query,
+        )
+        .unwrap();
+    let (mut iterator, snapshot) = insert_pipeline.into_iterator().unwrap();
+
+    assert!(matches!(iterator.next(), Some(Ok(_))));
+    assert!(matches!(iterator.next(), None));
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
+
+    {
+        let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+        let query = "match $p isa person, has name \"Alice\", has age $age;";
+        let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+        let pipeline = context
+            .query_manager
+            .prepare_read_pipeline(
+                snapshot,
+                &context.type_manager,
+                context.thing_manager.clone(),
+                &context.function_manager,
+                &match_,
+            )
+            .unwrap();
+        let selected_variable_names =
+            pipeline.named_selected_outputs().values().map(|s| s.clone()).collect::<HashSet<_>>();
+        assert!(selected_variable_names.contains("age"));
+        assert!(selected_variable_names.contains("p"));
+    }
+    {
+        let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+        let query = "match $p isa person, has name \"Alice\", has age $age; select $age;";
+        let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+        let pipeline = context
+            .query_manager
+            .prepare_read_pipeline(
+                snapshot,
+                &context.type_manager,
+                context.thing_manager.clone(),
+                &context.function_manager,
+                &match_,
+            )
+            .unwrap();
+        let selected_variable_names =
+            pipeline.named_selected_outputs().values().map(|s| s.clone()).collect::<HashSet<_>>();
+        assert!(selected_variable_names.contains("age"));
+        assert!(!selected_variable_names.contains("p"));
+    }
 }

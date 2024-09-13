@@ -13,7 +13,7 @@ use executor::{
         initial::InitialStage,
         insert::InsertStageExecutor,
         match_::MatchStageExecutor,
-        modifiers::{LimitStageExecutor, OffsetStageExecutor, SortStageExecutor},
+        modifiers::{FilterStageExecutor, LimitStageExecutor, OffsetStageExecutor, SortStageExecutor},
         stage::{ReadPipelineStage, WritePipelineStage},
     },
     write::{delete::DeleteExecutor, insert::InsertExecutor},
@@ -122,7 +122,10 @@ impl QueryManager {
                 CompiledStage::Delete(_) => {
                     unreachable!("Delete clause cannot exist in a read pipeline.")
                 }
-                CompiledStage::Filter(filter_program) => todo!(),
+                CompiledStage::Filter(filter_program) => {
+                    let filter_stage = FilterStageExecutor::new(filter_program, last_stage);
+                    last_stage = ReadPipelineStage::Filter(Box::new(filter_stage));
+                }
                 CompiledStage::Sort(sort_program) => {
                     let sort_stage = SortStageExecutor::new(sort_program, last_stage);
                     last_stage = ReadPipelineStage::Sort(Box::new(sort_stage));

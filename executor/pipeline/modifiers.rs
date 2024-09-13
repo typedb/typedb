@@ -6,7 +6,7 @@
 use std::{cmp::Ordering, collections::HashMap, marker::PhantomData, sync::Arc};
 
 use compiler::{
-    modifiers::{LimitProgram, OffsetProgram, SortProgram},
+    modifiers::{FilterProgram, LimitProgram, OffsetProgram, SortProgram},
     VariablePosition,
 };
 use ir::program::modifier::SortVariable;
@@ -19,6 +19,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
+// Sort
 pub struct SortStageExecutor<Snapshot, PreviousStage> {
     program: SortProgram,
     previous: PreviousStage,
@@ -127,6 +128,7 @@ where
 
 impl<Snapshot> StageIterator for SortStageIterator<Snapshot> where Snapshot: ReadableSnapshot + 'static {}
 
+// Offset
 pub struct OffsetStageExecutor<Snapshot, PreviousStage>
 where
     Snapshot: ReadableSnapshot + 'static,
@@ -210,6 +212,7 @@ where
     }
 }
 
+// Limit
 pub struct LimitStageExecutor<Snapshot, PreviousStage>
 where
     Snapshot: ReadableSnapshot + 'static,
@@ -289,5 +292,87 @@ where
         } else {
             None
         }
+    }
+}
+
+// Filter
+pub struct FilterStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    filter_program: FilterProgram,
+    previous: PreviousStage,
+    phantom: PhantomData<Snapshot>,
+}
+
+impl<Snapshot, PreviousStage> FilterStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    pub fn new(filter_program: FilterProgram, previous: PreviousStage) -> Self {
+        Self { filter_program, previous, phantom: PhantomData::default() }
+    }
+}
+
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for FilterStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    type OutputIterator = FilterStageIterator<Snapshot, PreviousStage::OutputIterator>;
+
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
+        let prev = self.previous.named_selected_outputs();
+        self.filter_program
+            .retained_positions
+            .iter()
+            .map(|pos| (pos.clone(), prev.get(pos).unwrap().clone()))
+            .collect::<HashMap<_, _>>()
+    }
+
+    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+        let Self { filter_program, previous, .. } = self;
+        let (previous_iterator, snapshot) = previous.into_iterator()?;
+        Ok((FilterStageIterator::new(previous_iterator), snapshot))
+    }
+}
+
+pub struct FilterStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+    previous: PreviousIterator,
+    phantom: PhantomData<Snapshot>,
+}
+
+impl<Snapshot, PreviousIterator> FilterStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+    fn new(previous: PreviousIterator) -> Self {
+        Self { previous, phantom: PhantomData::default() }
+    }
+}
+
+impl<Snapshot, PreviousIterator> StageIterator for FilterStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+}
+
+impl<Snapshot, PreviousIterator> LendingIterator for FilterStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.previous.next()
     }
 }
