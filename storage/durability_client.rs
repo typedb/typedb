@@ -9,7 +9,7 @@ use std::{
     error::Error,
     fmt, io,
     io::{Read, Write},
-    sync::Arc,
+    sync::{mpsc, Arc},
 };
 
 use durability::{wal::WAL, DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord};
@@ -45,6 +45,8 @@ pub trait DurabilityClient {
     fn unsequenced_write<Record>(&self, record: &Record) -> Result<(), DurabilityClientError>
     where
         Record: UnsequencedDurabilityRecord;
+
+    fn request_sync(&self) -> mpsc::Receiver<()>;
 
     fn iter_from(
         &self,
@@ -139,6 +141,10 @@ impl WALClient {
 }
 
 impl DurabilityClient for WALClient {
+    fn request_sync(&self) -> mpsc::Receiver<()> {
+        self.wal.request_sync()
+    }
+
     fn register_record_type<Record: DurabilityRecord>(&mut self) {
         self.wal.register_record_type(Record::RECORD_TYPE, Record::RECORD_NAME);
     }

@@ -214,7 +214,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
 fn create_entity() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let person_label = Label::build("person");
 
@@ -239,7 +239,7 @@ fn create_entity() {
 fn delete_twice() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let person_label = Label::build("person");
 
@@ -269,7 +269,7 @@ fn delete_twice() {
 fn put_has_twice() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let person_label = Label::build("person");
     let name_label = Label::build("name");
@@ -304,7 +304,7 @@ fn put_has_twice() {
 fn put_plays() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let person_label = Label::build("person");
     let friendship_label = Label::build("friendship");

@@ -50,7 +50,7 @@ const RELATES_CARDINALITY_ANY: RelatesAnnotation = RelatesAnnotation::Cardinalit
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
@@ -207,7 +207,7 @@ fn traverse_links_unbounded_sorted_from() {
 
     let entry = builder.finish();
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -306,7 +306,7 @@ fn traverse_links_unbounded_sorted_to() {
 
     let entry = builder.finish();
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -392,7 +392,7 @@ fn traverse_links_bounded_relation() {
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -490,7 +490,7 @@ fn traverse_links_bounded_relation_player() {
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -597,7 +597,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     let entry = builder.finish();
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -681,7 +681,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     let entry = builder.finish();
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -766,7 +766,7 @@ fn traverse_links_reverse_bounded_player() {
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -863,7 +863,7 @@ fn traverse_links_reverse_bounded_player_relation() {
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],

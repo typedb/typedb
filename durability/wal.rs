@@ -16,12 +16,17 @@ use std::{
     mem,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicU64, Ordering},
-        Arc, RwLock, RwLockReadGuard,
+        atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
+        mpsc, Arc, Mutex, RwLock, RwLockReadGuard,
     },
+    thread,
+    thread::{sleep, JoinHandle},
+    time::{Duration, Instant},
 };
 
 use itertools::Itertools;
+use logger::result::ResultExt;
+use resource::constants::storage::WAL_SYNC_INTERVAL_MICROSECONDS;
 
 use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, DurabilityServiceError, RawRecord};
 
@@ -33,7 +38,8 @@ const FILE_PREFIX: &str = "wal-";
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, String>,
     next_sequence_number: AtomicU64,
-    files: RwLock<Files>,
+    files: Arc<RwLock<Files>>,
+    fsync_thread: FsyncThread,
 }
 
 impl WAL {
@@ -50,13 +56,20 @@ impl WAL {
 
         let files = Files::open(wal_dir.clone()).map_err(|err| WALError::CreateError { source: Arc::new(err) })?;
 
-        let files = RwLock::new(files);
+        let files = Arc::new(RwLock::new(files));
         let next = RecordIterator::new(files.read().unwrap(), DurabilitySequenceNumber::MIN)
             .map_err(|err| WALError::CreateError { source: Arc::new(err) })?
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
-        Ok(Self { registered_types: HashMap::new(), next_sequence_number: AtomicU64::new(next.number()), files })
+        let mut fsync_thread = FsyncThread::new(files.clone());
+        FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
+        Ok(Self {
+            registered_types: HashMap::new(),
+            next_sequence_number: AtomicU64::new(next.number()),
+            files,
+            fsync_thread,
+        })
     }
 
     pub fn load(directory: impl AsRef<Path>) -> Result<Self, WALError> {
@@ -68,13 +81,19 @@ impl WAL {
 
         let files = Files::open(wal_dir.clone()).map_err(|err| WALError::LoadError { source: Arc::new(err) })?;
 
-        let files = RwLock::new(files);
+        let files = Arc::new(RwLock::new(files));
         let next = RecordIterator::new(files.read().unwrap(), DurabilitySequenceNumber::MIN)
             .map_err(|err| WALError::LoadError { source: Arc::new(err) })?
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
-        Ok(Self { registered_types: HashMap::new(), next_sequence_number: AtomicU64::new(next.number()), files })
+        let fsync_thread = FsyncThread::new(files.clone());
+        Ok(Self {
+            registered_types: HashMap::new(),
+            next_sequence_number: AtomicU64::new(next.number()),
+            files,
+            fsync_thread,
+        })
     }
 
     fn increment(&self) -> DurabilitySequenceNumber {
@@ -87,6 +106,10 @@ impl WAL {
 
     pub fn previous(&self) -> DurabilitySequenceNumber {
         DurabilitySequenceNumber::from(self.next_sequence_number.load(Ordering::Relaxed) - 1)
+    }
+
+    pub fn request_sync(&self) -> mpsc::Receiver<()> {
+        self.fsync_thread.subscribe_to_next_sync()
     }
 }
 
@@ -165,7 +188,7 @@ impl DurabilityService for WAL {
     }
 
     fn delete_durability(self) -> Result<(), DurabilityServiceError> {
-        let files = self.files.into_inner().unwrap();
+        let files = Arc::into_inner(self.files).unwrap().into_inner().unwrap();
         files.delete().map_err(|err| DurabilityServiceError::DeleteFailed { source: Arc::new(err) })
     }
 
@@ -213,7 +236,7 @@ impl Files {
         Ok(Self { directory, writer, files })
     }
 
-    fn init_files_writer(directory: &Path) -> io::Result<(Vec<File>, Option<BufWriter<std::fs::File>>)> {
+    fn init_files_writer(directory: &Path) -> io::Result<(Vec<File>, Option<BufWriter<StdFile>>)> {
         let mut files: Vec<File> = directory
             .read_dir()?
             .map_ok(|entry| entry.path())
@@ -254,6 +277,10 @@ impl Files {
 
         self.files.last_mut().unwrap().len = writer.stream_position()?;
         Ok(())
+    }
+
+    pub(crate) fn sync_all(&mut self) {
+        self.files.last_mut().unwrap().writer().unwrap().get_mut().sync_all().unwrap()
     }
 
     fn iter(&self) -> impl DoubleEndedIterator<Item = &File> {
@@ -477,6 +504,90 @@ impl<'a> Iterator for FileRecordIterator<'a> {
             Some(Ok(item)) => Some(Ok(item)),
             Some(Err(error)) => Some(Err(DurabilityServiceError::IO { source: Arc::new(error) })),
             None => None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct FsyncThreadContext {
+    files: Arc<RwLock<Files>>,
+    shutting_down: AtomicBool,
+    signalling: [Mutex<Vec<mpsc::Sender<()>>>; 2],
+    current_signal: AtomicU8,
+}
+
+#[derive(Debug)]
+pub struct FsyncThread {
+    handle: Option<JoinHandle<()>>,
+    context: Arc<FsyncThreadContext>,
+}
+
+impl FsyncThread {
+    fn new(files: Arc<RwLock<Files>>) -> Self {
+        let context = FsyncThreadContext {
+            files,
+            shutting_down: AtomicBool::new(false),
+            signalling: [Mutex::new(Vec::new()), Mutex::new(Vec::new())],
+            current_signal: AtomicU8::new(0),
+        };
+        Self { handle: None, context: Arc::new(context) }
+    }
+
+    fn subscribe_to_next_sync(&self) -> mpsc::Receiver<()> {
+        let (sender, recv) = mpsc::channel();
+        let mut vec = self
+            .context
+            .signalling
+            .get(self.context.current_signal.load(Ordering::Relaxed) as usize)
+            .unwrap()
+            .lock()
+            .unwrap();
+        vec.push(sender);
+        recv
+    }
+
+    fn start(handle: &mut Option<JoinHandle<()>>, context: Arc<FsyncThreadContext>) {
+        if handle.is_none() {
+            let mut context = context;
+            let jh = thread::spawn(move || {
+                let mut last_sync = Instant::now();
+                loop {
+                    if context.shutting_down.load(Ordering::Relaxed) {
+                        break;
+                    } else {
+                        let micros_since_last_sync = (Instant::now() - last_sync).as_micros() as u64;
+                        if micros_since_last_sync < WAL_SYNC_INTERVAL_MICROSECONDS {
+                            sleep(Duration::from_micros(WAL_SYNC_INTERVAL_MICROSECONDS - micros_since_last_sync));
+                        }
+                        last_sync = Instant::now(); // Should we reset the timer before or after the sync completes?
+                        Self::may_sync_and_update_state(&mut context);
+                    }
+                }
+            });
+            *handle = Some(jh);
+        }
+    }
+
+    fn may_sync_and_update_state(context: &mut Arc<FsyncThreadContext>) -> () {
+        let current_signal = context.current_signal.load(Ordering::Relaxed);
+        context.current_signal.store(1 - current_signal, Ordering::Relaxed);
+        let vec_lock = context.signalling.get(current_signal as usize).unwrap().lock();
+        let mut vec = vec_lock.unwrap();
+        if !vec.is_empty() {
+            context.files.write().unwrap().sync_all();
+            while let Some(sender) = vec.pop() {
+                sender.send(()).unwrap_or_log(); // TODO
+                drop(sender)
+            }
+        }
+    }
+}
+
+impl Drop for FsyncThread {
+    fn drop(&mut self) {
+        self.context.shutting_down.store(true, Ordering::Relaxed);
+        if let Some(handle) = self.handle.take() {
+            handle.join().unwrap_or_log();
         }
     }
 }

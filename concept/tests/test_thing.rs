@@ -50,7 +50,7 @@ fn thing_create_iterate() {
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
@@ -67,7 +67,7 @@ fn thing_create_iterate() {
 
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (_, thing_manager) = load_managers(storage.clone());
+        let (_, thing_manager) = load_managers(storage.clone(), None);
         let entities_count = thing_manager.get_entities(&snapshot).count();
         assert_eq!(entities_count, 4);
     }
@@ -86,7 +86,7 @@ fn attribute_create() {
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
         age_type
@@ -124,7 +124,7 @@ fn attribute_create() {
 
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let attributes_count = thing_manager.get_attributes(&snapshot).unwrap().count();
         assert_eq!(attributes_count, 2);
 
@@ -153,7 +153,7 @@ fn has() {
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
@@ -201,7 +201,7 @@ fn has() {
 
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (_, thing_manager) = load_managers(storage.clone());
+        let (_, thing_manager) = load_managers(storage.clone(), None);
         let attributes_count = thing_manager.get_attributes(&snapshot).unwrap().count();
         assert_eq!(attributes_count, 2);
 
@@ -228,7 +228,7 @@ fn attribute_cleanup_on_concurrent_detach() {
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
@@ -267,7 +267,7 @@ fn attribute_cleanup_on_concurrent_detach() {
     let mut snapshot_2: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
 
     {
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
         let name_type = type_manager.get_attribute_type(&snapshot_1, &name_label).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot_1, &age_label).unwrap().unwrap();
@@ -295,7 +295,7 @@ fn attribute_cleanup_on_concurrent_detach() {
     }
 
     {
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
         let name_type = type_manager.get_attribute_type(&snapshot_2, &name_label).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot_2, &age_label).unwrap().unwrap();
@@ -342,7 +342,7 @@ fn attribute_cleanup_on_concurrent_detach() {
 
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
         let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
 
@@ -364,7 +364,7 @@ fn role_player_distinct() {
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
         let employment_type = type_manager.create_relation_type(&mut snapshot, &employment_label).unwrap();
         employment_type
@@ -458,7 +458,7 @@ fn role_player_distinct() {
     snapshot.commit().unwrap();
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
         let entities: Vec<Entity<'static>> =
             thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
@@ -497,7 +497,7 @@ fn role_player_duplicates() {
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let list_type = type_manager.create_relation_type(&mut snapshot, &list_label).unwrap();
         list_type
             .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Unordered, None)
@@ -596,7 +596,7 @@ fn role_player_duplicates() {
     snapshot.commit().unwrap();
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let entities: Vec<Entity<'static>> =
             thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
         assert_eq!(entities.len(), 2);
@@ -663,7 +663,7 @@ fn role_player_duplicates() {
 fn attribute_string_write_read() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let attr_label = Label::build("test_string_attr");
     let short_string = "short".to_owned();
@@ -731,7 +731,7 @@ fn attribute_string_write_read() {
 fn attribute_struct_write_read() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let attr_label = Label::build("struct_test_attr");
     let struct_name = "struct_test_test".to_owned();
@@ -809,7 +809,7 @@ fn attribute_struct_write_read() {
 fn read_attribute_struct_by_field() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let attr_label = Label::build("index_test_attr");
     let nested_struct_spec =
@@ -891,7 +891,7 @@ fn read_attribute_struct_by_field() {
 fn attribute_struct_errors() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let (struct_key, nested_struct_key) = {
         let mut snapshot = storage.clone().open_snapshot_write();

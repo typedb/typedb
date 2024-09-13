@@ -114,10 +114,13 @@ impl IsolationManager {
         self.timeline.remove_reader(commit_record.open_sequence_number);
         match isolation_conflict {
             Some(conflict) => Ok(ValidatedCommit::Conflict(conflict)),
-            None => Ok(ValidatedCommit::Write(WriteBatches::from_operations(
-                sequence_number,
-                self.get_commit_record(sequence_number).operations(),
-            ))),
+            None => {
+                let commit_record = match window.get_status(sequence_number) {
+                    CommitStatus::Validated(commit_record) | CommitStatus::Applied(commit_record) => commit_record,
+                    _ => panic!("get_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
+                };
+                Ok(ValidatedCommit::Write(WriteBatches::from_operations(sequence_number, commit_record.operations())))
+            }
         }
     }
 
@@ -134,7 +137,7 @@ impl IsolationManager {
         // Pre-collect all the ARCs so we can validate against them.
         let (windows, first_sequence_number_in_memory) =
             self.timeline.collect_concurrent_windows(commit_record.open_sequence_number, commit_sequence_number);
-        if commit_record.open_sequence_number().next() <= first_sequence_number_in_memory {
+        if commit_record.open_sequence_number().next() < first_sequence_number_in_memory {
             if let Some(conflict) =
                 self.validate_concurrent_from_disk(commit_record, first_sequence_number_in_memory, durability_client)?
             {
@@ -242,16 +245,6 @@ impl IsolationManager {
         self.timeline.watermark()
     }
 
-    pub(crate) fn get_commit_record(&self, commit_sequence_number: SequenceNumber) -> impl ReadGuard<'_, CommitRecord> {
-        let window = self.timeline.try_get_window(commit_sequence_number).unwrap();
-        read_guard_project! {
-            window => match window.get_status(commit_sequence_number) {
-                CommitStatus::Validated(commit_record) | CommitStatus::Applied(commit_record) => commit_record,
-                _ => panic!("get_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
-            }
-        }
-    }
-
     pub fn reset(&mut self) {
         self.timeline = Timeline::new(self.initial_sequence_number)
     }
@@ -267,6 +260,10 @@ fn resolve_concurrent(
     predecessor_sequence_number: SequenceNumber,
     predecessor_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
 ) -> Option<IsolationConflict> {
+    while matches!(predecessor_window.get_status(predecessor_sequence_number), CommitStatus::Empty) {
+        // Race condition
+        std::hint::spin_loop();
+    }
     let commit_dependency = match predecessor_window.get_status(predecessor_sequence_number) {
         CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
         CommitStatus::Pending(predecessor_record) => match commit_record.compute_dependency(&predecessor_record) {
@@ -457,25 +454,13 @@ impl Timeline {
         (concurrent_windows, start_index_of_first_concurrent_window)
     }
 
-    fn try_get_window(
-        &self,
-        sequence_number: SequenceNumber,
-    ) -> Option<
-        RwLockReadGuardProject<
-            '_,
-            VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
-            TimelineWindow<TIMELINE_WINDOW_SIZE>,
-        >,
-    > {
+    fn try_get_window(&self, sequence_number: SequenceNumber) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
         let windows = self.windows.read().unwrap_or_log();
         let window_index = Self::resolve_window(&windows, sequence_number)?;
-        Some(read_guard_project! { windows => &**windows.get(window_index).unwrap() })
+        Some(windows.get(window_index).unwrap().clone())
     }
 
-    fn get_or_create_window(
-        &self,
-        sequence_number: SequenceNumber,
-    ) -> impl ReadGuard<'_, TimelineWindow<TIMELINE_WINDOW_SIZE>> {
+    fn get_or_create_window(&self, sequence_number: SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
         let end = self.windows.read().unwrap_or_log().back().unwrap().end();
         if sequence_number >= end {
             self.create_windows_to(sequence_number);

@@ -14,6 +14,7 @@ use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc},
+    time::Duration,
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -215,14 +216,15 @@ impl<Durability> MVCCStorage<Durability> {
             .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.to_string(), source: error })?;
 
+        let sync_notifier = self.durability_client.request_sync();
         let validated_commit = self
             .isolation_manager
             .validate_commit(commit_sequence_number, commit_record, &self.durability_client)
             .map_err(|error| Durability { name: self.name.to_owned(), source: error })?;
-
-        match validated_commit {
+        let result = match validated_commit {
             ValidatedCommit::Write(write_batches) => {
-                // Write to the k-v storage
+                sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
+                                               // Write to the k-v store
                 self.keyspaces
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.to_owned(), source: Arc::new(error) })?;
@@ -242,7 +244,8 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|error| Durability { name: self.name.clone(), source: error })?;
                 Err(StorageCommitError::Isolation { name: self.name.clone(), conflict })
             }
-        }
+        };
+        result
     }
 
     fn set_initial_put_status(&self, snapshot: &impl CommittableSnapshot<Durability>) -> Result<(), MVCCReadError>

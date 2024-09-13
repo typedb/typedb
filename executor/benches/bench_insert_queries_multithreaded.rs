@@ -7,11 +7,12 @@
 #![deny(unused_must_use)]
 
 use std::{
+    array,
     collections::HashMap,
-    ffi::c_int,
-    fs::File,
-    path::Path,
-    sync::{Arc, OnceLock},
+    sync::{Arc, OnceLock, RwLock},
+    thread,
+    thread::{sleep, JoinHandle},
+    time::{Duration, Instant},
 };
 
 use answer::variable_value::VariableValue;
@@ -20,17 +21,16 @@ use compiler::{
     VariablePosition,
 };
 use concept::{
-    thing::thing_manager::ThingManager,
+    thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
-use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use encoding::value::{label::Label, value_type::ValueType};
 use executor::{
     row::Row,
     write::{insert::InsertExecutor, WriteError},
 };
 use ir::translation::TranslationContext;
-use pprof::ProfilerGuard;
+use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -47,12 +47,10 @@ static MEMBERSHIP_MEMBER_LABEL: OnceLock<Label> = OnceLock::new();
 static MEMBERSHIP_GROUP_LABEL: OnceLock<Label> = OnceLock::new();
 static AGE_LABEL: OnceLock<Label> = OnceLock::new();
 static NAME_LABEL: OnceLock<Label> = OnceLock::new();
-
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let mut snapshot = storage.clone().open_snapshot_write();
     let mut snapshot = storage.clone().open_snapshot_write();
     let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
     let group_type = type_manager.create_entity_type(&mut snapshot, GROUP_LABEL.get().unwrap()).unwrap();
@@ -120,9 +118,8 @@ fn execute_insert(
     )
     .unwrap();
 
-    let variable_registry = Arc::new(translation_context.variable_registry);
     let insert_plan = compiler::insert::program::compile(
-        variable_registry,
+        Arc::new(translation_context.variable_registry),
         block.conjunction().constraints(),
         &input_row_format,
         &entry_annotations,
@@ -148,7 +145,7 @@ fn execute_insert(
     Ok(output_rows)
 }
 
-fn criterion_benchmark(c: &mut Criterion) {
+fn multi_threaded_inserts() {
     PERSON_LABEL.set(Label::new_static("person")).unwrap();
     GROUP_LABEL.set(Label::new_static("group")).unwrap();
     MEMBERSHIP_LABEL.set(Label::new_static("membership")).unwrap();
@@ -158,70 +155,61 @@ fn criterion_benchmark(c: &mut Criterion) {
     NAME_LABEL.set(Label::new_static("name")).unwrap();
     init_logging();
 
-    let mut group = c.benchmark_group("test insert queries");
-    // group.sample_size(1000);
-    // group.measurement_time(Duration::from_secs(200));
-    group.sampling_mode(SamplingMode::Linear);
-
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.read_watermark()));
-
-    group.bench_function("insert_queries", |b| {
-        b.iter(|| {
-            let mut snapshot = storage.clone().open_snapshot_write();
-            let age: u32 = rand::random();
-            let row = execute_insert(
-                &mut snapshot,
-                &type_manager,
-                &thing_manager,
-                &format!("insert $p isa person, has age {age};"),
-                &vec![],
-                vec![vec![]],
-            )
-            .unwrap();
-            snapshot.commit().unwrap();
-        });
+    const NUM_THREADS: usize = 32;
+    const INTERNAL_ITERS: usize = 1000;
+    let start_signal_rw_lock = Arc::new(RwLock::new(()));
+    let write_guard = start_signal_rw_lock.write().unwrap();
+    let join_handles: [JoinHandle<()>; NUM_THREADS] = array::from_fn(|_| {
+        let storage_cloned = storage.clone();
+        let type_manager_cloned = type_manager.clone();
+        let thing_manager_cloned = thing_manager.clone();
+        let rw_lock_cloned = start_signal_rw_lock.clone();
+        thread::spawn(move || {
+            drop(rw_lock_cloned.read().unwrap());
+            for _ in 0..INTERNAL_ITERS {
+                let mut snapshot = storage_cloned.clone().open_snapshot_write();
+                let age: u32 = rand::random();
+                let _row = execute_insert(
+                    &mut snapshot,
+                    &type_manager_cloned,
+                    &thing_manager_cloned,
+                    &format!("insert $p isa person, has age {age};"),
+                    &vec![],
+                    vec![vec![]],
+                )
+                .unwrap();
+                snapshot.commit().unwrap();
+            }
+        })
     });
-}
+    println!("Sleeping 1s before starting threads");
+    sleep(Duration::from_secs(1));
+    println!("Start!");
+    let start = Instant::now();
+    drop(write_guard); // Start
+    for join_handle in join_handles {
+        join_handle.join().unwrap()
+    }
+    let time_taken_ms = start.elapsed().as_millis();
+    println!(
+        "{NUM_THREADS} threads * {INTERNAL_ITERS} iters took: {time_taken_ms} ms = {} inserts/s",
+        (NUM_THREADS * INTERNAL_ITERS * 1000) / time_taken_ms as usize
+    );
 
-pub struct FlamegraphProfiler<'a> {
-    frequency: c_int,
-    active_profiler: Option<ProfilerGuard<'a>>,
-}
-
-impl<'a> FlamegraphProfiler<'a> {
-    #[allow(dead_code)]
-    pub fn new(frequency: c_int) -> Self {
-        Self { frequency, active_profiler: None }
+    {
+        let snapshot = storage.clone().open_snapshot_read();
+        let person_type = type_manager.get_entity_type(&snapshot, &Label::parse_from("person")).unwrap().unwrap();
+        assert_eq!(
+            NUM_THREADS as usize * INTERNAL_ITERS,
+            thing_manager.get_entities_in(&snapshot, person_type).count()
+        );
+        snapshot.close_resources();
     }
 }
 
-impl<'a> Profiler for FlamegraphProfiler<'a> {
-    fn start_profiling(&mut self, _benchmark_id: &str, _benchmark_dir: &Path) {
-        self.active_profiler = Some(ProfilerGuard::new(self.frequency).unwrap());
-    }
-
-    fn stop_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
-        std::fs::create_dir_all(benchmark_dir).unwrap();
-        let flamegraph_path = benchmark_dir.join("flamegraph.svg");
-        let flamegraph_file = File::create(flamegraph_path).expect("File system error while creating flamegraph.svg");
-        if let Some(profiler) = self.active_profiler.take() {
-            profiler.report().build().unwrap().flamegraph(flamegraph_file).expect("Error writing flamegraph");
-        }
-    }
+fn main() {
+    multi_threaded_inserts();
 }
-
-fn profiled() -> Criterion {
-    Criterion::default().with_profiler(FlamegraphProfiler::new(10))
-}
-
-// criterion_group!(
-//     name = benches;
-//     config= profiled();
-//     targets = criterion_benchmark
-// );
-
-// TODO: disable profiling when running on mac, since pprof seems to crash sometimes?
-criterion_group!(benches, criterion_benchmark);
-criterion_main!(benches);

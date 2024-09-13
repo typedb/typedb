@@ -35,7 +35,7 @@ const DOG_LABEL: Label = Label::new_static("dog");
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let animal_type = type_manager.create_entity_type(&mut snapshot, &ANIMAL_LABEL).unwrap();
@@ -79,7 +79,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -146,7 +146,7 @@ fn traverse_isa_unbounded_sorted_type() {
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -215,7 +215,7 @@ fn traverse_isa_bounded_thing() {
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -294,7 +294,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -361,7 +361,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
@@ -430,7 +430,7 @@ fn traverse_isa_reverse_bounded_type() {
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let (entry_annotations, _) = infer_types(
         &entry,
         vec![],
