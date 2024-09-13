@@ -13,7 +13,7 @@ use executor::{
         initial::InitialStage,
         insert::InsertStageExecutor,
         match_::MatchStageExecutor,
-        modifiers::{LimitStageExecutor, SortStageExecutor},
+        modifiers::{LimitStageExecutor, OffsetStageExecutor, SortStageExecutor},
         stage::{ReadPipelineStage, WritePipelineStage},
     },
     write::{delete::DeleteExecutor, insert::InsertExecutor},
@@ -127,7 +127,10 @@ impl QueryManager {
                     let sort_stage = SortStageExecutor::new(sort_program, last_stage);
                     last_stage = ReadPipelineStage::Sort(Box::new(sort_stage));
                 }
-                CompiledStage::Offset(_) => todo!(),
+                CompiledStage::Offset(offset_program) => {
+                    let offset_stage = OffsetStageExecutor::new(offset_program, last_stage);
+                    last_stage = ReadPipelineStage::Offset(Box::new(offset_stage));
+                }
                 CompiledStage::Limit(limit_program) => {
                     let limit_stage = LimitStageExecutor::new(limit_program, last_stage);
                     last_stage = ReadPipelineStage::Limit(Box::new(limit_stage));

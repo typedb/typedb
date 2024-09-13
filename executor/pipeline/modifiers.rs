@@ -6,15 +6,15 @@
 use std::{cmp::Ordering, collections::HashMap, marker::PhantomData, sync::Arc};
 
 use compiler::{
-    modifiers::{LimitProgram, SortProgram},
+    modifiers::{LimitProgram, OffsetProgram, SortProgram},
     VariablePosition,
 };
 use ir::program::modifier::SortVariable;
-use crate::ExecutionInterrupt;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::Batch,
+    ExecutionInterrupt,
     pipeline::{PipelineExecutionError, StageAPI, StageIterator},
     row::MaybeOwnedRow,
 };
@@ -51,7 +51,7 @@ where
         let Self { previous, program, .. } = self;
         let (previous_iterator, mut snapshot) = previous.into_iterator(interrupt)?;
         // accumulate once, then we will operate in-place
-        let mut batch = match previous_iterator.collect_owned() {
+        let batch = match previous_iterator.collect_owned() {
             Ok(batch) => batch,
             Err(err) => return Err((snapshot, err)),
         };
@@ -127,13 +127,104 @@ where
 
 impl<Snapshot> StageIterator for SortStageIterator<Snapshot> where Snapshot: ReadableSnapshot + 'static {}
 
-pub struct LimitStageExecutor<Snapshot, PreviousStage> {
+pub struct OffsetStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    offset_program: OffsetProgram,
+    previous: PreviousStage,
+    phantom: PhantomData<Snapshot>,
+}
+
+impl<Snapshot, PreviousStage> OffsetStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    pub fn new(offset_program: OffsetProgram, previous: PreviousStage) -> Self {
+        Self { offset_program, previous, phantom: PhantomData::default() }
+    }
+}
+
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for OffsetStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    type OutputIterator = OffsetStageIterator<Snapshot, PreviousStage::OutputIterator>;
+
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
+        self.previous.named_selected_outputs()
+    }
+
+    fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+        let Self { offset_program, previous, .. } = self;
+        let (previous_iterator, snapshot) = previous.into_iterator(interrupt)?;
+        Ok((OffsetStageIterator::new(previous_iterator, offset_program.offset), snapshot))
+    }
+}
+
+pub struct OffsetStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+    remaining: u64,
+    previous: PreviousIterator,
+    phantom: PhantomData<Snapshot>,
+}
+
+impl<Snapshot, PreviousIterator> OffsetStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+    fn new(previous: PreviousIterator, offset: u64) -> Self {
+        Self { remaining: offset, previous, phantom: PhantomData::default() }
+    }
+}
+
+impl<Snapshot, PreviousIterator> StageIterator for OffsetStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+}
+
+impl<Snapshot, PreviousIterator> LendingIterator for OffsetStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        while self.remaining > 0 {
+            if self.previous.next().is_none() {
+                return None;
+            }
+            self.remaining -= 1;
+        }
+        self.previous.next()
+    }
+}
+
+pub struct LimitStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
     limit_program: LimitProgram,
     previous: PreviousStage,
     phantom: PhantomData<Snapshot>,
 }
 
-impl<Snapshot, PreviousStage> LimitStageExecutor<Snapshot, PreviousStage> {
+impl<Snapshot, PreviousStage> LimitStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
     pub fn new(limit_program: LimitProgram, previous: PreviousStage) -> Self {
         Self { limit_program, previous, phantom: PhantomData::default() }
     }
@@ -162,7 +253,6 @@ where
     Snapshot: ReadableSnapshot + 'static,
     PreviousIterator: StageIterator,
 {
-    // TODO: Why not Box dyn it instead of template?
     remaining: u64,
     previous: PreviousIterator,
     phantom: PhantomData<Snapshot>,

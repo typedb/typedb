@@ -7,7 +7,7 @@
 use typeql::token::Order;
 
 use crate::{
-    program::modifier::{Filter, Limit, Sort},
+    program::modifier::{Filter, Limit, Offset, Sort},
     translation::{
         literal::{translate_literal, FromTypeQLLiteral},
         TranslationContext,
@@ -42,6 +42,15 @@ pub fn translate_sort(
         .collect();
     Sort::new(sort_on, &|name| context.visible_variables.get(name).map(|var| var.clone()))
         .map_err(|source| PatternDefinitionError::ModifierDefinitionError { source })
+}
+
+pub fn translate_offset(
+    context: &mut TranslationContext,
+    offset: &typeql::query::stage::modifier::Offset,
+) -> Result<Offset, PatternDefinitionError> {
+    u64::from_typeql_literal(&offset.offset)
+        .map(|offset| Offset::new(offset))
+        .map_err(|source| PatternDefinitionError::LiteralParseError { literal: offset.offset.value.clone(), source })
 }
 
 pub fn translate_limit(

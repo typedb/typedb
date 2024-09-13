@@ -9,7 +9,6 @@ use std::{collections::HashMap, sync::Arc};
 use compiler::VariablePosition;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use tokio::sync::broadcast;
 
 use crate::{
     batch::Batch,
@@ -18,7 +17,10 @@ use crate::{
         initial::{InitialIterator, InitialStage},
         insert::InsertStageExecutor,
         match_::{MatchStageExecutor, MatchStageIterator},
-        modifiers::{LimitStageExecutor, LimitStageIterator, SortStageExecutor, SortStageIterator},
+        modifiers::{
+            LimitStageExecutor, LimitStageIterator, OffsetStageExecutor, OffsetStageIterator, SortStageExecutor,
+            SortStageIterator,
+        },
         PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator,
     },
     row::MaybeOwnedRow,
@@ -30,6 +32,7 @@ pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Match(Box<MatchStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>>),
     Sort(Box<SortStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>>),
     Limit(Box<LimitStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>>),
+    Offset(Box<OffsetStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>>),
 }
 
 pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
@@ -37,6 +40,7 @@ pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
     Match(Box<MatchStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
     Sort(Box<SortStageIterator<Snapshot>>),
     Limit(Box<LimitStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
+    Offset(Box<OffsetStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
@@ -47,6 +51,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
             Self::Initial(stage) => stage.named_selected_outputs(),
             Self::Match(stage) => stage.named_selected_outputs(),
             Self::Sort(stage) => stage.named_selected_outputs(),
+            Self::Offset(stage) => stage.named_selected_outputs(),
             Self::Limit(stage) => stage.named_selected_outputs(),
         }
     }
@@ -68,6 +73,10 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((ReadStageIterator::Sort(Box::new(iterator)), snapshot))
             }
+            ReadPipelineStage::Offset(stage) => {
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
+                Ok((ReadStageIterator::Offset(Box::new(iterator)), snapshot))
+            }
             ReadPipelineStage::Limit(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((ReadStageIterator::Limit(Box::new(iterator)), snapshot))
@@ -84,6 +93,7 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadStageIterator
             ReadStageIterator::Initial(iterator) => iterator.next(),
             ReadStageIterator::Match(iterator) => iterator.next(),
             ReadStageIterator::Sort(iterator) => iterator.next(),
+            ReadStageIterator::Offset(iterator) => iterator.next(),
             ReadStageIterator::Limit(iterator) => iterator.next(),
         }
     }
@@ -95,6 +105,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageIterator for ReadStageIterator<S
             ReadStageIterator::Initial(iterator) => iterator.collect_owned(),
             ReadStageIterator::Match(iterator) => iterator.collect_owned(),
             ReadStageIterator::Sort(iterator) => iterator.collect_owned(),
+            ReadStageIterator::Offset(iterator) => iterator.collect_owned(),
             ReadStageIterator::Limit(iterator) => iterator.collect_owned(),
         }
     }

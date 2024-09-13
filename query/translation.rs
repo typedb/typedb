@@ -16,7 +16,7 @@ use ir::{
     translation::{
         function::translate_function,
         match_::translate_match,
-        modifiers::{translate_limit, translate_select, translate_sort},
+        modifiers::{translate_limit, translate_offset, translate_select, translate_sort},
         writes::{translate_delete, translate_insert},
         TranslationContext,
     },
@@ -92,7 +92,9 @@ fn translate_stage(
                 translate_select(translation_context, select).map(|filter| TranslatedStage::Filter(filter))
             }
             Modifier::Sort(sort) => translate_sort(translation_context, sort).map(|sort| TranslatedStage::Sort(sort)),
-            Modifier::Offset(offset) => todo!(),
+            Modifier::Offset(offset) => {
+                translate_offset(translation_context, offset).map(|offset| TranslatedStage::Offset(offset))
+            }
             Modifier::Limit(limit) => {
                 translate_limit(translation_context, limit).map(|limit| TranslatedStage::Limit(limit))
             }
