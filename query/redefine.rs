@@ -549,13 +549,9 @@ fn redefine_relates_annotations(
             typeql_capability,
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
-            relates.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(
-                |source| RedefineError::SetCapabilityAnnotation {
-                    annotation,
-                    declaration: typeql_capability.clone(),
-                    source,
-                },
-            )?;
+            relates.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
+                RedefineError::SetCapabilityAnnotation { annotation, declaration: typeql_capability.clone(), source }
+            })?;
         }
     }
     Ok(())
@@ -570,8 +566,7 @@ fn redefine_relates_specialise<'a>(
     relates: Relates<'static>,
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), RedefineError> {
-    // TODO: change to .specialised
-    if let Some(specialised_label) = &typeql_relates.overridden {
+    if let Some(specialised_label) = &typeql_relates.specialised {
         let specialised_relates =
             resolve_relates(snapshot, type_manager, relates.relation(), &specialised_label.ident.as_str())
                 .map_err(|typedb_source| RedefineError::DefinitionResolution { typedb_source })?;
@@ -579,33 +574,41 @@ fn redefine_relates_specialise<'a>(
         let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         match definition_status {
-            DefinableStatus::DoesNotExist => return Err(RedefineError::RelatesSpecialiseIsNotDefined {
-                label: relation_label.clone().into_owned(),
-                new_specialise_type: relates.role()
-                    .get_label_cloned(snapshot, type_manager)
-                    .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
-                    .into_owned(),
-                declaration: typeql_relates.clone(),
-            }),
-            DefinableStatus::ExistsSame(_) => return Err(RedefineError::RelatesSpecialiseRemainsSame {
-                label: relation_label.clone().into_owned(),
-                specialised_label: specialised_relates.role()
-                    .get_label_cloned(snapshot, type_manager)
-                    .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
-                    .into_owned(),
-                declaration: typeql_relates.clone(),
-            }),
-            DefinableStatus::ExistsDifferent(_) => {},
+            DefinableStatus::DoesNotExist => {
+                return Err(RedefineError::RelatesSpecialiseIsNotDefined {
+                    label: relation_label.clone().into_owned(),
+                    new_specialise_type: relates
+                        .role()
+                        .get_label(snapshot, type_manager)
+                        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                        .clone()
+                        .into_owned(),
+                    declaration: typeql_relates.clone(),
+                })
+            }
+            DefinableStatus::ExistsSame(_) => {
+                return Err(RedefineError::RelatesSpecialiseRemainsSame {
+                    label: relation_label.clone().into_owned(),
+                    specialised_label: specialised_relates
+                        .role()
+                        .get_label(snapshot, type_manager)
+                        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                        .clone()
+                        .into_owned(),
+                    declaration: typeql_relates.clone(),
+                })
+            }
+            DefinableStatus::ExistsDifferent(_) => {}
         };
 
         error_if_anything_redefined_else_set_true(anything_redefined)?;
-        relates
-            .set_specialise(snapshot, type_manager, thing_manager, specialised_relates)
-            .map_err(|source| RedefineError::SetRelatesSpecialise {
+        relates.set_specialise(snapshot, type_manager, thing_manager, specialised_relates).map_err(|source| {
+            RedefineError::SetRelatesSpecialise {
                 label: relation_label.clone().into_owned(),
                 declaration: typeql_relates.clone(),
                 source,
-            })?;
+            }
+        })?;
     }
     Ok(())
 }
