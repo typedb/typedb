@@ -354,6 +354,24 @@ pub enum Constraint<ID> {
 }
 
 impl<ID: IrID> Constraint<ID> {
+    pub fn name(&self) -> &str {
+        match self {
+            Constraint::Kind(kind) => kind.kind.as_str(),
+            Constraint::Label(_) => typeql::token::Keyword::Label.as_str(),
+            Constraint::RoleName(_) => "role-name",
+            Constraint::Sub(_) => typeql::token::Keyword::Sub.as_str(),
+            Constraint::Isa(_) => typeql::token::Keyword::Isa.as_str(),
+            Constraint::Links(_) => typeql::token::Keyword::Links.as_str(),
+            Constraint::Has(_) => typeql::token::Keyword::Has.as_str(),
+            Constraint::ExpressionBinding(_) => typeql::token::Comparator::Eq.as_str(),
+            Constraint::FunctionCallBinding(_) => "=/in",
+            Constraint::Comparison(comp) => comp.comparator.name(),
+            Constraint::Owns(_) => typeql::token::Keyword::Owns.as_str(),
+            Constraint::Relates(_) => typeql::token::Keyword::Relates.as_str(),
+            Constraint::Plays(_) => typeql::token::Keyword::Plays.as_str(),
+        }
+    }
+
     pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
             Constraint::Kind(kind) => Box::new(kind.ids()),
@@ -1039,7 +1057,21 @@ pub enum Comparator {
     LessOrEqual,
     GreaterOrEqual,
     Like,
-    Cointains,
+    Contains,
+}
+
+impl Comparator {
+    pub fn name(&self) -> &str {
+        match self {
+            Comparator::Equal => typeql::token::Comparator::Eq.as_str(),
+            Comparator::Less => typeql::token::Comparator::Lt.as_str(),
+            Comparator::Greater => typeql::token::Comparator::Gt.as_str(),
+            Comparator::LessOrEqual => typeql::token::Comparator::Lte.as_str(),
+            Comparator::GreaterOrEqual => typeql::token::Comparator::Gte.as_str(),
+            Comparator::Like => typeql::token::Comparator::Like.as_str(),
+            Comparator::Contains => typeql::token::Comparator::Contains.as_str(),
+        }
+    }
 }
 
 impl From<typeql::token::Comparator> for Comparator {

@@ -282,7 +282,7 @@ impl<'a> PlanBuilder<'a> {
                             self.elements[rhs].add_upper_bound(lhs);
                         }
                         Comparator::Like => todo!("like operator"),
-                        Comparator::Cointains => todo!("contains operator"),
+                        Comparator::Contains => todo!("contains operator"),
                     }
                     None
                 }

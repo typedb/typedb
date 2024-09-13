@@ -77,7 +77,7 @@ impl FunctionManager {
         let ir = Self::translate_functions(&functions, &function_index)?;
         // Run type-inference
         infer_types_for_functions(ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
-            .map_err(|source| FunctionError::AllFunctionsTypeCheckFailure { source })?;
+            .map_err(|source| FunctionError::AllFunctionsTypeCheckFailure { typedb_source: source })?;
         Ok(())
     }
 

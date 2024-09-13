@@ -385,7 +385,7 @@ impl<T: Hkt> Checker<T> {
                         Comparator::Greater => (Bound::Excluded(rhs), Bound::Unbounded),
                         Comparator::GreaterOrEqual => (Bound::Included(rhs), Bound::Unbounded),
                         Comparator::Like => continue,
-                        Comparator::Cointains => continue,
+                        Comparator::Contains => continue,
                     };
                     range = intersect(range, comp_range);
                 }
@@ -416,7 +416,7 @@ impl<T: Hkt> Checker<T> {
                         Comparator::LessOrEqual => |a, b| a <= b,
                         Comparator::GreaterOrEqual => |a, b| a >= b,
                         Comparator::Like => todo!("like"),
-                        Comparator::Cointains => todo!("contains"),
+                        Comparator::Contains => todo!("contains"),
                     };
                     filters.push(Box::new(move |value| Ok(cmp(&lhs_extractor(value), &rhs))));
                 }

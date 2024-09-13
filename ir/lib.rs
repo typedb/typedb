@@ -12,12 +12,12 @@
 use std::{error::Error, fmt};
 
 use answer::variable::Variable;
+use error::typedb_error;
 use typeql::{
     statement::{thing::RolePlayer, InIterable, StructDeconstruct},
     token,
     value::StringLiteral,
 };
-use error::typedb_error;
 
 use crate::{
     pattern::{constraint::Constraint, expression::ExpressionDefinitionError, variable_category::VariableCategory},

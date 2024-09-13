@@ -66,7 +66,7 @@ impl FunctionCache {
         // Run type-inference
         let unindexed_cache =
             infer_types_for_functions(functions_ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
-                .map_err(|source| FunctionError::CommittedFunctionsTypeCheck { source })?;
+                .map_err(|source| FunctionError::CommittedFunctionsTypeCheck { typedb_source: source })?;
 
         // Convert them to our cache
         let required_cache_count =

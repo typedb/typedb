@@ -115,7 +115,7 @@ fn validate_input_combinations_insertable(
     });
     if let Some((left_type, right_type)) = invalid_iter.find(|_| true) {
         Err(TypeInferenceError::IllegalInsertTypes {
-            constraint: constraint.clone(),
+            constraint_name: constraint.name().to_string(),
             left_type: left_type
                 .get_label(snapshot, type_manager)
                 .map_err(|err| TypeInferenceError::ConceptRead { source: err })?

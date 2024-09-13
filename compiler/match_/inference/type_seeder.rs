@@ -572,7 +572,7 @@ impl UnaryConstraint for Label<Variable> {
             );
             Ok(())
         } else {
-            Err(TypeInferenceError::LabelNotResolved(self.type_label().to_string()))
+            Err(TypeInferenceError::LabelNotResolved { name: self.type_label().to_string() })
         }
     }
 }
@@ -592,7 +592,7 @@ impl UnaryConstraint for RoleName<Variable> {
             TypeSeeder::<Snapshot>::add_or_intersect(tig_vertices, self.left(), Cow::Owned(annotations));
             Ok(())
         } else {
-            Err(TypeInferenceError::RoleNameNotResolved(self.name().to_string()))
+            Err(TypeInferenceError::RoleNameNotResolved { name: self.name().to_string() })
         }
     }
 }

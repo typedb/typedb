@@ -11,6 +11,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::error::ConceptReadError;
+use error::typedb_error;
 use ir::pattern::{constraint::Constraint, variable_category::VariableCategory};
 
 use crate::expression::ExpressionCompileError;
@@ -22,49 +23,51 @@ pub mod type_annotations;
 pub mod type_inference;
 mod type_seeder;
 
-#[derive(Debug, Clone)]
-pub enum FunctionTypeInferenceError {
-    TypeInference { function_name: String, source: TypeInferenceError },
-}
-
-impl Display for FunctionTypeInferenceError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+typedb_error!(
+    pub FunctionTypeInferenceError(domain = "Inference", prefix = "FIN") {
+        TypeInference(0, "Type inference error while type checking function '{name}'.", name: String, ( typedb_source : TypeInferenceError )),
     }
-}
+);
 
-impl Error for FunctionTypeInferenceError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            FunctionTypeInferenceError::TypeInference { source, .. } => Some(source),
-        }
+typedb_error!(
+    pub TypeInferenceError(domain="Inference", prefix = "TIN") {
+        ConceptRead(1, "Concept read error.", ( source: ConceptReadError )),
+        LabelNotResolved(2, "Type label '{name}' not found.", name: String),
+        RoleNameNotResolved(3, "Role label not found '{name}'.", name: String),
+        IllegalInsertTypes(
+            4,
+            "Left type '{left_type}' across constraint '{constraint_name}' is not compatible with right type '{right_type}'.",
+            constraint_name: String,
+            left_type: String,
+            right_type: String
+        ),
     }
-}
+);
 
-#[derive(Debug, Clone)]
-pub enum TypeInferenceError {
-    ConceptRead { source: ConceptReadError },
-    LabelNotResolved(String),
-    RoleNameNotResolved(String),
-    IllegalInsertTypes { constraint: Constraint<Variable>, left_type: String, right_type: String },
-}
-
-impl Display for TypeInferenceError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for TypeInferenceError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            TypeInferenceError::ConceptRead { source } => Some(source),
-            TypeInferenceError::LabelNotResolved(_) => None,
-            TypeInferenceError::RoleNameNotResolved(_) => None,
-            TypeInferenceError::IllegalInsertTypes { .. } => None,
-        }
-    }
-}
+// #[derive(Debug, Clone)]
+// pub enum TypeInferenceError {
+//     ConceptRead { source: ConceptReadError },
+//     LabelNotResolved(String),
+//     RoleNameNotResolved(String),
+//     IllegalInsertTypes { constraint: Constraint<Variable>, left_type: String, right_type: String },
+// }
+//
+// impl Display for TypeInferenceError {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+//         todo!()
+//     }
+// }
+//
+// impl Error for TypeInferenceError {
+//     fn source(&self) -> Option<&(dyn Error + 'static)> {
+//         match self {
+//             TypeInferenceError::ConceptRead { source } => Some(source),
+//             TypeInferenceError::LabelNotResolved(_) => None,
+//             TypeInferenceError::RoleNameNotResolved(_) => None,
+//             TypeInferenceError::IllegalInsertTypes { .. } => None,
+//         }
+//     }
+// }
 
 #[cfg(test)]
 pub mod tests {

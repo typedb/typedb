@@ -103,8 +103,8 @@ pub fn infer_types_for_function(
         local_functions,
     )
     .map_err(|err| FunctionTypeInferenceError::TypeInference {
-        function_name: function.name().to_string(),
-        source: err,
+        name: function.name().to_string(),
+        typedb_source: err,
     })?;
     let body_annotations = TypeAnnotations::build(root_tig);
     let return_annotations = function.return_operation().output_annotations(body_annotations.variable_annotations());
@@ -353,7 +353,10 @@ pub mod tests {
                 vec![(VariableCategory::Object, VariableOptionality::Required)],
                 true,
             );
-            conjunction.constraints_mut().add_function_binding(vec![var_animal], &callee_signature, vec![]).unwrap();
+            conjunction
+                .constraints_mut()
+                .add_function_binding(vec![var_animal], &callee_signature, vec![], "test_fn")
+                .unwrap();
             let entry = builder.finish();
             (entry, entry_context, f_ir)
         })

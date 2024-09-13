@@ -17,6 +17,7 @@ rust_library(
         "expression/**/*.rs",
     ]),
     deps = [
+        "//common/error",
         "//answer",
         "//concept",
         "//encoding",

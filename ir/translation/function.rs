@@ -6,10 +6,10 @@
 
 use answer::variable::Variable;
 use typeql::{
+    query::stage::reduce::Reduction,
     schema::definable::function::{Output, ReturnStatement, ReturnStream},
     TypeRefAny,
 };
-use typeql::query::stage::reduce::Reduction;
 
 use crate::{
     pattern::{
@@ -31,8 +31,9 @@ pub fn translate_function(
 ) -> Result<Function, FunctionRepresentationError> {
     let mut context = TranslationContext::new();
     let mut builder = FunctionalBlock::builder(context.next_block_context());
-    add_patterns(function_index, &mut builder.conjunction_mut(), &function.body.patterns)
-        .map_err(|source| FunctionRepresentationError::PatternDefinition { declaration: function.clone(), typedb_source: source })?;
+    add_patterns(function_index, &mut builder.conjunction_mut(), &function.body.patterns).map_err(|source| {
+        FunctionRepresentationError::PatternDefinition { declaration: function.clone(), typedb_source: source }
+    })?;
 
     let return_operation = match &function.return_stmt {
         ReturnStatement::Stream(stream) => build_return_stream(builder.context_mut(), stream),

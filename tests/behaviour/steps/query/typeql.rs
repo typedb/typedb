@@ -17,6 +17,7 @@ use compiler::{
 use concept::{thing::object::ObjectAPI, type_::TypeAPI};
 use cucumber::gherkin::Step;
 use encoding::value::label::Label;
+use error::TypeDBError;
 use executor::{
     error::ReadExecutionError,
     program_executor::ProgramExecutor,
@@ -31,7 +32,6 @@ use ir::{
 use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
-use error::TypeDBError;
 use primitive::either::Either;
 use query::query_manager::QueryManager;
 
@@ -49,8 +49,9 @@ fn execute_match_query(
 ) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Box<dyn TypeDBError>> {
     let mut translation_context = TranslationContext::new();
     let typeql_match = query.into_pipeline().stages.pop().unwrap().into_match();
-    let block =
-        translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &typeql_match)?.finish();
+    let block = translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &typeql_match)
+        .map_err(|err| Box::new(err) as _)?
+        .finish();
 
     let variable_position_index;
     let variable_registry = Arc::new(translation_context.variable_registry);
@@ -62,7 +63,8 @@ fn execute_match_query(
             &tx.type_manager,
             &IndexedAnnotatedFunctions::empty(),
             &variable_registry,
-        )?;
+        )
+        .map_err(|err| Box::new(err) as _)?;
 
         let match_plan = MatchProgram::compile(
             &block,
@@ -74,11 +76,11 @@ fn execute_match_query(
 
         let program_plan = ProgramPlan::new(match_plan, HashMap::new(), HashMap::new());
         let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager)
-            .map_err(|err| Either::Second(ReadExecutionError::ConceptRead { source: err }))?;
+            .map_err(|err| Box::new(ReadExecutionError::ConceptRead { source: err }) as _)?;
         variable_position_index = executor.entry_variable_positions_index().to_owned();
         executor
             .into_iterator(tx.snapshot.clone(), tx.thing_manager.clone(), ExecutionInterrupt::new_uninterruptible())
-            .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+            .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| Box::new(err.clone()) as _))
             .into_iter()
             .try_collect::<_, Vec<_>, _>()?
     });
