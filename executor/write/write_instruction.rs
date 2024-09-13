@@ -43,8 +43,8 @@ fn get_thing<'a>(input: &'a Row<'a>, source: &ThingSource) -> &'a answer::Thing<
 
 fn get_value<'a>(input: &'a Row<'_>, parameters: &'a ParameterRegistry, source: ValueSource) -> &'a Value<'a> {
     match source {
-        ValueSource::InputVariable(position) => input.get(position).as_value(),
-        ValueSource::ValueConstant(id) => &parameters[id],
+        ValueSource::Variable(position) => input.get(position).as_value(),
+        ValueSource::Parameter(id) => &parameters[id],
     }
 }
 

@@ -120,9 +120,9 @@ fn add_inserted_concepts(
             let value_variable = resolve_value_variable_for_inserted_attribute(constraints, isa.thing())?;
             let value = if let Some(&constant) = value_bindings.get(&value_variable) {
                 debug_assert!(!input_variables.contains_key(&value_variable));
-                ValueSource::ValueConstant(constant)
+                ValueSource::Parameter(constant)
             } else if let Some(&position) = input_variables.get(&value_variable) {
-                ValueSource::InputVariable(position)
+                ValueSource::Variable(position)
             } else {
                 return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute {
                     variable: value_variable,

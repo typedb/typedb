@@ -12,7 +12,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use encoding::graph::type_::Kind;
-use ir::{pattern::constraint::Isa, program::ParameterID};
+use ir::{pattern::constraint::Isa, program::SingleValue};
 use itertools::Itertools;
 
 use crate::VariablePosition;
@@ -33,11 +33,7 @@ pub enum TypeSource {
     Constant(answer::Type),
 }
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
-pub enum ValueSource {
-    InputVariable(VariablePosition),
-    ValueConstant(ParameterID),
-}
+pub type ValueSource = SingleValue<VariablePosition>;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct ThingSource(pub VariablePosition);
