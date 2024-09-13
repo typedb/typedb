@@ -90,10 +90,17 @@ pub fn compile(
     }
 
     // To produce the output stream, we remove the deleted concepts from each map in the stream.
-    let output_row_schema = input_variables
-        .iter()
-        .map(|(variable, position)| if deleted_concepts.contains(variable) { None } else { Some(*variable) })
-        .collect::<Vec<_>>();
+    let mut output_row_schema = Vec::new();
+    for (variable, position) in input_variables {
+        if deleted_concepts.contains(variable) {
+            continue;
+        }
+        let pos_as_usize = position.as_usize();
+        if output_row_schema.len() <= pos_as_usize {
+            output_row_schema.resize(pos_as_usize + 1, None);
+        }
+        output_row_schema[pos_as_usize] = Some(variable.clone());
+    }
 
     Ok(DeleteProgram {
         connection_instructions: connection_deletes,

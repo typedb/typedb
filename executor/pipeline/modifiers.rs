@@ -65,7 +65,7 @@ where
     Snapshot: ReadableSnapshot + 'static,
 {
     unsorted: Batch,
-    sorted_indices: Box<[usize]>,
+    sorted_indices: Vec<usize>,
     next_index_index: usize,
     phantom: PhantomData<Snapshot>,
 }
@@ -100,12 +100,7 @@ where
             }
             Ordering::Equal
         });
-        Self {
-            unsorted,
-            sorted_indices: indices.into_boxed_slice(),
-            next_index_index: 0,
-            phantom: PhantomData::default(),
-        }
+        Self { unsorted, sorted_indices: indices, next_index_index: 0, phantom: PhantomData::default() }
     }
 }
 
