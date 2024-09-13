@@ -96,7 +96,7 @@ fn build_program_with_functions() {
     );
     conjunction
         .constraints_mut()
-        .add_function_binding(vec![var_count, var_mean], &function_signature, vec![var_person])
+        .add_function_binding(vec![var_count, var_mean], &function_signature, vec![var_person], "test_fn")
         .unwrap();
     let block = builder.finish();
     println!("{}", block.conjunction());
