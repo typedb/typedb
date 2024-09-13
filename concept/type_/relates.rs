@@ -105,6 +105,7 @@ impl<'a> Relates<'a> {
         thing_manager: &ThingManager,
         annotation: RelatesAnnotation,
     ) -> Result<(), ConceptWriteError> {
+        debug_assert!(!self.is_specialising(snapshot, type_manager)?, "Only non-specialising relates can have manually set annotations!");
         match annotation {
             RelatesAnnotation::Abstract(_) => {
                 type_manager.set_relates_annotation_abstract(snapshot, thing_manager, self.clone().into_owned())?

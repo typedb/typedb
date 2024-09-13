@@ -658,6 +658,62 @@ pub async fn relation_role_unset_annotation(
 }
 
 #[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) get constraints for related role\({type_label}\) {contains_or_doesnt}: {constraint}")]
+pub async fn relation_get_constraints_for_related_role_contain(
+    context: &mut Context,
+    relation_label: params::Label,
+    role_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    constraint: params::Constraint,
+) {
+    with_read_tx!(context, |tx| {
+        let relation_type =
+            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
+        let typedb_role_label = role_label.into_typedb();
+        assert!(typedb_role_label.scope.is_some(), "Expected scoped label of a role in this test method");
+        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &typedb_role_label).unwrap().unwrap();
+
+        let expected_constraint = constraint.into_typedb(None);
+        let actual_contains = relation_type
+            .get_related_role_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, role_type)
+            .unwrap()
+            .into_iter()
+            .find(|constraint| &constraint.description() == &expected_constraint)
+            .is_some();
+        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+    });
+}
+
+#[apply(generic_step)]
+#[step(
+    expr = r"relation\({type_label}\) get constraint categories for related role\({type_label}\) {contains_or_doesnt}: {constraint_category}"
+)]
+pub async fn relation_constraint_categories_for_related_role_contain(
+    context: &mut Context,
+    relation_label: params::Label,
+    role_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    constraint_category: params::ConstraintCategory,
+) {
+    with_read_tx!(context, |tx| {
+        let relation_type =
+            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
+        let typedb_role_label = role_label.into_typedb();
+        assert!(typedb_role_label.scope.is_some(), "Expected scoped label of a role in this test method");
+        let role_type = tx.type_manager.get_role_type(tx.snapshot.as_ref(), &typedb_role_label).unwrap().unwrap();
+
+        let expected_constraint_category = constraint_category.into_typedb();
+        let actual_contains = relation_type
+            .get_related_role_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, role_type)
+            .unwrap()
+            .into_iter()
+            .find(|constraint| constraint.category() == expected_constraint_category)
+            .is_some();
+        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) get constraints {contains_or_doesnt}: {constraint}")]
 pub async fn relation_role_constraints_contain(
     context: &mut Context,

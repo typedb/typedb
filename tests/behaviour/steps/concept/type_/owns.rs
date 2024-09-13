@@ -21,6 +21,7 @@ use crate::{
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
+use crate::params::check_boolean;
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) set owns: {type_label}{may_error}")]
@@ -151,6 +152,62 @@ pub async fn get_owns_unset_annotation(
             annotation_category.into_typedb(),
         );
         may_error.check_concept_write_without_read_errors(&res);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "{kind}\\({type_label}\\) get constraints for owned attribute\\({type_label}\\) {contains_or_doesnt}: {constraint}")]
+pub async fn get_constraints_for_owned_attribute_contains(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    attr_type_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    constraint: params::Constraint,
+) {
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    with_read_tx!(context, |tx| {
+        let attr_type =
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let value_type =
+            attr_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+
+        let expected_constraint = constraint.into_typedb(value_type);
+        let actual_contains = object_type
+            .get_owned_attribute_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, attr_type)
+            .unwrap()
+            .into_iter()
+            .find(|constraint| &constraint.description() == &expected_constraint)
+            .is_some();
+        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+    });
+}
+
+#[apply(generic_step)]
+#[step(
+    expr = "{kind}\\({type_label}\\) get constraints categories for owned attribute\\({type_label}\\) {contains_or_doesnt}: {constraint_category}"
+)]
+pub async fn get_constraints_categories_for_owned_attribute_contains(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    attr_type_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    constraint_category: params::ConstraintCategory,
+) {
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    with_read_tx!(context, |tx| {
+        let attr_type =
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+
+        let expected_constraint_category = constraint_category.into_typedb();
+        let actual_contains = object_type
+            .get_owned_attribute_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, attr_type)
+            .unwrap()
+            .into_iter()
+            .find(|constraint| constraint.category() == expected_constraint_category)
+            .is_some();
+        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
 
@@ -484,5 +541,23 @@ pub async fn get_owns_get_ordering(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         assert_eq!(owns.get_ordering(tx.snapshot.as_ref(), &tx.type_manager).unwrap(), ordering.into_typedb());
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) is key: {boolean}")]
+pub async fn get_owns_is_key(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    attr_type_label: params::Label,
+    is: params::Boolean,
+) {
+    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    with_read_tx!(context, |tx| {
+        let attr_type =
+            tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
+        check_boolean!(is, owns.is_key(tx.snapshot.as_ref(), &tx.type_manager).unwrap());
     });
 }

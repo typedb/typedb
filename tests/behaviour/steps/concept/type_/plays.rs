@@ -210,9 +210,65 @@ pub async fn get_plays_unset_annotation(
 
 #[apply(generic_step)]
 #[step(
+    expr = "{kind}\\({type_label}\\) get constraints for played role\\({type_label}\\) {contains_or_doesnt}: {constraint}"
+)]
+pub async fn get_constraints_for_played_role_contains(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    constraint: params::Constraint,
+) {
+    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    with_read_tx!(context, |tx| {
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+
+        let expected_constraint = constraint.into_typedb(None);
+        let actual_contains = player_type
+            .get_played_role_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, role_type)
+            .unwrap()
+            .into_iter()
+            .find(|constraint| &constraint.description() == &expected_constraint)
+            .is_some();
+        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+    });
+}
+
+#[apply(generic_step)]
+#[step(
+    expr = "{kind}\\({type_label}\\) get constraint categories for played role\\({type_label}\\) {contains_or_doesnt}: {constraint_category}"
+)]
+pub async fn get_constraint_categories_for_played_role_contains(
+    context: &mut Context,
+    kind: params::Kind,
+    type_label: params::Label,
+    role_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    constraint_category: params::ConstraintCategory,
+) {
+    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    with_read_tx!(context, |tx| {
+        let role_type =
+            tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
+
+        let expected_constraint_category = constraint_category.into_typedb();
+        let actual_contains = player_type
+            .get_played_role_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, role_type)
+            .unwrap()
+            .into_iter()
+            .find(|constraint| constraint.category() == expected_constraint_category)
+            .is_some();
+        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+    });
+}
+
+#[apply(generic_step)]
+#[step(
     expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}"
 )]
-pub async fn get_plays_annotations_contains(
+pub async fn get_plays_constraints_contains(
     context: &mut Context,
     kind: params::Kind,
     type_label: params::Label,

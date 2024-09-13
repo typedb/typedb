@@ -313,7 +313,7 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_relates_with_specialised(snapshot, self.clone().into_owned())
     }
 
-    pub(crate) fn get_related_role_type_constraints<'m>(
+    pub fn get_related_role_type_constraints<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
