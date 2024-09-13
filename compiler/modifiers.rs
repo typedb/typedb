@@ -5,8 +5,10 @@
  */
 
 use std::collections::{HashMap, HashSet};
+
 use answer::variable::Variable;
 use ir::program::modifier::SortVariable;
+
 use crate::VariablePosition;
 
 pub struct FilterProgram {

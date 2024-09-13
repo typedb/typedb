@@ -103,7 +103,6 @@ pub(super) fn infer_types_for_pipeline(
             latest_match_index = Some(annotated_stages.len());
         }
         annotated_stages.push(annotated_stage);
-        println!("{:?}", variable_registry.variable_categories().collect::<Vec<_>>());
     }
     Ok(AnnotatedPipeline { annotated_stages, annotated_preamble })
 }
@@ -194,6 +193,7 @@ fn annotate_stage(
         }
         TranslatedStage::Sort(sort) => Ok(AnnotatedStage::Sort(sort)),
         TranslatedStage::Filter(select) => Ok(AnnotatedStage::Filter(select)),
-        _ => todo!()
+        TranslatedStage::Offset(offset) => Ok(AnnotatedStage::Offset(offset)),
+        TranslatedStage::Limit(limit) => Ok(AnnotatedStage::Limit(limit)),
     }
 }

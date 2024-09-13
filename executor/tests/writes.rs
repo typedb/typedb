@@ -205,7 +205,6 @@ fn execute_delete(
         delete_executor.execute_delete(snapshot, thing_manager, &mut output);
         output_rows.push(output_vec);
     }
-    println!("{:?}", &delete_executor.program().output_row_schema);
     Ok(output_rows)
 }
 

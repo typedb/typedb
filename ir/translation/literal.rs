@@ -12,8 +12,8 @@ use encoding::value::{
     value::Value,
 };
 use typeql::value::{
-    BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, Literal, Sign, SignedDecimalLiteral,
-    SignedIntegerLiteral, StringLiteral, TimeFragment, TimeZone, ValueLiteral,
+    BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, IntegerLiteral, Literal, Sign,
+    SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, TimeZone, ValueLiteral,
 };
 
 use crate::LiteralParseError;
@@ -72,6 +72,14 @@ impl FromTypeQLLiteral for i64 {
             Sign::Plus => unsigned,
             Sign::Minus => -unsigned,
         })
+    }
+}
+
+impl FromTypeQLLiteral for u64 {
+    type TypeQLLiteral = IntegerLiteral;
+
+    fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
+        Self::parse_primitive(literal.value.as_str())
     }
 }
 

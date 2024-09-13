@@ -3,16 +3,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashMap;
-use std::marker::PhantomData;
-use std::sync::Arc;
-use compiler::modifiers::SortProgram;
-use compiler::VariablePosition;
+use std::{cmp::Ordering, collections::HashMap, marker::PhantomData, sync::Arc};
+
+use compiler::{
+    modifiers::{LimitProgram, SortProgram},
+    VariablePosition,
+};
 use ir::program::modifier::SortVariable;
-use storage::snapshot::ReadableSnapshot;
-use crate::batch::Batch;
 use crate::ExecutionInterrupt;
-use crate::pipeline::{PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator};
+use lending_iterator::LendingIterator;
+use storage::snapshot::ReadableSnapshot;
+use crate::{
+    batch::Batch,
+    pipeline::{PipelineExecutionError, StageAPI, StageIterator},
+    row::MaybeOwnedRow,
+};
 
 pub struct SortStageExecutor<Snapshot, PreviousStage> {
     program: SortProgram,
@@ -20,11 +25,10 @@ pub struct SortStageExecutor<Snapshot, PreviousStage> {
     phantom: PhantomData<Snapshot>,
 }
 
-
 impl<Snapshot, PreviousStage> SortStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: ReadableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     pub fn new(program: SortProgram, previous: PreviousStage) -> Self {
         Self { program, previous, phantom: PhantomData::default() }
@@ -32,11 +36,11 @@ impl<Snapshot, PreviousStage> SortStageExecutor<Snapshot, PreviousStage>
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for SortStageExecutor<Snapshot, PreviousStage>
-    where
-        Snapshot: ReadableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
-    type OutputIterator = WrittenRowsIterator;
+    type OutputIterator = SortStageIterator<Snapshot>;
 
     fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
         // TODO: Do we really need this function apart from at  the final stage? If so, can't we make it a property of the pipeline instead?
@@ -44,18 +48,156 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for SortStageExecutor<Snapshot,
     }
 
     fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
-        let (previous_iterator, mut snapshot) = self.previous.into_iterator(interrupt)?;
+        let Self { previous, program, .. } = self;
+        let (previous_iterator, mut snapshot) = previous.into_iterator(interrupt)?;
         // accumulate once, then we will operate in-place
         let mut batch = match previous_iterator.collect_owned() {
             Ok(batch) => batch,
             Err(err) => return Err((snapshot, err)),
         };
-        let batch_len = batch.len();
-        quick_sort_batch(&mut batch, self.program.sort_on, 0, batch_len);
-        Ok((WrittenRowsIterator::new(batch), snapshot))
+        Ok((SortStageIterator::from_unsorted(batch, program), snapshot))
     }
 }
 
-fn quick_sort_batch(batch: &mut Batch, sort_on: Vec<SortVariable>, start: usize, end: usize) {
-    // todo!("Implement")
+pub struct SortStageIterator<Snapshot>
+where
+    Snapshot: ReadableSnapshot + 'static,
+{
+    unsorted: Batch,
+    sorted_indices: Box<[usize]>,
+    next_index_index: usize,
+    phantom: PhantomData<Snapshot>,
+}
+impl<Snapshot> SortStageIterator<Snapshot>
+where
+    Snapshot: ReadableSnapshot + 'static,
+{
+    fn from_unsorted(unsorted: Batch, sort_program: SortProgram) -> Self {
+        let mut indices: Vec<usize> = (0..unsorted.len()).collect();
+        let sort_by: Vec<(usize, bool)> = sort_program
+            .sort_on
+            .iter()
+            .map(|sort_variable| match sort_variable {
+                SortVariable::Ascending(v) => (sort_program.output_row_mapping.get(v).unwrap().as_usize(), true),
+                SortVariable::Descending(v) => (sort_program.output_row_mapping.get(v).unwrap().as_usize(), false),
+            })
+            .collect();
+        indices.sort_by(|x, y| {
+            let x_row_as_row = unsorted.get_row(*x);
+            let y_row_as_row = unsorted.get_row(*y);
+            let x_row = x_row_as_row.get_row();
+            let y_row = y_row_as_row.get_row();
+            for (idx, asc) in &sort_by {
+                let ord = x_row[*idx]
+                    .partial_cmp(&y_row[*idx])
+                    .expect("Sort on variable with uncomparable values should have been caught at query-compile time");
+                match (asc, ord) {
+                    (true, Ordering::Less) | (false, Ordering::Greater) => return Ordering::Less,
+                    (true, Ordering::Greater) | (false, Ordering::Less) => return Ordering::Greater,
+                    (true, Ordering::Equal) | (false, Ordering::Equal) => {}
+                };
+            }
+            Ordering::Equal
+        });
+        Self {
+            unsorted,
+            sorted_indices: indices.into_boxed_slice(),
+            next_index_index: 0,
+            phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl<Snapshot> LendingIterator for SortStageIterator<Snapshot>
+where
+    Snapshot: ReadableSnapshot + 'static,
+{
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        if self.next_index_index < self.unsorted.len() {
+            let row = self.unsorted.get_row(self.sorted_indices[self.next_index_index]);
+            self.next_index_index += 1;
+            Some(Ok(row))
+        } else {
+            None
+        }
+    }
+}
+
+impl<Snapshot> StageIterator for SortStageIterator<Snapshot> where Snapshot: ReadableSnapshot + 'static {}
+
+pub struct LimitStageExecutor<Snapshot, PreviousStage> {
+    limit_program: LimitProgram,
+    previous: PreviousStage,
+    phantom: PhantomData<Snapshot>,
+}
+
+impl<Snapshot, PreviousStage> LimitStageExecutor<Snapshot, PreviousStage> {
+    pub fn new(limit_program: LimitProgram, previous: PreviousStage) -> Self {
+        Self { limit_program, previous, phantom: PhantomData::default() }
+    }
+}
+
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for LimitStageExecutor<Snapshot, PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    type OutputIterator = LimitStageIterator<Snapshot, PreviousStage::OutputIterator>;
+
+    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
+        self.previous.named_selected_outputs()
+    }
+
+    fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+        let Self { limit_program, previous, .. } = self;
+        let (previous_iterator, snapshot) = previous.into_iterator(interrupt)?;
+        Ok((LimitStageIterator::new(previous_iterator, limit_program.limit), snapshot))
+    }
+}
+
+pub struct LimitStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+    // TODO: Why not Box dyn it instead of template?
+    remaining: u64,
+    previous: PreviousIterator,
+    phantom: PhantomData<Snapshot>,
+}
+
+impl<Snapshot, PreviousIterator> LimitStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+    fn new(previous: PreviousIterator, limit: u64) -> Self {
+        Self { remaining: limit, previous, phantom: PhantomData::default() }
+    }
+}
+
+impl<Snapshot, PreviousIterator> StageIterator for LimitStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+}
+
+impl<Snapshot, PreviousIterator> LendingIterator for LimitStageIterator<Snapshot, PreviousIterator>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousIterator: StageIterator,
+{
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        if self.remaining > 0 {
+            self.remaining -= 1;
+            self.previous.next()
+        } else {
+            None
+        }
+    }
 }

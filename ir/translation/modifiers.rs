@@ -5,9 +5,15 @@
  */
 
 use typeql::token::Order;
-use crate::PatternDefinitionError;
-use crate::program::modifier::{Filter, Sort};
-use crate::translation::TranslationContext;
+
+use crate::{
+    program::modifier::{Filter, Limit, Sort},
+    translation::{
+        literal::{translate_literal, FromTypeQLLiteral},
+        TranslationContext,
+    },
+    PatternDefinitionError,
+};
 
 pub fn translate_select(
     context: &mut TranslationContext,
@@ -24,9 +30,25 @@ pub fn translate_sort(
     context: &mut TranslationContext,
     sort: &typeql::query::stage::modifier::Sort,
 ) -> Result<Sort, PatternDefinitionError> {
-    let sort_on = sort.ordered_variables.iter().map(|ordered_var| {
-        (ordered_var.variable.name().unwrap(), ordered_var.ordering.map(|order| order == Order::Asc).unwrap_or(true))
-    }).collect();
+    let sort_on = sort
+        .ordered_variables
+        .iter()
+        .map(|ordered_var| {
+            (
+                ordered_var.variable.name().unwrap(),
+                ordered_var.ordering.map(|order| order == Order::Asc).unwrap_or(true),
+            )
+        })
+        .collect();
     Sort::new(sort_on, &|name| context.visible_variables.get(name).map(|var| var.clone()))
-    .map_err(|source| PatternDefinitionError::ModifierDefinitionError { source })
+        .map_err(|source| PatternDefinitionError::ModifierDefinitionError { source })
+}
+
+pub fn translate_limit(
+    context: &mut TranslationContext,
+    limit: &typeql::query::stage::modifier::Limit,
+) -> Result<Limit, PatternDefinitionError> {
+    u64::from_typeql_literal(&limit.limit)
+        .map(|limit| Limit::new(limit))
+        .map_err(|source| PatternDefinitionError::LiteralParseError { literal: limit.limit.value.clone(), source })
 }

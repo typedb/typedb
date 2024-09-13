@@ -13,6 +13,7 @@ use executor::{
         initial::InitialStage,
         insert::InsertStageExecutor,
         match_::MatchStageExecutor,
+        modifiers::{LimitStageExecutor, SortStageExecutor},
         stage::{ReadPipelineStage, WritePipelineStage},
     },
     write::{delete::DeleteExecutor, insert::InsertExecutor},
@@ -20,7 +21,6 @@ use executor::{
 use function::function_manager::FunctionManager;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
-use executor::pipeline::modifiers::SortStageExecutor;
 
 use crate::{
     annotation::{infer_types_for_pipeline, AnnotatedPipeline},
@@ -126,9 +126,12 @@ impl QueryManager {
                 CompiledStage::Sort(sort_program) => {
                     let sort_stage = SortStageExecutor::new(sort_program, last_stage);
                     last_stage = ReadPipelineStage::Sort(Box::new(sort_stage));
-                },
+                }
                 CompiledStage::Offset(_) => todo!(),
-                CompiledStage::Limit(_) => todo!()
+                CompiledStage::Limit(limit_program) => {
+                    let limit_stage = LimitStageExecutor::new(limit_program, last_stage);
+                    last_stage = ReadPipelineStage::Limit(Box::new(limit_stage));
+                }
             }
         }
         Ok(last_stage)
@@ -220,7 +223,7 @@ impl QueryManager {
                     );
                     last_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
-                _ => todo!()
+                _ => todo!(),
             }
         }
         Ok(last_stage)

@@ -3,20 +3,25 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{collections::HashMap, sync::Arc};
-use std::collections::HashSet;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use answer::variable::Variable;
 use compiler::{
     delete::program::DeleteProgram,
     insert::program::InsertProgram,
     match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
+    modifiers::{FilterProgram, LimitProgram, OffsetProgram, SortProgram},
     VariablePosition,
 };
-use compiler::modifiers::{FilterProgram, LimitProgram, OffsetProgram, SortProgram};
 use concept::thing::statistics::Statistics;
-use ir::program::{block::VariableRegistry, function::Function};
-use ir::program::modifier::{Filter, Limit, Offset, Sort};
+use ir::program::{
+    block::VariableRegistry,
+    function::Function,
+    modifier::{Filter, Limit, Offset, Sort},
+};
 
 use crate::{annotation::AnnotatedStage, error::QueryError};
 
@@ -58,9 +63,9 @@ impl CompiledStage {
                 .filter_map(|(i, v)| v.map(|v| (v, VariablePosition::new(i as u32))))
                 .collect(),
             CompiledStage::Filter(program) => program.output_row_mapping.clone(),
-            CompiledStage::Sort(_) => todo!(),
-            CompiledStage::Offset(_) => todo!(),
-            CompiledStage::Limit(_) => todo!(),
+            CompiledStage::Sort(program) => program.output_row_mapping.clone(),
+            CompiledStage::Offset(program) => program.output_row_mapping.clone(),
+            CompiledStage::Limit(program) => program.output_row_mapping.clone(),
         }
     }
 }
@@ -137,12 +142,14 @@ fn compile_stage(
             }
             Ok(CompiledStage::Filter(FilterProgram { retained_positions, output_row_mapping }))
         }
-        AnnotatedStage::Sort(sort) => {
-            Ok(CompiledStage::Sort(SortProgram { sort_on: sort.variables.clone(), output_row_mapping: input_variables.clone() }))
-        }
-        AnnotatedStage::Offset(offset) => {
-            Ok(CompiledStage::Offset(OffsetProgram { offset: offset.offset(), output_row_mapping: input_variables.clone() }))
-        }
+        AnnotatedStage::Sort(sort) => Ok(CompiledStage::Sort(SortProgram {
+            sort_on: sort.variables.clone(),
+            output_row_mapping: input_variables.clone(),
+        })),
+        AnnotatedStage::Offset(offset) => Ok(CompiledStage::Offset(OffsetProgram {
+            offset: offset.offset(),
+            output_row_mapping: input_variables.clone(),
+        })),
         AnnotatedStage::Limit(limit) => {
             Ok(CompiledStage::Limit(LimitProgram { limit: limit.limit(), output_row_mapping: input_variables.clone() }))
         }
