@@ -7,7 +7,6 @@
 use std::{fmt::Display, vec};
 
 use answer::variable_value::VariableValue;
-use compiler::VariablePosition;
 use concept::error::ConceptReadError;
 use lending_iterator::LendingIterator;
 
