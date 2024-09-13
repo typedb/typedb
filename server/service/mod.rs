@@ -10,4 +10,4 @@ mod response_builders;
 pub(crate) mod transaction_service;
 pub(crate) mod typedb_service;
 
-pub(crate) type RequestID = [u8; 16];
+pub(crate) type ConnectionID = uuid::Bytes;

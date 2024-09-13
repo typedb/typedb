@@ -4,15 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt, fs, io,
-    path::{Path, PathBuf},
-};
+use std::{error::Error, fmt, fs, io, path::PathBuf};
 
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 
-use crate::service::typedb_service::TypeDBService;
+use crate::{parameters::config::Config, service::typedb_service::TypeDBService};
 
 #[derive(Debug)]
 pub struct Server {
@@ -21,22 +17,22 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn open(data_directory: impl AsRef<Path>) -> Result<Self, ServerOpenError> {
+    pub fn open(config: Config) -> Result<Self, ServerOpenError> {
         use ServerOpenError::{CouldNotCreateDataDirectory, NotADirectory};
-        let data_directory = data_directory.as_ref();
+        let storage_directory = &config.storage.data;
 
-        if !data_directory.exists() {
-            fs::create_dir_all(data_directory)
-                .map_err(|error| CouldNotCreateDataDirectory { path: data_directory.to_owned(), source: error })?;
-        } else if !data_directory.is_dir() {
-            return Err(NotADirectory { path: data_directory.to_owned() });
+        if !storage_directory.exists() {
+            fs::create_dir_all(storage_directory)
+                .map_err(|error| CouldNotCreateDataDirectory { path: storage_directory.to_owned(), source: error })?;
+        } else if !storage_directory.is_dir() {
+            return Err(NotADirectory { path: storage_directory.to_owned() });
         }
 
-        let database_manager =
-            DatabaseManager::new(data_directory).map_err(|err| ServerOpenError::DatabaseOpenError { source: err })?;
-        let data_directory = data_directory.to_owned();
+        let database_manager = DatabaseManager::new(storage_directory)
+            .map_err(|err| ServerOpenError::DatabaseOpenError { source: err })?;
+        let data_directory = storage_directory.to_owned();
 
-        let typedb_service = TypeDBService::new(database_manager);
+        let typedb_service = TypeDBService::new(&config.server.address, database_manager);
 
         Ok(Self { data_directory, typedb_service: Some(typedb_service) })
     }

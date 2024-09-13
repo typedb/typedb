@@ -23,10 +23,7 @@ use database::{
 use error::typedb_error;
 use executor::{
     batch::Batch,
-    pipeline::{
-        stage::{ReadPipelineStage, WriteStageIterator},
-        PipelineExecutionError, StageAPI, StageIterator,
-    },
+    pipeline::{stage::ReadPipelineStage, PipelineExecutionError, StageAPI, StageIterator},
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
@@ -60,7 +57,7 @@ use uuid::Uuid;
 use crate::service::{
     answer::encode_row,
     error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
-    response_builders::{
+    response_builders::transaction::{
         query_res_from_error, query_res_from_query_res_ok, query_res_ok_concept_row_stream, query_res_ok_empty,
         query_res_ok_from_query_res_ok_ok, query_res_part_from_res_part_res,
         transaction_server_res_part_stream_signal_continue, transaction_server_res_part_stream_signal_done,
@@ -107,22 +104,6 @@ pub(crate) struct TransactionService {
     write_responders: HashMap<Uuid, (JoinHandle<()>, StreamTransmitter)>,
     running_write_query:
         Option<(Uuid, JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), QueryError>)>)>,
-}
-
-macro_rules! close_service {
-    () => {
-        return;
-    };
-}
-
-macro_rules! close_service_with_error {
-    ($self: ident, $error: expr) => {{
-        let result = $self.response_sender.send(Err($error)).await;
-        if let Err(send_error) = result {
-            event!(Level::DEBUG, ?send_error, "Failed to send error to client");
-        }
-        return;
-    }};
 }
 
 macro_rules! unwrap_or_execute_and_return {
