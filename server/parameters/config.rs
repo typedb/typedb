@@ -18,14 +18,14 @@ pub struct Config {
 impl Config {
     pub fn new() -> Self {
         Self {
-            server: ServerConfig { address: SocketAddr::from_str("localhost:1729").unwrap() },
+            server: ServerConfig { address: SocketAddr::from_str("127.0.0.1:1729").unwrap() },
             storage: StorageConfig { data: "runtimedata/server/data".into() },
         }
     }
 
     pub fn new_with_data_directory(data_directory: &Path) -> Self {
         Self {
-            server: ServerConfig { address: SocketAddr::from_str("localhost:1729").unwrap() },
+            server: ServerConfig { address: SocketAddr::from_str("127.0.0.1:1729").unwrap() },
             storage: StorageConfig { data: data_directory.into() },
         }
     }

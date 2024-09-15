@@ -85,7 +85,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
                 Ok((ReadStageIterator::Limit(Box::new(iterator)), snapshot))
             }
             ReadPipelineStage::Filter(stage) => {
-                let (iterator, snapshot) = stage.into_iterator()?;
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((ReadStageIterator::Filter(Box::new(iterator)), snapshot))
             }
         }

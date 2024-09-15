@@ -327,9 +327,9 @@ where
             .collect::<HashMap<_, _>>()
     }
 
-    fn into_iterator(self) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+    fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { filter_program, previous, .. } = self;
-        let (previous_iterator, snapshot) = previous.into_iterator()?;
+        let (previous_iterator, snapshot) = previous.into_iterator(interrupt)?;
         Ok((FilterStageIterator::new(previous_iterator), snapshot))
     }
 }
