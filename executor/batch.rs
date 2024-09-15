@@ -168,6 +168,7 @@ impl Batch {
         let end = (index + 1) * self.width as usize;
         if end > self.data.len() {
             self.data.resize(end, VariableValue::Empty);
+            self.multiplicities.resize(index + 1, 0);
         }
         let slice = &mut self.data[start..end];
         Row::new(slice, &mut self.multiplicities[index])
