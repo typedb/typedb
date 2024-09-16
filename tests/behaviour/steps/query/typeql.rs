@@ -24,8 +24,8 @@ use database::transaction::{TransactionRead, TransactionSchema, TransactionWrite
 use encoding::value::label::Label;
 use error::TypeDBError;
 use executor::{
-    error::ReadExecutionError,
     batch::Batch,
+    error::ReadExecutionError,
     pipeline::{
         stage::{WritePipelineStage, WriteStageIterator},
         PipelineExecutionError, StageAPI, StageIterator,
@@ -179,12 +179,12 @@ fn execute_insert_query_impl<Snapshot: WritableSnapshot + 'static>(
     query: Pipeline,
 ) -> (Snapshot, Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError>) {
     let qm = QueryManager::new();
-    let (final_stage, named_outputs) = match qm.prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &query)
-    {
-        Ok(final_stage) => final_stage,
-        Err((snapshot, error)) => return (snapshot, Err(error)),
-    };
-    let (snapshot, result_as_batch, ) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
+    let (final_stage, named_outputs) =
+        match qm.prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &query) {
+            Ok(final_stage) => final_stage,
+            Err((snapshot, error)) => return (snapshot, Err(error)),
+        };
+    let (snapshot, result_as_batch) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
         Ok((iterator, snapshot)) => {
             let result = iterator.collect_owned();
             (Arc::into_inner(snapshot).unwrap(), result)

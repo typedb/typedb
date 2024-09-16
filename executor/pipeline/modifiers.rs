@@ -12,11 +12,12 @@ use compiler::{
 use ir::program::modifier::SortVariable;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
+
 use crate::{
     batch::Batch,
-    ExecutionInterrupt,
     pipeline::{PipelineExecutionError, StageAPI, StageIterator},
     row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 
 // Sort
@@ -43,8 +44,10 @@ where
 {
     type OutputIterator = SortStageIterator<Snapshot>;
 
-
-    fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+    fn into_iterator(
+        self,
+        interrupt: ExecutionInterrupt,
+    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { previous, program, .. } = self;
         let (previous_iterator, mut snapshot) = previous.into_iterator(interrupt)?;
         // accumulate once, then we will operate in-place
@@ -147,7 +150,10 @@ where
 {
     type OutputIterator = OffsetStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
-    fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+    fn into_iterator(
+        self,
+        interrupt: ExecutionInterrupt,
+    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { offset_program, previous, .. } = self;
         let (previous_iterator, snapshot) = previous.into_iterator(interrupt)?;
         Ok((OffsetStageIterator::new(previous_iterator, offset_program.offset), snapshot))
@@ -227,7 +233,10 @@ where
 {
     type OutputIterator = LimitStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
-    fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+    fn into_iterator(
+        self,
+        interrupt: ExecutionInterrupt,
+    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { limit_program, previous, .. } = self;
         let (previous_iterator, snapshot) = previous.into_iterator(interrupt)?;
         Ok((LimitStageIterator::new(previous_iterator, limit_program.limit), snapshot))
@@ -306,7 +315,10 @@ where
 {
     type OutputIterator = FilterStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
-    fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
+    fn into_iterator(
+        self,
+        interrupt: ExecutionInterrupt,
+    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { filter_program, previous, .. } = self;
         let (previous_iterator, snapshot) = previous.into_iterator(interrupt)?;
         Ok((FilterStageIterator::new(previous_iterator), snapshot))

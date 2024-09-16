@@ -14,6 +14,7 @@ use std::{
     time::SystemTime,
 };
 
+use answer::variable::Variable;
 use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
@@ -53,7 +54,6 @@ use typeql::{
     Query,
 };
 use uuid::Uuid;
-use answer::variable::Variable;
 
 use crate::service::{
     answer::encode_row,
@@ -834,10 +834,7 @@ impl TransactionService {
         );
         let (query_output_descriptor, pipeline) = match result {
             Ok((executor, named_outputs)) => {
-                let named_outputs: StreamQueryOutputDescriptor = named_outputs
-                    .into_iter()
-                    .sorted()
-                    .collect();
+                let named_outputs: StreamQueryOutputDescriptor = named_outputs.into_iter().sorted().collect();
                 (named_outputs, executor)
             }
             Err((snapshot, err)) => return (snapshot, Err(err)),
@@ -932,11 +929,8 @@ impl TransactionService {
                     Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
                 });
 
-                let descriptor: StreamQueryOutputDescriptor = named_outputs
-                    .into_iter()
-                    .map(|(name, position)| (name, position))
-                    .sorted()
-                    .collect();
+                let descriptor: StreamQueryOutputDescriptor =
+                    named_outputs.into_iter().map(|(name, position)| (name, position)).sorted().collect();
                 let response = StreamQueryResponse::init(&descriptor);
                 Self::submit_response_sync(&sender, response);
 

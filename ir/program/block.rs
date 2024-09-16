@@ -107,8 +107,7 @@ impl<'reg> FunctionalBlockBuilder<'reg> {
     }
 
     pub fn add_sort(&mut self, sort_variables: Vec<(&str, bool)>) -> Result<&Modifier, ModifierDefinitionError> {
-        let sort =
-            Sort::new(sort_variables, self.context.variable_names_index)?;
+        let sort = Sort::new(sort_variables, self.context.variable_names_index)?;
         self.modifiers.push(Modifier::Sort(sort));
         Ok(self.modifiers.last().unwrap())
     }

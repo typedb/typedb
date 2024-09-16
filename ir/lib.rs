@@ -28,7 +28,6 @@ pub mod pattern;
 pub mod program;
 pub mod translation;
 
-
 // TODO: include declaration source for each error message
 typedb_error!(
     pub PatternDefinitionError(domain = "Representation", prefix = "PRP") {

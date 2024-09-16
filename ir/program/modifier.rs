@@ -50,7 +50,7 @@ pub struct Sort {
 impl Sort {
     pub(crate) fn new(
         variables: Vec<(&str, bool)>,
-        variable_lookup: &HashMap<String, Variable>
+        variable_lookup: &HashMap<String, Variable>,
     ) -> Result<Self, ModifierDefinitionError> {
         use ModifierDefinitionError::SortVariableNotAvailable;
         let mut sort_variables = Vec::with_capacity(variables.len());
