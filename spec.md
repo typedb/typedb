@@ -1,6 +1,7 @@
 # TypeDB - Behaviour Specification
 
 <!-- TODO
+* Add function calls to expressions
 [DONE] * Ensure role player set semantics
 [DONE]  * idempotency non-list inserts
 * Improve explanation of dependent list types
