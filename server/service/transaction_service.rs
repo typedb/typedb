@@ -13,8 +13,8 @@ use std::{
     sync::Arc,
     time::SystemTime,
 };
+use std::time::Instant;
 
-use answer::variable::Variable;
 use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
@@ -66,6 +66,7 @@ use crate::service::{
         transaction_server_res_query_res,
     },
 };
+use crate::service::response_builders::transaction::transaction_open_res;
 
 #[derive(Debug)]
 pub enum Transaction {
@@ -101,8 +102,8 @@ pub(crate) struct TransactionService {
     is_open: bool,
     transaction: Option<Transaction>,
     request_queue: Vec<(Uuid, Pipeline)>,
-    read_responders: HashMap<Uuid, (JoinHandle<()>, StreamTransmitter)>,
-    write_responders: HashMap<Uuid, (JoinHandle<()>, StreamTransmitter)>,
+    read_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
+    write_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query:
         Option<(Uuid, JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), QueryError>)>)>,
 }
@@ -311,12 +312,14 @@ impl TransactionService {
         req: typedb_protocol::transaction::req::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
         match (self.is_open, req) {
-            (false, typedb_protocol::transaction::req::Req::OpenReq(open_req)) => match self.handle_open(open_req) {
-                Ok(_) => {
-                    event!(Level::TRACE, "Transaction opened, request ID: {:?}", &request_id);
-                    Ok(Continue(()))
+            (false, typedb_protocol::transaction::req::Req::OpenReq(open_req)) => {
+                let result = self.handle_open(request_id, open_req).await;
+                match &result {
+                    Ok(ControlFlow::Continue(_)) => event!(Level::TRACE, "Transaction opened successfully."),
+                    Ok(ControlFlow::Break(_)) => event!(Level::TRACE, "Transaction open aborted."),
+                    Err(status) => event!(Level::TRACE, "Error opening transaction: {}", status),
                 }
-                Err(status) => Err(status),
+                result
             },
             (true, typedb_protocol::transaction::req::Req::OpenReq(_)) => {
                 Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
@@ -378,7 +381,8 @@ impl TransactionService {
         }
     }
 
-    fn handle_open(&mut self, open_req: typedb_protocol::transaction::open::Req) -> Result<(), Status> {
+    async fn handle_open(&mut self, req_id: Uuid, open_req: typedb_protocol::transaction::open::Req) -> Result<ControlFlow<(), ()>, Status> {
+        let receive_time = Instant::now();
         self.network_latency_millis = Some(open_req.network_latency_millis);
         let mut transaction_options = TransactionOptions::default();
         if let Some(options) = open_req.options {
@@ -415,7 +419,14 @@ impl TransactionService {
         };
         self.transaction = Some(transaction);
         self.is_open = true;
-        Ok(())
+
+        let processing_time_millis = Instant::now().duration_since(receive_time).as_millis() as u64;
+        if let Err(err) = self.response_sender.send(Ok(transaction_open_res(req_id, processing_time_millis))).await {
+            event!(Level::TRACE, "Submit message failed: {:?}", err);
+            Ok(Break(()))
+        } else {
+            Ok(Continue(()))
+        }
     }
 
     async fn handle_commit(&mut self, _commit_req: typedb_protocol::transaction::commit::Req) -> Result<(), Status> {
@@ -715,7 +726,7 @@ impl TransactionService {
         let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
         let interrupt = self.query_interrupt_receiver.clone();
         let batch_reader = self.write_query_batch_reader(output_descriptor, batch, sender, interrupt);
-        let stream_transmitter = StreamTransmitter::start_new(
+        let stream_transmitter = QueryStreamTransmitter::start_new(
             self.response_sender.clone(),
             receiver,
             req_id,
@@ -728,7 +739,7 @@ impl TransactionService {
     fn run_and_activate_read_transmitter(&mut self, req_id: Uuid, pipeline: Pipeline) {
         let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
         let worker_handle = self.blocking_read_query_worker(pipeline, sender);
-        let stream_transmitter = StreamTransmitter::start_new(
+        let stream_transmitter = QueryStreamTransmitter::start_new(
             self.response_sender.clone(),
             receiver,
             req_id,
@@ -1044,7 +1055,7 @@ impl TransactionService {
 }
 
 #[derive(Debug)]
-struct StreamTransmitter {
+struct QueryStreamTransmitter {
     response_sender: Sender<Result<Server, Status>>,
     req_id: Uuid,
     prefetch_size: usize,
@@ -1053,7 +1064,7 @@ struct StreamTransmitter {
     transmitter_task: Option<JoinHandle<ControlFlow<(), Receiver<StreamQueryResponse>>>>,
 }
 
-impl StreamTransmitter {
+impl QueryStreamTransmitter {
     fn start_new(
         response_sender: Sender<Result<Server, Status>>,
         query_response_receiver: Receiver<StreamQueryResponse>,

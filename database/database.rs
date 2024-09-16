@@ -15,6 +15,7 @@ use std::{
     },
     time::Duration,
 };
+use tracing::{event, Level};
 
 use concept::{
     thing::statistics::{Statistics, StatisticsError},
@@ -233,6 +234,7 @@ impl Database<WALClient> {
             TypeCacheInitialise, WALOpen,
         };
         let name = name.as_ref();
+        event!(Level::TRACE, "Loading database '{}', at path '{:?}' (absolute path: '{:?}').", &name, path, std::path::absolute(path));
 
         let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
         let wal_last_sequence_number = wal.previous();

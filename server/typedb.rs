@@ -7,6 +7,7 @@
 use std::{error::Error, fmt, fs, io, path::PathBuf};
 
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
+use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
 
 use crate::{parameters::config::Config, service::typedb_service::TypeDBService};
 
@@ -14,6 +15,7 @@ use crate::{parameters::config::Config, service::typedb_service::TypeDBService};
 pub struct Server {
     data_directory: PathBuf,
     typedb_service: Option<TypeDBService>,
+    config: Config,
 }
 
 impl Server {
@@ -34,23 +36,20 @@ impl Server {
 
         let typedb_service = TypeDBService::new(&config.server.address, database_manager);
 
-        Ok(Self { data_directory, typedb_service: Some(typedb_service) })
+        Ok(Self { data_directory, typedb_service: Some(typedb_service), config })
     }
 
     pub fn database_manager(&self) -> &DatabaseManager {
         self.typedb_service.as_ref().unwrap().database_manager()
     }
 
-    pub async fn serve(self) -> Result<(), Box<dyn Error>> {
-        // let address = "localhost:1729".parse().unwrap();
-
-        // TODO: could also construct in Server and await here only
-        // Server::builder()
-        // .http2_keepalive_interval()
-        // .add_service(self.typedb_service.take().unwrap())
-        // .serve(address)
-        // .await?;
-        Ok(())
+    pub async fn serve(mut self) -> Result<(), tonic::transport::Error> {
+        let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
+        tonic::transport::Server::builder()
+            .http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE))
+            .add_service(service)
+            .serve(self.config.server.address)
+        .await
     }
 }
 

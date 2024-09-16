@@ -7,18 +7,22 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use logger::initialise_logging;
+use logger::{initialise_logging, initialise_logging_global};
 use resource::constants::server::ASCII_LOGO;
 use server::parameters::config::Config;
 
 #[tokio::main]
 async fn main() {
     print_ascii_logo(); // very important
-    let _guard = initialise_logging();
+    initialise_logging_global();
 
     let config = get_configuration();
 
-    server::typedb::Server::open(config).unwrap().serve().await.unwrap()
+    let result = server::typedb::Server::open(config).unwrap().serve().await;
+    match result {
+        Ok(_) => println!("Exited."),
+        Err(err) => println!("Exited with error: {:?}", err),
+    }
 }
 
 fn get_configuration() -> Config {

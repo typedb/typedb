@@ -10,6 +10,7 @@ use std::{
     str::FromStr,
 };
 
+#[derive(Debug)]
 pub struct Config {
     pub(crate) server: ServerConfig,
     pub(crate) storage: StorageConfig,
@@ -31,10 +32,12 @@ impl Config {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct ServerConfig {
     pub(crate) address: SocketAddr,
 }
 
+#[derive(Debug)]
 pub(crate) struct StorageConfig {
     pub(crate) data: PathBuf,
 }

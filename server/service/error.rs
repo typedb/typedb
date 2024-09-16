@@ -13,6 +13,7 @@ use uuid::Uuid;
 
 // Errors caused by incorrect implementation or usage of the network protocol.
 // Note: NOT a typedb_error!(), since we want go directly to Status
+#[derive(Debug)]
 pub(crate) enum ProtocolError {
     MissingField {
         name: &'static str,

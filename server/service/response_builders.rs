@@ -5,11 +5,29 @@
  */
 
 pub(crate) mod connection {
+    use std::time::Instant;
+
     use crate::service::ConnectionID;
 
-    pub(crate) fn connection_open_res(connection_id: ConnectionID) -> typedb_protocol::connection::open::Res {
+    pub(crate) fn connection_open_res(connection_id: ConnectionID, receive_time: Instant) -> typedb_protocol::connection::open::Res {
+        let processing_millis = Instant::now().duration_since(receive_time).as_millis();
         typedb_protocol::connection::open::Res {
             connection_id: Some(typedb_protocol::ConnectionId { id: Vec::from(connection_id) }),
+            server_duration_millis: processing_millis as u64,
+        }
+    }
+}
+
+pub(crate) mod server_manager {
+    use std::net::SocketAddr;
+
+    pub(crate) fn servers_all_res(address: &SocketAddr) -> typedb_protocol::server_manager::all::Res {
+        typedb_protocol::server_manager::all::Res {
+            servers: vec![
+                typedb_protocol::Server {
+                    address: address.to_string()
+                }
+            ]
         }
     }
 }
@@ -71,6 +89,15 @@ pub(crate) mod database {
 
 pub(crate) mod transaction {
     use uuid::Uuid;
+
+    pub(crate) fn transaction_open_res(req_id: Uuid, server_processing_millis: u64) -> typedb_protocol::transaction::Server {
+        let message = typedb_protocol::transaction::res::Res::OpenRes(
+            typedb_protocol::transaction::open::Res {
+                server_duration_millis: server_processing_millis
+            }
+        );
+        transaction_server_res(req_id, message)
+    }
 
     pub(crate) fn query_res_ok_empty() -> typedb_protocol::query::res::ok::Ok {
         typedb_protocol::query::res::ok::Ok::Empty(typedb_protocol::query::res::ok::Empty {})
