@@ -11,16 +11,20 @@ use typeql::{
     statement::{comparison::ComparisonStatement, Assignment, AssignmentPattern, InIterable},
     token::Kind,
     type_::NamedType,
-    Function, ScopedLabel, TypeRef, TypeRefAny,
+    ScopedLabel, TypeRef, TypeRefAny,
 };
 
 use crate::{
     pattern::{
         conjunction::ConjunctionBuilder,
         constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
+        expression::{Expression, ExpressionTree},
     },
     program::function_signature::FunctionSignatureIndex,
-    translation::expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
+    translation::{
+        expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
+        literal::translate_literal,
+    },
     PatternDefinitionError,
 };
 
@@ -55,8 +59,26 @@ pub(super) fn add_statement(
             add_typeql_expression(function_index, constraints, assigned, rhs)?
         }
         typeql::Statement::Thing(thing) => add_thing_statement(function_index, constraints, thing)?,
-        typeql::Statement::AttributeValue(attribute_value) => todo!(),
-        typeql::Statement::AttributeComparison(_) => todo!(),
+        typeql::Statement::AttributeValue(attribute_value) => {
+            // TODO: Strip the expressions out once we have a ValueRegister.
+            let attribute = register_typeql_var(constraints, &attribute_value.var)?;
+            add_typeql_isa(constraints, attribute, &attribute_value.isa)?;
+            let rhs_var = constraints.create_anonymous_variable()?;
+            let mut rhs_value = ExpressionTree::empty();
+            let value = translate_literal(&attribute_value.value).map_err(|source| {
+                PatternDefinitionError::LiteralParseError { source, literal: attribute_value.value.to_string().clone() }
+            })?;
+            rhs_value.add(Expression::Constant(value));
+            constraints.add_expression(rhs_var, rhs_value)?;
+            constraints.add_comparison(attribute, rhs_var, Comparator::Equal)?;
+        }
+        typeql::Statement::AttributeComparison(attribute_comparison) => {
+            let attribute = register_typeql_var(constraints, &attribute_comparison.var)?;
+            add_typeql_isa(constraints, attribute, &attribute_comparison.isa)?;
+            let rhs_var = constraints.create_anonymous_variable()?;
+            add_typeql_expression(function_index, constraints, rhs_var, &attribute_comparison.comparison.rhs)?;
+            constraints.add_comparison(attribute, rhs_var, attribute_comparison.comparison.comparator.into())?;
+        }
         typeql::Statement::Type(type_) => add_type_statement(constraints, type_)?,
     }
     Ok(())
@@ -390,7 +412,7 @@ pub(super) fn add_function_call_binding_user(
 ) -> Result<(), PatternDefinitionError> {
     let function_opt = function_index
         .get_function_signature(function_name)
-        .map_err(|source| PatternDefinitionError::FunctionRead { source })?;
+        .map_err(|source| PatternDefinitionError::FunctionReadError { source })?;
     if let Some(callee) = function_opt {
         match (must_be_stream, callee.return_is_stream) {
             (true, true) | (false, false) => {}

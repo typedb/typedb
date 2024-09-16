@@ -6,25 +6,37 @@
 
 use std::{collections::HashMap, error::Error, str::FromStr, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
+use answer::{answer_map::AnswerMap, variable_value::VariableValue, Thing};
 use compiler::{
     insert::WriteCompilationError,
     match_::{
         inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
         planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
     },
+    VariablePosition,
 };
-use concept::{thing::object::ObjectAPI, type_::TypeAPI};
+use concept::{
+    thing::{object::ObjectAPI, thing_manager::ThingManager},
+    type_::{type_manager::TypeManager, TypeAPI},
+};
 use cucumber::gherkin::Step;
+use database::transaction::{TransactionRead, TransactionSchema, TransactionWrite};
 use encoding::value::label::Label;
 use error::TypeDBError;
 use executor::{
+    batch::Batch,
     error::ReadExecutionError,
+    pipeline::{
+        stage::{WritePipelineStage, WriteStageIterator},
+        PipelineExecutionError, StageAPI, StageIterator,
+    },
     program_executor::ProgramExecutor,
-    row::Row,
+    row::{MaybeOwnedRow, Row},
     write::{insert::InsertExecutor, WriteError},
     ExecutionInterrupt,
 };
+use function::function_manager::FunctionManager;
+use futures::TryFutureExt;
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, writes::translate_insert, TranslationContext},
@@ -33,128 +45,164 @@ use itertools::{izip, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 use primitive::either::Either;
-use query::query_manager::QueryManager;
+use query::{error::QueryError, query_manager::QueryManager};
+use storage::snapshot::WritableSnapshot;
+use typeql::{query::Pipeline, Query};
 
 use crate::{
     assert::assert_matches,
     generic_step, params,
-    transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
+    transaction_context::{with_read_tx, with_schema_tx, with_write_tx, ActiveTransaction},
     util::iter_table_map,
     Context,
 };
 
-fn execute_match_query(
-    context: &mut Context,
-    query: typeql::Query,
-) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Box<dyn TypeDBError>> {
-    let mut translation_context = TranslationContext::new();
-    let typeql_match = query.into_pipeline().stages.pop().unwrap().into_match();
-    let block = translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &typeql_match)
-        .map_err(|err| Box::new(err) as _)?
-        .finish();
-
-    let variable_position_index;
-    let variable_registry = Arc::new(translation_context.variable_registry);
-    let rows = with_read_tx!(context, |tx| {
-        let (type_annotations, _) = infer_types(
-            &block,
-            Vec::new(),
-            &*tx.snapshot,
-            &tx.type_manager,
-            &IndexedAnnotatedFunctions::empty(),
-            &variable_registry,
-        )
-        .map_err(|err| Box::new(err) as _)?;
-
-        let match_plan = MatchProgram::compile(
-            &block,
-            &type_annotations,
-            variable_registry.clone(),
-            &HashMap::new(),
-            tx.thing_manager.statistics(),
-        );
-
-        let program_plan = ProgramPlan::new(match_plan, HashMap::new(), HashMap::new());
-        let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager)
-            .map_err(|err| Box::new(ReadExecutionError::ConceptRead { source: err }) as _)?;
-        variable_position_index = executor.entry_variable_positions_index().to_owned();
-        executor
-            .into_iterator(tx.snapshot.clone(), tx.thing_manager.clone(), ExecutionInterrupt::new_uninterruptible())
-            .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| Box::new(err.clone()) as _))
-            .into_iter()
-            .try_collect::<_, Vec<_>, _>()?
-    });
-
-    let variable_names = variable_registry.variable_names();
-
-    let answers = rows
-        .into_iter()
-        .map(|row| {
-            izip!(&variable_position_index, row)
-                .filter_map(|(var, value)| Some((variable_names.get(var).cloned()?, value)))
-                .collect()
+fn batch_result_to_answer(
+    batch: Batch,
+    selected_outputs: HashMap<String, VariablePosition>,
+) -> Vec<HashMap<String, VariableValue<'static>>> {
+    batch
+        .into_iterator_mut()
+        .map_static(move |row| {
+            let answer_map: HashMap<String, VariableValue<'static>> = selected_outputs
+                .iter()
+                .map(|(v, p)| (v.clone().to_owned(), row.get(*p).clone().into_owned()))
+                .collect::<HashMap<_, _>>();
+            answer_map
         })
-        .collect();
-
-    Ok(answers)
+        .collect::<Vec<HashMap<String, VariableValue<'static>>>>()
 }
 
-fn execute_insert_query(
+fn execute_read_query(
     context: &mut Context,
     query: typeql::Query,
-) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Either<WriteCompilationError, WriteError>> {
-    // TODO: this needs to handle match-insert pipelines
-    let mut translation_context = TranslationContext::new();
-    let typeql_insert = query.into_pipeline().stages.pop().unwrap().into_insert();
-    let block = translate_insert(&mut translation_context, &typeql_insert).unwrap();
-
-    let (mock_annotations, _) = with_read_tx!(context, |tx| {
-        let dummy_for_annotations = typeql_insert.to_string().replacen("insert", "match", 1);
-        let mut ctx = TranslationContext::new();
-        let block = translate_match(
-            &mut ctx,
-            &HashMapFunctionSignatureIndex::empty(),
-            &typeql::parse_query(dummy_for_annotations.as_str())
-                .unwrap()
-                .into_pipeline()
-                .stages
-                .pop()
-                .unwrap()
-                .into_match(),
-        )
-        .unwrap()
-        .finish();
-        infer_types(
-            &block,
-            Vec::new(),
-            &*tx.snapshot,
+) -> Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError> {
+    with_read_tx!(context, |tx| {
+        let qm = QueryManager::new();
+        let (final_stage, named_outputs) = match qm.prepare_read_pipeline(
+            tx.snapshot.clone(),
             &tx.type_manager,
-            &IndexedAnnotatedFunctions::empty(),
-            &translation_context.variable_registry,
-        )
-        .unwrap()
-    });
+            tx.thing_manager.clone(),
+            &tx.function_manager,
+            &query.into_pipeline(),
+        ) {
+            Ok(prepared) => prepared,
+            Err(error) => return Err(error),
+        };
+        let (snapshot, result_as_batch) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
+            Ok((iterator, snapshot)) => (snapshot, iterator.collect_owned()),
+            Err((_snapshot, err)) => {
+                return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
+            }
+        };
 
-    let insert_plan = compiler::insert::program::compile(
-        Arc::new(translation_context.variable_registry),
-        block.conjunction().constraints(),
-        &HashMap::new(),
-        &mock_annotations,
-    )
-    .map_err(Either::First)?;
+        match result_as_batch {
+            Ok(batch) => Ok(batch_result_to_answer(batch, named_outputs)),
+            Err(typedb_source) => Err(QueryError::WritePipelineExecutionError { typedb_source }),
+        }
+    })
+}
 
-    let mut output_vec = vec![VariableValue::Empty; insert_plan.output_row_schema.len()];
-    with_write_tx!(context, |tx| {
-        InsertExecutor::new(insert_plan)
-            .execute_insert(
-                Arc::get_mut(&mut tx.snapshot).unwrap(),
-                &tx.thing_manager,
-                &mut Row::new(output_vec.as_mut_slice(), &mut 1),
+fn execute_write_query(
+    active_transaction: ActiveTransaction,
+    query: typeql::Query,
+) -> (ActiveTransaction, Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError>) {
+    // TODO: this needs to handle match-insert pipelines
+    let (tx, result) = match active_transaction {
+        ActiveTransaction::Read(_) => {
+            unreachable!("Attempting write in read transaction");
+        }
+        ActiveTransaction::Write(tx) => {
+            let TransactionWrite {
+                snapshot,
+                type_manager,
+                thing_manager,
+                function_manager,
+                database,
+                transaction_options,
+            } = tx;
+            let (snapshot, result) = execute_insert_query_impl(
+                Arc::into_inner(snapshot).unwrap(),
+                &type_manager,
+                thing_manager.clone(),
+                &function_manager,
+                query.into_pipeline(),
+            );
+            (
+                ActiveTransaction::Write(TransactionWrite {
+                    snapshot: Arc::new(snapshot),
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    database,
+                    transaction_options,
+                }),
+                result,
             )
-            .map_err(Either::Second)?;
-    });
+        }
+        ActiveTransaction::Schema(tx) => {
+            let TransactionSchema {
+                snapshot,
+                type_manager,
+                thing_manager,
+                function_manager,
+                database,
+                transaction_options,
+            } = tx;
+            let (snapshot, result) = execute_insert_query_impl(
+                Arc::into_inner(snapshot).unwrap(),
+                &type_manager,
+                thing_manager.clone(),
+                &function_manager,
+                query.into_pipeline(),
+            );
+            (
+                ActiveTransaction::Schema(TransactionSchema {
+                    snapshot: Arc::new(snapshot),
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    database,
+                    transaction_options,
+                }),
+                result,
+            )
+        }
+    };
+    (tx, result)
+}
+fn execute_insert_query_impl<Snapshot: WritableSnapshot + 'static>(
+    snapshot: Snapshot,
+    type_manager: &TypeManager,
+    thing_manager: Arc<ThingManager>,
+    function_manager: &FunctionManager,
+    query: Pipeline,
+) -> (Snapshot, Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError>) {
+    let qm = QueryManager::new();
+    let (final_stage, named_outputs) =
+        match qm.prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &query) {
+            Ok(final_stage) => final_stage,
+            Err((snapshot, error)) => return (snapshot, Err(error)),
+        };
+    let (snapshot, result_as_batch) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
+        Ok((iterator, snapshot)) => {
+            let result = iterator.collect_owned();
+            (Arc::into_inner(snapshot).unwrap(), result)
+        }
+        Err((snapshot, err)) => {
+            return (
+                Arc::into_inner(snapshot).unwrap(),
+                Err(QueryError::WritePipelineExecutionError { typedb_source: err }),
+            )
+        }
+    };
 
-    Ok(Vec::new()) // FIXME
+    let result_as_answers = match result_as_batch {
+        Ok(batch) => Ok(batch_result_to_answer(batch, named_outputs)),
+        Err(typedb_source) => Err(QueryError::WritePipelineExecutionError { typedb_source }),
+    };
+
+    (snapshot, result_as_answers)
 }
 
 #[apply(generic_step)]
@@ -187,7 +235,8 @@ async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, 
         return;
     }
     let query = parse_result.unwrap();
-    let result = execute_insert_query(context, query);
+    let (tx, result) = execute_write_query(context.active_transaction.take().unwrap(), query);
+    context.active_transaction = Some(tx);
     may_error.check_logic(result);
 }
 
@@ -195,7 +244,10 @@ async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, 
 #[step(expr = r"get answers of typeql write query")]
 async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
-    context.answers = execute_insert_query(context, query).unwrap();
+    let tx = context.active_transaction.take().unwrap();
+    let (tx, result) = execute_write_query(tx, query);
+    context.active_transaction = Some(tx);
+    context.answers = result.unwrap();
 }
 
 #[apply(generic_step)]
@@ -207,7 +259,7 @@ async fn typeql_read(context: &mut Context, may_error: params::TypeQLMayError, s
         return;
     }
     let query = parse_result.unwrap();
-    let result = execute_match_query(context, query);
+    let result = execute_read_query(context, query);
     may_error.check_logic(result);
 }
 
@@ -215,7 +267,7 @@ async fn typeql_read(context: &mut Context, may_error: params::TypeQLMayError, s
 #[step(expr = r"get answers of typeql read query")]
 async fn get_answers_of_typeql_read(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
-    context.answers = execute_match_query(context, query).unwrap();
+    context.answers = execute_read_query(context, query).unwrap();
 }
 
 #[apply(generic_step)]

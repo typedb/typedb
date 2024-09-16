@@ -239,10 +239,11 @@ impl ProgramExecutor {
                     instructions.clone(),
                     row_width,
                     selected_variables.clone(),
-                    &variable_registry
-                        .variable_names()
+                    &variable_positions
                         .iter()
-                        .map(|(var, name)| (variable_positions[var], name.to_owned()))
+                        .filter_map(|(var, pos)| {
+                            variable_registry.variable_names().get(var).map(|name| (pos.clone(), name.to_owned()))
+                        })
                         .collect(),
                     snapshot,
                     thing_manager,

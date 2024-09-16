@@ -14,6 +14,7 @@ use std::{
     time::SystemTime,
 };
 
+use answer::variable::Variable;
 use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
@@ -832,13 +833,8 @@ impl TransactionService {
             &pipeline,
         );
         let (query_output_descriptor, pipeline) = match result {
-            Ok(executor) => {
-                let named_outputs: StreamQueryOutputDescriptor = executor
-                    .named_selected_outputs()
-                    .into_iter()
-                    .map(|(position, name)| (name, position))
-                    .sorted()
-                    .collect();
+            Ok((executor, named_outputs)) => {
+                let named_outputs: StreamQueryOutputDescriptor = named_outputs.into_iter().sorted().collect();
                 (named_outputs, executor)
             }
             Err((snapshot, err)) => return (snapshot, Err(err)),
@@ -921,7 +917,7 @@ impl TransactionService {
             let thing_manager = transaction.thing_manager.clone();
             let function_manager = transaction.function_manager.clone();
             spawn_blocking(move || {
-                let executor = Self::prepare_read_query_in(
+                let prepare_result = Self::prepare_read_query_in(
                     snapshot.clone(),
                     &type_manager,
                     thing_manager.clone(),
@@ -929,16 +925,12 @@ impl TransactionService {
                     &pipeline,
                 );
 
-                let executor = unwrap_or_execute_and_return!(executor, |err| {
+                let (executor, named_outputs) = unwrap_or_execute_and_return!(prepare_result, |err| {
                     Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
                 });
 
-                let descriptor: StreamQueryOutputDescriptor = executor
-                    .named_selected_outputs()
-                    .into_iter()
-                    .map(|(position, name)| (name, position))
-                    .sorted()
-                    .collect();
+                let descriptor: StreamQueryOutputDescriptor =
+                    named_outputs.into_iter().map(|(name, position)| (name, position)).sorted().collect();
                 let response = StreamQueryResponse::init(&descriptor);
                 Self::submit_response_sync(&sender, response);
 
@@ -991,7 +983,7 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         pipeline: &Pipeline,
-    ) -> Result<ReadPipelineStage<Snapshot>, QueryError> {
+    ) -> Result<(ReadPipelineStage<Snapshot>, HashMap<String, VariablePosition>), QueryError> {
         QueryManager::new().prepare_read_pipeline(snapshot, type_manager, thing_manager, &function_manager, &pipeline)
     }
 

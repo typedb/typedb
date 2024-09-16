@@ -7,7 +7,6 @@
 use std::{fmt::Display, vec};
 
 use answer::variable_value::VariableValue;
-use concept::error::ConceptReadError;
 use lending_iterator::LendingIterator;
 
 use crate::{
@@ -168,12 +167,13 @@ impl Batch {
         let end = (index + 1) * self.width as usize;
         if end > self.data.len() {
             self.data.resize(end, VariableValue::Empty);
+            self.multiplicities.resize(index + 1, 1);
         }
         let slice = &mut self.data[start..end];
         Row::new(slice, &mut self.multiplicities[index])
     }
 
-    pub(crate) fn into_iterator_mut(self) -> MutableBatchRowIterator {
+    pub fn into_iterator_mut(self) -> MutableBatchRowIterator {
         MutableBatchRowIterator::new(self)
     }
 

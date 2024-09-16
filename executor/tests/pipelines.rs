@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
+use std::{
+    cmp::Ordering,
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::{
@@ -18,7 +22,11 @@ use executor::{
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{
+    durability_client::WALClient,
+    snapshot::{CommittableSnapshot, ReadSnapshot},
+    MVCCStorage,
+};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -67,7 +75,7 @@ fn test_insert() {
     let snapshot = context.storage.clone().open_snapshot_write();
     let query_str = "insert $p isa person, has age 10;";
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let pipeline = context
+    let (pipeline, _named_outputs) = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -143,7 +151,7 @@ fn test_match() {
        $r isa person, has age 30, has name 'Harry';
    "#;
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let pipeline = context
+    let (pipeline, _named_outputs) = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -162,7 +170,7 @@ fn test_match() {
     let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $p isa person;";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    let pipeline = context
+    let (pipeline, _named_outputs) = context
         .query_manager
         .prepare_read_pipeline(
             snapshot,
@@ -178,7 +186,7 @@ fn test_match() {
 
     let query = "match $person isa person, has name 'John', has age $age;";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    let pipeline = context
+    let (pipeline, _named_outputs) = context
         .query_manager
         .prepare_read_pipeline(
             snapshot,
@@ -205,7 +213,7 @@ fn test_match_delete_has() {
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 10;";
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
-    let insert_pipeline = context
+    let (insert_pipeline, _named_outputs) = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -222,6 +230,15 @@ fn test_match_delete_has() {
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
 
+    {
+        let snapshot = context.storage.clone().open_snapshot_read();
+        let age_type = context.type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
+        let attr_age_10 =
+            context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+        assert_eq!(1, attr_age_10.get_owners(&snapshot, &context.thing_manager).count());
+        snapshot.close_resources()
+    }
+
     let snapshot = context.storage.clone().open_snapshot_write();
     let delete_query_str = r#"
         match $p isa person, has age $a;
@@ -229,7 +246,7 @@ fn test_match_delete_has() {
     "#;
 
     let delete_query = typeql::parse_query(delete_query_str).unwrap().into_pipeline();
-    let delete_pipeline = context
+    let (delete_pipeline, _named_outputs) = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -245,9 +262,136 @@ fn test_match_delete_has() {
     assert!(matches!(iterator.next(), None));
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
+
+    {
+        let snapshot = context.storage.clone().open_snapshot_read();
+        let age_type = context.type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
+        let attr_age_10 =
+            context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+        assert_eq!(0, attr_age_10.get_owners(&snapshot, &context.thing_manager).count());
+        snapshot.close_resources()
+    }
 }
 
 #[test]
 fn test_insert_match_insert() {
     todo!()
+}
+
+#[test]
+fn test_match_sort() {
+    let context = setup_common();
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let insert_query_str = "insert $p isa person, has age 1, has age 2, has age 3, has age 4;";
+    let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
+    let (insert_pipeline, _named_outputs) = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &insert_query,
+        )
+        .unwrap();
+    let (mut iterator, snapshot) = insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+
+    assert!(matches!(iterator.next(), Some(Ok(_))));
+    assert!(matches!(iterator.next(), None));
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
+
+    let snapshot = Arc::new(context.storage.open_snapshot_read());
+    let query = "match $age isa age; sort $age desc;";
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+    let (pipeline, named_outputs) = context
+        .query_manager
+        .prepare_read_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &match_,
+        )
+        .unwrap();
+    let (iterator, snapshot) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+
+    let batch = iterator.collect_owned().unwrap();
+    assert_eq!(batch.len(), 4);
+    let pos = named_outputs.get("age").unwrap().clone();
+    let mut batch_iter = batch.into_iterator_mut();
+    let values = batch_iter
+        .map_static(move |res| {
+            let snapshot_borrow: &ReadSnapshot<WALClient> = &snapshot; // Can't get it to compile inline
+            res.get(pos)
+                .as_thing()
+                .as_attribute()
+                .get_value(snapshot_borrow, &context.thing_manager)
+                .clone()
+                .unwrap()
+                .unwrap_long()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!([4, 3, 2, 1], values.as_slice());
+}
+
+#[test]
+fn test_select() {
+    let context = setup_common();
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let insert_query_str = r#"insert
+        $p1 isa person, has name "Alice", has age 1;
+        $p2 isa person, has name "Bob", has age 2;"#;
+    let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
+    let (insert_pipeline, _named_outputs) = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &insert_query,
+        )
+        .unwrap();
+    let (mut iterator, snapshot) = insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+
+    assert!(matches!(iterator.next(), Some(Ok(_))));
+    assert!(matches!(iterator.next(), None));
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
+
+    {
+        let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+        let query = "match $p isa person, has name \"Alice\", has age $age;";
+        let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+        let (pipeline, named_outputs) = context
+            .query_manager
+            .prepare_read_pipeline(
+                snapshot,
+                &context.type_manager,
+                context.thing_manager.clone(),
+                &context.function_manager,
+                &match_,
+            )
+            .unwrap();
+        assert!(named_outputs.contains_key("age"));
+        assert!(named_outputs.contains_key("p"));
+    }
+    {
+        let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+        let query = "match $p isa person, has name \"Alice\", has age $age; select $age;";
+        let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+        let (pipeline, named_outputs) = context
+            .query_manager
+            .prepare_read_pipeline(
+                snapshot,
+                &context.type_manager,
+                context.thing_manager.clone(),
+                &context.function_manager,
+                &match_,
+            )
+            .unwrap();
+        assert!(named_outputs.contains_key("age"));
+        assert!(!named_outputs.contains_key("p"));
+    }
 }

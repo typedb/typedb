@@ -24,12 +24,11 @@ pub mod delete;
 pub mod initial;
 pub mod insert;
 pub mod match_;
+pub mod modifiers;
 pub mod stage;
 
 pub trait StageAPI<Snapshot: ReadableSnapshot + 'static>: 'static {
     type OutputIterator: StageIterator;
-
-    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String>;
 
     fn into_iterator(
         self,

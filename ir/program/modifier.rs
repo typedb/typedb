@@ -4,59 +4,64 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, error::Error, fmt};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    fmt,
+};
 
 use answer::variable::Variable;
 
-use crate::program::block::BlockContext;
-
 #[derive(Debug, Clone)]
 pub enum Modifier {
-    Filter(Filter),
+    Select(Select),
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
 }
 
 #[derive(Debug, Clone)]
-pub struct Filter {
-    variables: HashSet<Variable>,
+pub struct Select {
+    pub variables: HashSet<Variable>,
 }
 
-impl Filter {
-    pub(crate) fn new(variables: Vec<&str>, context: &BlockContext<'_>) -> Result<Self, ModifierDefinitionError> {
-        use ModifierDefinitionError::FilterVariableNotAvailable;
-        let mut filter_variables = HashSet::with_capacity(variables.len());
+impl Select {
+    pub(crate) fn new(
+        variables: Vec<&str>,
+        variable_index: &HashMap<String, Variable>,
+    ) -> Result<Self, ModifierDefinitionError> {
+        use ModifierDefinitionError::SelectedVariableNotAvailable;
+        let mut select_variables = HashSet::with_capacity(variables.len());
         for name in variables {
-            match context.get_variable(name) {
-                None => Err(FilterVariableNotAvailable { name: name.to_string() })?,
-                Some(var) => filter_variables.insert(var),
+            match variable_index.get(name) {
+                None => Err(SelectedVariableNotAvailable { name: name.to_string() })?,
+                Some(var) => select_variables.insert(var.clone()),
             };
         }
-        Ok(Self { variables: filter_variables })
+        Ok(Self { variables: select_variables })
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Sort {
-    variables: Vec<SortVariable>,
+    pub variables: Vec<SortVariable>,
 }
 
 impl Sort {
     pub(crate) fn new(
         variables: Vec<(&str, bool)>,
-        context: &BlockContext<'_>,
+        variable_lookup: &HashMap<String, Variable>,
     ) -> Result<Self, ModifierDefinitionError> {
         use ModifierDefinitionError::SortVariableNotAvailable;
         let mut sort_variables = Vec::with_capacity(variables.len());
         for (name, is_ascending) in variables {
-            match context.get_variable(name) {
+            match variable_lookup.get(name) {
                 None => Err(SortVariableNotAvailable { name: name.to_string() })?,
                 Some(var) => {
                     if is_ascending {
-                        sort_variables.push(SortVariable::Ascending(var));
+                        sort_variables.push(SortVariable::Ascending(var.clone()));
                     } else {
-                        sort_variables.push(SortVariable::Descending(var));
+                        sort_variables.push(SortVariable::Descending(var.clone()));
                     }
                 }
             };
@@ -66,7 +71,7 @@ impl Sort {
 }
 
 #[derive(Debug, Copy, Clone)]
-enum SortVariable {
+pub enum SortVariable {
     Ascending(Variable),
     Descending(Variable),
 }
@@ -80,6 +85,10 @@ impl Offset {
     pub(crate) fn new(offset: u64) -> Self {
         Self { offset }
     }
+
+    pub fn offset(&self) -> u64 {
+        self.offset
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -91,11 +100,15 @@ impl Limit {
     pub(crate) fn new(limit: u64) -> Self {
         Self { limit }
     }
+
+    pub fn limit(&self) -> u64 {
+        self.limit
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ModifierDefinitionError {
-    FilterVariableNotAvailable { name: String },
+    SelectedVariableNotAvailable { name: String },
     SortVariableNotAvailable { name: String },
 }
 
@@ -108,7 +121,7 @@ impl fmt::Display for ModifierDefinitionError {
 impl Error for ModifierDefinitionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::FilterVariableNotAvailable { .. } => None,
+            Self::SelectedVariableNotAvailable { .. } => None,
             Self::SortVariableNotAvailable { .. } => None,
         }
     }

@@ -28,7 +28,7 @@ use ir::{
     program::{
         block::{FunctionalBlock, VariableRegistry},
         function::Function,
-        modifier::{Filter, Limit, Offset, Sort},
+        modifier::{Limit, Offset, Select, Sort},
     },
 };
 use storage::snapshot::ReadableSnapshot;
@@ -57,7 +57,7 @@ pub(super) enum AnnotatedStage {
         annotations: TypeAnnotations,
     },
     // ...
-    Filter(Filter),
+    Filter(Select),
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
@@ -103,7 +103,6 @@ pub(super) fn infer_types_for_pipeline(
             latest_match_index = Some(annotated_stages.len());
         }
         annotated_stages.push(annotated_stage);
-        println!("{:?}", variable_registry.variable_categories().collect::<Vec<_>>());
     }
     Ok(AnnotatedPipeline { annotated_stages, annotated_preamble })
 }
@@ -192,6 +191,9 @@ fn annotate_stage(
             // TODO: check_annotations on deletes. Can only delete links or has for types that actually are linked or owned
             Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations })
         }
-        _ => todo!(),
+        TranslatedStage::Sort(sort) => Ok(AnnotatedStage::Sort(sort)),
+        TranslatedStage::Filter(select) => Ok(AnnotatedStage::Filter(select)),
+        TranslatedStage::Offset(offset) => Ok(AnnotatedStage::Offset(offset)),
+        TranslatedStage::Limit(limit) => Ok(AnnotatedStage::Limit(limit)),
     }
 }

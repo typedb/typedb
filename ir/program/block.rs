@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
 };
 
@@ -19,7 +19,7 @@ use crate::{
         variable_category::{VariableCategory, VariableOptionality},
         Scope, ScopeId,
     },
-    program::modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
+    program::modifier::{Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
     PatternDefinitionError,
 };
 
@@ -85,8 +85,8 @@ impl<'reg> FunctionalBlockBuilder<'reg> {
 
     pub fn finish(self) -> FunctionalBlock {
         let Self { conjunction, modifiers, context: block_context } = self;
-        let BlockContext { variable_declaration, scope_parents, .. } = block_context;
-        let scope_context = ScopeContext { variable_declaration, scope_parents };
+        let BlockContext { variable_declaration, scope_parents, referenced_variables, .. } = block_context;
+        let scope_context = ScopeContext { variable_declaration, scope_parents, referenced_variables };
         FunctionalBlock { conjunction, modifiers, scope_context }
     }
 
@@ -107,14 +107,14 @@ impl<'reg> FunctionalBlockBuilder<'reg> {
     }
 
     pub fn add_sort(&mut self, sort_variables: Vec<(&str, bool)>) -> Result<&Modifier, ModifierDefinitionError> {
-        let sort = Sort::new(sort_variables, &self.context)?;
+        let sort = Sort::new(sort_variables, self.context.variable_names_index)?;
         self.modifiers.push(Modifier::Sort(sort));
         Ok(self.modifiers.last().unwrap())
     }
 
-    pub fn add_filter(&mut self, variables: Vec<&str>) -> Result<&Modifier, ModifierDefinitionError> {
-        let filter = Filter::new(variables, &self.context)?;
-        self.modifiers.push(Modifier::Filter(filter));
+    pub fn add_select(&mut self, variables: Vec<&str>) -> Result<&Modifier, ModifierDefinitionError> {
+        let select = Select::new(variables, self.context.variable_names_index)?;
+        self.modifiers.push(Modifier::Select(select));
         Ok(self.modifiers.last().unwrap())
     }
 }
@@ -234,9 +234,14 @@ impl VariableRegistry {
 pub struct ScopeContext {
     variable_declaration: HashMap<Variable, ScopeId>,
     scope_parents: HashMap<ScopeId, ScopeId>,
+    referenced_variables: HashSet<Variable>,
 }
 
 impl ScopeContext {
+    pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.referenced_variables.iter().map(|v| v.clone())
+    }
+
     pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
         let variable_scope = self.variable_declaration.get(&variable);
         match variable_scope {
@@ -257,6 +262,7 @@ pub struct BlockContext<'a> {
 
     scope_id_allocator: u16,
     scope_parents: HashMap<ScopeId, ScopeId>,
+    referenced_variables: HashSet<Variable>, // Involved in a constraint in this block
 }
 
 impl<'a> BlockContext<'a> {
@@ -276,6 +282,7 @@ impl<'a> BlockContext<'a> {
             variable_names_index: input_variable_names,
             scope_id_allocator: 2, // `0`, `1` are reserved for INPUT, ROOT respectively.
             scope_parents,
+            referenced_variables: HashSet::new(),
         }
     }
 
@@ -355,6 +362,7 @@ impl<'a> BlockContext<'a> {
         category: VariableCategory,
         source: Constraint<Variable>,
     ) -> Result<(), PatternDefinitionError> {
+        self.referenced_variables.insert(variable.clone());
         self.variable_registry.set_variable_category(variable, category, source)
     }
 

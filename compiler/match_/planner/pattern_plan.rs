@@ -75,7 +75,12 @@ impl MatchProgram {
         let conjunction = block.conjunction();
         assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
 
-        let mut plan_builder = PlanBuilder::new(&variable_registry, type_annotations, statistics);
+        let mut plan_builder = PlanBuilder::new(
+            block.scope_context().referenced_variables(),
+            &variable_registry,
+            type_annotations,
+            statistics,
+        );
         plan_builder.register_constraints(conjunction);
         let ordering = plan_builder.initialise_greedy();
 
@@ -128,36 +133,39 @@ struct PlanBuilder<'a> {
 
 impl<'a> PlanBuilder<'a> {
     fn new(
+        variables: impl Iterator<Item = Variable>,
         variable_registry: &VariableRegistry,
         type_annotations: &'a TypeAnnotations,
         statistics: &'a Statistics,
     ) -> Self {
         let mut elements = Vec::new();
-        let variable_index = variable_registry
-            .variable_categories()
-            .map(|(variable, category)| match category {
-                VariableCategory::Type | VariableCategory::ThingType | VariableCategory::RoleType => {
-                    let planner = TypePlanner::from_variable(variable, type_annotations);
-                    let index = elements.len();
-                    elements.push(PlannerVertex::Type(planner));
-                    (variable, index)
+        let variable_index = variables
+            .map(|(variable)| {
+                let category = variable_registry.get_variable_category(variable).unwrap();
+                match category {
+                    VariableCategory::Type | VariableCategory::ThingType | VariableCategory::RoleType => {
+                        let planner = TypePlanner::from_variable(variable, type_annotations);
+                        let index = elements.len();
+                        elements.push(PlannerVertex::Type(planner));
+                        (variable, index)
+                    }
+                    VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
+                        let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
+                        let index = elements.len();
+                        elements.push(PlannerVertex::Thing(planner));
+                        (variable, index)
+                    }
+                    VariableCategory::Value => {
+                        let planner = ValuePlanner::from_variable(variable);
+                        let index = elements.len();
+                        elements.push(PlannerVertex::Value(planner));
+                        (variable, index)
+                    }
+                    | VariableCategory::ObjectList
+                    | VariableCategory::ThingList
+                    | VariableCategory::AttributeList
+                    | VariableCategory::ValueList => todo!("list variable planning"),
                 }
-                VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
-                    let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
-                    let index = elements.len();
-                    elements.push(PlannerVertex::Thing(planner));
-                    (variable, index)
-                }
-                VariableCategory::Value => {
-                    let planner = ValuePlanner::from_variable(variable);
-                    let index = elements.len();
-                    elements.push(PlannerVertex::Value(planner));
-                    (variable, index)
-                }
-                | VariableCategory::ObjectList
-                | VariableCategory::ThingList
-                | VariableCategory::AttributeList
-                | VariableCategory::ValueList => todo!("list variable planning"),
             })
             .collect();
         Self {

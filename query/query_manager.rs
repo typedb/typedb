@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
+use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::{
     pipeline::{
@@ -13,6 +14,7 @@ use executor::{
         initial::InitialStage,
         insert::InsertStageExecutor,
         match_::MatchStageExecutor,
+        modifiers::{LimitStageExecutor, OffsetStageExecutor, SelectStageExecutor, SortStageExecutor},
         stage::{ReadPipelineStage, WritePipelineStage},
     },
     write::{delete::DeleteExecutor, insert::InsertExecutor},
@@ -63,7 +65,7 @@ impl QueryManager {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
-    ) -> Result<ReadPipelineStage<Snapshot>, QueryError> {
+    ) -> Result<(ReadPipelineStage<Snapshot>, HashMap<String, VariablePosition>), QueryError> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         let mut snapshot = snapshot;
         // 1: Translate
@@ -103,8 +105,12 @@ impl QueryManager {
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let CompiledPipeline { compiled_functions, compiled_stages } =
-            compile_pipeline(thing_manager.statistics(), variable_registry, annotated_preamble, annotated_stages)?;
+        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } = compile_pipeline(
+            thing_manager.statistics(),
+            variable_registry.clone(),
+            annotated_preamble,
+            annotated_stages,
+        )?;
 
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(snapshot));
         for compiled_stage in compiled_stages {
@@ -121,9 +127,32 @@ impl QueryManager {
                 CompiledStage::Delete(_) => {
                     unreachable!("Delete clause cannot exist in a read pipeline.")
                 }
+                CompiledStage::Filter(filter_program) => {
+                    let filter_stage = SelectStageExecutor::new(filter_program, last_stage);
+                    last_stage = ReadPipelineStage::Select(Box::new(filter_stage));
+                }
+                CompiledStage::Sort(sort_program) => {
+                    let sort_stage = SortStageExecutor::new(sort_program, last_stage);
+                    last_stage = ReadPipelineStage::Sort(Box::new(sort_stage));
+                }
+                CompiledStage::Offset(offset_program) => {
+                    let offset_stage = OffsetStageExecutor::new(offset_program, last_stage);
+                    last_stage = ReadPipelineStage::Offset(Box::new(offset_stage));
+                }
+                CompiledStage::Limit(limit_program) => {
+                    let limit_stage = LimitStageExecutor::new(limit_program, last_stage);
+                    last_stage = ReadPipelineStage::Limit(Box::new(limit_stage));
+                }
             }
         }
-        Ok(last_stage)
+
+        let named_outputs = output_variable_positions
+            .iter()
+            .filter_map(|(variable, position)| {
+                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position.clone()))
+            })
+            .collect::<HashMap<_, _>>();
+        Ok((last_stage, named_outputs))
     }
 
     pub fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
@@ -133,7 +162,7 @@ impl QueryManager {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
-    ) -> Result<WritePipelineStage<Snapshot>, (Snapshot, QueryError)> {
+    ) -> Result<(WritePipelineStage<Snapshot>, HashMap<String, VariablePosition>), (Snapshot, QueryError)> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         // 1: Translate
         let translated_pipeline = translate_pipeline(&snapshot, function_manager, query);
@@ -147,7 +176,6 @@ impl QueryManager {
             Ok(annotated_functions) => annotated_functions,
             Err(err) => return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err })),
         };
-
         // 2: Annotate
         let annotated_pipeline = infer_types_for_pipeline(
             &snapshot,
@@ -181,12 +209,17 @@ impl QueryManager {
 
         // // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let compiled_pipeline =
-            compile_pipeline(thing_manager.statistics(), variable_registry, annotated_preamble, annotated_stages);
-        let CompiledPipeline { compiled_functions, compiled_stages } = match compiled_pipeline {
-            Ok(compiled_pipeline) => compiled_pipeline,
-            Err(err) => return Err((snapshot, err)),
-        };
+        let compiled_pipeline = compile_pipeline(
+            thing_manager.statistics(),
+            variable_registry.clone(),
+            annotated_preamble,
+            annotated_stages,
+        );
+        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } =
+            match compiled_pipeline {
+                Ok(compiled_pipeline) => compiled_pipeline,
+                Err(err) => return Err((snapshot, err)),
+            };
 
         let mut last_stage = WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot)));
         for compiled_stage in compiled_stages {
@@ -213,9 +246,32 @@ impl QueryManager {
                     );
                     last_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
+                CompiledStage::Filter(filter_program) => {
+                    let filter_stage = SelectStageExecutor::new(filter_program, last_stage);
+                    last_stage = WritePipelineStage::Select(Box::new(filter_stage));
+                }
+                CompiledStage::Sort(sort_program) => {
+                    let sort_stage = SortStageExecutor::new(sort_program, last_stage);
+                    last_stage = WritePipelineStage::Sort(Box::new(sort_stage));
+                }
+                CompiledStage::Offset(offset_program) => {
+                    let offset_stage = OffsetStageExecutor::new(offset_program, last_stage);
+                    last_stage = WritePipelineStage::Offset(Box::new(offset_stage));
+                }
+                CompiledStage::Limit(limit_program) => {
+                    let limit_stage = LimitStageExecutor::new(limit_program, last_stage);
+                    last_stage = WritePipelineStage::Limit(Box::new(limit_stage));
+                }
             }
         }
-        Ok(last_stage)
+
+        let named_outputs = output_variable_positions
+            .iter()
+            .filter_map(|(variable, position)| {
+                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position.clone()))
+            })
+            .collect::<HashMap<_, _>>();
+        Ok((last_stage, named_outputs))
     }
 }
 

@@ -3,23 +3,32 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use answer::variable::Variable;
 use compiler::{
     delete::program::DeleteProgram,
     insert::program::InsertProgram,
     match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
+    modifiers::{LimitProgram, OffsetProgram, SelectProgram, SortProgram},
     VariablePosition,
 };
 use concept::thing::statistics::Statistics;
-use ir::program::{block::VariableRegistry, function::Function};
+use ir::program::{
+    block::VariableRegistry,
+    function::Function,
+    modifier::{Limit, Offset, Select, Sort},
+};
 
 use crate::{annotation::AnnotatedStage, error::QueryError};
 
 pub struct CompiledPipeline {
     pub(super) compiled_functions: Vec<CompiledFunction>,
     pub(super) compiled_stages: Vec<CompiledStage>,
+    pub(super) output_variable_positions: HashMap<Variable, VariablePosition>,
 }
 
 pub struct CompiledFunction {
@@ -31,6 +40,11 @@ pub enum CompiledStage {
     Match(MatchProgram),
     Insert(InsertProgram),
     Delete(DeleteProgram),
+
+    Filter(SelectProgram),
+    Sort(SortProgram),
+    Offset(OffsetProgram),
+    Limit(LimitProgram),
 }
 
 impl CompiledStage {
@@ -49,6 +63,10 @@ impl CompiledStage {
                 .enumerate()
                 .filter_map(|(i, v)| v.map(|v| (v, VariablePosition::new(i as u32))))
                 .collect(),
+            CompiledStage::Filter(program) => program.output_row_mapping.clone(),
+            CompiledStage::Sort(program) => program.output_row_mapping.clone(),
+            CompiledStage::Offset(program) => program.output_row_mapping.clone(),
+            CompiledStage::Limit(program) => program.output_row_mapping.clone(),
         }
     }
 }
@@ -72,7 +90,10 @@ pub(super) fn compile_pipeline(
         let compiled_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;
         compiled_stages.push(compiled_stage);
     }
-    Ok(CompiledPipeline { compiled_functions, compiled_stages })
+    let output_variable_positions =
+        compiled_stages.last().map(|stage: &CompiledStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
+
+    Ok(CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions })
 }
 
 fn compile_function(
@@ -115,10 +136,26 @@ fn compile_stage(
             .map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Delete(plan))
         }
-        _ => todo!(),
-        // AnnotatedStage::Filter(_) => {}
-        // AnnotatedStage::Sort(_) => {}
-        // AnnotatedStage::Offset(_) => {}
-        // AnnotatedStage::Limit(_) => {}
+        AnnotatedStage::Filter(filter) => {
+            let mut retained_positions = HashSet::with_capacity(filter.variables.len());
+            let mut output_row_mapping = HashMap::with_capacity(filter.variables.len());
+            for variable in &filter.variables {
+                let pos = input_variables.get(variable).unwrap();
+                retained_positions.insert(pos.clone());
+                output_row_mapping.insert(variable.clone(), pos.clone());
+            }
+            Ok(CompiledStage::Filter(SelectProgram { retained_positions, output_row_mapping }))
+        }
+        AnnotatedStage::Sort(sort) => Ok(CompiledStage::Sort(SortProgram {
+            sort_on: sort.variables.clone(),
+            output_row_mapping: input_variables.clone(),
+        })),
+        AnnotatedStage::Offset(offset) => Ok(CompiledStage::Offset(OffsetProgram {
+            offset: offset.offset(),
+            output_row_mapping: input_variables.clone(),
+        })),
+        AnnotatedStage::Limit(limit) => {
+            Ok(CompiledStage::Limit(LimitProgram { limit: limit.limit(), output_row_mapping: input_variables.clone() }))
+        }
     }
 }

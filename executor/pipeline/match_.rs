@@ -43,21 +43,6 @@ where
 {
     type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
-    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
-        self.program
-            .outputs()
-            .iter()
-            .filter_map(|position| {
-                let variable = self.program.variable_positions_index()[position.as_usize()];
-                self.program
-                    .variable_registry()
-                    .variable_names()
-                    .get(&variable)
-                    .map(|name| (*position, name.to_string()))
-            })
-            .collect()
-    }
-
     fn into_iterator(
         mut self,
         interrupt: ExecutionInterrupt,

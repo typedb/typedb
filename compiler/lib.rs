@@ -12,6 +12,7 @@ pub mod delete;
 pub mod expression;
 pub mod insert;
 pub mod match_;
+pub mod modifiers;
 
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {

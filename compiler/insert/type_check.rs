@@ -11,27 +11,19 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
-use ir::{pattern::constraint::Constraint, program::block::FunctionalBlock};
+use ir::{
+    pattern::constraint::{Constraint, Has, Links},
+    program::block::FunctionalBlock,
+};
+use itertools::{chain, Itertools};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::match_::inference::{
-    type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
+    type_annotations::{
+        ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations,
+    },
     TypeInferenceError,
 };
-
-pub enum ValidCombinations<'a> {
-    Has(&'a BTreeMap<answer::Type, Vec<answer::Type>>),
-    Links(&'a BTreeMap<Type, HashSet<Type>>),
-}
-
-impl<'a> ValidCombinations<'a> {
-    fn check(&self, left: &answer::Type, right: &answer::Type) -> bool {
-        match self {
-            ValidCombinations::Has(has) => has.get(left).unwrap().contains(right),
-            ValidCombinations::Links(links) => links.get(left).unwrap().contains(right),
-        }
-    }
-}
 
 pub fn check_annotations(
     snapshot: &impl ReadableSnapshot,
@@ -44,39 +36,24 @@ pub fn check_annotations(
     for constraint in block.conjunction().constraints() {
         match constraint {
             Constraint::Isa(_) => (), // Nothing to do
-            Constraint::Has(_) => {
-                let valid_combinations = insert_annotations
-                    .constraint_annotations_of(constraint.clone())
-                    .unwrap()
-                    .as_left_right()
-                    .left_to_right();
-                validate_input_combinations_insertable(
+            Constraint::Has(has) => {
+                validate_has_insertable(
                     snapshot,
                     type_manager,
-                    constraint,
+                    has,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    &ValidCombinations::Has(&valid_combinations),
+                    insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_left_right(),
                 )?;
             }
-            Constraint::Links(_) => {
-                let links_annotations =
-                    insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_left_right_filtered();
-                validate_input_combinations_insertable(
+            Constraint::Links(links) => {
+                validate_links_insertable(
                     snapshot,
                     type_manager,
-                    constraint,
+                    links,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    &ValidCombinations::Links(&links_annotations.filters_on_left()),
-                )?;
-                validate_input_combinations_insertable(
-                    snapshot,
-                    type_manager,
-                    constraint,
-                    input_annotations_variables,
-                    input_annotations_constraints,
-                    &ValidCombinations::Links(&links_annotations.filters_on_right()),
+                    insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_left_right_filtered(),
                 )?;
             }
             | Constraint::Kind(_)
@@ -94,28 +71,92 @@ pub fn check_annotations(
     Ok(())
 }
 
-fn validate_input_combinations_insertable(
+fn validate_has_insertable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    constraint: &Constraint<Variable>,
+    has: &Has<Variable>,
     input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
-    input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    valid_combinations: &ValidCombinations,
+    input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
+    left_right: &LeftRightAnnotations,
 ) -> Result<(), TypeInferenceError> {
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.
-    let left = input_annotations_variables.get(&constraint.left_id()).unwrap();
-    let right = input_annotations_variables.get(&constraint.right_id()).unwrap();
+    let input_owner_types = input_annotations_variables.get(&has.owner()).unwrap();
+    let input_attr_types = input_annotations_variables.get(&has.attribute()).unwrap();
 
-    let mut invalid_iter = left.iter().flat_map(|left_type| {
-        right
+    let mut invalid_iter = input_owner_types.iter().flat_map(|left_type| {
+        input_attr_types
             .iter()
-            .filter(|right_type| !valid_combinations.check(left_type, right_type))
+            .filter(|right_type| {
+                !left_right
+                    .left_to_right()
+                    .get(left_type)
+                    .map(|valid_right_types| valid_right_types.contains(right_type))
+                    .unwrap_or(false)
+            })
             .map(|right_type| (left_type.clone(), right_type.clone()))
     });
     if let Some((left_type, right_type)) = invalid_iter.find(|_| true) {
         Err(TypeInferenceError::IllegalInsertTypes {
-            constraint_name: constraint.name().to_string(),
+            constraint_name: Constraint::Has(has.clone()).name().to_string(),
+            left_type: left_type
+                .get_label(snapshot, type_manager)
+                .map_err(|err| TypeInferenceError::ConceptRead { source: err })?
+                .scoped_name()
+                .as_str()
+                .to_string(),
+            right_type: right_type
+                .get_label(snapshot, type_manager)
+                .map_err(|err| TypeInferenceError::ConceptRead { source: err })?
+                .scoped_name()
+                .as_str()
+                .to_string(),
+        })?;
+    }
+    Ok(())
+}
+
+fn validate_links_insertable(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    links: &Links<Variable>,
+    input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
+    input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
+    left_right_filtered: &LeftRightFilteredAnnotations,
+) -> Result<(), TypeInferenceError> {
+    // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
+    // Esp when doing queries using type variables.
+    let input_relation_types = input_annotations_variables.get(&links.relation()).unwrap();
+    let input_player_types = input_annotations_variables.get(&links.player()).unwrap();
+    let input_role_types = input_annotations_variables.get(&links.role_type()).unwrap();
+
+    let mut invalid_relation_role_iter = input_relation_types.iter().flat_map(|relation_type| {
+        input_role_types
+            .iter()
+            .filter(|role_type| {
+                !left_right_filtered
+                    .filters_on_left
+                    .get(relation_type)
+                    .map(|valid_role_types| valid_role_types.contains(role_type))
+                    .unwrap_or(false)
+            })
+            .map(|role_type| (relation_type.clone(), role_type.clone()))
+    });
+    let mut invalid_player_role_iter = input_player_types.iter().flat_map(|player_type| {
+        input_role_types
+            .iter()
+            .filter(|role_type| {
+                !left_right_filtered
+                    .filters_on_right
+                    .get(player_type)
+                    .map(|valid_role_types| valid_role_types.contains(role_type))
+                    .unwrap_or(false)
+            })
+            .map(|role_type| (player_type.clone(), role_type.clone()))
+    });
+    if let Some((left_type, right_type)) = chain(invalid_relation_role_iter, invalid_player_role_iter).find(|_| true) {
+        Err(TypeInferenceError::IllegalInsertTypes {
+            constraint_name: Constraint::Links(links.clone()).name().to_string(),
             left_type: left_type
                 .get_label(snapshot, type_manager)
                 .map_err(|err| TypeInferenceError::ConceptRead { source: err })?

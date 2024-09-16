@@ -125,7 +125,7 @@ fn traverse_has_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     builder.add_limit(3);
-    let _filter = builder.add_filter(vec!["person", "age"]).unwrap().clone();
+    let _select = builder.add_select(vec!["person", "age"]).unwrap().clone();
     let entry = builder.finish();
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -304,7 +304,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
     builder.add_limit(3);
-    let _filter = builder.add_filter(vec!["person", "age"]).unwrap().clone();
+    let _select = builder.add_select(vec!["person", "age"]).unwrap().clone();
 
     let entry = builder.finish();
 
