@@ -80,7 +80,7 @@ impl IsaReverseExecutor {
                 if self.thing_types.len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
                     let type_ = self.thing_types.iter().next().unwrap();
-                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_, self.isa.isa_kind())?;
+                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_)?;
                     let as_tuples: IsaReverseUnboundedSortedTypeSingle = iterator
                         .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                         .map(isa_to_tuple_type_thing);
@@ -112,7 +112,7 @@ impl IsaReverseExecutor {
                 if self.thing_types.len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
                     let type_ = self.thing_types.iter().next().unwrap();
-                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_, self.isa.isa_kind())?;
+                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_)?;
                     let as_tuples: IsaReverseUnboundedSortedThingSingle = iterator
                         .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                         .map(isa_to_tuple_thing_type);

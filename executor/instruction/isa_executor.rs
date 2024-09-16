@@ -52,13 +52,11 @@ pub(crate) struct IsaExecutor {
     checker: Checker<(AsHkt![Thing<'_>], Type)>,
 }
 
-type MapToThing<I, F> = Map<I, F, Result<AsHkt![Thing<'_>], ConceptReadError>>;
-
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum SingleTypeIsaIterator {
-    Entity(ThingWithTypes<MapToThing<InstanceIterator<AsHkt![Entity<'_>]>, EntityEraseFn>>),
-    Relation(ThingWithTypes<MapToThing<InstanceIterator<AsHkt![Relation<'_>]>, RelationEraseFn>>),
-    Attribute(ThingWithTypes<MapToThing<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, AttributeEraseFn>>),
+    Entity(MapToThingType<InstanceIterator<AsHkt![Entity<'_>]>, EntityToThingTypeFn>),
+    Relation(MapToThingType<InstanceIterator<AsHkt![Relation<'_>]>, RelationToThingTypeFn>),
+    Attribute(MapToThingType<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, AttributeToThingTypeFn>),
 }
 
 impl LendingIterator for SingleTypeIsaIterator {
@@ -72,6 +70,14 @@ impl LendingIterator for SingleTypeIsaIterator {
         }
     }
 }
+
+type MapToThingType<I, F> = Map<I, F, Result<(AsHkt![Thing<'_>], Type), ConceptReadError>>;
+type EntityToThingTypeFn =
+    for<'a> fn(Result<Entity<'a>, ConceptReadError>) -> Result<(Thing<'a>, Type), ConceptReadError>;
+type RelationToThingTypeFn =
+    for<'a> fn(Result<Relation<'a>, ConceptReadError>) -> Result<(Thing<'a>, Type), ConceptReadError>;
+type AttributeToThingTypeFn =
+    for<'a> fn(Result<Attribute<'a>, ConceptReadError>) -> Result<(Thing<'a>, Type), ConceptReadError>;
 
 type MultipleTypeIsaObjectIterator = Flatten<
     AsLendingIterator<vec::IntoIter<ThingWithTypes<MapToThing<InstanceIterator<AsHkt![Object<'_>]>, ObjectEraseFn>>>>,
@@ -110,9 +116,8 @@ pub(super) type IsaUnboundedSortedThingMerged = IsaTupleIterator<MultipleTypeIsa
 pub(super) type IsaBoundedSortedType =
     IsaTupleIterator<ThingWithTypes<Once<Result<AsHkt![Thing<'_>], ConceptReadError>>>>;
 
+type MapToThing<I, F> = Map<I, F, Result<AsHkt![Thing<'_>], ConceptReadError>>;
 type ObjectEraseFn = for<'a> fn(Result<Object<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
-type EntityEraseFn = for<'a> fn(Result<Entity<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
-type RelationEraseFn = for<'a> fn(Result<Relation<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
 type AttributeEraseFn = for<'a> fn(Result<Attribute<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
 
 pub(super) type IsaFilterFn = FilterFn<(AsHkt![Thing<'_>], Type)>;
@@ -156,7 +161,7 @@ impl IsaExecutor {
                 if self.types.len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
                     let type_ = self.types.iter().next().unwrap();
-                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_, self.isa.isa_kind())?;
+                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_)?;
                     let as_tuples: IsaUnboundedSortedThingSingle = iterator
                         .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                         .map(isa_to_tuple_thing_type);
@@ -184,7 +189,7 @@ impl IsaExecutor {
                 if self.types.len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
                     let type_ = self.types.iter().next().unwrap();
-                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_, self.isa.isa_kind())?;
+                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_)?;
                     let as_tuples: IsaUnboundedSortedTypeSingle = iterator
                         .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                         .map(isa_to_tuple_type_thing);
@@ -296,27 +301,29 @@ pub(super) fn instances_of_single_type(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     type_: &Type,
-    isa_kind: IsaKind,
 ) -> Result<SingleTypeIsaIterator, ConceptReadError> {
-    let type_manager = thing_manager.type_manager();
-    let types = match isa_kind {
-        IsaKind::Exact => vec![type_.clone()],
-        IsaKind::Subtype => get_supertypes(snapshot, type_manager, type_, SubKind::Subtype)?,
-    };
-
     match type_ {
-        Type::Entity(entity_type) => Ok(SingleTypeIsaIterator::Entity(with_types(
-            thing_manager.get_entities_in(snapshot, entity_type.clone()).map(|res| res.map(Thing::Entity)),
-            types,
-        ))),
-        Type::Relation(relation_type) => Ok(SingleTypeIsaIterator::Relation(with_types(
-            thing_manager.get_relations_in(snapshot, relation_type.clone()).map(|res| res.map(Thing::Relation)),
-            types,
-        ))),
-        Type::Attribute(attribute_type) => Ok(SingleTypeIsaIterator::Attribute(with_types(
-            thing_manager.get_attributes_in(snapshot, attribute_type.clone())?.map(|res| res.map(Thing::Attribute)),
-            types,
-        ))),
+        Type::Entity(entity_type) => Ok(SingleTypeIsaIterator::Entity(
+            thing_manager.get_entities_in(snapshot, entity_type.clone()).map(|entity| {
+                let entity = entity?;
+                let type_ = entity.type_();
+                Ok((Thing::Entity(entity), Type::Entity(type_)))
+            }),
+        )),
+        Type::Relation(relation_type) => Ok(SingleTypeIsaIterator::Relation(
+            thing_manager.get_relations_in(snapshot, relation_type.clone()).map(|relation| {
+                let relation = relation?;
+                let type_ = relation.type_();
+                Ok((Thing::Relation(relation), Type::Relation(type_)))
+            }),
+        )),
+        Type::Attribute(attribute_type) => Ok(SingleTypeIsaIterator::Attribute(
+            thing_manager.get_attributes_in(snapshot, attribute_type.clone())?.map(|attribute| {
+                let attribute = attribute?;
+                let type_ = attribute.type_();
+                Ok((Thing::Attribute(attribute), Type::Attribute(type_)))
+            }),
+        )),
         Type::RoleType(_) => unreachable!("Cannot get instances of role types."),
     }
 }
