@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-};
+use std::{error::Error, fmt};
 
 mod typeql;
 
@@ -24,15 +21,15 @@ pub trait TypeDBError {
 
     fn format_description(&self) -> String;
 
-    fn source(&self) -> Option<&(dyn Error + Send)>;
+    fn source(&self) -> Option<&(dyn Error + Sync)>;
 
-    fn source_typedb_error(&self) -> Option<&(dyn TypeDBError + Send)>;
+    fn source_typedb_error(&self) -> Option<&(dyn TypeDBError + Sync)>;
 
-    fn root_source_typedb_error(&self) -> &(dyn TypeDBError + Send)
+    fn root_source_typedb_error(&self) -> &(dyn TypeDBError + Sync)
     where
-        Self: Sized + Send,
+        Self: Sized + Sync,
     {
-        let mut error: &(dyn TypeDBError + Send) = self;
+        let mut error: &(dyn TypeDBError + Sync) = self;
         while let Some(source) = error.source_typedb_error() {
             error = source;
         }
@@ -52,18 +49,16 @@ impl PartialEq for dyn TypeDBError {
 
 impl Eq for dyn TypeDBError {}
 
-impl Debug for dyn TypeDBError + '_ {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(self, f)
+impl fmt::Debug for dyn TypeDBError + '_ {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
     }
 }
 
-impl Display for dyn TypeDBError + '_ {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.source_typedb_error().is_some() {
-            write!(f, "{}\nCause: \n\t {:?}", self.format_code_and_description(), self.source_typedb_error().unwrap() as &dyn TypeDBError)
-        } else if self.source().is_some() {
-            write!(f, "{}\nCause: \n\t {:?}", self.format_code_and_description(), self.source().unwrap())
+impl fmt::Display for dyn TypeDBError + '_ {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(source) = self.source() {
+            write!(f, "[{}] {}\nCause: \n\t {:?}", self.code(), self.format_description(), source)
         } else {
             write!(f, "{}", self.format_code_and_description())
         }
@@ -102,8 +97,7 @@ macro_rules! typedb_error {
            };
         }
 
-        impl ::error::TypeDBError for $name {
-
+        impl $crate::TypeDBError for $name {
             fn variant_name(&self) -> &'static str {
                 match self {
                     $(
@@ -125,7 +119,7 @@ macro_rules! typedb_error {
             }
 
             fn code_prefix(&self) -> &'static str {
-                &$prefix
+                $prefix
             }
 
             fn code_number(&self) -> usize {
@@ -144,26 +138,26 @@ macro_rules! typedb_error {
                 }
             }
 
-            fn source(&self) -> Option<&(dyn std::error::Error + Send + 'static)> {
+            fn source(&self) -> Option<&(dyn ::std::error::Error + Sync + 'static)> {
                 let error = match self {
                     $(
-                        $( Self::$variant { source, .. } => {
+                        $(Self::$variant { source, .. } => {
                             let source: &$source = source;
-                            Some(source as &(dyn std::error::Error + Send))
-                        } )?
+                            Some(source as &(dyn ::std::error::Error + Sync))
+                        })?
                     )*
                     _ => None
                 };
                 error
             }
 
-            fn source_typedb_error(&self) -> Option<&(dyn ::error::TypeDBError + Send + 'static)> {
+            fn source_typedb_error(&self) -> Option<&(dyn $crate::TypeDBError + Sync + 'static)> {
                 let error = match self {
                     $(
-                        $( Self::$variant { typedb_source, .. } => {
+                        $(Self::$variant { typedb_source, .. } => {
                             let typedb_source: &$typedb_source = typedb_source;
-                            Some(typedb_source as &(dyn ::error::TypeDBError + Send))
-                        } )?
+                            Some(typedb_source as &(dyn $crate::TypeDBError + Sync))
+                        })?
                     )*
                     _ => None
                 };
@@ -171,9 +165,9 @@ macro_rules! typedb_error {
             }
         }
 
-        impl std::fmt::Debug for $name {
-           fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                std::fmt::Debug::fmt(self as &dyn ::error::TypeDBError, f)
+        impl ::std::fmt::Debug for $name {
+           fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                ::std::fmt::Debug::fmt(self as &dyn $crate::TypeDBError, f)
             }
         }
     };

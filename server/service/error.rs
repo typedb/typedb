@@ -84,7 +84,7 @@ pub(crate) trait IntoProtocolErrorMessage {
     fn into_error_message(self) -> typedb_protocol::Error;
 }
 
-impl<T: TypeDBError + Send> IntoProtocolErrorMessage for T {
+impl<T: TypeDBError + Sync> IntoProtocolErrorMessage for T {
     fn into_error_message(self) -> typedb_protocol::Error {
         let root_source = self.root_source_typedb_error();
         let code = root_source.code();
