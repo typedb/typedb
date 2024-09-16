@@ -27,7 +27,7 @@ impl Config {
     pub fn new_with_data_directory(data_directory: &Path) -> Self {
         Self {
             server: ServerConfig { address: SocketAddr::from_str("127.0.0.1:1729").unwrap() },
-            storage: StorageConfig { data: data_directory.into() },
+            storage: StorageConfig { data: data_directory.to_owned() },
         }
     }
 }
