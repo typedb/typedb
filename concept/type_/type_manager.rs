@@ -1711,6 +1711,14 @@ impl TypeManager {
         OperationTimeValidation::validate_attribute_type_supertype_is_abstract(snapshot, self, supertype.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_new_attribute_type_supertype_owns_ordering(
+            snapshot,
+            self,
+            subtype.clone(),
+            supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         OperationTimeValidation::validate_attribute_type_does_not_lose_instances_with_independent_constraint_with_new_supertype(
             snapshot,
             self,
@@ -2366,7 +2374,7 @@ impl TypeManager {
                 self,
                 relates.role(),
             )
-                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_relates_instances(

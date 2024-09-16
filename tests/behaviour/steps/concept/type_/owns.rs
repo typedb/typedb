@@ -18,10 +18,10 @@ use super::thing_type::get_as_object_type;
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
+    params::check_boolean,
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
-use crate::params::check_boolean;
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) set owns: {type_label}{may_error}")]
@@ -156,7 +156,9 @@ pub async fn get_owns_unset_annotation(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get constraints for owned attribute\\({type_label}\\) {contains_or_doesnt}: {constraint}")]
+#[step(
+    expr = "{kind}\\({type_label}\\) get constraints for owned attribute\\({type_label}\\) {contains_or_doesnt}: {constraint}"
+)]
 pub async fn get_constraints_for_owned_attribute_contains(
     context: &mut Context,
     kind: params::Kind,
@@ -169,8 +171,7 @@ pub async fn get_constraints_for_owned_attribute_contains(
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
-        let value_type =
-            attr_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
+        let value_type = attr_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
 
         let expected_constraint = constraint.into_typedb(value_type);
         let actual_contains = object_type

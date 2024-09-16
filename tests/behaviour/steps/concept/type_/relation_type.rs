@@ -293,11 +293,7 @@ pub async fn relation_role_is_specialising(
         let relation_type =
             tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let relates = relation_type
-            .get_relates_role_name(
-                tx.snapshot.as_ref(),
-                &tx.type_manager,
-                role_label.into_typedb().name.as_str(),
-            )
+            .get_relates_role_name(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name.as_str())
             .unwrap()
             .unwrap();
         check_boolean!(is, relates.is_specialising(tx.snapshot.as_ref(), &tx.type_manager).unwrap())
@@ -658,7 +654,9 @@ pub async fn relation_role_unset_annotation(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get constraints for related role\({type_label}\) {contains_or_doesnt}: {constraint}")]
+#[step(
+    expr = r"relation\({type_label}\) get constraints for related role\({type_label}\) {contains_or_doesnt}: {constraint}"
+)]
 pub async fn relation_get_constraints_for_related_role_contain(
     context: &mut Context,
     relation_label: params::Label,

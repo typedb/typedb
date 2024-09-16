@@ -49,7 +49,7 @@ pub enum SchemaValidationError {
     AbstractTypesSupertypeHasToBeAbstract(Label<'static>, Label<'static>),
     CannotUnsetRelatesAbstractnessAsItIsASpecialisingRelates(Relates<'static>),
     OrderingDoesNotMatchWithSupertype(Label<'static>, Label<'static>, Ordering, Ordering),
-    OrderingDoesNotMatchWithCapabilityOfSubtypeInterface(
+    OrderingDoesNotMatchWithCapabilityOfSupertypeInterface(
         Label<'static>,
         Label<'static>,
         Label<'static>,
@@ -161,7 +161,7 @@ impl Error for SchemaValidationError {
             Self::CannotDeleteTypeWithExistingSubtypes(_) => None,
             Self::RelatesNotInherited(_, _) => None,
             Self::OrderingDoesNotMatchWithSupertype(_, _, _, _) => None,
-            Self::OrderingDoesNotMatchWithCapabilityOfSubtypeInterface(_, _, _, _, _) => None,
+            Self::OrderingDoesNotMatchWithCapabilityOfSupertypeInterface(_, _, _, _, _) => None,
             Self::SpecialisingRelatesIsNotAbstract(_, _) => None,
             Self::CannotSetOwnsBecauseItIsAlreadySetWithDifferentOrdering(_, _, _) => None,
             Self::InvalidOrderingForDistinctConstraint(_) => None,

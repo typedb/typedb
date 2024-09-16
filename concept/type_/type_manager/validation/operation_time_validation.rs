@@ -1560,6 +1560,40 @@ impl OperationTimeValidation {
         Ok(())
     }
 
+    pub(crate) fn validate_new_attribute_type_supertype_owns_ordering(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        attribute_type: AttributeType<'static>,
+        new_supertype: AttributeType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let attribute_type_owners =
+            attribute_type.get_owner_types(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+        let new_supertype_owners =
+            new_supertype.get_owner_types(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+
+        for (attribute_type_owner, attribute_type_owns) in attribute_type_owners.into_iter() {
+            if let Some(new_supertype_owns) = new_supertype_owners.get(attribute_type_owner) {
+                let attribute_type_ordering = attribute_type_owns
+                    .get_ordering(snapshot, type_manager)
+                    .map_err(SchemaValidationError::ConceptRead)?;
+                let new_supertype_ordering = new_supertype_owns
+                    .get_ordering(snapshot, type_manager)
+                    .map_err(SchemaValidationError::ConceptRead)?;
+                if attribute_type_ordering != new_supertype_ordering {
+                    return Err(SchemaValidationError::OrderingDoesNotMatchWithCapabilityOfSupertypeInterface(
+                        get_label_or_schema_err(snapshot, type_manager, attribute_type_owner.clone())?,
+                        get_label_or_schema_err(snapshot, type_manager, new_supertype)?,
+                        get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
+                        new_supertype_ordering,
+                        attribute_type_ordering,
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     fn is_ordering_compatible_with_distinct_constraint(ordering: Ordering, distinct_set: bool) -> bool {
         if distinct_set {
             ordering == Ordering::Ordered

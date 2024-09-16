@@ -173,7 +173,7 @@ pub(crate) fn validate_sibling_owns_ordering_match_for_type(
 
         if let Some((first_subtype, first_ordering)) = attribute_types_ordering.get(&root_attribute_type) {
             if first_ordering != &ordering {
-                return Err(SchemaValidationError::OrderingDoesNotMatchWithCapabilityOfSubtypeInterface(
+                return Err(SchemaValidationError::OrderingDoesNotMatchWithCapabilityOfSupertypeInterface(
                     get_label_or_schema_err(snapshot, type_manager, owner_type)?,
                     get_label_or_schema_err(snapshot, type_manager, first_subtype.clone())?,
                     get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
