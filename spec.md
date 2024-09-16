@@ -1896,7 +1896,7 @@ In this case, we output a ***single concept*** map `($x_1 -> <EL>, $x_2 -> <EL>,
     * `$x` can be optional
 * Each `<AGG>` reduces the concept map `{ m }` passsed to it from the function's body to a single value in the specified way.
 
-**Case RED_**
+**Case RED_GROUP**
 ```
 reduce @group($y_1, $y_2, ...): <AGG> as $x_1, ... , <AGG> as $x_k;
 ``` 
