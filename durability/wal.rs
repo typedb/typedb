@@ -189,7 +189,10 @@ impl DurabilityService for WAL {
 
     fn delete_durability(self) -> Result<(), DurabilityServiceError> {
         drop(self.fsync_thread);
-        let files = Arc::into_inner(self.files).unwrap().into_inner().unwrap();
+        let files = Arc::into_inner(self.files)
+            .expect("cannot get exclusive ownership of WAL's Arc<Files>")
+            .into_inner()
+            .unwrap();
         files.delete().map_err(|err| DurabilityServiceError::DeleteFailed { source: Arc::new(err) })
     }
 
@@ -569,7 +572,7 @@ impl FsyncThread {
         }
     }
 
-    fn may_sync_and_update_state(context: &mut Arc<FsyncThreadContext>) -> () {
+    fn may_sync_and_update_state(context: &mut Arc<FsyncThreadContext>) {
         let current_signal = context.current_signal.load(Ordering::Relaxed);
         context.current_signal.store(1 - current_signal, Ordering::Relaxed);
         let vec_lock = context.signalling.get(current_signal as usize).unwrap().lock();
