@@ -37,7 +37,7 @@ use crate::{
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{
-            filter_by_constraint_category, filter_out_unchecked_constraints, get_abstract_constraints,
+            filter_by_constraint_category, filter_by_scope, filter_out_unchecked_constraints, get_abstract_constraints,
             get_checked_constraints, get_distinct_constraints, get_range_constraints, get_regex_constraints,
             get_values_constraints, type_get_constraints_closest_source, CapabilityConstraint, Constraint,
             ConstraintDescription, ConstraintScope, TypeConstraint,
@@ -296,11 +296,28 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
             new_supertype: $object_type<'static>,
         ) -> Result<(), SchemaValidationError> {
             let affected_object_types = TypeAPI::chain_types(type_.clone(), type_.get_subtypes_transitive(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?.into_iter().cloned()).collect();
+            let type_capabilities_declared = TypeReader::get_capabilities_declared::<$capability_type<'static>>(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
+            let type_capabilities = TypeReader::get_capabilities::<$capability_type<'static>>(snapshot, type_.clone(), false).map_err(SchemaValidationError::ConceptRead)?;
             let new_capabilities = TypeReader::get_capabilities::<$capability_type<'static>>(snapshot, new_supertype.clone(), false).map_err(SchemaValidationError::ConceptRead)?;
 
             for new_capability in new_capabilities.into_iter() {
                 let affected_interface_types = TypeAPI::chain_types(new_capability.interface(), new_capability.interface().get_subtypes_transitive(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?.into_iter().cloned()).collect();
-                let constraints = get_checked_constraints(new_capability.get_constraints(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?.into_iter().cloned());
+                let mut constraints = get_checked_constraints(new_capability.get_constraints(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?.into_iter().cloned());
+
+                // If the new_capability is not specialised by a declared capability of type_,
+                // ConstraintScope::SingleInstanceOfType constraints should affect type_'s capability
+                // As the actual capabilities for this interface
+                let single_instance_of_type_constraints: HashSet<CapabilityConstraint<$capability_type<'static>>> = filter_by_scope!(constraints.iter().cloned(), ConstraintScope::SingleInstanceOfType).collect();
+                for constraint in single_instance_of_type_constraints {
+                    let affected_interface_type = constraint.source().interface();
+                    if let Some(type_capability) = type_capabilities.iter().find(|capability| &capability.interface() == &affected_interface_type) {
+                        if type_capabilities_declared.iter().find(|capability_declared| &capability_declared.interface() == &affected_interface_type).is_none() {
+                            let new_constraint = CapabilityConstraint::new(constraint.description(), type_capability.clone());
+                            constraints.remove(&constraint);
+                            constraints.insert(new_constraint);
+                        }
+                    }
+                }
 
                 $validation_func(
                     snapshot,

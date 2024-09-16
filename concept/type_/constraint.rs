@@ -339,6 +339,13 @@ macro_rules! filter_by_source {
 }
 pub(crate) use filter_by_source;
 
+macro_rules! filter_by_scope {
+    ($constraints_iter:expr, $scope:expr) => {
+        $constraints_iter.filter(|constraint| constraint.scope() == $scope)
+    };
+}
+pub(crate) use filter_by_scope;
+
 macro_rules! filter_out_unchecked_constraints {
     ($constraints_iter:expr) => {
         $constraints_iter.filter(|constraint| !constraint.unchecked())
