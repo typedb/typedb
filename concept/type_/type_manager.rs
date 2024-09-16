@@ -1924,6 +1924,14 @@ impl TypeManager {
         )
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        OperationTimeValidation::validate_relates_specialises_compatible_with_new_supertype_transitive(
+            snapshot,
+            self,
+            subtype.clone(),
+            Some(supertype.clone()),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         // TODO: Cascade constraint does not exist. Revisit it after cascade returns.
         // OperationTimeValidation::validate_relation_type_does_not_acquire_cascade_constraint_to_lose_instances_with_new_supertype(
         //     snapshot,
@@ -1961,6 +1969,14 @@ impl TypeManager {
         thing_manager: &ThingManager,
         subtype: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_relates_specialises_compatible_with_new_supertype_transitive(
+            snapshot,
+            self,
+            subtype.clone(),
+            None, // supertype
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         OperationTimeValidation::validate_lost_relates_do_not_cause_lost_instances_while_changing_supertype(
             snapshot,
             self,
@@ -2187,6 +2203,19 @@ impl TypeManager {
                 role_type.clone(),
                 role_supertype,
                 Some(ordering),
+                None, // read supertype ordering from storage
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
+
+        for role_subtype in role_type.get_subtypes(snapshot, self)?.into_iter() {
+            OperationTimeValidation::validate_role_supertype_ordering_match(
+                snapshot,
+                self,
+                role_subtype.clone(),
+                role_type.clone(),
+                None, // read subtype ordering from storage
+                Some(ordering),
             )
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
@@ -2396,6 +2425,13 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Abstract;
 
+        OperationTimeValidation::validate_no_abstract_subtypes_to_unset_abstract_annotation(
+            snapshot,
+            self,
+            relates.role(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         OperationTimeValidation::validate_relates_is_not_specialising_to_unset_abstract_annotation(
             snapshot,
             self,
@@ -2466,7 +2502,8 @@ impl TypeManager {
             self,
             subtype.clone(),
             supertype.clone(),
-            None,
+            None, // read ordering from storage
+            None, // read ordering from storage
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 

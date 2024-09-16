@@ -518,7 +518,7 @@ impl CommitTimeValidation {
     ) -> Result<(), ConceptReadError> {
         if let Some(supertype) = type_.get_supertype(snapshot, type_manager)? {
             if let Err(err) =
-                validate_role_type_supertype_ordering_match(snapshot, type_manager, type_, supertype, None)
+                validate_role_type_supertype_ordering_match(snapshot, type_manager, type_, supertype, None, None)
             {
                 validation_errors.push(err);
             }

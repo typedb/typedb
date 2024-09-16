@@ -113,22 +113,25 @@ pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constrai
 pub(crate) fn validate_role_type_supertype_ordering_match(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    type_: RoleType<'static>,
+    subtype: RoleType<'static>,
     supertype: RoleType<'static>,
     set_subtype_role_ordering: Option<Ordering>,
+    set_supertype_role_ordering: Option<Ordering>,
 ) -> Result<(), SchemaValidationError> {
-    let supertype_ordering =
-        TypeReader::get_type_ordering(snapshot, supertype.clone()).map_err(SchemaValidationError::ConceptRead)?;
-    let type_ordering = set_subtype_role_ordering
-        .unwrap_or(TypeReader::get_type_ordering(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?);
+    let subtype_ordering = set_subtype_role_ordering.unwrap_or(
+        TypeReader::get_type_ordering(snapshot, subtype.clone()).map_err(SchemaValidationError::ConceptRead)?,
+    );
+    let supertype_ordering = set_supertype_role_ordering.unwrap_or(
+        TypeReader::get_type_ordering(snapshot, supertype.clone()).map_err(SchemaValidationError::ConceptRead)?,
+    );
 
-    if type_ordering == supertype_ordering {
+    if subtype_ordering == supertype_ordering {
         Ok(())
     } else {
         Err(SchemaValidationError::OrderingDoesNotMatchWithSupertype(
-            get_label_or_schema_err(snapshot, type_manager, type_)?,
+            get_label_or_schema_err(snapshot, type_manager, subtype)?,
             get_label_or_schema_err(snapshot, type_manager, supertype)?,
-            type_ordering,
+            subtype_ordering,
             supertype_ordering,
         ))
     }

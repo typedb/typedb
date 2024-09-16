@@ -95,7 +95,7 @@ pub async fn relation_role_set_specialise(
             .unwrap();
         if let Some(relation_supertype) = relation_type.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap() {
             if let Some(specialised_relates) = relation_supertype
-                .get_relates_role_name_declared(
+                .get_relates_role_name(
                     tx.snapshot.as_ref(),
                     &tx.type_manager,
                     superrole_label.into_typedb().name().as_str(),

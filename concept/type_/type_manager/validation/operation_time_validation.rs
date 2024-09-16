@@ -18,6 +18,7 @@ use encoding::{
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
+use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -31,8 +32,8 @@ use crate::{
     },
     type_::{
         annotation::{
-            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRange, AnnotationRegex,
-            AnnotationUnique, AnnotationValues,
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationKey, AnnotationRange,
+            AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{
@@ -45,7 +46,7 @@ use crate::{
         object_type::ObjectType,
         owns::{Owns, OwnsAnnotation},
         plays::Plays,
-        relates::Relates,
+        relates::{Relates, RelatesAnnotation},
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::{
@@ -662,11 +663,10 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?;
         let affected_supertypes =
             TypeAPI::chain_types(relation_supertype, relation_supertype_supertypes.into_iter().cloned()).collect_vec();
-        let subtype_relates_declared = relation_subtype
-            .get_relates_declared(snapshot, type_manager)
-            .map_err(SchemaValidationError::ConceptRead)?;
+        let subtype_relates_root =
+            relation_subtype.get_relates_root(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
 
-        for subtype_relates in subtype_relates_declared.into_iter() {
+        for subtype_relates in subtype_relates_root.into_iter() {
             let role = subtype_relates.role();
             let role_label = get_label_or_schema_err(snapshot, type_manager, role)?;
 
@@ -1503,7 +1503,7 @@ impl OperationTimeValidation {
                     snapshot,
                     type_manager,
                     subtype.clone(),
-                    Some(type_.clone()), // supertype is read from storage
+                    Some(type_.clone()), // supertype
                     None,                // subtype is abstract is read from storage
                     Some(false),         // set_supertype_abstract
                 )
@@ -1521,6 +1521,89 @@ impl OperationTimeValidation {
         } else {
             Ok(())
         }
+    }
+
+    pub(crate) fn validate_relates_specialises_compatible_with_new_supertype_transitive(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        relation_subtype: RelationType<'static>,
+        relation_supertype: Option<RelationType<'static>>,
+    ) -> Result<(), SchemaValidationError> {
+        let supertype_relates = match &relation_supertype {
+            None => MaybeOwns::Owned(HashSet::new()),
+            Some(relation_supertype) => {
+                relation_supertype.get_relates(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?
+            }
+        };
+
+        let subtype_relates_declared = relation_subtype
+            .get_relates_declared(snapshot, type_manager)
+            .map_err(SchemaValidationError::ConceptRead)?;
+        let subtype_relates =
+            relation_subtype.get_relates(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+
+        for subtype_capability in &subtype_relates_declared {
+            if let Some(subtype_role_supertype) = subtype_capability
+                .role()
+                .get_supertype(snapshot, type_manager)
+                .map_err(SchemaValidationError::ConceptRead)?
+            {
+                let subtype_role_supertype_relates = subtype_role_supertype
+                    .get_relates_root(snapshot, type_manager)
+                    .map_err(SchemaValidationError::ConceptRead)?;
+                if !supertype_relates
+                    .iter()
+                    .any(|supertype_relates| supertype_relates == &subtype_role_supertype_relates)
+                {
+                    return Err(SchemaValidationError::CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost(
+                        relation_subtype,
+                        relation_supertype,
+                        subtype_capability.role(),
+                        subtype_role_supertype,
+                    ));
+                }
+            }
+        }
+
+        let subtype_subtypes = relation_subtype
+            .get_subtypes_transitive(snapshot, type_manager)
+            .map_err(SchemaValidationError::ConceptRead)?;
+        for subsubtype in subtype_subtypes.into_iter() {
+            let subsubtype_relates_declared =
+                subsubtype.get_relates_declared(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+
+            for subsubtype_relates in subsubtype_relates_declared.into_iter() {
+                if let Some(subtype_role_supertype) = subsubtype_relates
+                    .role()
+                    .get_supertype(snapshot, type_manager)
+                    .map_err(SchemaValidationError::ConceptRead)?
+                {
+                    let subtype_role_supertype_relates = subtype_role_supertype
+                        .get_relates_root(snapshot, type_manager)
+                        .map_err(SchemaValidationError::ConceptRead)?;
+                    let is_in_subtype = subtype_relates.contains(&subtype_role_supertype_relates);
+                    let is_in_subtype_declared = subtype_relates_declared.contains(&subtype_role_supertype_relates);
+                    let is_lost = is_in_subtype && !is_in_subtype_declared;
+                    if is_lost {
+                        if !supertype_relates
+                            .iter()
+                            .any(|supertype_relates| supertype_relates == &subtype_role_supertype_relates)
+                        {
+                            return Err(
+                                SchemaValidationError::CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost(
+                                    relation_subtype,
+                                    relation_supertype,
+                                    subsubtype_relates.role(),
+                                    subtype_role_supertype,
+                                ),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub(crate) fn validate_set_owns_does_not_conflict_with_same_existing_owns_ordering(
@@ -1613,17 +1696,20 @@ impl OperationTimeValidation {
         let ordering = ordering.unwrap_or(
             TypeReader::get_type_ordering(snapshot, role.clone()).map_err(SchemaValidationError::ConceptRead)?,
         );
-        let distinct_set = distinct_set
-            .unwrap_or(relates.is_distinct(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?);
+        let distinct_set = distinct_set.unwrap_or(
+            relates
+                .get_annotations_declared(snapshot, type_manager)
+                .map_err(SchemaValidationError::ConceptRead)?
+                .contains(&RelatesAnnotation::Distinct(AnnotationDistinct)),
+        );
 
         if Self::is_ordering_compatible_with_distinct_constraint(ordering, distinct_set) {
             Ok(())
         } else {
-            Err(SchemaValidationError::InvalidOrderingForDistinctConstraint(get_label_or_schema_err(
-                snapshot,
-                type_manager,
-                role,
-            )?))
+            Err(SchemaValidationError::InvalidOrderingForDistinctAnnotation(
+                get_label_or_schema_err(snapshot, type_manager, role)?,
+                ordering,
+            ))
         }
     }
 
@@ -1637,17 +1723,19 @@ impl OperationTimeValidation {
         let attribute = owns.attribute();
         let ordering =
             ordering.unwrap_or(owns.get_ordering(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?);
-        let distinct_set = distinct_set
-            .unwrap_or(owns.is_distinct(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?);
+        let distinct_set = distinct_set.unwrap_or(
+            owns.get_annotations_declared(snapshot, type_manager)
+                .map_err(SchemaValidationError::ConceptRead)?
+                .contains(&OwnsAnnotation::Distinct(AnnotationDistinct)),
+        );
 
         if Self::is_ordering_compatible_with_distinct_constraint(ordering, distinct_set) {
             Ok(())
         } else {
-            Err(SchemaValidationError::InvalidOrderingForDistinctConstraint(get_label_or_schema_err(
-                snapshot,
-                type_manager,
-                attribute,
-            )?))
+            Err(SchemaValidationError::InvalidOrderingForDistinctAnnotation(
+                get_label_or_schema_err(snapshot, type_manager, attribute)?,
+                ordering,
+            ))
         }
     }
 
@@ -1657,6 +1745,7 @@ impl OperationTimeValidation {
         subtype_role: RoleType<'static>,
         supertype_role: RoleType<'static>,
         set_subtype_role_ordering: Option<Ordering>,
+        set_supertype_role_ordering: Option<Ordering>,
     ) -> Result<(), SchemaValidationError> {
         validate_role_type_supertype_ordering_match(
             snapshot,
@@ -1664,6 +1753,7 @@ impl OperationTimeValidation {
             subtype_role,
             supertype_role,
             set_subtype_role_ordering,
+            set_supertype_role_ordering,
         )
     }
 
