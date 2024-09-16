@@ -7,7 +7,6 @@
 use std::{fmt::Display, vec};
 
 use answer::variable_value::VariableValue;
-use concept::error::ConceptReadError;
 use lending_iterator::LendingIterator;
 
 use crate::{

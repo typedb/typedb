@@ -108,13 +108,13 @@ impl<'reg> FunctionalBlockBuilder<'reg> {
 
     pub fn add_sort(&mut self, sort_variables: Vec<(&str, bool)>) -> Result<&Modifier, ModifierDefinitionError> {
         let sort =
-            Sort::new(sort_variables, &|name| self.context.get_variable_named(name, ScopeId::ROOT).map(|v| v.clone()))?;
+            Sort::new(sort_variables, self.context.variable_names_index)?;
         self.modifiers.push(Modifier::Sort(sort));
         Ok(self.modifiers.last().unwrap())
     }
 
     pub fn add_filter(&mut self, variables: Vec<&str>) -> Result<&Modifier, ModifierDefinitionError> {
-        let filter = Filter::new_given_block_context(variables, &self.context)?;
+        let filter = Filter::new(variables, self.context.variable_names_index)?;
         self.modifiers.push(Modifier::Filter(filter));
         Ok(self.modifiers.last().unwrap())
     }

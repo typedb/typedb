@@ -20,7 +20,7 @@ pub fn translate_select(
     select: &typeql::query::stage::modifier::Select,
 ) -> Result<Filter, PatternDefinitionError> {
     let selected_variables = select.variables.iter().map(|typeql_var| typeql_var.name().unwrap()).collect();
-    let filter = Filter::new_given_variable_map(selected_variables, &context.visible_variables)
+    let filter = Filter::new(selected_variables, &context.visible_variables)
         .map_err(|source| PatternDefinitionError::ModifierDefinitionError { source })?;
     context.visible_variables.retain(|name, var| filter.variables.contains(var));
     Ok(filter)
@@ -40,7 +40,7 @@ pub fn translate_sort(
             )
         })
         .collect();
-    Sort::new(sort_on, &|name| context.visible_variables.get(name).map(|var| var.clone()))
+    Sort::new(sort_on, &context.visible_variables)
         .map_err(|source| PatternDefinitionError::ModifierDefinitionError { source })
 }
 

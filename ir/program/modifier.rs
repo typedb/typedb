@@ -12,8 +12,6 @@ use std::{
 
 use answer::variable::Variable;
 
-use crate::program::block::BlockContext;
-
 #[derive(Debug, Clone)]
 pub enum Modifier {
     Filter(Filter),
@@ -28,22 +26,7 @@ pub struct Filter {
 }
 
 impl Filter {
-    pub(crate) fn new_given_block_context(
-        variables: Vec<&str>,
-        context: &BlockContext<'_>,
-    ) -> Result<Self, ModifierDefinitionError> {
-        use ModifierDefinitionError::FilterVariableNotAvailable;
-        let mut filter_variables = HashSet::with_capacity(variables.len());
-        for name in variables {
-            match context.get_variable(name) {
-                None => Err(FilterVariableNotAvailable { name: name.to_string() })?,
-                Some(var) => filter_variables.insert(var),
-            };
-        }
-        Ok(Self { variables: filter_variables })
-    }
-
-    pub(crate) fn new_given_variable_map(
+    pub(crate) fn new(
         variables: Vec<&str>,
         variable_index: &HashMap<String, Variable>,
     ) -> Result<Self, ModifierDefinitionError> {
@@ -67,7 +50,7 @@ pub struct Sort {
 impl Sort {
     pub(crate) fn new(
         variables: Vec<(&str, bool)>,
-        variable_lookup: &impl Fn(&str) -> Option<Variable>,
+        variable_lookup: &HashMap<String, Variable>
     ) -> Result<Self, ModifierDefinitionError> {
         use ModifierDefinitionError::SortVariableNotAvailable;
         let mut sort_variables = Vec::with_capacity(variables.len());
