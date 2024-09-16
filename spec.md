@@ -169,10 +169,11 @@ This section collects useful abbrevations. See "Glossary" for other commonly use
 * **evar** - element variable (var representing some element in some type). 
 
   Can further distinguish:
-  * **svar** - sized variable (element of sized type)
+  * **vvar** - value variable (element of value type (struct or primitive))
   * **lvar** — list variable (element of list type)
+  * **ivar** — instance variable (element of schema types)
 
-  _Remark_. A key principle of TypeQL declarative language design is that for any a patterns of variable it can be uniquely inferred whether a var is a **tvar** or **evar**, and whether an evar is an **svar** or **lvar**.
+  _Remark_. A key principle of TypeQL declarative language design is that for any a patterns of variable it can be uniquely inferred whether a var is a **tvar** or **evar**, and whether an evar is an **vvar** or **lvar** or **ivar**.
 
 
 ## The type system
@@ -182,18 +183,24 @@ This section describes the basic **statements** that comprise our type system, a
 ### Simple (non-dependent) types
 
 * **Types**. We write 
-  $`A : \mathbf{Type}`$ to mean the statement:
-  > $`A`$ is a type. 
+  $`A : \mathbf{Kind}`$ to mean the statement:
+  > $`A`$ is a type of kind $`\mathbf{Kind}`$. 
 
-  * _Variations_: in general, may replace $`\textbf{Type}`$ by: 
-    * $`\mathbf{Ent}`$ (collection of entity types)
-    * $`\mathbf{Rel}`$ (collection of relation types)
-    * $`\mathbf{Att}`$ (collection of attribute types)
-    * $`\mathbf{Itf}`$ (collection of interface types)
-  * _Useful abbreviations_:
-    * $`\mathbf{Obj} = \mathbf{Ent} + \mathbf{Rel}`$ (collection of object types)
-    * $`\mathbf{ERA} = \mathbf{Ent} + \mathbf{Rel} + \mathbf{Att}`$ (collection of ERA types)
-  * _Example_: $`\mathsf{Person} : \mathbf{Ent}`$ means $`\mathsf{Person}`$ an entity type.
+  The type system the following cases of **type kinds**:
+    * $`\mathbf{Ent}`$ (collection of **entity types**)
+    * $`\mathbf{Rel}`$ (collection of **relation types**)
+    * $`\mathbf{Att}`$ (collection of **attribute types**)
+    * $`\mathbf{Itf}`$ (collection of **interface types**)
+    * $`\mathbf{Val}`$ (collection of **value types**)
+
+  _Example_: $`\mathsf{Person} : \mathbf{Ent}`$ means $`\mathsf{Person}`$ an entity type.
+* _Useful abbreviations_ using sum type notation (compare the actual "sum type" operator below)
+  * $`\mathbf{Obj} = \mathbf{Ent} + \mathbf{Rel}`$ (collection of **object types**)
+  * $`\mathbf{ERA} = \mathbf{Obj} + \mathbf{Att}`$ (collection of **ERA types**)
+  * $`\mathbf{Schema} = \mathbf{ERA} + \mathbf{Itf}`$ (collection of **schema types**)
+  * $`\mathbf{Simple} = \mathbf{Schema} + \mathbf{Value}`$ (collection of all **simple types**)
+  * $`\mathbf{Type} = \mathbf{Op}^*(\mathbf{Simple})`$ (collection of all **(non-list) types**, obtained by closing simple types under operators: sum, product, option... see "Type operators" below)
+
 * **Typing**
   If $`A`$ is a type, then we may write $`a : A`$ to mean:
   > $`a`$ is an element in type $`A`$.
@@ -210,11 +217,11 @@ This section describes the basic **statements** that comprise our type system, a
 
 ### Dependendent types
 
-* **Dependent types**. We write $`A : \mathbf{Type}(I,J,...)`$ to mean:
+* **Dependent types**. We write $`A : \mathbf{Kind}(I,J,...)`$ to mean:
   > $`A`$ is a type with interface types $`I, J, ...`$.
   
-  * _Application_: Writing $A : \mathbf{Type}(I,J,...)$ ***implies*** $`A(x:I, y:J, ...) : \mathbf{Type}`$ whenever we have $`x: I, y: J, ...`$.
-  * _Variations_: We may replace $`\mathbf{Type}`$ by $`\mathbf{Rel}`$ or $`\mathbf{Att}`$.
+  * _Application_: Writing $A : \mathbf{Kind}(I,J,...)$ ***implies*** $`A(x:I, y:J, ...) : \mathbf{Kind}`$ whenever we have $`x: I, y: J, ...`$.
+  * _Variations_: We may replace $`\mathbf{Kind}`$ by $`\mathbf{Rel}`$ or $`\mathbf{Att}`$.
   * _Example_: $`\mathsf{Marriage : \mathbf{Rel}(Spouse)}`$ is a relation type with interface type $`\mathsf{Spouse} : \mathbf{Itf}`$.
 * **Dependent typing**.  We write $`a : A(x : I, y : J,...)`$ to mean:
   > The element $`a`$ lives in the type "$`A`$ of $`x`$ (cast as $`I`$), and $`y`$ (cast as $`J`$), and ...".
@@ -224,22 +231,22 @@ This section describes the basic **statements** that comprise our type system, a
   * _Role cardinality_: $`|a|_I`$ counts elements in $`\{x_1,...,x_k\} :I^k`$
   * **Example**: $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$. Then $`|m|_{\mathsf{Spouse}} = 2`$.
 * **Key properties of dependencies**. (These are some key rules of the type system!)
-  * _Combining dependencies_: Given $A : \mathbf{Type}(I)$ and $`A : \mathbf{Type}(J)`$, this ***implies*** $`A : \mathbf{Type}(I,J)`$. In words:
+  * _Combining dependencies_: Given $A : \mathbf{Kind}(I)$ and $`A : \mathbf{Kind}(J)`$, this ***implies*** $`A : \mathbf{Kind}(I,J)`$. In words:
     > If a type separately depends on $`I`$ and on $`J`$, then it may jointly depend on $`I`$ and $`J`$! 
 
     _Remark_: This applies recursively to types with $`k`$ interfaces.
     * _Example_: $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband})`$ and $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Wife})`$ then $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband},\mathsf{Wife})`$
-  * _Weakening dependencies_: Given $`A : \mathbf{Type}(I,J)`$, this ***implies*** $`A : \mathbf{Type}(I)`$. In words:
+  * _Weakening dependencies_: Given $`A : \mathbf{Kind}(I,J)`$, this ***implies*** $`A : \mathbf{Kind}(I)`$. In words:
     > Dependencies can be simply ignored (note: this is a coarse rule — we later discuss more fine-grained constraints, e.g. cardinality).
 
     _Remark_: This applies recursively to types with $`k`$ interfaces.
     * _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
-  * _Specializing dependencies_:  If $`A : \mathbf{Type}`$, $`B : \mathbf{Type}(I)`$, $`A \leq B`$ and _not_ $A : \mathbf{Type}(J)$ with $`J \leq I`$, then we say:
+  * _Specializing dependencies_:  If $`A : \mathbf{Kind}`$, $`B : \mathbf{Kind}(I)`$, $`A \leq B`$ and _not_ $A : \mathbf{Kind}(J)$ with $`J \leq I`$, then we say:
     > The interface $`J`$ of $`A`$ specializes the interface $`I`$ of $`B`$
 
     We write this as $`A(J) \leq B(I)`$ 
 
-  * _Auto-inheritance rule_: If $`A : \mathbf{Type}`$, $`B : \mathbf{Type}(I)`$, $`A \leq B`$ and $`A`$ has no interface strictly specializing $`I`$ then $`A : \mathbf{Type}(I)`$ ("strictly" meaning "not equal to $`I`$"). In words:
+  * _Auto-inheritance rule_: If $`A : \mathbf{Kind}`$, $`B : \mathbf{Kind}(I)`$, $`A \leq B`$ and $`A`$ has no interface strictly specializing $`I`$ then $`A : \mathbf{Kind}(I)`$ ("strictly" meaning "not equal to $`I`$"). In words:
 
     > Dependencies that are not specialized are inherited
     
@@ -250,7 +257,7 @@ This section describes the basic **statements** that comprise our type system, a
   
   * _Casting rule_: If $`A \leq B`$ and $`a : A`$, then this ***implies*** $`a : B`$.
   * _Transitivity rule_: If $`A \leq B`$ and $`B \leq C`$, then this ***implies*** $`A \leq C`$.
-  * _Reflexivity rule_: If $`A : \mathbf{Type}`$ then this **implies** $`A \leq A`$ 
+  * _Reflexivity rule_: If $`A : \mathbf{Kind}`$ then this **implies** $`A \leq A`$ 
 
   * _Direct castings_: We write $`A <_! B`$ to mean:
     > A cast from A to B was declared by user (we speak of a ***direct casting*** from A to B).
@@ -265,24 +272,25 @@ This section describes the basic **statements** that comprise our type system, a
     * _Remark_: More generally, this applies for types with $k \leq 0$ interfaces. (In particular, $`A(x:I) \leq A() = A`$)
     * _Example_: If $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$ then both $`m : \mathsf{Marriage}(x:\mathsf{Spouse})`$ and $`m : \mathsf{Marriage}(y:\mathsf{Spouse})`$
 
-  * _"Covariance of dependencies" casting_: Given $`A \leq B`$, $`I \leq J`$ such that $`A : \mathbf{Type}(I)`$ $`B : \mathbf{Type}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$. In other words:
+  * _"Covariance of dependencies" casting_: Given $`A \leq B`$, $`I \leq J`$ such that $`A : \mathbf{Kind}(I)`$ $`B : \mathbf{Kind}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$. In other words:
     > When $`A`$ casts to $`B`$, and $`I`$ to $`J`$, then $`A(I)`$ casts to $`B(J)`$.
 
     _Remark_: This applies recursively for types with $`k`$ interfaces.
     * _Example_: If $`m : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$
 
-  _Notation_: Write $`X(I) \leq Y(J)`$ to mean $`X : \mathbf{Type}(I)`$, $Y : \mathbf{Type}(J)$ and $`X \leq Y`$, $`I \leq J`$.
+  _Notation_: Write $`X(I) \leq Y(J)`$ to mean $`X : \mathbf{Kind}(I)`$, $Y : \mathbf{Kind}(J)$ and $`X \leq Y`$, $`I \leq J`$.
 
 ### Lists
 
-* **List types**. We write $`[A] : \mathbf{Type}`$ to mean
+* **List types**. For any $`A : \mathbf{Type}`$, we write $`[A] : \mathbf{List}`$ to mean
   > the type of $`A`$-lists, i.e. the type which contains lists $`[a_0, a_1, ...]`$ of elements $`a_i : A`$.
 
-  * _Dependency on list types_: We allow $`A : \mathbf{Type}([I])`$, and thus our type system has types $`A(x:[I]) : \mathbf{Type}`$.
+    Note: We could include $`\mathbf{List}`$ in $`\mathbf{Kind}`$ but for simplicity we don't.
+  * _Dependency on list types_: We allow $`A : \mathbf{Kind}([I])`$, and thus our type system has types $`A(x:[I]) : \mathbf{Kind}`$.
     > $`A(x:[I])`$ is a type depending on lists $`x : [I]`$.
 
     * _Example_: $`\mathsf{FlightPath} : \mathbf{Rel}([\mathsf{Flight}])`$
-  * _Dependent list types_: We allow $`[A] : \mathbf{Type}(I)`$, and thus our type system has types $`[A](x:I) : \mathbf{Type}`$.
+  * _Dependent list types_: We allow $`[A] : \mathbf{List}(I)`$, and thus our type system has types $`[A](x:I) : \mathbf{List}`$.
     > $`[A](x:I)`$ is a type of $`A`$-lists depending on interface $`I`$.
 
     * _Example_: $`[a,b,c] : [\mathsf{MiddleName}](x : \mathsf{MiddleNameListOwner})`$
@@ -297,11 +305,22 @@ This section describes the basic **statements** that comprise our type system, a
 
 ### Type operators
 
-* **Sum types**. $`A + B`$ — Sum type
-* **Product types**. $`A \times B`$ — Product type
-* **Type cardinality**.$`|A| : \mathbb{N}`$ — Cardinality of $`A`$
+Our type system also features the following operations.
 
-_Remark for nerds: list types are neither sums, nor products, nor polynomials ... they are so-called _inductive_ types!_
+* **Sum types**. we may construct $`A + B : \mathbf{Type}`$ for $`A, B :\mathbf{Type}`$ 
+
+    > this is the sum type of $`A`$ and $`B`$, containing all elements of $`A`$ and of $`B`$
+* **Product types**. we may construct $`A \times B : \mathbf{Type}`$ for $`A, B :\mathbf{Type}`$
+
+    > this is the sum type of $`A`$ and $`B`$, containing all elements of $`A`$ and of $`B`$
+* **Option types**. we may construct $`A? : \mathbf{Type}`$ for $`A :\mathbf{Type}`$ 
+
+    > this is the option type, containing $`A`$ plus the empty element $`\emptyset`$
+* **Type cardinality**.$`|A| : \mathbb{N}`$ for $`A : \mathbf{Type}`$. 
+
+    > This is the cardinality of $`A`$, counting the elements in $`A`$.
+
+_Remark for nerds: list types are neither sums, nor products, nor combinations thereof (polynomials) ... they are so-called inductive types!_
 
 
 # Schema
@@ -858,11 +877,9 @@ redefine marriage:spouse label marriage:super_spouse;
 
 This section first describes the satisfication semantics of match queries, obtained by substituting _variables_ in _patterns_ by concepts (_answers_) such that these patterns are _satisfied_. It is then described how instance in ERA types can be declared and further manipulated. Finally, the section describes the semantics of functions (the novelty over match semantics is the ability to declared functions recursively).
 
-## Pattern semantics
+## Basics: Patterns, variables, concept maps, satisfaction
 
-### Basics: Patterns, variables, concept maps, satisfaction
-
-#### Statements, patterns
+### Statements, patterns
 
 * statements: syntactic units of TypeQL (see Glossary)
 * patterns: collection of statements, combined with logical connectives:
@@ -872,7 +889,7 @@ This section first describes the satisfication semantics of match queries, obtai
   * `try { PATT }` "optionally match `PATT` if possible"
   * what's inside `{ ... }` is called a block
 
-#### Variables
+### Variables
 
 Variables appear in statements. They fall in different categories, which can be recognized as follows.
 
@@ -903,7 +920,7 @@ _Remark 1_. The code variable `$x` will be written as $`x`$ in math notation (wi
 
 _Remark 2_. Currently, only implicit named anon vars (`$_`) can be used by the user (under the hood, general anon vars do exist though!). (STICKY: discuss!)
 
-#### Typed concept maps
+### Typed concept maps
 
 * _Concepts_. A **concept** is a type or an element in a type.
 * _Typed concept maps_. An **typed concept map** (cmap) $`m`$ is a mapping variables to non-dependently typed concepts
@@ -917,18 +934,20 @@ _Remark 2_. Currently, only implicit named anon vars (`$_`) can be used by the u
   * _Assigned types_. Write `T($x)` (math. notation $`T_m(x)`$) for the type that `m` assigns to `$x`.
     * _Special case: assigned kinds_. Note that `T($x)` may be `Ent`, `Rel`, `Att`, `Itf` (`Rol`), or `Val` (for value types) when `$x` is assigned a type as a concept — we speak of `T($x)` as the **type kind** of `m($x)` in this case.
 
-#### Pattern satisfaction (typing map conditions)
+### Pattern satisfication, typing conditions, answer
 
-A cmap `m` may **satisfy** a pattern `P`: 
-  > Intuitively, this means substituting the variables in `P` with the concepts assigned in `m` yields statements that are true in our type system.
+* _Satisfaction_. A cmap `m` may **satisfy** a pattern `P` if
+  1. Its typing assignemt satisfies the typing condition below
+  1. Its concept assignment satisfis the "pattern semantics" described in the next section.
+ 
+  > Intuitively, this means substituting the variables in `P` with the concepts assigned in `m` yields statements that are true in our type system. 
   
-* _Definition_. Satisfication  two requirements:  
-    1. For type vars `$X` in `P`, `T($X)` is a type kind (`entity`, `attribute`, `relation`, `value`)
-    1. For value vars `$x` in `P`, `T($x)` is a value type (primitive or struct)
-    1. For list vars `$x` in `P`, `T($x)` is a list type `A[]` for ***minimal*** `A` a schema type or value type such that `A` is the minimal upper bounds of the types of the list elements `<EL>` in the list `m($x) = [<EL>, <EL>, ...]` (note: our type system does have minimal upper bounds w.r.t. subtyping)
-    1. For instance vars `$x` in `P`, `T($x)` is a schema type `A` such that $`m(x) :_! A`$ isa **direct typing**
+  Here are the **typing conditions**:
+    * For tvars `$X` in `P`, `T($X)` is a type kind (`entity`, `attribute`, `relation`, `interface`, `value`)
+    * For vvars `$x` in `P`, `T($x)` is a value type (primitive or struct)
+    * For lvars `$x` in `P`, `T($x)` is a list type `A[]` for ***minimal*** `A` a type such that `A` is the minimal upper bounds of the types of the list elements `<EL>` in the list `m($x) = [<EL>, <EL>, ...]` (note: our type system does have minimal upper bounds thanks to sums)
+    * For ivars `$x` in `P`, `T($x)` is a schema type `A` such that $`m(x) :_! A`$ isa **direct typing**
 
-    There are further conditions on the assigned concepts `m(x)` on a per statement basis, discussed in the next sections.
 <!--    
   * **type satisfication** ("type assigned by `m` must conform with pattern `P`")
 
@@ -953,8 +972,6 @@ A cmap `m` may **satisfy** a pattern `P`:
     * The extra cases for `has` are introduced to facilate working with computed values (of potentially non-attribute type) to match attributes.
 -->
 
-
-_Remark (Replacing **var**s with concepts)_. When discussing pattern satisfaction, we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). This also determines satisfaction of **partially assigned** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`, or `x isa $A`).
 
 <!-- Examples for the typing algorithm:
 fun a($x: person) -> name[]:
@@ -985,15 +1002,15 @@ $x has color $y;
 // STICKY: are we happy with this?
 -->
 
-#### Answers
-
 * _Answers_. A cmap `m` that satisfies a pattern `P` is an **answer** to the pattern if:
   * **The map is minimal** in that no concept map with less variables satisfies `P`
   * All variables in `m` are **bound outside a negation** in `P`
 
 _Example_: Consider the pattern `$x isa Person;` (this pattern comprises a single statement). Than `($x -> p)` satisfies the pattern if `p` is an element of the type `Person` (i.e. $p : \mathsf{Person}$). The answer `($x -> p, $y -> p)` also satisfies the pattern, but it is not proper minimal.
 
-#### Optional variables
+### Optionality and boundedness
+
+**Optional variables**
 
 _Key principle_:
 
@@ -1010,9 +1027,12 @@ _Key principle_:
 * A variable is bound if it appears in a _binding position_ of at least one statement. 
   * Most statements bind their variables: in the next section we highlight _non-bound positions_
 
-### Pattern satisfaction
+## Pattern semantics
 
 Given a cmap `m` and pattern `P` we say `m` ***satisfies*** `P` if (in addition to the typing conditions in outlined in "Pattern satisfication" above) the following conditions are met.
+
+_Remark (Replacing **var**s with concepts)_. When discussing pattern semantics, we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). This also determines satisfaction of **partially assigned** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`, or `x isa $A`).
+
 
 #### Types
 
@@ -1152,7 +1172,7 @@ _**Remark**_: In the `is` pattern we cannot syntactically distinguish whether we
 #### Expression grammar (sketch)
 
 ```javascript
-BOOL      ::= VAR | bool 
+BOOL      ::= VAR | bool
 INT       ::= VAR | long | ( INT ) | INT (+|-|*|/|%) INT 
               | (ceil|floor|round)( DBL ) | abs( INT ) | len( T_LIST )
               | (max|min) ( INT ,..., INT )
@@ -1161,7 +1181,7 @@ DBL       ::= VAR | double | ( DBL ) | DBL (+|-|*|/) DBL
 STRING    ::= VAR | string | string + string
 TIME      ::= VAR | time | TIME (+|-) TIME 
 DATETIME  ::= VAR | datetime | DATETIME (+|-) TIME 
-T         ::= T_LIST [ INT ] | STRUCT.T_COMPONENT    // "polymorphic" grammar
+T         ::= T_LIST [ INT ] | STRUCT.T_COMPONENT | T_FUN    // "polymorphic" grammar
 T_LIST    ::= VAR | [ T ,..., T ] | T_LIST + T_LIST  // includes empty list []
 INT_LIST  ::= VAR | INT_LIST | [ INT .. INT ]
 VAL_EXPR  ::= T | T_LIST
@@ -1170,17 +1190,18 @@ STRUCT    ::= VAR | { T_COMPONENT: (VAL_EXPR|STRUCT)), ... }
 EXPR      ::= VAL_EXPR | STRUCT
 ```
 
-(omitted `FLOAT` for simplicity... it's similar to `DBL`)
-
 _Selected details_
-```
-datetime  ::=   ___Y__M__D
-              | ___Y__M__DT__h__m__s
-              | ___Y__M__DT__h__m__s:___
-time      ::=   P___Y__M__D               // aka "duration"
-              | P___Y__M__DT__h__m__s
-              | P___Y__M__DT__h__m__s:___  
-```
+* `T`-lists (`T_LIST`) are lists expressions of type `T[]`
+* `T`-functions (`T_FUN`) are function calls to **single-return** functions with output type `T` or `T?`
+* Datetime and time formats
+  ```
+  datetime  ::=   ___Y__M__D
+                | ___Y__M__DT__h__m__s
+                | ___Y__M__DT__h__m__s:___
+  time      ::=   P___Y__M__D               // aka "duration"
+                | P___Y__M__DT__h__m__s
+                | P___Y__M__DT__h__m__s:___  
+  ```
 
 #### Expression patterns
 
@@ -1854,7 +1875,7 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
 
 **Case RED_DEFAULT**
 ```
-reduce <AGG> as $x_1, ... , <AGG> as $x_k;
+reduce $x_1=<AGG>, ... , $x_k=<AGG>;
 ``` 
 
 In this case, we output a ***single concept*** map `($x_1 -> <EL>, $x_2 -> <EL>, ...)`, where `<EL>` is a output element (i.e. instance, value, or list, but _never_ type) constructed as follows:
@@ -1863,7 +1884,10 @@ In this case, we output a ***single concept*** map `($x_1 -> <EL>, $x_2 -> <EL>,
 * `<AGG>` is one of the following **aggregate functions**:
   * `check`:
     * output type `bool`
-    * outputs `true` if concept map set non-empty
+    * outputs `true` if concept map stream is non-empty
+  * `check($x)`:
+    * output type `bool`
+    * outputs `true` if concept map stream contains a map `m` with non-empty `m($x)`
   * `sum($x)`:
     * output type `double` or `int`
     * outputs sum of all non-empty `m($x)` in concept map `m`
@@ -1873,17 +1897,17 @@ In this case, we output a ***single concept*** map `($x_1 -> <EL>, $x_2 -> <EL>,
     * output type `double?`
     * outputs mean of all non-empty `m($x)` in concept map `m`
     * `$x` can be optional
-    * empty mean output $\emptyset$
+    * empty mean yield empty output ($\emptyset$)
   * `median($x)`, 
     * output type `double?` or `int?` (depending on type of `$x`)
     * outputs median of all non-empty `m($x)` in concept map `m`
     * `$x` can be optional
     * empty medians output $\emptyset$
   * `first($x)`
-    * `A?` for any `A`
+    * output type `A?` or `A[]?` for any (simple) type `A : Type`
     * outputs first concept of all non-empty `m($x)` in concept map `m`
     * `$x` can be optional
-    * if no `m($x)`is set, outputs $`\emptyset`$
+    * if no `m($x)`is set this outputs empty result ($`\emptyset`$)
   * `count`
     * output type `long`
     * outputs count of all answers
@@ -1899,7 +1923,7 @@ In this case, we output a ***single concept*** map `($x_1 -> <EL>, $x_2 -> <EL>,
 
 **Case RED_GROUP**
 ```
-reduce @group($y_1, $y_2, ...): <AGG> as $x_1, ... , <AGG> as $x_k;
+reduce $x_1=<AGG>, ... , $x_k=<AGG> within $y_1, $y_2, ...;
 ``` 
 
 In this case, we output the following:
@@ -1911,11 +1935,13 @@ In this case, we output the following:
 
 ### Basics
 
+(to be written)
+
 ### Snapshots
 
-### Concurrency
+(to be written)
 
-# Sharding
+### Concurrency
 
 (to be written)
 
