@@ -39,7 +39,7 @@ pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
 pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
     Initial(InitialIterator),
     Match(Box<MatchStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
-    Sort(Box<SortStageIterator<Snapshot>>),
+    Sort(SortStageIterator<Snapshot>),
     Limit(Box<LimitStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
     Offset(Box<OffsetStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
     Filter(Box<FilterStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
@@ -63,7 +63,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
             }
             ReadPipelineStage::Sort(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
-                Ok((ReadStageIterator::Sort(Box::new(iterator)), snapshot))
+                Ok((ReadStageIterator::Sort(iterator), snapshot))
             }
             ReadPipelineStage::Offset(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
@@ -114,6 +114,10 @@ pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
     Match(Box<MatchStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
     Insert(Box<InsertStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
     Delete(Box<DeleteStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
+    Sort(Box<SortStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
+    Limit(Box<LimitStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
+    Offset(Box<OffsetStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
+    Filter(Box<FilterStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
 }
 
 impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineStage<Snapshot> {
@@ -140,6 +144,22 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), snapshot))
             }
+            WritePipelineStage::Sort(stage) => {
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
+                Ok((WriteStageIterator::Sort(iterator), snapshot))
+            }
+            WritePipelineStage::Limit(stage) => {
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
+                Ok((WriteStageIterator::Limit(Box::new(iterator)), snapshot))
+            }
+            WritePipelineStage::Offset(stage) => {
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
+                Ok((WriteStageIterator::Offset(Box::new(iterator)), snapshot))
+            }
+            WritePipelineStage::Filter(stage) => {
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
+                Ok((WriteStageIterator::Filter(Box::new(iterator)), snapshot))
+            }
         }
     }
 }
@@ -148,6 +168,10 @@ pub enum WriteStageIterator<Snapshot: WritableSnapshot + 'static> {
     Initial(InitialIterator),
     Match(Box<MatchStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
     Write(WrittenRowsIterator),
+    Sort(SortStageIterator<Snapshot>),
+    Limit(Box<LimitStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
+    Offset(Box<OffsetStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
+    Filter(Box<FilterStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
 }
 
 impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterator<Snapshot> {
@@ -158,6 +182,10 @@ impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterato
             WriteStageIterator::Initial(iterator) => iterator.next(),
             WriteStageIterator::Match(iterator) => iterator.next(),
             WriteStageIterator::Write(iterator) => iterator.next(),
+            WriteStageIterator::Sort(iterator) => iterator.next(),
+            WriteStageIterator::Limit(iterator) => iterator.next(),
+            WriteStageIterator::Offset(iterator) => iterator.next(),
+            WriteStageIterator::Filter(iterator) => iterator.next(),
         }
     }
 }
@@ -168,6 +196,10 @@ impl<Snapshot: WritableSnapshot + 'static> StageIterator for WriteStageIterator<
             WriteStageIterator::Initial(iterator) => iterator.collect_owned(),
             WriteStageIterator::Match(iterator) => iterator.collect_owned(),
             WriteStageIterator::Write(iterator) => iterator.collect_owned(),
+            WriteStageIterator::Sort(iterator) => iterator.collect_owned(),
+            WriteStageIterator::Limit(iterator) => iterator.collect_owned(),
+            WriteStageIterator::Offset(iterator) => iterator.collect_owned(),
+            WriteStageIterator::Filter(iterator) => iterator.collect_owned(),
         }
     }
 }

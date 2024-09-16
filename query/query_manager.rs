@@ -143,8 +143,8 @@ impl QueryManager {
             }
         }
 
-        let named_outputs = output_variable_positions.iter().map(|(variable, position)| {
-            (variable_registry.variable_names().get(variable).unwrap().clone(), position.clone())
+        let named_outputs = output_variable_positions.iter().filter_map(|(variable, position)| {
+            variable_registry.variable_names().get(variable).map(|name| (name.clone(), position.clone()))
         }).collect::<HashMap<_,_>>();
         Ok((last_stage, named_outputs))
     }
@@ -235,12 +235,27 @@ impl QueryManager {
                     );
                     last_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
-                _ => todo!(),
+                CompiledStage::Filter(filter_program) => {
+                    let filter_stage = FilterStageExecutor::new(filter_program, last_stage);
+                    last_stage = WritePipelineStage::Filter(Box::new(filter_stage));
+                }
+                CompiledStage::Sort(sort_program) => {
+                    let sort_stage = SortStageExecutor::new(sort_program, last_stage);
+                    last_stage = WritePipelineStage::Sort(Box::new(sort_stage));
+                }
+                CompiledStage::Offset(offset_program) => {
+                    let offset_stage = OffsetStageExecutor::new(offset_program, last_stage);
+                    last_stage = WritePipelineStage::Offset(Box::new(offset_stage));
+                }
+                CompiledStage::Limit(limit_program) => {
+                    let limit_stage = LimitStageExecutor::new(limit_program, last_stage);
+                    last_stage = WritePipelineStage::Limit(Box::new(limit_stage));
+                }
             }
         }
 
-        let named_outputs = output_variable_positions.iter().map(|(variable, position)| {
-            (variable_registry.variable_names().get(variable).unwrap().clone(), position.clone())
+        let named_outputs = output_variable_positions.iter().filter_map(|(variable, position)| {
+            variable_registry.variable_names().get(variable).map(|name| (name.clone(), position.clone()))
         }).collect::<HashMap<_,_>>();
         Ok((last_stage, named_outputs))
     }
