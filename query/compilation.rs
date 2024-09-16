@@ -28,6 +28,7 @@ use crate::{annotation::AnnotatedStage, error::QueryError};
 pub struct CompiledPipeline {
     pub(super) compiled_functions: Vec<CompiledFunction>,
     pub(super) compiled_stages: Vec<CompiledStage>,
+    pub(super) output_variable_positions: HashMap<Variable, VariablePosition>,
 }
 
 pub struct CompiledFunction {
@@ -89,7 +90,10 @@ pub(super) fn compile_pipeline(
         let compiled_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;
         compiled_stages.push(compiled_stage);
     }
-    Ok(CompiledPipeline { compiled_functions, compiled_stages })
+    let output_variable_positions =
+        compiled_stages.last().map(|stage: &CompiledStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
+
+    Ok(CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions })
 }
 
 fn compile_function(

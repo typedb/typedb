@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -21,6 +22,7 @@ use executor::{
 use function::function_manager::FunctionManager;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
+use compiler::VariablePosition;
 
 use crate::{
     annotation::{infer_types_for_pipeline, AnnotatedPipeline},
@@ -64,7 +66,7 @@ impl QueryManager {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
-    ) -> Result<ReadPipelineStage<Snapshot>, QueryError> {
+    ) -> Result<(ReadPipelineStage<Snapshot>, HashMap<String, VariablePosition>), QueryError> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         let mut snapshot = snapshot;
         // 1: Translate
@@ -104,7 +106,7 @@ impl QueryManager {
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let CompiledPipeline { compiled_functions, compiled_stages } =
+        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } =
             compile_pipeline(thing_manager.statistics(), variable_registry, annotated_preamble, annotated_stages)?;
 
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(snapshot));
@@ -140,7 +142,11 @@ impl QueryManager {
                 }
             }
         }
-        Ok(last_stage)
+
+        let output_mapping = output_variable_positions.iter().map(|(variable, position)| {
+            (variable_registry.variable_names().get(variable).unwrap().clone(), position.clone())
+        }).collect::<HashMap<_,_>>();
+        Ok((last_stage, output_mapping))
     }
 
     pub fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
@@ -150,7 +156,7 @@ impl QueryManager {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
-    ) -> Result<WritePipelineStage<Snapshot>, (Snapshot, QueryError)> {
+    ) -> Result<(WritePipelineStage<Snapshot>, HashMap<String, VariablePosition>), (Snapshot, QueryError)> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         // 1: Translate
         let translated_pipeline = translate_pipeline(&snapshot, function_manager, query);
@@ -199,10 +205,11 @@ impl QueryManager {
         let variable_registry = Arc::new(variable_registry);
         let compiled_pipeline =
             compile_pipeline(thing_manager.statistics(), variable_registry, annotated_preamble, annotated_stages);
-        let CompiledPipeline { compiled_functions, compiled_stages } = match compiled_pipeline {
+        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } = match compiled_pipeline {
             Ok(compiled_pipeline) => compiled_pipeline,
             Err(err) => return Err((snapshot, err)),
         };
+        compiled_stages.last().unwrap().
 
         let mut last_stage = WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot)));
         for compiled_stage in compiled_stages {
@@ -232,7 +239,11 @@ impl QueryManager {
                 _ => todo!(),
             }
         }
-        Ok(last_stage)
+
+        let output_mapping = output_variable_positions.iter().map(|(variable, position)| {
+            (variable_registry.variable_names().get(variable).unwrap().clone(), position.clone())
+        }).collect::<HashMap<_,_>>();
+        Ok((last_stage, output_mapping))
     }
 }
 
