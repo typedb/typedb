@@ -197,8 +197,7 @@ fn test_match() {
             &match_,
         )
         .unwrap();
-    let (iterator, StageContext { .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (iterator, StageContext { .. }) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 1);
 }
