@@ -43,10 +43,6 @@ where
 {
     type OutputIterator = SortStageIterator<Snapshot>;
 
-    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
-        // TODO: Do we really need this function apart from at  the final stage? If so, can't we make it a property of the pipeline instead?
-        self.previous.named_selected_outputs()
-    }
 
     fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { previous, program, .. } = self;
@@ -151,10 +147,6 @@ where
 {
     type OutputIterator = OffsetStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
-    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
-        self.previous.named_selected_outputs()
-    }
-
     fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { offset_program, previous, .. } = self;
         let (previous_iterator, snapshot) = previous.into_iterator(interrupt)?;
@@ -235,10 +227,6 @@ where
 {
     type OutputIterator = LimitStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
-    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
-        self.previous.named_selected_outputs()
-    }
-
     fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { limit_program, previous, .. } = self;
         let (previous_iterator, snapshot) = previous.into_iterator(interrupt)?;
@@ -317,15 +305,6 @@ where
     PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = FilterStageIterator<Snapshot, PreviousStage::OutputIterator>;
-
-    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
-        let prev = self.previous.named_selected_outputs();
-        self.filter_program
-            .retained_positions
-            .iter()
-            .map(|pos| (pos.clone(), prev.get(pos).unwrap().clone()))
-            .collect::<HashMap<_, _>>()
-    }
 
     fn into_iterator(self, interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
         let Self { filter_program, previous, .. } = self;

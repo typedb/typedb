@@ -83,15 +83,15 @@ typedb_error!(
             "Iterable assignments ('in') must have an iterable stream or list on the right hand side.\nSource:\n{declaration}",
             declaration: InIterable
         ),
-        FunctionRead(
+        FunctionReadError(
             9,
             "Error reading function.",
-            source: FunctionReadError
+            ( source: FunctionReadError )
         ),
         ParseError(
             10,
             "Error parsing query.",
-            source: typeql::Error
+            ( typedb_source: typeql::Error )
         ),
         LiteralParseError(
             11,
@@ -99,7 +99,7 @@ typedb_error!(
             literal: String,
             ( source: LiteralParseError )
         ),
-        ExpressionDefinition(
+        ExpressionDefinitionError(
             12,
             "Expression error.",
             ( source: ExpressionDefinitionError )
@@ -126,10 +126,10 @@ typedb_error!(
             "Relation's declared role types should not contain scopes (':').\nSource:\n{declaration}",
             declaration: typeql::statement::thing::RolePlayer
         ),
-        ModifierDefinitionError( // TODO: Should we just inline the two?
+        ModifierDefinitionError(
             17,
             "Error adding modifier",
-            source: ModifierDefinitionError
+            ( source: ModifierDefinitionError )
         ),
     }
 );

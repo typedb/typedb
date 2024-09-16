@@ -105,7 +105,7 @@ pub(super) fn add_user_defined_function_call(
     let function_name = identifier.as_str();
     let callee = function_index
         .get_function_signature(function_name)
-        .map_err(|source| PatternDefinitionError::FunctionRead { source })?;
+        .map_err(|source| PatternDefinitionError::FunctionReadError { source })?;
     let Some(callee) = callee else {
         return Err(PatternDefinitionError::UnresolvedFunction { function_name: function_name.to_owned() });
     };

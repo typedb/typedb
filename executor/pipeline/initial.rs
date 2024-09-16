@@ -30,10 +30,6 @@ impl<Snapshot: ReadableSnapshot + 'static> InitialStage<Snapshot> {
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for InitialStage<Snapshot> {
     type OutputIterator = InitialIterator;
 
-    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
-        HashMap::new()
-    }
-
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,

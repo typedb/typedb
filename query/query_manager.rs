@@ -107,7 +107,7 @@ impl QueryManager {
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
         let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } =
-            compile_pipeline(thing_manager.statistics(), variable_registry, annotated_preamble, annotated_stages)?;
+            compile_pipeline(thing_manager.statistics(), variable_registry.clone(), annotated_preamble, annotated_stages)?;
 
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(snapshot));
         for compiled_stage in compiled_stages {
@@ -143,10 +143,10 @@ impl QueryManager {
             }
         }
 
-        let output_mapping = output_variable_positions.iter().map(|(variable, position)| {
+        let named_outputs = output_variable_positions.iter().map(|(variable, position)| {
             (variable_registry.variable_names().get(variable).unwrap().clone(), position.clone())
         }).collect::<HashMap<_,_>>();
-        Ok((last_stage, output_mapping))
+        Ok((last_stage, named_outputs))
     }
 
     pub fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
@@ -204,12 +204,11 @@ impl QueryManager {
         // // 3: Compile
         let variable_registry = Arc::new(variable_registry);
         let compiled_pipeline =
-            compile_pipeline(thing_manager.statistics(), variable_registry, annotated_preamble, annotated_stages);
+            compile_pipeline(thing_manager.statistics(), variable_registry.clone(), annotated_preamble, annotated_stages);
         let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } = match compiled_pipeline {
             Ok(compiled_pipeline) => compiled_pipeline,
             Err(err) => return Err((snapshot, err)),
         };
-        compiled_stages.last().unwrap().
 
         let mut last_stage = WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot)));
         for compiled_stage in compiled_stages {
@@ -240,10 +239,10 @@ impl QueryManager {
             }
         }
 
-        let output_mapping = output_variable_positions.iter().map(|(variable, position)| {
+        let named_outputs = output_variable_positions.iter().map(|(variable, position)| {
             (variable_registry.variable_names().get(variable).unwrap().clone(), position.clone())
         }).collect::<HashMap<_,_>>();
-        Ok((last_stage, output_mapping))
+        Ok((last_stage, named_outputs))
     }
 }
 

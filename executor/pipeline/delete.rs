@@ -40,16 +40,6 @@ where
 {
     type OutputIterator = WrittenRowsIterator;
 
-    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
-        let mut inputs = self.previous.named_selected_outputs();
-        for (position, variable) in self.deleter.program().output_row_schema.iter().enumerate() {
-            if variable.is_none() {
-                inputs.remove(&VariablePosition::new(position as u32));
-            }
-        }
-        inputs
-    }
-
     fn into_iterator(
         self,
         mut interrupt: ExecutionInterrupt,

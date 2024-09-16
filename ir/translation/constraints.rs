@@ -412,7 +412,7 @@ pub(super) fn add_function_call_binding_user(
 ) -> Result<(), PatternDefinitionError> {
     let function_opt = function_index
         .get_function_signature(function_name)
-        .map_err(|source| PatternDefinitionError::FunctionRead { source })?;
+        .map_err(|source| PatternDefinitionError::FunctionReadError { source })?;
     if let Some(callee) = function_opt {
         match (must_be_stream, callee.return_is_stream) {
             (true, true) | (false, false) => {}

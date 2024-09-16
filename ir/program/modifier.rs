@@ -55,13 +55,13 @@ impl Sort {
         use ModifierDefinitionError::SortVariableNotAvailable;
         let mut sort_variables = Vec::with_capacity(variables.len());
         for (name, is_ascending) in variables {
-            match variable_lookup(name) {
+            match variable_lookup.get(name) {
                 None => Err(SortVariableNotAvailable { name: name.to_string() })?,
                 Some(var) => {
                     if is_ascending {
-                        sort_variables.push(SortVariable::Ascending(var));
+                        sort_variables.push(SortVariable::Ascending(var.clone()));
                     } else {
-                        sort_variables.push(SortVariable::Descending(var));
+                        sort_variables.push(SortVariable::Descending(var.clone()));
                     }
                 }
             };

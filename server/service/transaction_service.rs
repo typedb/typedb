@@ -53,6 +53,7 @@ use typeql::{
     Query,
 };
 use uuid::Uuid;
+use answer::variable::Variable;
 
 use crate::service::{
     answer::encode_row,
@@ -832,11 +833,9 @@ impl TransactionService {
             &pipeline,
         );
         let (query_output_descriptor, pipeline) = match result {
-            Ok(executor) => {
-                let named_outputs: StreamQueryOutputDescriptor = executor
-                    .named_selected_outputs()
+            Ok((executor, named_outputs)) => {
+                let named_outputs: StreamQueryOutputDescriptor = named_outputs
                     .into_iter()
-                    .map(|(position, name)| (name, position))
                     .sorted()
                     .collect();
                 (named_outputs, executor)
@@ -921,7 +920,7 @@ impl TransactionService {
             let thing_manager = transaction.thing_manager.clone();
             let function_manager = transaction.function_manager.clone();
             spawn_blocking(move || {
-                let executor = Self::prepare_read_query_in(
+                let prepare_result = Self::prepare_read_query_in(
                     snapshot.clone(),
                     &type_manager,
                     thing_manager.clone(),
@@ -929,14 +928,13 @@ impl TransactionService {
                     &pipeline,
                 );
 
-                let executor = unwrap_or_execute_and_return!(executor, |err| {
+                let (executor, named_outputs) = unwrap_or_execute_and_return!(prepare_result, |err| {
                     Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
                 });
 
-                let descriptor: StreamQueryOutputDescriptor = executor
-                    .named_selected_outputs()
+                let descriptor: StreamQueryOutputDescriptor = named_outputs
                     .into_iter()
-                    .map(|(position, name)| (name, position))
+                    .map(|(name, position)| (name, position))
                     .sorted()
                     .collect();
                 let response = StreamQueryResponse::init(&descriptor);
@@ -991,7 +989,7 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         pipeline: &Pipeline,
-    ) -> Result<ReadPipelineStage<Snapshot>, QueryError> {
+    ) -> Result<(ReadPipelineStage<Snapshot>, HashMap<String, VariablePosition>), QueryError> {
         QueryManager::new().prepare_read_pipeline(snapshot, type_manager, thing_manager, &function_manager, &pipeline)
     }
 

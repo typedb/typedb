@@ -59,14 +59,14 @@ use crate::{
 
 fn batch_result_to_answer(
     batch: Batch,
-    selected_outputs: HashMap<VariablePosition, String>,
+    selected_outputs: HashMap<String, VariablePosition>,
 ) -> Vec<HashMap<String, VariableValue<'static>>> {
     batch
         .into_iterator_mut()
         .map_static(move |row| {
             let answer_map: HashMap<String, VariableValue<'static>> = selected_outputs
                 .iter()
-                .map(|(p, v)| (v.clone().to_owned(), row.get(*p).clone().into_owned()))
+                .map(|(v, p)| (v.clone().to_owned(), row.get(*p).clone().into_owned()))
                 .collect::<HashMap<_, _>>();
             answer_map
         })
@@ -79,17 +79,16 @@ fn execute_read_query(
 ) -> Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError> {
     with_read_tx!(context, |tx| {
         let qm = QueryManager::new();
-        let final_stage = match qm.prepare_read_pipeline(
+        let (final_stage, named_outputs) = match qm.prepare_read_pipeline(
             tx.snapshot.clone(),
             &tx.type_manager,
             tx.thing_manager.clone(),
             &tx.function_manager,
             &query.into_pipeline(),
         ) {
-            Ok(final_stage) => final_stage,
+            Ok(prepared) => prepared,
             Err(error) => return Err(error),
         };
-        let selected_outputs = final_stage.named_selected_outputs().clone();
         let (snapshot, result_as_batch) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
             Ok((iterator, snapshot)) => (snapshot, iterator.collect_owned()),
             Err((_snapshot, err)) => {
@@ -98,7 +97,7 @@ fn execute_read_query(
         };
 
         match result_as_batch {
-            Ok(batch) => Ok(batch_result_to_answer(batch, selected_outputs)),
+            Ok(batch) => Ok(batch_result_to_answer(batch, named_outputs)),
             Err(typedb_source) => Err(QueryError::WritePipelineExecutionError { typedb_source }),
         }
     })
@@ -180,12 +179,11 @@ fn execute_insert_query_impl<Snapshot: WritableSnapshot + 'static>(
     query: Pipeline,
 ) -> (Snapshot, Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError>) {
     let qm = QueryManager::new();
-    let final_stage = match qm.prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &query)
+    let (final_stage, named_outputs) = match qm.prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &query)
     {
         Ok(final_stage) => final_stage,
         Err((snapshot, error)) => return (snapshot, Err(error)),
     };
-    let selected_outputs = final_stage.named_selected_outputs().clone();
     let (snapshot, result_as_batch, ) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
         Ok((iterator, snapshot)) => {
             let result = iterator.collect_owned();
@@ -200,7 +198,7 @@ fn execute_insert_query_impl<Snapshot: WritableSnapshot + 'static>(
     };
 
     let result_as_answers = match result_as_batch {
-        Ok(batch) => Ok(batch_result_to_answer(batch, selected_outputs)),
+        Ok(batch) => Ok(batch_result_to_answer(batch, named_outputs)),
         Err(typedb_source) => Err(QueryError::WritePipelineExecutionError { typedb_source }),
     };
 
