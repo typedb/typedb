@@ -160,8 +160,6 @@ impl QueryManager {
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
     ) -> Result<(WritePipelineStage<Snapshot>, HashMap<String, VariablePosition>), (Snapshot, QueryError)> {
-        // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
-
         // 1: Translate
         let translated_pipeline = translate_pipeline(&snapshot, function_manager, query);
         let TranslatedPipeline { translated_preamble, translated_stages, variable_registry, parameters } =

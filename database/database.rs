@@ -313,6 +313,7 @@ impl Database<WALClient> {
         Ok(())
     }
 
+    #[allow(clippy::drop_non_drop)]
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
         drop(self._statistics_updater);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));

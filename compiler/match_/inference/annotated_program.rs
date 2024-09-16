@@ -109,7 +109,6 @@ pub mod tests {
             HashMapFunctionSignatureIndex::build([(FunctionID::Preamble(0), &typeql_function)].into_iter());
         let function = translate_function(&function_index, &typeql_function).unwrap();
         let mut translation_context = TranslationContext::new();
-        let mut parameters = ParameterRegistry::default();
         let entry = translate_match(&mut translation_context, &function_index, &typeql_match).unwrap().finish();
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();

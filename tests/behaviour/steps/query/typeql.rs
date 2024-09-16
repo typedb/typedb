@@ -10,7 +10,10 @@ use answer::{answer_map::AnswerMap, variable_value::VariableValue, Thing};
 use compiler::{
     insert::WriteCompilationError,
     match_::{
-        inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+        inference::{
+            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+            type_inference::infer_types_for_match_block,
+        },
         planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
     },
     VariablePosition,
@@ -59,32 +62,68 @@ use crate::{
     Context,
 };
 
-fn batch_result_to_answer(
-    batch: Batch,
-    selected_outputs: HashMap<String, VariablePosition>,
-) -> Vec<HashMap<String, VariableValue<'static>>> {
-    batch
-        .into_iterator_mut()
-        .map_static(move |row| {
-            let answer_map: HashMap<String, VariableValue<'static>> = selected_outputs
-                .iter()
-                .map(|(v, p)| (v.clone().to_owned(), row.get(*p).clone().into_owned()))
-                .collect::<HashMap<_, _>>();
-            answer_map
+fn execute_match_query(
+    context: &mut Context,
+    query: typeql::Query,
+) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Box<dyn TypeDBError>> {
+    let mut translation_context = TranslationContext::new();
+    let typeql_match = query.into_pipeline().stages.pop().unwrap().into_match();
+    let block = translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), &typeql_match)
+        .map_err(|err| Box::new(err) as _)?
+        .finish();
+
+    let variable_position_index;
+    let variable_registry = Arc::new(translation_context.variable_registry);
+    let rows = with_read_tx!(context, |tx| {
+        let type_annotations = infer_types_for_match_block(
+            &block,
+            &variable_registry,
+            &*tx.snapshot,
+            &tx.type_manager,
+            &HashMap::new(),
+            &IndexedAnnotatedFunctions::empty(),
+            &AnnotatedUnindexedFunctions::empty(),
+        )
+        .map_err(|err| Box::new(err) as _)?;
+
+        let match_plan = MatchProgram::compile(
+            &block,
+            &type_annotations,
+            variable_registry.clone(),
+            &HashMap::new(),
+            tx.thing_manager.statistics(),
+        );
+
+        let program_plan = ProgramPlan::new(match_plan, HashMap::new(), HashMap::new());
+        let executor = ProgramExecutor::new(&program_plan, &tx.snapshot, &tx.thing_manager)
+            .map_err(|err| Box::new(ReadExecutionError::ConceptRead { source: err }) as _)?;
+        variable_position_index = executor.entry_variable_positions_index().to_owned();
+        executor
+            .into_iterator(tx.snapshot.clone(), tx.thing_manager.clone(), ExecutionInterrupt::new_uninterruptible())
+            .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| Box::new(err.clone()) as _))
+            .into_iter()
+            .try_collect::<_, Vec<_>, _>()?
+    });
+
+    let variable_names = variable_registry.variable_names();
+
+    let answers = rows
+        .into_iter()
+        .map(|row| {
+            izip!(&variable_position_index, row)
+                .filter_map(|(var, value)| Some((variable_names.get(var).cloned()?, value)))
+                .collect()
         })
         .collect::<Vec<HashMap<String, VariableValue<'static>>>>()
+
+    Ok(answers)
 }
 
 fn execute_read_query(
     context: &mut Context,
     query: typeql::Query,
 ) -> Result<Vec<HashMap<String, VariableValue<'static>>>, Either<WriteCompilationError, WriteError>> {
-    with_write_tx_deconstructed!(context, |snapshot,
-                                           type_manager,
-                                           thing_manager,
-                                           function_manager,
-                                           database,
-                                           _opts| {
+    with_write_tx_deconstructed!(context, |snapshot, type_manager, thing_manager, function_manager, _db, _opts| {
         let pipeline = QueryManager {}
             .prepare_write_pipeline(
                 Arc::into_inner(snapshot).unwrap(),
@@ -93,6 +132,14 @@ fn execute_read_query(
                 &function_manager,
                 &query.into_pipeline(),
             )
+            .inspect_err(|(_, err)| {
+                let mut err: &dyn TypeDBError = err;
+                eprintln!("{err}");
+                while let Some(source) = err.source_typedb_error() {
+                    err = source;
+                    eprintln!("   {err}");
+                }
+            })
             .unwrap();
         let (_iterator, StageContext { snapshot, .. }) =
             pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
