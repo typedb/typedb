@@ -14,31 +14,31 @@ use answer::variable::Variable;
 
 #[derive(Debug, Clone)]
 pub enum Modifier {
-    Filter(Filter),
+    Select(Select),
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
 }
 
 #[derive(Debug, Clone)]
-pub struct Filter {
+pub struct Select {
     pub variables: HashSet<Variable>,
 }
 
-impl Filter {
+impl Select {
     pub(crate) fn new(
         variables: Vec<&str>,
         variable_index: &HashMap<String, Variable>,
     ) -> Result<Self, ModifierDefinitionError> {
-        use ModifierDefinitionError::FilterVariableNotAvailable;
-        let mut filter_variables = HashSet::with_capacity(variables.len());
+        use ModifierDefinitionError::SelectedVariableNotAvailable;
+        let mut select_variables = HashSet::with_capacity(variables.len());
         for name in variables {
             match variable_index.get(name) {
-                None => Err(FilterVariableNotAvailable { name: name.to_string() })?,
-                Some(var) => filter_variables.insert(var.clone()),
+                None => Err(SelectedVariableNotAvailable { name: name.to_string() })?,
+                Some(var) => select_variables.insert(var.clone()),
             };
         }
-        Ok(Self { variables: filter_variables })
+        Ok(Self { variables: select_variables })
     }
 }
 
@@ -108,7 +108,7 @@ impl Limit {
 
 #[derive(Debug, Clone)]
 pub enum ModifierDefinitionError {
-    FilterVariableNotAvailable { name: String },
+    SelectedVariableNotAvailable { name: String },
     SortVariableNotAvailable { name: String },
 }
 
@@ -121,7 +121,7 @@ impl fmt::Display for ModifierDefinitionError {
 impl Error for ModifierDefinitionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::FilterVariableNotAvailable { .. } => None,
+            Self::SelectedVariableNotAvailable { .. } => None,
             Self::SortVariableNotAvailable { .. } => None,
         }
     }

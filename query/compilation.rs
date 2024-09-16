@@ -13,14 +13,14 @@ use compiler::{
     delete::program::DeleteProgram,
     insert::program::InsertProgram,
     match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
-    modifiers::{FilterProgram, LimitProgram, OffsetProgram, SortProgram},
+    modifiers::{LimitProgram, OffsetProgram, SelectProgram, SortProgram},
     VariablePosition,
 };
 use concept::thing::statistics::Statistics;
 use ir::program::{
     block::VariableRegistry,
     function::Function,
-    modifier::{Filter, Limit, Offset, Sort},
+    modifier::{Limit, Offset, Select, Sort},
 };
 
 use crate::{annotation::AnnotatedStage, error::QueryError};
@@ -41,7 +41,7 @@ pub enum CompiledStage {
     Insert(InsertProgram),
     Delete(DeleteProgram),
 
-    Filter(FilterProgram),
+    Filter(SelectProgram),
     Sort(SortProgram),
     Offset(OffsetProgram),
     Limit(LimitProgram),
@@ -144,7 +144,7 @@ fn compile_stage(
                 retained_positions.insert(pos.clone());
                 output_row_mapping.insert(variable.clone(), pos.clone());
             }
-            Ok(CompiledStage::Filter(FilterProgram { retained_positions, output_row_mapping }))
+            Ok(CompiledStage::Filter(SelectProgram { retained_positions, output_row_mapping }))
         }
         AnnotatedStage::Sort(sort) => Ok(CompiledStage::Sort(SortProgram {
             sort_on: sort.variables.clone(),

@@ -14,7 +14,7 @@ use executor::{
         initial::InitialStage,
         insert::InsertStageExecutor,
         match_::MatchStageExecutor,
-        modifiers::{FilterStageExecutor, LimitStageExecutor, OffsetStageExecutor, SortStageExecutor},
+        modifiers::{LimitStageExecutor, OffsetStageExecutor, SelectStageExecutor, SortStageExecutor},
         stage::{ReadPipelineStage, WritePipelineStage},
     },
     write::{delete::DeleteExecutor, insert::InsertExecutor},
@@ -128,8 +128,8 @@ impl QueryManager {
                     unreachable!("Delete clause cannot exist in a read pipeline.")
                 }
                 CompiledStage::Filter(filter_program) => {
-                    let filter_stage = FilterStageExecutor::new(filter_program, last_stage);
-                    last_stage = ReadPipelineStage::Filter(Box::new(filter_stage));
+                    let filter_stage = SelectStageExecutor::new(filter_program, last_stage);
+                    last_stage = ReadPipelineStage::Select(Box::new(filter_stage));
                 }
                 CompiledStage::Sort(sort_program) => {
                     let sort_stage = SortStageExecutor::new(sort_program, last_stage);
@@ -247,8 +247,8 @@ impl QueryManager {
                     last_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
                 CompiledStage::Filter(filter_program) => {
-                    let filter_stage = FilterStageExecutor::new(filter_program, last_stage);
-                    last_stage = WritePipelineStage::Filter(Box::new(filter_stage));
+                    let filter_stage = SelectStageExecutor::new(filter_program, last_stage);
+                    last_stage = WritePipelineStage::Select(Box::new(filter_stage));
                 }
                 CompiledStage::Sort(sort_program) => {
                     let sort_stage = SortStageExecutor::new(sort_program, last_stage);

@@ -19,7 +19,7 @@ use crate::{
         variable_category::{VariableCategory, VariableOptionality},
         Scope, ScopeId,
     },
-    program::modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
+    program::modifier::{Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
     PatternDefinitionError,
 };
 
@@ -112,9 +112,9 @@ impl<'reg> FunctionalBlockBuilder<'reg> {
         Ok(self.modifiers.last().unwrap())
     }
 
-    pub fn add_filter(&mut self, variables: Vec<&str>) -> Result<&Modifier, ModifierDefinitionError> {
-        let filter = Filter::new(variables, self.context.variable_names_index)?;
-        self.modifiers.push(Modifier::Filter(filter));
+    pub fn add_select(&mut self, variables: Vec<&str>) -> Result<&Modifier, ModifierDefinitionError> {
+        let select = Select::new(variables, self.context.variable_names_index)?;
+        self.modifiers.push(Modifier::Select(select));
         Ok(self.modifiers.last().unwrap())
     }
 }

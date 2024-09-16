@@ -11,7 +11,7 @@ use ir::{
         block::{FunctionalBlock, VariableRegistry},
         function::Function,
         function_signature::{FunctionID, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
-        modifier::{Filter, Limit, Offset, Sort},
+        modifier::{Limit, Offset, Select, Sort},
     },
     translation::{
         function::translate_function,
@@ -38,7 +38,7 @@ pub(super) enum TranslatedStage {
     Delete { block: FunctionalBlock, deleted_variables: Vec<Variable> },
 
     // ...
-    Filter(Filter),
+    Filter(Select),
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),

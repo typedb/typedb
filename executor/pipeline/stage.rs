@@ -18,8 +18,8 @@ use crate::{
         insert::InsertStageExecutor,
         match_::{MatchStageExecutor, MatchStageIterator},
         modifiers::{
-            FilterStageExecutor, FilterStageIterator, LimitStageExecutor, LimitStageIterator, OffsetStageExecutor,
-            OffsetStageIterator, SortStageExecutor, SortStageIterator,
+            LimitStageExecutor, LimitStageIterator, OffsetStageExecutor, OffsetStageIterator, SelectStageExecutor,
+            SelectStageIterator, SortStageExecutor, SortStageIterator,
         },
         PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator,
     },
@@ -33,7 +33,7 @@ pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Sort(Box<SortStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>>),
     Limit(Box<LimitStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>>),
     Offset(Box<OffsetStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>>),
-    Filter(Box<FilterStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>>),
+    Select(Box<SelectStageExecutor<Snapshot, ReadPipelineStage<Snapshot>>>),
 }
 
 pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
@@ -42,7 +42,7 @@ pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
     Sort(SortStageIterator<Snapshot>),
     Limit(Box<LimitStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
     Offset(Box<OffsetStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
-    Filter(Box<FilterStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
+    Select(Box<SelectStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
@@ -73,9 +73,9 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((ReadStageIterator::Limit(Box::new(iterator)), snapshot))
             }
-            ReadPipelineStage::Filter(stage) => {
+            ReadPipelineStage::Select(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
-                Ok((ReadStageIterator::Filter(Box::new(iterator)), snapshot))
+                Ok((ReadStageIterator::Select(Box::new(iterator)), snapshot))
             }
         }
     }
@@ -91,7 +91,7 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadStageIterator
             ReadStageIterator::Sort(iterator) => iterator.next(),
             ReadStageIterator::Offset(iterator) => iterator.next(),
             ReadStageIterator::Limit(iterator) => iterator.next(),
-            ReadStageIterator::Filter(iterator) => iterator.next(),
+            ReadStageIterator::Select(iterator) => iterator.next(),
         }
     }
 }
@@ -104,7 +104,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageIterator for ReadStageIterator<S
             ReadStageIterator::Sort(iterator) => iterator.collect_owned(),
             ReadStageIterator::Offset(iterator) => iterator.collect_owned(),
             ReadStageIterator::Limit(iterator) => iterator.collect_owned(),
-            ReadStageIterator::Filter(iterator) => iterator.collect_owned(),
+            ReadStageIterator::Select(iterator) => iterator.collect_owned(),
         }
     }
 }
@@ -117,7 +117,7 @@ pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
     Sort(Box<SortStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
     Limit(Box<LimitStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
     Offset(Box<OffsetStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
-    Filter(Box<FilterStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
+    Select(Box<SelectStageExecutor<Snapshot, WritePipelineStage<Snapshot>>>),
 }
 
 impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineStage<Snapshot> {
@@ -156,9 +156,9 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((WriteStageIterator::Offset(Box::new(iterator)), snapshot))
             }
-            WritePipelineStage::Filter(stage) => {
+            WritePipelineStage::Select(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
-                Ok((WriteStageIterator::Filter(Box::new(iterator)), snapshot))
+                Ok((WriteStageIterator::Select(Box::new(iterator)), snapshot))
             }
         }
     }
@@ -171,7 +171,7 @@ pub enum WriteStageIterator<Snapshot: WritableSnapshot + 'static> {
     Sort(SortStageIterator<Snapshot>),
     Limit(Box<LimitStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
     Offset(Box<OffsetStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
-    Filter(Box<FilterStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
+    Select(Box<SelectStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
 }
 
 impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterator<Snapshot> {
@@ -185,7 +185,7 @@ impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterato
             WriteStageIterator::Sort(iterator) => iterator.next(),
             WriteStageIterator::Limit(iterator) => iterator.next(),
             WriteStageIterator::Offset(iterator) => iterator.next(),
-            WriteStageIterator::Filter(iterator) => iterator.next(),
+            WriteStageIterator::Select(iterator) => iterator.next(),
         }
     }
 }
@@ -199,7 +199,7 @@ impl<Snapshot: WritableSnapshot + 'static> StageIterator for WriteStageIterator<
             WriteStageIterator::Sort(iterator) => iterator.collect_owned(),
             WriteStageIterator::Limit(iterator) => iterator.collect_owned(),
             WriteStageIterator::Offset(iterator) => iterator.collect_owned(),
-            WriteStageIterator::Filter(iterator) => iterator.collect_owned(),
+            WriteStageIterator::Select(iterator) => iterator.collect_owned(),
         }
     }
 }

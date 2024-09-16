@@ -6,7 +6,7 @@
 use std::{cmp::Ordering, collections::HashMap, marker::PhantomData, sync::Arc};
 
 use compiler::{
-    modifiers::{FilterProgram, LimitProgram, OffsetProgram, SortProgram},
+    modifiers::{LimitProgram, OffsetProgram, SelectProgram, SortProgram},
     VariablePosition,
 };
 use ir::program::modifier::SortVariable;
@@ -287,45 +287,45 @@ where
     }
 }
 
-// Filter
-pub struct FilterStageExecutor<Snapshot, PreviousStage>
+// Select
+pub struct SelectStageExecutor<Snapshot, PreviousStage>
 where
     Snapshot: ReadableSnapshot + 'static,
     PreviousStage: StageAPI<Snapshot>,
 {
-    filter_program: FilterProgram,
+    select_program: SelectProgram,
     previous: PreviousStage,
     phantom: PhantomData<Snapshot>,
 }
 
-impl<Snapshot, PreviousStage> FilterStageExecutor<Snapshot, PreviousStage>
+impl<Snapshot, PreviousStage> SelectStageExecutor<Snapshot, PreviousStage>
 where
     Snapshot: ReadableSnapshot + 'static,
     PreviousStage: StageAPI<Snapshot>,
 {
-    pub fn new(filter_program: FilterProgram, previous: PreviousStage) -> Self {
-        Self { filter_program, previous, phantom: PhantomData::default() }
+    pub fn new(select_program: SelectProgram, previous: PreviousStage) -> Self {
+        Self { select_program, previous, phantom: PhantomData::default() }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for FilterStageExecutor<Snapshot, PreviousStage>
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for SelectStageExecutor<Snapshot, PreviousStage>
 where
     Snapshot: ReadableSnapshot + 'static,
     PreviousStage: StageAPI<Snapshot>,
 {
-    type OutputIterator = FilterStageIterator<Snapshot, PreviousStage::OutputIterator>;
+    type OutputIterator = SelectStageIterator<Snapshot, PreviousStage::OutputIterator>;
 
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
-        let Self { filter_program, previous, .. } = self;
+        let Self { previous, .. } = self;
         let (previous_iterator, snapshot) = previous.into_iterator(interrupt)?;
-        Ok((FilterStageIterator::new(previous_iterator), snapshot))
+        Ok((SelectStageIterator::new(previous_iterator), snapshot))
     }
 }
 
-pub struct FilterStageIterator<Snapshot, PreviousIterator>
+pub struct SelectStageIterator<Snapshot, PreviousIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
     PreviousIterator: StageIterator,
@@ -334,7 +334,7 @@ where
     phantom: PhantomData<Snapshot>,
 }
 
-impl<Snapshot, PreviousIterator> FilterStageIterator<Snapshot, PreviousIterator>
+impl<Snapshot, PreviousIterator> SelectStageIterator<Snapshot, PreviousIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
     PreviousIterator: StageIterator,
@@ -344,14 +344,14 @@ where
     }
 }
 
-impl<Snapshot, PreviousIterator> StageIterator for FilterStageIterator<Snapshot, PreviousIterator>
+impl<Snapshot, PreviousIterator> StageIterator for SelectStageIterator<Snapshot, PreviousIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
     PreviousIterator: StageIterator,
 {
 }
 
-impl<Snapshot, PreviousIterator> LendingIterator for FilterStageIterator<Snapshot, PreviousIterator>
+impl<Snapshot, PreviousIterator> LendingIterator for SelectStageIterator<Snapshot, PreviousIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
     PreviousIterator: StageIterator,

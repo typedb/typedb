@@ -11,7 +11,7 @@ use ir::program::modifier::SortVariable;
 
 use crate::VariablePosition;
 
-pub struct FilterProgram {
+pub struct SelectProgram {
     pub retained_positions: HashSet<VariablePosition>,
     pub output_row_mapping: HashMap<Variable, VariablePosition>,
 }

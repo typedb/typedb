@@ -7,7 +7,7 @@
 use typeql::token::Order;
 
 use crate::{
-    program::modifier::{Filter, Limit, Offset, Sort},
+    program::modifier::{Limit, Offset, Select, Sort},
     translation::{
         literal::{translate_literal, FromTypeQLLiteral},
         TranslationContext,
@@ -17,13 +17,13 @@ use crate::{
 
 pub fn translate_select(
     context: &mut TranslationContext,
-    select: &typeql::query::stage::modifier::Select,
-) -> Result<Filter, PatternDefinitionError> {
-    let selected_variables = select.variables.iter().map(|typeql_var| typeql_var.name().unwrap()).collect();
-    let filter = Filter::new(selected_variables, &context.visible_variables)
+    typeql_select: &typeql::query::stage::modifier::Select,
+) -> Result<Select, PatternDefinitionError> {
+    let selected_variables = typeql_select.variables.iter().map(|typeql_var| typeql_var.name().unwrap()).collect();
+    let select = Select::new(selected_variables, &context.visible_variables)
         .map_err(|source| PatternDefinitionError::ModifierDefinitionError { source })?;
-    context.visible_variables.retain(|name, var| filter.variables.contains(var));
-    Ok(filter)
+    context.visible_variables.retain(|name, var| select.variables.contains(var));
+    Ok(select)
 }
 
 pub fn translate_sort(

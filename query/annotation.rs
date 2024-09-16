@@ -28,7 +28,7 @@ use ir::{
     program::{
         block::{FunctionalBlock, VariableRegistry},
         function::Function,
-        modifier::{Filter, Limit, Offset, Sort},
+        modifier::{Limit, Offset, Select, Sort},
     },
 };
 use storage::snapshot::ReadableSnapshot;
@@ -57,7 +57,7 @@ pub(super) enum AnnotatedStage {
         annotations: TypeAnnotations,
     },
     // ...
-    Filter(Filter),
+    Filter(Select),
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
