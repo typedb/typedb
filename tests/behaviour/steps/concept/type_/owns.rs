@@ -186,9 +186,9 @@ pub async fn get_constraints_for_owned_attribute_contains(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{kind}\\({type_label}\\) get constraints categories for owned attribute\\({type_label}\\) {contains_or_doesnt}: {constraint_category}"
+    expr = "{kind}\\({type_label}\\) get constraint categories for owned attribute\\({type_label}\\) {contains_or_doesnt}: {constraint_category}"
 )]
-pub async fn get_constraints_categories_for_owned_attribute_contains(
+pub async fn get_constraint_categories_for_owned_attribute_contains(
     context: &mut Context,
     kind: params::Kind,
     type_label: params::Label,
@@ -243,9 +243,9 @@ pub async fn get_owns_constraints_contains(
 
 #[apply(generic_step)]
 #[step(
-    expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get constraints categories {contains_or_doesnt}: {constraint_category}"
+    expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get constraint categories {contains_or_doesnt}: {constraint_category}"
 )]
-pub async fn get_owns_constraints_categories_contains(
+pub async fn get_owns_constraint_categories_contains(
     context: &mut Context,
     kind: params::Kind,
     type_label: params::Label,

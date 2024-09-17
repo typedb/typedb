@@ -348,7 +348,8 @@ impl CommitTimeValidation {
                 supertype_capabilities.iter().find(|cap| &cap.interface() == &interface_type)
             {
                 let capability_annotations_declared = capability.get_annotations_declared(snapshot, type_manager)?;
-                if capability_annotations_declared.is_empty() {
+                let supertype_capability_annotations_declared = supertype_capability.get_annotations_declared(snapshot, type_manager)?;
+                if capability_annotations_declared.is_empty() || capability_annotations_declared == supertype_capability_annotations_declared {
                     validation_errors.push(
                         SchemaValidationError::CannotRedeclareInheritedCapabilityWithoutSpecialisation(
                             CAP::KIND,
