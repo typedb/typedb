@@ -8,10 +8,7 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 
-use crate::program::{
-    block::{BlockContext, VariableRegistry},
-    ParameterRegistry,
-};
+use crate::program::block::{BlockContext, ParameterRegistry, VariableRegistry};
 
 mod constraints;
 mod expression;

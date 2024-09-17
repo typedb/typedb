@@ -17,8 +17,9 @@ use crate::{
             BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ExpressionTreeNodeId, ListConstructor,
             ListIndex, ListIndexRange, Operation, Operator,
         },
+        ParameterID, ValueSource,
     },
-    program::{function_signature::FunctionSignatureIndex, ParameterRegistry},
+    program::function_signature::FunctionSignatureIndex,
     translation::{
         constraints::{register_typeql_var, split_out_inline_expressions},
         literal::translate_literal,
@@ -29,12 +30,17 @@ use crate::{
 pub(super) fn add_typeql_expression(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    variable: Variable,
     rhs: &typeql::Expression,
-) -> Result<(), PatternDefinitionError> {
-    let expression = build_expression(function_index, constraints, rhs)?;
-    constraints.add_expression(variable, expression)?;
-    Ok(())
+) -> Result<ValueSource<Variable>, PatternDefinitionError> {
+    if let typeql::Expression::Value(literal) = rhs {
+        let id = register_typeql_literal(constraints, literal)?;
+        Ok(ValueSource::Parameter(id))
+    } else {
+        let expression = build_expression(function_index, constraints, rhs)?;
+        let variable = constraints.create_anonymous_variable()?;
+        constraints.add_assignment(variable, expression)?;
+        Ok(ValueSource::Variable(variable))
+    }
 }
 
 pub(crate) fn build_expression(
@@ -64,9 +70,7 @@ fn build_recursive(
             Expression::ListIndex(ListIndex::new(variable, id))
         }
         typeql::Expression::Value(literal) => {
-            let value = translate_literal(literal)
-                .map_err(|source| PatternDefinitionError::LiteralParseError { literal: literal.to_string(), source })?;
-            let id = constraints.parameters().register(value);
+            let id = register_typeql_literal(constraints, literal)?;
             Expression::Constant(id)
         }
         typeql::Expression::Operation(operation) => {
@@ -93,6 +97,16 @@ fn build_recursive(
         }
     };
     Ok(tree.add(expression))
+}
+
+fn register_typeql_literal(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    literal: &typeql::Literal,
+) -> Result<ParameterID, PatternDefinitionError> {
+    let value = translate_literal(literal)
+        .map_err(|source| PatternDefinitionError::LiteralParseError { literal: literal.to_string(), source })?;
+    let id = constraints.parameters().register(value);
+    Ok(id)
 }
 
 pub(super) fn add_user_defined_function_call(
@@ -187,7 +201,7 @@ pub mod tests {
 
     use crate::{
         pattern::expression::{Expression, Operation, Operator},
-        program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+        program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
         translation::{match_::translate_match, TranslationContext},
         PatternDefinitionError,
     };

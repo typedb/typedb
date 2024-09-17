@@ -14,10 +14,13 @@ use crate::{
         expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ScopeId,
+        IrID, ScopeId, TypeSource, ValueSource,
     },
-    program::{block::BlockContext, function_signature::FunctionSignature, ParameterRegistry},
-    PatternDefinitionError::{self, FunctionCallArgumentCountMismatch},
+    program::{
+        block::{BlockContext, ParameterRegistry},
+        function_signature::FunctionSignature,
+    },
+    PatternDefinitionError,
 };
 
 #[derive(Debug, Clone)]
@@ -124,14 +127,23 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     pub fn add_sub(
         &mut self,
         kind: SubKind,
-        subtype: Variable,
-        supertype: Variable,
+        subtype: TypeSource<Variable>,
+        supertype: TypeSource<Variable>,
     ) -> Result<&Sub<Variable>, PatternDefinitionError> {
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, subtype));
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, supertype));
+        let subtype_var = subtype.as_variable();
+        let supertype_var = supertype.as_variable();
         let sub = Sub::new(kind, subtype, supertype);
-        self.context.set_variable_category(subtype, VariableCategory::Type, sub.clone().into())?;
-        self.context.set_variable_category(supertype, VariableCategory::Type, sub.clone().into())?;
+
+        if let Some(subtype) = subtype_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, subtype));
+            self.context.set_variable_category(subtype, VariableCategory::Type, sub.clone().into())?;
+        };
+
+        if let Some(supertype) = supertype_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, supertype));
+            self.context.set_variable_category(supertype, VariableCategory::Type, sub.clone().into())?;
+        };
+
         let as_ref = self.constraints.add_constraint(sub);
         Ok(as_ref.as_sub().unwrap())
     }
@@ -140,27 +152,32 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         kind: IsaKind,
         thing: Variable,
-        type_: Variable,
+        type_: TypeSource<Variable>,
     ) -> Result<&Isa<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, thing)
-                && self.context.is_variable_available(self.constraints.scope, type_)
-        );
+        let type_var = type_.as_variable();
         let isa = Isa::new(kind, thing, type_);
+
+        debug_assert!(self.context.is_variable_available(self.constraints.scope, thing));
         self.context.set_variable_category(thing, VariableCategory::Thing, isa.clone().into())?;
-        self.context.set_variable_category(type_, VariableCategory::ThingType, isa.clone().into())?;
+
+        if let Some(type_) = type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, type_));
+            self.context.set_variable_category(type_, VariableCategory::ThingType, isa.clone().into())?;
+        };
+
         let constraint = self.constraints.add_constraint(isa);
         Ok(constraint.as_isa().unwrap())
     }
 
     pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> Result<&Has<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, owner)
-                && self.context.is_variable_available(self.constraints.scope, attribute)
-        );
-        let has = Constraint::from(Has::new(owner, attribute));
-        self.context.set_variable_category(owner, VariableCategory::Object, has.clone())?;
-        self.context.set_variable_category(attribute, VariableCategory::Attribute, has.clone())?;
+        let has = Has::new(owner, attribute);
+
+        debug_assert!(self.context.is_variable_available(self.constraints.scope, owner));
+        self.context.set_variable_category(owner, VariableCategory::Thing, has.clone().into())?;
+
+        debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute));
+        self.context.set_variable_category(attribute, VariableCategory::Thing, has.clone().into())?;
+
         let constraint = self.constraints.add_constraint(has);
         Ok(constraint.as_has().unwrap())
     }
@@ -169,35 +186,49 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         relation: Variable,
         player: Variable,
-        role_type: Variable,
+        role_type: TypeSource<Variable>,
     ) -> Result<&Links<Variable>, PatternDefinitionError> {
+        let role_type_var = role_type.as_variable();
+        let links = Constraint::from(Links::new(relation, player, role_type));
+
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, relation)
                 && self.context.is_variable_available(self.constraints.scope, player)
-                && self.context.is_variable_available(self.constraints.scope, role_type)
         );
-        let links = Constraint::from(Links::new(relation, player, role_type));
+
         self.context.set_variable_category(relation, VariableCategory::Object, links.clone())?;
         self.context.set_variable_category(player, VariableCategory::Object, links.clone())?;
-        self.context.set_variable_category(role_type, VariableCategory::RoleType, links.clone())?;
+
+        if let Some(role_type) = role_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
+            self.context.set_variable_category(role_type, VariableCategory::RoleType, links.clone())?;
+        }
+
         let constraint = self.constraints.add_constraint(links);
         Ok(constraint.as_links().unwrap())
     }
 
     pub fn add_comparison(
         &mut self,
-        lhs: Variable,
-        rhs: Variable,
+        lhs: ValueSource<Variable>,
+        rhs: ValueSource<Variable>,
         comparator: Comparator,
     ) -> Result<&Comparison<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, lhs)
-                && self.context.is_variable_available(self.constraints.scope, rhs)
-        );
-        let comparison = Comparison::new(lhs, rhs, Comparator::Equal); // TODO
-        self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
-        self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
-        // todo!("The above lines were the two lines below");
+        let lhs_var = lhs.as_variable();
+        let rhs_var = rhs.as_variable();
+        let comparison = Comparison::new(lhs, rhs, comparator.into());
+
+        if let Some(lhs) = lhs_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, lhs));
+            self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
+        }
+
+        if let Some(rhs) = rhs_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, rhs));
+            self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
+        }
+
+        // TODO The above lines were the two lines below
         // self.context.set_variable_category(lhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
         // self.context.set_variable_category(rhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
 
@@ -235,7 +266,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         arguments: Vec<Variable>,
         function_name: &str, // for errors
     ) -> Result<FunctionCall<Variable>, PatternDefinitionError> {
-        use PatternDefinitionError::FunctionCallReturnCountMismatch;
+        use PatternDefinitionError::{FunctionCallArgumentCountMismatch, FunctionCallReturnCountMismatch};
         debug_assert!(assigned.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
         debug_assert!(arguments.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
 
@@ -260,7 +291,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(FunctionCall::new(callee_signature.function_id.clone(), call_variable_mapping))
     }
 
-    pub fn add_expression(
+    pub fn add_assignment(
         &mut self,
         variable: Variable,
         expression: ExpressionTree<Variable>,
@@ -278,49 +309,70 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_owns(
         &mut self,
-        owner_type: Variable,
-        attribute_type: Variable,
+        owner_type: TypeSource<Variable>,
+        attribute_type: TypeSource<Variable>,
     ) -> Result<&Owns<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, owner_type)
-                && self.context.is_variable_available(self.constraints.scope, attribute_type)
-        );
-        let has = Constraint::from(Owns::new(owner_type, attribute_type));
-        self.context.set_variable_category(owner_type, VariableCategory::ThingType, has.clone())?;
-        self.context.set_variable_category(attribute_type, VariableCategory::ThingType, has.clone())?;
-        let constraint = self.constraints.add_constraint(has);
+        let owner_type_var = owner_type.as_variable();
+        let attribute_type_var = attribute_type.as_variable();
+        let owns = Constraint::from(Owns::new(owner_type, attribute_type));
+
+        if let Some(owner_type) = owner_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, owner_type));
+            self.context.set_variable_category(owner_type, VariableCategory::ThingType, owns.clone().into())?;
+        };
+
+        if let Some(attribute_type) = attribute_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute_type));
+            self.context.set_variable_category(attribute_type, VariableCategory::ThingType, owns.clone().into())?;
+        };
+
+        let constraint = self.constraints.add_constraint(owns);
         Ok(constraint.as_owns().unwrap())
     }
 
     pub fn add_relates(
         &mut self,
-        relation_type: Variable,
-        role_type: Variable,
+        relation_type: TypeSource<Variable>,
+        role_type: TypeSource<Variable>,
     ) -> Result<&Relates<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, relation_type)
-                && self.context.is_variable_available(self.constraints.scope, role_type)
-        );
+        let relation_type_var = relation_type.as_variable();
+        let role_type_var = role_type.as_variable();
         let relates = Constraint::from(Relates::new(relation_type, role_type));
-        self.context.set_variable_category(relation_type, VariableCategory::ThingType, relates.clone())?;
-        self.context.set_variable_category(role_type, VariableCategory::RoleType, relates.clone())?;
+
+        if let Some(relation_type) = relation_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, relation_type));
+            self.context.set_variable_category(relation_type, VariableCategory::ThingType, relates.clone().into())?;
+        };
+
+        if let Some(role_type) = role_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
+            self.context.set_variable_category(role_type, VariableCategory::ThingType, relates.clone().into())?;
+        };
+
         let constraint = self.constraints.add_constraint(relates);
         Ok(constraint.as_relates().unwrap())
     }
 
     pub fn add_plays(
         &mut self,
-        player_type: Variable,
-        role_type: Variable,
+        player_type: TypeSource<Variable>,
+        role_type: TypeSource<Variable>,
     ) -> Result<&Plays<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, player_type)
-                && self.context.is_variable_available(self.constraints.scope, role_type)
-        );
-        let relates = Constraint::from(Plays::new(player_type, role_type));
-        self.context.set_variable_category(player_type, VariableCategory::ThingType, relates.clone())?;
-        self.context.set_variable_category(role_type, VariableCategory::RoleType, relates.clone())?;
-        let constraint = self.constraints.add_constraint(relates);
+        let player_type_var = player_type.as_variable();
+        let role_type_var = role_type.as_variable();
+        let plays = Constraint::from(Plays::new(player_type, role_type));
+
+        if let Some(player_type) = player_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, player_type));
+            self.context.set_variable_category(player_type, VariableCategory::ThingType, plays.clone().into())?;
+        };
+
+        if let Some(role_type) = role_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
+            self.context.set_variable_category(role_type, VariableCategory::ThingType, plays.clone().into())?;
+        };
+
+        let constraint = self.constraints.add_constraint(plays);
         Ok(constraint.as_plays().unwrap())
     }
 
@@ -440,24 +492,24 @@ impl<ID: IrID> Constraint<ID> {
         count
     }
 
-    pub fn left_id(&self) -> ID {
+    pub fn left_id(&self) -> Option<ID> {
         let mut id = None;
         self.ids_foreach(|constraint_id, side| {
             if side == ConstraintIDSide::Left {
                 id = Some(constraint_id);
             }
         });
-        id.unwrap()
+        id
     }
 
-    pub fn right_id(&self) -> ID {
+    pub fn right_id(&self) -> Option<ID> {
         let mut id = None;
         self.ids_foreach(|constraint_id, side| {
             if side == ConstraintIDSide::Right {
                 id = Some(constraint_id);
             }
         });
-        id.unwrap()
+        id
     }
 
     pub(crate) fn as_kind(&self) -> Option<&Kind<ID>> {
@@ -734,44 +786,53 @@ pub enum SubKind {
     Subtype,
 }
 
+impl From<typeql::statement::type_::SubKind> for SubKind {
+    fn from(kind: typeql::statement::type_::SubKind) -> Self {
+        match kind {
+            typeql::statement::type_::SubKind::Direct => Self::Exact,
+            typeql::statement::type_::SubKind::Transitive => Self::Subtype,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Sub<ID> {
     kind: SubKind,
-    subtype: ID,
-    supertype: ID,
+    subtype: TypeSource<ID>,
+    supertype: TypeSource<ID>,
 }
 
 impl<ID: IrID> Sub<ID> {
-    fn new(kind: SubKind, subtype: ID, supertype: ID) -> Self {
+    fn new(kind: SubKind, subtype: TypeSource<ID>, supertype: TypeSource<ID>) -> Self {
         Sub { subtype, supertype, kind }
     }
 
-    pub fn subtype(&self) -> ID {
-        self.subtype
+    pub fn subtype(&self) -> &TypeSource<ID> {
+        &self.subtype
     }
 
-    pub fn supertype(&self) -> ID {
-        self.supertype
+    pub fn supertype(&self) -> &TypeSource<ID> {
+        &self.supertype
     }
 
     pub fn sub_kind(&self) -> SubKind {
         self.kind
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
-        [self.subtype, self.supertype].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [self.subtype.as_variable(), self.supertype.as_variable()].into_iter().flatten()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
         where
             F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.subtype, ConstraintIDSide::Left);
-        function(self.supertype, ConstraintIDSide::Right)
+        self.subtype.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.supertype.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Sub<T> {
-        Sub::new(self.kind, mapping[&self.subtype], mapping[&self.supertype])
+        Sub::new(self.kind, self.subtype.map(mapping), self.supertype.map(mapping))
     }
 }
 
@@ -783,7 +844,7 @@ impl<ID: IrID> From<Sub<ID>> for Constraint<ID> {
 
 impl<ID: IrID> fmt::Display for Sub<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} isa {}", self.subtype, self.supertype)
+        write!(f, "{} sub {}", self.subtype, self.supertype)
     }
 }
 
@@ -791,11 +852,11 @@ impl<ID: IrID> fmt::Display for Sub<ID> {
 pub struct Isa<ID> {
     kind: IsaKind,
     thing: ID,
-    type_: ID,
+    type_: TypeSource<ID>,
 }
 
 impl<ID: IrID> Isa<ID> {
-    fn new(kind: IsaKind, thing: ID, type_: ID) -> Self {
+    fn new(kind: IsaKind, thing: ID, type_: TypeSource<ID>) -> Self {
         Self { kind, thing, type_ }
     }
 
@@ -803,16 +864,16 @@ impl<ID: IrID> Isa<ID> {
         self.thing
     }
 
-    pub fn type_(&self) -> ID {
-        self.type_
+    pub fn type_(&self) -> &TypeSource<ID> {
+        &self.type_
     }
 
     pub fn isa_kind(&self) -> IsaKind {
         self.kind
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
-        [self.thing, self.type_].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [Some(self.thing), self.type_.as_variable()].into_iter().flatten()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
@@ -820,11 +881,11 @@ impl<ID: IrID> Isa<ID> {
             F: FnMut(ID, ConstraintIDSide),
     {
         function(self.thing, ConstraintIDSide::Left);
-        function(self.type_, ConstraintIDSide::Right);
+        self.type_.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Isa<T> {
-        Isa::new(self.kind, mapping[&self.thing], mapping[&self.type_])
+        Isa::new(self.kind, mapping[&self.thing], self.type_.map(mapping))
     }
 }
 
@@ -846,15 +907,24 @@ pub enum IsaKind {
     Subtype,
 }
 
+impl From<typeql::statement::thing::isa::IsaKind> for IsaKind {
+    fn from(kind: typeql::statement::thing::isa::IsaKind) -> Self {
+        match kind {
+            typeql::statement::thing::isa::IsaKind::Exact => Self::Exact,
+            typeql::statement::thing::isa::IsaKind::Subtype => Self::Subtype,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Links<ID> {
     pub(crate) relation: ID,
     pub(crate) player: ID,
-    pub(crate) role_type: ID,
+    pub(crate) role_type: TypeSource<ID>,
 }
 
 impl<ID: IrID> Links<ID> {
-    pub fn new(relation: ID, player: ID, role_type: ID) -> Self {
+    pub fn new(relation: ID, player: ID, role_type: TypeSource<ID>) -> Self {
         Self { relation, player, role_type }
     }
 
@@ -866,12 +936,12 @@ impl<ID: IrID> Links<ID> {
         self.player
     }
 
-    pub fn role_type(&self) -> ID {
-        self.role_type
+    pub fn role_type(&self) -> &TypeSource<ID> {
+        &self.role_type
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
-        [self.relation, self.player, self.role_type].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [Some(self.relation), Some(self.player), self.role_type.as_variable()].into_iter().flatten()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
@@ -880,11 +950,11 @@ impl<ID: IrID> Links<ID> {
     {
         function(self.relation, ConstraintIDSide::Left);
         function(self.player, ConstraintIDSide::Right);
-        function(self.role_type, ConstraintIDSide::Filter);
+        self.role_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Filter));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Links<T> {
-        Links::new(mapping[&self.relation], mapping[&self.player], mapping[&self.role_type])
+        Links::new(mapping[&self.relation], mapping[&self.player], self.role_type.map(mapping))
     }
 }
 
@@ -1103,21 +1173,21 @@ impl From<typeql::token::Comparator> for Comparator {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Comparison<ID> {
-    lhs: ID,
-    rhs: ID,
+    lhs: ValueSource<ID>,
+    rhs: ValueSource<ID>,
     comparator: Comparator,
 }
 
 impl<ID: IrID> Comparison<ID> {
-    fn new(lhs: ID, rhs: ID, comparator: Comparator) -> Self {
+    fn new(lhs: ValueSource<ID>, rhs: ValueSource<ID>, comparator: Comparator) -> Self {
         Self { lhs, rhs, comparator }
     }
 
-    pub fn lhs(&self) -> ID {
+    pub fn lhs(&self) -> ValueSource<ID> {
         self.lhs
     }
 
-    pub fn rhs(&self) -> ID {
+    pub fn rhs(&self) -> ValueSource<ID> {
         self.rhs
     }
 
@@ -1125,22 +1195,22 @@ impl<ID: IrID> Comparison<ID> {
         self.comparator
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
-        [self.lhs, self.rhs].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.lhs.as_variable(), self.rhs.as_variable()].into_iter().flatten()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
         where
             F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.lhs, ConstraintIDSide::Left);
-        function(self.rhs, ConstraintIDSide::Right);
+        self.lhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.rhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 }
 
-impl<ID: IrID> From<Comparison<ID>> for Constraint<ID> {
-    fn from(val: Comparison<ID>) -> Self {
-        Constraint::Comparison(val)
+impl<ID> From<Comparison<ID>> for Constraint<ID> {
+    fn from(comp: Comparison<ID>) -> Self {
+        Constraint::Comparison(comp)
     }
 }
 
@@ -1152,37 +1222,37 @@ impl<ID: IrID> fmt::Display for Comparison<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<ID> {
-    owner: ID,
-    attribute: ID,
+    owner: TypeSource<ID>,
+    attribute: TypeSource<ID>,
 }
 
 impl<ID: IrID> Owns<ID> {
-    fn new(owner: ID, attribute: ID) -> Self {
+    fn new(owner: TypeSource<ID>, attribute: TypeSource<ID>) -> Self {
         Self { owner, attribute }
     }
 
-    pub fn owner(&self) -> ID {
-        self.owner
+    pub fn owner(&self) -> &TypeSource<ID> {
+        &self.owner
     }
 
-    pub fn attribute(&self) -> ID {
-        self.attribute
+    pub fn attribute(&self) -> &TypeSource<ID> {
+        &self.attribute
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
-        [self.owner, self.attribute].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.owner.as_variable(), self.attribute.as_variable()].into_iter().flatten()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
         where
             F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.owner, ConstraintIDSide::Left);
-        function(self.attribute, ConstraintIDSide::Right);
+        self.owner.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.attribute.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Owns<T> {
-        Owns::new(mapping[&self.owner], mapping[&self.attribute])
+        Owns::new(self.owner.map(mapping), self.attribute.map(mapping))
     }
 }
 
@@ -1200,37 +1270,37 @@ impl<ID: IrID> fmt::Display for Owns<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Relates<ID> {
-    relation: ID,
-    role_type: ID,
+    relation: TypeSource<ID>,
+    role_type: TypeSource<ID>,
 }
 
 impl<ID: IrID> Relates<ID> {
-    fn new(relation: ID, role: ID) -> Self {
+    fn new(relation: TypeSource<ID>, role: TypeSource<ID>) -> Self {
         Self { relation, role_type: role }
     }
 
-    pub fn relation(&self) -> ID {
-        self.relation
+    pub fn relation(&self) -> &TypeSource<ID> {
+        &self.relation
     }
 
-    pub fn role_type(&self) -> ID {
-        self.role_type
+    pub fn role_type(&self) -> &TypeSource<ID> {
+        &self.role_type
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
-        [self.relation, self.role_type].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.relation.as_variable(), self.role_type.as_variable()].into_iter().flatten()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
         where
             F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.relation, ConstraintIDSide::Left);
-        function(self.role_type, ConstraintIDSide::Right);
+        self.relation.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.role_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Relates<T> {
-        Relates::new(mapping[&self.relation], mapping[&self.role_type])
+        Relates::new(self.relation.map(mapping), self.role_type.map(mapping))
     }
 }
 
@@ -1248,37 +1318,37 @@ impl<ID: IrID> fmt::Display for Relates<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Plays<ID> {
-    player: ID,
-    role_type: ID,
+    player: TypeSource<ID>,
+    role_type: TypeSource<ID>,
 }
 
 impl<ID: IrID> Plays<ID> {
-    fn new(player: ID, role: ID) -> Self {
+    fn new(player: TypeSource<ID>, role: TypeSource<ID>) -> Self {
         Self { player, role_type: role }
     }
 
-    pub fn player(&self) -> ID {
-        self.player
+    pub fn player(&self) -> &TypeSource<ID> {
+        &self.player
     }
 
-    pub fn role_type(&self) -> ID {
-        self.role_type
+    pub fn role_type(&self) -> &TypeSource<ID> {
+        &self.role_type
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
-        [self.player, self.role_type].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.player.as_variable(), self.role_type.as_variable()].into_iter().flatten()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
         where
             F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.player, ConstraintIDSide::Left);
-        function(self.role_type, ConstraintIDSide::Right);
+        self.player.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.role_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Plays<T> {
-        Plays::new(mapping[&self.player], mapping[&self.role_type])
+        Plays::new(self.player.map(mapping), self.role_type.map(mapping))
     }
 }
 

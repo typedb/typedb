@@ -16,7 +16,7 @@ use crate::{
     graph::type_::property::TypeVertexPropertyEncoding, layout::infix::Infix, value::string_bytes::StringBytes, AsBytes,
 };
 
-#[derive(Debug, Eq, PartialEq, Clone, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Label<'a> {
     pub name: StringBytes<'a, LABEL_NAME_STRING_INLINE>,
     pub scope: Option<StringBytes<'a, LABEL_SCOPE_STRING_INLINE>>,

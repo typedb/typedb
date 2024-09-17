@@ -12,7 +12,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use encoding::graph::type_::Kind;
-use ir::{pattern::constraint::Isa, program::SingleValue};
+use ir::pattern::{constraint::Isa, ParameterID};
 use itertools::Itertools;
 
 use crate::VariablePosition;
@@ -21,19 +21,23 @@ pub mod instructions;
 pub mod program;
 pub mod type_check;
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum VariableSource {
     InputVariable(VariablePosition),
     InsertedThing(usize),
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum TypeSource {
     InputVariable(VariablePosition),
     Constant(answer::Type),
 }
 
-pub type ValueSource = SingleValue<VariablePosition>;
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub enum ValueSource {
+    Variable(VariablePosition),
+    Parameter(ParameterID),
+}
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct ThingSource(pub VariablePosition);
@@ -49,7 +53,7 @@ pub(crate) fn get_thing_source(
 }
 
 pub(crate) fn get_kinds_from_annotations(annotations: &HashSet<Type>) -> Vec<Kind> {
-    annotations.iter().map(|annotation| annotation.kind()).dedup().collect::<Vec<_>>()
+    annotations.iter().map(Type::kind).unique().collect_vec()
 }
 
 #[derive(Debug, Clone)]

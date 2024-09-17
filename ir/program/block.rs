@@ -7,9 +7,11 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
+    ops::Index,
 };
 
 use answer::variable::Variable;
+use encoding::value::value::Value;
 use itertools::Itertools;
 
 use crate::{
@@ -20,8 +22,11 @@ use crate::{
         Scope, ScopeId,
     },
     program::{
+        conjunction::{Conjunction, ConjunctionBuilder},
+        constraint::Constraint,
         modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
-        ParameterRegistry,
+        variable_category::{VariableCategory, VariableOptionality},
+        ParameterID, ParameterRegistry, Scope, ScopeId,
     },
     PatternDefinitionError,
 };
@@ -230,6 +235,36 @@ impl VariableRegistry {
             VariableOptionality::Required => false,
             VariableOptionality::Optional => true,
         }
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct ParameterRegistry {
+    registry: HashMap<ParameterID, Value<'static>>,
+}
+
+impl ParameterRegistry {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub(crate) fn register(&mut self, value: Value<'static>) -> ParameterID {
+        let id = ParameterID { id: self.registry.len() };
+        let _prev = self.registry.insert(id, value);
+        debug_assert_eq!(_prev, None);
+        id
+    }
+
+    pub fn get(&self, id: ParameterID) -> Option<&Value<'static>> {
+        self.registry.get(&id)
+    }
+}
+
+impl Index<ParameterID> for ParameterRegistry {
+    type Output = Value<'static>;
+
+    fn index(&self, id: ParameterID) -> &Self::Output {
+        self.get(id).unwrap()
     }
 }
 

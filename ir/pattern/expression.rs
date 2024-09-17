@@ -12,7 +12,10 @@ use std::{
 
 use answer::variable::Variable;
 
-use crate::{pattern::IrID, program::ParameterID, PatternDefinitionError};
+use crate::{
+    pattern::{IrID, ParameterID},
+    PatternDefinitionError,
+};
 
 enum ExpectedArgumentType {
     Single,
