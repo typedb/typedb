@@ -343,7 +343,7 @@ This document specifies the behaviour of TypeDB and its query language TypeQL.
 
 The type system is a mathematical system, which we describe in this section with a reasonable level of formality (not all details are included, and some basic mathematical rules are taken for granted: for example, the rule of equality, i.e. if $a = b$ then $a$ and $b$ are exchangeable for all purposes in our type system.)
 
-The type system comprises to **components**:
+The type system comprises two **components**:
 
 * A grammar for (mathematical) statements.
 * A rule system for inferring which statement are true.
