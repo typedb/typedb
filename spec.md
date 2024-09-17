@@ -215,14 +215,14 @@
             * [**Case IS_PATT**](#case-is_patt)
         * [Expression grammar (sketch)](#expression-grammar-sketch)
         * [Expression patterns](#expression-patterns)
-            * [**Case ASS_PATT**](#case-ass_patt)
+            * [**Case ASSIGN_PATT**](#case-assign_patt)
             * [**Case DESTRUCT_PATT**](#case-destruct_patt)
             * [**Case IN_LIST_PATT**](#case-in_list_patt)
             * [**Case EQ_PATT**](#case-eq_patt)
             * [**Case COMP_PATT**](#case-comp_patt)
         * [Functions](#functions)
             * [**Case IN_FUN_PATT**](#case-in_fun_patt)
-            * [**Case ASS_FUN_PATT**](#case-ass_fun_patt)
+            * [**Case ASSIGN_FUN_PATT**](#case-assign_fun_patt)
         * [Patterns](#patterns)
             * [**Case AND_PATT**](#case-and_patt)
             * [**Case OR_PATT**](#case-or_patt)
@@ -1501,7 +1501,7 @@ _System property_
 _Remark_: The exception for 2. is mainly for convenience. Indeed, you could always explicitly bind `$index` with the pattern `$index in [0..len($list)-1];`. See "Case **IN_LIST_PATT**" below.
 
 
-#### **Case ASS_PATT**
+#### **Case ASSIGN_PATT**
 * `$x = <EXPR>` is satisfied if $`m(x)`$ equals the expression on the right-hand side, evaluated after substituting answer for all its variables.
 
 _System property_
@@ -1560,7 +1560,7 @@ _System property_
     * $`m(z) = t_i`$ and $`t_i \neq \emptyset`$
     * $`m(z) = t_i`$ and $`t_i = \emptyset`$
 
-#### **Case ASS_FUN_PATT**
+#### **Case ASSIGN_FUN_PATT**
 * `$x, $y?, ... = <FUN_CALL>` is satisfied, after substituting concepts, the left hand side complies with the **function answer tuple** $`t`$ of `<FUN_CALL>` on the right (see "Function semantics") meaning that:
   * for the $`i`$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
   * for the $`i`$th variable `$z`, which is marked as optional using `?`, we have either
@@ -1719,7 +1719,7 @@ An `insert` clause comprises collection of _insert statements_
 
 * _Extending input map_: Insert clauses can extend bindings of the input concept map `m` in two ways
   * `$x` is the subject of an `isa` statement in the `insert` clause, in which case $`m(x) =`$ _newly-inserted-concept_ (see "Case **ISA_INS**")
-  * `$x` is the subject of an `=` assignment statement in the `insert` clause, in which case $`m(x) =`$ _assigned-value_ (see "Case **ASS_INS**")
+  * `$x` is the subject of an `=` assignment statement in the `insert` clause, in which case $`m(x) =`$ _assigned-value_ (see "Case **ASSIGN_INS**")
 
 * _Execution_: An `insert` clause is executed by executing its statements individually.
   * Not all statement need to execute (see Optionality below)
