@@ -26,7 +26,7 @@
 -->
 
 <details>
-  <summary> <b>Table of contents<b> <i>(Overview)</i> </summary>
+  <summary> <b>Table of contents</b> <i>(Overview)</i> </summary>
 
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
