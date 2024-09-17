@@ -25,19 +25,20 @@
 *
 -->
 
-<detail>
-  <summary> Table of contents (Overview) </summary>
+<details>
+  <summary> Table of contents <i>(Overview)</i> </summary>
 
-* [Foundations](#foundations)
-    * [Terminology](#terminology)
-    * [The type system](#the-type-system)
-* [Schema](#schema)
+* [Introduction](#introduction)
+* [The type system](#the-type-system)
+    * [Grammar and notations](#grammar-and-notations)
+    * [Rule system](#rule-system)
+* [Schema definition language](#schema-definition-language)
     * [Basics of schemas](#basics-of-schemas)
     * [Define semantics](#define-semantics)
     * [Undefine semantics](#undefine-semantics)
     * [Redefine semantics](#redefine-semantics)
     * [Labels and aliases](#labels-and-aliases)
-* [Data instance languages](#data-instance-languages)
+* [Pattern matching language](#pattern-matching-language)
     * [Basics: Patterns, variables, concept maps, satisfaction](#basics-patterns-variables-concept-maps-satisfaction)
     * [Pattern semantics](#pattern-semantics)
     * [Match semantics](#match-semantics)
@@ -46,7 +47,7 @@
     * [Delete semantics](#delete-semantics)
     * [Update semantics](#update-semantics)
     * [Put semantics](#put-semantics)
-* [System execution](#system-execution)
+* [Query execution principles](#query-execution-principles)
     * [Pipelines](#pipelines)
     * [Transactions](#transactions)
 * [Glossary](#glossary)
@@ -55,57 +56,129 @@
     * [Syntactic Sugar](#syntactic-sugar)
     * [Typing of operators](#typing-of-operators)
 
-</detail>
+</details>
 
 
-<detail>
-  <summary> Table of contents (Overview) </summary>
-
+<details>
+  <summary> Table of contents <i>(Detailed)</i> </summary>
 
 <!-- vim-markdown-toc GFM -->
 
-* [Foundations](#foundations)
-    * [Terminology](#terminology)
-    * [The type system](#the-type-system)
-        * [Simple (non-dependent) types](#simple-non-dependent-types)
+* [Introduction](#introduction)
+* [The type system](#the-type-system)
+    * [Grammar and notations](#grammar-and-notations)
+        * [Ordinary types](#ordinary-types)
+        * [Dependent types](#dependent-types)
+        * [Subtypes and castings](#subtypes-and-castings)
+        * [Algebraic type operators](#algebraic-type-operators)
+        * [List types](#list-types)
+        * [Modalities](#modalities)
+    * [Rule system](#rule-system)
+        * [Ordinary types](#ordinary-types-1)
         * [Dependendent types](#dependendent-types)
-        * [Castings / Subtypes](#castings--subtypes)
-        * [Lists](#lists)
-        * [Type operators and modalities](#type-operators-and-modalities)
-* [Schema](#schema)
+        * [Subtypes and castings](#subtypes-and-castings-1)
+        * [Algebraic type operators](#algebraic-type-operators-1)
+        * [List types](#list-types-1)
+        * [Modalities](#modalities-1)
+* [Schema definition language](#schema-definition-language)
     * [Basics of schemas](#basics-of-schemas)
     * [Define semantics](#define-semantics)
         * [Type axioms](#type-axioms)
+            * [**Case ENT_DEF**](#case-ent_def)
+            * [**Case REL_DEF**](#case-rel_def)
+            * [**Case ATT_DEF**](#case-att_def)
+            * [**Case PLAYS_DEF**](#case-plays_def)
+            * [**Case OWNS_DEF**](#case-owns_def)
         * [Constraints](#constraints)
             * [Cardinality](#cardinality)
+                * [**Case CARD_DEF**](#case-card_def)
+                * [**Case CARD_LIST_DEF**](#case-card_list_def)
+                * [**Case PLAYS_AS_DEF**](#case-plays_as_def)
+                * [**Case OWNS_AS_DEF**](#case-owns_as_def)
             * [Behavior flags](#behavior-flags)
+                * [**Case UNIQUE_DEF**](#case-unique_def)
+                * [**Case KEY_DEF**](#case-key_def)
+                * [**Case SUBKEY_DEF**](#case-subkey_def)
+                * [**Case TYP_ABSTRACT_DEF**](#case-typ_abstract_def)
+                * [**Case GEN_ABSTRACT_DEF** (General abstractness)](#case-gen_abstract_def-general-abstractness)
+                * [**Case REL_ABSTRACT_DEF** (--UNEXPOSED)](#case-rel_abstract_def---unexposed)
+                * [**Case PLAYS_ABSTRACT_DEF**](#case-plays_abstract_def)
+                * [**Case OWNS_ABSTRACT_DEF**](#case-owns_abstract_def)
+                * [**Case DISTINCT_DEF**](#case-distinct_def)
             * [Values](#values)
+                * [**Case OWNS_VALUES_DEF**](#case-owns_values_def)
+                * [**Case VALUE_VALUES_DEF**](#case-value_values_def)
         * [Triggers](#triggers)
+            * [**Case DEPENDENCY_DEF** (CASCADE/INDEPEDENT)](#case-dependency_def-cascadeindepedent)
         * [Value types](#value-types)
+            * [**Case PRIMITIVES_DEF**](#case-primitives_def)
+            * [**Case STRUCT_DEF**](#case-struct_def)
         * [Functions defs](#functions-defs)
+            * [**Case STREAM_RET_FUN_DEF**](#case-stream_ret_fun_def)
+            * [**Case SINGLE_RET_FUN_DEF**](#case-single_ret_fun_def)
     * [Undefine semantics](#undefine-semantics)
         * [Type axioms](#type-axioms-1)
+            * [**Case ENT_UNDEF**](#case-ent_undef)
+            * [**Case REL_UNDEF**](#case-rel_undef)
+            * [**Case ATT_UNDEF**](#case-att_undef)
+            * [**Case PLAYS_UNDEF**](#case-plays_undef)
+            * [**Case OWNS_UNDEF**](#case-owns_undef)
         * [Constraints](#constraints-1)
             * [Cardinality](#cardinality-1)
+                * [**Case CARD_UNDEF**](#case-card_undef)
+                * [**Case CARD_LIST_UNDEF**](#case-card_list_undef)
+                * [**Case PLAYS_AS_UNDEF**](#case-plays_as_undef)
+                * [**Case OWNS_AS_UNDEF**](#case-owns_as_undef)
             * [Behavior flags](#behavior-flags-1)
+                * [**Case UNIQUE_UNDEF**](#case-unique_undef)
+                * [**Case KEY_UNDEF**](#case-key_undef)
+                * [**Case SUBKEY_UNDEF**](#case-subkey_undef)
+                * [**Case TYP_ABSTRACT_UNDEF**](#case-typ_abstract_undef)
+                * [**Case PLAYS_ABSTRACT_UNDEF**](#case-plays_abstract_undef)
+                * [**Case OWNS_ABSTRACT_UNDEF**](#case-owns_abstract_undef)
+                * [**Case REL_ABSTRACT_UNDEF**](#case-rel_abstract_undef)
+                * [**Case DISTINCT_UNDEF**](#case-distinct_undef)
             * [Values](#values-1)
+                * [**Case OWNS_VALUES_UNDEF**](#case-owns_values_undef)
+                * [**Case VALUE_VALUES_UNDEF**](#case-value_values_undef)
         * [Triggers](#triggers-1)
+            * [**Case DEPENDENCY_UNDEF** (CASCADE/INDEPEDENT)](#case-dependency_undef-cascadeindepedent)
         * [Value types](#value-types-1)
+            * [**Case PRIMITIVES_UNDEF**](#case-primitives_undef)
+            * [**Case STRUCT_UNDEF**](#case-struct_undef)
         * [Functions defs](#functions-defs-1)
+            * [**Case STREAM_RET_FUN_UNDEF**](#case-stream_ret_fun_undef)
+            * [**Case SINGLE_RET_FUN_UNDEF**](#case-single_ret_fun_undef)
     * [Redefine semantics](#redefine-semantics)
         * [Type axioms](#type-axioms-2)
+            * [**Case ENT_REDEF**](#case-ent_redef)
+            * [**Case REL_REDEF**](#case-rel_redef)
+            * [**Case ATT_REDEF**](#case-att_redef)
+            * [**Case PLAYS_REDEF**](#case-plays_redef)
+            * [**Case OWNS_REDEF**](#case-owns_redef)
         * [Constraints](#constraints-2)
             * [Cardinality](#cardinality-2)
+                * [**Case CARD_REDEF**](#case-card_redef)
+                * [**Case CARD_LIST_REDEF**](#case-card_list_redef)
+                * [**Case PLAYS_AS_REDEF**](#case-plays_as_redef)
+                * [**Case OWNS_AS_REDEF**](#case-owns_as_redef)
             * [Behavior flags](#behavior-flags-2)
             * [Values](#values-2)
+                * [**Case OWNS_VALUES_REDEF**](#case-owns_values_redef)
+                * [**Case VALUE_VALUES_REDEF**](#case-value_values_redef)
         * [Triggers](#triggers-2)
+                * [**Case DEPENDENCY_REDEF** (CASCADE/INDEPEDENT)](#case-dependency_redef-cascadeindepedent)
         * [Value types](#value-types-2)
+                * [**Case PRIMITIVES_REDEF**](#case-primitives_redef)
+                * [**Case STRUCT_REDEF**](#case-struct_redef)
         * [Functions defs](#functions-defs-2)
+                * [**Case STREAM_RET_FUN_REDEF**](#case-stream_ret_fun_redef)
+                * [**Case SINGLE_RET_FUN_REDEF**](#case-single_ret_fun_redef)
     * [Labels and aliases](#labels-and-aliases)
         * [Define](#define)
         * [Undefine](#undefine)
         * [Redefine](#redefine)
-* [Data instance languages](#data-instance-languages)
+* [Pattern matching language](#pattern-matching-language)
     * [Basics: Patterns, variables, concept maps, satisfaction](#basics-patterns-variables-concept-maps-satisfaction)
         * [Statements, patterns](#statements-patterns)
         * [Variables](#variables)
@@ -114,36 +187,89 @@
         * [Optionality and boundedness](#optionality-and-boundedness)
     * [Pattern semantics](#pattern-semantics)
         * [Types](#types)
+            * [**Case TYPE_DEF_PATT**](#case-type_def_patt)
+            * [**Case REL_PATT**](#case-rel_patt)
+            * [**Case PLAY_PATT**](#case-play_patt)
+            * [**Case OWNS_PATT**](#case-owns_patt)
+            * [**Cases TYP_IS_PATT and LABEL_PATT**](#cases-typ_is_patt-and-label_patt)
         * [Constraints](#constraints-3)
             * [Cardinality](#cardinality-3)
+                * [**Case CARD_PATT**](#case-card_patt)
+                * [**Case PLAYS_AS_PATT**](#case-plays_as_patt)
+                * [**Case OWNS_AS_PATT**](#case-owns_as_patt)
             * [Bevavior flags](#bevavior-flags)
+                * [**Case UNIQUE_PATT**](#case-unique_patt)
+                * [**Case KEY_PATT**](#case-key_patt)
+                * [**Case SUBKEY_PATT**](#case-subkey_patt)
+                * [**Case TYP_ABSTRACT_PATT**](#case-typ_abstract_patt)
+                * [**Case RELATES_ABSTRACT_PATT**](#case-relates_abstract_patt)
+                * [**Case PLAYS_ABSTRACT_PATT**](#case-plays_abstract_patt)
+                * [**Case OWNS_ABSTRACT_PATT**](#case-owns_abstract_patt)
+                * [**Case DISTINCT_PATT**](#case-distinct_patt)
             * [Values](#values-3)
+                * [**Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**](#cases-value_values_patt-and-owns_values_patt)
         * [Data](#data)
+            * [**Case ISA_PATT**](#case-isa_patt)
+            * [**Case LINKS_PATT**](#case-links_patt)
+            * [**Case HAS_PATT**](#case-has_patt)
+            * [**Case IS_PATT**](#case-is_patt)
         * [Expression grammar (sketch)](#expression-grammar-sketch)
         * [Expression patterns](#expression-patterns)
+            * [**Case ASS_PATT**](#case-ass_patt)
+            * [**Case DESTRUCT_PATT**](#case-destruct_patt)
+            * [**Case IN_LIST_PATT**](#case-in_list_patt)
+            * [**Case EQ_PATT**](#case-eq_patt)
+            * [**Case COMP_PATT**](#case-comp_patt)
         * [Functions](#functions)
+            * [**Case IN_FUN_PATT**](#case-in_fun_patt)
+            * [**Case ASS_FUN_PATT**](#case-ass_fun_patt)
         * [Patterns](#patterns)
+            * [**Case AND_PATT**](#case-and_patt)
+            * [**Case OR_PATT**](#case-or_patt)
+            * [**Case NOT_PATT**](#case-not_patt)
+            * [**Case TRY_PATT**](#case-try_patt)
     * [Match semantics](#match-semantics)
     * [Functions semantics](#functions-semantics)
         * [Function signature, body, operators](#function-signature-body-operators)
+            * [**Case FUN_SIGN_STREAM**](#case-fun_sign_stream)
+            * [**Case FUN_SIGN_SINGLE**](#case-fun_sign_single)
+            * [**Case FUN_BODY**](#case-fun_body)
+            * [**Case FUN_OPS**](#case-fun_ops)
         * [Stream-return](#stream-return)
         * [Single-return](#single-return)
         * [Recursion and recursive semantics](#recursion-and-recursive-semantics)
     * [Insert semantics](#insert-semantics)
         * [Basics of inserting](#basics-of-inserting)
         * [Insert statements](#insert-statements)
+            * [**Case ASSIGN_INS**](#case-assign_ins)
+            * [**Case OBJ_ISA_INS**](#case-obj_isa_ins)
+            * [**Case ATT_ISA_INS**](#case-att_isa_ins)
+            * [**Case LINKS_INS**](#case-links_ins)
+            * [**Case LINKS_LIST_INS**](#case-links_list_ins)
+            * [**Case HAS_INS**](#case-has_ins)
+            * [**Case HAS_LIST_INS**](#case-has_list_ins)
         * [Optional inserts](#optional-inserts)
+            * [**Case TRY_INS**](#case-try_ins)
         * [Leaf attribute system constraint](#leaf-attribute-system-constraint)
     * [Delete semantics](#delete-semantics)
         * [Basics of deleting](#basics-of-deleting)
         * [Delete statements](#delete-statements)
+            * [**Case CONCEPT_DEL**](#case-concept_del)
+            * [**Case ROL_OF_DEL**](#case-rol_of_del)
+            * [**Case ROL_LIST_OF_DEL**](#case-rol_list_of_del)
+            * [**Case ATT_OF_DEL**](#case-att_of_del)
+            * [**Case ATT_LIST_OF_DEL**](#case-att_list_of_del)
         * [Clean-up](#clean-up)
     * [Update semantics](#update-semantics)
         * [Basics of updating](#basics-of-updating)
         * [Update statements](#update-statements)
+            * [**Case LINKS_UP**](#case-links_up)
+            * [**Case LINKS_LIST_UP**](#case-links_list_up)
+            * [**Case HAS_UP**](#case-has_up)
+            * [**Case HAS_LIST_UP**](#case-has_list_up)
         * [Clean-up](#clean-up-1)
     * [Put semantics](#put-semantics)
-* [System execution](#system-execution)
+* [Query execution principles](#query-execution-principles)
     * [Pipelines](#pipelines)
         * [Basics of clauses](#basics-of-clauses)
             * [Match](#match)
@@ -152,6 +278,17 @@
             * [Update](#update)
             * [Put](#put)
             * [Fetch](#fetch)
+                * [**Case FETCH_VAL**](#case-fetch_val)
+                * [**Case FETCH_EXPR**](#case-fetch_expr)
+                * [**Case FETCH_ATTR**](#case-fetch_attr)
+                * [**Case FETCH_MULTI_ATTR**](#case-fetch_multi_attr)
+                * [**Case FETCH_LIST_ATTR**](#case-fetch_list_attr)
+                * [**Case FETCH_SNGL_FUN**](#case-fetch_sngl_fun)
+                * [**Case FETCH_STREAM_FUN**](#case-fetch_stream_fun)
+                * [**Case FETCH_FETCH**](#case-fetch_fetch)
+                * [**Case FETCH_REDUCE_VAL**](#case-fetch_reduce_val)
+                * [**Case FETCH_REDUCE_LIST_VAL**](#case-fetch_reduce_list_val)
+                * [**Case FETCH_NESTED**](#case-fetch_nested)
         * [Basics of operators](#basics-of-operators)
             * [Select](#select)
             * [Deselect](#deselect)
@@ -160,6 +297,8 @@
             * [Limit](#limit)
             * [Offset](#offset)
             * [Reduce](#reduce)
+                * [**Case RED_DEFAULT**](#case-red_default)
+                * [**Case RED_GROUP**](#case-red_group)
     * [Transactions](#transactions)
         * [Basics](#basics)
         * [Snapshots](#snapshots)
@@ -194,34 +333,28 @@
     * [Typing of operators](#typing-of-operators)
 
 <!-- vim-markdown-toc -->
+</details>
 
-</detail>
+# Introduction
 
+This document specifies the behaviour of TypeDB and its query language TypeQL.
 
-# Foundations
+# The type system
 
-## Terminology
+The type system is a mathematical system, which we describe in this section with a reasonable level of formality (not all details are included, and some basic mathematical rules are taken for granted: for example, the rule of equality, i.e. if $a = b$ then $a$ and $b$ are exchangeable for all purposes in our type system.)
 
-This section collects useful abbrevations. See "Glossary" for other commonly used terms.
+The type system comprises to **components**:
 
-* **TT** — transaction time (any time within transaction)
-* **CT** — commit time (time of committing a transaction to DB)
-* **tvar** — type variable (var representing some type)
-* **evar** - element variable (var representing some element in some type). 
+* A grammar for (mathematical) statements.
+* A rule system for inferring which statement are true.
 
-  Can further distinguish:
-  * **vvar** - value variable (element of value type (struct or primitive))
-  * **lvar** — list variable (element of list type)
-  * **ivar** — instance variable (element of schema types)
+_IMPORTANT_: Not all parts of the type system introduced in this section are exposed to the user through TypeQL, but most parts are. This is similar to not all parts of the mathematical definition of the borrow checker in Rust being reflected in actual Rust syntax... defining the meaning of language often takes more language than the original language itself!
 
-  _Remark_. A key principle of TypeQL declarative language design is that for any a patterns of variable it can be uniquely inferred whether a var is a **tvar** or **evar**, and whether an evar is an **vvar** or **lvar** or **ivar**.
+## Grammar and notations
 
+### Ordinary types
 
-## The type system
-
-This section describes the basic **statements** that comprise our type system, and the **rules** that govern the interaction of these statements.
-
-### Simple (non-dependent) types
+We discuss the grammar for statements relating to types, and explain them in natural language statements.
 
 * **Types**. We write 
   $`A : \mathbf{Kind}`$ to mean the statement:
@@ -233,33 +366,35 @@ This section describes the basic **statements** that comprise our type system, a
     * $`\mathbf{Att}`$ (collection of **attribute types**)
     * $`\mathbf{Itf}`$ (collection of **interface types**)
     * $`\mathbf{Val}`$ (collection of **value types**)
+    * $`\mathbf{List}`$ (collection of **list types**)
 
   _Example_: $`\mathsf{Person} : \mathbf{Ent}`$ means $`\mathsf{Person}`$ an entity type.
-* _Useful abbreviations_ using sum type notation (compare the actual "sum type" operator below)
+
+* **Combined kind notations** 
   * $`\mathbf{Obj} = \mathbf{Ent} + \mathbf{Rel}`$ (collection of **object types**)
   * $`\mathbf{ERA} = \mathbf{Obj} + \mathbf{Att}`$ (collection of **ERA types**)
   * $`\mathbf{Schema} = \mathbf{ERA} + \mathbf{Itf}`$ (collection of **schema types**)
-  * $`\mathbf{Simple} = \mathbf{Schema} + \mathbf{Value}`$ (collection of all **simple types**)
-  * $`\mathbf{Type} = \mathbf{Op}^*(\mathbf{Simple})`$ (collection of all **(non-list) types**, obtained by closing simple types under operators: sum, product, option... see "Type operators" below)
+  * $`\mathbf{Simple} = \mathbf{Schema} + \mathbf{Value}`$ (collection of all **simple types**, "without any operators")
+  * $`\mathbf{Alg} = \mathbf{Op}^*(\mathbf{Simple})`$ (collection of all **algebraic types**, obtained by closing simple types under operators: sum, product, option... see "Type operators" below)
+  * $`\mathbf{Type} = \mathbf{Alg} + \mathbf{List}`$ (collection of all **types**)
 
 * **Typing**
-  If $`A`$ is a type, then we may write $`a : A`$ to mean:
+  If $`A`$ is a type, then we may write $`a : A`$ to mean the statement:
   > $`a`$ is an element in type $`A`$.
 
-  * _Example_: $`p : \mathsf{Person}`$ means $`p`$ is of type $`\mathsf{Person}`$
+  _Example_: $`p : \mathsf{Person}`$ means $`p`$ is of type $`\mathsf{Person}`$
 
-  * _Direct typing_: We write $`a :_! A`$ to mean:
-    > $`a`$ was declared as an element of $`A`$ by the user (we speak of a ***direct typing***).
+* **Direct typing**: We write $`a :_! A`$ to mean:
+  > $`a`$ was declared as an element of $`A`$ by the user (we speak of a ***direct typing***).
 
-    _Remark_. The notion of direct typing might be confusing at first. Mathematically, it is merely an additional statement in our type system. Intuively, you can think of it as a way of keeping track of the _user-provided_ information. A similar remark applies to direct subtyping ($`<_!`$) below.
+  _Remark_. The notion of direct typing might be confusing at first. Mathematically, it is merely an additional statement in our type system. Intuively, you can think of it as a way of keeping track of the _user-provided_ information. A similar remark applies to direct subtyping ($`<_!`$) below.
 
-    * _Direct typing rule_. The statement $`a :_! A`$ implies the statement $`a : A`$. (The converse is not true!)
-    * _Example_. $p :_! \mathsf{Child}$ means the user has inserted $`p`$ into the type $`\mathsf{Child}`$. Our type system may derive $`p : \mathsf{Person}`$ from this (but _not_ $`p :_! \mathsf{Person}`$)
+### Dependent types
 
-### Dependendent types
+We discuss the grammar for statements relating to dependent types, and explain them in natural language statements.
 
 * **Dependent types**. We write $`A : \mathbf{Kind}(I,J,...)`$ to mean:
-  > $`A`$ is a type with interface types $`I, J, ...`$.
+  > $`A`$ is a type with **interface types** $`I, J, ...`$.
   
   * _Application_: Writing $A : \mathbf{Kind}(I,J,...)$ ***implies*** $`A(x:I, y:J, ...) : \mathbf{Kind}`$ whenever we have $`x: I, y: J, ...`$.
   * _Variations_: We may replace $`\mathbf{Kind}`$ by $`\mathbf{Rel}`$ or $`\mathbf{Att}`$.
@@ -267,107 +402,162 @@ This section describes the basic **statements** that comprise our type system, a
 * **Dependent typing**.  We write $`a : A(x : I, y : J,...)`$ to mean:
   > The element $`a`$ lives in the type "$`A`$ of $`x`$ (cast as $`I`$), and $`y`$ (cast as $`J`$), and ...".
 
-  * _Interface set semantics_:  Our type system rewrites dependencies by removing duplicates in the same interface, i.e. $`a : A(x : I, y : I, y : I)`$ is rewritten to $`a : A(x : I, y : I)`$ 
-    * _Set notation_: We use set notation, writing $`a : A(x : I, y : I)`$ as $`A : A(\{x,y\}:I^2)`$. (Similarly, when $`I`$ appears $`k`$ times in $`A(...)`$, we would write $`\{x_1, ..., x_k\} : I^k`$) 
-  * _Role cardinality_: $`|a|_I`$ counts elements in $`\{x_1,...,x_k\} :I^k`$
-  * **Example**: $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$. Then $`|m|_{\mathsf{Spouse}} = 2`$.
-* **Key properties of dependencies**. (These are some key rules of the type system!)
-  * _Combining dependencies_: Given $A : \mathbf{Kind}(I)$ and $`A : \mathbf{Kind}(J)`$, this ***implies*** $`A : \mathbf{Kind}(I,J)`$. In words:
-    > If a type separately depends on $`I`$ and on $`J`$, then it may jointly depend on $`I`$ and $`J`$! 
+* **Interface set notation**:  Our type system rewrites dependencies by removing duplicates in the same interface, i.e. $`a : A(x : I, y : I, y : I)`$ is rewritten to $`a : A(x : I, y : I)`$ (this **set semantics** is really a rule of our type system)
+  
+  We use set notation, writing $`a : A(x : I, y : I)`$ as $`A : A(\{x,y\}:I^2)`$. (Similarly, when $`I`$ appears $`k`$ times in $`A(...)`$, we would write $`\{x_1, ..., x_k\} : I^k`$) 
 
-    _Remark_: This applies recursively to types with $`k`$ interfaces.
-    * _Example_: $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband})`$ and $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Wife})`$ then $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband},\mathsf{Wife})`$
-  * _Weakening dependencies_: Given $`A : \mathbf{Kind}(I,J)`$, this ***implies*** $`A : \mathbf{Kind}(I)`$. In words:
-    > Dependencies can be simply ignored (note: this is a coarse rule — we later discuss more fine-grained constraints, e.g. cardinality).
+* **Interface specialization notation**:  If $`A : \mathbf{Kind}`$, $`B : \mathbf{Kind}(I)`$, $`A \leq B`$ and _not_ $A : \mathbf{Kind}(J)$ with $`J \leq I`$, then we say:
+  > The interface $`J`$ of $`A`$ specializes the interface $`I`$ of $`B`$
 
-    _Remark_: This applies recursively to types with $`k`$ interfaces.
-    * _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
-  * _Specializing dependencies_:  If $`A : \mathbf{Kind}`$, $`B : \mathbf{Kind}(I)`$, $`A \leq B`$ and _not_ $A : \mathbf{Kind}(J)$ with $`J \leq I`$, then we say:
-    > The interface $`J`$ of $`A`$ specializes the interface $`I`$ of $`B`$
+  We write this as $`A(J) \leq B(I)`$. 
 
-    We write this as $`A(J) \leq B(I)`$ 
+* **Role cardinality notation**: $`|a|_I`$ counts elements in $`\{x_1,...,x_k\} :I^k`$
 
-  * _Auto-inheritance rule_: If $`A : \mathbf{Kind}`$, $`B : \mathbf{Kind}(I)`$, $`A \leq B`$ and $`A`$ has no interface strictly specializing $`I`$ then $`A : \mathbf{Kind}(I)`$ ("strictly" meaning "not equal to $`I`$"). In words:
+  _Example_: $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$. Then $`|m|_{\mathsf{Spouse}} = 2`$.
 
-    > Dependencies that are not specialized are inherited
-    
-### Castings / Subtypes
+### Subtypes and castings
+
+We discuss the grammar for statements relating to subtypes and castings, and explain them in natural language statements.
 
 * **Casting**. We write $`A \leq B`$ to mean:
   > type casts from $`A`$ to $`B`$ are possible: 
-  
-  * _Casting rule_: If $`A \leq B`$ and $`a : A`$, then this ***implies*** $`a : B`$.
-  * _Transitivity rule_: If $`A \leq B`$ and $`B \leq C`$, then this ***implies*** $`A \leq C`$.
-  * _Reflexivity rule_: If $`A : \mathbf{Kind}`$ then this **implies** $`A \leq A`$ 
 
-  * _Direct castings_: We write $`A <_! B`$ to mean:
+* **Direct castings**: We write $`A <_! B`$ to mean:
     > A cast from A to B was declared by user (we speak of a ***direct casting*** from A to B).
 
     * _Direct-to-general rule_: $`A <_! B`$ ***implies*** $`A \leq B`$.
     * _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
     * _Example_: $`\mathsf{Child} <_! \mathsf{Nameowner}`$
     * _Example_: $`\mathsf{Person} <_! \mathsf{Spouse}`$
-  * _Weakening dependencies of terms rule_: If $`a : A(x:I, y:J)`$ then $`a : A(x:I)`$, equivalently: $`A(x:I, y:J) \leq A(x:I)`$. In other words:
-    > Elements in $`A(I,J)`$ casts into elements of $`A(I)`$.
 
-    * _Remark_: More generally, this applies for types with $k \leq 0$ interfaces. (In particular, $`A(x:I) \leq A() = A`$)
-    * _Example_: If $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$ then both $`m : \mathsf{Marriage}(x:\mathsf{Spouse})`$ and $`m : \mathsf{Marriage}(y:\mathsf{Spouse})`$
+### Algebraic type operators
 
-  * _"Covariance of dependencies" casting_: Given $`A \leq B`$, $`I \leq J`$ such that $`A : \mathbf{Kind}(I)`$ $`B : \mathbf{Kind}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$. In other words:
-    > When $`A`$ casts to $`B`$, and $`I`$ to $`J`$, then $`A(I)`$ casts to $`B(J)`$.
+We discuss the grammar for statements relating to operators and modalitites, and explain them in natural language statements.
 
-    _Remark_: This applies recursively for types with $`k`$ interfaces.
-    * _Example_: If $`m : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$
+* **Sum operator**. we may construct $`A + B : \mathbf{Alg}`$ for $`A, B :\mathbf{Alg}`$ 
 
-  _Notation_: Write $`X(I) \leq Y(J)`$ to mean $`X : \mathbf{Kind}(I)`$, $Y : \mathbf{Kind}(J)$ and $`X \leq Y`$, $`I \leq J`$.
+    > this is the sum type of $`A`$ and $`B`$, containing all elements of $`A`$ and of $`B`$
+* **Product operator**. we may construct $`A \times B : \mathbf{Alg}`$ for $`A, B :\mathbf{Alg}`$
 
-### Lists
+    > this is the sum type of $`A`$ and $`B`$, containing all elements of $`A`$ and of $`B`$
+* **Option operator**. we may construct $`A? : \mathbf{Alg}`$ for $`A :\mathbf{Alg}`$ 
+
+    > this is the option type, containing $`A`$ plus the empty element $`\emptyset`$
+* **Cardinality operator**.$`|A| : \mathbb{N}`$ for $`A : \mathbf{Alg}`$. 
+
+    > This is the cardinality of $`A`$, counting the elements in $`A`$.
+
+_Remark for nerds: list types are not algebraic types... they are so-called inductive types!_
+
+### List types
+
+We discuss the grammar for statements relating to list types, and explain them in natural language statements.
 
 * **List types**. For any $`A : \mathbf{Type}`$, we write $`[A] : \mathbf{List}`$ to mean
   > the type of $`A`$-lists, i.e. the type which contains lists $`[a_0, a_1, ...]`$ of elements $`a_i : A`$.
 
     Note: We could include $`\mathbf{List}`$ in $`\mathbf{Kind}`$ but for simplicity we don't.
-  * _Dependency on list types_: We allow $`A : \mathbf{Kind}([I])`$, and thus our type system has types $`A(x:[I]) : \mathbf{Kind}`$.
+
+* **Dependency on list types**: We allow $`A : \mathbf{Kind}([I])`$, and thus our type system has types $`A(x:[I]) : \mathbf{Kind}`$.
     > $`A(x:[I])`$ is a type depending on lists $`x : [I]`$.
 
-    * _Example_: $`\mathsf{FlightPath} : \mathbf{Rel}([\mathsf{Flight}])`$
-  * _Dependent list types_: We allow $`[A] : \mathbf{List}(I)`$, and thus our type system has types $`[A](x:I) : \mathbf{List}`$.
+    _Example_: $`\mathsf{FlightPath} : \mathbf{Rel}([\mathsf{Flight}])`$
+
+* **Dependent list types**: We allow $`[A] : \mathbf{List}(I)`$, and thus our type system has types $`[A](x:I) : \mathbf{List}`$.
     > $`[A](x:I)`$ is a type of $`A`$-lists depending on interface $`I`$.
 
-    * _Example_: $`[a,b,c] : [\mathsf{MiddleName}](x : \mathsf{MiddleNameListOwner})`$
-  
-  * _Direct typing rules_. Two rules relating to user intention/direct typing. 
-    * _Direct typing list rule_: Given $`l = [l_0,l_1,...] :_! [A]`$ this implies $`l_i : A`$. In other words:
-      > If the user intends a list typing $`l :_! [A]`$ then the list entries $`l_i`$ will be elements in $`A`$.
-    * _Direct dependency list rule_: Given $`l = [l_0,l_1,...] : [I]`$ and $`a :_! A(l : [I])`$ implies $`a : A(l_i : I)`$. In other words:
-      > If the user intends dependency on a list $`l`$ then this implies dependency on the list's entries $`l_i`$.
+    _Example_: $`[a,b,c] : [\mathsf{MiddleName}](x : \mathsf{MiddleNameListOwner})`$
 
-  * _List length_: for list $`l : [A]`$ the term $\mathrm{len}(l) : \mathbb{N}$ represents $`l`$'s length.
+* **List length notation**: for list $`l : [A]`$ the term $\mathrm{len}(l) : \mathbb{N}$ represents $`l`$'s length.
 
-### Type operators and modalities
+### Modalities
 
-Our type system also features the following operations.
+The following is purely for keeping track of certain information in the type system.
 
-* **Sum operator**. we may construct $`A + B : \mathbf{Type}`$ for $`A, B :\mathbf{Type}`$ 
+* **Abstract modality**. Certain statements $`\mathcal{J}`$ about types (namely: type kinds $`A : \mathbf{Kind}(...)`$ and subtyping $`A < B`$) have abstract versions written $`\diamond(\mathcal{J})`$.
 
-    > this is the sum type of $`A`$ and $`B`$, containing all elements of $`A`$ and of $`B`$
-* **Product operator**. we may construct $`A \times B : \mathbf{Type}`$ for $`A, B :\mathbf{Type}`$
+    > If $`\diamond(\mathcal{J})`$ is true then this means $`\mathcal{J}`$ is _abstractly true_ in the type system, where "abstractly true" is a special truth-value which entails certain special behaviours in the database.
 
-    > this is the sum type of $`A`$ and $`B`$, containing all elements of $`A`$ and of $`B`$
-* **Option operator**. we may construct $`A? : \mathbf{Type}`$ for $`A :\mathbf{Type}`$ 
+## Rule system
 
-    > this is the option type, containing $`A`$ plus the empty element $`\emptyset`$
-* **Cardinality operator**.$`|A| : \mathbb{N}`$ for $`A : \mathbf{Type}`$. 
+This section describes the **rules** that govern the interaction of statements.
 
-    > This is the cardinality of $`A`$, counting the elements in $`A`$.
-* **Abstract modality**. Certain judgements $`\mathcal{J}`$ about types (namely $`A : \mathbf{Kind}(...)`$ and $`A < B`$) have abstract versions written $`\diamond(\mathcal{J})`$.
+### Ordinary types
 
-    > This states $`\mathcal{J}`$ is abstractly true in the type system, where "abstractly true" is a special truth-value which entails special behaviour of the data model.
+* _Direct typing rule_. The statement $`a :_! A`$ implies the statement $`a : A`$. (The converse is not true!)
 
-_Remark for nerds: list types are neither sums, nor products, nor combinations thereof (polynomials) ... they are so-called inductive types!_
+  _Example_. $p :_! \mathsf{Child}$ means the user has inserted $`p`$ into the type $`\mathsf{Child}`$. Our type system may derive $`p : \mathsf{Person}`$ from this (but _not_ $`p :_! \mathsf{Person}`$)
+
+### Dependendent types
+
+* _Combining dependencies_: Given $A : \mathbf{Kind}(I)$ and $`A : \mathbf{Kind}(J)`$, this ***implies*** $`A : \mathbf{Kind}(I,J)`$. In words:
+  > If a type separately depends on $`I`$ and on $`J`$, then it may jointly depend on $`I`$ and $`J`$! 
+
+  _Remark_: This applies recursively to types with $`k`$ interfaces.
+
+  _Example_: $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband})`$ and $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Wife})`$ then $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband},\mathsf{Wife})`$
+
+* _Weakening dependencies_: Given $`A : \mathbf{Kind}(I,J)`$, this ***implies*** $`A : \mathbf{Kind}(I)`$. In words:
+  > Dependencies can be simply ignored (note: this is a coarse rule — we later discuss more fine-grained constraints, e.g. cardinality).
+
+  _Remark_: This applies recursively to types with $`k`$ interfaces.
+
+  _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
+
+* _Auto-inheritance rule_: If $`A : \mathbf{Kind}`$, $`B : \mathbf{Kind}(I)`$, $`A \leq B`$ and $`A`$ has no interface strictly specializing $`I`$ then $`A : \mathbf{Kind}(I)`$ ("strictly" meaning "not equal to $`I`$"). In words:
+
+  > Dependencies that are not specialized are inherited.
+    
+### Subtypes and castings
+
+* _Basic casting rule_: If $`A \leq B`$ and $`a : A`$, then this ***implies*** $`a : B`$.
+
+* _Transitivity rule_: If $`A \leq B`$ and $`B \leq C`$, then this ***implies*** $`A \leq C`$.
+
+* _Reflexivity rule_: If $`A : \mathbf{Kind}`$ then this **implies** $`A \leq A`$ 
+
+* _"Weakening dependencies of terms" rule_: If $`a : A(x:I, y:J)`$ then $`a : A(x:I)`$, equivalently: $`A(x:I, y:J) \leq A(x:I)`$. In other words:
+    > Elements in $`A(I,J)`$ casts into elements of $`A(I)`$.
+
+    * _Remark_: More generally, this applies for types with $k \leq 0$ interfaces. (In particular, $`A(x:I) \leq A() = A`$)
+    * _Example_: If $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$ then both $`m : \mathsf{Marriage}(x:\mathsf{Spouse})`$ and $`m : \mathsf{Marriage}(y:\mathsf{Spouse})`$
+
+* _"Covariance of dependencies" rule_: Given $`A \leq B`$, $`I \leq J`$ such that $`A : \mathbf{Kind}(I)`$ $`B : \mathbf{Kind}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$. In other words:
+    > When $`A`$ casts to $`B`$, and $`I`$ to $`J`$, then $`A(I)`$ casts to $`B(J)`$.
+
+    _Remark_: This applies recursively for types with $`k`$ interfaces.
+
+    _Example_: If $`m : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$
+
+### Algebraic type operators
+
+* Sum types follow the usual rules of type system.
+
+    _Note_: the inclusion $`A \leq A + B`$ is also **subsumptive** subtyping. This induces certain equalities on elements: for example, if $`A \leq B`$, then $`A + B = B`$ since $`a : A`$ for $`a : B`$ we have $`a = a : A + B`$ ... therefore, technically $`A + B`$ the so-called _fibered_ sum which identifies the $`A \cap B`$). We omit the detailed rules here, and use common sense.
+
+* Product types follow the usual rules of type systems.
+
+    _Note_: again, subsumptive subtyping interacts with this. For example, we would have if $`A \leq A'$ and $B \leq B'`$ then $`A \times B \leq A' \times B'`$ ...  We omit the detailed rules here, and use common sense.
+
+* Option types follow the usual rules of type systems.
+
+    _Note_: same note as before applies.
+
+### List types
+
+* _Direct typing list rule_: Given $`l = [l_0,l_1,...] :_! [A]`$ this implies $`l_i :_! A`$. In other words:
+  > If the user intends a list typing $`l :_! [A]`$ then the list entries $`l_i`$ will be direct elements of $`A`$.
+
+* _Direct dependency list rule_: Given $`l = [l_0,l_1,...] : [I]`$ and $`a :_! A(l : [I])`$ implies $`a :_! A(l_i : I)`$. In other words:
+  > If the user intends $a$ to directly depend on the list $`l`$ then they intend $a$ to directly depend on each list's entries $`l_i`$.
 
 
-# Schema
+### Modalities
+
+There are no specific rules relating to the abstractness modality. It's just a tool for keeping track of certain properties.
+
+
+# Schema definition language
 
 This section describes valid declarations of _types_ and axioms relating types (_dependencies_ and _type castings_) for the user's data model, as well as _schema constraints_ that can be further imposed. These declarations are subject to a set of _type system properties_ as listed in this section. The section also describes how such declarations can be manipulated after being first declared (undefine, redefine).
 
@@ -406,7 +596,7 @@ _Principles._
 
 ### Type axioms
 
-**Case ENT_DEF**
+#### **Case ENT_DEF**
 * `entity A` adds $`A : \mathbf{Ent}`$
 * `(entity) A sub B` adds $`A : \mathbf{Ent}, A <_! B`$
 
@@ -414,7 +604,7 @@ _System property_:
 
 1. _Single inheritance_: Cannot have $`A <_! B`$ and $`A <_! C \neq B`$
 
-**Case REL_DEF**
+#### **Case REL_DEF**
 * `relation A` adds $`A : \mathbf{Rel}`$
 * `(relation) A sub B` adds $`A : \mathbf{Rel}, A <_! B`$ where $`B : \mathbf{Rel}`$ 
 * `(relation) A relates I` adds $`A : \mathbf{Rel}(I)`$ and $`I : \mathbf{Itf}`$.
@@ -435,7 +625,7 @@ _System property_:
 1. _Exclusive interface modes_:
     * Only one of `$A relates $I` or `$A relates $I[]` can ever be true non-abstractly (see "Pattern semantics" for the validity of statements), otherwise reject the definition.
 
-**Case ATT_DEF**
+#### **Case ATT_DEF**
 * `attribute A` adds $`A : \mathbf{Att}(O_A)`$ and $`O_A : \mathbf{Itf}`$ ($`O_A`$ being automatically generated ownership interface)
 * `(attribute) A value V` adds $`A <_! V`$, where $`V`$ is a primitive or a user-defined struct value type
 * `(attribute) A sub B` adds $`A : \mathbf{Att}(O_A)`$, $`A <_! B`$ and $`O_A <_! O_B`$ where $`B : \mathbf{Att}(O_B)`$
@@ -445,7 +635,7 @@ _System property_:
 
 1. _Single inheritance_: Cannot have $A <_! B`$ and $A <_! C \neq B$ for $`A, B, C : \mathbf{Att}`$.
 
-**Case PLAYS_DEF**
+#### **Case PLAYS_DEF**
 
 * `A plays B:I` adds $`A <_! I`$ where $`B: \mathbf{Rel}(I)`$, $`A :\mathbf{Obj}`$.
 
@@ -455,7 +645,7 @@ _System property_:
 
 _Remark_. The property ensures that we can only declare `A plays B:I` if `I` is a role directly declared for `B`, and not an inherited role.
 
-**Case OWNS_DEF**
+#### **Case OWNS_DEF**
 * `A owns B` adds $`A <_! O_B`$ where $`B: \mathbf{Att}(O_B)`$, $`A :\mathbf{Obj}`$
 * `A owns B[]` adds $`A <_! O_B`$ where $`B: \mathbf{Att}(O_B)`$, $`A :\mathbf{Obj}`$
 
@@ -471,7 +661,7 @@ _System property_:
 
 #### Cardinality
 
-**Case CARD_DEF**
+##### **Case CARD_DEF**
 * `A relates I @card(n..m)` postulates $n \leq k \leq m$ whenever $`a :_! A'(\{...\} : I^k)`$, $`A' \leq A`$, $`A' : \mathbf{Rel}(I)`$.
   * **defaults** to `@card(1..1)` if omitted ("one")
 * `A plays B:I @card(n..m)` postulates $n \leq |B(a:I)| \leq m$ for all $`a : A`$
@@ -488,18 +678,18 @@ _Remark 1: Upper bounds can be omitted, writing `@card(2..)`, to allow for arbit
 
 _Remark 2: For cardinality, and for most other constraints, we should reject redundant conditions, such as `A owns B card(0..3);` when `A sub A'` and `A' owns B card(1..2);`_
 
-**Case CARD_LIST_DEF**
+##### **Case CARD_LIST_DEF**
 * `A relates I[] @card(n..m)` postulates $n \leq \mathrm{len}(l) \leq m$ whenever $`a : A'(l : [I])`$, $A' \leq A$, $`A' : \mathbf{Rel}([I])`$, and $`k`$ is _maximal_ (for fixed $a : A$).
   * **defaults** to `@card(0..)` if omitted ("many")
 * `A owns B[] @card(n...m)` postulates $n \leq \mathrm{len}(l) \leq m$ whenever $`l : [B](a:O_B)`$ for $`a : A`$
   * **defaults** to `@card(0..)` if omitted ("many")
 
 <!--
-**Case PLAYS_AS_DEF**
+##### **Case PLAYS_AS_DEF**
 * `A plays B:I as C:J` postulates $`c :_! C(a:J)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $`A \leq D`$, $`D <_! J`$.
   * **Invalidated** when $`A <_! J'`$ for $`B(I) \lneq C'(J') \leq C(J)`$.
 
-**Case OWNS_AS_DEF**
+##### **Case OWNS_AS_DEF**
 * `A owns B as C` postulates $`c :_! C(a:O_C)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $`A \leq D`$, $`D <_! O_C`$.
   * **Invalidated** when $`A <_! O_{C'}`$ for $`B \lneq C' \leq C`$.
 
@@ -508,29 +698,29 @@ _Comment: both preceding cases are kinda complicated/unnatural ... as reflected 
 
 #### Behavior flags
 
-**Case UNIQUE_DEF**
+##### **Case UNIQUE_DEF**
 * `A owns B @unique` postulates that if $`b : B(a:O_B)`$ for some $`a : A`$ then this $`a`$ is unique (for fixed $`b`$).
 
-**Case KEY_DEF**
+##### **Case KEY_DEF**
 * `A owns B @key` postulates that if $`b : B(a:O_B)`$ for some $`a : A`$ then this $`a`$ is unique, and also $`|B(a:O_B) = 1`$.
 
-**Case SUBKEY_DEF**
+##### **Case SUBKEY_DEF**
 * `A owns B1 @subkey(<LABEL>); A owns B2 @subkey(<LABEL>)` postulates that if $`b : B_1(a:O_{B_1}) \times B_2(a:O_{B_2})`$ for some $`a : A`$ then this $`a`$ is unique, and also $`|B_1(a:O_{B_1}) \times B_2(a:O_{B_2})| = 1`$. **Generalizes** to $`n`$ subkeys.
 
-**Case TYP_ABSTRACT_DEF**
+##### **Case TYP_ABSTRACT_DEF**
 * `(type) A @abstract` postulates $`a :_! A(...)`$ to be impossible
 
 _System property_
 
 1. If `(type) A @abstract` and $`A \leq B`$ then `(type) B (sub ...)`cannot be declared non-abstractly.
 
-**Case GEN_ABSTRACT_DEF** (General abstractness)
+##### **Case GEN_ABSTRACT_DEF** (General abstractness)
 
 * _Key principle_: Only one of $`\diamond(A : K)`$ and $`A : K`$ can be inferred in the type system.
 * _Schema constraint_: 
   * If a schema declaration violates the above (making something both abstract and non-abstract) then we reject that declaration.
 
-**Case REL_ABSTRACT_DEF** (--UNEXPOSED)
+##### **Case REL_ABSTRACT_DEF** (--UNEXPOSED)
 * `B relates I @abstract` is equivalent to $`\diamond(B : \mathbf{Rel}(I))`$. It is an inferred statements (i.e. cannot be declared). It entails no constraints beyond the general case.
 * `B relates I[] @abstract` is equivalent to $`\diamond(B : \mathbf{Rel}([I]))`$. It is an inferred statements (i.e. cannot be declared). It entails no constraints beyond the general case.
 
@@ -540,33 +730,30 @@ _Remark_: Let's recall the cases in which this gets inferred:
 * Un-ordering: if a relation type relates a list interface it abstractly relates the "un-ordered" (un-listed?) interface.
 
 
-**Case PLAYS_ABSTRACT_DEF**
-* `A plays B:I @abstract` adds $`\diamond(A <_! I)`$ and adds the constraint:
-  *  for $`B : \mathbf{Rel}(I)`$ then $`b :_! B'(a:I)`$ is impossible whenever $`a : A`$, $B' \leq B$
-  *  for $`B : \mathbf{Rel}([I])`$ then  $`b :_! B'(l:[I])`$, $a \in l$ is impossible whenever $`a : A`$, $B' \leq B$
-  
-_Note_: $`B' \leq B`$ is needed here, since the interface $`I`$ may be inherited to some subtypes.
+##### **Case PLAYS_ABSTRACT_DEF**
+* `A plays B:I @abstract` adds $`\diamond(A <_! I)`$ which affects `insert` semantics.
 
 _System property_
 
-1. If `A plays B:I @abstract` and $`B'(I) \leq B'(I')`$ then `A plays B':J'` cannot be declared non-abstractly.
+1. _Upwards abstractness_. If `A plays B:I @abstract` and $`B'(I) \leq B'(I')`$ then `A plays B':I'` cannot be declared non-abstractly.
 
-**Case OWNS_ABSTRACT_DEF**
-* `A owns B @abstract` adds $`\diamond(A <_! O_B)`$ and adds the constraint:
-    * $`b :_! B'(a:I)`$ is impossible for $`a : A`$  and $`B \leq B'`$
-* `A owns B[] @abstract` adds $`\diamond(A <_! O_B)`$ and adds the constraint:
-    * $`b :_! [B'](a:I)`$ is impossible for $`a : A`$ and $`B \leq B'`$ 
+##### **Case OWNS_ABSTRACT_DEF**
+* `A owns B @abstract` adds $`\diamond(A <_! O_B)`$ which affects `insert` semantics.
+* `A owns B[] @abstract` adds $`\diamond(A <_! O_B)`$ which affects `insert` semantics.
 
-_Remark_: Let's recall the cases in which this gets inferred:
-* Un-ordering: if a object type owns a list attribute then it abstractly owns the "un-ordered" (un-listed?) attributes _and all its sub-attributes_.
+_Remark_: Recall also that this constraint may be inferred (cf. "Un-ordering"): if a object type owns a list attribute then it abstractly owns the "un-ordered" (un-listed?) attribute.
 
-**Case DISTINCT_DEF**
+_System property_
+
+1. _Upwards abstractness_. If `A owns B @abstract` and $`B \leq B'`$ then `A owns B'` cannot be declared non-abstractly.
+
+##### **Case DISTINCT_DEF**
 * `A owns B[] @distinct` postulates that when $`[b_1, ..., b_n] : [B]`$ then all $`b_i`$ are distinct. 
 * `B relates I[] @distinct` postulates that when $`[x_1, ..., x_n] : [I]`$ then all $`x_i`$ are distinct.
 
 #### Values
 
-**Case OWNS_VALUES_DEF**
+##### **Case OWNS_VALUES_DEF**
 * `A owns B @values(v1, v2)` postulates if $`a : A`$ then $`a \in \{v_1, v_2\}`$ , ***requiring*** that 
   * either $`A : \mathbf{Att}`$, $`A \leq V`$, $`v_i : V`$, 
   * or $`A`$ is the component of a struct, see section on struct defs. 
@@ -575,7 +762,7 @@ _Remark_: Let's recall the cases in which this gets inferred:
 * `A owns B @regex(v1..v2)` postulates if $`a : A`$ then $`a`$ conforms with regex `<EXPR>`.
 * `A owns B @range(v1..v2)` postulates if $`a : A`$ then $`a \in [v_1,v_2]`$ (conditions as before).
 
-**Case VALUE_VALUES_DEF**
+##### **Case VALUE_VALUES_DEF**
 * `A value B @values(v1, v2)` postulates if $`a : A`$ then $`a \in \{v_1, v_2\}`$ , ***requiring*** that: 
   * either $`A : \mathbf{Att}`$, $`A \leq V`$, $`v_i : V`$, 
   * or $`A`$ is the component of a struct, see section on struct defs.
@@ -586,7 +773,7 @@ _Remark_: Let's recall the cases in which this gets inferred:
 
 ### Triggers
 
-**Case DEPENDENCY_DEF** (CASCADE/INDEPEDENT)
+#### **Case DEPENDENCY_DEF** (CASCADE/INDEPEDENT)
 * `(relation) B relates I @cascade`: deleting $`a : A`$ with existing $`b :_! B(a:I,...)`$, such that $`b :_! B(...)`$ violates $`B`$'s cardinality for $`I`$, triggers deletion of $`b`$.
   * **defaults** to **TT** error
 * `(relation) B @cascade`: deleting $`a : A`$ with existing $`b :_! B(a:I,...)`$, such that $`b :_! B(...)`$ violates $`B`$'s cardinality _for any role_ of $`B`$, triggers deletion of $`b`$.
@@ -597,17 +784,20 @@ _Remark_: Let's recall the cases in which this gets inferred:
 
 ### Value types
 
-**Case PRIMITIVES_DEF**
+#### **Case PRIMITIVES_DEF**
 * `bool`
   * Terms: `true`, `false`
 * `long` — _Comment: still think this could be named more nicely_
   * Terms: 64bit integers
+* `double` 
+  * Terms: 64bit doubles
 * `datetime`
-  * TODO: list formats
-* `time` — _Comment: relative times_
-* `string` — _Comment: dynamically sized type; but could consider Arrow-like implementation, see e.g. [here](https://pola.rs/posts/polars-string-type/)_
+  * See expression grammar for valid formats
+* `time` — _Comment: also called "duration"?_
+* `string`
+  * Terms: arbitrary sized strings
 
-**Case STRUCT_DEF**
+#### **Case STRUCT_DEF**
 ```
 struct S:
   C1 value V1 (@values(<EXPR>)),
@@ -623,7 +813,7 @@ adds
 
 ### Functions defs
 
-**Case STREAM_RET_FUN_DEF**
+#### **Case STREAM_RET_FUN_DEF**
 ```
 fun F (x: T, y: S) -> { A, B }:
   match <PATTERN>
@@ -637,7 +827,7 @@ adds the following to our type system:
 * _Function terms_: $`(z,w) : F(x:T, y:S)`$ are discussed in section "Function semantics"
 * **Generalizes** to $`n`$ inputs and $`m`$ outputs
 
-**Case SINGLE_RET_FUN_DEF**
+#### **Case SINGLE_RET_FUN_DEF**
 ```
 fun f (x: T, y: S) -> A, B:
   match <PATTERN>
@@ -662,11 +852,11 @@ _Principles._
 
 ### Type axioms
 
-**Case ENT_UNDEF**
+#### **Case ENT_UNDEF**
 * `entity A` removes $`A : \mathbf{Ent}`$
 * `sub B from (entity) A` removes $`A \leq B`$
 
-**Case REL_UNDEF**
+#### **Case REL_UNDEF**
 * `relation A` removes $`A : \mathbf{Rel}`$
 * `sub B from (relation) A` removes $`A \leq B`$
 * `relates I from (relation) A` removes $`A : \mathbf{Rel}(I)`$
@@ -674,15 +864,15 @@ _Principles._
 * `relates I[] from (relation) A` removes $`A : \mathbf{Rel}([I])$
 * `as J[] from (relation) A relates I[]` removes $`I <_! J`$
 
-**Case ATT_UNDEF**
+#### **Case ATT_UNDEF**
 * `attribute A` removes $`A : \mathbf{Att}`$ and $`A : \mathbf{Att}(O_A)`$
 * `value V from (attribute) A value V` removes $`A \leq V`$
 * `sub B from (attribute) A` removes $`A <_! B`$ and $`O_A <_! O_B`$
 
-**Case PLAYS_UNDEF**
+#### **Case PLAYS_UNDEF**
 * `plays B:I from (type) A` removes $`A <_! I`$ 
 
-**Case OWNS_UNDEF**
+#### **Case OWNS_UNDEF**
 * `owns B from (type) A` removes $`A <_! O_B`$ 
 * `owns B[] from (type) A` removes $`A <_! O_B`$
 
@@ -692,58 +882,58 @@ _In each case, `undefine` removes the postulated condition (restoring the defaul
 
 #### Cardinality
 
-**Case CARD_UNDEF**
+##### **Case CARD_UNDEF**
 * `@card(n..m) from A relates I`
 * `@card(n..m) from A plays B:I`
 * `@card(n...m) from A owns B`
 
-**Case CARD_LIST_UNDEF**
+##### **Case CARD_LIST_UNDEF**
 * `@card(n..m) from A relates I[]`
 * `@card(n...m) from A owns B[]`
 
 <!--
-**Case PLAYS_AS_UNDEF**
+##### **Case PLAYS_AS_UNDEF**
 * `as C from A plays B`
 
-**Case OWNS_AS_UNDEF**
+##### **Case OWNS_AS_UNDEF**
 * `as C from A owns B`
 -->
 
 #### Behavior flags
 
-**Case UNIQUE_UNDEF**
+##### **Case UNIQUE_UNDEF**
 * `@unique from A owns B`
 
-**Case KEY_UNDEF**
+##### **Case KEY_UNDEF**
 * `@key from A owns B`
 
-**Case SUBKEY_UNDEF**
+##### **Case SUBKEY_UNDEF**
 * `@subkey(<LABEL>) from A owns B` removes $`B`$ as part of the `<LABEL>` key of $`A`$
 
-**Case TYP_ABSTRACT_UNDEF**
+##### **Case TYP_ABSTRACT_UNDEF**
 * `@abstract from (type) B` 
 
-**Case PLAYS_ABSTRACT_UNDEF**
+##### **Case PLAYS_ABSTRACT_UNDEF**
 * `@abstract from A plays B:I`
 
-**Case OWNS_ABSTRACT_UNDEF**
+##### **Case OWNS_ABSTRACT_UNDEF**
 * `@abstract from A owns B` 
 * `@abstract from A owns B[]` 
 
-**Case REL_ABSTRACT_UNDEF**
+##### **Case REL_ABSTRACT_UNDEF**
 Doesn't apply.
 
-**Case DISTINCT_UNDEF**
+##### **Case DISTINCT_UNDEF**
 * `@distinct from A owns B[]`
 * `@distinct from B relates I[]`
 
 #### Values
 
-**Case OWNS_VALUES_UNDEF**
+##### **Case OWNS_VALUES_UNDEF**
 * `@values(v1, v2) from A owns B` 
 * `@range(v1..v2) from A owns B`
 
-**Case VALUE_VALUES_UNDEF**
+##### **Case VALUE_VALUES_UNDEF**
 * `@values(v1, v2) from A value B` 
 * `@range(v1..v2) from A value B`
 
@@ -752,17 +942,17 @@ Doesn't apply.
 
 _In each case, `undefine` removes the triggered action._
 
-**Case DEPENDENCY_UNDEF** (CASCADE/INDEPEDENT)
+#### **Case DEPENDENCY_UNDEF** (CASCADE/INDEPEDENT)
 * `@cascade from (relation) B relates I`
 * `@cascade from (relation) B`
 * `@independent from (attribute) B`
 
 ### Value types
 
-**Case PRIMITIVES_UNDEF**
+#### **Case PRIMITIVES_UNDEF**
 cannot undefine primitives
 
-**Case STRUCT_UNDEF**
+#### **Case STRUCT_UNDEF**
 
 * `struct S;`
   removes $S : \mathbf{Type}$ and all associated defs.
@@ -772,14 +962,14 @@ cannot undefine primitives
 
 ### Functions defs
 
-**Case STREAM_RET_FUN_UNDEF**
+#### **Case STREAM_RET_FUN_UNDEF**
 * `fun F;`
   removes $`F`$ and all associated defs.
   * **TT** error if
     * $`S`$ is used in another function
 
 
-**Case SINGLE_RET_FUN_UNDEF**
+#### **Case SINGLE_RET_FUN_UNDEF**
 * `fun f;`
   removes $`f`$ and all associated defs.
   * **TT** error if
@@ -816,11 +1006,11 @@ _System property_:
 
 ### Type axioms
 
-**Case ENT_REDEF**
+#### **Case ENT_REDEF**
 * cannot redefine `entity A`
 * `(entity) A sub B` redefines $`A \leq B`$
 
-**Case REL_REDEF**
+#### **Case REL_REDEF**
 * cannot redefine `relation A` 
 * `(relation) A sub B` redefines $`A \leq B`$, ***requiring*** 
   * either $`A <_! B' \neq B`$ (to be redefined)
@@ -834,15 +1024,15 @@ _System property_:
   * _Data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I^k`$
 * `(relation) A relates I[] as J[]` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
 
-**Case ATT_REDEF**
+#### **Case ATT_REDEF**
 * cannot redefine `attribute A`
 * `(attribute) A value V` redefines $`A \leq V`$
 * cannot redefine `(attribute) A sub B`
 
-**Case PLAYS_REDEF**
+#### **Case PLAYS_REDEF**
 * cannot redefine `(type) A plays B:I`
 
-**Case OWNS_REDEF**
+#### **Case OWNS_REDEF**
 * cannot redefine `(type) A owns B`
 * cannot redefine `(type) A owns B[]`
 
@@ -852,20 +1042,20 @@ _In each case, `redefine` redefines the postulated condition._
 
 #### Cardinality
 
-**Case CARD_REDEF**
+##### **Case CARD_REDEF**
 * `A relates I @card(n..m)`
 * `A plays B:I @card(n..m)`
 * `A owns B @card(n...m)`
 
-**Case CARD_LIST_REDEF**
+##### **Case CARD_LIST_REDEF**
 * `A relates I[] @card(n..m)`
 * `A owns B[] @card(n...m)`
 
 <!--
-**Case PLAYS_AS_REDEF**
+##### **Case PLAYS_AS_REDEF**
 * `A plays B as C`
 
-**Case OWNS_AS_REDEF**
+##### **Case OWNS_AS_REDEF**
 * `A owns B as C`
 -->
 
@@ -875,12 +1065,12 @@ Cannot redefine `@unique`, `@key`, `@abstract`, or `@distinct`.
 
 #### Values
 
-**Case OWNS_VALUES_REDEF**
+##### **Case OWNS_VALUES_REDEF**
 * `A owns B @values(v1, v2)` 
 * `A owns B @regex(<EXPR>)` 
 * `A owns B @range(v1..v2)`
 
-**Case VALUE_VALUES_REDEF**
+##### **Case VALUE_VALUES_REDEF**
 * `A value B @values(v1, v2)` 
 * `A value B @regex(<EXPR>)` 
 * `A value B @range(v1..v2)`
@@ -889,28 +1079,28 @@ Cannot redefine `@unique`, `@key`, `@abstract`, or `@distinct`.
 
 _In each case, `redefine` redefines the triggered action._
 
-**Case DEPENDENCY_REDEF** (CASCADE/INDEPEDENT)
+##### **Case DEPENDENCY_REDEF** (CASCADE/INDEPEDENT)
 * cannot redefine `(relation) B relates I @cascade`
 * cannot redefine `(relation) B @cascade`
 * cannot redefine `(attribute) B @independent`
 
 ### Value types
 
-**Case PRIMITIVES_REDEF**
+##### **Case PRIMITIVES_REDEF**
 
 cannot redefine primitives
 
-**Case STRUCT_REDEF**
+##### **Case STRUCT_REDEF**
 
 `redefine struct A: ...` replaces the previous definition of `A` with a new on. 
 
 ### Functions defs
 
-**Case STREAM_RET_FUN_REDEF**
+##### **Case STREAM_RET_FUN_REDEF**
 
 `redefine fun F: ...` replaces the previous definition of `F` with a new on. 
 
-**Case SINGLE_RET_FUN_REDEF**
+##### **Case SINGLE_RET_FUN_REDEF**
 
 cannot redefine single-return functions.
 
@@ -939,9 +1129,9 @@ redefine person label animal;
 redefine marriage:spouse label marriage:super_spouse;
 ```
 
-# Data instance languages
+# Pattern matching language
 
-This section first describes the satisfication semantics of match queries, obtained by substituting _variables_ in _patterns_ by concepts (_answers_) such that these patterns are _satisfied_. It is then described how instance in ERA types can be declared and further manipulated. Finally, the section describes the semantics of functions (the novelty over match semantics is the ability to declared functions recursively).
+This section first describes the pattern matching language of TypeDB, which relies on _variables_.
 
 ## Basics: Patterns, variables, concept maps, satisfaction
 
@@ -1102,7 +1292,7 @@ _Remark (Replacing **var**s with concepts)_. When discussing pattern semantics, 
 
 ### Types
 
-**Case TYPE_DEF_PATT**
+#### **Case TYPE_DEF_PATT**
 * `Kind $A` (for `Kind` in `{entity, relation, attribute}`) is satisfied if $`m(A) : \mathbf{Kind}`$
 
 * `(Kind) $A sub $B` is satisfied if $`m(A) : \mathbf{Kind}`$, $`m(B) : \mathbf{Kind}`$, $`m(A) \lneq m(B)`$
@@ -1110,28 +1300,42 @@ _Remark (Replacing **var**s with concepts)_. When discussing pattern semantics, 
 
 _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not`, and `is`. Similar remarks apply to **all** other `!`-variations of TypeQL key words below.
 
-**Case REL_PATT**
-* `$A relates $I` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$
+#### **Case REL_PATT**
+* `$A relates $I` is satisfied 
+    * either if $`m(A) : \mathbf{Rel}(m(I))`$
+    * or if `$A relates $I @abstract` is satisfied (see **REL_ABSTRACT_PATT**)
 
 * `$A relates! $I` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$ and **not** $`m(A) \lneq m(B) : \mathbf{Rel}(m(I))`$
 * `$A relates $I as $J` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$, $`B : \mathbf{Rel}(m(J))`$, $`A \leq B`$, $`m(I) \leq m(J)`$.
 * `$A relates $I[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$
+    * either if $`m(A) : \mathbf{Rel}([m(I)])`$
+    * or if `$A relates $I[] @abstract` is satisfied (see **REL_ABSTRACT_PATT**)
+
 * `$A relates! $I[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$ and **not** $`m(A) \lneq m(B) : \mathbf{Rel}(m([I]))`$
 * `$A relates $I[] as $J[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$, $`B : \mathbf{Rel}(m([J]))`$, $`A \leq B`$, $`m(I) \leq m(J)`$.
 
-**Case PLAY_PATT**
+#### **Case PLAY_PATT**
 * `$A plays $I` is satisfied if $`m(A) \leq A' <_! m(I)`$ (for $`A'`$ **not** an interface type)
+    * either if $`m(A) : \mathbf{Rel}([m(I)])`$
+    * or if `$A relates $I[] @abstract` is satisfied (see **REL_ABSTRACT_PATT**)
+
 * `$A plays! $I` is satisfied if $`m(A) <_! m(I)`$
 
-**Case OWNS_PATT**
-* `$A owns $B` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type)
+#### **Case OWNS_PATT**
+* `$A owns $B` is satisfied if 
+    * either $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type) 
+    * or `$A owns $B @abstract` is satisfied (see **OWNS_ABSTRACT_PATT**)
+
 * `$A owns! $B` is satisfied if $`m(A) <_! m(O_B)`$ 
 * `$A owns $B[]` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type)
+    * either $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type) 
+    * or `$A owns $B[] @abstract` is satisfied (see **OWNS_ABSTRACT_PATT**)
+
 * `$A owns! $B[]` is satisfied if $`m(A) <_! m(O_B)`$ 
 
 _Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` will match the answer `m($X) = A`.
 
-**Cases TYP_IS_PATT and LABEL_PATT**
+#### **Cases TYP_IS_PATT and LABEL_PATT**
 * `$A is $B` is satisfied if $`m(A) = m(B)`$ (this is actually covered by the later case `IS_PATT`)
 * `$A label <LABEL>` is satisfied if $`m(A)`$ has primary label `<LABEL>`
 
@@ -1141,7 +1345,7 @@ _Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` wil
 
 _Remark: the usefulness of constraint patterns seems overall low, could think of a different way to retrieve full schema or at least annotations (this would be more useful than, say,having to find cardinalities by "trialing and erroring" through matching). STICKY: discuss!_
 
-**Case CARD_PATT**
+##### **Case CARD_PATT**
 * cannot match `@card(n..m)` (STICKY: there's just not much point to do so ... rather have normalized schema dump. discuss `@card($n..$m)`??)
 <!-- 
 * `A relates I @card(n..m)` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$ and schema allows $`|a|_I`$ to be any number in range `n..m`.
@@ -1152,13 +1356,13 @@ _Remark: the usefulness of constraint patterns seems overall low, could think of
 -->
 
 <!--
-**Case PLAYS_AS_PATT**
+##### **Case PLAYS_AS_PATT**
 
 _Notation: for readability, we simply write $`X`$ in place of $`m(X)`$ in this case and the next._
 
 * `$A plays $B:$I as $C:$J` is satisfied if $A \leq A' <_! D' \leq D$ for some $`D`$s, and $I \leq I' <_! J' \leq J$, with $`A^{(')} \leq {I^{(')}}`$, $`D^{(')} \leq {J^{(')}}`$, and schema directly contains the constraint `A' plays B':I' as C':J'` for relation types $B \leq B' \leq_! C' \leq C$.
 
-**Case OWNS_AS_PATT**
+##### **Case OWNS_AS_PATT**
 * `$A owns $B as $C` is satisfied if $A \leq A' <_! D' \leq D$ for some $`D`$s, and $B \leq B' <_! C' \leq C$, with $`A^{(')} \leq O_{B^{(')}}`$, $`D^{(')} \leq O_{C^{(')}}`$, and schema directly contains the constraint `A' owns B' as C'`.
 
 _Remark: these two are still not a natural constraint, as foreshadowed by a previous remark!_
@@ -1166,40 +1370,40 @@ _Remark: these two are still not a natural constraint, as foreshadowed by a prev
 
 #### Bevavior flags
 
-**Case UNIQUE_PATT**
+##### **Case UNIQUE_PATT**
 * `$A owns $B @unique` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
 
 * `$A owns! $B @unique` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `m($A) owns m($B) @unique`.
 
-**Case KEY_PATT**
+##### **Case KEY_PATT**
 * `$A owns $B @key` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
 
 * `$A owns! $B @key` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `m($A) owns m($B) @key`.
 
-**Case SUBKEY_PATT**
+##### **Case SUBKEY_PATT**
 * `$A owns $B @subkey(<LABEL>)` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @subkey(<LABEL>)`.
 
-**Case TYP_ABSTRACT_PATT**
+##### **Case TYP_ABSTRACT_PATT**
 * `(type) $B @abstract` is satisfied if schema directly contains `(type) m($B) @abstract`.
 
-**Case RELATES_ABSTRACT_PATT**
+##### **Case RELATES_ABSTRACT_PATT**
 * `$B relates $I @abstract` is satisfied if `$m(B) \leq B'`$ and $`\diamond(B' : \mathbf{Rel}(I)`$
 * `$B relates $I[] @abstract` is satisfied if `$m(B) \leq B'`$ and $`\diamond(B' : \mathbf{Rel}([I])`$
 
-**Case PLAYS_ABSTRACT_PATT**
+##### **Case PLAYS_ABSTRACT_PATT**
 * `$A plays $B:$I @abstract` is satisfied if $`m(A) \leq A'`$ and $`\diamond(A' <_! m(I))`, where $`m(B) \leq B' : \mathbf{Rel}(m(I))`$
 
-**Case OWNS_ABSTRACT_PATT**
+##### **Case OWNS_ABSTRACT_PATT**
 * `$A owns $B @abstract` is satisfied if $`m(A) \leq A'`$ and $`\diamond(A' <_! O_{m(B)})`$
 * `$A owns $B[] @abstract` is satisfied if $`m(A) \leq A'`$ and $`\diamond(A' <_! O_{m(B)})`$ and the schema contains `$A owns $B[]`.
 
-**Case DISTINCT_PATT**
+##### **Case DISTINCT_PATT**
 * `A owns B[] @distinct` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B)[] @distinct`.
 * `B relates I[] @distinct` is satisfied if $`m(B) : \mathbf{Rel}(m([I]))`$, $`B \leq B'`$ and schema directly contains `B' relates I[] @distinct`.
 
 #### Values
 
-**Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**
+##### **Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**
 * cannot match `@values/@regex/@range` (STICKY: there's just not much point to do so ... rather have normalized schema dump)
 <!--
 * `A owns B @values(v1, v2)` is satisfied if 
@@ -1212,23 +1416,27 @@ _Remark: these two are still not a natural constraint, as foreshadowed by a prev
 
 ### Data
 
-**Case ISA_PATT**
+#### **Case ISA_PATT**
 * `$x isa $T` is satisfied if $`m(x) : m(T)`$ for $`m(T) : \mathbf{ERA}`$
 * `$x isa! $T` is satisfied if $`m(x) :_! m(T)`$ for $`m(T) : \mathbf{ERA}`$
 
-**Case LINKS_PATT**
+#### **Case LINKS_PATT**
 * `$x links ($I: $y)` is satisfied if $`m(x) : A(m(y):m(I))`$ for some $`A : \mathbf{Rel}(m(I))`$.
+* `$x links! ($I: $y)` is satisfied if $`m(x) :_! A(m(y):m(I))`$ for some $`A : \mathbf{Rel}(m(I))`$.
 * `$x links ($I[]: $y)` is satisfied if $`m(x) : A(m(y):[m(I)])`$ for some $`A : \mathbf{Rel}([m(I)])`$.
+* `$x links! ($I[]: $y)` is satisfied if $`m(x) :_! A(m(y):[m(I)])`$ for some $`A : \mathbf{Rel}([m(I)])`$.
 * `$x links ($y)` is equivalent to `$x links ($_: $y)` for anonymous `$_` (See "Syntactic Sugar")
 
-**Case HAS_PATT**
+#### **Case HAS_PATT**
 * `$x has $B $y` is satisfied if $`m(y) : m(B)(m(x):O_{m(B)})`$ for some $`m(B) : \mathbf{Att}`$.
+* `$x has! $B $y` is satisfied if $`m(y) :_! m(B)(m(x):O_{m(B)})`$ for some $`m(B) : \mathbf{Att}`$.
 * `$x has $B[] $y` is satisfied if $`m(y) : [m(B)](m(x):O_{m(B)})`$ for some $`m(B) : \mathbf{Att}`$.
+* `$x has! $B[] $y` is satisfied if $`m(y) :_! [m(B)](m(x):O_{m(B)})`$ for some $`m(B) : \mathbf{Att}`$.
 * `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
 
 _Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes (e.g. when $`m(x) : A`$ and $`A <_! O_B`$).
 
-**Case IS_PATT**
+#### **Case IS_PATT**
 * `$x is $y` is satisfied if $`m(x) :_! A`$, $`m(y) :_! A`$, $`m(x) = m(y)`$, for $`A : \mathbf{ERA}`$
 * `$A is $B` is satisfied if $`A = B`$ for $`A : \mathbf{ERA}`$, $`B : \mathbf{ERA}`$
 
@@ -1236,7 +1444,7 @@ _System property_
 
 1. In the `is` pattern, left or right variables are **not bound**.
 
-_**Remark**_: In the `is` pattern we cannot syntactically distinguish whether we are in the "type" or "element" case (it's the only such pattern where tvars and evars can be in the same position!) but this is alleviated by the pattern being non-binding, i.e. we require further statements which bind these variables, which then determines them to be tvars are evars.
+_Remark_: In the `is` pattern we cannot syntactically distinguish whether we are in the "type" or "element" case (it's the only such pattern where tvars and evars can be in the same position!) but this is alleviated by the pattern being non-binding, i.e. we require further statements which bind these variables, which then determines them to be tvars are evars.
 
 ### Expression grammar (sketch)
 
@@ -1286,7 +1494,7 @@ _System property_
 _Remark_: The exception for 2. is mainly for convenience. Indeed, you could always explicitly bind `$index` with the pattern `$index in [0..len($list)-1];`. See "Case **IN_LIST_PATT**" below.
 
 
-**Case ASS_PATT**
+#### **Case ASS_PATT**
 * `$x = <EXPR>` is satisfied if $`m(x)`$ equals the expression on the right-hand side, evaluated after substituting answer for all its variables.
 
 _System property_
@@ -1295,7 +1503,7 @@ _System property_
 2. _Assign once, to vars only_. Any variable can be assigned only once within a pattern—importantly, the left hand side _must be_ a variable (replacing it with a concept will throw an error; this implicitly applies to "Match semantics").
 3. _Acyclicity_. It must be possibly to determine answers of all variables in `<EXPR>` before answering `$x` — this avoids cyclic assignments (like `$x = $x + $y; $y = $y - $x;`)
 
-**Case DESTRUCT_PATT**
+#### **Case DESTRUCT_PATT**
 * `DESTRUCT = STRUCT` is satisfied if, after substituting concepts from `m`, the left hand side (up to potentially omitting components whose variables are marked as optional) matched the structure of the right and side, and each variable on the left matches the evaluated expression of the correponding position on the right.
 
 _System property_
@@ -1303,7 +1511,7 @@ _System property_
 1. _Assignments bind_. The left-hand variable is bound by the pattern.
 2. _Acyclicity_. Applies as before.
 
-**Case IN_LIST_PATT**
+#### **Case IN_LIST_PATT**
 * `$x in $l` is satisfied if $`m(l) : [A]`$ for $`A : \mathbf{Type}`$ and $`m(x) \in m(l)`$
 * `$x in <LIST_EXPR>` is equivalent to `$l = <LIST_EXPR>; $x in $l` (see "Syntactic Sugar") 
 
@@ -1311,7 +1519,7 @@ _System property_
 
 1. The right-hand side variable(s) of the pattern are **not bound**. (The left-hand side variable is bound.)
 
-**Case EQ_PATT**
+#### **Case EQ_PATT**
 * `<EXPR> == <EXPR>` is satisfied if, after substituting `m`, the left hand expression evaluates exactly to the right hand one.
 * `<EXPR> != <EXPR>` is equivalent to `not { $x == $y }` (see "Patterns")
 
@@ -1319,7 +1527,7 @@ _System property_
 
 1. All variables are bound **not bound**.
 
-**Case COMP_PATT**
+#### **Case COMP_PATT**
 
 The following are all kind of obvious (for `<COMP>` one of `<`,`<=`,`>`,`>=`):
 
@@ -1338,14 +1546,14 @@ _System property_
 
 ### Functions
 
-**Case IN_FUN_PATT**
+#### **Case IN_FUN_PATT**
 * `$x, $y?, ... in <FUN_CALL>` is satisfied, after substituting concepts, the left hand side is an element of the **function answer set** $`F`$ of evaluated `<FUN_CALL>` on the right (see "Function semantics") meaning that: for some tuple $t \in F$ we have
   * for the $`i`$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
   * for the $`i`$th variable `$z`, which is marked as optional using `?`, we have either
     * $`m(z) = t_i`$ and $`t_i \neq \emptyset`$
     * $`m(z) = t_i`$ and $`t_i = \emptyset`$
 
-**Case ASS_FUN_PATT**
+#### **Case ASS_FUN_PATT**
 * `$x, $y?, ... = <FUN_CALL>` is satisfied, after substituting concepts, the left hand side complies with the **function answer tuple** $`t`$ of `<FUN_CALL>` on the right (see "Function semantics") meaning that:
   * for the $`i`$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
   * for the $`i`$th variable `$z`, which is marked as optional using `?`, we have either
@@ -1359,19 +1567,19 @@ _Remark_: variables marked with `?` in function assignments are the first exampl
 
 Now that we have seen how to determine when answers satisfy individual statements, we can extend our discussion of match semantics to composite patterns (patterns of patterns).
 
-**Case AND_PATT**
+#### **Case AND_PATT**
 * An answer satisfies the pattern `<PATT1>; <PATT2>;` that simultaneously satisfies both `<PATT1>` and `<PATT2>`.
 
 
-**Case OR_PATT**
+#### **Case OR_PATT**
 * An answer for the pattern `{ <PATT1> } or { <PATT2> };` is an answer that satisfies either `<PATT1>` or `<PATT2>`.
 
 _Remark_: this generalize to a chain of $`k`$ `or` clauses.
 
-**Case NOT_PATT**
+#### **Case NOT_PATT**
 * An answer satisfying the pattern `not { <PATT> };` is any answer which _cannot_ be completed to a answer satisfying `<PATT>`.
 
-**Case TRY_PATT**
+#### **Case TRY_PATT**
 * The pattern `try { <PATT> };` is equivalent to the pattern `{ <PATT> } or { not { <PATT>}; };`.
 
 
@@ -1391,7 +1599,7 @@ A `match` clause comprises a pattern `P`.
 
 ### Function signature, body, operators
 
-**Case FUN_SIGN_STREAM**
+#### **Case FUN_SIGN_STREAM**
 
 _Syntax_:
 ```
@@ -1402,7 +1610,7 @@ where
 
 _STICKY: allow types to be optional in args (this extends types to sum types, interface types, etc.)_
 
-**Case FUN_SIGN_SINGLE**
+#### **Case FUN_SIGN_SINGLE**
 
 _Syntax_:
 ```
@@ -1413,7 +1621,7 @@ where
 
 _STICKY: allow types to be optional in args (this extends types to sum types, interface types, etc.)_
 
-**Case FUN_BODY**
+#### **Case FUN_BODY**
 
 _Syntax_:
 ```
@@ -1421,7 +1629,7 @@ match <PATT>
 ```
 * `<PATT>;` can be any pattern as defined in the previous sections. 
 
-**Case FUN_OPS**
+#### **Case FUN_OPS**
 
 _Syntax_:
 ```
@@ -1533,7 +1741,7 @@ An `insert` clause comprises collection of _insert statements_
 ### Insert statements
 
 
-**Case ASSIGN_INS**
+#### **Case ASSIGN_INS**
 * `$x = <EXPR>` adds nothing, and sets $`m(x) = v`$ where $`v`$ is the value that `<EXPR>` evaluates to.
 
 _System property_:
@@ -1543,14 +1751,14 @@ _System property_:
 3. `<EXPR>` cannot contain function calls.
 4. All **EXPR_INS** statements are executed first as described in the previous section.
 
-**Case OBJ_ISA_INS**
+#### **Case OBJ_ISA_INS**
 * `$x isa $T` adds new $`a :_! m(T)`$, $`m(T) : \mathbf{Obj}`$, and sets $`m(x) = a`$
 
 _System property_:
 
 1. `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input map `m` nor in other `isa` or `=` statements).
 
-**Case ATT_ISA_INS**
+#### **Case ATT_ISA_INS**
 * `<EXPR> isa $T` adds new $`v :_! m(T)`$, $`m(T) : \mathbf{Att}`$, where `v` is the result of evaluating
 
 _System property_:
@@ -1558,7 +1766,7 @@ _System property_:
 * `<EXPR>` must be of the right value type, and be evaluatable (i.e. all vars are bound).
 * `m(T)` must be an independent attribute, i.e. the schema must contain `attribute m(T) (sub B) @indepedent`
 
-**Case LINKS_INS** 
+#### **Case LINKS_INS** 
 * `$x links ($I: $y)` replaces $`m(x) :_! A(a : J, b : K, ...)`$ by $`m(x) :_! A(m(y)a : m(I), b : K, ...)`$
 
 _Remark_. Set semantics for interfaces means that inserts become idempotent when inserting the same role players twice.
@@ -1569,7 +1777,7 @@ _System property_:
     * Must have $`T(x) \leq B : \mathbf{Rel}(m(I))`$ non-abstractly (i.e. $`\diamond (B : \mathbf{Rel}(m(I)))`$ is not true) for minimal $`B`$
     * Must have $`T(y) \leq B <_! m(I)`$ non-abstractly (i.e. $`\diamond (B <_! m(I))`$ is not true) for minimal $`B`$
 
-**Case LINKS_LIST_INS** 
+#### **Case LINKS_LIST_INS** 
 * `$x links ($I[]: <T_LIST>)` replaces $`m(x) :_! A()`$ by $`m(x) :_! A(l : [m(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
 
 _System property_:
@@ -1579,7 +1787,7 @@ _System property_:
     * Must have $`T(x) \leq B : \mathbf{Rel}(m(I))`$ non-abstractly, i.e. $`\diamond (B : \mathbf{Rel}(m(I)))`$ is not true for the minimal $`B`$ satisfying the former
     * Must have $`l_i : T_i \leq B <_! m(I)`$ non-abstractly, i.e. $`\diamond (B <_! m(I))`$ is not true for the minimal $`B`$ satisfying the former
 
-**Case HAS_INS**
+#### **Case HAS_INS**
 * `$x has $A $y` adds new $`m(y) :_! m(A)(m(x) : O_{m(A)})`$
 * `$x has $A <EXPR>` adds new $`m(y) :_! m(A)(m(x) : O_{m(A)})`$
 
@@ -1589,7 +1797,7 @@ _System property_:
     * Must have $`T(x) \leq B <_! O_{m(A)}`$ non-abstractly, i.e. $`\diamond (B <_! O_{m(A)})`$ is not true for the minimal $`B`$ satisfying the former
     * Must have $`T(y) = m(A)`$ or $`T(y) = V`$ with $`A <_! V`$ (similarly for `<EXPR>`)
 
-**Case HAS_LIST_INS**
+#### **Case HAS_LIST_INS**
 * `$x has $A[] <T_LIST>` adds $`l :_! [m(A)](m(x) : O_{m(A)})`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
 
 _Remark_: usage of direct typing implies (non-direct) typings $`l_i : m(A)(m(x) : O_{m(A)})`$
@@ -1603,7 +1811,7 @@ _System property_:
 
 ### Optional inserts
 
-**Case TRY_INS**
+#### **Case TRY_INS**
 * `try { <INS>; ...; <INS>; }` where `<INS>` are insert statements as described above.
   * `<TRY_INS>` blocks can appear alongside other insert statements in an `insert` clause
   * Execution is as described in "Basics of inserting"
@@ -1674,7 +1882,7 @@ delete
 
 ### Delete statements
 
-**Case CONCEPT_DEL**
+#### **Case CONCEPT_DEL**
 * `$x;` removes $`m(x) :_! A(...)`$. If $`m(x)`$ is an object, we also:
   * replaces any $`b :_! B(m(x) : I, z : J, ...)`$ by $`b :_! B(z : J, ...)`$ for all such dependencies on $`m(x)`$
 
@@ -1703,20 +1911,20 @@ _Remark_. In an earlier version of the spec, condition (1.) for the recursive de
 1. The extra condition only makes a difference when non-default interface cardinalities are imposed, in which case it is arguably useful to adhere to those custom constraints.
 2. The extra condition ensure that deletes cannot interfere with one another, i.e. the order of deletion does not matter.
 
-**Case ROL_OF_DEL**
+#### **Case ROL_OF_DEL**
 * `($I: $y) of $x` replaces $`m(x) :_! m(A)(m(y) : m(I), z : J, ...)`$ by $`m(x) :_! m(A)(z : J, ...)`$
 
 _Remark_. The resulting $`m(x) :_! m(A)(z : J, ...)`$ must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
 
-**Case ROL_LIST_OF_DEL**
+#### **Case ROL_LIST_OF_DEL**
 * `($I[]: <T_LIST>) of $x` replaces $`m(x) :_! m(A)(l : m(I))`$ by $`m(x) :_! m(A)()`$ for $`l`$ being the evaluation of `T_LIST`.
 
-**Case ATT_OF_DEL**
+#### **Case ATT_OF_DEL**
 * `$B $y of $x` replaces $`m(y) :_! B'(m(x) : O_{m(B)})`$ by $`m(y) :_! B'()`$ for all possible $`B' \leq m(B)`$
 
 _Remark_. Note the subtyping here! It only makes sense in this case though since the same value `$y` may have been inserted in multiple attribute subtypes (this is not the case for **LINKS_DEL**)—at least if we lift the "Leaf attribute system constraint".
 
-**Case ATT_LIST_OF_DEL**
+#### **Case ATT_LIST_OF_DEL**
 * `$B[] <T_LIST> of $x` deletes $`l :_! B'(m(x) : O_{m(B)})`$ for all possible $`B' \leq m(B)`$ and $`l`$ being the evaluation of `T_LIST`. (STICKY: discuss! Suggestion: we do not retain list elements as independent attributes.)
 
 
@@ -1746,7 +1954,7 @@ A `update` clause comprises collection of _update statements_.
 
 ### Update statements
 
-**Case LINKS_UP**
+#### **Case LINKS_UP**
 * `$x links ($I: $y);` updates $`m(x) :_! A(b:J)`$ to $`m(x) :_! A(m(x) : m(I))`$
 
 _System property_:
@@ -1754,7 +1962,7 @@ _System property_:
 1. Require there to be exactly one present roleplayer for update to succeed.
 1. Require that each update happens at most once, or fail the transaction. (STICKY: discuss!)
 
-**Case LINKS_LIST_UP** 
+#### **Case LINKS_LIST_UP** 
 * `$x links ($I[]: <T_LIST>)` updates $`m(x) :_! A(j : [m(I)])`$ to $`m(x) :_! A(l : [m(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
 
 _System property_:
@@ -1762,7 +1970,7 @@ _System property_:
 1. Require there to be a present roleplayer list for update to succeed (can have at most one).
 1. Require that each update happens at most once, or fail the transaction.
 
-**Case HAS_UP**
+#### **Case HAS_UP**
 * `$x has $B: $y;` updates $`b :_! m(B)(x:O_{m(B)})`$ to $`m(y) :_! m(B)(x:O_{m(B)})`$
 
 _System property_:
@@ -1770,7 +1978,7 @@ _System property_:
 1. Require there to be exactly one present attribute for update to succeed.
 1. Require that each update happens at most once, or fail the transaction.
 
-**Case HAS_LIST_UP**
+#### **Case HAS_LIST_UP**
 * `$x has $A[] <T_LIST>` updates $`j :_! [m(A)](m(x) : O_{m(A)})`$ to $`l :_! [m(A)](m(x) : O_{m(A)})`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
 
 _System property_:
@@ -1791,7 +1999,7 @@ if (match <PUT>; check;) then (match <PUT>;) else (insert <PUT>)
 ```
 In particular, `<PUT>` needs to be an `insert` compatible set of statements. 
 
-# System execution
+# Query execution principles
 
 ## Pipelines 
 
@@ -1842,15 +2050,15 @@ fetch {
 * It output a stream `{ doc<m> }` of JSON documents (one for each `m` in the input stream)
 * The `fetch` clause is **terminal**
 
-**Case FETCH_VAL**
+##### **Case FETCH_VAL**
 * `"key": $x`
 
-**Case FETCH_EXPR**
+##### **Case FETCH_EXPR**
 * `"key": <EXPR>`
 
 _Note_. `<EXPR>` can, in particuar, be `T_LIST` expression (see "Expressions").
 
-**Case FETCH_ATTR**
+##### **Case FETCH_ATTR**
 * `"key": $x.A` where $`A : \mathbf{Att}`$
 
 _System property_
@@ -1858,29 +2066,29 @@ _System property_
 1. fails transaction if $`T_m(x)`$ does not own $`A`$.
 1. fails transaction if $`T_m(x)`$ does not own $`A`$ with `card(1,1)`.
 
-**Case FETCH_MULTI_ATTR**
+##### **Case FETCH_MULTI_ATTR**
 * `"key": [ $x.A ]` where $`A : \mathbf{Att}`$
 
 _System property_
 
 1. fails transaction if $`T_m(x)`$ does not own $`A`$.
 
-**Case FETCH_LIST_ATTR**
+##### **Case FETCH_LIST_ATTR**
 * `"key": $x.A[]` where  $`A : \mathbf{Att}`$
 
 _System property_
 
 1. fails transaction if $`T_m(x)`$ does not own $`[A]`$.
 
-**Case FETCH_SNGL_FUN**
+##### **Case FETCH_SNGL_FUN**
 * `"key": fun(...)` where `fun` is single-return.
 
-**Case FETCH_STREAM_FUN**
+##### **Case FETCH_STREAM_FUN**
 * `"key": [ fun(...) ]` where `fun` is stream-return.
 
 _Note_: (STICKY:) what to do if type inference for function args fails based on previous pipeline stages?
 
-**Case FETCH_FETCH**
+##### **Case FETCH_FETCH**
 ```
 "key": [ 
   match <PATTERN>;
@@ -1888,7 +2096,7 @@ _Note_: (STICKY:) what to do if type inference for function args fails based on 
 ]
 ```
 
-**Case FETCH_REDUCE_VAL** 
+##### **Case FETCH_REDUCE_VAL** 
 ```
 "key": ( 
   match <PATTERN>;
@@ -1898,7 +2106,7 @@ _Note_: (STICKY:) what to do if type inference for function args fails based on 
 
 where `<AGG>` must have return type `A` or `A?` for a value-castable type `A`.
 
-**Case FETCH_REDUCE_LIST_VAL** 
+##### **Case FETCH_REDUCE_LIST_VAL** 
 ```
 "key": [ 
   match <PATTERN>;
@@ -1906,7 +2114,7 @@ where `<AGG>` must have return type `A` or `A?` for a value-castable type `A`.
 ]
 ```
 
-**Case FETCH_NESTED**
+##### **Case FETCH_NESTED**
 ```
 "key" : { 
   <fetch-KV-statement>;
@@ -1971,7 +2179,7 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
 * The `reduce` operator takes as input a stream of maps `{ m }`
 * It outputs a stream of new concepts maps
 
-**Case RED_DEFAULT**
+##### **Case RED_DEFAULT**
 ```
 reduce $x_1=<AGG>, ... , $x_k=<AGG>;
 ``` 
@@ -2019,7 +2227,7 @@ In this case, we output a ***single concept*** map `($x_1 -> <EL>, $x_2 -> <EL>,
     * `$x` can be optional
 * Each `<AGG>` reduces the concept map `{ m }` passsed to it from the function's body to a single value in the specified way.
 
-**Case RED_GROUP**
+##### **Case RED_GROUP**
 ```
 reduce $x_1=<AGG>, ... , $x_k=<AGG> within $y_1, $y_2, ...;
 ``` 
