@@ -1532,8 +1532,8 @@ _System property_:
 
 1. _Single list_. Transaction will fail if $`m(x) :_! A(...)`$ already has a roleplayer list. (In this case, user should `update` instead!)
 1. _Capability check_. 
-    * Must have $`T(x) \leq B : \mathbf{Rel}(m(I))`$ non-abstractly (i.e. $`\diamond (B : \mathbf{Rel}(m(I)))`$ is not true) for minimal $`B`$
-    * Must have $`l_i : T_i \leq B <_! m(I)`$ non-abstractly (i.e. $`\diamond (B <_! m(I))`$ is not true) for minimal $`B`$
+    * Must have $`T(x) \leq B : \mathbf{Rel}(m(I))`$ non-abstractly, i.e. $`\diamond (B : \mathbf{Rel}(m(I)))`$ is not true for the minimal $`B`$ satisfying the former
+    * Must have $`l_i : T_i \leq B <_! m(I)`$ non-abstractly, i.e. $`\diamond (B <_! m(I))`$ is not true for the minimal $`B`$ satisfying the former
 
 **Case HAS_INS**
 * `$x has $A $y` adds new $`m(y) :_! m(A)(m(x) : O_{m(A)})`$
@@ -1543,7 +1543,7 @@ _System property_:
 
 1. `m($y)` or `<EXPR>` must be of the right value type.
 1. _Capability check_. 
-    * Must have $`T(x) \leq B <_! O_{m(A)}`$ non-abstractly (i.e. $`\diamond (B <_! O_{m(A)})`$ is not true) for minimal $`B`$
+    * Must have $`T(x) \leq B <_! O_{m(A)}`$ non-abstractly, i.e. $`\diamond (B <_! O_{m(A)})`$ is not true for the minimal $`B`$ satisfying the former
 
 **Case HAS_LIST_INS**
 * `$x has $A[] <T_LIST>` adds $`l :_! [m(A)](m(x) : O_{m(A)})`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
@@ -1551,9 +1551,9 @@ _System property_:
 
 _System property_:
 
-1. `<T_LIST>` must be of the right value type. (TODO: do lists keep track of the types of their elements?)
+1. `<T_LIST>` must be of the right value type. (STICKY + TODO: do lists keep track of the types of their elements? In this case we need _typed_ list not just lists)
 1. _Capability check_. 
-    * Must have $`T(x) \leq B <_! O_{m(A)}`$ non-abstractly (i.e. $`\diamond (B <_! O_{m(A)})`$ is not true) for minimal $`B`$
+    * Must have $`T(x) \leq B <_! O_{m(A)}`$ non-abstractly, i.e. $`\diamond (B <_! O_{m(A)})`$ is not true for the minimal $`B`$ satisfying the former
 
 _System property_:
 
