@@ -25,133 +25,177 @@
 *
 -->
 
-**Table of contents**
+<detail>
+  <summary> Table of contents (Overview) </summary>
 
-- [Foundations](#foundations)
-  - [Terminology](#terminology)
-  - [The type system](#the-type-system)
-    - [Simple (non-dependent) types](#simple-non-dependent-types)
-    - [Dependendent types](#dependendent-types)
-    - [Castings / Subtypes](#castings--subtypes)
-    - [Lists](#lists)
-    - [Type operators](#type-operators)
-- [Schema](#schema)
-  - [Basics of schemas](#basics-of-schemas)
-  - [Define semantics](#define-semantics)
-    - [Type axioms](#type-axioms)
-    - [Constraints](#constraints)
-      - [Cardinality](#cardinality)
-      - [Behavior flags](#behavior-flags)
-      - [Values](#values)
-    - [Triggers](#triggers)
-    - [Value types](#value-types)
-    - [Functions defs](#functions-defs)
-  - [Undefine semantics](#undefine-semantics)
-    - [Type axioms](#type-axioms-1)
-    - [Constraints](#constraints-1)
-      - [Cardinality](#cardinality-1)
-      - [Behavior flags](#behavior-flags-1)
-      - [Values](#values-1)
-    - [Triggers](#triggers-1)
-    - [Value types](#value-types-1)
-    - [Functions defs](#functions-defs-1)
-  - [Redefine semantics](#redefine-semantics)
-    - [Type axioms](#type-axioms-2)
-    - [Constraints](#constraints-2)
-      - [Cardinality](#cardinality-2)
-      - [Behavior flags](#behavior-flags-2)
-      - [Values](#values-2)
-    - [Triggers](#triggers-2)
-    - [Value types](#value-types-2)
-    - [Functions defs](#functions-defs-2)
-  - [Labels and aliases](#labels-and-aliases)
-    - [Define](#define)
-    - [Undefine](#undefine)
-    - [Redefine](#redefine)
-- [Data instance languages](#data-instance-languages)
-  - [Basics: Patterns, variables, concept maps, satisfaction](#basics-patterns-variables-concept-maps-satisfaction)
-    - [Statements, patterns](#statements-patterns)
-    - [Variables](#variables)
-    - [Typed concept maps](#typed-concept-maps)
-    - [Pattern satisfication, typing conditions, answer](#pattern-satisfication-typing-conditions-answer)
-    - [Optionality and boundedness](#optionality-and-boundedness)
-  - [Pattern semantics](#pattern-semantics)
-      - [Types](#types)
-      - [Constraints](#constraints-3)
-      - [Data](#data)
-      - [Expression grammar (sketch)](#expression-grammar-sketch)
-      - [Expression patterns](#expression-patterns)
-      - [Functions](#functions)
-      - [Patterns](#patterns)
-  - [Match semantics](#match-semantics)
-  - [Functions semantics](#functions-semantics)
-    - [Function signature, body, operators](#function-signature-body-operators)
-    - [Stream-return](#stream-return)
-    - [Single-return](#single-return)
-    - [Recursion and recursive semantics](#recursion-and-recursive-semantics)
-  - [Insert semantics](#insert-semantics)
-    - [Basics of inserting](#basics-of-inserting)
-    - [Insert statements](#insert-statements)
-    - [Optional inserts](#optional-inserts)
-    - [Leaf attribute system constraint](#leaf-attribute-system-constraint)
-  - [Delete semantics](#delete-semantics)
-    - [Basics of deleting](#basics-of-deleting)
-    - [Delete statements](#delete-statements)
-    - [Clean-up](#clean-up)
-  - [Update semantics](#update-semantics)
-    - [Basics of updating](#basics-of-updating)
-    - [Update statements](#update-statements)
-    - [Clean-up](#clean-up-1)
-  - [Put semantics](#put-semantics)
-- [System execution](#system-execution)
-  - [Pipelines](#pipelines)
-    - [Basics of clauses](#basics-of-clauses)
-      - [Match](#match)
-      - [Insert](#insert)
-      - [Delete](#delete)
-      - [Update](#update)
-      - [Put](#put)
-      - [Fetch](#fetch)
-    - [Basics of operators](#basics-of-operators)
-      - [Select](#select)
-      - [Deselect](#deselect)
-      - [Distinct](#distinct)
-      - [Sort](#sort)
-      - [Limit](#limit)
-      - [Offset](#offset)
-      - [Reduce](#reduce)
-  - [Transactions](#transactions)
-    - [Basics](#basics)
-    - [Snapshots](#snapshots)
-    - [Concurrency](#concurrency)
-- [Glossary](#glossary)
-  - [Type system](#type-system)
-    - [Type](#type)
-    - [Schema type](#schema-type)
-    - [Value type](#value-type)
-    - [Data instance / instance](#data-instance--instance)
-    - [Data value / value](#data-value--value)
-    - [Attribute instance value / attribute value](#attribute-instance-value--attribute-value)
-    - [Data element / element](#data-element--element)
-    - [Concept](#concept)
-    - [Concept map](#concept-map)
-    - [Stream](#stream)
-    - [Answer set](#answer-set)
-    - [Answer](#answer)
-  - [TypeQL syntax](#typeql-syntax)
-    - [Schema query](#schema-query)
-    - [Data query](#data-query)
-    - [Clause / Stream clause](#clause--stream-clause)
-    - [Operators / Stream operator](#operators--stream-operator)
-    - [Functions](#functions-1)
-    - [Statement](#statement)
-    - [Pattern](#pattern)
-    - [Stream reduction / reduction](#stream-reduction--reduction)
-    - [Clause](#clause)
-    - [Block](#block)
-    - [Suffix](#suffix)
-  - [Syntactic Sugar](#syntactic-sugar)
-  - [Typing of operators](#typing-of-operators)
+* [Foundations](#foundations)
+    * [Terminology](#terminology)
+    * [The type system](#the-type-system)
+* [Schema](#schema)
+    * [Basics of schemas](#basics-of-schemas)
+    * [Define semantics](#define-semantics)
+    * [Undefine semantics](#undefine-semantics)
+    * [Redefine semantics](#redefine-semantics)
+    * [Labels and aliases](#labels-and-aliases)
+* [Data instance languages](#data-instance-languages)
+    * [Basics: Patterns, variables, concept maps, satisfaction](#basics-patterns-variables-concept-maps-satisfaction)
+    * [Pattern semantics](#pattern-semantics)
+    * [Match semantics](#match-semantics)
+    * [Functions semantics](#functions-semantics)
+    * [Insert semantics](#insert-semantics)
+    * [Delete semantics](#delete-semantics)
+    * [Update semantics](#update-semantics)
+    * [Put semantics](#put-semantics)
+* [System execution](#system-execution)
+    * [Pipelines](#pipelines)
+    * [Transactions](#transactions)
+* [Glossary](#glossary)
+    * [Type system](#type-system)
+    * [TypeQL syntax](#typeql-syntax)
+    * [Syntactic Sugar](#syntactic-sugar)
+    * [Typing of operators](#typing-of-operators)
+
+</detail>
+
+
+<detail>
+  <summary> Table of contents (Overview) </summary>
+
+
+<!-- vim-markdown-toc GFM -->
+
+* [Foundations](#foundations)
+    * [Terminology](#terminology)
+    * [The type system](#the-type-system)
+        * [Simple (non-dependent) types](#simple-non-dependent-types)
+        * [Dependendent types](#dependendent-types)
+        * [Castings / Subtypes](#castings--subtypes)
+        * [Lists](#lists)
+        * [Type operators and modalities](#type-operators-and-modalities)
+* [Schema](#schema)
+    * [Basics of schemas](#basics-of-schemas)
+    * [Define semantics](#define-semantics)
+        * [Type axioms](#type-axioms)
+        * [Constraints](#constraints)
+            * [Cardinality](#cardinality)
+            * [Behavior flags](#behavior-flags)
+            * [Values](#values)
+        * [Triggers](#triggers)
+        * [Value types](#value-types)
+        * [Functions defs](#functions-defs)
+    * [Undefine semantics](#undefine-semantics)
+        * [Type axioms](#type-axioms-1)
+        * [Constraints](#constraints-1)
+            * [Cardinality](#cardinality-1)
+            * [Behavior flags](#behavior-flags-1)
+            * [Values](#values-1)
+        * [Triggers](#triggers-1)
+        * [Value types](#value-types-1)
+        * [Functions defs](#functions-defs-1)
+    * [Redefine semantics](#redefine-semantics)
+        * [Type axioms](#type-axioms-2)
+        * [Constraints](#constraints-2)
+            * [Cardinality](#cardinality-2)
+            * [Behavior flags](#behavior-flags-2)
+            * [Values](#values-2)
+        * [Triggers](#triggers-2)
+        * [Value types](#value-types-2)
+        * [Functions defs](#functions-defs-2)
+    * [Labels and aliases](#labels-and-aliases)
+        * [Define](#define)
+        * [Undefine](#undefine)
+        * [Redefine](#redefine)
+* [Data instance languages](#data-instance-languages)
+    * [Basics: Patterns, variables, concept maps, satisfaction](#basics-patterns-variables-concept-maps-satisfaction)
+        * [Statements, patterns](#statements-patterns)
+        * [Variables](#variables)
+        * [Typed concept maps](#typed-concept-maps)
+        * [Pattern satisfication, typing conditions, answer](#pattern-satisfication-typing-conditions-answer)
+        * [Optionality and boundedness](#optionality-and-boundedness)
+    * [Pattern semantics](#pattern-semantics)
+        * [Types](#types)
+        * [Constraints](#constraints-3)
+            * [Cardinality](#cardinality-3)
+            * [Bevavior flags](#bevavior-flags)
+            * [Values](#values-3)
+        * [Data](#data)
+        * [Expression grammar (sketch)](#expression-grammar-sketch)
+        * [Expression patterns](#expression-patterns)
+        * [Functions](#functions)
+        * [Patterns](#patterns)
+    * [Match semantics](#match-semantics)
+    * [Functions semantics](#functions-semantics)
+        * [Function signature, body, operators](#function-signature-body-operators)
+        * [Stream-return](#stream-return)
+        * [Single-return](#single-return)
+        * [Recursion and recursive semantics](#recursion-and-recursive-semantics)
+    * [Insert semantics](#insert-semantics)
+        * [Basics of inserting](#basics-of-inserting)
+        * [Insert statements](#insert-statements)
+        * [Optional inserts](#optional-inserts)
+        * [Leaf attribute system constraint](#leaf-attribute-system-constraint)
+    * [Delete semantics](#delete-semantics)
+        * [Basics of deleting](#basics-of-deleting)
+        * [Delete statements](#delete-statements)
+        * [Clean-up](#clean-up)
+    * [Update semantics](#update-semantics)
+        * [Basics of updating](#basics-of-updating)
+        * [Update statements](#update-statements)
+        * [Clean-up](#clean-up-1)
+    * [Put semantics](#put-semantics)
+* [System execution](#system-execution)
+    * [Pipelines](#pipelines)
+        * [Basics of clauses](#basics-of-clauses)
+            * [Match](#match)
+            * [Insert](#insert)
+            * [Delete](#delete)
+            * [Update](#update)
+            * [Put](#put)
+            * [Fetch](#fetch)
+        * [Basics of operators](#basics-of-operators)
+            * [Select](#select)
+            * [Deselect](#deselect)
+            * [Distinct](#distinct)
+            * [Sort](#sort)
+            * [Limit](#limit)
+            * [Offset](#offset)
+            * [Reduce](#reduce)
+    * [Transactions](#transactions)
+        * [Basics](#basics)
+        * [Snapshots](#snapshots)
+        * [Concurrency](#concurrency)
+* [Glossary](#glossary)
+    * [Type system](#type-system)
+        * [Type](#type)
+        * [Schema type](#schema-type)
+        * [Value type](#value-type)
+        * [Data instance / instance](#data-instance--instance)
+        * [Data value / value](#data-value--value)
+        * [Attribute instance value / attribute value](#attribute-instance-value--attribute-value)
+        * [Data element / element](#data-element--element)
+        * [Concept](#concept)
+        * [Concept map](#concept-map)
+        * [Stream](#stream)
+        * [Answer set](#answer-set)
+        * [Answer](#answer)
+    * [TypeQL syntax](#typeql-syntax)
+        * [Schema query](#schema-query)
+        * [Data query](#data-query)
+        * [Clause / Stream clause](#clause--stream-clause)
+        * [Operators / Stream operator](#operators--stream-operator)
+        * [Functions](#functions-1)
+        * [Statement](#statement)
+        * [Pattern](#pattern)
+        * [Stream reduction / reduction](#stream-reduction--reduction)
+        * [Clause](#clause)
+        * [Block](#block)
+        * [Suffix](#suffix)
+    * [Syntactic Sugar](#syntactic-sugar)
+    * [Typing of operators](#typing-of-operators)
+
+<!-- vim-markdown-toc -->
+
+</detail>
 
 
 # Foundations
@@ -384,10 +428,10 @@ _System property_:
     * _for relation types_: Cannot have $`A <_! B`$ and $A <_! C \neq B$
     * _for interfaces_: Cannot have $`I <_! J`$ and $I <_! K \neq J$ for $`I,J,K :\mathbf{Itf}`$
 1. _No role re-declaractions_: Cannot redeclare inherited interface (i.e. when `B relates I`, `A sub B` we cannot re-declare `A relates I`... this is automatically inherited!)
-1. _Automatic abstractions_: (see **REL_ABSTRACT_DEF**)
-    * _Un-specialization_: when `A relates I as J` then automatically `A relates J @abstract` 
+1. _Automatic abstractions_:
+    * _Un-specialization_: when `A relates I as J` then automatically `A relates J @abstract` (see **REL_ABSTRACT_DEF** for mathematical meaning of the latter)
     * _Un-specialization (list case)_: when `A relates I[] as J[]` then automatically `A relates J[] @abstract`
-    * _Un-ordering_: when `A relates I[]` then `A relates I @abstract`
+    * _Un-ordering_: when `A relates I[]` then automatically `A relates I @abstract`
 1. _Exclusive interface modes_:
     * Only one of `$A relates $I` or `$A relates $I[]` can ever be true non-abstractly (see "Pattern semantics" for the validity of statements), otherwise reject the definition.
 
@@ -417,8 +461,8 @@ _Remark_. The property ensures that we can only declare `A plays B:I` if `I` is 
 
 _System property_: 
 
-1. _Automatic abstractions_: (see **OWNS_ABSTRACT_DEF**)
-    * _Un-ordering_: when `A owns B[]` then automatically `A owns C @abstract` for any $`C \leq B`$ (abstractness is crucial here, see `abstract` constraint below)._
+1. _Automatic abstractions_: 
+    * _Un-ordering_: when `A owns B[]` then automatically `A owns B @abstract` (see **OWNS_ABSTRACT_DEF** for mathematical meaning of the latter)
 1. _Exclusive interface modes_: 
     * Only one of `$A owns $B` or `$A owns $B[]` can ever be true non-abstractly (see "Pattern semantics" for the validity of statements), otherwise reject the definition.
 1. _Disallow list specialization_: If `A owns B`, and $`A' \leq A`$, $`B' \leq B`$, then disallow declaring `A' owns B'[]`. (STICKY: this property is not really needed)
@@ -1517,7 +1561,7 @@ _System property_:
 **Case LINKS_INS** 
 * `$x links ($I: $y)` replaces $`m(x) :_! A(a : J, b : K, ...)`$ by $`m(x) :_! A(m(y)a : m(I), b : K, ...)`$
 
-_Note_. Set semantics for interfaces means that inserts become idempotent when inserting the same role players twice.
+_Remark_. Set semantics for interfaces means that inserts become idempotent when inserting the same role players twice.
 
 _System property_:
 
@@ -1531,7 +1575,7 @@ _System property_:
 _System property_:
 
 1. _Single list_. Transaction will fail if $`m(x) :_! A(...)`$ already has a roleplayer list. (In this case, user should `update` instead!)
-1. _Capability check_. 
+1. _Capability + type check_. 
     * Must have $`T(x) \leq B : \mathbf{Rel}(m(I))`$ non-abstractly, i.e. $`\diamond (B : \mathbf{Rel}(m(I)))`$ is not true for the minimal $`B`$ satisfying the former
     * Must have $`l_i : T_i \leq B <_! m(I)`$ non-abstractly, i.e. $`\diamond (B <_! m(I))`$ is not true for the minimal $`B`$ satisfying the former
 
@@ -1541,23 +1585,21 @@ _System property_:
 
 _System property_:
 
-1. `m($y)` or `<EXPR>` must be of the right value type.
-1. _Capability check_. 
+1. _Capability + type check_. 
     * Must have $`T(x) \leq B <_! O_{m(A)}`$ non-abstractly, i.e. $`\diamond (B <_! O_{m(A)})`$ is not true for the minimal $`B`$ satisfying the former
+    * Must have $`T(y) = m(A)`$ or $`T(y) = V`$ with $`A <_! V`$ (similarly for `<EXPR>`)
 
 **Case HAS_LIST_INS**
 * `$x has $A[] <T_LIST>` adds $`l :_! [m(A)](m(x) : O_{m(A)})`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
-  * _Note_ usage of direct typing implies (non-direct) typings $`l_i : m(A)(m(x) : O_{m(A)})`$
+
+_Remark_: usage of direct typing implies (non-direct) typings $`l_i : m(A)(m(x) : O_{m(A)})`$
 
 _System property_:
 
-1. `<T_LIST>` must be of the right value type. (STICKY + TODO: do lists keep track of the types of their elements? In this case we need _typed_ list not just lists)
-1. _Capability check_. 
+1. _Single list_. Transaction should fail if $`[m(A)](m(x) : O_{m(A)})`$ already has an attribute list. (Need "Update" instead!)
+1. _Capability + type check_. 
     * Must have $`T(x) \leq B <_! O_{m(A)}`$ non-abstractly, i.e. $`\diamond (B <_! O_{m(A)})`$ is not true for the minimal $`B`$ satisfying the former
-
-_System property_:
-
-1. Transaction should fail if $`[m(A)](m(x) : O_{m(A)})`$ already has an attribute list. (Need "Update" instead!)
+    * For each list element, must have $`\mathrm{Type}(l_i) = m(A)`$ or $`\mathrm{Type}(l_i) = V`$ with $`A <_! V`$ (where the $`\mathrm{Type}(-)`$ of an instance variable is its direct type, and the $`\mathrm{Type}(-)`$ of an expression is its value type)
 
 ### Optional inserts
 
