@@ -167,13 +167,13 @@
                 * [**Case OWNS_VALUES_REDEF**](#case-owns_values_redef)
                 * [**Case VALUE_VALUES_REDEF**](#case-value_values_redef)
         * [Triggers](#triggers-2)
-                * [**Case DEPENDENCY_REDEF** (CASCADE/INDEPEDENT)](#case-dependency_redef-cascadeindepedent)
+            * [**Case DEPENDENCY_REDEF** (CASCADE/INDEPEDENT)](#case-dependency_redef-cascadeindepedent)
         * [Value types](#value-types-2)
-                * [**Case PRIMITIVES_REDEF**](#case-primitives_redef)
-                * [**Case STRUCT_REDEF**](#case-struct_redef)
+            * [**Case PRIMITIVES_REDEF**](#case-primitives_redef)
+            * [**Case STRUCT_REDEF**](#case-struct_redef)
         * [Functions defs](#functions-defs-2)
-                * [**Case STREAM_RET_FUN_REDEF**](#case-stream_ret_fun_redef)
-                * [**Case SINGLE_RET_FUN_REDEF**](#case-single_ret_fun_redef)
+            * [**Case STREAM_RET_FUN_REDEF**](#case-stream_ret_fun_redef)
+            * [**Case SINGLE_RET_FUN_REDEF**](#case-single_ret_fun_redef)
     * [Labels and aliases](#labels-and-aliases)
         * [Define](#define)
         * [Undefine](#undefine)
@@ -1086,28 +1086,28 @@ Cannot redefine `@unique`, `@key`, `@abstract`, or `@distinct`.
 
 _In each case, `redefine` redefines the triggered action._
 
-##### **Case DEPENDENCY_REDEF** (CASCADE/INDEPEDENT)
+#### **Case DEPENDENCY_REDEF** (CASCADE/INDEPEDENT)
 * cannot redefine `(relation) B relates I @cascade`
 * cannot redefine `(relation) B @cascade`
 * cannot redefine `(attribute) B @independent`
 
 ### Value types
 
-##### **Case PRIMITIVES_REDEF**
+#### **Case PRIMITIVES_REDEF**
 
 cannot redefine primitives
 
-##### **Case STRUCT_REDEF**
+#### **Case STRUCT_REDEF**
 
 `redefine struct A: ...` replaces the previous definition of `A` with a new on. 
 
 ### Functions defs
 
-##### **Case STREAM_RET_FUN_REDEF**
+#### **Case STREAM_RET_FUN_REDEF**
 
 `redefine fun F: ...` replaces the previous definition of `F` with a new on. 
 
-##### **Case SINGLE_RET_FUN_REDEF**
+#### **Case SINGLE_RET_FUN_REDEF**
 
 cannot redefine single-return functions.
 
