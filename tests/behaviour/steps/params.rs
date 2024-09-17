@@ -599,7 +599,7 @@ fn parse_regex_annotation(regex: &str) -> TypeDBAnnotation {
 fn parse_card_annotation(card: &str) -> TypeDBAnnotation {
     assert!(
         card.starts_with("@card(") && card.ends_with(')'),
-        r#"Invalid @card format: {card:?}. Expected "@card(min, max)""#
+        r#"Invalid @card format: {card:?}. Expected "@card(min..max)""#
     );
     let card = card["@card(".len()..card.len() - ")".len()].trim();
     let (min, max) = card.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
