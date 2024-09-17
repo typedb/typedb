@@ -26,7 +26,7 @@
 -->
 
 <details>
-  <summary> Table of contents <i>(Overview)</i> </summary>
+  <summary> <b>Table of contents<b> <i>(Overview)</i> </summary>
 
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
@@ -60,7 +60,7 @@
 
 
 <details>
-  <summary> Table of contents <i>(Detailed)</i> </summary>
+  <summary> <b>Table of contents</b> <i>(Detailed)</i> </summary>
 
 <!-- vim-markdown-toc GFM -->
 
