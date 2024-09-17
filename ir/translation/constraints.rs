@@ -211,9 +211,23 @@ fn register_typeql_role_type_any(
     type_: &typeql::TypeRefAny,
 ) -> Result<TypeSource<Variable>, PatternDefinitionError> {
     match type_ {
-        typeql::TypeRefAny::Type(type_) => register_typeql_type(constraints, type_),
+        typeql::TypeRefAny::Type(type_) => register_typeql_role_type(constraints, type_),
         typeql::TypeRefAny::Optional(_) => todo!(),
         typeql::TypeRefAny::List(_) => todo!(),
+    }
+}
+
+fn register_typeql_role_type(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    type_: &typeql::TypeRef,
+) -> Result<TypeSource<Variable>, PatternDefinitionError> {
+    match type_ {
+        typeql::TypeRef::Named(NamedType::Label(label)) => Ok(TypeSource::RoleName(label.ident.to_string())),
+        typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
+            Ok(TypeSource::Label(register_type_scoped_label(constraints, scoped_label)?))
+        }
+        typeql::TypeRef::Named(NamedType::BuiltinValueType(builtin)) => todo!(),
+        typeql::TypeRef::Variable(var) => Ok(TypeSource::Variable(register_typeql_var(constraints, var)?)),
     }
 }
 
@@ -285,7 +299,7 @@ fn add_typeql_plays(
     player_type: TypeSource<Variable>,
     plays: &typeql::statement::type_::Plays,
 ) -> Result<(), PatternDefinitionError> {
-    let role_type = register_typeql_type(constraints, &plays.role)?;
+    let role_type = register_typeql_role_type(constraints, &plays.role)?;
     constraints.add_plays(player_type, role_type)?;
     Ok(())
 }
@@ -336,7 +350,7 @@ pub(super) fn add_typeql_relation(
             typeql::statement::thing::RolePlayer::Typed(type_ref, player_var) => {
                 let type_ = match type_ref {
                     TypeRefAny::Type(TypeRef::Named(NamedType::Label(name))) => {
-                        TypeSource::Label(Label::build(name.ident.as_str()))
+                        TypeSource::RoleName(name.ident.to_string())
                     }
                     TypeRefAny::Type(TypeRef::Variable(var)) => {
                         TypeSource::Variable(register_typeql_var(constraints, var)?)

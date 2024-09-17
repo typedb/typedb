@@ -53,6 +53,7 @@ impl IrID for Variable {}
 pub enum TypeSource<ID> {
     Variable(ID),
     Label(Label<'static>),
+    RoleName(String),
 }
 
 impl<ID: IrID> TypeSource<ID> {
@@ -60,6 +61,7 @@ impl<ID: IrID> TypeSource<ID> {
         match self {
             TypeSource::Variable(var) => TypeSource::Variable(mapping[&var]),
             TypeSource::Label(label) => TypeSource::Label(label),
+            TypeSource::RoleName(name) => TypeSource::RoleName(name),
         }
     }
 
@@ -77,6 +79,7 @@ impl<ID: fmt::Display> fmt::Display for TypeSource<ID> {
         match self {
             TypeSource::Variable(var) => fmt::Display::fmt(var, f),
             TypeSource::Label(label) => write!(f, "{}", label.scoped_name().as_str()),
+            TypeSource::RoleName(name) => write!(f, "{}", name),
         }
     }
 }
