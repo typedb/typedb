@@ -300,22 +300,25 @@ This section describes the basic **statements** that comprise our type system, a
 
   * _List length_: for list $`l : [A]`$ the term $\mathrm{len}(l) : \mathbb{N}$ represents $`l`$'s length.
 
-### Type operators
+### Type operators and modalities
 
 Our type system also features the following operations.
 
-* **Sum types**. we may construct $`A + B : \mathbf{Type}`$ for $`A, B :\mathbf{Type}`$ 
+* **Sum operator**. we may construct $`A + B : \mathbf{Type}`$ for $`A, B :\mathbf{Type}`$ 
 
     > this is the sum type of $`A`$ and $`B`$, containing all elements of $`A`$ and of $`B`$
-* **Product types**. we may construct $`A \times B : \mathbf{Type}`$ for $`A, B :\mathbf{Type}`$
+* **Product operator**. we may construct $`A \times B : \mathbf{Type}`$ for $`A, B :\mathbf{Type}`$
 
     > this is the sum type of $`A`$ and $`B`$, containing all elements of $`A`$ and of $`B`$
-* **Option types**. we may construct $`A? : \mathbf{Type}`$ for $`A :\mathbf{Type}`$ 
+* **Option operator**. we may construct $`A? : \mathbf{Type}`$ for $`A :\mathbf{Type}`$ 
 
     > this is the option type, containing $`A`$ plus the empty element $`\emptyset`$
-* **Type cardinality**.$`|A| : \mathbb{N}`$ for $`A : \mathbf{Type}`$. 
+* **Cardinality operator**.$`|A| : \mathbb{N}`$ for $`A : \mathbf{Type}`$. 
 
     > This is the cardinality of $`A`$, counting the elements in $`A`$.
+* **Abstract modality**. Certain judgements $`\mathcal{J}`$ about types (namely $`A : \mathbf{Kind}(...)`$ and $`A < B`$) have abstract versions written $`\diamond(\mathcal{J})`$.
+
+    > This states $`\mathcal{J}`$ is abstractly true in the type system, where "abstractly true" is a special truth-value which entails special behaviour of the data model.
 
 _Remark for nerds: list types are neither sums, nor products, nor combinations thereof (polynomials) ... they are so-called inductive types!_
 
@@ -369,23 +372,30 @@ _System property_:
 
 **Case REL_DEF**
 * `relation A` adds $`A : \mathbf{Rel}`$
-* `(relation) A sub B` adds $`A : \mathbf{Rel}, A <_! B`$, ***requiring*** that $`B : \mathbf{Rel}`$ 
+* `(relation) A sub B` adds $`A : \mathbf{Rel}, A <_! B`$ where $`B : \mathbf{Rel}`$ 
 * `(relation) A relates I` adds $`A : \mathbf{Rel}(I)`$ and $`I : \mathbf{Itf}`$.
-* `(relation) A relates I as J` adds $`A : \mathbf{Rel}(I)`$, $`I <_! J`$, ***requiring*** that $`B : \mathbf{Rel}(J)`$ and $`A <_! B`$
+* `(relation) A relates I as J` adds $`A : \mathbf{Rel}(I)`$, $`I <_! J`$ where $`B : \mathbf{Rel}(J)`$ and $`A <_! B`$
 * `(relation) A relates I[]` adds $`A : \mathbf{Rel}([I])`$
-* `(relation) A relates I[] as J[]` adds $`A : \mathbf{Rel}([I])`$, $`I <_! J`$, ***requiring*** that $`B : \mathbf{Rel}([J])`$ and $`A <_! B`$
+* `(relation) A relates I[] as J[]` adds $`A : \mathbf{Rel}([I])`$, $`I <_! J`$ where $`B : \mathbf{Rel}([J])`$ and $`A <_! B`$
 
 _System property_: 
 
-1. _Single inheritance_: Cannot have $`A <_! B`$ and $A <_! C \neq B$
-2. _Single inheritance (for interfaces)_: Cannot have $`I <_! J`$ and $I <_! K \neq J$ for $`I,J,K :\mathbf{Itf}`$
-3. _Exclusive interface modes_: Cannot have both $`A : \mathbf{Rel}(I)`$ and $`A : \mathbf{Rel}([I])`$ (in other words, cannot have both `A relates I` and `A relates I[]`).
-4. _Implicit inheritance_: Cannot redeclare inherited interface (i.e. when `B relates I`, `A sub B` we cannot re-declare `A relates I`... this is automatically inherited!)
+1. _Single inheritance_: 
+    * _for relation types_: Cannot have $`A <_! B`$ and $A <_! C \neq B$
+    * _for interfaces_: Cannot have $`I <_! J`$ and $I <_! K \neq J$ for $`I,J,K :\mathbf{Itf}`$
+1. _No role re-declaractions_: Cannot redeclare inherited interface (i.e. when `B relates I`, `A sub B` we cannot re-declare `A relates I`... this is automatically inherited!)
+1. _Automatic abstractions_: (see **REL_ABSTRACT_DEF**)
+    * _Un-specialization_: when `A relates I as J` then automatically `A relates J @abstract` 
+    * _Un-specialization (list case)_: when `A relates I[] as J[]` then automatically `A relates J[] @abstract`
+    * _Un-ordering_: when `A relates I[]` then `A relates I @abstract`
+1. _Exclusive interface modes_:
+    * Only one of `$A relates $I` or `$A relates $I[]` can ever be true non-abstractly (see "Pattern semantics" for the validity of statements), otherwise reject the definition.
 
 **Case ATT_DEF**
 * `attribute A` adds $`A : \mathbf{Att}(O_A)`$ and $`O_A : \mathbf{Itf}`$ ($`O_A`$ being automatically generated ownership interface)
-* `(attribute) A value V` adds $`A <_! V`$, ***requiring*** that $`V`$ is a primitive or struct value type
-* `(attribute) A sub B` adds $`A : \mathbf{Att}(O_A)`$, $`A <_! B`$ and $`O_A <_! O_B`$, ***requiring*** that $`B : \mathbf{Att}(O_A)`$
+* `(attribute) A value V` adds $`A <_! V`$, where $`V`$ is a primitive or a user-defined struct value type
+* `(attribute) A sub B` adds $`A : \mathbf{Att}(O_A)`$, $`A <_! B`$ and $`O_A <_! O_B`$ where $`B : \mathbf{Att}(O_B)`$
+
 
 _System property_: 
 
@@ -393,21 +403,25 @@ _System property_:
 
 **Case PLAYS_DEF**
 
-* `A plays B:I` adds $`A <_! I`$, ***requiring*** that $`B: \mathbf{Rel}(I)`$, $`A :\mathbf{Obj}`$ and not $B \lneq B'$ with $`B': \mathbf{Rel}(I)`$
-
-_Remark_. The last part of the condition ensure that we can only declare `A plays B:I` if `I` is a role directly declared for `B`, and not an inherited role.
-
-**Case OWNS_DEF**
-* `A owns B` adds $`A <_! O_B`$, ***requiring*** that $`B: \mathbf{Att}(O_B)`$, $`A :\mathbf{Obj}`$
-* `A owns B[]` adds $`A <_! O_B`$, ***requiring*** that $`B: \mathbf{Att}(O_B)`$, **puts B[] to be non-abstract**: i.e. allows declaring terms $`l :_! [B](x:O_B)`$, see earlier discussion of list types
-
-_Remark: based on recent discussion, `A owns B[]` _implies_ `A owns B @abstract` (abstractness is crucial here, see `abstract` constraint below). See also the remark in "Satisfying type patterns"._
+* `A plays B:I` adds $`A <_! I`$ where $`B: \mathbf{Rel}(I)`$, $`A :\mathbf{Obj}`$.
 
 _System property_: 
 
-1. _Exclusive interface modes_: Only one of `A owns B` or `A owns B[]` can be declared in the model.
-2. _Consistent interface modes_: If `A owns B`, and $`A' \leq A`$, $`B' \leq B`$, then disallow declaring `A' owns B'[]`.
-3. _Consistent interface modes (list case)_: If `A owns B[]`, and $`A' \leq A`$, $`B' \leq B`$, then disallow declaring `A' owns B'`.
+1. _Dissallow inherited roles_: Cannot have that $B \lneq B'$ with $`B': \mathbf{Rel}(I)`$ (otherwise fail).
+
+_Remark_. The property ensures that we can only declare `A plays B:I` if `I` is a role directly declared for `B`, and not an inherited role.
+
+**Case OWNS_DEF**
+* `A owns B` adds $`A <_! O_B`$ where $`B: \mathbf{Att}(O_B)`$, $`A :\mathbf{Obj}`$
+* `A owns B[]` adds $`A <_! O_B`$ where $`B: \mathbf{Att}(O_B)`$, $`A :\mathbf{Obj}`$
+
+_System property_: 
+
+1. _Automatic abstractions_: (see **OWNS_ABSTRACT_DEF**)
+    * _Un-ordering_: when `A owns B[]` then automatically `A owns C @abstract` for any $`C \leq B`$ (abstractness is crucial here, see `abstract` constraint below)._
+1. _Exclusive interface modes_: 
+    * Only one of `$A owns $B` or `$A owns $B[]` can ever be true non-abstractly (see "Pattern semantics" for the validity of statements), otherwise reject the definition.
+1. _Disallow list specialization_: If `A owns B`, and $`A' \leq A`$, $`B' \leq B`$, then disallow declaring `A' owns B'[]`. (STICKY: this property is not really needed)
 
 ### Constraints
 
@@ -466,30 +480,41 @@ _System property_
 
 1. If `(type) A @abstract` and $`A \leq B`$ then `(type) B (sub ...)`cannot be declared non-abstractly.
 
+**Case GEN_ABSTRACT_DEF** (General abstractness)
+
+* _Key principle_: Only one of $`\diamond(A : K)`$ and $`A : K`$ can be inferred in the type system.
+* _Schema constraint_: 
+  * If a schema declaration violates the above (making something both abstract and non-abstract) then we reject that declaration.
+
+**Case REL_ABSTRACT_DEF** (--UNEXPOSED)
+* `B relates I @abstract` is equivalent to $`\diamond(B : \mathbf{Rel}(I))`$. It is an inferred statements (i.e. cannot be declared). It entails no constraints beyond the general case.
+* `B relates I[] @abstract` is equivalent to $`\diamond(B : \mathbf{Rel}([I]))`$. It is an inferred statements (i.e. cannot be declared). It entails no constraints beyond the general case.
+
+_Remark_: Let's recall the cases in which this gets inferred:
+* Un-specialization: if a relation type relates a specialized interface it abstractly relates the unspecialized versions of the interface.
+* Un-specialization for lists: if a relation type relates a specialized list interface it abstractly relates the unspecialized versions of the list interface.
+* Un-ordering: if a relation type relates a list interface it abstractly relates the "un-ordered" (un-listed?) interface.
+
+
 **Case PLAYS_ABSTRACT_DEF**
-* `A plays B:I @abstract` postulates that
-  *  (if $`I`$ is used as a plain role:) $`b :_! B'(a:I)`$ 
-  *  (if $`I`$ is used as a list role:) $`b :_! B'(l:[I])`$, $a \in l$ 
+* `A plays B:I @abstract` adds $`\diamond(A <_! I)`$ and adds the constraint:
+  *  for $`B : \mathbf{Rel}(I)`$ then $`b :_! B'(a:I)`$ is impossible whenever $`a : A`$, $B' \leq B$
+  *  for $`B : \mathbf{Rel}([I])`$ then  $`b :_! B'(l:[I])`$, $a \in l$ is impossible whenever $`a : A`$, $B' \leq B$
   
-  is impossible whenever $`a : A`$, $B' \leq B$ (_note_: $`B' \leq B`$ is needed here, since the interface $`I`$ may be inherited to some subtypes)
+_Note_: $`B' \leq B`$ is needed here, since the interface $`I`$ may be inherited to some subtypes.
 
 _System property_
 
 1. If `A plays B:I @abstract` and $`B'(I) \leq B'(I')`$ then `A plays B':J'` cannot be declared non-abstractly.
 
 **Case OWNS_ABSTRACT_DEF**
-* `A owns B @abstract` postulates $`b :_! B'(a:I)`$ to be impossible for $`a : A`$  and $`B \leq B'`$
-* `A owns B[] @abstract` postulates $`b :_! [B'](a:I)`$ to be impossible for $`a : A`$ and $`B \leq B'`$ 
+* `A owns B @abstract` adds $`\diamond(A <_! O_B)`$ and adds the constraint:
+    * $`b :_! B'(a:I)`$ is impossible for $`a : A`$  and $`B \leq B'`$
+* `A owns B[] @abstract` adds $`\diamond(A <_! O_B)`$ and adds the constraint:
+    * $`b :_! [B'](a:I)`$ is impossible for $`a : A`$ and $`B \leq B'`$ 
 
-_System property_:
-
-1. If `A owns B @abstract` and $`B \leq B'`$ then `A owns B'` cannot be declared non-abstractly. 
-1. If `A owns B[] @abstract` and $`B \leq B'`$ then `A' owns B'[]` cannot be declared non-abstractly. 
-
-
-**Case REL_ABSTRACT_DEF**
-* `B relates I @abstract` _cannot be defined_ (it is inferred on role specialization, and can be matched)
-* `B relates I[] @abstract` _cannot be defined_ (it is inferred on role specialization, and can be matched)
+_Remark_: Let's recall the cases in which this gets inferred:
+* Un-ordering: if a object type owns a list attribute then it abstractly owns the "un-ordered" (un-listed?) attributes _and all its sub-attributes_.
 
 **Case DISTINCT_DEF**
 * `A owns B[] @distinct` postulates that when $`[b_1, ..., b_n] : [B]`$ then all $`b_i`$ are distinct. 
@@ -1031,7 +1056,7 @@ Given a cmap `m` and pattern `P` we say `m` ***satisfies*** `P` if (in addition 
 _Remark (Replacing **var**s with concepts)_. When discussing pattern semantics, we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). This also determines satisfaction of **partially assigned** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`, or `x isa $A`).
 
 
-#### Types
+### Types
 
 **Case TYPE_DEF_PATT**
 * `Kind $A` (for `Kind` in `{entity, relation, attribute}`) is satisfied if $`m(A) : \mathbf{Kind}`$
@@ -1066,12 +1091,14 @@ _Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` wil
 * `$A is $B` is satisfied if $`m(A) = m(B)`$ (this is actually covered by the later case `IS_PATT`)
 * `$A label <LABEL>` is satisfied if $`m(A)`$ has primary label `<LABEL>`
 
-#### Constraints
+### Constraints
+
+#### Cardinality
 
 _Remark: the usefulness of constraint patterns seems overall low, could think of a different way to retrieve full schema or at least annotations (this would be more useful than, say,having to find cardinalities by "trialing and erroring" through matching). STICKY: discuss!_
 
 **Case CARD_PATT**
-* cannot match `@card(n..m)` (STICKY: discuss! `@card($n..$m)`??)
+* cannot match `@card(n..m)` (STICKY: there's just not much point to do so ... rather have normalized schema dump. discuss `@card($n..$m)`??)
 <!-- 
 * `A relates I @card(n..m)` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$ and schema allows $`|a|_I`$ to be any number in range `n..m`.
 * `A plays B:I @card(n..m)` is satisfied if ...
@@ -1093,6 +1120,8 @@ _Notation: for readability, we simply write $`X`$ in place of $`m(X)`$ in this c
 _Remark: these two are still not a natural constraint, as foreshadowed by a previous remark!_
 -->
 
+#### Bevavior flags
+
 **Case UNIQUE_PATT**
 * `$A owns $B @unique` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
 
@@ -1109,22 +1138,25 @@ _Remark: these two are still not a natural constraint, as foreshadowed by a prev
 **Case TYP_ABSTRACT_PATT**
 * `(type) $B @abstract` is satisfied if schema directly contains `(type) m($B) @abstract`.
 
+**Case RELATES_ABSTRACT_PATT**
+* `$B relates $I @abstract` is satisfied if `$m(B) \leq B'`$ and $`\diamond(B' : \mathbf{Rel}(I)`$
+* `$B relates $I[] @abstract` is satisfied if `$m(B) \leq B'`$ and $`\diamond(B' : \mathbf{Rel}([I])`$
+
 **Case PLAYS_ABSTRACT_PATT**
-* `$A plays $B:$I @abstract` is satisfied if $`m(A) \leq A'`$, $`m(B) : \mathbf{Rel}(m(I))`$, $`m(B) \leq B' : \mathbf{Rel}(m(I))`$ and schema directly contains constraint `A' plays B':m($I) @abstract`.
+* `$A plays $B:$I @abstract` is satisfied if $`m(A) \leq A'`$ and $`\diamond(A' <_! m(I))`, where $`m(B) \leq B' : \mathbf{Rel}(m(I))`$
 
 **Case OWNS_ABSTRACT_PATT**
-* `$A owns $B @abstract` is satisfied if $`m(A) \leq A'`$ and schema directly contains one of the constraints
-  * `A' owns m($B) @abstract`
-  * `A' owns m($B)[]`
+* `$A owns $B @abstract` is satisfied if $`m(A) \leq A'`$ and $`\diamond(A' <_! O_{m(B)})`$
+* `$A owns $B[] @abstract` is satisfied if $`m(A) \leq A'`$ and $`\diamond(A' <_! O_{m(B)})`$ and the schema contains `$A owns $B[]`.
 
-* `$A owns $B[] @abstract` is satisfied if $`m(A) \leq A'`$ and schema directly contains constraint `A' owns m($B)[] @abstract`.
+**Case DISTINCT_PATT**
+* `A owns B[] @distinct` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B)[] @distinct`.
+* `B relates I[] @distinct` is satisfied if $`m(B) : \mathbf{Rel}(m([I]))`$, $`B \leq B'`$ and schema directly contains `B' relates I[] @distinct`.
 
-**Case RELATES_ABSTRACT_PATT**
-* `$B relates $I @abstract` is satisfied if $`m(B) \leq B'`$, and schema directly contains constraint `m(B) relates J as m($I)`.
-* `$B relates $I[] @abstract` is satisfied if $`m(B) \leq B'`$, and schema directly contains constraint `m(B) relates J[] as m($I)[]`.
+#### Values
 
 **Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**
-* cannot match `@values/@regex/@range` (STICKY: discuss!)
+* cannot match `@values/@regex/@range` (STICKY: there's just not much point to do so ... rather have normalized schema dump)
 <!--
 * `A owns B @values(v1, v2)` is satisfied if 
 * `A owns B @regex(<EXPR>)` is satisfied if 
@@ -1134,11 +1166,7 @@ _Remark: these two are still not a natural constraint, as foreshadowed by a prev
 * `A value B @range(v1..v2)` is satisfied if 
 -->
 
-**Case DISTINCT_PATT**
-* `A owns B[] @distinct` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B)[] @distinct`.
-* `B relates I[] @distinct` is satisfied if $`m(B) : \mathbf{Rel}(m([I]))`$, $`B \leq B'`$ and schema directly contains `B' relates I[] @distinct`.
-
-#### Data
+### Data
 
 **Case ISA_PATT**
 * `$x isa $T` is satisfied if $`m(x) : m(T)`$ for $`m(T) : \mathbf{ERA}`$
@@ -1166,7 +1194,7 @@ _System property_
 
 _**Remark**_: In the `is` pattern we cannot syntactically distinguish whether we are in the "type" or "element" case (it's the only such pattern where tvars and evars can be in the same position!) but this is alleviated by the pattern being non-binding, i.e. we require further statements which bind these variables, which then determines them to be tvars are evars.
 
-#### Expression grammar (sketch)
+### Expression grammar (sketch)
 
 ```javascript
 BOOL      ::= VAR | bool
@@ -1200,7 +1228,7 @@ _Selected details_
                 | P___Y__M__DT__h__m__s:___  
   ```
 
-#### Expression patterns
+### Expression patterns
 
 Expression are part of some patterns, which we discuss in this section under the name "expression patterns". First, we briefly touch on the definition of the grammar for expressions itself. 
 
@@ -1264,7 +1292,7 @@ _System property_
 1. In all the above patterns all variables are **not bound**.
 
 
-#### Functions
+### Functions
 
 **Case IN_FUN_PATT**
 * `$x, $y?, ... in <FUN_CALL>` is satisfied, after substituting concepts, the left hand side is an element of the **function answer set** $`F`$ of evaluated `<FUN_CALL>` on the right (see "Function semantics") meaning that: for some tuple $t \in F$ we have
@@ -1283,7 +1311,7 @@ _System property_
 _Remark_: variables marked with `?` in function assignments are the first example of **optional variables**. We will meet other pattern yielding optional variables in the following section.
 
 
-#### Patterns
+### Patterns
 
 Now that we have seen how to determine when answers satisfy individual statements, we can extend our discussion of match semantics to composite patterns (patterns of patterns).
 
@@ -1311,7 +1339,7 @@ A `match` clause comprises a pattern `P`.
 
 * _Output cmaps_: For each `m`: 
   * replace all patterns in `P` with concepts from `m`. 
-  * Compute the stream of answert `{ m' }`. 
+  * Compute the stream of answer `{ m' }`. 
   * The final output stream will be `{ (m,m') }`.
 
 
@@ -1460,15 +1488,8 @@ An `insert` clause comprises collection of _insert statements_
 
 ### Insert statements
 
-**Case ISA_INS**
-* `$x isa A` adds new $`a :_! A`$ for $`A : \mathbf{ERA}`$ and sets $`m(x) = a`$
-* `$x isa $T` adds new $`a :_! m(T)`$ ($T$ must be bound) and sets $`m(x) = a`$
 
-_System property_:
-
-1. `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input map `m` nor in other `isa` or `=` statements).
-
-**Case ISA_INS**
+**Case ASSIGN_INS**
 * `$x = <EXPR>` adds nothing, and sets $`m(x) = v`$ where $`v`$ is the value that `<EXPR>` evaluates to.
 
 _System property_:
@@ -1476,25 +1497,63 @@ _System property_:
 1. `$x` cannot be bound elsewhere.
 2. All variables in `<EXPR>` must be bound elsewhere (as before, we require acyclicity of assignement, see "Acyclicity").
 3. `<EXPR>` cannot contain function calls.
+4. All **EXPR_INS** statements are executed first as described in the previous section.
+
+**Case OBJ_ISA_INS**
+* `$x isa $T` adds new $`a :_! m(T)`$, $`m(T) : \mathbf{Obj}`$, and sets $`m(x) = a`$
+
+_System property_:
+
+1. `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input map `m` nor in other `isa` or `=` statements).
+
+**Case ATT_ISA_INS**
+* `<EXPR> isa $T` adds new $`v :_! m(T)`$, $`m(T) : \mathbf{Att}`$, where `v` is the result of evaluating
+
+_System property_:
+
+* `<EXPR>` must be of the right value type, and be evaluatable (i.e. all vars are bound).
+* `m(T)` must be an independent attribute, i.e. the schema must contain `attribute m(T) (sub B) @indepedent`
 
 **Case LINKS_INS** 
 * `$x links ($I: $y)` replaces $`m(x) :_! A(a : J, b : K, ...)`$ by $`m(x) :_! A(m(y)a : m(I), b : K, ...)`$
 
-_Note_. Set semantics for interfaces means that inserts become idempotent when inserting the same role players twice. 
+_Note_. Set semantics for interfaces means that inserts become idempotent when inserting the same role players twice.
+
+_System property_:
+
+1. _Capability check_. 
+    * Must have $`T(x) \leq B : \mathbf{Rel}(m(I))`$ non-abstractly (i.e. $`\diamond (B : \mathbf{Rel}(m(I)))`$ is not true) for minimal $`B`$
+    * Must have $`T(y) \leq B <_! m(I)`$ non-abstractly (i.e. $`\diamond (B <_! m(I))`$ is not true) for minimal $`B`$
 
 **Case LINKS_LIST_INS** 
 * `$x links ($I[]: <T_LIST>)` replaces $`m(x) :_! A()`$ by $`m(x) :_! A(l : [m(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
 
 _System property_:
 
-1. Transaction will fail if $`m(x) :_! A(...)`$ already has a roleplayer list. (In this case, user should `update` instead!)
+1. _Single list_. Transaction will fail if $`m(x) :_! A(...)`$ already has a roleplayer list. (In this case, user should `update` instead!)
+1. _Capability check_. 
+    * Must have $`T(x) \leq B : \mathbf{Rel}(m(I))`$ non-abstractly (i.e. $`\diamond (B : \mathbf{Rel}(m(I)))`$ is not true) for minimal $`B`$
+    * Must have $`l_i : T_i \leq B <_! m(I)`$ non-abstractly (i.e. $`\diamond (B <_! m(I))`$ is not true) for minimal $`B`$
 
 **Case HAS_INS**
 * `$x has $A $y` adds new $`m(y) :_! m(A)(m(x) : O_{m(A)})`$
+* `$x has $A <EXPR>` adds new $`m(y) :_! m(A)(m(x) : O_{m(A)})`$
+
+_System property_:
+
+1. `m($y)` or `<EXPR>` must be of the right value type.
+1. _Capability check_. 
+    * Must have $`T(x) \leq B <_! O_{m(A)}`$ non-abstractly (i.e. $`\diamond (B <_! O_{m(A)})`$ is not true) for minimal $`B`$
 
 **Case HAS_LIST_INS**
 * `$x has $A[] <T_LIST>` adds $`l :_! [m(A)](m(x) : O_{m(A)})`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
   * _Note_ usage of direct typing implies (non-direct) typings $`l_i : m(A)(m(x) : O_{m(A)})`$
+
+_System property_:
+
+1. `<T_LIST>` must be of the right value type. (TODO: do lists keep track of the types of their elements?)
+1. _Capability check_. 
+    * Must have $`T(x) \leq B <_! O_{m(A)}`$ non-abstractly (i.e. $`\diamond (B <_! O_{m(A)})`$ is not true) for minimal $`B`$
 
 _System property_:
 
