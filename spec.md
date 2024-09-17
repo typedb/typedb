@@ -339,8 +339,8 @@
 
 This document specifies the behaviour of TypeDB and its query language TypeQL.
 
-* Best view _not in Chrome_ (doesn't display math correctly)
-* Badge system (not yet applied): implemented (✅), alpha-plan (🅰), beta-plan (🅱), 3.x-plan (❎), un-stable/to-be-discussed (❓)
+* Best viewed _not in Chrome_ (doesn't display math correctly)
+* Badge system (not yet applied): implemented (✅), alpha-plan (🔷), beta-plan (🔶), 3.x-plan (🔜), un-stable/to-be-discussed (❓), stopped (⛔)
 
 # The type system
 
@@ -547,9 +547,9 @@ Beside the rules below, subtyping ($`\leq`$) is transitive and reflexive.
 
     _Note_: again, subsumptive subtyping interacts with this. For example, we would have if $`A \leq A'$ and $B \leq B'`$ then $`A \times B \leq A' \times B'`$ ...  We omit the detailed rules here, and use common sense.
 
-* **Options**: Option types follow the usual rules of type systems.
+* **Options**: Option types follow the usual rules of type systems (effectively, options are sum types: $`A? = A + \{ \emptyset \}`$).
 
-    _Note_: same note as before applies.
+    _Note_: same note as before applies. Also note $`A?? = A?`$ due to subsumptive subtyping.
 
 ### List types
 
