@@ -49,52 +49,19 @@ pub trait IrID: Copy + fmt::Display + Hash + Eq + PartialEq + Ord + PartialOrd +
 
 impl IrID for Variable {}
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub enum TypeSource<ID> {
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Vertex<ID> {
     Variable(ID),
     Label(Label<'static>),
-    RoleName(String),
-}
-
-impl<ID: IrID> TypeSource<ID> {
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> TypeSource<T> {
-        match self {
-            TypeSource::Variable(var) => TypeSource::Variable(mapping[&var]),
-            TypeSource::Label(label) => TypeSource::Label(label),
-            TypeSource::RoleName(name) => TypeSource::RoleName(name),
-        }
-    }
-
-    pub fn as_variable(&self) -> Option<ID> {
-        if let &Self::Variable(v) = self {
-            Some(v)
-        } else {
-            None
-        }
-    }
-}
-
-impl<ID: fmt::Display> fmt::Display for TypeSource<ID> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            TypeSource::Variable(var) => fmt::Display::fmt(var, f),
-            TypeSource::Label(label) => write!(f, "{}", label.scoped_name().as_str()),
-            TypeSource::RoleName(name) => write!(f, "{}", name),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-pub enum ValueSource<ID> {
-    Variable(ID),
     Parameter(ParameterID),
 }
 
-impl<ID: IrID> ValueSource<ID> {
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ValueSource<T> {
+impl<ID: IrID> Vertex<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Vertex<T> {
         match self {
-            ValueSource::Variable(var) => ValueSource::Variable(mapping[&var]),
-            ValueSource::Parameter(parameter) => ValueSource::Parameter(parameter),
+            Self::Variable(var) => Vertex::Variable(mapping[&var]),
+            Self::Label(label) => Vertex::Label(label),
+            Self::Parameter(param) => Vertex::Parameter(param),
         }
     }
 
@@ -107,16 +74,23 @@ impl<ID: IrID> ValueSource<ID> {
     }
 }
 
-impl<ID: fmt::Display> fmt::Display for ValueSource<ID> {
+impl<ID> From<ID> for Vertex<ID> {
+    fn from(var: ID) -> Self {
+        Self::Variable(var)
+    }
+}
+
+impl<ID: fmt::Display> fmt::Display for Vertex<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Variable(var) => fmt::Display::fmt(var, f),
+            Self::Label(label) => write!(f, "{}", label.scoped_name().as_str()),
             Self::Parameter(param) => fmt::Display::fmt(param, f),
         }
     }
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ParameterID {
     pub id: usize,
 }

@@ -14,7 +14,7 @@ use crate::{
         expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ScopeId, TypeSource, ValueSource,
+        IrID, ScopeId, Vertex,
     },
     program::{
         block::{BlockContext, ParameterRegistry},
@@ -127,8 +127,8 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     pub fn add_sub(
         &mut self,
         kind: SubKind,
-        subtype: TypeSource<Variable>,
-        supertype: TypeSource<Variable>,
+        subtype: Vertex<Variable>,
+        supertype: Vertex<Variable>,
     ) -> Result<&Sub<Variable>, PatternDefinitionError> {
         let subtype_var = subtype.as_variable();
         let supertype_var = supertype.as_variable();
@@ -152,7 +152,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         kind: IsaKind,
         thing: Variable,
-        type_: TypeSource<Variable>,
+        type_: Vertex<Variable>,
     ) -> Result<&Isa<Variable>, PatternDefinitionError> {
         let type_var = type_.as_variable();
         let isa = Isa::new(kind, thing, type_);
@@ -186,7 +186,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         relation: Variable,
         player: Variable,
-        role_type: TypeSource<Variable>,
+        role_type: Vertex<Variable>,
     ) -> Result<&Links<Variable>, PatternDefinitionError> {
         let role_type_var = role_type.as_variable();
         let links = Constraint::from(Links::new(relation, player, role_type));
@@ -210,8 +210,8 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_comparison(
         &mut self,
-        lhs: ValueSource<Variable>,
-        rhs: ValueSource<Variable>,
+        lhs: Vertex<Variable>,
+        rhs: Vertex<Variable>,
         comparator: Comparator,
     ) -> Result<&Comparison<Variable>, PatternDefinitionError> {
         let lhs_var = lhs.as_variable();
@@ -309,8 +309,8 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_owns(
         &mut self,
-        owner_type: TypeSource<Variable>,
-        attribute_type: TypeSource<Variable>,
+        owner_type: Vertex<Variable>,
+        attribute_type: Vertex<Variable>,
     ) -> Result<&Owns<Variable>, PatternDefinitionError> {
         let owner_type_var = owner_type.as_variable();
         let attribute_type_var = attribute_type.as_variable();
@@ -332,8 +332,8 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_relates(
         &mut self,
-        relation_type: TypeSource<Variable>,
-        role_type: TypeSource<Variable>,
+        relation_type: Vertex<Variable>,
+        role_type: Vertex<Variable>,
     ) -> Result<&Relates<Variable>, PatternDefinitionError> {
         let relation_type_var = relation_type.as_variable();
         let role_type_var = role_type.as_variable();
@@ -355,8 +355,8 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_plays(
         &mut self,
-        player_type: TypeSource<Variable>,
-        role_type: TypeSource<Variable>,
+        player_type: Vertex<Variable>,
+        role_type: Vertex<Variable>,
     ) -> Result<&Plays<Variable>, PatternDefinitionError> {
         let player_type_var = player_type.as_variable();
         let role_type_var = role_type.as_variable();
@@ -798,20 +798,20 @@ impl From<typeql::statement::type_::SubKind> for SubKind {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Sub<ID> {
     kind: SubKind,
-    subtype: TypeSource<ID>,
-    supertype: TypeSource<ID>,
+    subtype: Vertex<ID>,
+    supertype: Vertex<ID>,
 }
 
 impl<ID: IrID> Sub<ID> {
-    fn new(kind: SubKind, subtype: TypeSource<ID>, supertype: TypeSource<ID>) -> Self {
+    fn new(kind: SubKind, subtype: Vertex<ID>, supertype: Vertex<ID>) -> Self {
         Sub { subtype, supertype, kind }
     }
 
-    pub fn subtype(&self) -> &TypeSource<ID> {
+    pub fn subtype(&self) -> &Vertex<ID> {
         &self.subtype
     }
 
-    pub fn supertype(&self) -> &TypeSource<ID> {
+    pub fn supertype(&self) -> &Vertex<ID> {
         &self.supertype
     }
 
@@ -852,11 +852,11 @@ impl<ID: IrID> fmt::Display for Sub<ID> {
 pub struct Isa<ID> {
     kind: IsaKind,
     thing: ID,
-    type_: TypeSource<ID>,
+    type_: Vertex<ID>,
 }
 
 impl<ID: IrID> Isa<ID> {
-    fn new(kind: IsaKind, thing: ID, type_: TypeSource<ID>) -> Self {
+    fn new(kind: IsaKind, thing: ID, type_: Vertex<ID>) -> Self {
         Self { kind, thing, type_ }
     }
 
@@ -864,7 +864,7 @@ impl<ID: IrID> Isa<ID> {
         self.thing
     }
 
-    pub fn type_(&self) -> &TypeSource<ID> {
+    pub fn type_(&self) -> &Vertex<ID> {
         &self.type_
     }
 
@@ -920,11 +920,11 @@ impl From<typeql::statement::thing::isa::IsaKind> for IsaKind {
 pub struct Links<ID> {
     pub(crate) relation: ID,
     pub(crate) player: ID,
-    pub(crate) role_type: TypeSource<ID>,
+    pub(crate) role_type: Vertex<ID>,
 }
 
 impl<ID: IrID> Links<ID> {
-    pub fn new(relation: ID, player: ID, role_type: TypeSource<ID>) -> Self {
+    pub fn new(relation: ID, player: ID, role_type: Vertex<ID>) -> Self {
         Self { relation, player, role_type }
     }
 
@@ -936,7 +936,7 @@ impl<ID: IrID> Links<ID> {
         self.player
     }
 
-    pub fn role_type(&self) -> &TypeSource<ID> {
+    pub fn role_type(&self) -> &Vertex<ID> {
         &self.role_type
     }
 
@@ -1173,22 +1173,22 @@ impl From<typeql::token::Comparator> for Comparator {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Comparison<ID> {
-    lhs: ValueSource<ID>,
-    rhs: ValueSource<ID>,
+    lhs: Vertex<ID>,
+    rhs: Vertex<ID>,
     comparator: Comparator,
 }
 
 impl<ID: IrID> Comparison<ID> {
-    fn new(lhs: ValueSource<ID>, rhs: ValueSource<ID>, comparator: Comparator) -> Self {
+    fn new(lhs: Vertex<ID>, rhs: Vertex<ID>, comparator: Comparator) -> Self {
         Self { lhs, rhs, comparator }
     }
 
-    pub fn lhs(&self) -> ValueSource<ID> {
-        self.lhs
+    pub fn lhs(&self) -> &Vertex<ID> {
+        &self.lhs
     }
 
-    pub fn rhs(&self) -> ValueSource<ID> {
-        self.rhs
+    pub fn rhs(&self) -> &Vertex<ID> {
+        &self.rhs
     }
 
     pub fn comparator(&self) -> Comparator {
@@ -1222,20 +1222,20 @@ impl<ID: IrID> fmt::Display for Comparison<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<ID> {
-    owner: TypeSource<ID>,
-    attribute: TypeSource<ID>,
+    owner: Vertex<ID>,
+    attribute: Vertex<ID>,
 }
 
 impl<ID: IrID> Owns<ID> {
-    fn new(owner: TypeSource<ID>, attribute: TypeSource<ID>) -> Self {
+    fn new(owner: Vertex<ID>, attribute: Vertex<ID>) -> Self {
         Self { owner, attribute }
     }
 
-    pub fn owner(&self) -> &TypeSource<ID> {
+    pub fn owner(&self) -> &Vertex<ID> {
         &self.owner
     }
 
-    pub fn attribute(&self) -> &TypeSource<ID> {
+    pub fn attribute(&self) -> &Vertex<ID> {
         &self.attribute
     }
 
@@ -1270,20 +1270,20 @@ impl<ID: IrID> fmt::Display for Owns<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Relates<ID> {
-    relation: TypeSource<ID>,
-    role_type: TypeSource<ID>,
+    relation: Vertex<ID>,
+    role_type: Vertex<ID>,
 }
 
 impl<ID: IrID> Relates<ID> {
-    fn new(relation: TypeSource<ID>, role: TypeSource<ID>) -> Self {
+    fn new(relation: Vertex<ID>, role: Vertex<ID>) -> Self {
         Self { relation, role_type: role }
     }
 
-    pub fn relation(&self) -> &TypeSource<ID> {
+    pub fn relation(&self) -> &Vertex<ID> {
         &self.relation
     }
 
-    pub fn role_type(&self) -> &TypeSource<ID> {
+    pub fn role_type(&self) -> &Vertex<ID> {
         &self.role_type
     }
 
@@ -1318,20 +1318,20 @@ impl<ID: IrID> fmt::Display for Relates<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Plays<ID> {
-    player: TypeSource<ID>,
-    role_type: TypeSource<ID>,
+    player: Vertex<ID>,
+    role_type: Vertex<ID>,
 }
 
 impl<ID: IrID> Plays<ID> {
-    fn new(player: TypeSource<ID>, role: TypeSource<ID>) -> Self {
+    fn new(player: Vertex<ID>, role: Vertex<ID>) -> Self {
         Self { player, role_type: role }
     }
 
-    pub fn player(&self) -> &TypeSource<ID> {
+    pub fn player(&self) -> &Vertex<ID> {
         &self.player
     }
 
-    pub fn role_type(&self) -> &TypeSource<ID> {
+    pub fn role_type(&self) -> &Vertex<ID> {
         &self.role_type
     }
 

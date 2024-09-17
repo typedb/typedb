@@ -17,7 +17,7 @@ use crate::{
             BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ExpressionTreeNodeId, ListConstructor,
             ListIndex, ListIndexRange, Operation, Operator,
         },
-        ParameterID, ValueSource,
+        ParameterID, Vertex
     },
     program::function_signature::FunctionSignatureIndex,
     translation::{
@@ -31,15 +31,15 @@ pub(super) fn add_typeql_expression(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     rhs: &typeql::Expression,
-) -> Result<ValueSource<Variable>, PatternDefinitionError> {
+) -> Result<Vertex<Variable>, PatternDefinitionError> {
     if let typeql::Expression::Value(literal) = rhs {
         let id = register_typeql_literal(constraints, literal)?;
-        Ok(ValueSource::Parameter(id))
+        Ok(Vertex::Parameter(id))
     } else {
         let expression = build_expression(function_index, constraints, rhs)?;
         let variable = constraints.create_anonymous_variable()?;
         constraints.add_assignment(variable, expression)?;
-        Ok(ValueSource::Variable(variable))
+        Ok(Vertex::Variable(variable))
     }
 }
 

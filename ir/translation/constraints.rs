@@ -20,7 +20,7 @@ use crate::{
     pattern::{
         conjunction::ConjunctionBuilder,
         constraint::{Comparator, ConstraintsBuilder, IsaKind},
-        TypeSource, ValueSource,
+        Vertex,
     },
     program::function_signature::FunctionSignatureIndex,
     translation::{
@@ -67,11 +67,7 @@ pub(super) fn add_statement(
             })?;
             let value_id = constraints.parameters().register(value);
 
-            constraints.add_comparison(
-                ValueSource::Variable(attribute),
-                ValueSource::Parameter(value_id),
-                Comparator::Equal,
-            )?;
+            constraints.add_comparison(Vertex::Variable(attribute), Vertex::Parameter(value_id), Comparator::Equal)?;
         }
         typeql::Statement::AttributeComparison(AttributeComparisonStatement { var, comparison, isa, .. }) => {
             let attribute = register_typeql_var(constraints, var)?;
@@ -80,7 +76,7 @@ pub(super) fn add_statement(
             let rhs = &comparison.rhs;
             let rhs_var = add_typeql_expression(function_index, constraints, rhs)?;
 
-            constraints.add_comparison(ValueSource::Variable(attribute), rhs_var, comparison.comparator.into())?;
+            constraints.add_comparison(Vertex::Variable(attribute), rhs_var, comparison.comparator.into())?;
         }
         typeql::Statement::Type(type_) => add_type_statement(constraints, type_)?,
     }
@@ -119,7 +115,7 @@ fn add_type_statement(
 ) -> Result<(), PatternDefinitionError> {
     let type_ = register_typeql_type_any(constraints, &type_statement.type_)?;
     if let Some(kind) = type_statement.kind {
-        let TypeSource::Variable(var) = type_ else {
+        let Vertex::Variable(var) = type_ else {
             return Err(PatternDefinitionError::LabelWithKind { declaration: type_statement.clone() });
         };
         add_typeql_kind(constraints, var, kind)?;
@@ -130,7 +126,7 @@ fn add_type_statement(
             typeql::statement::type_::ConstraintBase::Sub(sub) => add_typeql_sub(constraints, type_.clone(), sub)?,
             typeql::statement::type_::ConstraintBase::Label(label) => match label {
                 typeql::statement::type_::LabelConstraint::Name(label) => {
-                    let &TypeSource::Variable(var) = &type_ else {
+                    let &Vertex::Variable(var) = &type_ else {
                         return Err(PatternDefinitionError::LabelWithLabel { declaration: label.clone() });
                     };
                     constraints.add_label(var, label.ident.as_str())?;
@@ -184,7 +180,7 @@ pub(crate) fn register_typeql_var(
 fn register_typeql_type_any(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     type_: &typeql::TypeRefAny,
-) -> Result<TypeSource<Variable>, PatternDefinitionError> {
+) -> Result<Vertex<Variable>, PatternDefinitionError> {
     match type_ {
         typeql::TypeRefAny::Type(type_) => register_typeql_type(constraints, type_),
         typeql::TypeRefAny::Optional(_) => todo!(),
@@ -195,21 +191,21 @@ fn register_typeql_type_any(
 fn register_typeql_type(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     type_: &typeql::TypeRef,
-) -> Result<TypeSource<Variable>, PatternDefinitionError> {
+) -> Result<Vertex<Variable>, PatternDefinitionError> {
     match type_ {
-        typeql::TypeRef::Named(NamedType::Label(label)) => Ok(TypeSource::Label(Label::build(label.ident.as_str()))),
+        typeql::TypeRef::Named(NamedType::Label(label)) => Ok(Vertex::Label(Label::build(label.ident.as_str()))),
         typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
-            Ok(TypeSource::Label(register_type_scoped_label(constraints, scoped_label)?))
+            Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
         }
         typeql::TypeRef::Named(NamedType::BuiltinValueType(builtin)) => todo!(),
-        typeql::TypeRef::Variable(var) => Ok(TypeSource::Variable(register_typeql_var(constraints, var)?)),
+        typeql::TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }
 
 fn register_typeql_role_type_any(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     type_: &typeql::TypeRefAny,
-) -> Result<TypeSource<Variable>, PatternDefinitionError> {
+) -> Result<Vertex<Variable>, PatternDefinitionError> {
     match type_ {
         typeql::TypeRefAny::Type(type_) => register_typeql_role_type(constraints, type_),
         typeql::TypeRefAny::Optional(_) => todo!(),
@@ -220,14 +216,16 @@ fn register_typeql_role_type_any(
 fn register_typeql_role_type(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     type_: &typeql::TypeRef,
-) -> Result<TypeSource<Variable>, PatternDefinitionError> {
+) -> Result<Vertex<Variable>, PatternDefinitionError> {
     match type_ {
-        typeql::TypeRef::Named(NamedType::Label(label)) => Ok(TypeSource::RoleName(label.ident.to_string())),
+        typeql::TypeRef::Named(NamedType::Label(label)) => {
+            Ok(Vertex::Variable(register_type_role_name_var(constraints, label)?))
+        }
         typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
-            Ok(TypeSource::Label(register_type_scoped_label(constraints, scoped_label)?))
+            Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
         }
         typeql::TypeRef::Named(NamedType::BuiltinValueType(builtin)) => todo!(),
-        typeql::TypeRef::Variable(var) => Ok(TypeSource::Variable(register_typeql_var(constraints, var)?)),
+        typeql::TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }
 
@@ -265,7 +263,7 @@ fn add_typeql_kind(
 
 fn add_typeql_sub(
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    subtype: TypeSource<Variable>,
+    subtype: Vertex<Variable>,
     sub: &typeql::statement::type_::Sub,
 ) -> Result<(), PatternDefinitionError> {
     let kind = sub.kind.into();
@@ -276,7 +274,7 @@ fn add_typeql_sub(
 
 fn add_typeql_owns(
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    owner_type: TypeSource<Variable>,
+    owner_type: Vertex<Variable>,
     owns: &typeql::statement::type_::Owns,
 ) -> Result<(), PatternDefinitionError> {
     let attribute_type = register_typeql_type_any(constraints, &owns.owned)?;
@@ -286,7 +284,7 @@ fn add_typeql_owns(
 
 fn add_typeql_relates(
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    relation_type: TypeSource<Variable>,
+    relation_type: Vertex<Variable>,
     relates: &typeql::statement::type_::Relates,
 ) -> Result<(), PatternDefinitionError> {
     let role_type = register_typeql_role_type_any(constraints, &relates.related)?;
@@ -296,7 +294,7 @@ fn add_typeql_relates(
 
 fn add_typeql_plays(
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    player_type: TypeSource<Variable>,
+    player_type: Vertex<Variable>,
     plays: &typeql::statement::type_::Plays,
 ) -> Result<(), PatternDefinitionError> {
     let role_type = register_typeql_role_type(constraints, &plays.role)?;
@@ -326,7 +324,7 @@ fn add_typeql_has(
         typeql::statement::thing::HasValue::Expression(expression) => {
             let expression = add_typeql_expression(function_index, constraints, expression)?;
             let attribute = constraints.create_anonymous_variable()?;
-            constraints.add_comparison(ValueSource::Variable(attribute), expression, Comparator::Equal)?;
+            constraints.add_comparison(Vertex::Variable(attribute), expression, Comparator::Equal)?;
             attribute
         }
         typeql::statement::thing::HasValue::Comparison(_) => todo!("Same as above?"),
@@ -350,10 +348,10 @@ pub(super) fn add_typeql_relation(
             typeql::statement::thing::RolePlayer::Typed(type_ref, player_var) => {
                 let type_ = match type_ref {
                     TypeRefAny::Type(TypeRef::Named(NamedType::Label(name))) => {
-                        TypeSource::RoleName(name.ident.to_string())
+                        Vertex::Variable(register_type_role_name_var(constraints, name)?)
                     }
                     TypeRefAny::Type(TypeRef::Variable(var)) => {
-                        TypeSource::Variable(register_typeql_var(constraints, var)?)
+                        Vertex::Variable(register_typeql_var(constraints, var)?)
                     }
                     TypeRefAny::Type(TypeRef::Named(NamedType::Role(name))) => {
                         return Err(PatternDefinitionError::ScopedRoleNameInRelation {
@@ -372,7 +370,7 @@ pub(super) fn add_typeql_relation(
             typeql::statement::thing::RolePlayer::Untyped(var) => {
                 let player = register_typeql_var(constraints, var)?;
                 let role_type = constraints.create_anonymous_variable()?;
-                constraints.add_links(relation, player, TypeSource::Variable(role_type))?;
+                constraints.add_links(relation, player, Vertex::Variable(role_type))?;
             }
         }
     }

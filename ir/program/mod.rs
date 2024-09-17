@@ -4,14 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, error::Error, fmt, ops::Index, sync::Arc};
+use std::{error::Error, fmt, sync::Arc};
 
-use encoding::value::{label::Label, value::Value};
 use error::typedb_error;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 use typeql::schema::definable::function::{Function, ReturnStream};
 
-use crate::{pattern::IrID, program::function_signature::FunctionID, PatternDefinitionError};
+use crate::{program::function_signature::FunctionID, PatternDefinitionError};
 
 pub mod block;
 pub mod function;
