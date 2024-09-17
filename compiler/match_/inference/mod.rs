@@ -4,17 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-};
-
-use answer::variable::Variable;
 use concept::error::ConceptReadError;
 use error::typedb_error;
-use ir::pattern::{constraint::Constraint, variable_category::VariableCategory};
-
-use crate::expression::ExpressionCompileError;
 
 pub mod annotated_functions;
 pub mod annotated_program;

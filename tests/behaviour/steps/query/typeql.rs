@@ -114,7 +114,7 @@ fn execute_match_query(
                 .filter_map(|(var, value)| Some((variable_names.get(var).cloned()?, value)))
                 .collect()
         })
-        .collect::<Vec<HashMap<String, VariableValue<'static>>>>()
+        .collect::<Vec<HashMap<String, VariableValue<'static>>>>();
 
     Ok(answers)
 }

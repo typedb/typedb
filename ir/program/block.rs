@@ -6,7 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    fmt::{Display, Formatter},
+    fmt,
     ops::Index,
 };
 
@@ -19,15 +19,9 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
         variable_category::{VariableCategory, VariableOptionality},
-        Scope, ScopeId,
+        ParameterID, Scope, ScopeId,
     },
-    program::{
-        conjunction::{Conjunction, ConjunctionBuilder},
-        constraint::Constraint,
-        modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
-        variable_category::{VariableCategory, VariableOptionality},
-        ParameterID, ParameterRegistry, Scope, ScopeId,
-    },
+    program::modifier::{Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
     PatternDefinitionError,
 };
 
@@ -277,7 +271,7 @@ pub struct ScopeContext {
 
 impl ScopeContext {
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.referenced_variables.iter().map(|v| v.clone())
+        self.referenced_variables.iter().copied()
     }
 
     pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
@@ -404,7 +398,7 @@ impl<'a> BlockContext<'a> {
         category: VariableCategory,
         source: Constraint<Variable>,
     ) -> Result<(), PatternDefinitionError> {
-        self.referenced_variables.insert(variable.clone());
+        self.referenced_variables.insert(variable);
         self.variable_registry.set_variable_category(variable, category, source)
     }
 
@@ -425,8 +419,8 @@ fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_chi
     parents.get(&maybe_child).is_some_and(|&c| c == scope || is_child_scope(parents, scope, c))
 }
 
-impl Display for VariableRegistry {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for VariableRegistry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Named variables:")?;
         for var in self.variable_names.keys().sorted_unstable() {
             writeln!(f, "  {}: ${}", var, self.variable_names[var])?;
