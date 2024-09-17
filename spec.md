@@ -356,7 +356,7 @@ _IMPORTANT_: Not all parts of the type system introduced in this section are exp
 
 We discuss the grammar for statements relating to types, and explain them in natural language statements.
 
-* **Types**. We write 
+* **Ordinary kinds**. We write 
   $`A : \mathbf{Kind}`$ to mean the statement:
   > $`A`$ is a type of kind $`\mathbf{Kind}`$. 
 
@@ -370,7 +370,7 @@ We discuss the grammar for statements relating to types, and explain them in nat
 
   _Example_: $`\mathsf{Person} : \mathbf{Ent}`$ means $`\mathsf{Person}`$ an entity type.
 
-* **Combined kind notations** 
+* **Combined kinds notation**
   * $`\mathbf{Obj} = \mathbf{Ent} + \mathbf{Rel}`$ (collection of **object types**)
   * $`\mathbf{ERA} = \mathbf{Obj} + \mathbf{Att}`$ (collection of **ERA types**)
   * $`\mathbf{Schema} = \mathbf{ERA} + \mathbf{Itf}`$ (collection of **schema types**)
@@ -378,7 +378,7 @@ We discuss the grammar for statements relating to types, and explain them in nat
   * $`\mathbf{Alg} = \mathbf{Op}^*(\mathbf{Simple})`$ (collection of all **algebraic types**, obtained by closing simple types under operators: sum, product, option... see "Type operators" below)
   * $`\mathbf{Type} = \mathbf{Alg} + \mathbf{List}`$ (collection of all **types**)
 
-* **Typing**
+* **Typing of elements**
   If $`A`$ is a type, then we may write $`a : A`$ to mean the statement:
   > $`a`$ is an element in type $`A`$.
 
@@ -393,12 +393,15 @@ We discuss the grammar for statements relating to types, and explain them in nat
 
 We discuss the grammar for statements relating to dependent types, and explain them in natural language statements.
 
-* **Dependent types**. We write $`A : \mathbf{Kind}(I,J,...)`$ to mean:
-  > $`A`$ is a type with **interface types** $`I, J, ...`$.
-  
-  * _Application_: Writing $A : \mathbf{Kind}(I,J,...)$ ***implies*** $`A(x:I, y:J, ...) : \mathbf{Kind}`$ whenever we have $`x: I, y: J, ...`$.
-  * _Variations_: We may replace $`\mathbf{Kind}`$ by $`\mathbf{Rel}`$ or $`\mathbf{Att}`$.
-  * _Example_: $`\mathsf{Marriage : \mathbf{Rel}(Spouse)}`$ is a relation type with interface type $`\mathsf{Spouse} : \mathbf{Itf}`$.
+* **Dependent type kinds**. We write $`A : \mathbf{Kind}(I,J,...)`$ to mean:
+  > $`A`$ is a type of kind $`\mathbf{Kind}`$ with **interface types** $`I, J, ...`$.
+
+  The type system the following cases of **dependent type kinds**:
+    * $`\mathbf{Ent}`$ (collection of **entity types**)
+    * $`\mathbf{Rel}`$ (collection of **relation types**)
+
+  _Example_: $`\mathsf{Marriage : \mathbf{Rel}(Spouse)}`$ is a relation type with interface type $`\mathsf{Spouse} : \mathbf{Itf}`$.
+
 * **Dependent typing**.  We write $`a : A(x : I, y : J,...)`$ to mean:
   > The element $`a`$ lives in the type "$`A`$ of $`x`$ (cast as $`I`$), and $`y`$ (cast as $`J`$), and ...".
 
@@ -425,10 +428,9 @@ We discuss the grammar for statements relating to subtypes and castings, and exp
 * **Direct castings**: We write $`A <_! B`$ to mean:
     > A cast from A to B was declared by user (we speak of a ***direct casting*** from A to B).
 
-    * _Direct-to-general rule_: $`A <_! B`$ ***implies*** $`A \leq B`$.
-    * _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
-    * _Example_: $`\mathsf{Child} <_! \mathsf{Nameowner}`$
-    * _Example_: $`\mathsf{Person} <_! \mathsf{Spouse}`$
+    _Example_: $`\mathsf{Child} <_! \mathsf{Person}`$
+    _Example_: $`\mathsf{Child} <_! \mathsf{Nameowner}`$
+    _Example_: $`\mathsf{Person} <_! \mathsf{Spouse}`$
 
 ### Algebraic type operators
 
@@ -484,45 +486,48 @@ This section describes the **rules** that govern the interaction of statements.
 
 ### Ordinary types
 
-* _Direct typing rule_. The statement $`a :_! A`$ implies the statement $`a : A`$. (The converse is not true!)
+* **Direct typing rule**: The statement $`a :_! A`$ implies the statement $`a : A`$. (The converse is not true!)
 
-  _Example_. $p :_! \mathsf{Child}$ means the user has inserted $`p`$ into the type $`\mathsf{Child}`$. Our type system may derive $`p : \mathsf{Person}`$ from this (but _not_ $`p :_! \mathsf{Person}`$)
+  _Example_. $`p :_! \mathsf{Child}`$ means the user has inserted $`p`$ into the type $`\mathsf{Child}`$. Our type system may derive $`p : \mathsf{Person}`$ from this (but _not_ $`p :_! \mathsf{Person}`$)
 
 ### Dependendent types
 
-* _Combining dependencies_: Given $A : \mathbf{Kind}(I)$ and $`A : \mathbf{Kind}(J)`$, this ***implies*** $`A : \mathbf{Kind}(I,J)`$. In words:
+
+* **Applying dependencies**: Writing $A : \mathbf{Kind}(I,J,...)$ *implies* $`A(x:I, y:J, ...) : \mathbf{Kind}`$ whenever we have $`x: I, y: J, ...`$.
+
+* **Combining dependencies**: Given $A : \mathbf{Kind}(I)$ and $`A : \mathbf{Kind}(J)`$, this *implies* $`A : \mathbf{Kind}(I,J)`$. In words:
   > If a type separately depends on $`I`$ and on $`J`$, then it may jointly depend on $`I`$ and $`J`$! 
 
   _Remark_: This applies recursively to types with $`k`$ interfaces.
 
   _Example_: $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband})`$ and $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Wife})`$ then $`\mathsf{HeteroMarriage} : \mathbf{Rel}(\mathsf{Husband},\mathsf{Wife})`$
 
-* _Weakening dependencies_: Given $`A : \mathbf{Kind}(I,J)`$, this ***implies*** $`A : \mathbf{Kind}(I)`$. In words:
+* **Weakening dependencies**: Given $`A : \mathbf{Kind}(I,J)`$, this *implies* $`A : \mathbf{Kind}(I)`$. In words:
   > Dependencies can be simply ignored (note: this is a coarse rule — we later discuss more fine-grained constraints, e.g. cardinality).
 
   _Remark_: This applies recursively to types with $`k`$ interfaces.
 
   _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
 
-* _Auto-inheritance rule_: If $`A : \mathbf{Kind}`$, $`B : \mathbf{Kind}(I)`$, $`A \leq B`$ and $`A`$ has no interface strictly specializing $`I`$ then $`A : \mathbf{Kind}(I)`$ ("strictly" meaning "not equal to $`I`$"). In words:
+* **Auto-inheritance rule**: If $`A : \mathbf{Kind}`$, $`B : \mathbf{Kind}(I)`$, $`A \leq B`$ and $`A`$ has no interface strictly specializing $`I`$ then $`A : \mathbf{Kind}(I)`$ ("strictly" meaning "not equal to $`I`$"). In words:
 
   > Dependencies that are not specialized are inherited.
     
 ### Subtypes and castings
 
-* _Basic casting rule_: If $`A \leq B`$ and $`a : A`$, then this ***implies*** $`a : B`$.
+Beside the rules below, subtyping ($`\leq`$) is transitive and reflexive.
 
-* _Transitivity rule_: If $`A \leq B`$ and $`B \leq C`$, then this ***implies*** $`A \leq C`$.
+* **Basic casting rule**: If $`A \leq B`$ is true and $`a : A`$ is true, then this *implies* $`a : B`$ is true.
 
-* _Reflexivity rule_: If $`A : \mathbf{Kind}`$ then this **implies** $`A \leq A`$ 
+* **Direct-to-general rule**: $`A <_! B`$ *implies* $`A \leq B`$.
 
-* _"Weakening dependencies of terms" rule_: If $`a : A(x:I, y:J)`$ then $`a : A(x:I)`$, equivalently: $`A(x:I, y:J) \leq A(x:I)`$. In other words:
+* **"Weakening dependencies of terms" rule**: If $`a : A(x:I, y:J)`$ then this *implies* $`a : A(x:I)`$, equivalently: $`A(x:I, y:J) \leq A(x:I)`$. In other words:
     > Elements in $`A(I,J)`$ casts into elements of $`A(I)`$.
 
     * _Remark_: More generally, this applies for types with $k \leq 0$ interfaces. (In particular, $`A(x:I) \leq A() = A`$)
     * _Example_: If $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$ then both $`m : \mathsf{Marriage}(x:\mathsf{Spouse})`$ and $`m : \mathsf{Marriage}(y:\mathsf{Spouse})`$
 
-* _"Covariance of dependencies" rule_: Given $`A \leq B`$, $`I \leq J`$ such that $`A : \mathbf{Kind}(I)`$ $`B : \mathbf{Kind}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$. In other words:
+* **"Covariance of dependencies" rule**: Given $`A \leq B`$, $`I \leq J`$ such that $`A : \mathbf{Kind}(I)`$ $`B : \mathbf{Kind}(J)`$, then $`a : A(x:I)`$ implies $`a : B(x:J)`$. In other words:
     > When $`A`$ casts to $`B`$, and $`I`$ to $`J`$, then $`A(I)`$ casts to $`B(J)`$.
 
     _Remark_: This applies recursively for types with $`k`$ interfaces.
@@ -531,26 +536,25 @@ This section describes the **rules** that govern the interaction of statements.
 
 ### Algebraic type operators
 
-* Sum types follow the usual rules of type system.
+* **Sums**: Sum types follow the usual rules of type system.
 
     _Note_: the inclusion $`A \leq A + B`$ is also **subsumptive** subtyping. This induces certain equalities on elements: for example, if $`A \leq B`$, then $`A + B = B`$ since $`a : A`$ for $`a : B`$ we have $`a = a : A + B`$ ... therefore, technically $`A + B`$ the so-called _fibered_ sum which identifies the $`A \cap B`$). We omit the detailed rules here, and use common sense.
 
-* Product types follow the usual rules of type systems.
+* **Products**: Product types follow the usual rules of type systems.
 
     _Note_: again, subsumptive subtyping interacts with this. For example, we would have if $`A \leq A'$ and $B \leq B'`$ then $`A \times B \leq A' \times B'`$ ...  We omit the detailed rules here, and use common sense.
 
-* Option types follow the usual rules of type systems.
+* **Options**: Option types follow the usual rules of type systems.
 
     _Note_: same note as before applies.
 
 ### List types
 
-* _Direct typing list rule_: Given $`l = [l_0,l_1,...] :_! [A]`$ this implies $`l_i :_! A`$. In other words:
+* **Direct typing list rule**: Given $`l = [l_0,l_1,...] :_! [A]`$ this implies $`l_i :_! A`$. In other words:
   > If the user intends a list typing $`l :_! [A]`$ then the list entries $`l_i`$ will be direct elements of $`A`$.
 
-* _Direct dependency list rule_: Given $`l = [l_0,l_1,...] : [I]`$ and $`a :_! A(l : [I])`$ implies $`a :_! A(l_i : I)`$. In other words:
+* **Direct dependency list rule**: Given $`l = [l_0,l_1,...] : [I]`$ and $`a :_! A(l : [I])`$ implies $`a :_! A(l_i : I)`$. In other words:
   > If the user intends $a$ to directly depend on the list $`l`$ then they intend $a$ to directly depend on each list's entries $`l_i`$.
-
 
 ### Modalities
 
