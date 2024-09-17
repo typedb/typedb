@@ -60,7 +60,7 @@ pub trait StageIterator:
 }
 
 typedb_error!(
-    pub PipelineExecutionError(domain = "Executor", prefix = "EXE") {
+    pub PipelineExecutionError(component = "Pipeline execution", prefix = "PEX") {
         // TODO: migrate to `typedb_error` once they are typedb errors
         Interrupted(1, "Query was interrupted."),
         ConceptRead(2, "Error reading concept.", ( source: ConceptReadError )),

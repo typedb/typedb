@@ -17,7 +17,7 @@ use ir::{program::FunctionRepresentationError, PatternDefinitionError};
 use crate::{define::DefineError, redefine::RedefineError, undefine::UndefineError};
 
 typedb_error!(
-    pub QueryError(domain = "Query", prefix = "QRY") {
+    pub QueryError(component = "Query execution", prefix = "QEX") {
         // TODO: decide if we want to include whole query
         ParseError(1, "Failed to parse TypeQL query.", query: String, ( typedb_source: typeql::Error )),
         Define(2, "Failed to execute define query.", ( typedb_source: DefineError )),

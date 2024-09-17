@@ -41,7 +41,7 @@ impl Error for FunctionReadError {
 }
 
 typedb_error!(
-    pub FunctionRepresentationError(domain = "Representation", prefix = "FRP") {
+    pub FunctionRepresentationError(component = "Function representation", prefix = "FRP") {
         FunctionArgumentUnused(
             1,
             "Function argument variable '{argument_variable}' is unused.\nSource:\n{declaration}",

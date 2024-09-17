@@ -380,7 +380,7 @@ fn make_update_statistics_fn(
 }
 
 typedb_error!(
-    pub DatabaseOpenError(domain="Database", prefix = "DBO") {
+    pub DatabaseOpenError(component = "Database open", prefix = "DBO") {
         InvalidUnicodeName(1, "Could not open database, invalid unicode name '{name:?}'.", name: OsString ),
         CouldNotReadDataDirectory(2, "error while reading data directory at '{path:?}'.", path: PathBuf, ( source: Arc<io::Error> )),
         DirectoryCreate(3, "Error creating directory at '{path:?}'", path: PathBuf, ( source: Arc<io::Error> )),
@@ -398,7 +398,7 @@ typedb_error!(
 );
 
 typedb_error!(
-    pub DatabaseDeleteError(domain = "Database", prefix = "DBD") {
+    pub DatabaseDeleteError(component = "Database delete", prefix = "DBD") {
         InUse(1, "Cannot delete database since it is in use."),
         StorageDelete(2, "Error while deleting storage resources.", ( source: StorageDeleteError )),
         DirectoryDelete(3, "Error deleting directory.", ( source: Arc<io::Error> )),
@@ -406,7 +406,7 @@ typedb_error!(
 );
 
 typedb_error!(
-    pub DatabaseResetError(domain = "Database", prefix = "DBR") {
+    pub DatabaseResetError(component = "Database reset", prefix = "DBR") {
         InUse(1, "Database cannot be reset since it is in use."),
         StorageInUse(2, "Database cannot be reset since the storage is in use."),
         CorruptionPartialResetStorageInUse(

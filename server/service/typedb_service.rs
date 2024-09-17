@@ -162,7 +162,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 }
 
 typedb_error!(
-    ServiceError(domain="Service", prefix = "SRV") {
+    ServiceError(component = "Server", prefix = "SRV") {
         Unimplemented(1, "Not implemented: {description}", description: String),
         DatabaseDoesNotExist(2, "Database '{name}' does not exist.", name: String),
     }

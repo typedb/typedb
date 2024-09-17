@@ -907,7 +907,7 @@ fn err_capability_kind_mismatch(
 }
 
 typedb_error!(
-    pub DefineError(domain = "Define", prefix = "DEF") {
+    pub DefineError(component = "Define execution", prefix = "DEX") {
         Unimplemented(1, "Unimplemented define functionality: {description}", description: String),
         UnexpectedConceptRead(2, "Concept read error. ", ( source: ConceptReadError )),
         DefinitionResolution(3, "Failed to find definition.", ( typedb_source: SymbolResolutionError )),

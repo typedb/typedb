@@ -461,7 +461,7 @@ pub(crate) fn try_resolve_plays_role_label(
 
 // TODO: ideally these all have TypeQL declarations, so we can pinpoint line number in these errors!
 typedb_error!(
-    pub(crate) SymbolResolutionError(domain="SymbolResolution", prefix = "SYM") {
+    pub(crate) SymbolResolutionError(component = "Symbol resolution", prefix = "SYR") {
         TypeNotFound(1, "The type '{label}' was not found.", label: Label<'static>),
         StructNotFound(2, "The struct value type '{name}' was not found.", name: String),
         StructFieldIllegalList(3, "Struct fields cannot be lists.\nSource:\n{declaration}", declaration: Field),

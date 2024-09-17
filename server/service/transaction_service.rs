@@ -1209,7 +1209,7 @@ impl QueryStreamTransmitter {
 }
 
 typedb_error!(
-    pub(crate) TransactionServiceError(domain = "Service", prefix = "TSV") {
+    pub(crate) TransactionServiceError(component = "Transaction service", prefix = "TSV") {
         DatabaseNotFound(1, "Database '{name}' not found.", name: String),
         CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
         CannotRollbackReadTransaction(3, "Read transactions cannot be rolled back, since they never contain writes."),

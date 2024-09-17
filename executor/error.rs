@@ -8,7 +8,7 @@ use concept::error::ConceptReadError;
 use error::typedb_error;
 
 typedb_error!(
-    pub ReadExecutionError(domain = "ReadExecution", prefix = "REX") {
+    pub ReadExecutionError(component = "Read execution", prefix = "REX") {
         Interrupted(1, "Execution was interrupted."),
         ConceptRead(2, "Concept read error.", ( source: ConceptReadError )),
         CreatingIterator(3, "Error creating iterator from {instruction_name} instruction.", instruction_name: String, ( source: ConceptReadError )),

@@ -14,7 +14,7 @@ mod typeql;
 pub trait TypeDBError {
     fn variant_name(&self) -> &'static str;
 
-    fn domain(&self) -> &'static str;
+    fn component(&self) -> &'static str;
 
     fn code(&self) -> &'static str;
 
@@ -38,6 +38,10 @@ pub trait TypeDBError {
         }
         error
     }
+
+    fn format_code_and_description(&self) -> String {
+        format!("[{}] {}", self.code(), self.format_description())
+    }
 }
 
 impl PartialEq for dyn TypeDBError {
@@ -57,9 +61,9 @@ impl Debug for dyn TypeDBError {
 impl Display for dyn TypeDBError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.source().is_some() {
-            write!(f, "[{}] {}\nCause: \n\t {:?}", self.code(), self.format_description(), self.source().unwrap())
+            write!(f, "{}\nCause: \n\t {:?}", self.format_code_and_description(), self.source().unwrap())
         } else {
-            write!(f, "[{}] {}", self.code(), self.format_description())
+            write!(f, "{}", self.format_code_and_description())
         }
     }
 }
@@ -67,7 +71,7 @@ impl Display for dyn TypeDBError {
 // ***USAGE WARNING***: We should not set both Source and TypeDBSource, TypeDBSource has precedence!
 #[macro_export]
 macro_rules! typedb_error {
-    ( $vis: vis $name:ident(domain = $domain: literal, prefix = $prefix: literal) { $(
+    ( $vis: vis $name:ident(component = $component: literal, prefix = $prefix: literal) { $(
         $variant: ident (
             $number: literal,
             $description: literal
@@ -106,8 +110,8 @@ macro_rules! typedb_error {
                 }
             }
 
-            fn domain(&self) -> &'static str {
-                &$domain
+            fn component(&self) -> &'static str {
+                &$component
             }
 
             fn code(&self) -> &'static str {

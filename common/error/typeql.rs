@@ -11,11 +11,11 @@ use crate::TypeDBError;
 // Adapt TypeQL error as a TypeDB error so the errors are visible in the stack trace
 impl TypeDBError for typeql::Error {
     fn variant_name(&self) -> &'static str {
-        "typeql error"
+        "TypeQLUsage"
     }
 
-    fn domain(&self) -> &'static str {
-        "typeql"
+    fn component(&self) -> &'static str {
+        "TypeQL usage"
     }
 
     fn code(&self) -> &'static str {
@@ -31,7 +31,7 @@ impl TypeDBError for typeql::Error {
     }
 
     fn format_description(&self) -> String {
-        format!("Causes:\n{}", self)
+        format!("{}\nCaused: Error in usage of TypeQL.", self)
     }
 
     fn source(&self) -> Option<&(dyn Error + Send)> {

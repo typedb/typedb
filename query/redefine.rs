@@ -925,7 +925,7 @@ fn error_if_anything_redefined_else_set_true(anything_redefined: &mut bool) -> R
 }
 
 typedb_error!(
-    pub RedefineError(domain = "Redefine", prefix = "RDF") {
+    pub RedefineError(component = "Redefine execution", prefix = "REX") {
         Unimplemented(1, "Unimplemented redefine functionality: {description}", description: String),
         UnexpectedConceptRead(2, "Concept read error during redefine query execution.", ( source: ConceptReadError )),
         NothingRedefined(3, "Nothing was redefined."),
