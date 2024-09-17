@@ -1066,11 +1066,21 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         owns: Owns<'static>,
     ) -> Result<bool, ConceptReadError> {
-        Ok(if let Some(constraint) = get_unique_constraint(owns.get_constraints(snapshot, self)?.into_iter()) {
-            constraint.source().get_annotations_declared(snapshot, self)?.contains(&OwnsAnnotation::Key(AnnotationKey))
-        } else {
-            false
-        })
+        match owns.get_ordering(snapshot, self) {
+            Ok(_) => {
+                Ok(if let Some(constraint) = get_unique_constraint(owns.get_constraints(snapshot, self)?.into_iter()) {
+                    constraint
+                        .source()
+                        .get_annotations_declared(snapshot, self)?
+                        .contains(&OwnsAnnotation::Key(AnnotationKey))
+                } else {
+                    false
+                })
+            }
+            // Can be called from validation functions before storing ordering
+            Err(ConceptReadError::OrderingValueMissing) => Ok(false),
+            Err(err) => Err(err),
+        }
     }
 
     pub(crate) fn get_independent_attribute_types(

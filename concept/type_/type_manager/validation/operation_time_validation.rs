@@ -234,6 +234,7 @@ macro_rules! new_acquired_capability_instances_validation {
                 thing_manager,
                 &affected_object_types,
                 &affected_interface_types,
+                &HashMap::new(), // all interface supertypes are read from storage
                 &get_checked_constraints(default_constraints.into_iter()),
             )
             .map_err(SchemaValidationError::CannotAcquireCapabilityAsExistingInstancesViolateItsConstraint)
@@ -279,6 +280,7 @@ macro_rules! new_annotation_constraints_compatible_with_capability_instances_val
                 thing_manager,
                 &affected_object_types,
                 &affected_interface_types,
+                &HashMap::new(), // all interface supertypes are read from storage
                 &constraints,
             )
             .map_err(SchemaValidationError::CannotSetAnnotationForCapabilityAsExistingInstancesViolateItsConstraint)
@@ -325,6 +327,7 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
                     thing_manager,
                     &affected_object_types,
                     &affected_interface_types,
+                    &HashMap::new(), // all interface supertypes are read from storage
                     &constraints,
                 )
                 .map_err(SchemaValidationError::CannotChangeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances)?;
@@ -334,7 +337,7 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
     };
 }
 
-macro_rules! affected_constraints_compatible_with_capability_instances_on_interface_subtype_unset_validation {
+macro_rules! affected_constraints_compatible_with_capability_instances_on_interface_supertype_unset_validation {
     ($func_name:ident, $capability_type:ident, $validation_func:path) => {
         pub(crate) fn $func_name(
             snapshot: &impl ReadableSnapshot,
@@ -361,10 +364,12 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             collect_object_types_with_interface_type_and_subtypes::<$capability_type<'static>>(
                 snapshot,
                 type_manager,
-                interface_type,
+                interface_type.clone(),
                 &mut objects_with_interface_subtypes_and_constraints,
             )
             .map_err(SchemaValidationError::ConceptRead)?;
+
+            let updated_supertypes = HashMap::from([(interface_type, None)]);
 
             for (affected_object_type, constraints) in objects_with_interface_supertypes_and_constraints.into_iter() {
                 if !objects_with_interface_subtypes_and_constraints.contains(&affected_object_type) {
@@ -386,6 +391,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                     thing_manager,
                     &HashSet::from([affected_object_type]),
                     &all_interface_supertypes,
+                    &updated_supertypes,
                     &affected_constraints,
                 )
                 .map_err(SchemaValidationError::CannotUnsetInterfaceTypeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances)?;
@@ -422,7 +428,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             let all_interface_supertypes = collect_object_types_with_interface_type_and_supertypes_constraints(
                 snapshot,
                 type_manager,
-                interface_supertype,
+                interface_supertype.clone(),
                 &mut objects_with_interface_supertypes_and_constraints,
             )
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -431,10 +437,12 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             let all_interface_subtypes = collect_object_types_with_interface_type_and_subtypes::<$capability_type<'static>>(
                 snapshot,
                 type_manager,
-                interface_type,
+                interface_type.clone(),
                 &mut objects_with_interface_subtypes_and_constraints,
             )
             .map_err(SchemaValidationError::ConceptRead)?;
+
+            let updated_supertypes = HashMap::from([(interface_type, Some(interface_supertype))]);
 
             for (affected_object_type, constraints) in objects_with_interface_supertypes_and_constraints.into_iter() {
                 if !objects_with_interface_subtypes_and_constraints.contains(&affected_object_type) {
@@ -447,6 +455,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                     thing_manager,
                     &HashSet::from([affected_object_type]),
                     &all_interface_supertypes.iter().chain(all_interface_subtypes.iter()).cloned().collect(),
+                    &updated_supertypes,
                     &get_checked_constraints(constraints.into_iter()),
                 )
                 .map_err(SchemaValidationError::CannotChangeInterfaceTypeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances)?;
@@ -2771,12 +2780,54 @@ impl OperationTimeValidation {
         // Ok(())
     }
 
+    fn is_suitable_capability_constraint<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        constraint: &CapabilityConstraint<CAP>,
+        capability: CAP,
+        interface_type: CAP::InterfaceType,
+        new_interface_supertypes: &HashMap<CAP::InterfaceType, Option<CAP::InterfaceType>>,
+    ) -> Result<bool, ConceptReadError> {
+        debug_assert!(&capability.interface() == &interface_type);
+        match constraint.scope() {
+            ConstraintScope::SingleInstanceOfType => {
+                return Ok(constraint.source() == capability);
+            }
+            ConstraintScope::SingleInstanceOfTypeOrSubtype
+            | ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes
+            | ConstraintScope::AllInstancesOfTypeOrSubtypes => {}
+        }
+
+        let source_interface_type = constraint.source().interface();
+
+        if &source_interface_type == &interface_type {
+            return Ok(true);
+        }
+
+        for (subtype, supertype) in new_interface_supertypes {
+            if interface_type.is_subtype_transitive_of_or_same(snapshot, type_manager, subtype.clone())? {
+                return Ok(match supertype {
+                    None => false,
+                    Some(supertype) => source_interface_type.is_subtype_transitive_of_or_same(
+                        snapshot,
+                        type_manager,
+                        supertype.clone(),
+                    )?,
+                });
+            }
+        }
+
+        // Not affected by new_interface_supertypes, can use storage
+        Ok(interface_type.is_subtype_transitive_of_or_same(snapshot, type_manager, source_interface_type.clone())?)
+    }
+
     fn validate_owns_instances_against_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         object_types: &HashSet<ObjectType<'static>>,
         attribute_types: &HashSet<AttributeType<'static>>,
+        new_attribute_supertypes: &HashMap<AttributeType<'static>, Option<AttributeType<'static>>>,
         constraints: &HashSet<CapabilityConstraint<Owns<'static>>>,
     ) -> Result<(), DataValidationError> {
         if constraints.is_empty() {
@@ -2860,7 +2911,16 @@ impl OperationTimeValidation {
                             ConstraintScope::SingleInstanceOfType,
                             "Reconsider the algorithm if constraint scope is changed!"
                         );
-                        if &abstract_constraint.source() == &owns {
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            abstract_constraint,
+                            owns.clone(),
+                            attribute_type.clone(),
+                            new_attribute_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
+                        {
                             return Err(DataValidation::create_data_validation_owns_abstractness_error(
                                 &abstract_constraint,
                                 object.as_reference(),
@@ -2874,24 +2934,30 @@ impl OperationTimeValidation {
                             ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes,
                             "Reconsider the algorithm if constraint scope is changed!"
                         );
-                        if cardinality_constraint
-                            .source()
-                            .attribute()
-                            .is_supertype_transitive_of(snapshot, type_manager, attribute_type.clone())
-                            .map_err(DataValidationError::ConceptRead)?
-                            || &cardinality_constraint.source().attribute() == &attribute_type
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            cardinality_constraint,
+                            owns.clone(),
+                            attribute_type.clone(),
+                            new_attribute_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
                         {
                             *constraint_counts += count;
                         }
                     }
 
                     for distinct_constraint in distinct_constraints.iter() {
-                        if distinct_constraint
-                            .source()
-                            .attribute()
-                            .is_supertype_transitive_of(snapshot, type_manager, attribute_type.clone())
-                            .map_err(DataValidationError::ConceptRead)?
-                            || &distinct_constraint.source().attribute() == &attribute_type
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            distinct_constraint,
+                            owns.clone(),
+                            attribute_type.clone(),
+                            new_attribute_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
                         {
                             DataValidation::validate_owns_distinct_constraint(
                                 distinct_constraint,
@@ -2912,12 +2978,15 @@ impl OperationTimeValidation {
                             ConstraintScope::AllInstancesOfTypeOrSubtypes,
                             "Reconsider the algorithm if constraint scope is changed!"
                         );
-                        if unique_constraint
-                            .source()
-                            .attribute()
-                            .is_supertype_transitive_of(snapshot, type_manager, attribute_type.clone())
-                            .map_err(DataValidationError::ConceptRead)?
-                            || &unique_constraint.source().attribute() == &attribute_type
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            unique_constraint,
+                            owns.clone(),
+                            attribute_type.clone(),
+                            new_attribute_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
                         {
                             let new = unique_values.insert(value.clone().into_owned());
                             if !new {
@@ -2939,12 +3008,16 @@ impl OperationTimeValidation {
                             ConstraintScope::SingleInstanceOfTypeOrSubtype,
                             "Reconsider the algorithm if constraint scope is changed!"
                         );
-                        if regex_constraint
-                            .source()
-                            .attribute()
-                            .is_supertype_transitive_of(snapshot, type_manager, attribute_type.clone())
-                            .map_err(DataValidationError::ConceptRead)?
-                            || &regex_constraint.source().attribute() == &attribute_type
+
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            regex_constraint,
+                            owns.clone(),
+                            attribute_type.clone(),
+                            new_attribute_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
                         {
                             DataValidation::validate_owns_regex_constraint(
                                 regex_constraint,
@@ -2961,12 +3034,15 @@ impl OperationTimeValidation {
                             ConstraintScope::SingleInstanceOfTypeOrSubtype,
                             "Reconsider the algorithm if constraint scope is changed!"
                         );
-                        if range_constraint
-                            .source()
-                            .attribute()
-                            .is_supertype_transitive_of(snapshot, type_manager, attribute_type.clone())
-                            .map_err(DataValidationError::ConceptRead)?
-                            || &range_constraint.source().attribute() == &attribute_type
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            range_constraint,
+                            owns.clone(),
+                            attribute_type.clone(),
+                            new_attribute_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
                         {
                             DataValidation::validate_owns_range_constraint(
                                 range_constraint,
@@ -2983,12 +3059,15 @@ impl OperationTimeValidation {
                             ConstraintScope::SingleInstanceOfTypeOrSubtype,
                             "Reconsider the algorithm if constraint scope is changed!"
                         );
-                        if values_constraint
-                            .source()
-                            .attribute()
-                            .is_supertype_transitive_of(snapshot, type_manager, attribute_type.clone())
-                            .map_err(DataValidationError::ConceptRead)?
-                            || &values_constraint.source().attribute() == &attribute_type
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            values_constraint,
+                            owns.clone(),
+                            attribute_type.clone(),
+                            new_attribute_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
                         {
                             DataValidation::validate_owns_values_constraint(
                                 values_constraint,
@@ -3022,6 +3101,7 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         object_types: &HashSet<ObjectType<'a>>,
         role_types: &HashSet<RoleType<'a>>,
+        new_role_supertypes: &HashMap<RoleType<'static>, Option<RoleType<'static>>>,
         constraints: &HashSet<CapabilityConstraint<Plays<'static>>>,
     ) -> Result<(), DataValidationError> {
         if constraints.is_empty() {
@@ -3063,7 +3143,16 @@ impl OperationTimeValidation {
                             ConstraintScope::SingleInstanceOfType,
                             "Reconsider the algorithm if constraint scope is changed!"
                         );
-                        if &abstract_constraint.source() == &plays {
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            abstract_constraint,
+                            plays.clone(),
+                            role_type.clone(),
+                            new_role_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
+                        {
                             return Err(DataValidation::create_data_validation_plays_abstractness_error(
                                 &abstract_constraint,
                                 object.as_reference(),
@@ -3077,12 +3166,15 @@ impl OperationTimeValidation {
                             ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes,
                             "Reconsider the algorithm if constraint scope is changed!"
                         );
-                        if cardinality_constraint
-                            .source()
-                            .role()
-                            .is_supertype_transitive_of(snapshot, type_manager, role_type.clone())
-                            .map_err(DataValidationError::ConceptRead)?
-                            || &cardinality_constraint.source().role() == &role_type
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            cardinality_constraint,
+                            plays.clone(),
+                            role_type.clone(),
+                            new_role_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
                         {
                             *constraint_counts += count;
                         }
@@ -3111,6 +3203,7 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         relation_types: &HashSet<RelationType<'a>>,
         role_types: &HashSet<RoleType<'a>>,
+        new_role_supertypes: &HashMap<RoleType<'static>, Option<RoleType<'static>>>,
         constraints: &HashSet<CapabilityConstraint<Relates<'static>>>,
     ) -> Result<(), DataValidationError> {
         if constraints.is_empty() {
@@ -3157,7 +3250,16 @@ impl OperationTimeValidation {
                             ConstraintScope::SingleInstanceOfType,
                             "Reconsider the algorithm if constraint scope is changed!"
                         );
-                        if &abstract_constraint.source() == &relates {
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            abstract_constraint,
+                            relates.clone(),
+                            role_type.clone(),
+                            new_role_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
+                        {
                             return Err(DataValidation::create_data_validation_relates_abstractness_error(
                                 &abstract_constraint,
                                 relation.as_reference(),
@@ -3171,12 +3273,15 @@ impl OperationTimeValidation {
                             ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes,
                             "Reconsider the algorithm if constraint scope is changed!"
                         );
-                        if cardinality_constraint
-                            .source()
-                            .role()
-                            .is_supertype_transitive_of(snapshot, type_manager, role_type.clone())
-                            .map_err(DataValidationError::ConceptRead)?
-                            || &cardinality_constraint.source().role() == &role_type
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            cardinality_constraint,
+                            relates.clone(),
+                            role_type.clone(),
+                            new_role_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
                         {
                             *constraint_counts += count;
                         }
@@ -3188,12 +3293,15 @@ impl OperationTimeValidation {
                             ConstraintScope::SingleInstanceOfTypeOrSubtype,
                             "Reconsider the algorithm if constraint scope is changed!"
                         );
-                        if distinct_constraint
-                            .source()
-                            .role()
-                            .is_supertype_transitive_of(snapshot, type_manager, role_type.clone())
-                            .map_err(DataValidationError::ConceptRead)?
-                            || &distinct_constraint.source().role() == &role_type
+                        if Self::is_suitable_capability_constraint(
+                            snapshot,
+                            type_manager,
+                            distinct_constraint,
+                            relates.clone(),
+                            role_type.clone(),
+                            new_role_supertypes,
+                        )
+                        .map_err(DataValidationError::ConceptRead)?
                         {
                             DataValidation::validate_relates_distinct_constraint(
                                 distinct_constraint,
@@ -3369,17 +3477,17 @@ impl OperationTimeValidation {
         Self::validate_relates_instances_against_constraints
     );
 
-    affected_constraints_compatible_with_capability_instances_on_interface_subtype_unset_validation!(
+    affected_constraints_compatible_with_capability_instances_on_interface_supertype_unset_validation!(
         validate_affected_constraints_compatible_with_owns_instances_on_attribute_supertype_unset,
         Owns,
         Self::validate_owns_instances_against_constraints
     );
-    affected_constraints_compatible_with_capability_instances_on_interface_subtype_unset_validation!(
+    affected_constraints_compatible_with_capability_instances_on_interface_supertype_unset_validation!(
         validate_affected_constraints_compatible_with_plays_instances_on_role_supertype_unset,
         Plays,
         Self::validate_plays_instances_against_constraints
     );
-    affected_constraints_compatible_with_capability_instances_on_interface_subtype_unset_validation!(
+    affected_constraints_compatible_with_capability_instances_on_interface_supertype_unset_validation!(
         validate_affected_constraints_compatible_with_relates_instances_on_role_supertype_unset,
         Relates,
         Self::validate_relates_instances_against_constraints

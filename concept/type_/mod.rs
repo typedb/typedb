@@ -159,6 +159,15 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         Ok(other.get_supertypes_transitive(snapshot, type_manager)?.contains(self))
     }
 
+    fn is_supertype_transitive_of_or_same<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        other: Self,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self == &other || self.is_supertype_transitive_of(snapshot, type_manager, other)?)
+    }
+
     fn is_subtype_of<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -175,6 +184,15 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         other: Self,
     ) -> Result<bool, ConceptReadError> {
         Ok(other.get_subtypes_transitive(snapshot, type_manager)?.contains(self))
+    }
+
+    fn is_subtype_transitive_of_or_same<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        other: Self,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self == &other || self.is_subtype_transitive_of(snapshot, type_manager, other)?)
     }
 
     fn inheritance_cmp<'m>(
