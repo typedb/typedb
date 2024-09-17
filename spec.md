@@ -339,6 +339,9 @@
 
 This document specifies the behaviour of TypeDB and its query language TypeQL.
 
+* Best view _not in Chrome_ (doesn't display math correctly)
+* Badge system (not yet applied): implemented (✅), alpha-plan (🅰), beta-plan (🅱), 3.x-plan (❎), un-stable/to-be-discussed (❓)
+
 # The type system
 
 The type system is a mathematical system, which we describe in this section with a reasonable level of formality (not all details are included, and some basic mathematical rules are taken for granted: for example, the rule of equality, i.e. if $a = b$ then $a$ and $b$ are exchangeable for all purposes in our type system.)
