@@ -46,8 +46,6 @@ impl<Snapshot> Clone for StageContext<Snapshot> {
 pub trait StageAPI<Snapshot> {
     type OutputIterator: StageIterator;
 
-    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String>;
-
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
